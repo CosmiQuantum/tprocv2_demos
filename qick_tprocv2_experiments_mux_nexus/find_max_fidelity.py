@@ -5,10 +5,16 @@ import glob
 import datetime
 
 # Directory where your HDF5 files are stored
+<<<<<<< HEAD
 outerFolder1 = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/2025-01-22")
 outerFolder = outerFolder1 + "/readout_opt/Gain_Freq_Sweeps/"
 print('For files inside: ', outerFolder)
 
+=======
+outerFolder1 = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/", str(datetime.date.today()))
+outerFolder = outerFolder1 + "/readout_opt/Gain_Freq_Sweeps/"
+print('For files inside: ', outerFolder)
+>>>>>>> 0bc5a5807f81cf04e7b06796a6b9b5114a4a58a9
 def find_max_fidelity(file_path):
     with h5py.File(file_path, "r") as f:
         # Load the results dataset and metadata
@@ -35,12 +41,17 @@ def find_max_fidelity(file_path):
         for index in max_indices:
             freq_idx, gain_idx = index
             gain = gain_range[0] + gain_idx * gain_step_size
+<<<<<<< HEAD
             freq_offset = (freq_range[0] - reference_frequency) + freq_idx * freq_step_size #this is doing freq - reference_frequency
+=======
+            freq_offset = (freq_range[0] - reference_frequency) + freq_idx * freq_step_size
+>>>>>>> 0bc5a5807f81cf04e7b06796a6b9b5114a4a58a9
             configurations.append((max_fidelity, gain, freq_offset, optimal_length))
 
         return max_fidelity, configurations
 
 # Loop through each HDF5 file in the folder for each qubit
+<<<<<<< HEAD
 # for qubit_index in range(1, 5):
 #     # Search for files matching the pattern with any timestamp
 #     file_pattern = os.path.join(outerFolder, f"*_Qubit_{qubit_index}_*.h5")
@@ -146,3 +157,38 @@ for qubit_index in range(1, 5):
             print(f"  Gain: {gain:.4f}")
             print(f"  Freq Offset: {freq_offset:.4f}")
             print(f"  Opt Length: {optimal_length:.4f}\n")
+=======
+for qubit_index in range(1, 5):
+    # Search for files matching the pattern with any timestamp
+    file_pattern = os.path.join(outerFolder, f"*_Qubit_{qubit_index}_*.h5")
+    # file_pattern = os.path.join(outerFolder, f"{str(datetime.date.today())}_Gain_Freq_Sweep_Qubit_{qubit_index}_*.h5")
+    # print("file pattern = " + file_pattern)
+    file_list = glob.glob(file_pattern)
+
+    if file_list:
+        # Initialize variables to track the maximum fidelity and configurations
+        overall_max_fidelity = -np.inf
+        all_configurations = []
+
+        # Iterate over each file and collect configurations tied for max fidelity
+        for file_path in file_list:
+            max_fidelity, configurations = find_max_fidelity(file_path)
+
+            # If this file's max fidelity is higher, reset the list of configurations
+            if max_fidelity > overall_max_fidelity:
+                overall_max_fidelity = max_fidelity
+                all_configurations = configurations
+            # If it matches the current max, add these configurations as well
+            elif max_fidelity == overall_max_fidelity:
+                all_configurations.extend(configurations)
+
+        # Print all configurations with the highest fidelity
+        print(f"Qubit {qubit_index}:")
+        for max_fidelity, max_gain, max_freq_offset, optimal_length in all_configurations:
+            print(f"  Max Fidelity: {overall_max_fidelity:.4f}")
+            print(f"  Optimal Readout Length: {optimal_length:.4f} us")
+            print(f"  Optimal Gain: {max_gain:.4f} a.u.")
+            print(f"  Optimal Frequency Offset: {max_freq_offset:.4f} MHz\n")
+    else:
+        print(f"File for Qubit {qubit_index} not found.")
+>>>>>>> 0bc5a5807f81cf04e7b06796a6b9b5114a4a58a9

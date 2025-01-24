@@ -6,7 +6,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import csv
 import datetime
+<<<<<<< HEAD
 import time
+=======
+>>>>>>> 0bc5a5807f81cf04e7b06796a6b9b5114a4a58a9
 
 from NetDrivers import E36300
 
@@ -56,17 +59,25 @@ class BiasQubitSpectroscopy:
         amps_arr = []
         freq_arr = []
 
+<<<<<<< HEAD
         for index, v in enumerate(vsweep):
             print(f"Setting bias to {v}V")
             BiasPS.setVoltage(v, Bias_ch[qubit_index])
             time.sleep(5)
 
+=======
+        for index, v in enumerate(tqdm(vsweep)):
+            BiasPS.setVoltage(v, Bias_ch[qubit_index])
+
+            #add wait time? Probably
+>>>>>>> 0bc5a5807f81cf04e7b06796a6b9b5114a4a58a9
 
             qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'], final_delay = self.exp_cfg['relax_delay'], cfg=self.config)
             iq_list = qspec.acquire(soc, soft_avgs = self.exp_cfg["rounds"], progress=True)
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
             amps = np.abs(I + 1j * Q)
+<<<<<<< HEAD
             freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
             I_arr.append(I)
             Q_arr.append(Q)
@@ -74,6 +85,14 @@ class BiasQubitSpectroscopy:
             freq_arr.append(freqs)
         BiasPS.disable(Bias_ch[qubit_index])
         print(freq_arr[0])
+=======
+            freq = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
+            I_arr.append(I)
+            Q_arr.append(Q)
+            amps_arr.append(amps)
+            freq_arr.append(freq)
+        BiasPS.disable(Bias_ch[qubit_index])
+>>>>>>> 0bc5a5807f81cf04e7b06796a6b9b5114a4a58a9
 
         '''outerFolder_expt = os.path.join(self.outerFolder, 'bias_spec')
         self.experiment.create_folder_if_not_exists(outerFolder_expt)

@@ -1,1 +1,3 @@
 qick_tprocv2_experiments_mux_nexus/assembler.log
+*.pyc
+__pycache__/
