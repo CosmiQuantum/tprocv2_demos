@@ -36,7 +36,8 @@ qubit_to_increase_reps_for = 0 #only has impact if previous line is True
 multiply_qubit_reps_by = 2 #only has impact if the line two above is True
 list_of_all_qubits = list(range(tot_num_of_qubits))
 
-outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/", str(datetime.date.today()))
+#outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/", str(datetime.date.today()))
+outerFolder = os.path.join("/data/QICK_data/", str(datetime.date.today()))
 
 ################################################ optimization outputs ##################################################
 
@@ -88,17 +89,17 @@ while j < n:
         #del tof
 
         ################################################## Res spec ####################################################
-        #try:
-        res_spec   = ResonanceSpectroscopy(QubitIndex,list_of_all_qubits, outerFolder, j, save_figs, experiment)
-        res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
-        experiment.readout_cfg['res_freq_ge'] = res_freqs
-        offset = freq_offsets[QubitIndex] #use optimized offset values
-        offset_res_freqs = [r + offset for r in res_freqs]
-        experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
-        '''#    del res_spec
-        #except Exception as e:
-        #    print(f'Got the following error, continuing: {e}')
-        #    continue #skip the rest of this qubit
+        try:
+            res_spec   = ResonanceSpectroscopy(QubitIndex,list_of_all_qubits, outerFolder, j, save_figs, experiment)
+            res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
+            experiment.readout_cfg['res_freq_ge'] = res_freqs
+            offset = freq_offsets[QubitIndex] #use optimized offset values
+            offset_res_freqs = [r + offset for r in res_freqs]
+            experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
+            del res_spec
+        except Exception as e:
+            print(f'Got the following error, continuing: {e}')
+            continue #skip the rest of this qubit
 
         # ############################################ Roll Signal into I ##############################################
         # #get the average theta value, then use that to rotate the signal. Plug that value into system_config res_phase
@@ -339,4 +340,3 @@ while j < n:
 
 
 
-'''
