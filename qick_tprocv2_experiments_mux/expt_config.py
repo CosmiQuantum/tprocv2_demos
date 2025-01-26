@@ -3,9 +3,11 @@ import numpy as np
 
 VNA_res = np.array([6.20905, 6.26145, 6.321265, 6.401472, 6.467723, 6.5209414])*1000  # run 5
 # VNA_res = np.array([6191.519, 6216, 6292.321, 6405.85, 6432.959, 6468.441,]) # run 4a
-
 VNA_qubit = np.array([4184.10, 3821.43, 4156.88, 4459.12, 4471.18, 4998.04])  # Freqs of Qubit g/e Transition
+
+# Set this for your experiment
 tot_num_of_qubits = 4
+
 list_of_all_qubits = list(range(tot_num_of_qubits))
 
 expt_cfg = {

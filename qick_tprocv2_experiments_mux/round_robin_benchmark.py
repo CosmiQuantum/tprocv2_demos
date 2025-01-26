@@ -17,7 +17,7 @@ from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
 from system_config import QICK_experiment
 from section_003_punch_out_ge_mux import PunchOut
-from expt_config import expt_cfg
+from expt_config import expt_cfg, list_of_all_qubits
 
 ################################################ Run Configurations ####################################################
 
@@ -29,12 +29,10 @@ live_plot = False      # for live plotting do "visdom" in comand line and then o
 fit_data = False      # fit the data here and save or plot the fits?
 save_data_h5 = True   # save all of the data to h5 files?
 Qs_to_look_at = [0, 1, 2, 3] #only list the qubits you want to do the RR for
-tot_num_of_qubits = 4
 
 increase_qubit_reps = True #if you want to increase the reps for a qubit, set to True
 qubit_to_increase_reps_for = 0 #only has impact if previous line is True
 multiply_qubit_reps_by = 2 #only has impact if the line two above is True
-list_of_all_qubits = list(range(tot_num_of_qubits))
 
 #outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/", str(datetime.date.today()))
 outerFolder = os.path.join("/data/QICK_data/", str(datetime.date.today()))
