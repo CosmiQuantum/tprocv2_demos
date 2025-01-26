@@ -3,9 +3,10 @@ import h5py
 import os
 
 class SaveRunData:
-    def __init__(self, run_number, run_notes):
+    def __init__(self, run_number, fridge, run_notes):
         self.run_number = run_number
         self.run_notes = run_notes
+        self.fridge = fridge
 
     def create_folder_if_not_exists(self, folder):
         """Creates a folder at the given path if it doesn't already exist."""
@@ -26,7 +27,7 @@ class SaveRunData:
         last_date = date_times_t1[max(date_times_t1.keys())][-1] if date_times_t1[
             max(date_times_t1.keys())] else None
 
-        run_stats_folder = f"run_stats/run{self.run_number}/"
+        run_stats_folder = f"run_stats/{self.fridge}/run{self.run_number}/"
         self.create_folder_if_not_exists(run_stats_folder)
         filename = run_stats_folder + 'experiment_data.h5'
 

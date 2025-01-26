@@ -6,8 +6,8 @@ class UpdateNote:
         self.run_number = run_number
         self.new_run_notes = new_run_notes
 
-    def run(self):
-        run_stats_folder = f"run_stats/run{self.run_number}/"
+    def run(self, fridge):
+        run_stats_folder = f"run_stats/{fridge}/run{self.run_number}/"
         filename = os.path.join(run_stats_folder, 'experiment_data.h5')
 
         with h5py.File(filename, 'r+') as f:
