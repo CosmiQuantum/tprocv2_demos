@@ -193,11 +193,10 @@ class T2RProgram(AveragerProgramV2):
 
 
 class T2RMeasurement:
-    def __init__(self, QubitIndex, list_of_all_qubits, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
+    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
                  fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
                  multiply_qubit_reps_by = 0):
         self.QubitIndex = QubitIndex
-        self.list_of_all_qubits = list_of_all_qubits
         self.outerFolder = outerFolder
         self.fit_data = fit_data
         self.expt_name = "Ramsey_ge"

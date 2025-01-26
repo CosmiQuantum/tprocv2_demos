@@ -9,10 +9,9 @@ import copy
 import visdom
 
 class AmplitudeRabiExperiment:
-    def __init__(self, QubitIndex, list_of_all_qubits, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
+    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
                  increase_qubit_reps = False, qubit_to_increase_reps_for = None, multiply_qubit_reps_by = 0):
         self.QubitIndex = QubitIndex
-        self.list_of_all_qubits = list_of_all_qubits
         self.outerFolder = outerFolder
         self.expt_name = "power_rabi_ge"
         self.Qubit = 'Q' + str(self.QubitIndex)

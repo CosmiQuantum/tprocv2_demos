@@ -82,7 +82,7 @@ while j < n:
         experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
 
         ###################################################### TOF #####################################################
-        #tof        = TOFExperiment(QubitIndex, list_of_all_qubits, outerFolder, experiment, j, save_figs)
+        #tof        = TOFExperiment(QubitIndex, outerFolder, experiment, j, save_figs)
         #tof.run(experiment.soccfg, experiment.soc)
         #del tof
 
@@ -102,7 +102,7 @@ while j < n:
         # ############################################ Roll Signal into I ##############################################
         # #get the average theta value, then use that to rotate the signal. Plug that value into system_config res_phase
         # leng=4
-        # ss = SingleShot(QubitIndex, list_of_all_qubits, outerFolder, experiment, j, save_figs)
+        # ss = SingleShot(QubitIndex, outerFolder, experiment, j, save_figs)
         # fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
         # angles.append(angle)
         # #print(angles)
@@ -148,7 +148,7 @@ while j < n:
 
         ########################################## Single Shot Measurements ############################################
         try:
-            ss = SingleShot(QubitIndex, list_of_all_qubits, outerFolder,  j, save_figs, experiment)
+            ss = SingleShot(QubitIndex, outerFolder,  j, save_figs, experiment)
             fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
             I_g = iq_list_g[QubitIndex][0].T[0]
             Q_g = iq_list_g[QubitIndex][0].T[1]
@@ -163,7 +163,7 @@ while j < n:
             continue #skip the rest of this qubit
         ###################################################### T1 ######################################################
         try:
-            t1 = T1Measurement(QubitIndex, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
+            t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
                                increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential = t1.run(experiment.soccfg, experiment.soc)
             del t1
@@ -175,7 +175,7 @@ while j < n:
         ###################################################### T2R #####################################################
         try:
 
-            t2r = T2RMeasurement(QubitIndex, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
+            t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
                                  increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey = t2r.run(experiment.soccfg, experiment.soc)
             del t2r
@@ -186,7 +186,7 @@ while j < n:
 
         ##################################################### T2E ######################################################
         try:
-            t2e = T2EMeasurement(QubitIndex, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
+            t2e = T2EMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
                                  increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             t2e_est, t2e_err, t2e_I, t2e_Q, t2e_delay_times, fit_ramsey_t2e, sys_config_to_save = t2e.run(experiment.soccfg,
                                                                                                           experiment.soc)

@@ -1,5 +1,6 @@
 from syspurpose.files import three_way_merge
-
+from section_008_save_data_to_h5 import Data_H5
+from analysis_000_load_configs import LoadConfigs
 from analysis_001_plot_all_RR_h5 import PlotAllRR
 from analysis_002_res_centers_vs_time_plots import ResonatorFreqVsTime
 from analysis_003_q_freqs_vs_time_plots import QubitFreqsVsTime
@@ -17,9 +18,9 @@ from analysis_014_temperature_calcsandplots import TempCalcAndPlots
 from analysis_015_plot_all_run_stats import CompareRuns
 from analysis_016_metrics_vs_temp import (ResonatorFreqVsTemp, GetThermData, QubitFreqsVsTemp,
                                           PiAmpsVsTemp, T1VsTemp, T2rVsTemp, T2eVsTemp)
-from section_008_save_data_to_h5 import Data_H5
-from analysis_000_load_configs import LoadConfigs
 from analysis_017_plot_metric_dependencies import PlotMetricDependencies
+from analysis_018_box_whisker import PlotBoxWhisker
+
 import matplotlib.pyplot as plt
 from datetime import datetime
 import pytz
@@ -47,32 +48,32 @@ outerFolder = f"/data/QICK_data/{run_name}/" + date + "/"
 config_loader = LoadConfigs(outerFolder)
 sys_config, exp_config = config_loader.run()
 
-# ################################################ 01: Get all data ######################################################
-# res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
-#                                        save_figs, fit_saved, signal, run_name, exp_config)
-# date_times_res_spec, res_freqs = res_spec_vs_time.run()
-#
-# q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
-#                                   save_figs, fit_saved, signal, run_name, exp_config)
-# date_times_q_spec, q_freqs = q_spec_vs_time.run()
-#
-# pi_amps_vs_time = PiAmpsVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs,
-#                               fit_saved,signal, run_name, exp_config)
-# date_times_pi_amps, pi_amps = pi_amps_vs_time.run(plot_depths=False)
-#
-# t1_vs_time = T1VsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-#                  signal, run_name, exp_config)
-# date_times_t1, t1_vals = t1_vs_time.run()
-#
-# t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-#                  signal, run_name, exp_config)
-# date_times_t2r, t2r_vals = t2r_vs_time.run()
-#
-# t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-#                  signal, run_name, exp_config)
-# date_times_t2e, t2e_vals = t2e_vs_time.run()
+################################################ 01: Get all data ######################################################
+res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
+                                       save_figs, fit_saved, signal, run_name, exp_config)
+date_times_res_spec, res_freqs = res_spec_vs_time.run()
 
-# ################################################### 02: Plot Everything ################################################
+q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
+                                  save_figs, fit_saved, signal, run_name, exp_config)
+date_times_q_spec, q_freqs = q_spec_vs_time.run()
+
+pi_amps_vs_time = PiAmpsVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs,
+                              fit_saved,signal, run_name, exp_config)
+date_times_pi_amps, pi_amps = pi_amps_vs_time.run(plot_depths=False)
+
+t1_vs_time = T1VsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+                 signal, run_name, exp_config)
+date_times_t1, t1_vals = t1_vs_time.run()
+
+t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+                 signal, run_name, exp_config)
+date_times_t2r, t2r_vals = t2r_vs_time.run()
+
+t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+                 signal, run_name, exp_config)
+date_times_t2e, t2e_vals = t2e_vs_time.run()
+
+# ####################################### 02: Plot All Individual Data Plots ###########################################
 # outerFolder_save_plots = f"/data/QICK_data/{run_name}/" + date + "_plots/"
 # plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
 #                  outerFolder_save_plots, exp_config)
@@ -146,13 +147,13 @@ sys_config, exp_config = config_loader.run()
 # saver.run(date_times_res_spec, date_times_q_spec, date_times_pi_amps, date_times_t1, date_times_t2r, date_times_t2e,
 #           res_freqs, q_freqs, pi_amps, t1_vals, t1_errs, t1_std_values, t1_mean_values, t2r_vals, t2r_errs,
 #           t2r_mean_values, t2r_std_values, t2e_vals, t2e_errs, t2e_mean_values, t2e_std_values)
-
-################################## 13: Update Saved Run Notes For Comparison Plot ######################################
-run_number_to_update = 2
-new_run_notes = ("Added more eccosorb filters and a lpf on mxc before and after the device. Added thermometry "
-                 "next to the device")
-updater = UpdateNote(run_number_to_update, new_run_notes)
-updater.run(fridge)
+#
+# ################################## 13: Update Saved Run Notes For Comparison Plot ######################################
+# run_number_to_update = 2
+# new_run_notes = ("Added more eccosorb filters and a lpf on mxc before and after the device. Added thermometry "
+#                  "next to the device")
+# updater = UpdateNote(run_number_to_update, new_run_notes)
+# updater.run(fridge)
 
 ################################################ 14: Run Comparison Plots ##############################################
 # run_number_list = [1,2]
@@ -245,4 +246,14 @@ updater.run(fridge)
 #                             mcp2_dates = mcp2_dates, mcp2_temps = mcp2_temps, mcp2_label = "MCP2 Temp (mK)",
 #                             Q1_freqs = Q1_freqs, Q1_dates_spec = Q1_dates_spec, qspec_label = "Q1 Frequency (MHz)",
 #                             date_times_pi_amps_Q1 = date_times_pi_amps_Q1, pi_amps_Q1 = pi_amps_Q1, pi_amps_label = "Pi Amp (a.u.)")
+
+###################################### 17: Box And Whisker Qubit Comparison ############################################
+
+boxwhisker = PlotBoxWhisker(run_name, number_of_qubits, final_figure_quality)
+boxwhisker.plot(res_freqs, metric_label="Resonator Frequencies (MHz)")
+boxwhisker.plot(q_freqs, metric_label="Qubit Frequencies (MHz)")
+boxwhisker.plot(pi_amps, metric_label="Pi Amplitude (a.u.)")
+boxwhisker.plot(t1_vals, metric_label="T1 (µs)")
+boxwhisker.plot(t2r_vals, metric_label="T2R (µs)")
+boxwhisker.plot(t2e_vals, metric_label="T2E (µs)")
 

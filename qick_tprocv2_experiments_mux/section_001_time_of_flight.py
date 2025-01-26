@@ -5,11 +5,10 @@ from expt_config import *
 from system_config import *
 
 class TOFExperiment:
-    def __init__(self, QubitIndex, list_of_all_qubits, outerFolder, experiment, round_num = 1, save_figs = True, title = False):
+    def __init__(self, QubitIndex,  outerFolder, experiment, round_num = 1, save_figs = True, title = False):
         # every time a class instance is created, these definitions are set
         self.expt_name = "tof"
         self.QubitIndex = QubitIndex
-        self.list_of_all_qubits = list_of_all_qubits
         self.outerFolder = outerFolder
         self.Qubit = 'Q' + str(QubitIndex)
         self.exp_cfg = expt_cfg[self.expt_name]
