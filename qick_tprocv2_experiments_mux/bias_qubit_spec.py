@@ -8,7 +8,6 @@ import csv
 import datetime
 import time
 
-
 from NetDrivers import E36300
 
 class BiasQubitSpectroscopy:
@@ -28,7 +27,7 @@ class BiasQubitSpectroscopy:
     def run(self, soccfg, soc, start_volt, stop_volt, volt_pts, plot_sweeps=True, plot_2d=True):
 
         vsweep = np.linspace(start_volt, stop_volt, volt_pts, endpoint=True)
-        Is, Qs, amps, freqs = self.sweep_bias(soccfg, soc, vsweep, save_csvs=False)
+        Is, Qs, amps, freqs = self.sweep_bias(soccfg, soc, vsweep)
 
         if plot_sweeps:
             self.plot_sweeps(vsweep, Is, Qs, freqs)
@@ -38,12 +37,15 @@ class BiasQubitSpectroscopy:
 
         return
 
-    def sweep_bias(self, soccfg, soc, vsweep, save_csvs=False):
+    def sweep_bias(self, soccfg, soc, vsweep):
 
         Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44', '192.168.0.41'] #IP address of bias PS (qubits 1-3 are the same PS)
         Bias_ch = [1, 2, 3, 1] #Channel number of qubit 1-4 on associated PS
         qubit_index = int(self.QubitIndex)
 
+        print(f"Qubit_index {qubit_index}")
+        print(f"PSip {Bias_PS_ip[qubit_index]}")
+        print(f"PSch {Bias_ch[qubit_index]}")
         BiasPS = E36300(Bias_PS_ip[qubit_index], server_port = 5025)
 
         BiasPS.setVoltage(0, Bias_ch[qubit_index])
@@ -55,9 +57,10 @@ class BiasQubitSpectroscopy:
         freq_arr = []
 
         for index, v in enumerate(vsweep):
-            #print(f"Setting bias to {v}V")
+            print(f"Setting bias to {v}V")
             BiasPS.setVoltage(v, Bias_ch[qubit_index])
-            time.sleep(8)
+            time.sleep(5)
+
 
             qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'], final_delay = self.exp_cfg['relax_delay'], cfg=self.config)
             iq_list = qspec.acquire(soc, soft_avgs = self.exp_cfg["rounds"], progress=True)
@@ -72,27 +75,26 @@ class BiasQubitSpectroscopy:
             freq_arr.append(freqs)
         BiasPS.disable(Bias_ch[qubit_index])
 
-        if save_csvs:
-            outerFolder_expt = os.path.join(self.outerFolder, 'bias_spec')
-            self.experiment.create_folder_if_not_exists(outerFolder_expt)
-            now = datetime.datetime.now()
-            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-            file_name_Iarr = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex + 1}_Iarr")
-            file_name_Qarr = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex + 1}_Qarr")
-            file_name_Amparr = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex + 1}_Amparr")
-            file_name_freqarr = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex + 1}_freqarr")
-            with open(f"{file_name_Iarr}.csv", 'w', newline='') as f:
-                writer = csv.writer(f)
-                writer.writerows(I_arr)
-            with open(f"{file_name_Qarr}.csv", 'w', newline='') as f:
-                writer = csv.writer(f)
-                writer.writerows(Q_arr)
-            with open(f"{file_name_Amparr}.csv", 'w', newline='') as f:
-                writer = csv.writer(f)
-                writer.writerows(amps_arr)
-            with open(f"{file_name_freqarr}.csv", 'w', newline='') as f:
-                writer = csv.writer(f)
-                writer.writerows(freq_arr)
+        '''outerFolder_expt = os.path.join(self.outerFolder, 'bias_spec')
+        self.experiment.create_folder_if_not_exists(outerFolder_expt)
+        now = datetime.datetime.now()
+        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+        file_name_Iarr = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex + 1}_Iarr")
+        file_name_Qarr = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex + 1}_Qarr")
+        file_name_Amparr = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex + 1}_Amparr")
+        #file_name_freqarr = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex + 1}_freqarr")
+        with open(f"{file_name_Iarr}.csv", 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerows(I_arr)
+        with open(f"{file_name_Qarr}.csv", 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerows(Q_arr)
+        with open(f"{file_name_Amparr}.csv", 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerows(amps_arr)
+        # with open(f"{file_name_freqarr}.csv", 'w', newline='') as f:
+        #     writer = csv.writer(f)
+        #     writer.writerows(freq_arr)'''
 
         return I_arr, Q_arr, amps_arr, freq_arr
 
@@ -119,7 +121,7 @@ class BiasQubitSpectroscopy:
 
         for volt_index in range(len(vsweep)):
             ax1.plot(freq_arr[volt_index], I_arr[volt_index], linewidth=2, label=round(vsweep[volt_index],3))
-            ax2.plot(freq_arr[volt_index], Q_arr[volt_index], linewidth=2, label = round(vsweep[volt_index],3))
+            ax2.plot(freq_arr[volt_index], Q_arr[volt_index], line_width=2, label = round(vsweep[volt_index],3))
 
         ax1.legend(fontsize='6', title='Voltage')
         ax2.legend(fontsize='6', title='Voltage')
@@ -140,10 +142,8 @@ class BiasQubitSpectroscopy:
         return
 
     def plot2d(self, vsweep, I_arr, Q_arr, amps_arr, freq_arr):
-        amps = np.array(amps_arr)
-        amps = amps.astype(float)
         plt.imshow(amps_arr, aspect='auto', origin='lower',
-                   extent=[float(freq_arr[0][0]), float(freq_arr[0][-1]), vsweep[0], vsweep[-1]])
+                   extent=[freq_arr[0], freq_arr[-1], vsweep[0], vsweep[-1]])
         plt.colorbar(label="Amplitude (a.u.)")
         plt.xlabel("Qubit Frequency (MHz)")
         plt.ylabel("Voltage Bias (V)")
@@ -176,14 +176,14 @@ class PulseProbeSpectroscopyProgram(AveragerProgramV2):
         self.add_pulse(ch=res_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
-                       mask=[0, 1, 2, 3],
+                       mask=cfg["list_of_all_qubits"],
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
         self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_ch[0],
                        style="const",
                        length=cfg['qubit_length_ge'],
-                       freq=cfg['bias_qubit_freq_ge'],
+                       freq=cfg['qubit_freq_ge'],
                        phase=0,
                        gain=cfg['qubit_gain_ge'],
                        )

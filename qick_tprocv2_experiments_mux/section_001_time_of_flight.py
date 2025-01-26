@@ -29,12 +29,7 @@ class TOFExperiment:
 
     def run(self, soccfg, soc):
         class MuxProgram(AveragerProgramV2):
-            def __init__(self, cfg, list_of_all_qubits, **kwargs):
-                super().__init__(cfg, **kwargs)
-                self.list_of_all_qubits = list_of_all_qubits
-
             def _initialize(self, cfg):
-                super()._initialize(cfg)
                 ro_chs = cfg['ro_ch']
                 gen_ch = cfg['res_ch']
 
@@ -54,7 +49,7 @@ class TOFExperiment:
                     ch=gen_ch, name="mymux",
                     style="const",
                     length=cfg["res_length"],
-                    mask=self.list_of_all_qubits,
+                    mask=cfg["list_of_all_qubits"],
                 )
 
             def _body(self, cfg):

@@ -16,12 +16,7 @@ import os
 
 # Both g and e during the same experiment.
 class SingleShotProgram(AveragerProgramV2):
-    def __init__(self, cfg, list_of_all_qubits, **kwargs):
-        super().__init__(cfg, **kwargs)
-        self.list_of_all_qubits = list_of_all_qubits
-
     def _initialize(self, cfg):
-        super()._initialize(cfg)
         ro_chs = cfg['ro_chs']
         gen_ch = cfg['res_ch']
         qubit_ch = cfg['qubit_ch']
@@ -37,7 +32,7 @@ class SingleShotProgram(AveragerProgramV2):
         self.add_pulse(ch=gen_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_len"],
-                       mask=self.list_of_all_qubits,
+                       mask=cfg["list_of_all_qubits"],
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
@@ -63,13 +58,7 @@ class SingleShotProgram(AveragerProgramV2):
 
 # Separate g and e per each experiment defined.
 class SingleShotProgram_g(AveragerProgramV2):
-    def __init__(self, cfg, list_of_all_qubits, **kwargs):
-        super().__init__(cfg, **kwargs)
-        self.list_of_all_qubits = list_of_all_qubits
-
     def _initialize(self, cfg):
-        super()._initialize(cfg)
-
         ro_chs = cfg['ro_ch']
         gen_ch = cfg['res_ch']
         qubit_ch = cfg['qubit_ch']
@@ -86,7 +75,7 @@ class SingleShotProgram_g(AveragerProgramV2):
         self.add_pulse(ch=gen_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
-                       mask=self.list_of_all_qubits,
+                       mask=cfg["list_of_all_qubits"],
                        )
 
         self.add_loop("shotloop", cfg["steps"])  # number of total shots
@@ -99,12 +88,7 @@ class SingleShotProgram_g(AveragerProgramV2):
 
 
 class SingleShotProgram_e(AveragerProgramV2):
-    def __init__(self, cfg, list_of_all_qubits, **kwargs):
-        super().__init__(cfg, **kwargs)
-        self.list_of_all_qubits = list_of_all_qubits
-
     def _initialize(self, cfg):
-        super()._initialize(cfg)
         ro_chs = cfg['ro_ch']
         gen_ch = cfg['res_ch']
         qubit_ch = cfg['qubit_ch']
@@ -121,7 +105,7 @@ class SingleShotProgram_e(AveragerProgramV2):
         self.add_pulse(ch=gen_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
-                       mask=self.list_of_all_qubits,
+                       mask=cfg["list_of_all_qubits"],
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])

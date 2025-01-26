@@ -7,12 +7,7 @@ import copy
 import datetime
 
 class SingleToneSpectroscopyProgram(AveragerProgramV2):
-    def __init__(self, cfg, list_of_all_qubits, **kwargs):
-        super().__init__(cfg, **kwargs)
-        self.list_of_all_qubits = list_of_all_qubits
-
     def _initialize(self, cfg):
-        super()._initialize(cfg)
         ro_chs = cfg['ro_ch']
         res_ch = cfg['res_ch']
 
@@ -24,11 +19,11 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         
         for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
-        
+
         self.add_pulse(ch=res_ch, name="mymux",
                        style="const",
                        length=cfg["res_length"],
-                       mask=self.list_of_all_qubits,
+                       mask=cfg["list_of_all_qubits"],
                        )
 
     def _body(self, cfg):
@@ -49,6 +44,7 @@ class ResonanceSpectroscopy:
         if experiment is not None:
             self.q_config = all_qubit_state(experiment)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} Res Spec configuration: ', self.config)
 
     def run(self, soccfg, soc):
@@ -58,7 +54,10 @@ class ResonanceSpectroscopy:
 
         for index, f in enumerate(tqdm(fpts)):
             self.config["res_freq_ge"] = fcenter + f
+
             prog = SingleToneSpectroscopyProgram(soccfg, reps=self.exp_cfg["reps"], final_delay=0.5, cfg=self.config)
+            print('soc: ',soc)
+            print('exp_cfg["rounds"]: ',self.exp_cfg["rounds"])
             iq_list = prog.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=False)
             for i in range(len(self.config['res_freq_ge'])):
                 amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])
@@ -126,9 +125,8 @@ class ResonanceSpectroscopy:
         return res_freqs
 
 class PostProcessResonanceSpectroscopy:
-    def __init__(self, QubitIndex, list_of_all_qubits, outerFolder, round_num, save_figs, experiment = None):
+    def __init__(self, QubitIndex,  outerFolder, round_num, save_figs, experiment = None):
         self.QubitIndex = QubitIndex
-        self.list_of_all_qubits = list_of_all_qubits
         self.outerFolder = outerFolder
         self.expt_name = "res_spec"
         self.Qubit = 'Q' + str(self.QubitIndex)

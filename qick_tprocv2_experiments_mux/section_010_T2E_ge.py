@@ -144,12 +144,7 @@ class Fit:
         return out
 
 class T2EProgram(AveragerProgramV2):
-    def __init__(self, cfg, list_of_all_qubits, **kwargs):
-        super().__init__(cfg, **kwargs)
-        self.list_of_all_qubits = list_of_all_qubits
-
     def _initialize(self, cfg):
-        super()._initialize(cfg)
         ro_ch = cfg['ro_ch']
         res_ch = cfg['res_ch']
         qubit_ch = cfg['qubit_ch']
@@ -165,7 +160,7 @@ class T2EProgram(AveragerProgramV2):
         self.add_pulse(ch=res_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
-                       mask=self.list_of_all_qubits,
+                       mask=cfg["list_of_all_qubits"],
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])

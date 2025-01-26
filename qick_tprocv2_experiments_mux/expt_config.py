@@ -5,12 +5,15 @@ VNA_res = np.array([6.20905, 6.26145, 6.321265, 6.401472, 6.467723, 6.5209414])*
 # VNA_res = np.array([6191.519, 6216, 6292.321, 6405.85, 6432.959, 6468.441,]) # run 4a
 
 VNA_qubit = np.array([4184.10, 3821.43, 4156.88, 4459.12, 4471.18, 4998.04])  # Freqs of Qubit g/e Transition
+tot_num_of_qubits = 4
+list_of_all_qubits = list(range(tot_num_of_qubits))
 
 expt_cfg = {
     "tof": {
         "reps": 1, #reps doesnt make a difference here, leave it at 1
         "soft_avgs": 300,
         "relax_delay": 0,  # [us]
+        "list_of_all_qubits": list_of_all_qubits,
     },
 
     "res_spec": {
@@ -20,6 +23,7 @@ expt_cfg = {
         "step_size": 0.12,  # [MHz]
         "steps": 101,
         "relax_delay": 20,  # [us]
+        "list_of_all_qubits": list_of_all_qubits,
     },
 
     "qubit_spec_ge": {
@@ -29,6 +33,17 @@ expt_cfg = {
         "stop":  list(VNA_qubit+5), # [MHz]
         "steps": 300,
         "relax_delay": 1000, # [us]
+        "list_of_all_qubits": list_of_all_qubits,
+    },
+
+    "bias_qubit_spec_ge": {
+        "reps": 700,  # 100
+        "rounds": 1,  # 10
+        "start": list(VNA_qubit - 70),  # [MHz]
+        "stop": list(VNA_qubit + 70),  # [MHz]
+        "steps": 300,
+        "relax_delay": 0.5,  # [us]
+        "list_of_all_qubits": list_of_all_qubits,
     },
 
     "power_rabi_ge": {
@@ -38,6 +53,7 @@ expt_cfg = {
         "stop":  [1.0] * 6, # [DAC units]
         "steps": 100,
         "relax_delay": 1000, # [us]
+        "list_of_all_qubits": list_of_all_qubits,
     },
 
     "T1_ge": {
@@ -48,6 +64,7 @@ expt_cfg = {
         "steps": 80,
         "relax_delay": 1000,  # [us] ### Should be >10x T1!
         "wait_time": 0.0,  # [us]
+        "list_of_all_qubits": list_of_all_qubits,
     },
 
     "Ramsey_ge": {
@@ -59,6 +76,7 @@ expt_cfg = {
         "ramsey_freq": 0.12,  # [MHz]
         "relax_delay": 1000, # [us] the time to wait to let the qubit to relax to gnd again after exciting it (make it way above T1)
         "wait_time": 0.0, # [us]
+        "list_of_all_qubits": list_of_all_qubits,
     },
 
     "SpinEcho_ge": {
@@ -70,6 +88,7 @@ expt_cfg = {
         "ramsey_freq": 0.12,  # [MHz]
         "relax_delay": 1000, # [us]
         "wait_time": 0.0, # [us]
+        "list_of_all_qubits": list_of_all_qubits,
     },
 #
 
@@ -81,6 +100,7 @@ expt_cfg = {
 #         "stop":  [7151, 0, 7207, 0, 0, 0], # [MHz]
 #         "steps": 200,
 #         "relax_delay": 1000, # [us]
+#         "list_of_all_qubits": list_of_all_qubits,
 #     },
 #
 #     "qubit_spec_ef": {
@@ -90,6 +110,7 @@ expt_cfg = {
 #         "stop":  [2850, 0, 0, 0, 0, 0], # [MHz]
 #         "steps": 500,
 #         "relax_delay": 1000, # [us]
+    #         "list_of_all_qubits": list_of_all_qubits,
 #     },
 #
 #     "qubit_temp": {
@@ -99,6 +120,7 @@ expt_cfg = {
 #         "expts":  [200] * 6,
 #         "step": 0.02, # [us]
 #         "relax_delay": 1000, # [us]
+#         "list_of_all_qubits": list_of_all_qubits,
 #     },
 #
 #     "power_rabi_ef": {
@@ -108,6 +130,7 @@ expt_cfg = {
 #         "stop":  [1.0] * 6, # [DAC units]
 #         "steps": 100,
 #         "relax_delay": 1000, # [us]
+#         "list_of_all_qubits": list_of_all_qubits,
 #     },
 #
 #     "Ramsey_ef": {
@@ -119,6 +142,7 @@ expt_cfg = {
 #         "ramsey_freq": 0.05,  # [MHz]
 #         "relax_delay": 1000, # [us]
 #         "wait_time": 0.0, # [us]
+#         "list_of_all_qubits": list_of_all_qubits,
 #     },
 #
 #     "IQ_plot":{
@@ -127,6 +151,7 @@ expt_cfg = {
 #         "reps": 1,
 #         "relax_delay": 1000, # [us]
 #         "SS_ONLY": False,
+#         "list_of_all_qubits": list_of_all_qubits,
 #     },
 #
     "Readout_Optimization":{
@@ -139,6 +164,7 @@ expt_cfg = {
         "freq_stop" : [6178.0, 0, 0, 0],
         "freq_step" : 0.1,
         "relax_delay": 1000, # [us]
+        "list_of_all_qubits": list_of_all_qubits,
     },
 #
 }

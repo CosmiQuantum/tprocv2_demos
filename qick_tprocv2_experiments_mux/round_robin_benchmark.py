@@ -25,18 +25,18 @@ n= 100000
 save_r = 1            # how many rounds to save after
 signal = 'None'       #'I', or 'Q' depending on where the signal is (after optimization). Put'None' if no optimization
 save_figs = False    # save plots for everything as you go along the RR script?
-live_plot = True      # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
+live_plot = False      # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
 fit_data = False      # fit the data here and save or plot the fits?
 save_data_h5 = True   # save all of the data to h5 files?
-tot_num_of_qubits = 6
 Qs_to_look_at = [0, 1, 2, 3] #only list the qubits you want to do the RR for
+tot_num_of_qubits = 4
 
 increase_qubit_reps = True #if you want to increase the reps for a qubit, set to True
 qubit_to_increase_reps_for = 0 #only has impact if previous line is True
 multiply_qubit_reps_by = 2 #only has impact if the line two above is True
-
-outerFolder = os.path.join("/data/QICK_data/6transmon_run5/", str(datetime.date.today()))
 list_of_all_qubits = list(range(tot_num_of_qubits))
+
+outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/", str(datetime.date.today()))
 
 ################################################ optimization outputs ##################################################
 
@@ -78,7 +78,7 @@ while j < n:
         experiment = QICK_experiment(outerFolder, DAC_attenuator1 = 5, DAC_attenuator2 = 10, ADC_attenuator = 10)
 
         #Mask out all other resonators except this one
-        res_gains = experiment.mask_gain_res(QubitIndex, list_of_all_qubits, IndexGain=res_gain[QubitIndex])
+        res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=res_gain[QubitIndex])
         experiment.readout_cfg['res_gain_ge'] = res_gains
         experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
 
@@ -88,17 +88,17 @@ while j < n:
         #del tof
 
         ################################################## Res spec ####################################################
-        try:
-            res_spec   = ResonanceSpectroscopy(QubitIndex,list_of_all_qubits, outerFolder, j, save_figs, experiment)
-            res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
-            experiment.readout_cfg['res_freq_ge'] = res_freqs
-            offset = freq_offsets[QubitIndex] #use optimized offset values
-            offset_res_freqs = [r + offset for r in res_freqs]
-            experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
-            del res_spec
-        except Exception as e:
-            print(f'Got the following error, continuing: {e}')
-            continue #skip the rest of this qubit
+        #try:
+        res_spec   = ResonanceSpectroscopy(QubitIndex,list_of_all_qubits, outerFolder, j, save_figs, experiment)
+        res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
+        experiment.readout_cfg['res_freq_ge'] = res_freqs
+        offset = freq_offsets[QubitIndex] #use optimized offset values
+        offset_res_freqs = [r + offset for r in res_freqs]
+        experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
+        '''#    del res_spec
+        #except Exception as e:
+        #    print(f'Got the following error, continuing: {e}')
+        #    continue #skip the rest of this qubit
 
         # ############################################ Roll Signal into I ##############################################
         # #get the average theta value, then use that to rotate the signal. Plug that value into system_config res_phase
@@ -339,3 +339,4 @@ while j < n:
 
 
 
+'''

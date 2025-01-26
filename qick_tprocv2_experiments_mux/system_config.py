@@ -20,7 +20,7 @@ class QICK_experiment:
 
         # Make proxy to the QICK
         self.soc, self.soccfg = makeProxy()
-        print(self.soccfg)
+        #print(self.soccfg)
 
         self.FSGEN_CH = 0 # 0 for "old QICK", 6 for RF board
         self.MIXMUXGEN_CH = 4 # Readout resonator DAC channel

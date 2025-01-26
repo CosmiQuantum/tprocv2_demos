@@ -5,14 +5,11 @@ from build_state import *
 from expt_config import *
 import copy
 import datetime
+import time
+from windfreak import SynthHD
 
 class SingleToneSpectroscopyProgram(AveragerProgramV2):
-    def __init__(self, cfg, list_of_all_qubits, **kwargs):
-        super().__init__(cfg, **kwargs)
-        self.list_of_all_qubits = list_of_all_qubits
-
     def _initialize(self, cfg):
-        super()._initialize(cfg)
         ro_chs = cfg['ro_ch']
         res_ch = cfg['res_ch']
 
@@ -28,7 +25,7 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.add_pulse(ch=res_ch, name="mymux",
                        style="const",
                        length=cfg["res_length"],
-                       mask=self.list_of_all_qubits,
+                       mask=cfg["list_of_all_qubits"],
                        )
 
     def _body(self, cfg):
@@ -159,3 +156,137 @@ class PunchOut:
         return
 
 
+class TWPAConsistency:
+    def __init__(self, outerFolder, experiment):
+        self.outerFolder = outerFolder
+        self.expt_name = "res_spec"
+
+        self.experiment = experiment
+        self.Qubit = 'Q' + str(1)
+        self.experiment = experiment
+        self.exp_cfg = expt_cfg[self.expt_name]
+        self.q_config = all_qubit_state(experiment)
+        self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+        print(f'TWPA Consistency configuration: ', self.config)
+
+    def run(self, soccfg, soc, pump_power, pump_freq, num_points, plot_res_sweeps=True, plot_gains=True):
+        fpts = (np.linspace(self.exp_cfg["start"], self.exp_cfg["stop"], self.exp_cfg["steps"]))
+
+        resonance_vals, frequency_sweeps, gains = self.repeat_TWPA(soccfg, soc, fpts, pump_power, pump_freq, num_points)
+
+        if plot_res_sweeps:
+            self.plot_res_sweeps(fpts, frequency_sweeps, pump_power, pump_freq, num_points)
+
+        if plot_gains:
+            self.plot_TWPA_gains(pump_power, pump_freq, num_points, gains)
+
+        return
+
+    def repeat_TWPA(self, soccfg, soc, fpts, pump_power, pump_freq, num_points):
+        #power_sweep = np.linspace(start_power, stop_power, num_points)
+
+        resonance_vals = []
+        frequency_sweeps = []
+        gains = np.zeros((len(self.config['res_freq_ge']), num_points))
+
+        synth = SynthHD('/dev/ttyACM0')
+        synth[0].frequency = pump_freq
+        synth[0].power = pump_power
+        synth[0].enable = True
+        time.sleep(2)
+
+        for n in range(num_points):
+            amps = np.zeros((len(self.config['res_freq_ge']), len(fpts)))
+            for index, f in enumerate(tqdm(fpts)):
+                self.config["res_freq_ge"] = f
+                prog = SingleToneSpectroscopyProgram(soccfg, reps=self.exp_cfg["reps"], final_delay=0.5,
+                                                     cfg=self.config)
+                iq_list = prog.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=False)
+                for i in range(len(self.config['res_freq_ge'])):
+                    amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])
+                    gains[i][n] = np.max(amps[i]) - np.min(amps[i])
+            amps = np.array(amps)
+            frequency_sweeps.append(amps)
+
+            freq_res = []
+            for i in range(len(self.config['res_freq_ge'])):
+                freq_res.append(fpts[np.argmin(amps[i])])
+            resonance_vals.append(freq_res)
+        synth[0].enable = False
+
+        return resonance_vals, frequency_sweeps, gains
+
+    def plot_res_sweeps(self, fpts, frequency_sweeps, pump_power, pump_freq, num_points):
+        plt.figure(figsize=(12, 8))
+
+        # Set larger font sizes
+        plt.rcParams.update({
+            'font.size': 14,  # Base font size
+            'axes.titlesize': 18,  # Title font size
+            'axes.labelsize': 16,  # Axis label font size
+            'xtick.labelsize': 14,  # X-axis tick label size
+            'ytick.labelsize': 14,  # Y-axis tick label size
+            'legend.fontsize': 14,  # Legend font size
+        })
+        for meas_index in range(num_points):
+            for i in range(len(self.config['res_freq_ge'])):
+                plt.subplot(2, 2, i + 1)
+                plt.plot(fpts.T[i], frequency_sweeps[meas_index][i], '-', linewidth=1.5,
+                         label=(meas_index+1))
+
+                plt.xlabel("Frequency (MHz)", fontweight='normal')
+                plt.ylabel("Amplitude (a.u)", fontweight='normal')
+                plt.title(f"Resonator {i + 1}", pad=10)
+                plt.legend(loc='upper left', fontsize='6', title='Meas Num')
+
+        # Add a main title to the figure
+        plt.suptitle(f"Resonance With TWPA: {pump_freq/1e9} GHz, {pump_power} dBm", fontsize=24, y=0.95)
+
+        plt.tight_layout(pad=2.0)
+        outerFolder_expt = os.path.join(self.outerFolder, 'TWPA_opt')
+        self.experiment.create_folder_if_not_exists(outerFolder_expt)
+        now = datetime.datetime.now()
+        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_TWPAcons_res_sweep.png")
+        plt.savefig(file_name, dpi=300)
+        plt.close()
+        return
+
+    def plot_TWPA_gains(self, pump_power, pump_freq, num_points, gains):
+        plt.figure(figsize=(12, 8))
+
+        # Set larger font sizes
+        plt.rcParams.update({
+            'font.size': 14,  # Base font size
+            'axes.titlesize': 18,  # Title font size
+            'axes.labelsize': 16,  # Axis label font size
+            'xtick.labelsize': 14,  # X-axis tick label size
+            'ytick.labelsize': 14,  # Y-axis tick label size
+            'legend.fontsize': 14,  # Legend font size
+        })
+        for i in range(len(self.config['res_freq_ge'])):
+            plt.subplot(2, 2, i + 1)
+            plt.scatter(range(1, num_points+1), gains[i])
+
+            plt.xlabel("Measurement Number", fontweight='normal')
+            plt.ylabel("Peak height (a.u)", fontweight='normal')
+            plt.title(f"Resonator {i + 1}", pad=10)
+
+        # Add a main title to the figure
+        plt.suptitle(f"Amplitude Heights With TWPA: {pump_freq/1e9} GHz, {pump_power} dBm", fontsize=24, y=0.95)
+
+        plt.tight_layout(pad=2.0)
+        outerFolder_expt = os.path.join(self.outerFolder, 'TWPA_opt')
+        self.experiment.create_folder_if_not_exists(outerFolder_expt)
+        now = datetime.datetime.now()
+        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_TWPAcons_heights.png")
+        plt.savefig(file_name, dpi=300)
+        plt.close()
+        print(f"For TWPA at {pump_freq/1e9} GHz, {pump_power} dBm:")
+        for q in range(len(self.config['res_freq_ge'])):
+            max_gain = np.max(gains[q])
+            min_gain = np.min(gains[q])
+            print(f"Q{q + 1} Max Height {max_gain}")
+            print(f"Q{q + 1} Min Height {min_gain}")
+        return

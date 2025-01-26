@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append(os.path.abspath("/home/nexusadmin/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux_nexus"))
+sys.path.append(os.path.abspath("/home/nexusadmin/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux"))
 from system_config import QICK_experiment
 from bias_qubit_spec import BiasQubitSpectroscopy
 import datetime
@@ -11,12 +11,12 @@ experiment = QICK_experiment(outerFolder)
 
 qubit = 1 #Qubit to Run
 start_voltage = 0 #V
-stop_voltage = 0.3 #V
-voltage_pts = 5
+stop_voltage = 0.01 #V
+voltage_pts = 2
 
 bias_spec = BiasQubitSpectroscopy(qubit-1, outerFolder, experiment)
 
-bias_spec.run(experiment.soccfg, experiment.soc, start_voltage, stop_voltage, voltage_pts, plot_sweeps=True, plot_2d=True)
+bias_spec.run(experiment.soccfg, experiment.soc, start_voltage, stop_voltage, voltage_pts, plot_sweeps=False, plot_2d=False)
 
 del bias_spec
 del experiment
