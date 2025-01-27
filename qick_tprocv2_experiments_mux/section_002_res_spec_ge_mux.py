@@ -31,8 +31,9 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
 class ResonanceSpectroscopy:
-    def __init__(self, QubitIndex, list_of_all_qubits, outerFolder, round_num, save_figs, experiment = None):
+    def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, round_num, save_figs, experiment = None):
         self.QubitIndex = QubitIndex
+        self.number_of_qubits = number_of_qubits
         self.list_of_all_qubits = list_of_all_qubits
         self.outerFolder = outerFolder
         self.expt_name = "res_spec"
@@ -76,7 +77,7 @@ class ResonanceSpectroscopy:
             'legend.fontsize': 14,
         })
 
-        for i in range(6):
+        for i in range(self.number_of_qubits):
             plt.subplot(2, 3, i + 1)
             #plt.plot(fpts + fcenter[i], amps[i], '-', linewidth=1.5)
             plt.plot([f + fcenter[i] for f in fpts], amps[i], '-', linewidth=1.5)

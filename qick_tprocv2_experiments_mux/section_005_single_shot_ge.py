@@ -329,7 +329,8 @@ class GainFrequencySweep:
                 fresh_experiment.readout_cfg['res_gain_ge'] = res_gains
 
                 # Initialize SingleShot instance for fidelity calculation
-                single_shot = SingleShot(self.qubit_index, self.output_folder, fresh_experiment, round_num=0, save_figs = False)
+                round_num = 0
+                single_shot = SingleShot(self.qubit_index, self.list_of_all_qubits, self.output_folder, fresh_experiment, round_num, save_figs = False)
                 fidelity = single_shot.fidelity_test(fresh_experiment.soccfg, fresh_experiment.soc)
                 fid_results.append(fidelity)
                 del fresh_experiment

@@ -1,4 +1,4 @@
-from syspurpose.files import three_way_merge
+#from syspurpose.files import three_way_merge
 
 from analysis_001_plot_all_RR_h5 import PlotAllRR
 from analysis_002_res_centers_vs_time_plots import ResonatorFreqVsTime
@@ -20,30 +20,50 @@ from analysis_016_metrics_vs_temp import (ResonatorFreqVsTemp, GetThermData, Qub
 from section_008_save_data_to_h5 import Data_H5
 from analysis_000_load_configs import LoadConfigs
 from analysis_017_plot_metric_dependencies import PlotMetricDependencies
+
+# from expt_config import expt_cfg, list_of_all_qubits #QUIET
+from expt_config_nexus import expt_cfg, list_of_all_qubits #NEXUS
+
 import matplotlib.pyplot as plt
 from datetime import datetime
+import os
 import pytz
 ###################################################### Set These #######################################################
-fridge = 'QUIET' #QUIET or NEXUS to save data to the correct run_stats folder
+fridge = 'NEXUS' #QUIET or NEXUS to save data to the correct run_stats folder
 save_figs = True
 fit_saved = False
 show_legends = False
 signal = 'None'
-number_of_qubits = 6
+number_of_qubits = 4 #6 for QUIET, 4 for NEXUS
 run_number = 2 #starting from first run with qubits. Run 1 = run4a at quiet, run 2 = run5a at quiet
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
-run_name = '6transmon_run5'
+
+#QUIET
+# run_name = '6transmon_run5'
+#NEXUS
+run_name = 'Run30'
+
 run_notes = ('Added more eccosorb filters and a lpf on mxc before and after the device. Added thermometry '
              'next to the device') #please make it brief for the plot
+
+#QUIET
 # top_folder_dates = ['2024-12-09', '2024-12-10', '2024-12-11', '2024-12-12', '2024-12-13', '2024-12-14', '2024-12-15',
 #                      '2024-12-16', '2024-12-17', '2024-12-18', '2024-12-19', '2024-12-20']
-
 #top_folder_dates = ['2024-12-20_warmup']
-top_folder_dates = ['2024-12-20']
+
+#NEXUS
+top_folder_dates = ['2025-01-16', '2025-01-17', '2025-01-21', '2025-01-22']
+
 ###################################### 00: Load Configs for Plotting Titles ############################################
-date = '2024-12-20'  #only plot all of the data for one date at a time because there is a lot
-outerFolder = f"/data/QICK_data/{run_name}/" + date + "/"
+date = '2025-01-21'  #only plot all of the data for one date at a time because there is a lot
+
+#QUIET
+# outerFolder = f"/data/QICK_data/{run_name}/" + date + "/"
+
+#NEXUS
+outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{run_name}/" + date + "/"
+
 config_loader = LoadConfigs(outerFolder)
 sys_config, exp_config = config_loader.run()
 
@@ -72,12 +92,17 @@ sys_config, exp_config = config_loader.run()
 #                  signal, run_name, exp_config)
 # date_times_t2e, t2e_vals = t2e_vs_time.run()
 
-# ################################################### 02: Plot Everything ################################################
+################################################### 02: Plot Everything ################################################
+#QUIET
 # outerFolder_save_plots = f"/data/QICK_data/{run_name}/" + date + "_plots/"
-# plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
-#                  outerFolder_save_plots, exp_config)
-# plotter.run(plot_res_spec = False, plot_q_spec = True, plot_rabi = False, plot_ss = False, plot_t1 = True,
-#             plot_t2r = False, plot_t2e = False)
+
+#NEXUS
+outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{run_name}/" + date + "_plots/"
+
+plotter = PlotAllRR(list_of_all_qubits, date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
+                 outerFolder_save_plots, exp_config)
+plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_ss = True, plot_t1 = False,
+            plot_t2r = False, plot_t2e = False)
 
 # ########################################## 03: Resonator Freqs vs Time Plots ###########################################
 # res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
@@ -148,11 +173,11 @@ sys_config, exp_config = config_loader.run()
 #           t2r_mean_values, t2r_std_values, t2e_vals, t2e_errs, t2e_mean_values, t2e_std_values)
 
 ################################## 13: Update Saved Run Notes For Comparison Plot ######################################
-run_number_to_update = 2
-new_run_notes = ("Added more eccosorb filters and a lpf on mxc before and after the device. Added thermometry "
-                 "next to the device")
-updater = UpdateNote(run_number_to_update, new_run_notes)
-updater.run(fridge)
+# run_number_to_update = 2
+# new_run_notes = ("Added more eccosorb filters and a lpf on mxc before and after the device. Added thermometry "
+#                  "next to the device")
+# updater = UpdateNote(run_number_to_update, new_run_notes)
+# updater.run(fridge)
 
 ################################################ 14: Run Comparison Plots ##############################################
 # run_number_list = [1,2]
