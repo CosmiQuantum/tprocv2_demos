@@ -110,7 +110,6 @@ class AllanStats:
 
             ax.scatter(taus_out, ad, marker='o', color=colors[i], label=f"Qubit {i + 1}")
 
-            # Optional: plot error bars
             ax.errorbar(taus_out, ad, yerr=ade, fmt='o', color=colors[i])
 
             if show_legends:

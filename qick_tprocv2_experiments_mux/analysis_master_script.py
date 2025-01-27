@@ -260,6 +260,7 @@ date_times_t2e, t2e_vals = t2e_vs_time.run()
 ################################################ 18: Allan Deviation ###################################################
 allanstats = AllanStats(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
                  signal, run_name, exp_config)
+allanstats.plot_allan_deviation(date_times_q_spec, q_freqs, show_legends, label='QFreq')
 allanstats.plot_allan_deviation(date_times_t1, t1_vals, show_legends, label='T1')
 allanstats.plot_allan_deviation(date_times_t2r, t2r_vals, show_legends, label='T2R')
 allanstats.plot_allan_deviation(date_times_t2e, t2e_vals, show_legends, label='T2E')
