@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import sys
+from matplotlib.ticker import LogLocator, LogFormatterMathtext
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
@@ -18,10 +19,11 @@ import ast
 import os
 import matplotlib.pyplot as plt
 import allantools
+from scipy.signal import welch
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
-class AllanStats:
+class AllanWelchStats:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
                  signal, run_name, exp_config):
         self.save_figs = save_figs
@@ -104,12 +106,9 @@ class AllanStats:
                 taus='decade'
             )
 
-            # Plot on log axes to mimic a standard Allan plot
             ax.set_xscale('log')
-            ax.set_yscale('log')
 
             ax.scatter(taus_out, ad, marker='o', color=colors[i], label=f"Qubit {i + 1}")
-
             ax.errorbar(taus_out, ad, yerr=ade, fmt='o', color=colors[i])
 
             if show_legends:
@@ -122,4 +121,68 @@ class AllanStats:
 
         plt.tight_layout()
         plt.savefig(analysis_folder + f'{label}_allan_deviation.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.close(fig)
+
+    def plot_welch_spectral_density(self, date_times, vals, show_legends, label="T1"):
+
+        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+        self.create_folder_if_not_exists(analysis_folder)
+        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/welch_stats/"
+        self.create_folder_if_not_exists(analysis_folder)
+
+        font = 14
+        fig, axes = plt.subplots(2, 3, figsize=(12, 8), sharex=False, sharey=False)
+        fig.suptitle(f'Welch-method Spectral Density of {label} Fluctuations', fontsize=font)
+        axes = axes.flatten()
+
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
+
+        for i, ax in enumerate(axes):
+            ax.set_title(titles[i], fontsize=font)
+
+            datetime_strings = date_times[i]  # list of "YYYY-MM-DD HH:MM:SS"
+            data = vals[i]
+
+            from datetime import datetime
+            dt_objs = [datetime.strptime(s, "%Y-%m-%d %H:%M:%S") for s in datetime_strings]
+
+            combined = list(zip(dt_objs, data))
+            combined.sort(key=lambda x: x[0])  # sort by datetime
+            sorted_times, sorted_vals = zip(*combined)
+
+            # Convert times -> seconds since first measurement
+            t0 = sorted_times[0]
+            time_sec = np.array([(t - t0).total_seconds() for t in sorted_times])
+            vals_array = np.array(sorted_vals, dtype=float)
+
+            #average sampling interval (seconds)
+            avg_dt = np.mean(np.diff(time_sec))
+            if avg_dt <= 0:
+                avg_dt = 1.0
+
+            # Compute Welch PSD
+            # Note: fs = 1 / avg_dt  (Hz)
+            fs = 1.0 / avg_dt
+
+            freq, psd = welch(vals_array, fs=fs, nperseg=None, scaling='density')
+
+            ax.set_xscale('log')
+            ax.set_yscale('log')
+
+            # "freq" in Hz, "psd" has units of (amplitude^2)/Hz
+            ax.plot(freq, psd, marker='o', color=colors[i],
+                    linestyle='none', label=f"Qubit {i + 1}")
+
+            if show_legends:
+                ax.legend(loc='best', edgecolor='black')
+
+            ax.set_xlabel(r"Frequency (Hz)", fontsize=font - 2)
+            ax.set_ylabel(rf"$S_{{{label}}}$ ($\mu s^2$/Hz)", fontsize=font - 2)
+            ax.tick_params(axis='both', which='major', labelsize=8)
+
+
+        plt.tight_layout()
+        plt.savefig(analysis_folder + f'{label}_welch_spectral_density.pdf',
+                    transparent=True, dpi=self.final_figure_quality)
         plt.close(fig)

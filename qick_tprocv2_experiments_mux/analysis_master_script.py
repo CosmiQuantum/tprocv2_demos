@@ -20,7 +20,7 @@ from analysis_016_metrics_vs_temp import (ResonatorFreqVsTemp, GetThermData, Qub
                                           PiAmpsVsTemp, T1VsTemp, T2rVsTemp, T2eVsTemp)
 from analysis_017_plot_metric_dependencies import PlotMetricDependencies
 from analysis_018_box_whisker import PlotBoxWhisker
-from analysis_019_allan_stats_plots import AllanStats
+from analysis_019_allan_welch_stats_plots import AllanWelchStats
 
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -257,11 +257,15 @@ date_times_t2e, t2e_vals = t2e_vs_time.run()
 # boxwhisker.plot(t2r_vals, metric_label="T2R (µs)")
 # boxwhisker.plot(t2e_vals, metric_label="T2E (µs)")
 
-################################################ 18: Allan Deviation ###################################################
-allanstats = AllanStats(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+################################## 18: Allan Deviation/ Welch Spectral Density #########################################
+stats = AllanWelchStats(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
                  signal, run_name, exp_config)
-allanstats.plot_allan_deviation(date_times_q_spec, q_freqs, show_legends, label='QFreq')
-allanstats.plot_allan_deviation(date_times_t1, t1_vals, show_legends, label='T1')
-allanstats.plot_allan_deviation(date_times_t2r, t2r_vals, show_legends, label='T2R')
-allanstats.plot_allan_deviation(date_times_t2e, t2e_vals, show_legends, label='T2E')
+# stats.plot_allan_deviation(date_times_q_spec, q_freqs, show_legends, label='QFreq')
+# stats.plot_allan_deviation(date_times_t1, t1_vals, show_legends, label='T1')
+# stats.plot_allan_deviation(date_times_t2r, t2r_vals, show_legends, label='T2R')
+# stats.plot_allan_deviation(date_times_t2e, t2e_vals, show_legends, label='T2E')
 
+stats.plot_welch_spectral_density(date_times_q_spec, q_freqs, show_legends, label='QFreq')
+stats.plot_welch_spectral_density(date_times_t1, t1_vals, show_legends, label='T1')
+stats.plot_welch_spectral_density(date_times_t2r, t2r_vals, show_legends, label='T2R')
+stats.plot_welch_spectral_density(date_times_t2e, t2e_vals, show_legends, label='T2E')
