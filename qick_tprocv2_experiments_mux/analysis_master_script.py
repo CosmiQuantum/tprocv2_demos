@@ -20,6 +20,7 @@ from analysis_016_metrics_vs_temp import (ResonatorFreqVsTemp, GetThermData, Qub
                                           PiAmpsVsTemp, T1VsTemp, T2rVsTemp, T2eVsTemp)
 from analysis_017_plot_metric_dependencies import PlotMetricDependencies
 from analysis_018_box_whisker import PlotBoxWhisker
+from analysis_019_allan_stats_plots import AllanStats
 
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -37,11 +38,11 @@ final_figure_quality = 200
 run_name = '6transmon_run5'
 run_notes = ('Added more eccosorb filters and a lpf on mxc before and after the device. Added thermometry '
              'next to the device') #please make it brief for the plot
-# top_folder_dates = ['2024-12-09', '2024-12-10', '2024-12-11', '2024-12-12', '2024-12-13', '2024-12-14', '2024-12-15',
-#                      '2024-12-16', '2024-12-17', '2024-12-18', '2024-12-19', '2024-12-20']
+top_folder_dates = ['2024-12-09', '2024-12-10', '2024-12-11', '2024-12-12', '2024-12-13', '2024-12-14', '2024-12-15',
+                      '2024-12-16', '2024-12-17', '2024-12-18', '2024-12-19', '2024-12-20']
 
 #top_folder_dates = ['2024-12-20_warmup']
-top_folder_dates = ['2024-12-20']
+#top_folder_dates = ['2024-12-20']
 ###################################### 00: Load Configs for Plotting Titles ############################################
 date = '2024-12-20'  #only plot all of the data for one date at a time because there is a lot
 outerFolder = f"/data/QICK_data/{run_name}/" + date + "/"
@@ -246,14 +247,20 @@ date_times_t2e, t2e_vals = t2e_vs_time.run()
 #                             mcp2_dates = mcp2_dates, mcp2_temps = mcp2_temps, mcp2_label = "MCP2 Temp (mK)",
 #                             Q1_freqs = Q1_freqs, Q1_dates_spec = Q1_dates_spec, qspec_label = "Q1 Frequency (MHz)",
 #                             date_times_pi_amps_Q1 = date_times_pi_amps_Q1, pi_amps_Q1 = pi_amps_Q1, pi_amps_label = "Pi Amp (a.u.)")
+#
+# ###################################### 17: Box And Whisker Qubit Comparison ############################################
+# boxwhisker = PlotBoxWhisker(run_name, number_of_qubits, final_figure_quality)
+# boxwhisker.plot(res_freqs, metric_label="Resonator Frequencies (MHz)")
+# boxwhisker.plot(q_freqs, metric_label="Qubit Frequencies (MHz)")
+# boxwhisker.plot(pi_amps, metric_label="Pi Amplitude (a.u.)")
+# boxwhisker.plot(t1_vals, metric_label="T1 (µs)")
+# boxwhisker.plot(t2r_vals, metric_label="T2R (µs)")
+# boxwhisker.plot(t2e_vals, metric_label="T2E (µs)")
 
-###################################### 17: Box And Whisker Qubit Comparison ############################################
-
-boxwhisker = PlotBoxWhisker(run_name, number_of_qubits, final_figure_quality)
-boxwhisker.plot(res_freqs, metric_label="Resonator Frequencies (MHz)")
-boxwhisker.plot(q_freqs, metric_label="Qubit Frequencies (MHz)")
-boxwhisker.plot(pi_amps, metric_label="Pi Amplitude (a.u.)")
-boxwhisker.plot(t1_vals, metric_label="T1 (µs)")
-boxwhisker.plot(t2r_vals, metric_label="T2R (µs)")
-boxwhisker.plot(t2e_vals, metric_label="T2E (µs)")
+################################################ 18: Allan Deviation ###################################################
+allanstats = AllanStats(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+                 signal, run_name, exp_config)
+allanstats.plot_allan_deviation(date_times_t1, t1_vals, show_legends, label='T1')
+allanstats.plot_allan_deviation(date_times_t2r, t2r_vals, show_legends, label='T2R')
+allanstats.plot_allan_deviation(date_times_t2e, t2e_vals, show_legends, label='T2E')
 
