@@ -38,9 +38,9 @@ expt_cfg = {
     "qubit_spec_ge": {
         "reps": 700, #100
         "rounds": 1, #10
-        "start": list(VNA_qubit-70), # [MHz]
-        "stop":  list(VNA_qubit+70), # [MHz]
-        "steps": 300,
+        "start": list(VNA_qubit-7), # [MHz]
+        "stop":  list(VNA_qubit+7), # [MHz]
+        "steps": 70,
         "relax_delay": 0.5, # [us]
         "list_of_all_qubits": list_of_all_qubits,
     },
@@ -48,8 +48,8 @@ expt_cfg = {
     "bias_qubit_spec_ge": {
         "reps": 700, #100
         "rounds": 1, #10
-        "start": list(VNA_qubit-70), # [MHz]
-        "stop":  list(VNA_qubit+70), # [MHz]
+        "start": list(VNA_qubit-10), # [MHz]
+        "stop":  list(VNA_qubit), # [MHz]
         "steps": 300,
         "relax_delay": 0.5, # [us]
         "list_of_all_qubits": list_of_all_qubits,

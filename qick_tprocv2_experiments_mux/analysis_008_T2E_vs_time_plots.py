@@ -17,12 +17,14 @@ import datetime
 import ast
 import os
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from matplotlib.ticker import StrMethodFormatter
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
 class T2eVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config):
+                 signal, run_name, exp_config, fridge, list_of_all_qubits):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -32,6 +34,8 @@ class T2eVsTime:
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
         self.exp_config = exp_config
+        self.fridge = fridge
+        self.list_of_all_qubits = list_of_all_qubits
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -118,8 +122,14 @@ class T2eVsTime:
         mean_values = {}
 
         for folder_date in self.top_folder_dates:
-            outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
-            outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
+            if self.fridge.upper() == 'QUIET':
+                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
+                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
+            elif self.fridge.upper() == 'NEXUS':
+                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
+                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
+            else:
+                raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
             # -------------------------------------------------------Load/Plot/Save T2E------------------------------------------
             outerFolder_expt = outerFolder + "/Data_h5/T2E_ge/"
@@ -145,7 +155,7 @@ class T2eVsTime:
                         batch_num = load_data['T2E'][q_key].get('Batch Num', [])[0][dataset]
 
                         if len(I) > 0:
-                            T2E_class_instance = T2EMeasurement(q_key, outerFolder_save_plots, round_num, self.signal, self.save_figs,
+                            T2E_class_instance = T2EMeasurement(q_key, self.list_of_all_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                                fit_data=True)
                             try:
                                 fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
@@ -168,10 +178,18 @@ class T2eVsTime:
 
     def plot(self, date_times, t2e_vals, show_legends):
         #---------------------------------plot-----------------------------------------------------
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
-        self.create_folder_if_not_exists(analysis_folder)
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
-        self.create_folder_if_not_exists(analysis_folder)
+        if self.fridge.upper() == 'QUIET':
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
+        elif self.fridge.upper() == 'NEXUS':
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
+        else:
+            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         font = 14
         titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
@@ -179,9 +197,13 @@ class T2eVsTime:
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
         plt.title('T2E Values vs Time',fontsize = font)
         axes = axes.flatten()
-        titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
+
         from datetime import datetime
         for i, ax in enumerate(axes):
+
+            if i >= self.number_of_qubits: # If we have fewer qubits than subplots, stop plotting and hide the rest
+                ax.set_visible(False)
+                continue
 
             ax.set_title(titles[i], fontsize = font)
 
@@ -195,6 +217,11 @@ class T2eVsTime:
             combined = list(zip(datetime_objects, y))
             combined.sort(reverse=True, key=lambda x: x[0])
 
+            if len(combined) == 0:
+                # If this qubit has no data, just skip
+                ax.set_visible(False)
+                continue
+
             # Unpack them back into separate lists, in order from latest to most recent.
             sorted_x, sorted_y = zip(*combined)
             ax.scatter(sorted_x, sorted_y, color=colors[i])
@@ -204,9 +231,13 @@ class T2eVsTime:
             num_points = 5
             indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
 
-            # Set new x-ticks using the datetime objects at the selected indices
-            ax.set_xticks(sorted_x[indices])
-            ax.set_xticklabels([dt for dt in sorted_x[indices]], rotation=45)
+            ax.xaxis.set_major_locator(mdates.AutoDateLocator())  # Automatically choose good tick locations
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
+            ax.tick_params(axis='x', rotation=45)  # Rotate ticks for better readability
+
+            # Disable scientific notation and format y-ticks
+            ax.ticklabel_format(style="plain", axis="y")
+            ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.2f}"))  # 2 decimal places
 
             ax.scatter(x, y, color=colors[i])
             if show_legends:
@@ -216,6 +247,6 @@ class T2eVsTime:
             ax.tick_params(axis='both', which='major', labelsize=8)
 
         plt.tight_layout()
-        plt.savefig(analysis_folder + 'T2E_vals.png', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'T2E_vals.png', transparent=False, dpi=self.final_figure_quality)
 
         #plt.show()

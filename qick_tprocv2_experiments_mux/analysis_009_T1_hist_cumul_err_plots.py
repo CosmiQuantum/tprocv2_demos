@@ -116,8 +116,14 @@ class T1HistCumulErrPlots:
         dates = {i: [] for i in range(self.number_of_qubits)}
 
         for folder_date in self.top_folder_dates:
-            outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
-            outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
+            if self.fridge.upper() == 'QUIET':
+                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
+                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
+            elif self.fridge.upper() == 'NEXUS':
+                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
+                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
+            else:
+                raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
 
             outerFolder_expt = outerFolder + "/Data_h5/T1_ge/"
@@ -170,10 +176,18 @@ class T1HistCumulErrPlots:
 
     def plot(self, dates, t1_vals, t1_errs, show_legends):
         #---------------------------------plot-----------------------------------------------------
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
-        self.create_folder_if_not_exists(analysis_folder)
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/T1/"
-        self.create_folder_if_not_exists(analysis_folder)
+        if self.fridge.upper() == 'QUIET':
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/T1/"
+            self.create_folder_if_not_exists(analysis_folder)
+        elif self.fridge.upper() == 'NEXUS':
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/T1/"
+            self.create_folder_if_not_exists(analysis_folder)
+        else:
+            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
         axes = axes.flatten()

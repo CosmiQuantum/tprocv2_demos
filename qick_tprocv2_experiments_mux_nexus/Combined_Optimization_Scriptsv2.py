@@ -43,7 +43,7 @@ n = 1  # Number of rounds
 n_loops = 5  # Number of repetitions per length to average
 
 # List of qubits and pulse lengths to measure
-Qs = [0,1,2,3]
+Qs = [3]#[0,1,2,3]
 #Qs = [0]
 #res_leng_vals = [9, 5.5, 6.5, 9] # From 12/9 optimization
 res_leng_vals = [10.03, 5.07, 9.54, 4.07] #from 1/22

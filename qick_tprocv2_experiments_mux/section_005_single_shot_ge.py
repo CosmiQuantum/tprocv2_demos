@@ -283,8 +283,9 @@ class SingleShot:
 
 
 class GainFrequencySweep:
-    def __init__(self,qubit_index, experiment, optimal_lengths=None, output_folder="/default/path/"):
+    def __init__(self,qubit_index, list_of_all_qubits, experiment, optimal_lengths=None, output_folder="/default/path/"):
         self.qubit_index = qubit_index
+        self.list_of_all_qubits = list_of_all_qubits
         self.output_folder = output_folder
         self.expt_name = "Readout_Optimization"
         self.Qubit = 'Q' + str(self.qubit_index)
@@ -330,7 +331,8 @@ class GainFrequencySweep:
 
                 # Initialize SingleShot instance for fidelity calculation
                 round_num = 0
-                single_shot = SingleShot(self.qubit_index, self.list_of_all_qubits, self.output_folder, fresh_experiment, round_num, save_figs = False)
+                save_figs = False
+                single_shot = SingleShot(self.qubit_index, self.list_of_all_qubits, self.output_folder, round_num, save_figs, fresh_experiment)
                 fidelity = single_shot.fidelity_test(fresh_experiment.soccfg, fresh_experiment.soc)
                 fid_results.append(fidelity)
                 del fresh_experiment

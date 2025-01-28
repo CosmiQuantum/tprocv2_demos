@@ -25,7 +25,7 @@ class BiasQubitSpectroscopy:
 
         print(f'Q {self.QubitIndex + 1} Qubit Spec configuration: ', self.config)
 
-    def run(self, soccfg, soc, start_volt, stop_volt, volt_pts, plot_sweeps=True, plot_2d=True):
+    def run(self, soccfg, soc, start_volt, stop_volt, volt_pts, plot_sweeps=True, plot_3d=True):
 
         vsweep = np.linspace(start_volt, stop_volt, volt_pts, endpoint=True)
         Is, Qs, amps, freqs = self.sweep_bias(soccfg, soc, vsweep, save_csvs=False)
@@ -33,8 +33,8 @@ class BiasQubitSpectroscopy:
         if plot_sweeps:
             self.plot_sweeps(vsweep, Is, Qs, freqs)
 
-        if plot_2d:
-            self.plot2d(vsweep, Is, Qs, amps, freqs)
+        if plot_3d:
+            self.plot_colormap(vsweep, Is, Qs, amps, freqs)
 
         return
 
@@ -65,7 +65,7 @@ class BiasQubitSpectroscopy:
             Q = iq_list[self.QubitIndex][0, :, 1]
             amps = np.abs(I + 1j * Q)
             freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
-            print(freqs)
+            #print(freqs)
             I_arr.append(I)
             Q_arr.append(Q)
             amps_arr.append(amps)
@@ -139,15 +139,33 @@ class BiasQubitSpectroscopy:
         plt.close(fig)
         return
 
-    def plot2d(self, vsweep, I_arr, Q_arr, amps_arr, freq_arr):
-        amps = np.array(amps_arr)
-        amps = amps.astype(float)
-        plt.imshow(amps_arr, aspect='auto', origin='lower',
+    def plot_colormap(self, vsweep, I_arr, Q_arr, amps_arr, freq_arr):
+        Is = np.array(I_arr)
+        I_val = Is.astype(float)
+        Qs = np.array(Q_arr)
+        Q_val = Qs.astype(float)
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10,8), sharex='all')
+        ax1.set_ylabel("Voltage Bias (V)", fontsize=20)
+        ax1.tick_params(axis='both', which='major', labelsize=16)
+        im1 = ax1.imshow(I_val, aspect='auto', origin='lower',
                    extent=[float(freq_arr[0][0]), float(freq_arr[0][-1]), vsweep[0], vsweep[-1]])
-        plt.colorbar(label="Amplitude (a.u.)")
-        plt.xlabel("Qubit Frequency (MHz)")
-        plt.ylabel("Voltage Bias (V)")
-        plt.title(f"Bias Spectrocopy for Q{self.QubitIndex+1}")
+        fig.colorbar(im1, label="I Amplitude (a.u.)")
+        #ax1.colorbar(label="I Amplitude (a.u.)")
+        ax2.set_ylabel("Voltage Bias (V)", fontsize=20)
+        ax2.tick_params(axis='both', which='major', labelsize=16)
+        ax2.set_xlabel("Qubit Frequency (MHz)", fontsize=20)
+        im2 = ax2.imshow(Q_val, aspect='auto', origin='lower',
+                   extent=[float(freq_arr[0][0]), float(freq_arr[0][-1]), vsweep[0], vsweep[-1]])
+        #ax2.colorbar(label="Q Amplitude (a.u.)")
+        fig.colorbar(im2, label="Q Amplitude (a.u.)")
+
+        #fig.suptitle(f"Bias Spectroscopy Q{self.QubitIndex + 1}, ", fontsize=24)
+        fig.suptitle(f"Bias Spectroscopy Q{self.QubitIndex + 1}, \n resf={self.config['res_freq_ge'][self.QubitIndex]} \n resg={self.config['res_gain_ge'][self.QubitIndex]}", fontsize=24)
+
+        plt.tight_layout()
+
+        # Adjust the top margin to make room for the title
+        plt.subplots_adjust(top=0.93)
 
         # Save the plot
         outerFolder_expt = os.path.join(self.outerFolder, 'bias_spec')

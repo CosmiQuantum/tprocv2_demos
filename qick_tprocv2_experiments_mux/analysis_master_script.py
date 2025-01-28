@@ -53,7 +53,7 @@ run_notes = ('Added more eccosorb filters and a lpf on mxc before and after the 
 #top_folder_dates = ['2024-12-20_warmup']
 
 #NEXUS
-top_folder_dates = ['2025-01-16', '2025-01-17', '2025-01-21', '2025-01-22']
+top_folder_dates = ['2025-01-16', '2025-01-17', '2025-01-21', '2025-01-22', '2025-01-23', '2025-01-24', '2025-01-25', '2025-01-26', '2025-01-27', '2025-01-28']
 
 ###################################### 00: Load Configs for Plotting Titles ############################################
 date = '2025-01-21'  #only plot all of the data for one date at a time because there is a lot
@@ -71,38 +71,39 @@ sys_config, exp_config = config_loader.run()
 # res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
 #                                        save_figs, fit_saved, signal, run_name, exp_config)
 # date_times_res_spec, res_freqs = res_spec_vs_time.run()
-#
-# q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
-#                                   save_figs, fit_saved, signal, run_name, exp_config)
-# date_times_q_spec, q_freqs = q_spec_vs_time.run()
-#
+
+q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
+                                  save_figs, fit_saved, signal, run_name, exp_config, fridge, list_of_all_qubits)
+date_times_q_spec, q_freqs = q_spec_vs_time.run()
+
 # pi_amps_vs_time = PiAmpsVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs,
 #                               fit_saved,signal, run_name, exp_config)
 # date_times_pi_amps, pi_amps = pi_amps_vs_time.run(plot_depths=False)
 #
 # t1_vs_time = T1VsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-#                  signal, run_name, exp_config)
+#                  signal, run_name, exp_config, fridge, list_of_all_qubits)
 # date_times_t1, t1_vals = t1_vs_time.run()
+
 #
 # t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, exp_config)
 # date_times_t2r, t2r_vals = t2r_vs_time.run()
 #
-# t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-#                  signal, run_name, exp_config)
-# date_times_t2e, t2e_vals = t2e_vs_time.run()
+t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+                 signal, run_name, exp_config, fridge, list_of_all_qubits)
+date_times_t2e, t2e_vals = t2e_vs_time.run()
 
 ################################################### 02: Plot Everything ################################################
 #QUIET
 # outerFolder_save_plots = f"/data/QICK_data/{run_name}/" + date + "_plots/"
 
 #NEXUS
-outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{run_name}/" + date + "_plots/"
+# outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{run_name}/" + date + "_plots/"
 
-plotter = PlotAllRR(list_of_all_qubits, date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
-                 outerFolder_save_plots, exp_config)
-plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_ss = True, plot_t1 = False,
-            plot_t2r = False, plot_t2e = False)
+# plotter = PlotAllRR(list_of_all_qubits, date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
+#                  outerFolder_save_plots, exp_config)
+# plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_ss = False, plot_t1 = False,
+#             plot_t2r = False, plot_t2e = False) #as of 1/27/2025, 6pm everything works except res spec plotting
 
 # ########################################## 03: Resonator Freqs vs Time Plots ###########################################
 # res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
@@ -139,7 +140,7 @@ plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_
 # qtemp_vs_time.plot(qubit_temp_dates, qubit_temperatures, show_legends)
 #
 # ################################################# 06: T1 vs Time Plots #################################################
-# t1_vs_time.plot(date_times_t1, t1_vals, show_legends)
+#t1_vs_time.plot(date_times_t1, t1_vals, show_legends)
 #
 # ################################################# 07: T2R vs Time Plots ################################################
 # t2r_vs_time.plot(date_times_t2r, t2r_vals, show_legends)

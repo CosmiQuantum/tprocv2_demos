@@ -134,6 +134,7 @@ class PlotAllRR:
                     freq_center = self.process_h5_data(load_data['Res'][q_key].get('freq_center', [])[0][dataset].decode()) # comes in as an array but put into a string, need to convert to list
                     freqs_found = self.string_to_float_list(load_data['Res'][q_key].get('Found Freqs', [])[0][dataset].decode()) #comes in as a list of floats in string format, need to convert
                     amps =  self.process_string_of_nested_lists(load_data['Res'][q_key].get('Amps', [])[0][dataset].decode())  #list of lists
+                    print('here: ', amps)
                     round_num = load_data['Res'][q_key].get('Round Num', [])[0][dataset] #already a float
                     batch_num = load_data['Res'][q_key].get('Batch Num', [])[0][dataset]
                     freq_pts_data = load_data['Res'][q_key].get('freq_pts', [])[0][dataset].decode()
@@ -288,7 +289,7 @@ class PlotAllRR:
                     Q_e = np.array(Q_e)
         
                     if len(Q_g)>0:
-                        ss_class_instance = SingleShot(q_key, self.outerFolder_save_plots, round_num, self.save_figs)
+                        ss_class_instance = SingleShot(q_key, self.list_of_all_qubits, self.outerFolder_save_plots, round_num, self.save_figs)
                         ss_cfg = ast.literal_eval(self.exp_config['Readout_Optimization'].decode())
                         ss_class_instance.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=True)
                         del ss_class_instance

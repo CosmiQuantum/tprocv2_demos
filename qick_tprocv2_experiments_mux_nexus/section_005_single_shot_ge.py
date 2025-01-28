@@ -311,10 +311,12 @@ class GainFrequencySweep:
         readout_length = self.optimal_lengths[self.qubit_index]
         print('readout_length for this qubit: ',readout_length)
         for freq_step in range(freq_steps):
+            print('On iter', freq_step, 'out of ', freq_steps)
             freq = freq_range[0] + freq_step * freq_step_size
             #print('Running for res_freq: ', freq, '...')
             fid_results = []
             for gain_step in range(gain_steps):
+                print('On iter', freq_step, 'out of ', freq_steps)
                 #experiment = QICK_experiment(self.output_folder)
                 #experiment = QICK_experiment(self.output_folder, DAC_attenuator1=10, DAC_attenuator2=5, ADC_attenuator=10)
                 fresh_experiment = copy.deepcopy(self.experiment)
@@ -329,7 +331,9 @@ class GainFrequencySweep:
                 fresh_experiment.readout_cfg['res_gain_ge'] = res_gains
 
                 # Initialize SingleShot instance for fidelity calculation
-                single_shot = SingleShot(self.qubit_index, self.output_folder, fresh_experiment, round_num=0, save_figs = False)
+                round_num = 0
+                save_figs = False
+                single_shot = SingleShot(self.qubit_index,  self.output_folder, round_num, save_figs, fresh_experiment) #SingleShot(self.qubit_index, self.output_folder, fresh_experiment, round_num=0, save_figs = False)
                 fidelity = single_shot.fidelity_test(fresh_experiment.soccfg, fresh_experiment.soc)
                 fid_results.append(fidelity)
                 del fresh_experiment
