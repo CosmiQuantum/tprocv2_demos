@@ -1,6 +1,7 @@
 from build_task import *
 from build_state import *
-from expt_config import *
+# from expt_config import *
+from expt_config_nexus import * # Change for quiet vs nexus
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
@@ -9,7 +10,7 @@ import copy
 import visdom
 
 class QubitSpectroscopy:
-    def __init__(self, QubitIndex, list_of_all_qubits, outerFolder,  round_num, signal, save_figs, experiment = None, live_plot = None):
+    def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder,  round_num, signal, save_figs, experiment = None, live_plot = None):
         self.QubitIndex = QubitIndex
         self.list_of_all_qubits = list_of_all_qubits
         self.outerFolder = outerFolder
@@ -20,8 +21,9 @@ class QubitSpectroscopy:
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.exp_cfg = expt_cfg[self.expt_name]
         self.round_num = round_num
+        self.number_of_qubits = number_of_qubits
         if experiment is not None:
-            self.q_config = all_qubit_state(self.experiment)
+            self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
             self.live_plot = live_plot
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}

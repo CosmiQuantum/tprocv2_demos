@@ -140,6 +140,14 @@ class T2eVsTime:
                 H5_class_instance = Data_H5(h5_file)
                 load_data = H5_class_instance.load_from_h5(data_type='T2E', save_r=int(save_round))
 
+                # Define specific days to exclude
+                exclude_dates = {
+                    datetime.date(2025, 1, 26),  # power outage
+                    datetime.date(2025, 1, 29),  # HEMT Issues
+                    datetime.date(2025, 1, 30),  # HEMT Issues
+                    datetime.date(2025, 1, 31)  # Optimization Issues and non RR work in progress
+                }
+
                 for q_key in load_data['T2E']:
                     for dataset in range(len(load_data['T2E'][q_key].get('Dates', [])[0])):
                         if 'nan' in str(load_data['T2E'][q_key].get('Dates', [])[0][dataset]):
@@ -147,6 +155,12 @@ class T2eVsTime:
                         # T2 = load_data['T2E'][q_key].get('T2', [])[0][dataset]
                         # errors = load_data['T2E'][q_key].get('Errors', [])[0][dataset]
                         date = datetime.datetime.fromtimestamp(load_data['T2E'][q_key].get('Dates', [])[0][dataset])
+
+                        # Skip processing if the date (as a date object) is in the excluded set
+                        if date.date() in exclude_dates:
+                            print(f"Skipping data for {date} (excluded date)")
+                            continue
+
                         I = self.process_h5_data(load_data['T2E'][q_key].get('I', [])[0][dataset].decode())
                         Q = self.process_h5_data(load_data['T2E'][q_key].get('Q', [])[0][dataset].decode())
                         delay_times = self.process_h5_data(load_data['T2E'][q_key].get('Delay Times', [])[0][dataset].decode())
@@ -191,6 +205,18 @@ class T2eVsTime:
         else:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
+        # ----------------To Plot a specific timeframe------------------
+        from datetime import datetime
+        year = 2025
+        month = 1
+        day1 = 24  # Start date
+        day2 = 25  # End date
+        hour_start = 0  # Start hour
+        hour_end = 12  # End hour
+        start_time = datetime(year, month, day1, hour_start, 0)
+        end_time = datetime(year, month, day2, hour_end, 0)
+        # -----------------------------------------------------------------
+
         font = 14
         titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
         colors = ['orange','blue','purple','green','brown','pink']
@@ -226,20 +252,23 @@ class T2eVsTime:
             sorted_x, sorted_y = zip(*combined)
             ax.scatter(sorted_x, sorted_y, color=colors[i])
 
+            # Set x-axis limits for the specific timeframe
+            ax.set_xlim(start_time, end_time)
+
             sorted_x = np.asarray(sorted(x))
 
             num_points = 5
             indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
 
             ax.xaxis.set_major_locator(mdates.AutoDateLocator())  # Automatically choose good tick locations
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
+            # ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # Show day and time
             ax.tick_params(axis='x', rotation=45)  # Rotate ticks for better readability
 
             # Disable scientific notation and format y-ticks
             ax.ticklabel_format(style="plain", axis="y")
             ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.2f}"))  # 2 decimal places
 
-            ax.scatter(x, y, color=colors[i])
             if show_legends:
                 ax.legend(edgecolor='black')
             ax.set_xlabel('Time (Days)', fontsize=font-2)
@@ -248,5 +277,5 @@ class T2eVsTime:
 
         plt.tight_layout()
         plt.savefig(analysis_folder + 'T2E_vals.png', transparent=False, dpi=self.final_figure_quality)
-
+        print('Plot saved at: ', analysis_folder)
         #plt.show()

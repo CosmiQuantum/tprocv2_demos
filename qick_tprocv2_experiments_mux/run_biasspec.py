@@ -9,8 +9,8 @@ import numpy as np
 outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30", str(datetime.date.today()))
 
 experiment = QICK_experiment(outerFolder)
-resGs=np.linspace(0.1,0.5,11)
-resFs=np.linspace(5958.673-1.5, 5958.673+1.5, 11)
+#resGs=np.linspace(0.1,0.5,11)
+#resFs=np.linspace(5958.673-1.5, 5958.673+1.5, 11)
 qubit = 4 #Qubit to Run
 start_voltage = 0 #V
 stop_voltage = 0.15 #V

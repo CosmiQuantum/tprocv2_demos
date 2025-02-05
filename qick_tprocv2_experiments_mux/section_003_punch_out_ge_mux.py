@@ -33,15 +33,15 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
 class PunchOut:
-    def __init__(self, outerFolder, experiment):
+    def __init__(self, number_of_qubits, outerFolder, experiment):
         self.outerFolder = outerFolder
         self.expt_name = "res_spec"
-
+        self.number_of_qubits = number_of_qubits
         self.experiment = experiment
         self.Qubit = 'Q' + str(1)
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
-        self.q_config = all_qubit_state(experiment)
+        self.q_config = all_qubit_state(experiment, self.number_of_qubits)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
         print(f'Punch Out configuration: ', self.config)
 
@@ -66,7 +66,7 @@ class PunchOut:
         frequency_sweeps = []
         for p in power_sweep:
             power = round(p, 3)
-            self.config['res_gain_ge'] = [power for i in range(0, 6)]
+            self.config['res_gain_ge'] = [power for i in range(0, self.number_of_qubits)]
             amps = np.zeros((len(fcenter), len(fpts)))
             for index, f in enumerate(tqdm(fpts)):
                 self.config["res_freq_ge"] = fcenter + f
@@ -79,7 +79,7 @@ class PunchOut:
             frequency_sweeps.append(amps)
 
             freq_res = []
-            for i in range(6):
+            for i in range(self.number_of_qubits):
                 freq_res.append(round(float(fpts[np.argmin(amps[i])] + fcenter[i]), 3))
             resonance_vals.append(freq_res)
         return resonance_vals, power_sweep, frequency_sweeps
@@ -97,7 +97,7 @@ class PunchOut:
             'legend.fontsize': 14,  # Legend font size
         })
 
-        for i in range(6):
+        for i in range(self.number_of_qubits):
             plt.subplot(2, 3, i + 1)
             plt.plot(power_sweep, [six_resonance_vals[i] for six_resonance_vals in resonance_vals], '-', linewidth=1.5)
 
@@ -132,7 +132,7 @@ class PunchOut:
             'legend.fontsize': 14,  # Legend font size
         })
         for power_index in range(len(power_sweep)):
-            for i in range(6):
+            for i in range(self.number_of_qubits):
                 plt.subplot(2, 3, i + 1)
                 plt.plot(fpts + fcenter[i], frequency_sweeps[power_index][i], '-', linewidth=1.5,
                          label=round(power_sweep[power_index], 3))

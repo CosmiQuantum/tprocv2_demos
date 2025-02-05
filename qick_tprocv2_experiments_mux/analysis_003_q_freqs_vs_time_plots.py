@@ -141,9 +141,13 @@ class QubitFreqsVsTime:
                 #sometimes you get '1(1)' when redownloading the h5 files for some reason
                 load_data = H5_class_instance.load_from_h5(data_type='QSpec', save_r=int(save_round.split('(')[0]))
 
-                # Define the time frame to exclude
-                exclude_start = datetime.datetime(2025, 1, 26)  # Start date (inclusive)
-                exclude_end = datetime.datetime(2025, 1, 26)  # End date (inclusive)
+                # Define specific days to exclude
+                exclude_dates = {
+                    datetime.date(2025, 1, 26),  # power outage
+                    datetime.date(2025, 1, 29),  # HEMT Issues
+                    datetime.date(2025, 1, 30),  # HEMT Issues
+                    datetime.date(2025, 1, 31)  # Optimization Issues and non RR work in progress
+                }
 
                 for q_key in load_data['QSpec']:
                     for dataset in range(len(load_data['QSpec'][q_key].get('Dates', [])[0])):
@@ -151,9 +155,9 @@ class QubitFreqsVsTime:
                             continue
                         date = datetime.datetime.fromtimestamp(load_data['QSpec'][q_key].get('Dates', [])[0][dataset])
 
-                        # Skip processing if the date falls within the excluded range
-                        if exclude_start <= date <= exclude_end:
-                            print(f"Skipping data for {date} (within excluded time frame)")
+                        # Skip processing if the date (as a date object) is in the excluded set
+                        if date.date() in exclude_dates:
+                            print(f"Skipping data for {date} (excluded date)")
                             continue
 
                         I = self.process_h5_data(load_data['QSpec'][q_key].get('I', [])[0][dataset].decode())
@@ -193,6 +197,18 @@ class QubitFreqsVsTime:
         else:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
+        # ----------------To Plot a specific timeframe------------------
+        from datetime import datetime
+        year = 2025
+        month = 1
+        day1 = 24  # Start date
+        day2 = 25  # End date
+        hour_start = 0  # Start hour
+        hour_end = 12  # End hour
+        start_time = datetime(year, month, day1, hour_start, 0)
+        end_time = datetime(year, month, day2, hour_end, 0)
+        # -----------------------------------------------------------------
+
         font = 14
         titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
         colors = ['orange','blue','purple','green','brown','pink']
@@ -227,25 +243,32 @@ class QubitFreqsVsTime:
             sorted_x, sorted_y = zip(*combined)
             ax.scatter(sorted_x, sorted_y, color=colors[i])
 
+            # Set x-axis limits for the specific timeframe
+            ax.set_xlim(start_time, end_time)
+
+            ax.set_ylim(sorted_y[0] - 2.0, sorted_y[0] + 2.0)
+
             sorted_x = np.asarray(sorted(x))
 
             num_points = 5
             indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
 
             ax.xaxis.set_major_locator(mdates.AutoDateLocator())  # Automatically choose good tick locations
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
+            # ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # Show day and time
             ax.tick_params(axis='x', rotation=45)  # Rotate ticks for better readability
 
             # Disable scientific notation and format y-ticks
             ax.ticklabel_format(style="plain", axis="y")
             ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.2f}"))  # 2 decimal places
 
-            ax.scatter(x, y, color=colors[i])
+
             if show_legends:
                 ax.legend(edgecolor='black')
             ax.set_xlabel('Time (Days)', fontsize=font-2)
             ax.set_ylabel('Qubit Frequency (MHz)', fontsize=font-2)
             ax.tick_params(axis='both', which='major', labelsize=8)
+
 
         plt.tight_layout()
         plt.savefig(analysis_folder + 'Q_Freqs.pdf', transparent=True, dpi=self.final_figure_quality)

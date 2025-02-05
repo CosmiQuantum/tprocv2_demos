@@ -183,7 +183,7 @@ class PulseProbeSpectroscopyProgram(AveragerProgramV2):
         self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_ch[0],
                        style="const",
                        length=cfg['qubit_length_ge'],
-                       freq=cfg['qubit_freq_ge'],
+                       freq=cfg['bias_qubit_freq_ge'],
                        phase=0,
                        gain=cfg['qubit_gain_ge'],
                        )

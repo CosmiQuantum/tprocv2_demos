@@ -3,8 +3,10 @@ from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 from build_task import *
 from build_state import *
-from expt_config import *
-from system_config import *
+# from expt_config import *
+# from system_config import *
+from expt_config_nexus import * # Change for quiet vs nexus
+from system_config_nexus import * # Change for quiet vs nexus
 import copy
 import visdom
 from scipy import optimize
@@ -202,7 +204,7 @@ class T2EProgram(AveragerProgramV2):
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 class T2EMeasurement:
-    def __init__(self, QubitIndex, list_of_all_qubits, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
+    def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
                  fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
                  multiply_qubit_reps_by = 0):
         self.QubitIndex = QubitIndex
@@ -217,8 +219,9 @@ class T2EMeasurement:
         self.signal = signal
         self.save_figs = save_figs
         self.live_plot = live_plot
+        self.number_of_qubits = number_of_qubits
         if experiment is not None:
-            self.q_config = all_qubit_state(self.experiment)
+            self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
             if increase_qubit_reps:
@@ -453,7 +456,7 @@ class T2EMeasurement:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"T2 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         f"Q{self.QubitIndex + 1}" + f" T2E={t2e_est:.2f} us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
                          fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
                 fig.text(plot_middle, 0.98,

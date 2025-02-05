@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 from qick.asm_v2 import AveragerProgramV2
 from tqdm import tqdm
 from build_state import *
-from expt_config import *
+# from expt_config import *
+from expt_config_nexus import * # Change for quiet vs nexus
 import copy
 import datetime
 
@@ -43,7 +44,7 @@ class ResonanceSpectroscopy:
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
         if experiment is not None:
-            self.q_config = all_qubit_state(experiment)
+            self.q_config = all_qubit_state(experiment, self.number_of_qubits)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
 
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} Res Spec configuration: ', self.config)
@@ -116,7 +117,7 @@ class ResonanceSpectroscopy:
     def get_results(self, fpts, fcenter, amps):
         res_freqs = []
 
-        for i in range(6):
+        for i in range(self.number_of_qubits):
             freq_r = fpts[np.argmin(amps[i])] + fcenter[i]
             res_freqs.append(freq_r)
 

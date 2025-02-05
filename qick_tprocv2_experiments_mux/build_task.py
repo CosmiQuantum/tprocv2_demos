@@ -54,8 +54,6 @@ def add_single_qubit_experiment(expt_cfg, expt_name, QubitIndex):
         exp_cfg.update([('qubit_gain_ge', QickSweep1D('gainloop', start, stop))])
     elif expt_name == 'Ramsey_ge' or expt_name == 'SpinEcho_ge' or expt_name == 'T1_ge' or expt_name == 'Ramsey_ef':
         exp_cfg.update([('wait_time', QickSweep1D('waitloop', start, stop))])
-    elif expt_name == 'tomography':
-        exp_cfg.update([('tomography_ge')]) #what else to put?
     elif expt_name == 'res_spec_ef':
         exp_cfg.update([('res_freq_ef', QickSweep1D('freqloop', start, stop))])
     elif expt_name == 'qubit_spec_ef':

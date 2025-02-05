@@ -2,7 +2,8 @@ from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 from build_task import *
 from build_state import *
-from expt_config import *
+# from expt_config import *
+from expt_config_nexus import * # Change for quiet vs nexus
 from system_config import *
 import copy
 import visdom
@@ -48,11 +49,12 @@ class T1Program(AveragerProgramV2):
 
 
 class T1Measurement:
-    def __init__(self, QubitIndex, list_of_all_qubits, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
+    def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
                  fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
                  multiply_qubit_reps_by = 0):
         self.QubitIndex = QubitIndex
         self.list_of_all_qubits = list_of_all_qubits
+        self.number_of_qubits = number_of_qubits
         self.outerFolder = outerFolder
         self.expt_name = "T1_ge"
         self.fit_data = fit_data
@@ -64,7 +66,7 @@ class T1Measurement:
         self.signal = signal
         self.save_figs = save_figs
         if experiment is not None:
-            self.q_config = all_qubit_state(self.experiment)
+            self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
             if increase_qubit_reps:
@@ -188,7 +190,7 @@ class T1Measurement:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"T1 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         f"Q{self.QubitIndex + 1} " + f"T1={T1_est:.2f} us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
                          fontsize=24, ha='center',
                          va='top')  # , pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:

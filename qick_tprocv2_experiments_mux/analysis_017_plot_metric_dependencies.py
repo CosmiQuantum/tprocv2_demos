@@ -5,10 +5,11 @@ from datetime import datetime
 import pytz
 
 class PlotMetricDependencies:
-    def __init__(self,run_name, number_of_qubits, final_figure_quality):
+    def __init__(self,run_name, number_of_qubits, final_figure_quality, fridge):
         self.run_name = run_name
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
+        self.fridge = fridge
 
     def create_folder_if_not_exists(self, folder):
         """Creates a folder at the given path if it doesn't already exist."""
@@ -97,11 +98,20 @@ class PlotMetricDependencies:
         Creates a SINGLE scatter plot of metric_1 vs metric_2,
         matching data points by the same 'closest timestamp' logic.
         """
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
-        self.create_folder_if_not_exists(analysis_folder)
 
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/correlations_singleplots/"
-        self.create_folder_if_not_exists(analysis_folder)
+        if self.fridge.upper() == 'QUIET':
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/correlations_singleplots/"
+            self.create_folder_if_not_exists(analysis_folder)
+        elif self.fridge.upper() == 'NEXUS':
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/correlations_singleplots/"
+            self.create_folder_if_not_exists(analysis_folder)
+        else:
+            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+
 
         #Converts timestamps from strings to datetime objects
         datetime_objects_1 = [datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
@@ -165,6 +175,7 @@ class PlotMetricDependencies:
         #plt.show()
         plt.savefig(analysis_folder + f'{metric_1_label}_vs_{metric_2_label}_correlation.png', transparent=False,
                     dpi=self.final_figure_quality)
+        print('Plot saved at: ', analysis_folder)
 
 
     #----------------------------------Plots T1 vs. Time  and other metrics vs time if data is provided --------------------------------------------

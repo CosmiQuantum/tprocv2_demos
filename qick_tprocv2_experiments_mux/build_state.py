@@ -40,9 +40,9 @@ def qubit_state(system_config, QubitIndex):
     qubit_cfg = add_qubit_cfg(system_config, QubitIndex)
     return {**hw_cfg, **readout_cfg, **qubit_cfg}
 
-def all_qubit_state(system_config):
+def all_qubit_state(system_config,num_qubits):
     state = {}
-    for QubitIndex in range(6):
+    for QubitIndex in range(num_qubits):
         Qi_state = copy.deepcopy(qubit_state(system_config, QubitIndex))
         state.update([("Q"+str(QubitIndex),Qi_state)])
     return state
