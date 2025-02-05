@@ -1,4 +1,3 @@
-from backup.tprocv2_demos.qick_tprocv2_experiments_mux_nexus.ReadoutOpt_gain_freqs import QubitIndex
 from build_task import *
 from build_state import *
 from expt_config import *
@@ -15,7 +14,7 @@ class TomographyMeasurement:
     def __init__(self, QubitIndex, outerFolder, experiment):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
-        self.expt_name = "Tomography"
+        self.expt_name = "tomography_ge"
         self.experiment = experiment
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.exp_cfg = expt_cfg[self.expt_name]
@@ -63,12 +62,13 @@ class TomographyMeasurement:
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
             amps = np.sqrt(np.abs(I + 1j *Q))
-            print(I)
+            #print(I)
             I_arr.append(I)
             Q_arr.append(Q)
             amps_arr.append(amps)
-        BiasPS.disable(Bias_ch[qubit_index])
-        print(I_arr)
+        #BiasPS.disable(Bias_ch[qubit_index])
+        BiasPS.setVoltage(0, Bias_ch[qubit_index])
+        #print(I_arr)
 
         return I_arr, Q_arr, amps_arr
 
@@ -113,7 +113,7 @@ class TomographyMeasurement:
         })
 
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10,8), sharex='all')
-        ax1.set_ylable("I Amplitude (a.u.)", fontsize=20)
+        ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
         ax1.tick_params(axis='both', which='major', labelsize=16)
         ax1.plot(vsweep, I_arr, linewidth=2)   # I_arr might be the wrong shape!
 
@@ -121,7 +121,7 @@ class TomographyMeasurement:
         ax2.set_xlabel("Applied Voltage Bias (mV)", fontsize=20)
         ax2.plot(vsweep, Q_arr, linewidth=2)   # Q_arr might be the wrong shape!
 
-        fig.suptitle(f"Charge Tomography Q{self,QubitIndex + 1}", fontsize=24)
+        fig.suptitle(f"Charge Tomography Q{self.QubitIndex + 1} \n Wait time: 1/(4*2.5MHz)", fontsize=24)
         plt.tight_layout()
 
         plt.subplots_adjust(top=0.93)
@@ -129,7 +129,7 @@ class TomographyMeasurement:
         outerFolder_expt = os.path.join(self.outerFolder, 'tomography')
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
-        formatted_datetime = now.strftime("%Y-%m-%d_%H-$M-%S")
+        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
         file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_Tomography_Q{self.QubitIndex + 1}.png")
         fig.savefig(file_name, dpi=300, bbox_inches='tight')
         plt.close(fig)
@@ -153,7 +153,7 @@ class TomographyProgram(AveragerProgramV2):
         self.add_pulse(ch=res_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
-                       mask=cfg["list_of_all_qubits"],
+                       mask=[0, 1, 2, 3],
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
@@ -161,7 +161,7 @@ class TomographyProgram(AveragerProgramV2):
         self.add_pulse(ch=qubit_ch, name="qubit_pulse1",
                        style="arb",
                        envelope="ramp",
-                       freq=cfg['tomography_ge'] ,
+                       freq=cfg['qubit_freq_ge'],
                        phase=cfg['qubit_phase'],
                        gain=cfg['pi_amp'] / 2,
                        )
@@ -169,10 +169,12 @@ class TomographyProgram(AveragerProgramV2):
         self.add_pulse(ch=qubit_ch, name="qubit_pulse2",
                        style="arb",
                        envelope="ramp",
-                       freq=cfg['tomography_ge'],
+                       freq=cfg['qubit_freq_ge'],
                        phase=cfg['qubit_phase'],  # + cfg['wait_time']*360*cfg['ramsey_freq'], # current phase + time * 2pi * ramsey freq #how to do this for tomography?
                        gain=cfg['pi_amp'] / 2,
                       )
+
+        self.add_loop("waitloop", cfg["steps"])  # number of times; should be 1
 
 
     def _body(self, cfg):

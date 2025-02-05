@@ -6,7 +6,7 @@ import datetime
 import time
 import visdom
 sys.path.append(os.path.abspath("/home/nexusadmin/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))  ## Change for quiet vs nexus
-# sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/")) f
+# sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_001_time_of_flight import TOFExperiment
 from section_003_punch_out_ge_mux import PunchOut
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
@@ -152,11 +152,7 @@ while j < n:
 
         ########################################## Single Shot Measurements ############################################
         try:
-<<<<<<< HEAD
             ss = SingleShot(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder,  j, save_figs, experiment)
-=======
-            ss = SingleShot(QubitIndex, outerFolder,  j, save_figs, experiment)
->>>>>>> c6c3d49d9a4a90f020dc8c2e012826826b86457e
             fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
             I_g = iq_list_g[QubitIndex][0].T[0]
             Q_g = iq_list_g[QubitIndex][0].T[1]
@@ -171,11 +167,7 @@ while j < n:
             continue #skip the rest of this qubit
         ###################################################### T1 ######################################################
         try:
-<<<<<<< HEAD
             t1 = T1Measurement(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
-=======
-            t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
->>>>>>> c6c3d49d9a4a90f020dc8c2e012826826b86457e
                                increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential = t1.run(experiment.soccfg, experiment.soc)
             del t1
@@ -186,12 +178,7 @@ while j < n:
 
         ###################################################### T2R #####################################################
         try:
-
-<<<<<<< HEAD
             t2r = T2RMeasurement(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
-=======
-            t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
->>>>>>> c6c3d49d9a4a90f020dc8c2e012826826b86457e
                                  increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey = t2r.run(experiment.soccfg, experiment.soc)
             del t2r
@@ -202,11 +189,7 @@ while j < n:
 
         ##################################################### T2E ######################################################
         try:
-<<<<<<< HEAD
             t2e = T2EMeasurement(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
-=======
-            t2e = T2EMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
->>>>>>> c6c3d49d9a4a90f020dc8c2e012826826b86457e
                                  increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             t2e_est, t2e_err, t2e_I, t2e_Q, t2e_delay_times, fit_ramsey_t2e, sys_config_to_save = t2e.run(experiment.soccfg,
                                                                                                           experiment.soc)

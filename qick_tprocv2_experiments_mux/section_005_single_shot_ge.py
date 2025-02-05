@@ -130,11 +130,7 @@ class SingleShotProgram_e(AveragerProgramV2):
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 class SingleShot:
-<<<<<<< HEAD
     def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, round_num, save_figs=False, experiment = None):
-=======
-    def __init__(self, QubitIndex, outerFolder, round_num, save_figs=False, experiment = None):
->>>>>>> c6c3d49d9a4a90f020dc8c2e012826826b86457e
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "Readout_Optimization"
@@ -143,6 +139,7 @@ class SingleShot:
         self.save_figs = save_figs
         self.experiment = experiment
         self.number_of_qubits = number_of_qubits
+        self.list_of_all_qubits = list_of_all_qubits
 
         if experiment is not None:
             self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
@@ -288,13 +285,14 @@ class SingleShot:
 
 
 class GainFrequencySweep:
-    def __init__(self,qubit_index, list_of_all_qubits, experiment, optimal_lengths=None, output_folder="/default/path/"):
+    def __init__(self,qubit_index, number_of_qubits, list_of_all_qubits, experiment, optimal_lengths=None, output_folder="/default/path/"):
         self.qubit_index = qubit_index
         self.list_of_all_qubits = list_of_all_qubits
         self.output_folder = output_folder
         self.expt_name = "Readout_Optimization"
         self.Qubit = 'Q' + str(self.qubit_index)
         self.optimal_lengths = optimal_lengths
+        self.number_of_qubits = number_of_qubits
 
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
@@ -338,7 +336,7 @@ class GainFrequencySweep:
                 # Initialize SingleShot instance for fidelity calculation
                 round_num = 0
                 save_figs = False
-                single_shot = SingleShot(self.qubit_index, self.list_of_all_qubits, self.output_folder, round_num, save_figs, fresh_experiment)
+                single_shot = SingleShot(self.qubit_index, self.number_of_qubits, self.list_of_all_qubits, self.output_folder, round_num, save_figs, fresh_experiment)
                 fidelity = single_shot.fidelity_test(fresh_experiment.soccfg, fresh_experiment.soc)
                 fid_results.append(fidelity)
                 del fresh_experiment

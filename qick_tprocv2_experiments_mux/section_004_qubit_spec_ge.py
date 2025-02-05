@@ -10,11 +10,7 @@ import copy
 import visdom
 
 class QubitSpectroscopy:
-<<<<<<< HEAD
     def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder,  round_num, signal, save_figs, experiment = None, live_plot = None):
-=======
-    def __init__(self, QubitIndex, outerFolder,  round_num, signal, save_figs, experiment = None, live_plot = None):
->>>>>>> c6c3d49d9a4a90f020dc8c2e012826826b86457e
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "qubit_spec_ge"
@@ -24,6 +20,7 @@ class QubitSpectroscopy:
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.exp_cfg = expt_cfg[self.expt_name]
         self.round_num = round_num
+        self.list_of_all_qubits = list_of_all_qubits
         self.number_of_qubits = number_of_qubits
         if experiment is not None:
             self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)

@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Path to the HDF5 file for a specific qubit (replace with actual file path)
-h5_filename = '/home/nexusadmin/qick/NEXUS_sandbox/Data/2025-01-21/SingleShot_Test/qubit_2_data_20250121_222114.h5'  # Update with your file path
+h5_filename = '/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/2025-02-01/SingleShot_Test/qubit_1_data_20250201_005026.h5'  # Update with your file path
 
 
 # Lists to store pulse lengths, average fidelities, and RMS fidelities
@@ -13,7 +13,7 @@ rms_fidelities = []
 
 # Load data from the HDF5 file
 with h5py.File(h5_filename, 'r') as h5_file:
-    qubit_group = h5_file[f"Qubit_2"]
+    qubit_group = h5_file[f"Qubit_1"]
 
     # Iterate over each length to retrieve the avg_fidelity and rms_fidelity data
     for length_key in qubit_group.keys():
@@ -37,7 +37,7 @@ avg_fidelities = np.array(avg_fidelities)[sorted_indices]
 rms_fidelities = np.array(rms_fidelities)[sorted_indices]
 
 # Find the maximum average fidelity and corresponding length
-max_fidelity = max(avg_fidelities[:11])
+max_fidelity = max(avg_fidelities[:40])
 max_fid_index = avg_fidelities.tolist().index(max_fidelity)
 max_length = pulse_lengths[max_fid_index]
 print('first max length: ', max_length)
@@ -52,10 +52,10 @@ plt.figure()
 plt.errorbar(pulse_lengths, avg_fidelities, yerr=rms_fidelities, fmt='-o', color='black', capsize=2)
 plt.axvline(x=max_length, linestyle="--", color="red")
 #plt.axvline(x=max_length2, linestyle="--", color="green")
-plt.text(max_length + 0.1, max_fidelity-0.1, f'max length {max_length:.2f}', color='red')
+plt.text(max_length + 0.1, max_fidelity-0.2, f'max length {max_length:.2f}', color='red')
 #plt.text(max_length2 + 0.1, max_fidelity2-0.2, f'max length {max_length2:.2f}', color='green')
 plt.xlabel('Readout and Pulse Length')
 plt.ylabel('Fidelity')
-plt.title('Avg Fidelity vs. Readout and Pulse Length for Qubit 2, (5 repetitions)')
+plt.title('Avg Fidelity vs. Readout and Pulse Length for Qubit 1, (5 repetitions)')
 plt.show()
 #plt.close()

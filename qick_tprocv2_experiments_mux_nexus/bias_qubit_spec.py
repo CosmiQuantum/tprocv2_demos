@@ -38,7 +38,7 @@ class BiasQubitSpectroscopy:
 
         return
 
-    def sweep_bias(self, soccfg, soc, vsweep, save_csvs=False):
+    def sweep_bias(self, soccfg, soc, vsweep, save_csvs=True):
 
         Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44', '192.168.0.41'] #IP address of bias PS (qubits 1-3 are the same PS)
         Bias_ch = [1, 2, 3, 1] #Channel number of qubit 1-4 on associated PS
@@ -70,9 +70,10 @@ class BiasQubitSpectroscopy:
             Q_arr.append(Q)
             amps_arr.append(amps)
             freq_arr.append(freqs)
-        BiasPS.disable(Bias_ch[qubit_index])
+        #BiasPS.disable(Bias_ch[qubit_index])
+        BiasPS.setVoltage(0, Bias_ch[qubit_index])
 
-        if save_csvs:
+        if save_csvs==True:
             outerFolder_expt = os.path.join(self.outerFolder, 'bias_spec')
             self.experiment.create_folder_if_not_exists(outerFolder_expt)
             now = datetime.datetime.now()
@@ -123,7 +124,7 @@ class BiasQubitSpectroscopy:
 
         ax1.legend(fontsize='6', title='Voltage')
         ax2.legend(fontsize='6', title='Voltage')
-        fig.suptitle(f"Qubit Spectroscopy Q{self.QubitIndex+1} at Voltage Bias Points", fontsize=24)
+        fig.suptitle(f"Qubit Spectroscopy Q{self.QubitIndex+1} at Voltage Bias Points \n Qgain = 0.07, 20dB atten", fontsize=24)
 
         plt.tight_layout()
 
@@ -160,7 +161,8 @@ class BiasQubitSpectroscopy:
         fig.colorbar(im2, label="Q Amplitude (a.u.)")
 
         #fig.suptitle(f"Bias Spectroscopy Q{self.QubitIndex + 1}, ", fontsize=24)
-        fig.suptitle(f"Bias Spectroscopy Q{self.QubitIndex + 1}, \n resf={self.config['res_freq_ge'][self.QubitIndex]} \n resg={self.config['res_gain_ge'][self.QubitIndex]}", fontsize=24)
+        #fig.suptitle(f"Bias Spectroscopy Q{self.QubitIndex + 1}, \n resf={self.config['res_freq_ge'][self.QubitIndex]} \n resg={self.config['res_gain_ge'][self.QubitIndex]}", fontsize=24)
+        fig.suptitle(f"Bias Spectroscopy Q{self.QubitIndex + 1}, \n resf={self.config['res_freq_ge'][self.QubitIndex]}, Qgain = 0.07, 20dB atten", fontsize=24)
 
         plt.tight_layout()
 
@@ -172,7 +174,7 @@ class BiasQubitSpectroscopy:
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex+1}_2d.png")
+        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex+1}_3d.png")
         plt.savefig(file_name, dpi=300, bbox_inches='tight')
         plt.close()
         return
@@ -195,6 +197,7 @@ class PulseProbeSpectroscopyProgram(AveragerProgramV2):
                        style="const",
                        length=cfg["res_length"],
                        mask=[0, 1, 2, 3],
+
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
@@ -204,6 +207,7 @@ class PulseProbeSpectroscopyProgram(AveragerProgramV2):
                        freq=cfg['bias_qubit_freq_ge'],
                        phase=0,
                        gain=cfg['qubit_gain_ge'],
+                       #mode="periodic",
                        )
 
         self.add_loop("freqloop", cfg["steps"])

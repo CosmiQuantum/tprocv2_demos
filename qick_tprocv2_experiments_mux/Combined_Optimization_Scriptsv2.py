@@ -13,9 +13,13 @@ from section_005_single_shot_ge import SingleShot
 from section_008_save_data_to_h5 import Data_H5
 from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
-from system_config import QICK_experiment
 from section_003_punch_out_ge_mux import PunchOut
-from expt_config import *
+
+# from system_config import QICK_experiment # for QUIET
+# from expt_config import * # for QUIET
+from system_config_nexus import QICK_experiment
+from expt_config_nexus import *
+
 import h5py
 import time
 import matplotlib.pyplot as plt
@@ -44,13 +48,18 @@ n_loops = 5  # Number of repetitions per length to average
 
 # List of qubits and pulse lengths to measure
 Qs = [3]#[0,1,2,3]
+number_of_qubits = 4 #for QUIET 6, for NEXUS 4
+list_of_all_qubits = [0, 1, 2, 3] #for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0, 1, 2, 3]
 
+
+#Change for NEXUS vs QUIET
 res_leng_vals = [5.6, 5.85, 6.35, 3.35] # from 1/31-2/1optimization
 optimal_lengths = [None] * 4 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_gain = [0.34, 0.3, 0.34, 0.3875] #from 1/31-2/1optimization, after implementing punchout threshold
 freq_offsets = [-0.08, -0.16, -0.08, -0.08] #from 1/31-2/1optimization, after implementing punchout threshold
 
 res_freq_ge = [6187.191, 5827.678, 6074.095, 5958.533]#[None] * 4
+
 j=0 #round number, from RR code. Not really used here since we just run it once for each qubit
 
 lengs = np.arange(0.1, 6, 0.25) #np.arange(0.1, 12.25, 0.25)
@@ -156,8 +165,7 @@ for QubitIndex in Qs:
                 res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=gain)
                 experiment.readout_cfg['res_gain_ge'] = res_gains
 
-                # ss = SingleShot(QubitIndex, output_folder, k, round(leng, 3)) #Old way
-                ss = SingleShot(QubitIndex, outerFolder,  j, save_figs, experiment)  # updated way
+                ss = SingleShot(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder,  j, save_figs, experiment)  # updated way
                 fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
                 fids.append(fid)
 
@@ -232,7 +240,7 @@ for QubitIndex in Qs:
     # freq_range = [reference_frequency - 0.5,reference_frequency + 0.5]# Frequency range in MHz
     #
     # experiment = copy.deepcopy(tuned_experiment)
-    # sweep = GainFrequencySweep(QubitIndex, experiment, optimal_lengths=optimal_lengths, output_folder=output_folder)
+    # sweep = GainFrequencySweep(QubitIndex, number_of_qubits, list_of_all_qubits, experiment, optimal_lengths=optimal_lengths, output_folder=output_folder)
     # results = sweep.run_sweep(freq_range, gain_range, freq_steps, gain_steps)
     # results = np.array(results)
     #
