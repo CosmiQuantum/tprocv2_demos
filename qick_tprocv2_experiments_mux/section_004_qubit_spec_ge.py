@@ -68,7 +68,7 @@ class QubitSpectroscopy:
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
 
-        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm = self.fit_lorenzian(I, Q, freqs,
+        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, fit_err = self.fit_lorenzian(I, Q, freqs,
                                                                                                           freq_q)
 
         # Check if the returned values are all None
@@ -140,9 +140,9 @@ class QubitSpectroscopy:
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
 
-        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm = self.fit_lorenzian(I, Q, freqs, freq_q)
+        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, qspec_fit_err = self.fit_lorenzian(I, Q, freqs, freq_q)
 
-        return largest_amp_curve_mean, I_fit, Q_fit
+        return largest_amp_curve_mean, I_fit, Q_fit, qspec_fit_err
 
 
     def lorentzian(self, f, f0, gamma, A, B):
@@ -170,66 +170,71 @@ class QubitSpectroscopy:
 
     def fit_lorenzian(self, I, Q, freqs, freq_q):
         try:
-            # guesses
-            initial_guess_I = [freq_q, 1, np.max(I),
-                               np.min(I)]  # x guess (which is very off here), amplitude guess, offset
+            # Initial guesses for I and Q
+            initial_guess_I = [freq_q, 1, np.max(I), np.min(I)]
             initial_guess_Q = [freq_q, 1, np.max(Q), np.min(Q)]
 
-            # fitting the Lorentzian
+            # First round of fits (to get rough estimates)
             params_I, _ = curve_fit(self.lorentzian, freqs, I, p0=initial_guess_I)
             params_Q, _ = curve_fit(self.lorentzian, freqs, Q, p0=initial_guess_Q)
 
+            # Use these fits to refine guesses
             x_max_diff_I, max_diff_I = self.max_offset_difference_with_x(freqs, I, params_I[3])
             x_max_diff_Q, max_diff_Q = self.max_offset_difference_with_x(freqs, Q, params_Q[3])
-
-            # refined guesses
             initial_guess_I = [x_max_diff_I, 1, np.max(I), np.min(I)]
             initial_guess_Q = [x_max_diff_Q, 1, np.max(Q), np.min(Q)]
 
-            # fitting the Lorentzian again with refined guesses
-            params_I, _ = curve_fit(self.lorentzian, freqs, I, p0=initial_guess_I)
-            params_Q, _ = curve_fit(self.lorentzian, freqs, Q, p0=initial_guess_Q)
+            # Second (refined) round of fits, this time capturing the covariance matrices
+            params_I, cov_I = curve_fit(self.lorentzian, freqs, I, p0=initial_guess_I)
+            params_Q, cov_Q = curve_fit(self.lorentzian, freqs, Q, p0=initial_guess_Q)
 
-            # make line from the fits
+            # Create the fitted curves
             I_fit = self.lorentzian(freqs, *params_I)
             Q_fit = self.lorentzian(freqs, *params_Q)
 
-            mean_I = params_I[0]  # the mean from fitted parameters for I
-            mean_Q = params_Q[0]  # the mean from fitted parameters for Q
+            # Calculate errors from the covariance matrices
+            fit_err_I = np.sqrt(np.diag(cov_I))
+            fit_err_Q = np.sqrt(np.diag(cov_Q))
 
-            # find which fit has the widest curve
+            # Extract fitted means and FWHM (assuming params[0] is the mean and params[1] relates to the width)
+            mean_I = params_I[0]
+            mean_Q = params_Q[0]
             fwhm_I = 2 * params_I[1]
             fwhm_Q = 2 * params_Q[1]
 
-            # Calculate maximum amplitudes
+            # Calculate the amplitude differences from the fitted curves
             amp_I_fit = abs(np.max(I_fit) - np.min(I_fit))
             amp_Q_fit = abs(np.max(Q_fit) - np.min(Q_fit))
 
-            # Determine which curve to choose
-            largest_amp_curve_mean = None
-            largest_amp_curve_fwhm = None
+            # Choose which curve to use based on the input signal indicator
             if 'None' in self.signal:
                 if amp_I_fit > amp_Q_fit:
                     largest_amp_curve_mean = mean_I
                     largest_amp_curve_fwhm = fwhm_I
+                    # error on the Q fit's center frequency (first parameter):
+                    qspec_fit_err = fit_err_I[0]
                 else:
                     largest_amp_curve_mean = mean_Q
                     largest_amp_curve_fwhm = fwhm_Q
+                    qspec_fit_err = fit_err_Q[0]
             elif 'I' in self.signal:
                 largest_amp_curve_mean = mean_I
                 largest_amp_curve_fwhm = fwhm_I
+                qspec_fit_err = fit_err_I[0]
             elif 'Q' in self.signal:
                 largest_amp_curve_mean = mean_Q
                 largest_amp_curve_fwhm = fwhm_Q
+                qspec_fit_err = fit_err_Q[0]
             else:
-                print('Invalid signal passed, please do I, Q, or None')
+                print('Invalid signal passed, please choose "I", "Q", or "None".')
+                return None
 
-            return mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm
+            # Return all desired results including the error on the Q fit
+            return mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, qspec_fit_err
 
         except Exception as e:
-            print("Error fitting Lorentzian in QSpec:", e)
-            # Return None for all values if fitting fails
-            return None, None, None, None, None, None
+            print("Error during Lorentzian fit:", e)
+            return None, None,None,None,None,None,None
 
     def create_folder_if_not_exists(self, folder_path):
         import os

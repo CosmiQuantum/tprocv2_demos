@@ -110,6 +110,7 @@ class QubitFreqsVsTime:
         import datetime
 
         qubit_frequencies = {i: [] for i in range(self.number_of_qubits)}
+        qspec_fit_errs= {i: [] for i in range(self.number_of_qubits)}
         rounds = []
         reps = []
         file_names = []
@@ -148,15 +149,16 @@ class QubitFreqsVsTime:
                             qspec_class_instance = QubitSpectroscopy(q_key, outerFolder_save_plots, round_num, self.signal,
                                                                      self.save_figs)
                             q_spec_cfg = ast.literal_eval(self.exp_config['qubit_spec_ge'].decode())
-                            largest_amp_curve_mean, I_fit, Q_fit = qspec_class_instance.get_results(I, Q, freqs)
+                            largest_amp_curve_mean, I_fit, Q_fit, qspec_fit_err = qspec_class_instance.get_results(I, Q, freqs)
 
                             qubit_frequencies[q_key].extend([largest_amp_curve_mean])
+                            qspec_fit_errs[q_key].extend([qspec_fit_err])
                             date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
 
                             del qspec_class_instance
 
                 del H5_class_instance
-        return date_times, qubit_frequencies
+        return date_times, qubit_frequencies, qspec_fit_errs
 
     def plot(self,date_times, qubit_frequencies, show_legends):
         #---------------------------------plot-----------------------------------------------------

@@ -4,6 +4,7 @@ import numpy as np
 np.set_printoptions(threshold=int(1e15)) #need this so it saves absolutely everything returned from the classes
 import datetime
 import time
+import logging
 import visdom
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_001_time_of_flight import TOFExperiment
@@ -19,8 +20,18 @@ from system_config import QICK_experiment
 from section_003_punch_out_ge_mux import PunchOut
 from expt_config import expt_cfg, list_of_all_qubits
 
-################################################ Run Configurations ####################################################
+################################################## Configure logging ###################################################
+logging.basicConfig(
+    level=logging.DEBUG,  # log all of the things
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("RR_script.log", mode='a'),
+        # also output log to the console (remove if you want only the file)
+        logging.StreamHandler(sys.stdout)
+    ]
+)
 
+################################################ Run Configurations ####################################################
 n= 100000
 save_r = 1            # how many rounds to save after
 signal = 'None'       #'I', or 'Q' depending on where the signal is (after optimization). Put'None' if no optimization
@@ -67,6 +78,10 @@ t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
 t2r_data = create_data_dict(t2r_keys, save_r, list_of_all_qubits)
 t2e_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
 
+#initialize a simple list to store the qspec values in incase a fit fails
+max_index = max(Qs_to_look_at)
+stored_qspec_list = [None] * (max_index + 1)
+
 batch_num=0
 j = 0
 angles=[]
@@ -88,7 +103,7 @@ while j < n:
 
         ################################################## Res spec ####################################################
         try:
-            res_spec   = ResonanceSpectroscopy(QubitIndex,list_of_all_qubits, outerFolder, j, save_figs, experiment)
+            res_spec   = ResonanceSpectroscopy(QubitIndex, outerFolder, j, save_figs, experiment)
             res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
             experiment.readout_cfg['res_freq_ge'] = res_freqs
             offset = freq_offsets[QubitIndex] #use optimized offset values
@@ -96,7 +111,7 @@ while j < n:
             experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
             del res_spec
         except Exception as e:
-            print(f'Got the following error, continuing: {e}')
+            logging.exception(f'Got the following error, continuing: {e}')
             continue #skip the rest of this qubit
 
         # ############################################ Roll Signal into I ##############################################
@@ -105,45 +120,50 @@ while j < n:
         # ss = SingleShot(QubitIndex, outerFolder, experiment, j, save_figs)
         # fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
         # angles.append(angle)
-        # #print(angles)
-        # #print('avg theta: ', np.average(angles))
+        # #logging.info(angles)
+        # #logging.info('avg theta: ', np.average(angles))
         # del ss
 
         ################################################## Qubit spec ##################################################
         try:
-            q_spec = QubitSpectroscopy(QubitIndex,list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot)
+            q_spec = QubitSpectroscopy(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
             qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg,
                                                                                              experiment.soc)
-            # if these are None, fit didnt work
-            if (qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None):
-                print('QSpec fit didnt work, skipping the rest of this qubit')
-                continue #skip the rest of this qubit
+            # if these are None, fit didnt work. use the last value
+            if qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None:
+                if stored_qspec_list[QubitIndex] is not None:
+                    experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = stored_qspec_list[QubitIndex]
+                    logging.warning(f"Using previous stored value: {stored_qspec_list[QubitIndex]}")
+                else:
+                    logging.warning('There were no previous qubit spec values stored, skipping rest of this qubit')
+                    continue
 
             experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
-            print('Qubit freq for qubit ', QubitIndex + 1 ,' is: ',float(qubit_freq))
+            stored_qspec_list[QubitIndex] = float(qubit_freq)  # update the stored value
+            logging.info('Qubit freq for qubit ', QubitIndex + 1 ,' is: ',float(qubit_freq))
             del q_spec
 
         except Exception as e:
-            print(f'Got the following error, continuing: {e}')
+            logging.exception(f'Got the following error, continuing: {e}')
             continue #skip the rest of this qubit
 
         ###################################################### Rabi ####################################################
         try:
-            rabi = AmplitudeRabiExperiment(QubitIndex,list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot,
+            rabi = AmplitudeRabiExperiment(QubitIndex,outerFolder, j, signal, save_figs, experiment, live_plot,
                                            increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save  = rabi.run(experiment.soccfg, experiment.soc)
 
             # if these are None, fit didnt work
             if (rabi_fit is None and pi_amp is None):
-                print('Rabi fit didnt work, skipping the rest of this qubit')
+                logging.info('Rabi fit didnt work, skipping the rest of this qubit')
                 continue  # skip the rest of this qubit
 
             experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
-            print('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
+            logging.info('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
             del rabi
 
         except Exception as e:
-            print(f'Got the following error, continuing: {e}')
+            logging.exception(f'Got the following error, continuing: {e}')
             continue #skip the rest of this qubit
 
         ########################################## Single Shot Measurements ############################################
@@ -159,7 +179,7 @@ while j < n:
                 data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
 
         except Exception as e:
-            print(f'Got the following error, continuing: {e}')
+            logging.exception(f'Got the following error, continuing: {e}')
             continue #skip the rest of this qubit
         ###################################################### T1 ######################################################
         try:
@@ -169,7 +189,7 @@ while j < n:
             del t1
 
         except Exception as e:
-            print(f'Got the following error, continuing: {e}')
+            logging.exception(f'Got the following error, continuing: {e}')
             continue #skip the rest of this qubit
 
         ###################################################### T2R #####################################################
@@ -181,7 +201,7 @@ while j < n:
             del t2r
 
         except Exception as e:
-            print(f'Got the following error, continuing: {e}')
+            logging.exception(f'Got the following error, continuing: {e}')
             continue #skip the rest of this qubit
 
         ##################################################### T2E ######################################################
@@ -193,7 +213,7 @@ while j < n:
             del t2e
 
         except Exception as e:
-            print(f'Got the following error, continuing: {e}')
+            logging.exception(f'Got the following error, continuing: {e}')
             continue #skip the rest of this qubit
 
         ############################################### Collect Results ################################################

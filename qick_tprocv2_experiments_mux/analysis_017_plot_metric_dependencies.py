@@ -15,81 +15,70 @@ class PlotMetricDependencies:
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-    def plot(self, date_times_1, metric_1, date_times_2, metric_2, metric_1_label,metric_2_label):
-        #---------------------------------plot-----------------------------------------------------
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from datetime import datetime
+
+    def plot(self, date_times_1, metric_1, date_times_2, metric_2, metric_1_label, metric_2_label):
         analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
         analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/metric_interdependencies/"
         self.create_folder_if_not_exists(analysis_folder)
 
         font = 14
-        titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
-        colors = ['orange','blue','purple','green','brown','pink']
-        fig, axes = plt.subplots(2, 3, figsize=(12, 8))
-        plt.title('T2 Values vs Time',fontsize = font)
-        axes = axes.flatten()
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
-        from datetime import datetime
+        fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+        fig.suptitle(f'{metric_1_label} vs {metric_2_label}', fontsize=font)
+        axes = axes.flatten()
+
         for i, ax in enumerate(axes):
             ax.set_title(titles[i], fontsize=font)
 
-            datetime_objects_1 = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S")
-                                  for date_string in date_times_1[i]]
-            datetime_objects_2 = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S")
-                                  for date_string in date_times_2[i]]
+            # Parse the timestamp strings into datetime objects for both metrics.
+            datetime_objects_1 = [datetime.strptime(dt, "%Y-%m-%d %H:%M:%S") for dt in date_times_1[i]]
+            datetime_objects_2 = [datetime.strptime(dt, "%Y-%m-%d %H:%M:%S") for dt in date_times_2[i]]
 
-            combined_1 = list(zip(datetime_objects_1, metric_1[i]))  # frequency
-            combined_2 = list(zip(datetime_objects_2, metric_2[i]))  # T1
-
+            # Combine and sort the timestamp-metric pairs by time (most recent first)
+            combined_1 = list(zip(datetime_objects_1, metric_1[i]))
+            combined_2 = list(zip(datetime_objects_2, metric_2[i]))
             combined_1.sort(reverse=True, key=lambda item: item[0])
             combined_2.sort(reverse=True, key=lambda item: item[0])
-
             sorted_date_times_1, sorted_metric_1 = zip(*combined_1)
             sorted_date_times_2, sorted_metric_2 = zip(*combined_2)
 
-            # Convert to NumPy arrays
+            # Convert lists to numpy arrays (this helps with numerical operations)
             sorted_date_times_1 = np.array(sorted_date_times_1)
             sorted_date_times_2 = np.array(sorted_date_times_2)
-            sorted_metric_1 = np.array(sorted_metric_1)  # frequency
-            sorted_metric_2 = np.array(sorted_metric_2)  # T1
+            sorted_metric_1 = np.array(sorted_metric_1)
+            sorted_metric_2 = np.array(sorted_metric_2)
 
-            # ------------------------------------------------------
-            # Remove the "pick the shorter array" logic. We assume:
-            #   metric_1 == qubit frequency
-            #   metric_2 == T1
-            # ------------------------------------------------------
+            # Use the first metrics timestamps as the reference.
             ref_times = sorted_date_times_1
-            ref_metrics = sorted_metric_1  # frequency
+            ref_metrics = sorted_metric_1
             other_times = sorted_date_times_2
-            other_mets = sorted_metric_2  # T1
+            other_metrics = sorted_metric_2
 
-            # Now match times so that for each timestamp in ref_times,
-            # we find the closest timestamp in other_times.
+            # For each timestamp in the reference metric, find the closest timestamp in the other metric.
             matched_ref_metrics = []
             matched_other_metrics = []
-
             for t_ref, m_ref in zip(ref_times, ref_metrics):
-                # Index of closest timestamp in other_times
-                idx_closest = np.argmin(np.abs(other_times - t_ref))
+                # Compute the absolute differences between the reference time and all other times.
+                time_differences = np.abs(np.array([(t_ref - t).total_seconds() for t in other_times]))
+                idx_closest = np.argmin(time_differences)
                 matched_ref_metrics.append(m_ref)
-                matched_other_metrics.append(other_mets[idx_closest])
+                matched_other_metrics.append(other_metrics[idx_closest])
 
             matched_ref_metrics = np.array(matched_ref_metrics)
             matched_other_metrics = np.array(matched_other_metrics)
 
-            # ------------------------------------------------------
-            # Always plot qubit frequency on the x-axis (metric_1)
-            # and T1 on the y-axis (metric_2).
-            # ------------------------------------------------------
             ax.scatter(matched_ref_metrics, matched_other_metrics, color='blue')
-            ax.set_xlabel("Q Freq", fontsize=font - 2)
-            ax.set_ylabel("T1 (us)", fontsize=font - 2)
-
+            ax.set_xlabel(metric_1_label, fontsize=font - 2)
+            ax.set_ylabel(metric_2_label, fontsize=font - 2)
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-        plt.savefig(analysis_folder + f'{metric_1_label}_vs_{metric_2_label}_correlation.pdf', transparent=True, dpi=self.final_figure_quality)
-
-        #plt.show()
+        save_path = analysis_folder + f'{metric_1_label}_vs_{metric_2_label}_correlation.pdf'
+        plt.savefig(save_path, transparent=True, dpi=self.final_figure_quality)
+        # plt.show()
 
     # -------------------------------- Single scatter plot for two metrics ---------------------------------------------
     def plot_single_pair(self, date_times_1, metric_1, date_times_2, metric_2, metric_1_label="Qubit 1 T1", metric_2_label="Qubit 3 T1"):

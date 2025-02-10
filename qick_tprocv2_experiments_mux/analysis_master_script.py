@@ -56,7 +56,7 @@ date_times_res_spec, res_freqs = res_spec_vs_time.run()
 
 q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
                                   save_figs, fit_saved, signal, run_name, exp_config)
-date_times_q_spec, q_freqs = q_spec_vs_time.run()
+date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run()
 
 pi_amps_vs_time = PiAmpsVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs,
                               fit_saved,signal, run_name, exp_config)
@@ -224,20 +224,20 @@ date_times_t2e, t2e_vals = t2e_vs_time.run()
 # # # qubit3_times = date_times_t1[2]  # timestamps for qubit 3
 # # # qubit3_t1 = t1_vals[2]        # T1 values for qubit 3
 #
-# # # #now plot them vs eachother
-# plotter = PlotMetricDependencies(run_name, number_of_qubits, final_figure_quality)
-#
-# plotter.plot(date_times_q_spec, q_freqs, date_times_t1, t1_vals, metric_1_label = 'Q Freq',metric_2_label = 'T1')
-# # plotter.plot(date_times_pi_amps, pi_amps, date_times_t1, t1_vals, metric_1_label = 'Pi Amp',metric_2_label = 'T1')
-# #
-# # plotter.plot(date_times_q_spec, q_freqs, date_times_t2r, t2r_vals, metric_1_label = 'Q Freq',metric_2_label = 'T2R')
-# # plotter.plot(date_times_pi_amps, pi_amps, date_times_t2r, t2r_vals, metric_1_label = 'Pi Amp',metric_2_label = 'T2R')
-# #
-# # plotter.plot(date_times_q_spec, q_freqs, date_times_t2e, t2e_vals, metric_1_label = 'Q Freq',metric_2_label = 'T2E')
-# # plotter.plot(date_times_pi_amps, pi_amps, date_times_t2e, t2e_vals, metric_1_label = 'Pi Amp',metric_2_label = 'T2E')
-# #
-# # plotter.plot(date_times_q_spec, q_freqs, date_times_pi_amps, pi_amps, metric_1_label = 'Q Freq',metric_2_label = 'Pi Amp')
-#
+#now plot them vs eachother
+plotter = PlotMetricDependencies(run_name, number_of_qubits, final_figure_quality)
+
+plotter.plot(date_times_q_spec, q_freqs, date_times_t1, t1_vals, metric_1_label = 'Q Freq (MHz)',metric_2_label = 'T1 (us)')
+plotter.plot(date_times_pi_amps, pi_amps, date_times_t1, t1_vals, metric_1_label = 'Pi Amp (a.u.)',metric_2_label = 'T1 (us)')
+
+plotter.plot(date_times_q_spec, q_freqs, date_times_t2r, t2r_vals, metric_1_label = 'Q Freq (MHz)',metric_2_label = 'T2R (us)')
+plotter.plot(date_times_pi_amps, pi_amps, date_times_t2r, t2r_vals, metric_1_label = 'Pi Amp (a.u.)',metric_2_label = 'T2R (us)')
+
+plotter.plot(date_times_q_spec, q_freqs, date_times_t2e, t2e_vals, metric_1_label = 'Q Freq (MHz)',metric_2_label = 'T2E (us)')
+plotter.plot(date_times_pi_amps, pi_amps, date_times_t2e, t2e_vals, metric_1_label = 'Pi Amp (a.u.)',metric_2_label = 'T2E (us)')
+
+plotter.plot(date_times_q_spec, q_freqs, date_times_pi_amps, pi_amps, metric_1_label = 'Q Freq (MHz)',metric_2_label = 'Pi Amp (a.u.)')
+
 # # Q1 T1 vs Q3 T1
 # #plotter.plot_single_pair(date_times_1=qubit1_times, metric_1=qubit1_t1, date_times_2=qubit3_times, metric_2=qubit3_t1, metric_1_label="T1_Qubit_1", metric_2_label="T1_Qubit_3")
 #
@@ -256,16 +256,20 @@ date_times_t2e, t2e_vals = t2e_vs_time.run()
 # boxwhisker.plot(t1_vals, metric_label="T1 (µs)")
 # boxwhisker.plot(t2r_vals, metric_label="T2R (µs)")
 # boxwhisker.plot(t2e_vals, metric_label="T2E (µs)")
-
-################################## 18: Allan Deviation/ Welch Spectral Density #########################################
-stats = AllanWelchStats(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config)
+#
+# ################################## 18: Allan Deviation/ Welch Spectral Density #########################################
+# stats = AllanWelchStats(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+#                  signal, run_name, exp_config)
 # stats.plot_allan_deviation(date_times_q_spec, q_freqs, show_legends, label='QFreq')
 # stats.plot_allan_deviation(date_times_t1, t1_vals, show_legends, label='T1')
 # stats.plot_allan_deviation(date_times_t2r, t2r_vals, show_legends, label='T2R')
 # stats.plot_allan_deviation(date_times_t2e, t2e_vals, show_legends, label='T2E')
+#
+# stats.plot_welch_spectral_density(date_times_q_spec, q_freqs, show_legends, label='QFreq')
+# stats.plot_welch_spectral_density(date_times_t1, t1_vals, show_legends, label='T1')
+# stats.plot_welch_spectral_density(date_times_t2r, t2r_vals, show_legends, label='T2R')
+# stats.plot_welch_spectral_density(date_times_t2e, t2e_vals, show_legends, label='T2E')
 
-stats.plot_welch_spectral_density(date_times_q_spec, q_freqs, show_legends, label='QFreq')
-stats.plot_welch_spectral_density(date_times_t1, t1_vals, show_legends, label='T1')
-stats.plot_welch_spectral_density(date_times_t2r, t2r_vals, show_legends, label='T2R')
-stats.plot_welch_spectral_density(date_times_t2e, t2e_vals, show_legends, label='T2E')
+#################################################### 19: Extra #########################################################
+plotter = PlotMetricDependencies(run_name, number_of_qubits, final_figure_quality)
+plotter.plot(date_times_q_spec, q_freqs, date_times_q_spec, qspec_fit_err, metric_1_label = 'Q Freq (MHz)',metric_2_label = 'Q Freq Fit Err (MHz)')
