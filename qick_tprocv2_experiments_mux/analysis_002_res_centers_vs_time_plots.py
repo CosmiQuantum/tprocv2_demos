@@ -153,7 +153,7 @@ class ResonatorFreqVsTime:
                         batch_num = load_data['Res'][q_key].get('Batch Num', [])[0][dataset]
 
                         if len(freq_pts) > 0:
-                            res_class_instance = ResonanceSpectroscopy(q_key, outerFolder_save_plots, round_num, self.save_figs)
+                            res_class_instance = ResonanceSpectroscopy(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.save_figs)
                             res_spec_cfg = ast.literal_eval(self.exp_config['res_spec'].decode())
                             res_freqs = res_class_instance.get_results(freq_pts, freq_center, amps)
 

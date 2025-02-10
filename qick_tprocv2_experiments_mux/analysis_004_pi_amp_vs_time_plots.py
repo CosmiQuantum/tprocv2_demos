@@ -141,7 +141,7 @@ class PiAmpsVsTime:
                         batch_num = load_data['Rabi'][q_key].get('Batch Num', [])[0][dataset]
 
                         if len(I) > 0:
-                            rabi_class_instance = AmplitudeRabiExperiment(q_key, outerFolder_save_plots, round_num,
+                            rabi_class_instance = AmplitudeRabiExperiment(q_key, self.number_of_qubits, outerFolder_save_plots, round_num,
                                                                           self.signal, self.save_figs)
                             rabi_cfg = ast.literal_eval(self.exp_config['power_rabi_ge'].decode())
                             I = np.asarray(I)

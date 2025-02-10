@@ -103,7 +103,7 @@ while j < n:
 
         ################################################## Res spec ####################################################
         try:
-            res_spec   = ResonanceSpectroscopy(QubitIndex, outerFolder, j, save_figs, experiment)
+            res_spec   = ResonanceSpectroscopy(QubitIndex, list_of_all_qubits, outerFolder, j, save_figs, experiment)
             res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
             experiment.readout_cfg['res_freq_ge'] = res_freqs
             offset = freq_offsets[QubitIndex] #use optimized offset values
@@ -126,7 +126,7 @@ while j < n:
 
         ################################################## Qubit spec ##################################################
         try:
-            q_spec = QubitSpectroscopy(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
+            q_spec = QubitSpectroscopy(QubitIndex, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot)
             qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg,
                                                                                              experiment.soc)
             # if these are None, fit didnt work. use the last value
@@ -149,7 +149,7 @@ while j < n:
 
         ###################################################### Rabi ####################################################
         try:
-            rabi = AmplitudeRabiExperiment(QubitIndex,outerFolder, j, signal, save_figs, experiment, live_plot,
+            rabi = AmplitudeRabiExperiment(QubitIndex, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot,
                                            increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save  = rabi.run(experiment.soccfg, experiment.soc)
 
@@ -168,7 +168,7 @@ while j < n:
 
         ########################################## Single Shot Measurements ############################################
         try:
-            ss = SingleShot(QubitIndex, outerFolder,  j, save_figs, experiment)
+            ss = SingleShot(QubitIndex, list_of_all_qubits, outerFolder,  j, save_figs, experiment)
             fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
             I_g = iq_list_g[QubitIndex][0].T[0]
             Q_g = iq_list_g[QubitIndex][0].T[1]
@@ -183,7 +183,7 @@ while j < n:
             continue #skip the rest of this qubit
         ###################################################### T1 ######################################################
         try:
-            t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
+            t1 = T1Measurement(QubitIndex, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
                                increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential = t1.run(experiment.soccfg, experiment.soc)
             del t1
@@ -195,7 +195,7 @@ while j < n:
         ###################################################### T2R #####################################################
         try:
 
-            t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
+            t2r = T2RMeasurement(QubitIndex, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
                                  increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey = t2r.run(experiment.soccfg, experiment.soc)
             del t2r
@@ -206,7 +206,7 @@ while j < n:
 
         ##################################################### T2E ######################################################
         try:
-            t2e = T2EMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
+            t2e = T2EMeasurement(QubitIndex, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
                                  increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             t2e_est, t2e_err, t2e_I, t2e_Q, t2e_delay_times, fit_ramsey_t2e, sys_config_to_save = t2e.run(experiment.soccfg,
                                                                                                           experiment.soc)

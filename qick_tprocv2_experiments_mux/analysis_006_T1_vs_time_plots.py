@@ -25,7 +25,7 @@ from matplotlib.ticker import StrMethodFormatter
 
 class T1VsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config, fridge, list_of_all_qubits):
+                 signal, run_name, exp_config, fridge):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -36,7 +36,7 @@ class T1VsTime:
         self.top_folder_dates = top_folder_dates
         self.exp_config = exp_config
         self.fridge = fridge
-        self.list_of_all_qubits = list_of_all_qubits
+
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
         unix_timestamp = int(dt.timestamp())
@@ -173,7 +173,7 @@ class T1VsTime:
 
                         if len(I) > 0:
 
-                            T1_class_instance = T1Measurement(q_key, self.list_of_all_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
+                            T1_class_instance = T1Measurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                               fit_data=True)
                             T1_spec_cfg = ast.literal_eval(self.exp_config['T1_ge'].decode())
                             q1_fit_exponential, T1_err, T1_est, plot_sig = T1_class_instance.t1_fit(I, Q, delay_times)

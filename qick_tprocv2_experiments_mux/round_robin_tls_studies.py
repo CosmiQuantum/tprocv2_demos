@@ -93,7 +93,7 @@ for QubitIndex in Qs_to_look_at:
     experiment.readout_cfg['res_gain_ge'] = res_gains
     experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
 
-    res_spec   = ResonanceSpectroscopy(QubitIndex, outerFolder, 0, save_figs, experiment)
+    res_spec   = ResonanceSpectroscopy(QubitIndex, list_of_all_qubits, outerFolder, 0, save_figs, experiment)
     res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
     experiment.readout_cfg['res_freq_ge'] = res_freqs
     offset = freq_offsets[QubitIndex] #use optimized offset values
@@ -102,7 +102,7 @@ for QubitIndex in Qs_to_look_at:
     del res_spec
 
     ################################# Do Qspec once per qubit and store the value ######################################
-    q_spec = QubitSpectroscopy(QubitIndex,outerFolder, 0, signal, save_figs, experiment, live_plot)
+    q_spec = QubitSpectroscopy(QubitIndex, list_of_all_qubits,outerFolder, 0, signal, save_figs, experiment, live_plot)
     qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg,
                                                                                      experiment.soc)
 
@@ -112,7 +112,7 @@ for QubitIndex in Qs_to_look_at:
     del q_spec
 
     ################################### Do Rabi once per qubit and store the value #####################################
-    rabi = AmplitudeRabiExperiment(QubitIndex,outerFolder, 0, signal, save_figs, experiment, live_plot,
+    rabi = AmplitudeRabiExperiment(QubitIndex,outerFolder, list_of_all_qubits, 0, signal, save_figs, experiment, live_plot,
                                    increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
     rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save  = rabi.run(experiment.soccfg, experiment.soc)
 
@@ -134,7 +134,7 @@ while j < n:
 
         ################################################## Qubit spec ##################################################
         try:
-            q_spec = QubitSpectroscopy(QubitIndex,outerFolder, j, signal, save_figs, experiment, live_plot)
+            q_spec = QubitSpectroscopy(QubitIndex, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot)
             qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg,
                                                                                              experiment.soc)
             # if these are None, fit didnt work. use the last value
@@ -158,7 +158,7 @@ while j < n:
 
         ###################################################### T1 ######################################################
         try:
-            t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
+            t1 = T1Measurement(QubitIndex, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
                                increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential = t1.run(experiment.soccfg, experiment.soc)
             del t1

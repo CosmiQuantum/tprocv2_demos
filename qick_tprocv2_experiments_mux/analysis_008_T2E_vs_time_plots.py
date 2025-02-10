@@ -24,7 +24,7 @@ from scipy.optimize import curve_fit
 
 class T2eVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config, fridge, list_of_all_qubits):
+                 signal, run_name, exp_config, fridge):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -35,7 +35,6 @@ class T2eVsTime:
         self.top_folder_dates = top_folder_dates
         self.exp_config = exp_config
         self.fridge = fridge
-        self.list_of_all_qubits = list_of_all_qubits
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -169,7 +168,7 @@ class T2eVsTime:
                         batch_num = load_data['T2E'][q_key].get('Batch Num', [])[0][dataset]
 
                         if len(I) > 0:
-                            T2E_class_instance = T2EMeasurement(q_key, self.list_of_all_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
+                            T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                                fit_data=True)
                             try:
                                 fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)

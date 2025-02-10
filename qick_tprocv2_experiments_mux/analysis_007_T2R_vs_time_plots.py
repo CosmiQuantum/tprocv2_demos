@@ -146,7 +146,7 @@ class T2rVsTime:
                         batch_num = load_data['T2'][q_key].get('Batch Num', [])[0][dataset]
 
                         if len(I) > 0:
-                            T2_class_instance = T2RMeasurement(q_key, outerFolder_save_plots, round_num, self.signal,
+                            T2_class_instance = T2RMeasurement(q_key,self.number_of_qubits, outerFolder_save_plots, round_num, self.signal,
                                                                self.save_figs, fit_data=True)
                             try:
                                 fitted, t2r_est, t2r_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)

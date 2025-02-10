@@ -7,6 +7,7 @@ from expt_config_nexus import * # Change for quiet vs nexus
 import copy
 import datetime
 
+
 class SingleToneSpectroscopyProgram(AveragerProgramV2):
     def _initialize(self, cfg):
         ro_chs = cfg['ro_ch']
@@ -32,10 +33,9 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
 class ResonanceSpectroscopy:
-    def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, round_num, save_figs, experiment = None):
+    def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, save_figs, experiment = None):
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
-        self.list_of_all_qubits = list_of_all_qubits
         self.outerFolder = outerFolder
         self.expt_name = "res_spec"
         self.Qubit = 'Q' + str(self.QubitIndex)
