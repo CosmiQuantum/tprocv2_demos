@@ -6,11 +6,20 @@ import datetime
 import h5py
 import time
 
+from system_config import QICK_experiment
+
 date_str = str(datetime.date.today())
-outerFolder = f"/data/QICK_data/6transmon_run4a/{date_str}/readout_opt/Gain_Freq_Sweeps/"
+outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30", str(datetime.date.today()))#f"/data/QICK_data/6transmon_run4a/{date_str}/readout_opt/Gain_Freq_Sweeps/"
 
 # Ensure the output folder exists
-os.makedirs(outerFolder, exist_ok=True)
+#os.makedirs(outerFolder, exist_ok=True)
+
+def create_folder_if_not_exists(folder_path):
+    """Creates a folder at the given path if it doesn't already exist."""
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+create_folder_if_not_exists(outerFolder)
 
 # Reference frequencies for each resonator in MHz
 res_freq_ge = [6187.191, 5827.678, 6074.095, 5958.673], #MHz #[6191.439, 6216.0, 6292.261, 6405.79, 6432.899, 6468.501]
@@ -18,19 +27,22 @@ res_freq_ge = [6187.191, 5827.678, 6074.095, 5958.673], #MHz #[6191.439, 6216.0,
 optimal_lengths = [2.53, 9.66, 3.50, 4.75, 4.57, 6.60]
 
 # Define sweeping parameters
-gain_range = [0.5,1]  # Gain range in a.u.
+gain_range = [0.1,0.5]  # Gain range in a.u.
 freq_steps = 40
 gain_steps = 26
 
-Qs = [2,3]
+Qs = [3]#[2,3]
 for QubitIndex in Qs:
 #QubitIndex= 0
     print(f'Starting Qubit {QubitIndex + 1} measurements.')
     # Select the reference frequency for the current qubit
-    reference_frequency = res_freq_ge[QubitIndex]
+    print('QubitIndex',QubitIndex)
+    print('res_freq_ge',res_freq_ge[0])
+    reference_frequency = res_freq_ge[0][QubitIndex-1]#res_freq_ge[QubitIndex-1]#res_freq_ge[QubitIndex]
     freq_range = [reference_frequency-1, reference_frequency + 1]  # Frequency range in MHz
 
-    sweep = GainFrequencySweep(QubitIndex,  optimal_lengths=optimal_lengths, output_folder=outerFolder)
+    experiment = QICK_experiment(outerFolder, DAC_attenuator1=5, DAC_attenuator2=10, ADC_attenuator=10)
+    sweep = GainFrequencySweep(QubitIndex, experiment , optimal_lengths=optimal_lengths, output_folder=outerFolder)
     results = sweep.run_sweep(freq_range, gain_range, freq_steps, gain_steps)
     results = np.array(results)
 

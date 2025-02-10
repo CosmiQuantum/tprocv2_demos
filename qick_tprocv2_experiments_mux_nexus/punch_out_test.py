@@ -9,7 +9,7 @@ import datetime
 att_1=999
 att_2=999
 
-outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/", str(datetime.date.today()))
+outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/", str(datetime.date.today()))
 
 experiment = QICK_experiment(outerFolder)
 punch_out   = PunchOut(outerFolder, experiment)

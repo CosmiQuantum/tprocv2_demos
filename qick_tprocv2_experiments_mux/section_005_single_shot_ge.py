@@ -9,7 +9,8 @@ import h5py
 # Assuming these are defined elsewhere and importable
 from build_task import *
 from build_state import *
-from expt_config import *
+# from expt_config import *
+from expt_config_nexus import * # Change for quiet vs nexus
 from system_config import QICK_experiment
 import copy
 import os
@@ -129,7 +130,7 @@ class SingleShotProgram_e(AveragerProgramV2):
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 class SingleShot:
-    def __init__(self, QubitIndex, outerFolder, round_num, save_figs=False, experiment = None):
+    def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, round_num, save_figs=False, experiment = None):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "Readout_Optimization"
@@ -137,9 +138,11 @@ class SingleShot:
         self.round_num = round_num
         self.save_figs = save_figs
         self.experiment = experiment
+        self.number_of_qubits = number_of_qubits
+        self.list_of_all_qubits = list_of_all_qubits
 
         if experiment is not None:
-            self.q_config = all_qubit_state(self.experiment)
+            self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} Single Shot configuration: ', self.config)
@@ -168,10 +171,10 @@ class SingleShot:
         return fidelity
 
     def run(self, soccfg, soc):
-        ssp_g = SingleShotProgram_g(soccfg, self.list_of_all_qubits, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
+        ssp_g = SingleShotProgram_g(soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
         iq_list_g = ssp_g.acquire(soc, soft_avgs=1, progress=True)
 
-        ssp_e = SingleShotProgram_e(soccfg, self.list_of_all_qubits, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
+        ssp_e = SingleShotProgram_e(soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
         iq_list_e = ssp_e.acquire(soc, soft_avgs=1, progress=True)
 
         fid, angle = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
@@ -282,12 +285,14 @@ class SingleShot:
 
 
 class GainFrequencySweep:
-    def __init__(self,qubit_index, experiment, optimal_lengths=None, output_folder="/default/path/"):
+    def __init__(self,qubit_index, number_of_qubits, list_of_all_qubits, experiment, optimal_lengths=None, output_folder="/default/path/"):
         self.qubit_index = qubit_index
+        self.list_of_all_qubits = list_of_all_qubits
         self.output_folder = output_folder
         self.expt_name = "Readout_Optimization"
         self.Qubit = 'Q' + str(self.qubit_index)
         self.optimal_lengths = optimal_lengths
+        self.number_of_qubits = number_of_qubits
 
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
@@ -318,6 +323,7 @@ class GainFrequencySweep:
                 #experiment = QICK_experiment(self.output_folder, DAC_attenuator1=10, DAC_attenuator2=5, ADC_attenuator=10)
                 fresh_experiment = copy.deepcopy(self.experiment)
                 gain = gain_range[0] + gain_step * gain_step_size
+                print('freq step index ', freq_step)
                 print('gain', gain)
 
                 # Update config with current gain and frequency values
@@ -328,7 +334,9 @@ class GainFrequencySweep:
                 fresh_experiment.readout_cfg['res_gain_ge'] = res_gains
 
                 # Initialize SingleShot instance for fidelity calculation
-                single_shot = SingleShot(self.qubit_index, self.output_folder, fresh_experiment, round_num=0, save_figs = False)
+                round_num = 0
+                save_figs = False
+                single_shot = SingleShot(self.qubit_index, self.number_of_qubits, self.list_of_all_qubits, self.output_folder, round_num, save_figs, fresh_experiment)
                 fidelity = single_shot.fidelity_test(fresh_experiment.soccfg, fresh_experiment.soc)
                 fid_results.append(fidelity)
                 del fresh_experiment

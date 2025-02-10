@@ -1,7 +1,7 @@
 from qick import *
 import sys
 import os
-sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos"))
+sys.path.append(os.path.abspath("/home/nexusadmin/Documents/GitHub/tprocv2_demos"))
 from tprocv2_demos.qick_tprocv2_experiments_mux.socProxy import makeProxy
 import os
 import datetime
@@ -57,7 +57,8 @@ class QICK_experiment:
             "nqz_qubit": 1,
             "nqz_res": 2,
             # ADC
-            "ro_ch": [self.MUXRO_CH] * 6  # MUX readout channel
+            "ro_ch": [self.MUXRO_CH] * 6,  # MUX readout channel
+            "list_of_all_qubits": [0, 1, 2, 3, 4, 5]
         }
 
         # Readout Configuration

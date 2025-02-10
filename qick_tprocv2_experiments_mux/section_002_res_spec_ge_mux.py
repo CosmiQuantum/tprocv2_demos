@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 from qick.asm_v2 import AveragerProgramV2
 from tqdm import tqdm
 from build_state import *
-from expt_config import *
+# from expt_config import *
+from expt_config_nexus import * # Change for quiet vs nexus
 import copy
 import datetime
 
@@ -31,8 +32,10 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
 class ResonanceSpectroscopy:
-    def __init__(self, QubitIndex, outerFolder, round_num, save_figs, experiment = None):
+    def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, round_num, save_figs, experiment = None):
         self.QubitIndex = QubitIndex
+        self.number_of_qubits = number_of_qubits
+        self.list_of_all_qubits = list_of_all_qubits
         self.outerFolder = outerFolder
         self.expt_name = "res_spec"
         self.Qubit = 'Q' + str(self.QubitIndex)
@@ -41,7 +44,7 @@ class ResonanceSpectroscopy:
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
         if experiment is not None:
-            self.q_config = all_qubit_state(experiment)
+            self.q_config = all_qubit_state(experiment, self.number_of_qubits)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
 
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} Res Spec configuration: ', self.config)
@@ -75,7 +78,7 @@ class ResonanceSpectroscopy:
             'legend.fontsize': 14,
         })
 
-        for i in range(6):
+        for i in range(self.number_of_qubits):
             plt.subplot(2, 3, i + 1)
             #plt.plot(fpts + fcenter[i], amps[i], '-', linewidth=1.5)
             plt.plot([f + fcenter[i] for f in fpts], amps[i], '-', linewidth=1.5)
@@ -114,7 +117,7 @@ class ResonanceSpectroscopy:
     def get_results(self, fpts, fcenter, amps):
         res_freqs = []
 
-        for i in range(6):
+        for i in range(self.number_of_qubits):
             freq_r = fpts[np.argmin(amps[i])] + fcenter[i]
             res_freqs.append(freq_r)
 

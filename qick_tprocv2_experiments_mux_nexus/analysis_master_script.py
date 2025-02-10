@@ -35,7 +35,7 @@ run_name = 'Run30' #update in each new run
 run_notes = ('Added more eccosorb filters and a lpf on mxc before and after the device. Added thermometry '
              'next to the device') #please make it brief for the plot. This was the text for QUIET, change as needed for NEXUS.
 #top_folder_dates = ['2025-01-16', '2025-01-17', '2025-01-21', '2025-01-22']
-top_folder_dates = ['2025-01-22'] # To look at just one date
+#top_folder_dates = ['2025-01-22'] # To look at just one date
 ###################################### 00: Load Configs for Plotting Titles ############################################
 date = '2025-01-22'  #only plot all of the data for one date at a time because there is a lot
 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{run_name}/" + date + "/"

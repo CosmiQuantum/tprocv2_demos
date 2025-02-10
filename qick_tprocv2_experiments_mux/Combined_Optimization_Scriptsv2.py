@@ -2,7 +2,7 @@ import sys
 import os
 import numpy as np
 import datetime
-sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+sys.path.append(os.path.abspath("/home/nexusadmin/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux_nexus/"))
 from section_001_time_of_flight import TOFExperiment
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_004_qubit_spec_ge import QubitSpectroscopy
@@ -13,9 +13,13 @@ from section_005_single_shot_ge import SingleShot
 from section_008_save_data_to_h5 import Data_H5
 from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
-from system_config import QICK_experiment
 from section_003_punch_out_ge_mux import PunchOut
-from expt_config import *
+
+# from system_config import QICK_experiment # for QUIET
+# from expt_config import * # for QUIET
+from system_config_nexus import QICK_experiment
+from expt_config_nexus import *
+
 import h5py
 import time
 import matplotlib.pyplot as plt
@@ -23,12 +27,11 @@ import copy
 
 
 signal = 'None'        #'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization has happened
-save_figs = True   # save plots for everything as you go along the RR script?
+save_figs = False   # save plots for everything as you go along the RR script?
 live_plot = False    # for live plotting open http://localhost:8097/ on firefox
-fit_data = False    # fit the data here and save or plot the fits?
-outerFolder = "/data/QICK_data/6transmon_run5/" + str(datetime.date.today()) + "/"
+fit_data = False # always set to False
 
-
+outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30", str(datetime.date.today())) #change run number in each new run
 def create_folder_if_not_exists(folder_path):
     """Creates a folder at the given path if it doesn't already exist."""
     if not os.path.exists(folder_path):
@@ -37,71 +40,96 @@ def create_folder_if_not_exists(folder_path):
 
 # Where to save readout length sweep data
 prefix = str(datetime.date.today())
-output_folder = "/data/QICK_data/6transmon_run5/" + prefix + "/SingleShot_Test/"
+output_folder =outerFolder + "/SingleShot_Test/"
 create_folder_if_not_exists(output_folder)
 
 n = 1  # Number of rounds
-n_loops = 3  # Number of repetitions per length to average
+n_loops = 5  # Number of repetitions per length to average
 
 # List of qubits and pulse lengths to measure
-tot_num_of_qubits = 6
-list_of_all_qubits = list(range(tot_num_of_qubits))
-Qs = [0] #,1,2,3,4,5
-res_leng_vals = [2.75, 4, 2.25, 2.75, 3.5, 2.75]
+Qs = [3]#[0,1,2,3]
+number_of_qubits = 4 #for QUIET 6, for NEXUS 4
+list_of_all_qubits = [0, 1, 2, 3] #for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0, 1, 2, 3]
 
-optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
-res_gain = [1.0]*6
-#res_gain = [0.7, 0.9, 0.7, 0.7, 0.7, 0.9, 0.9]
-res_freq_ge = [None] * 6
-j=1 #round number, from RR code. Not really used here since we just run it once for each qubit
 
-#lengs = np.linspace(0.5, 5, 19)  # increments of 0.25
-lengs = np.linspace(0.1, 4, 27) # increments of 0.25
+#Change for NEXUS vs QUIET
+res_leng_vals = [5.6, 5.85, 6.35, 3.35] # from 1/31-2/1optimization
+optimal_lengths = [None] * 4 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
+res_gain = [0.34, 0.3, 0.34, 0.3875] #from 1/31-2/1optimization, after implementing punchout threshold
+freq_offsets = [-0.08, -0.16, -0.08, -0.08] #from 1/31-2/1optimization, after implementing punchout threshold
+
+res_freq_ge = [6187.191, 5827.678, 6074.095, 5958.533]#[None] * 4
+
+j=0 #round number, from RR code. Not really used here since we just run it once for each qubit
+
+lengs = np.arange(0.1, 6, 0.25) #np.arange(0.1, 12.25, 0.25)
+
+# lengs = np.linspace(0.1, 7, 15) #increments of 0.25
 
 for QubitIndex in Qs:
-    #Get the config for this qubit
-    experiment = QICK_experiment(outerFolder, DAC_attenuator1 = 5, DAC_attenuator2 = 10, ADC_attenuator = 10)
+    # Get the config for this qubit
+    experiment = QICK_experiment(outerFolder, DAC_attenuator1=5, DAC_attenuator2=10, ADC_attenuator=10)
 
-    #Mask out all other resonators except this one
+    # Mask out all other resonators except this one
     res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=res_gain[QubitIndex])
     experiment.readout_cfg['res_gain_ge'] = res_gains
     experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
 
-
-    #---------------------Res spec---------------------
-    res_spec   = ResonanceSpectroscopy(QubitIndex, list_of_all_qubits, outerFolder, j, save_figs, experiment)
-    res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
-    experiment.readout_cfg['res_freq_ge'] = res_freqs
-    this_res_freq = res_freqs[QubitIndex]
-    res_freq_ge[QubitIndex] = float(this_res_freq)
-    del res_spec
-
-    #--------------------Qubit spec--------------------
-    q_spec = QubitSpectroscopy(QubitIndex, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot)
-    qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg, experiment.soc)
-    experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
-    print('Qubit freq for qubit ', QubitIndex + 1 ,' is: ',float(qubit_freq))
-    del q_spec
-
-    #-----------------------Rabi-----------------------
-    rabi = AmplitudeRabiExperiment(QubitIndex,list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, q1_lowT1=True)
-    rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, conf  = rabi.run(experiment.soccfg, experiment.soc)
-    experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
-    print('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
-    del rabi
-
-    # #------------------Single Shot Measurements---------------
-    # ss = SingleShot(QubitIndex,list_of_all_qubits, outerFolder, experiment, round_num=0, save_figs=True)
-    # fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
+    # ################################################## Res spec ####################################################
+    # try:
+    #     res_spec = ResonanceSpectroscopy(QubitIndex, outerFolder, j, save_figs, experiment)
+    #     res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
+    #     experiment.readout_cfg['res_freq_ge'] = res_freqs
+    #     offset = freq_offsets[QubitIndex]  # use optimized offset values
+    #     offset_res_freqs = [r + offset for r in res_freqs]
+    #     experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
     #
-    # I_g = iq_list_g[QubitIndex][0].T[0]
-    # Q_g = iq_list_g[QubitIndex][0].T[1]
-    # I_e = iq_list_e[QubitIndex][0].T[0]
-    # Q_e = iq_list_e[QubitIndex][0].T[1]
+    #     #Use the two lines below when optimizing res gains and freqs, make sure you are setting all freq_offsets to zero beforehand
+    #     this_res_freq = offset_res_freqs[QubitIndex]
+    #     res_freq_ge[QubitIndex] = float(this_res_freq)
     #
-    # fid, threshold, rotation_angle, ig_new, ie_new = ss.hist_ssf(
-    #     data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=True)
+    #     del res_spec
+    # except Exception as e:
+    #     print(f'Got the following error, continuing: {e}')
+    #     continue  # skip the rest of this qubit
+    #
+    # ################################################## Qubit spec ##################################################
+    # try:
+    #     q_spec = QubitSpectroscopy(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
+    #     qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg,
+    #                                                                                      experiment.soc)
+    #     # if these are None, fit didnt work
+    #     if (qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None):
+    #         print('QSpec fit didnt work, skipping the rest of this qubit')
+    #         continue  # skip the rest of this qubit
+    #
+    #     experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
+    #     print('Qubit freq for qubit ', QubitIndex + 1, ' is: ', float(qubit_freq))
+    #     del q_spec
+    #
+    # except Exception as e:
+    #     print(f'Got the following error, continuing: {e}')
+    #     continue  # skip the rest of this qubit
 
+    ###################################################### Rabi ####################################################
+    try:
+        rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
+        rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save = rabi.run(experiment.soccfg, experiment.soc)
+
+        # if these are None, fit didnt work
+        if (rabi_fit is None and pi_amp is None):
+            print('Rabi fit didnt work, skipping the rest of this qubit')
+            continue  # skip the rest of this qubit
+
+        experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
+        print('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
+        del rabi
+
+    except Exception as e:
+        print(f'Got the following error, continuing: {e}')
+        continue  # skip the rest of this qubit
+
+    #MAKE DEEP COPY OF CONFIG, IMPORTANT
     tuned_experiment = copy.deepcopy(experiment)
 
     #-----------Sweeping Readout Length----------------------------
@@ -127,8 +155,6 @@ for QubitIndex in Qs:
             for k in range(n_loops):  # loops for each read out length
                 # ------------------------Single Shot-------------------------
                 # Initialize experiment for each loop iteration
-                # experiment = QICK_experiment(output_folder)
-                #experiment = QICK_experiment(output_folder, DAC_attenuator1=10, DAC_attenuator2=5, ADC_attenuator=10)
                 experiment = copy.deepcopy(tuned_experiment)
                 # Set specific configuration values for each iteration
                 experiment.readout_cfg['res_length'] = leng  # Set the current readout pulse length
@@ -139,11 +165,9 @@ for QubitIndex in Qs:
                 res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=gain)
                 experiment.readout_cfg['res_gain_ge'] = res_gains
 
-                # ss = SingleShot(QubitIndex,list_of_all_qubits, output_folder, k, round(leng, 3)) #Old way
-                ss = SingleShot(QubitIndex, list_of_all_qubits, output_folder, k, False, experiment)  # New way
+                ss = SingleShot(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder,  j, save_figs, experiment)  # updated way
                 fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
                 fids.append(fid)
-                print(f'FID (round {k}) = {fid}')
 
                 # Append IQ data for each loop
                 ground_iq_data.append(iq_list_g)
@@ -192,33 +216,31 @@ for QubitIndex in Qs:
     plt.ylabel('Fidelity')
     plt.title(f'Avg Fidelity vs. Readout and Pulse Length for Qubit {QubitIndex + 1}, ({n_loops} repetitions)')
     plt.savefig(os.path.join(output_folder, f'fidelity_Q{QubitIndex + 1}_{timestamp}.png'), dpi=300)
+    print('res leng sweep plot saved to:', output_folder)
     plt.close()
 
     del avg_fids, rms_fids, avg_ground_iq, avg_excited_iq, loop_group, length_group
 
     #---------------------Res Gain and Res Freq Sweeps------------------------
-    #exit()  # use this if you only want to run the readout length sweep
-    #optimal_lengths = [2.75, 4, 2.25, 2.75, 3.5, 2.75] old
-    # optimal_lengths = [1.0, 4, 2.25, 2.75, 3.5, 2.75] #Q1 updated
-    # # optimal_lengths = [3.25, 4.75, 2.50, 3.50, 4.0, 6.00] # use when you are running this part of the code separately
+    # optimal_lengths = [5.6, 5.85, 6.35, 3.35]
     # date_str = str(datetime.date.today())
-    # outerFolder = f"/data/QICK_data/6transmon_run5/{date_str}/readout_opt/Gain_Freq_Sweeps/"
-    #
+    # output_folder = outerFolder + "/readout_opt/Gain_Freq_Sweeps/"
     # # Ensure the output folder exists
-    # os.makedirs(outerFolder, exist_ok=True)
+    # os.makedirs(output_folder, exist_ok=True)
     #
     # # Define sweeping parameters
-    # gain_range = [0.5, 1]  # Gain range in a.u.
-    # freq_steps = 30
-    # gain_steps = 10
+    # gain_range = [0.2, 0.5]  # Gain range in a.u.
+    # freq_steps = 20
+    # gain_steps = 8
     #
     # print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')
-    # # Select the reference frequency for the current qubit
+    # # Select the reference frequency for the current resonator
     # reference_frequency = res_freq_ge[QubitIndex]
-    # freq_range = [reference_frequency - 1, reference_frequency + 1]  # Frequency range in MHz
+    # print()
+    # freq_range = [reference_frequency - 0.5,reference_frequency + 0.5]# Frequency range in MHz
     #
     # experiment = copy.deepcopy(tuned_experiment)
-    # sweep = GainFrequencySweep(QubitIndex,list_of_all_qubits, experiment, optimal_lengths=optimal_lengths, output_folder=outerFolder)
+    # sweep = GainFrequencySweep(QubitIndex, number_of_qubits, list_of_all_qubits, experiment, optimal_lengths=optimal_lengths, output_folder=output_folder)
     # results = sweep.run_sweep(freq_range, gain_range, freq_steps, gain_steps)
     # results = np.array(results)
     #
@@ -247,9 +269,9 @@ for QubitIndex in Qs:
     # plt.ylabel("Readout frequency offset (MHz)")  # Frequency on y-axis
     # plt.title(f"Gain-Frequency Sweep for Qubit {QubitIndex + 1}")
     # # plt.show()
-    # # Save the plot
-    # file = f"{outerFolder}Gain_Freq_Sweep_Qubit_{QubitIndex + 1}_{timestamp}.png"
+    # file = f"{outerFolder}_Gain_Freq_Sweep_Qubit_{QubitIndex + 1}_{timestamp}.png"
     # plt.savefig(file, dpi=600, bbox_inches='tight')
     # plt.close()  # Close the plot to free up memory
+    # print('2d sweep plot saved at:',output_folder)
     # del results, sweep
     # print(f"Saved plot for Qubit {QubitIndex + 1} to {file}")

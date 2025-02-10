@@ -128,9 +128,12 @@ class PlotAllRR:
                 for dataset in range(len(load_data['Res'][q_key].get('Dates', [])[0])):
                     date = datetime.datetime.fromtimestamp(load_data['Res'][q_key].get('Dates', [])[0][dataset])   #single date per dataset
                     freq_pts = self.process_h5_data(load_data['Res'][q_key].get('freq_pts', [])[0][dataset].decode())   # comes in as an array but put into a byte string, need to convert to list
+                    #print(freq_pts)
+
                     freq_center = self.process_h5_data(load_data['Res'][q_key].get('freq_center', [])[0][dataset].decode()) # comes in as an array but put into a string, need to convert to list
                     freqs_found = self.string_to_float_list(load_data['Res'][q_key].get('Found Freqs', [])[0][dataset].decode()) #comes in as a list of floats in string format, need to convert
                     amps =  self.process_string_of_nested_lists(load_data['Res'][q_key].get('Amps', [])[0][dataset].decode())  #list of lists
+                    print('here: ', amps)
                     round_num = load_data['Res'][q_key].get('Round Num', [])[0][dataset] #already a float
                     batch_num = load_data['Res'][q_key].get('Batch Num', [])[0][dataset]
                     freq_pts_data = load_data['Res'][q_key].get('freq_pts', [])[0][dataset].decode()
@@ -146,9 +149,9 @@ class PlotAllRR:
                                            formatted_str)  # Fix malformed floating-point numbers (e.g., '5829.,' -> '5829.0')
                     # Convert to NumPy array
                     freq_points = np.array(eval(formatted_str))
-        
+                    #print('here: ', freq_points)
                     if len(freq_pts) > 0:
-                        res_class_instance = ResonanceSpectroscopy(q_key, self.outerFolder_save_plots, round_num, self.save_figs)
+                        res_class_instance = ResonanceSpectroscopy(q_key, self.number_of_qubits, self.list_of_all_qubits, self.outerFolder_save_plots, round_num, self.save_figs)
                         res_spec_cfg = ast.literal_eval(self.exp_config['res_spec'].decode())
                         res_class_instance.plot_results(freq_points, freq_center, amps, res_spec_cfg, self.figure_quality)
                         del res_class_instance
@@ -190,7 +193,7 @@ class PlotAllRR:
         
                     if len(I)>0:
         
-                        qspec_class_instance = QubitSpectroscopy(q_key, self.outerFolder_save_plots, round_num, self.signal, self.save_figs)
+                        qspec_class_instance = QubitSpectroscopy(q_key, self.list_of_all_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs)
                         q_spec_cfg = ast.literal_eval(self.exp_config['qubit_spec_ge'].decode())
                         #print('q_spec_cfg: ', q_spec_cfg)
                         qspec_class_instance.plot_results(I, Q, freqs, q_spec_cfg, self.figure_quality)
@@ -233,7 +236,7 @@ class PlotAllRR:
         
                     if len(I)>0:
         
-                        rabi_class_instance = AmplitudeRabiExperiment(q_key, self.outerFolder_save_plots, round_num, self.signal, self.save_figs)
+                        rabi_class_instance = AmplitudeRabiExperiment(q_key, self.list_of_all_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs)
                         rabi_cfg = ast.literal_eval(self.exp_config['power_rabi_ge'].decode())
                         I = np.asarray(I)
                         Q = np.asarray(Q)
@@ -285,7 +288,7 @@ class PlotAllRR:
                     Q_e = np.array(Q_e)
         
                     if len(Q_g)>0:
-                        ss_class_instance = SingleShot(q_key, self.outerFolder_save_plots, round_num, self.save_figs)
+                        ss_class_instance = SingleShot(q_key, self.list_of_all_qubits, self.outerFolder_save_plots, round_num, self.save_figs)
                         ss_cfg = ast.literal_eval(self.exp_config['Readout_Optimization'].decode())
                         ss_class_instance.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=True)
                         del ss_class_instance
@@ -328,7 +331,7 @@ class PlotAllRR:
                     batch_num = load_data['T1'][q_key].get('Batch Num', [])[0][dataset]
         
                     if len(I)>0:
-                        T1_class_instance = T1Measurement(q_key, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
+                        T1_class_instance = T1Measurement(q_key, self.list_of_all_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
                         T1_spec_cfg = ast.literal_eval(self.exp_config['T1_ge'].decode())
                         T1_class_instance.plot_results(I, Q, delay_times, date, T1_spec_cfg, self.figure_quality)
                         del T1_class_instance
@@ -370,7 +373,7 @@ class PlotAllRR:
                     batch_num = load_data['T2'][q_key].get('Batch Num', [])[0][dataset]
         
                     if len(I) > 0:
-                        T2_class_instance = T2RMeasurement(q_key, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
+                        T2_class_instance = T2RMeasurement(q_key, self.list_of_all_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
                         try:
                             fitted, t2r_est, t2r_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)
                         except Exception as e:
@@ -416,7 +419,7 @@ class PlotAllRR:
                     batch_num = load_data['T2E'][q_key].get('Batch Num', [])[0][dataset]
         
                     if len(I) > 0:
-                        T2E_class_instance = T2EMeasurement(q_key, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
+                        T2E_class_instance = T2EMeasurement(q_key, self.list_of_all_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
                         try:
                             fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
                         except Exception as e:

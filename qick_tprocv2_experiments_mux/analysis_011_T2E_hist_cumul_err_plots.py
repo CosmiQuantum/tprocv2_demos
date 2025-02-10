@@ -21,7 +21,7 @@ from scipy.optimize import curve_fit
 
 class T2eHistCumulErrPlots:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config):
+                 signal, run_name, exp_config, fridge, list_of_all_qubits):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -31,6 +31,8 @@ class T2eHistCumulErrPlots:
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
         self.exp_config = exp_config
+        self.fridge = fridge
+        self.list_of_all_qubits = list_of_all_qubits
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -116,8 +118,14 @@ class T2eHistCumulErrPlots:
         dates = {i: [] for i in range(self.number_of_qubits)}
 
         for folder_date in self.top_folder_dates:
-            outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
-            outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
+            if self.fridge.upper() == 'QUIET':
+                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
+                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
+            elif self.fridge.upper() == 'NEXUS':
+                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
+                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
+            else:
+                raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
             outerFolder_expt = outerFolder + "/Data_h5/T2E_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -127,6 +135,14 @@ class T2eHistCumulErrPlots:
                 H5_class_instance = Data_H5(h5_file)
                 load_data = H5_class_instance.load_from_h5(data_type='T2E', save_r=int(save_round))
 
+                # Define specific days to exclude
+                exclude_dates = {
+                    datetime.date(2025, 1, 26),  # power outage
+                    datetime.date(2025, 1, 29),  # HEMT Issues
+                    datetime.date(2025, 1, 30),  # HEMT Issues
+                    datetime.date(2025, 1, 31)  # Optimization Issues and non RR work in progress
+                }
+
                 for q_key in load_data['T2E']:
                     for dataset in range(len(load_data['T2E'][q_key].get('Dates', [])[0])):
                         if 'nan' in str(load_data['T2E'][q_key].get('Dates', [])[0][dataset]):
@@ -134,6 +150,12 @@ class T2eHistCumulErrPlots:
                         # T2E = load_data['T2E'][q_key].get('T2E', [])[0][dataset]
                         # errors = load_data['T2E'][q_key].get('Errors', [])[0][dataset]
                         date = datetime.datetime.fromtimestamp(load_data['T2E'][q_key].get('Dates', [])[0][dataset])
+
+                        # Skip processing if the date (as a date object) is in the excluded set
+                        if date.date() in exclude_dates:
+                            print(f"Skipping data for {date} (excluded date)")
+                            continue
+
                         I = self.process_h5_data(load_data['T2E'][q_key].get('I', [])[0][dataset].decode())
                         Q = self.process_h5_data(load_data['T2E'][q_key].get('Q', [])[0][dataset].decode())
                         delay_times = self.process_h5_data(load_data['T2E'][q_key].get('Delay Times', [])[0][dataset].decode())
@@ -142,7 +164,7 @@ class T2eHistCumulErrPlots:
                         batch_num = load_data['T2E'][q_key].get('Batch Num', [])[0][dataset]
 
                         if len(I) > 0:
-                            T2E_class_instance = T2EMeasurement(q_key, outerFolder_save_plots, round_num, self.signal, self.save_figs,
+                            T2E_class_instance = T2EMeasurement(q_key, self.list_of_all_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                                fit_data=True)
                             try:
                                 fitted, T2E, T2E_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
@@ -170,10 +192,18 @@ class T2eHistCumulErrPlots:
 
     def plot(self, dates, t2e_vals, t2e_errs, show_legends):
         #---------------------------------plot-----------------------------------------------------
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
-        self.create_folder_if_not_exists(analysis_folder)
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/T2E/"
-        self.create_folder_if_not_exists(analysis_folder)
+        if self.fridge.upper() == 'QUIET':
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/T2E/"
+            self.create_folder_if_not_exists(analysis_folder)
+        elif self.fridge.upper() == 'NEXUS':
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/T2E/"
+            self.create_folder_if_not_exists(analysis_folder)
+        else:
+            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
         axes = axes.flatten()
@@ -187,6 +217,19 @@ class T2eHistCumulErrPlots:
         std_values = {}
         colors = ['orange','blue','purple','green','brown','pink']
         for i, ax in enumerate(axes):
+
+            # Skip processing if data is completely missing (key does not exist)
+            if i not in dates or i not in t2e_vals or i not in t2e_errs:
+                print(f"  Skipping Qubit {i}: No data found.")
+                ax.set_visible(False)  # Hide subplot
+                continue
+
+            # Skip plotting if the lists are completely empty
+            if not t2e_vals[i] or not t2e_errs[i]:
+                print(f"  Skipping Qubit {i}: Empty data lists.")
+                ax.set_visible(False)  # Hide subplot
+                continue
+
             if len(dates[i])>1:
                 date_label = dates[i][0]
             else:
@@ -245,7 +288,7 @@ class T2eHistCumulErrPlots:
                 ax.tick_params(axis='both', which='major', labelsize=font)
 
         plt.tight_layout()
-        plt.savefig( analysis_folder + 'hists.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig( analysis_folder + 'hists.pdf', transparent=False, dpi=self.final_figure_quality)
 
         fig, ax = plt.subplots(1, 1, figsize=(12, 8))
         plt.title('Cumulative Distribution',fontsize = font)
@@ -273,7 +316,7 @@ class T2eHistCumulErrPlots:
         #ax.set_xlim(10**0, 10**3)
         #ax.set_ylim(10 ** -7, 10 ** 0) #to compare to johns plot, need to adjust a little
         plt.tight_layout()
-        plt.savefig(analysis_folder + 'cumulative.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'cumulative.pdf', transparent=False, dpi=self.final_figure_quality)
 
 
 
@@ -282,6 +325,17 @@ class T2eHistCumulErrPlots:
         axes = axes.flatten()
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
         for i, ax in enumerate(axes):
+            # Skip processing if data is completely missing (key does not exist)
+            if i not in dates or i not in t2e_vals or i not in t2e_errs:
+                print(f"  Skipping Qubit {i}: No data found.")
+                ax.set_visible(False)  # Hide subplot
+                continue
+
+            # Skip plotting if the lists are completely empty
+            if not t2e_vals[i] or not t2e_errs[i]:
+                print(f"  Skipping Qubit {i}: Empty data lists.")
+                ax.set_visible(False)  # Hide subplot
+                continue
 
             if len(dates[i])>1:
                 date_label = dates[i][0]
@@ -295,7 +349,7 @@ class T2eHistCumulErrPlots:
             ax.set_ylabel('Fit error (us)', fontsize = font)
             ax.tick_params(axis='both', which='major', labelsize=font)
         plt.tight_layout()
-        plt.savefig(analysis_folder + 'errs.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'errs.pdf', transparent=False, dpi=self.final_figure_quality)
         #plt.show()
 
         return std_values, mean_values

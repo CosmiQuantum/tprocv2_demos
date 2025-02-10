@@ -3,8 +3,10 @@ from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 from build_task import *
 from build_state import *
-from expt_config import *
-from system_config import *
+# from expt_config import *
+from expt_config_nexus import * # Change for quiet vs nexus
+# from system_config import *
+from system_config_nexus import * # Change for quiet vs nexus
 import copy
 import visdom
 from scipy import optimize
@@ -193,7 +195,7 @@ class T2RProgram(AveragerProgramV2):
 
 
 class T2RMeasurement:
-    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
+    def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
                  fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
                  multiply_qubit_reps_by = 0):
         self.QubitIndex = QubitIndex
@@ -205,10 +207,11 @@ class T2RMeasurement:
         self.exp_cfg = expt_cfg[self.expt_name]
         self.round_num = round_num
         self.signal = signal
+        self.number_of_qubits = number_of_qubits
         self.save_figs = save_figs
         self.live_plot = live_plot
         if experiment is not None:
-            self.q_config = all_qubit_state(self.experiment)
+            self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
             if increase_qubit_reps:

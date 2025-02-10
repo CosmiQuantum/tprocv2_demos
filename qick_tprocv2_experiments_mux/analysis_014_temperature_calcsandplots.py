@@ -28,8 +28,13 @@ figure_quality = 100 #ramp this up to like 500 for presentation plots
 
 
 class TempCalcAndPlots:
+<<<<<<< HEAD
+    def __init__(self, list_of_all_qubits, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+                 signal, run_name, exp_config, outerFolder, fridge):
+=======
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
                  signal, run_name, exp_config, outerFolder):
+>>>>>>> c6c3d49d9a4a90f020dc8c2e012826826b86457e
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -41,6 +46,7 @@ class TempCalcAndPlots:
         self.exp_config = exp_config
         self.outerFolder = outerFolder
         self.temperature_folder = os.path.join(self.outerFolder, "Temperatures")
+        self.fridge = fridge
 
         # Create the folder if it doesn't exist
         if not os.path.exists(self.temperature_folder):
@@ -101,6 +107,12 @@ class TempCalcAndPlots:
 
         return ground_state_population, excited_state_population_overlap, gmm, means, covariances, weights, crossing_point, ground_gaussian, excited_gaussian, ground_data, excited_data, iq_data
 
+
+    def create_folder_if_not_exists(self, folder):
+        """Creates a folder at the given path if it doesn't already exist."""
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
     def process_string_of_nested_lists(self, data):
         # Remove extra whitespace and non-numeric characters.
         data = re.sub(r'\s*\[(\s*.*?\s*)\]\s*', r'[\1]', data)
@@ -154,9 +166,14 @@ class TempCalcAndPlots:
         all_qubit_timestamps = {i: [] for i in range(self.number_of_qubits)}
         # ----------------------------------------------Load/Plot/Save QSpec------------------------------------
         for date in self.top_folder_dates:
-            print('Starting date: ', date)
-            outerFolder = "/data/QICK_data/6transmon_run5/" + date + "/"
-            outerFolder_save_plots = "/data/QICK_data/6transmon_run5/" + date + "_plots/"
+            if self.fridge.upper() == 'QUIET':
+                outerFolder = f"/data/QICK_data/{self.run_name}/" + date + "/"
+                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + date + "_plots/"
+            elif self.fridge.upper() == 'NEXUS':
+                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + date + "/"
+                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + date + "_plots/"
+            else:
+                raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
             # Update self.temperature_folder for the current date
             self.temperature_folder = os.path.join(outerFolder, "Temperatures")
@@ -175,6 +192,11 @@ class TempCalcAndPlots:
                 load_data = H5_class_instance.load_from_h5(data_type=  'QSpec', save_r = int(save_round))
 
                 populated_keys = []
+
+                # Define the time frame to exclude
+                exclude_start = datetime.datetime(2025, 1, 26)  # Start date (inclusive)
+                exclude_end = datetime.datetime(2025, 1, 27)  # End date (inclusive)
+
                 for q_key in load_data['QSpec']:
                     # Access 'Dates' for the current q_key
                     dates_list = load_data['QSpec'][q_key].get('Dates', [[]])
@@ -191,6 +213,12 @@ class TempCalcAndPlots:
                 for q_key in populated_keys:
                     for dataset in range(len(load_data['QSpec'][q_key].get('Dates', [])[0])):
                         date = datetime.datetime.fromtimestamp(load_data['QSpec'][q_key].get('Dates', [])[0][dataset])
+
+                        # Skip processing if the date falls within the excluded range
+                        if exclude_start <= date <= exclude_end:
+                            print(f"Skipping data for {date} (within excluded time frame)")
+                            continue
+
                         I = self.process_h5_data(load_data['QSpec'][q_key].get('I', [])[0][dataset].decode())
                         Q = self.process_h5_data(load_data['QSpec'][q_key].get('Q', [])[0][dataset].decode())
                         #I_fit = load_data['QSpec'][q_key].get('I Fit', [])[0][dataset]
@@ -201,7 +229,7 @@ class TempCalcAndPlots:
 
                         if len(I)>0:
 
-                            qspec_class_instance = QubitSpectroscopy(q_key, outerFolder_save_plots, round_num, signal, save_figs)
+                            qspec_class_instance = QubitSpectroscopy(q_key, self.list_of_all_qubits, outerFolder_save_plots, round_num, signal, save_figs)
                             q_spec_cfg = ast.literal_eval(self.exp_config['qubit_spec_ge'].decode())
                             largest_amp_curve_mean, I_fit, Q_fit = qspec_class_instance.get_results(I, Q, freqs)
 
@@ -223,7 +251,7 @@ class TempCalcAndPlots:
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 
             # Initialize a dictionary to store temperatures for each qubit
-            qubit_temperatures = {i: [] for i in range(6)}  # Assuming there are 6 qubits
+            qubit_temperatures = {i: [] for i in range(self.number_of_qubits)}  # Assuming there are 6 qubits
 
             for h5_file in h5_files:
                 #print(h5_file)
@@ -232,6 +260,11 @@ class TempCalcAndPlots:
                 load_data = H5_class_instance.load_from_h5(data_type=  'SS', save_r = int(save_round))
 
                 populated_keys = []
+
+                # Define the time frame to exclude
+                exclude_start = datetime.datetime(2025, 1, 26)  # Start date (inclusive)
+                exclude_end = datetime.datetime(2025, 1, 27)  # End date (inclusive)
+
                 for q_key in load_data['SS']:
                     # Access 'Dates' for the current q_key
                     dates_list = load_data['SS'][q_key].get('Dates', [[]])
@@ -254,6 +287,12 @@ class TempCalcAndPlots:
                     for dataset in range(len(load_data['SS'][q_key].get('Dates', [])[0])):
                         timestamp = load_data['SS'][q_key].get('Dates', [])[0][dataset]
                         date= datetime.datetime.fromtimestamp(load_data['SS'][q_key].get('Dates', [])[0][dataset])
+
+                        # Skip processing if the date falls within the excluded range
+                        if exclude_start <= date <= exclude_end:
+                            print(f"Skipping data for {date} (within excluded time frame)")
+                            continue
+
                         angle = load_data['SS'][q_key].get('Angle', [])[0][dataset]
                         fidelity = load_data['SS'][q_key].get('Fidelity', [])[0][dataset]
                         I_g = self.process_h5_data(load_data['SS'][q_key].get('I_g', [])[0][dataset].decode())
@@ -269,7 +308,7 @@ class TempCalcAndPlots:
                         Q_e = np.array(Q_e)
 
                         if len(Q_g)>0:
-                            ss_class_instance = SingleShot(q_key, outerFolder_save_plots, round_num, save_figs)
+                            ss_class_instance = SingleShot(q_key, self.list_of_all_qubits, outerFolder_save_plots, round_num, save_figs)
                             ss_cfg = ast.literal_eval(self.exp_config['Readout_Optimization'].decode())
                             #ss_class_instance.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=True)
                             fid, threshold, rotation_angle, ig_new, ie_new = ss_class_instance.hist_ssf(
@@ -279,12 +318,24 @@ class TempCalcAndPlots:
                             base_h5_file = "_".join(h5_file.split('/')[-1].split('_')[:2])  # Extract up to 2024-12-11_11-45-27
                             #print(f"Base H5 File for Matching: {base_h5_file}")
 
+                            # Convert current file's timestamp to a datetime object
+                            current_timestamp = datetime.datetime.strptime(base_h5_file, "%Y-%m-%d_%H-%M-%S")
+
+                            #Old way (matched time stamps in the file names down to the second)
+                            # qubit_frequency = [
+                            #     entry['largest_amp_curve_mean']
+                            #     for entry in qubit_frequencies
+                            #     if
+                            #     "_".join(entry['h5_file'].split('/')[-1].split('_')[:2]) == base_h5_file and entry['q_key'] == q_key]
+
+                            #new way (matches time stamps in the file names within 10 seconds of eachother)
                             qubit_frequency = [
                                 entry['largest_amp_curve_mean']
                                 for entry in qubit_frequencies
-                                if
-                                "_".join(entry['h5_file'].split('/')[-1].split('_')[:2]) == base_h5_file and entry['q_key'] == q_key
-                            ]
+                                if entry['q_key'] == q_key and abs(
+                                    (datetime.datetime.strptime(
+                                        "_".join(entry['h5_file'].split('/')[-1].split('_')[:2]), "%Y-%m-%d_%H-%M-%S") - current_timestamp).total_seconds()) <= 10]
+
                             if len(qubit_frequency) == 0:
                                 print(f"No match found for h5_file: {base_h5_file}, q_key: {q_key}. Skipping.")
                                 continue
@@ -310,7 +361,7 @@ class TempCalcAndPlots:
                                 # qubit_temperatures[q_key].append((temperature_mk, timestamp))#save temps for each qubit
 
                                 #-----------------PLOTS TO CHECK FITS AND THRESHOLDS---------------
-                                # # Plotting double gaussian distributions and fitting
+                                # Plotting double gaussian distributions and fitting
                                 # xlims = [np.min(ig_new), np.max(ig_new)]
                                 # plt.figure(figsize=(10, 6))
                                 #
@@ -379,7 +430,7 @@ class TempCalcAndPlots:
                                 #
                                 # # Save the plot to the Temperatures folder
                                 # plot_filename = os.path.join(qubit_folder, f"Qubit{q_key + 1}_Fidelityhist_gaussianfit_Dataset{dataset}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
-                                # #plt.savefig(plot_filename)
+                                # plt.savefig(plot_filename)
                                 # #print(f"Plot saved to {plot_filename}")
                                 # plt.close()
                                 #
@@ -412,25 +463,25 @@ class TempCalcAndPlots:
 
 
             # After the loop is complete, create the subplots for temperature histograms
-            #plt.figure(figsize=(15, 10))
-            colors = ['orange','blue','purple','green','brown','pink']
-            for qubit_id, temperatures in qubit_temperatures.items():
-                temperatures = [temp[0] for temp in qubit_temperatures[qubit_id]]
-                # plt.subplot(2, 3, qubit_id + 1)
-                # plt.hist(temperatures, bins=20, color=colors[qubit_id], alpha=0.7, edgecolor='black')
-                # plt.title(f"Qubit {qubit_id + 1} Temperature Distribution")
-                # plt.xlabel("Temperature (mK)")
-                # plt.ylabel("Frequency")
-                # plt.grid(alpha=0.3)
-
-            # Adjust layout and save the figure
-            #plt.tight_layout()
-            #hist_plot_filename = os.path.join(temp_histograms_folder, f"Temperature_Distributions_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
-            #plt.savefig(hist_plot_filename)
-            #print(f"Temperature histogram saved to {hist_plot_filename}")
-
-            # Cleanup
-            plt.close()
+            # plt.figure(figsize=(15, 10))
+            # colors = ['orange','blue','purple','green','brown','pink']
+            # for qubit_id, temperatures in qubit_temperatures.items():
+            #     temperatures = [temp[0] for temp in qubit_temperatures[qubit_id]]
+            #     plt.subplot(2, 3, qubit_id + 1)
+            #     plt.hist(temperatures, bins=20, color=colors[qubit_id], alpha=0.7, edgecolor='black')
+            #     plt.title(f"Qubit {qubit_id + 1} Temperature Distribution")
+            #     plt.xlabel("Temperature (mK)")
+            #     plt.ylabel("Frequency")
+            #     plt.grid(alpha=0.3)
+            #
+            # #Adjust layout and save the figure
+            # plt.tight_layout()
+            # hist_plot_filename = os.path.join(temp_histograms_folder, f"Temperature_Distributions_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
+            # plt.savefig(hist_plot_filename)
+            # print(f"Temperature histogram saved to {hist_plot_filename}")
+            #
+            # #Cleanup
+            # plt.close()
 
             #------------------------------------------Scatter Plots---------------------------------------------------
             # Create a new folder to store temperature scatter plots
@@ -476,13 +527,18 @@ class TempCalcAndPlots:
                     all_qubit_timestamps[q_id].append(datetime.datetime.fromtimestamp(ts))
 
         # ---------------------------------- New Section: Combined Scatter Plot for All Dates ----------------------------------
-        # Create the folder for the combined figure
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
-        if not os.path.exists(analysis_folder):
-            os.makedirs(analysis_folder)
-        features_folder = os.path.join(analysis_folder, "features_vs_time")
-        if not os.path.exists(features_folder):
-            os.makedirs(features_folder)
+        if self.fridge.upper() == 'QUIET':
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
+        elif self.fridge.upper() == 'NEXUS':
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
+        else:
+            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         # Create a single figure with subplots for each qubit, plotting all collected data from all dates
         plt.figure(figsize=(15, 10))
@@ -505,20 +561,57 @@ class TempCalcAndPlots:
                 plt.xticks(rotation=45)
 
         plt.tight_layout()
-        all_scatter_plot_filename = os.path.join(features_folder,
-                                                 f"AllQubits_Temperature_Over_All_Dates_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
-        #plt.savefig(all_scatter_plot_filename)
+        plt.savefig(analysis_folder + f"AllQubits_Temperature_Over_All_Dates_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png", transparent=False)
         plt.close()
 
-        print(f"All-dates temperature scatter plot saved to {all_scatter_plot_filename}")
+        print(f"All-dates temperature scatter plot saved to {analysis_folder}")
+
+        # ---------------------------------- Histograms of All Qubit Temperatures, over all dates----------------------------------
+
+        if self.fridge.upper() == 'QUIET':
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/Temperatures/"
+            self.create_folder_if_not_exists(analysis_folder)
+        elif self.fridge.upper() == 'NEXUS':
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/Temperatures/"
+            self.create_folder_if_not_exists(analysis_folder)
+        else:
+            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+
+        plt.figure(figsize=(15, 10))
+
+        for qubit_id in range(self.number_of_qubits):
+            if all_qubit_temperatures[qubit_id]:  # Check if we have any data for this qubit
+                ax = plt.subplot(2, 3, qubit_id + 1)
+                ax.hist(all_qubit_temperatures[qubit_id], bins=20, color=colors[qubit_id], alpha=0.7, edgecolor='black')
+                ax.set_title(f"Qubit {qubit_id + 1} Temperature Distribution")
+                ax.set_xlabel("Temperature (mK)")
+                ax.set_ylabel("Frequency")
+                ax.grid(alpha=0.3)
+
+        plt.tight_layout()
+        #plt.savefig(analysis_folder + f"AllQubits_Temps_Hist_alldates_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png",transparent=False)
+        plt.close()
+
+        #print(f"All-dates temperature histogram saved to {analysis_folder}")
+
         return all_qubit_temperatures, all_qubit_timestamps
 
 
     def get_temps(self):
         # ----------------------------------------------Load/Plot/Save QSpec------------------------------------
         for date in self.top_folder_dates:
-            outerFolder = "/data/QICK_data/6transmon_run5/" + date + "/"
-            outerFolder_save_plots = "/data/QICK_data/6transmon_run5/" + date + "_plots/"
+            if self.fridge.upper() == 'QUIET':
+                outerFolder = f"/data/QICK_data/{self.run_name}/" + date + "/"
+                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + date + "_plots/"
+            elif self.fridge.upper() == 'NEXUS':
+                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + date + "/"
+                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + date + "_plots/"
+            else:
+                raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
             self.temperature_folder = os.path.join(outerFolder, "Temperatures")
             if not os.path.exists(self.temperature_folder):
@@ -536,6 +629,11 @@ class TempCalcAndPlots:
                 load_data = H5_class_instance.load_from_h5(data_type=  'QSpec', save_r = int(save_round))
 
                 populated_keys = []
+
+                # Define the time frame to exclude
+                exclude_start = datetime.datetime(2025, 1, 26)  # Start date (inclusive)
+                exclude_end = datetime.datetime(2025, 1, 27)  # End date (inclusive)
+
                 for q_key in load_data['QSpec']:
                     # Access 'Dates' for the current q_key
                     dates_list = load_data['QSpec'][q_key].get('Dates', [[]])
@@ -552,6 +650,12 @@ class TempCalcAndPlots:
                 for q_key in populated_keys:
                     for dataset in range(len(load_data['QSpec'][q_key].get('Dates', [])[0])):
                         date = datetime.datetime.fromtimestamp(load_data['QSpec'][q_key].get('Dates', [])[0][dataset])
+
+                        # Skip processing if the date falls within the excluded range
+                        if exclude_start <= date <= exclude_end:
+                            print(f"Skipping data for {date} (within excluded time frame)")
+                            continue
+
                         I = self.process_h5_data(load_data['QSpec'][q_key].get('I', [])[0][dataset].decode())
                         Q = self.process_h5_data(load_data['QSpec'][q_key].get('Q', [])[0][dataset].decode())
                         #I_fit = load_data['QSpec'][q_key].get('I Fit', [])[0][dataset]
@@ -562,7 +666,7 @@ class TempCalcAndPlots:
 
                         if len(I)>0:
 
-                            qspec_class_instance = QubitSpectroscopy(q_key, outerFolder_save_plots, round_num, signal, save_figs)
+                            qspec_class_instance = QubitSpectroscopy(q_key, self.list_of_all_qubits, outerFolder_save_plots, round_num, signal, save_figs)
                             q_spec_cfg = ast.literal_eval(self.exp_config['qubit_spec_ge'].decode())
                             largest_amp_curve_mean, I_fit, Q_fit = qspec_class_instance.get_results(I, Q, freqs)
 
@@ -584,8 +688,8 @@ class TempCalcAndPlots:
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 
             # Initialize a dictionary to store temperatures for each qubit
-            qubit_temperatures = {i: [] for i in range(6)}  # Assuming there are 6 qubits
-            qubit_temp_dates = {i: [] for i in range(6)}  # Assuming there are 6 qubits
+            qubit_temperatures = {i: [] for i in range(self.number_of_qubits)}  # Assuming there are 6 qubits
+            qubit_temp_dates = {i: [] for i in range(self.number_of_qubits)}  # Assuming there are 6 qubits
 
             for h5_file in h5_files:
                 #print(h5_file)
@@ -594,6 +698,11 @@ class TempCalcAndPlots:
                 load_data = H5_class_instance.load_from_h5(data_type=  'SS', save_r = int(save_round))
 
                 populated_keys = []
+
+                # Define the time frame to exclude
+                exclude_start = datetime.datetime(2025, 1, 26)  # Start date (inclusive)
+                exclude_end = datetime.datetime(2025, 1, 27)  # End date (inclusive)
+
                 for q_key in load_data['SS']:
                     # Access 'Dates' for the current q_key
                     dates_list = load_data['SS'][q_key].get('Dates', [[]])
@@ -615,6 +724,12 @@ class TempCalcAndPlots:
                     for dataset in range(len(load_data['SS'][q_key].get('Dates', [])[0])):
                         timestamp = load_data['SS'][q_key].get('Dates', [])[0][dataset]
                         date= datetime.datetime.fromtimestamp(load_data['SS'][q_key].get('Dates', [])[0][dataset])
+
+                        # Skip processing if the date falls within the excluded range
+                        if exclude_start <= date <= exclude_end:
+                            print(f"Skipping data for {date} (within excluded time frame)")
+                            continue
+
                         angle = load_data['SS'][q_key].get('Angle', [])[0][dataset]
                         fidelity = load_data['SS'][q_key].get('Fidelity', [])[0][dataset]
                         I_g = self.process_h5_data(load_data['SS'][q_key].get('I_g', [])[0][dataset].decode())
@@ -631,7 +746,7 @@ class TempCalcAndPlots:
 
                         if len(Q_g)>0:
 
-                            ss_class_instance = SingleShot(q_key, outerFolder_save_plots, round_num, save_figs)
+                            ss_class_instance = SingleShot(q_key, self.list_of_all_qubits, outerFolder_save_plots, round_num, save_figs)
                             ss_cfg = ast.literal_eval(self.exp_config['Readout_Optimization'].decode())
                             #ss_class_instance.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=True)
                             fid, threshold, rotation_angle, ig_new, ie_new = ss_class_instance.hist_ssf(
@@ -666,8 +781,14 @@ class TempCalcAndPlots:
     def get_ssf(self):
         # ----------------------------------------------Load/Plot/Save QSpec------------------------------------
         for date in self.top_folder_dates:
-            outerFolder = "/data/QICK_data/6transmon_run5/" + date + "/"
-            outerFolder_save_plots = "/data/QICK_data/6transmon_run5/" + date + "_plots/"
+            if self.fridge.upper() == 'QUIET':
+                outerFolder = f"/data/QICK_data/{self.run_name}/" + date + "/"
+                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + date + "_plots/"
+            elif self.fridge.upper() == 'NEXUS':
+                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + date + "/"
+                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + date + "_plots/"
+            else:
+                raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
             self.temperature_folder = os.path.join(outerFolder, "Temperatures")
             if not os.path.exists(self.temperature_folder):
@@ -685,6 +806,10 @@ class TempCalcAndPlots:
                 load_data = H5_class_instance.load_from_h5(data_type=  'QSpec', save_r = int(save_round))
 
                 populated_keys = []
+                # Define the time frame to exclude
+                exclude_start = datetime.datetime(2025, 1, 26)  # Start date (inclusive)
+                exclude_end = datetime.datetime(2025, 1, 27)  # End date (inclusive)
+
                 for q_key in load_data['QSpec']:
                     # Access 'Dates' for the current q_key
                     dates_list = load_data['QSpec'][q_key].get('Dates', [[]])
@@ -700,6 +825,12 @@ class TempCalcAndPlots:
                 for q_key in populated_keys:
                     for dataset in range(len(load_data['QSpec'][q_key].get('Dates', [])[0])):
                         date = datetime.datetime.fromtimestamp(load_data['QSpec'][q_key].get('Dates', [])[0][dataset])
+
+                        # Skip processing if the date falls within the excluded range
+                        if exclude_start <= date <= exclude_end:
+                            print(f"Skipping data for {date} (within excluded time frame)")
+                            continue
+
                         I = self.process_h5_data(load_data['QSpec'][q_key].get('I', [])[0][dataset].decode())
                         Q = self.process_h5_data(load_data['QSpec'][q_key].get('Q', [])[0][dataset].decode())
                         #I_fit = load_data['QSpec'][q_key].get('I Fit', [])[0][dataset]
@@ -710,7 +841,7 @@ class TempCalcAndPlots:
 
                         if len(I)>0:
 
-                            qspec_class_instance = QubitSpectroscopy(q_key, outerFolder_save_plots, round_num, signal, save_figs)
+                            qspec_class_instance = QubitSpectroscopy(q_key, self.list_of_all_qubits, outerFolder_save_plots, round_num, signal, save_figs)
                             q_spec_cfg = ast.literal_eval(self.exp_config['qubit_spec_ge'].decode())
                             largest_amp_curve_mean, I_fit, Q_fit = qspec_class_instance.get_results(I, Q, freqs)
 
@@ -730,8 +861,8 @@ class TempCalcAndPlots:
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 
             # Initialize a dictionary to store temperatures for each qubit
-            qubit_ssf = {i: [] for i in range(6)}  # Assuming there are 6 qubits
-            qubit_ssf_dates = {i: [] for i in range(6)}  # Assuming there are 6 qubits
+            qubit_ssf = {i: [] for i in range(self.number_of_qubits)}  # Assuming there are 6 qubits
+            qubit_ssf_dates = {i: [] for i in range(self.number_of_qubits)}  # Assuming there are 6 qubits
 
             for h5_file in h5_files:
                 #print(h5_file)
@@ -740,6 +871,11 @@ class TempCalcAndPlots:
                 load_data = H5_class_instance.load_from_h5(data_type=  'SS', save_r = int(save_round))
 
                 populated_keys = []
+
+                # Define the time frame to exclude
+                exclude_start = datetime.datetime(2025, 1, 26)  # Start date (inclusive)
+                exclude_end = datetime.datetime(2025, 1, 27)  # End date (inclusive)
+
                 for q_key in load_data['SS']:
                     # Access 'Dates' for the current q_key
                     dates_list = load_data['SS'][q_key].get('Dates', [[]])
@@ -761,6 +897,12 @@ class TempCalcAndPlots:
                     for dataset in range(len(load_data['SS'][q_key].get('Dates', [])[0])):
                         timestamp = load_data['SS'][q_key].get('Dates', [])[0][dataset]
                         date= datetime.datetime.fromtimestamp(load_data['SS'][q_key].get('Dates', [])[0][dataset])
+
+                        # Skip processing if the date falls within the excluded range
+                        if exclude_start <= date <= exclude_end:
+                            print(f"Skipping data for {date} (within excluded time frame)")
+                            continue
+
                         angle = load_data['SS'][q_key].get('Angle', [])[0][dataset]
                         fidelity = load_data['SS'][q_key].get('Fidelity', [])[0][dataset]
                         I_g = self.process_h5_data(load_data['SS'][q_key].get('I_g', [])[0][dataset].decode())
@@ -777,7 +919,7 @@ class TempCalcAndPlots:
 
                         if len(Q_g)>0:
 
-                            ss_class_instance = SingleShot(q_key, outerFolder_save_plots, round_num, save_figs)
+                            ss_class_instance = SingleShot(q_key, self.list_of_all_qubits, outerFolder_save_plots, round_num, save_figs)
                             ss_cfg = ast.literal_eval(self.exp_config['Readout_Optimization'].decode())
                             #ss_class_instance.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=True)
                             fid, threshold, rotation_angle, ig_new, ie_new = ss_class_instance.hist_ssf(
@@ -807,9 +949,9 @@ class TempCalcAndPlots:
         from bisect import bisect_right
 
         # Create a new dictionary to store filtered pi_amps
-        filtered_pi_amps = {i: [] for i in range(6)}
+        filtered_pi_amps = {i: [] for i in range(self.number_of_qubits)}
 
-        for i in range(6):
+        for i in range(self.number_of_qubits):
             # Extract corresponding lists
             qt_dates = qubit_temp_dates[i]
             from datetime import datetime

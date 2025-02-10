@@ -25,14 +25,14 @@ expt_cfg = {
         "list_of_all_qubits": list_of_all_qubits,
     },
 
-    # "res_spec": { # Works for punchout only 1/23 to do
+    # "res_spec": { # Works for PUNCHOUT only 1/23 to do
     #     "reps": 500,
     #     "rounds": 1,
     #     "start": list(VNA_res - 1),  # [MHz]
     #     "stop": list(VNA_res + 1),
     #     "steps": 101,
     #     "relax_delay": 20,  # [us]
-     #    "list_of_all_qubits": list_of_all_qubits,
+    #     "list_of_all_qubits": list_of_all_qubits,
     # },
 
     "qubit_spec_ge": {
@@ -48,9 +48,9 @@ expt_cfg = {
     "bias_qubit_spec_ge": {
         "reps": 700, #100
         "rounds": 1, #10
-        "start": list(VNA_qubit-70), # [MHz]
-        "stop":  list(VNA_qubit+70), # [MHz]
-        "steps": 300,
+        "start": list(VNA_qubit-7), # [MHz]
+        "stop":  list(VNA_qubit), # [MHz]
+        "steps": 400,
         "relax_delay": 0.5, # [us]
         "list_of_all_qubits": list_of_all_qubits,
     },
@@ -112,6 +112,20 @@ expt_cfg = {
         "wait_time": 0.0, # [us]
         "list_of_all_qubits": list_of_all_qubits,
     },
+
+    "parity_ge":{
+        "steps": 10000,
+        "relax_delay": 500, # [us]
+        "wait_time": (np.pi /2)/(2*np.pi*1.199), # [us]
+    },
+
+    "tomography_ge":{
+        "steps": 1,
+        "reps": 300,
+        "rounds": 1,
+        "relax_delay": 500, # [us]
+        "wait_time": 1/(4*(2.5)), # [us]
+    }
 #
 
 #
