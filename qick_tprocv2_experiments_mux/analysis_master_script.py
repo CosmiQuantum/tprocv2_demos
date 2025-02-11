@@ -53,7 +53,7 @@ sys_config, exp_config = config_loader.run()
 # res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
 #                                        save_figs, fit_saved, signal, run_name, exp_config)
 # date_times_res_spec, res_freqs = res_spec_vs_time.run()
-
+#
 q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
                                   save_figs, fit_saved, signal, run_name, exp_config, fridge)
 date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run()
@@ -64,15 +64,15 @@ date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run()
 #
 # t1_vs_time = T1VsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, exp_config, fridge)
-# date_times_t1, t1_vals = t1_vs_time.run()
+# date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True)
 #
 # t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, exp_config)
-# date_times_t2r, t2r_vals = t2r_vs_time.run()
+# date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True)
 #
 # t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, exp_config, fridge)
-# date_times_t2e, t2e_vals = t2e_vs_time.run()
+# date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
 
 # ####################################### 02: Plot All Individual Data Plots ###########################################
 # outerFolder_save_plots = f"/data/QICK_data/{run_name}/" + date + "_plots/"
@@ -84,9 +84,10 @@ date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run()
 # ########################################## 03: Resonator Freqs vs Time Plots ###########################################
 # res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
 #
-# ############################################ 04: Qubit Freqs vs Time Plots #############################################
-# q_spec_vs_time.plot(date_times_q_spec, q_freqs, show_legends)
-#
+############################################ 04: Qubit Freqs vs Time Plots #############################################
+#q_spec_vs_time.plot_without_errs(date_times_q_spec, q_freqs,show_legends)
+q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends)
+
 # ############################################## 05: Pi Amp vs Time Plots ###############################################
 # pi_amps_vs_time.plot(date_times_pi_amps, pi_amps, show_legends)
 
@@ -116,14 +117,17 @@ date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run()
 # qtemp_vs_time.plot(qubit_temp_dates, qubit_temperatures, show_legends)
 #
 # ################################################# 06: T1 vs Time Plots #################################################
-# t1_vs_time.plot(date_times_t1, t1_vals, show_legends)
+# #t1_vs_time.plot_without_errs(date_times_t1, t1_vals, show_legends)
+# t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends)
 #
 # ################################################# 07: T2R vs Time Plots ################################################
-# t2r_vs_time.plot(date_times_t2r, t2r_vals, show_legends)
+# #t2r_vs_time.plot_without_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends)
+# t2r_vs_time.plot_with_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends)
 #
 # ################################################# 08: T2E vs Time Plots ################################################
-# t2e_vs_time.plot(date_times_t2e, t2e_vals, show_legends)
-#
+# #t2e_vs_time.plot_without_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
+# t2e_vs_time.plot_with_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
+
 # ############################################## 09: T1 hist/cumul/err Plots #############################################
 # t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
 #                                             save_figs, fit_saved, signal, run_name, run_notes, run_number, exp_config)
@@ -282,8 +286,8 @@ date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run()
 # stats.plot_welch_spectral_density(date_times_t2e, t2e_vals, show_legends, label='T2E')
 
 #################################################### 19: Extra #########################################################
-plotter = PlotMetricDependencies(run_name, number_of_qubits, final_figure_quality, fridge)
-plotter.plot_shared_datetimes(date_times_q_spec, q_freqs, qspec_fit_err, metric_1_label = 'Q Freq (MHz)',
-             metric_2_label = 'Q Freq Fit Err (MHz)')
+# plotter = PlotMetricDependencies(run_name, number_of_qubits, final_figure_quality, fridge)
+# plotter.plot_shared_datetimes(date_times_q_spec, q_freqs, qspec_fit_err, metric_1_label = 'Q Freq (MHz)',
+#              metric_2_label = 'Q Freq Fit Err (MHz)')
 # plotter.scatter_plot_two_y_axis(date_times_q_spec, q_freqs, date_times_q_spec, qspec_fit_err, metric_1_label = 'Q Freq (MHz)',
 #              metric_2_label = 'Q Freq Fit Err (MHz)')

@@ -36,6 +36,11 @@ class QubitFreqsVsTime:
         self.exp_config = exp_config
         self.fridge = fridge
 
+        qspec_ge_str = self.exp_config['qubit_spec_ge'].decode('utf-8')
+        qspec_ge_dict = ast.literal_eval(qspec_ge_str)
+        self.reps = qspec_ge_dict['reps']
+        self.rounds = qspec_ge_dict['rounds']
+
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
         unix_timestamp = int(dt.timestamp())
@@ -182,8 +187,8 @@ class QubitFreqsVsTime:
                 del H5_class_instance
         return date_times, qubit_frequencies, qspec_fit_errs
 
-    def plot(self,date_times, qubit_frequencies, show_legends):
-        #---------------------------------plot-----------------------------------------------------
+    def plot_without_errs(self, date_times, qubit_frequencies, show_legends):
+        # ---------------------------------plot-----------------------------------------------------
         if self.fridge.upper() == 'QUIET':
             analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
             self.create_folder_if_not_exists(analysis_folder)
@@ -210,19 +215,19 @@ class QubitFreqsVsTime:
         # -----------------------------------------------------------------
 
         font = 14
-        titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
-        colors = ['orange','blue','purple','green','brown','pink']
+        titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
-        plt.title('Qubit Frequencies vs Time',fontsize = font)
+        plt.title('Qubit Frequencies vs Time', fontsize=font)
         axes = axes.flatten()
 
         from datetime import datetime
         for i, ax in enumerate(axes):
-            if i >= self.number_of_qubits: # If we have fewer qubits than subplots, stop plotting and hide the rest
+            if i >= self.number_of_qubits:  # If we have fewer qubits than subplots, stop plotting and hide the rest
                 ax.set_visible(False)
                 continue
 
-            ax.set_title(titles[i], fontsize = font)
+            ax.set_title(titles[i], fontsize=font)
 
             x = date_times[i]
             y = qubit_frequencies[i]
@@ -262,6 +267,101 @@ class QubitFreqsVsTime:
             ax.ticklabel_format(style="plain", axis="y")
             ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.2f}"))  # 2 decimal places
 
+            if show_legends:
+                ax.legend(edgecolor='black')
+            ax.set_xlabel('Time (Days)', fontsize=font - 2)
+            ax.set_ylabel('Qubit Frequency (MHz)', fontsize=font - 2)
+            ax.tick_params(axis='both', which='major', labelsize=8)
+
+        plt.tight_layout()
+        plt.savefig(analysis_folder + 'Q_Freqs.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.close()
+
+    def plot_with_errs(self, date_times, qubit_frequencies, qspec_fit_err, show_legends):
+        #---------------------------------plot-----------------------------------------------------
+        if self.fridge.upper() == 'QUIET':
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
+        elif self.fridge.upper() == 'NEXUS':
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
+        else:
+            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+
+        # ----------------To Plot a specific timeframe------------------
+        from datetime import datetime
+        year = 2025
+        month = 1
+        day1 = 24  # Start date
+        day2 = 25  # End date
+        hour_start = 0  # Start hour
+        hour_end = 12  # End hour
+        start_time = datetime(year, month, day1, hour_start, 0)
+        end_time = datetime(year, month, day2, hour_end, 0)
+        # -----------------------------------------------------------------
+
+        font = 14
+        titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+        plt.suptitle('Qubit Frequencies vs Time', fontsize=font)
+        axes = axes.flatten()
+
+        from datetime import datetime  # (if not already imported)
+        # Loop over each qubit’s data.
+        for i, ax in enumerate(axes):
+            if i >= self.number_of_qubits:  # Hide extra subplots.
+                ax.set_visible(False)
+                continue
+
+            ax.set_title(titles[i], fontsize=font)
+
+            x = date_times[i]       # list of date strings
+            y = qubit_frequencies[i]
+            err = qspec_fit_err[i]  # corresponding error bars
+
+            # Convert date strings to datetime objects.
+            datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
+
+            # Combine datetime objects, frequencies, and error values, then sort in ascending order.
+            combined = list(zip(datetime_objects, y, err))
+            combined.sort(key=lambda tup: tup[0])  # sort by time (oldest first)
+
+            if len(combined) == 0:
+                # Skip if there is no data for this qubit.
+                ax.set_visible(False)
+                continue
+
+            # Unpack the sorted data.
+            sorted_x, sorted_y, sorted_err = zip(*combined)
+            sorted_x = np.array(sorted_x)
+            #print([er/np.sqrt((float(self.reps)*float(self.rounds))) for er in sorted_err])
+            ax.errorbar(
+                sorted_x, sorted_y, yerr=sorted_err,
+                fmt='none',
+                ecolor=colors[i],
+                elinewidth=1,
+                capsize=0
+            )
+            ax.scatter(
+                sorted_x, sorted_y,
+                s=10,
+                color=colors[i],
+                alpha=0.5
+            )
+
+            num_points = 5
+            indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
+            ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
+            ax.tick_params(axis='x', rotation=45)
+
+            ax.ticklabel_format(style="plain", axis="y")
+            ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.2f}"))
 
             if show_legends:
                 ax.legend(edgecolor='black')
@@ -269,8 +369,7 @@ class QubitFreqsVsTime:
             ax.set_ylabel('Qubit Frequency (MHz)', fontsize=font-2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
-
         plt.tight_layout()
         plt.savefig(analysis_folder + 'Q_Freqs.pdf', transparent=True, dpi=self.final_figure_quality)
 
-        #plt.show()
+
