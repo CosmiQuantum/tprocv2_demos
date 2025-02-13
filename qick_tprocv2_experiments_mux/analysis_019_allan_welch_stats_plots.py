@@ -18,7 +18,7 @@ import datetime
 import ast
 import os
 import matplotlib.pyplot as plt
-import allantools
+# import allantools # commented out, was getting error ModuleNotFoundError: No module named 'allantools'
 from scipy.signal import welch
 from scipy.stats import norm
 from scipy.optimize import curve_fit

@@ -165,7 +165,7 @@ class T1HistCumulErrPlots:
                         batch_num = load_data['T1'][q_key].get('Batch Num', [])[0][dataset]
 
                         if len(I)>0:
-                            T1_class_instance = T1Measurement(q_key, self. list_of_all_qubits, outerFolder_save_plots, round_num, self.signal,
+                            T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.list_of_all_qubits, outerFolder_save_plots, round_num, self.signal,
                                                               self.save_figs, fit_data = True)
                             T1_spec_cfg = ast.literal_eval(self.exp_config['T1_ge'].decode())
                             try:
@@ -238,7 +238,8 @@ class T1HistCumulErrPlots:
 
             if len(t1_vals[i]) >1:
                 optimal_bin_num = self.optimal_bins(t1_vals[i])
-
+                # print(optimal_bin_num)
+                optimal_bin_num = 50
                 # Fit a Gaussian to the raw data instead of the histogram
                 # get the mean and standard deviation of the data
                 mu_1, std_1 = norm.fit(t1_vals[i])

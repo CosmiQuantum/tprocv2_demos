@@ -169,7 +169,7 @@ class T2eVsTime:
                         batch_num = load_data['T2E'][q_key].get('Batch Num', [])[0][dataset]
 
                         if len(I) > 0:
-                            T2E_class_instance = T2EMeasurement(q_key, self.list_of_all_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
+                            T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits, self.list_of_all_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                                fit_data=True)
                             try:
                                 fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
@@ -206,15 +206,15 @@ class T2eVsTime:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         # ----------------To Plot a specific timeframe------------------
-        from datetime import datetime
-        year = 2025
-        month = 1
-        day1 = 24  # Start date
-        day2 = 25  # End date
-        hour_start = 0  # Start hour
-        hour_end = 12  # End hour
-        start_time = datetime(year, month, day1, hour_start, 0)
-        end_time = datetime(year, month, day2, hour_end, 0)
+        # from datetime import datetime
+        # year = 2025
+        # month = 1
+        # day1 = 24  # Start date
+        # day2 = 25  # End date
+        # hour_start = 0  # Start hour
+        # hour_end = 12  # End hour
+        # start_time = datetime(year, month, day1, hour_start, 0)
+        # end_time = datetime(year, month, day2, hour_end, 0)
         # -----------------------------------------------------------------
 
         font = 14
@@ -253,7 +253,7 @@ class T2eVsTime:
             ax.scatter(sorted_x, sorted_y, color=colors[i])
 
             # Set x-axis limits for the specific timeframe
-            ax.set_xlim(start_time, end_time)
+            # ax.set_xlim(start_time, end_time)
 
             sorted_x = np.asarray(sorted(x))
 
@@ -261,8 +261,8 @@ class T2eVsTime:
             indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
 
             ax.xaxis.set_major_locator(mdates.AutoDateLocator())  # Automatically choose good tick locations
-            # ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # Show day and time
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
+            # ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # Show day and time
             ax.tick_params(axis='x', rotation=45)  # Rotate ticks for better readability
 
             # Disable scientific notation and format y-ticks

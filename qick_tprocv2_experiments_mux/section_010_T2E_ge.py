@@ -219,6 +219,7 @@ class T2EMeasurement:
         self.save_figs = save_figs
         self.live_plot = live_plot
         self.number_of_qubits = number_of_qubits
+        self.list_of_all_qubits = list_of_all_qubits
         if experiment is not None:
             self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)

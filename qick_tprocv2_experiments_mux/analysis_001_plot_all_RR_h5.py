@@ -17,7 +17,7 @@ import sys
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 
 class PlotAllRR:
-    def __init__(self,  date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
+    def __init__(self,  date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, list_of_all_qubits, outerFolder,
                  outerFolder_save_plots, exp_config):
         self.date = date
         self.figure_quality = figure_quality
@@ -29,6 +29,7 @@ class PlotAllRR:
         self.outerFolder = outerFolder
         self.outerFolder_save_plots = outerFolder_save_plots
         self.exp_config = exp_config
+        self.list_of_all_qubits = list_of_all_qubits
 
     def process_string_of_nested_lists(self, data):
         # Remove extra whitespace and non-numeric characters.
@@ -331,7 +332,7 @@ class PlotAllRR:
                     batch_num = load_data['T1'][q_key].get('Batch Num', [])[0][dataset]
         
                     if len(I)>0:
-                        T1_class_instance = T1Measurement(q_key, self.list_of_all_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
+                        T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.list_of_all_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
                         T1_spec_cfg = ast.literal_eval(self.exp_config['T1_ge'].decode())
                         T1_class_instance.plot_results(I, Q, delay_times, date, T1_spec_cfg, self.figure_quality)
                         del T1_class_instance

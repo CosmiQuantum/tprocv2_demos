@@ -17,7 +17,7 @@ import datetime
 import ast
 import os
 import matplotlib.pyplot as plt
-import allantools
+# import allantools #commented this out for now since it was giving the error ModuleNotFoundError: No module named 'allantools'
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 import matplotlib.dates as mdates
@@ -114,6 +114,9 @@ class T1VsTime:
     def run(self):
         import datetime
 
+        # New list to collect Q2 data with the desired T1 values
+        q2_combined_fit_data = []
+
         # ----------Load/get data------------------------
         t1_vals = {i: [] for i in range(self.number_of_qubits)}
         rounds = []
@@ -122,6 +125,8 @@ class T1VsTime:
         date_times = {i: [] for i in range(self.number_of_qubits)}
         mean_values = {}
         #print(self.top_folder_dates)
+        t1_errors = {i: [] for i in range(self.number_of_qubits)}
+
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
                 outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
@@ -173,7 +178,7 @@ class T1VsTime:
 
                         if len(I) > 0:
 
-                            T1_class_instance = T1Measurement(q_key, self.list_of_all_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
+                            T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.list_of_all_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                               fit_data=True)
                             T1_spec_cfg = ast.literal_eval(self.exp_config['T1_ge'].decode())
                             q1_fit_exponential, T1_err, T1_est, plot_sig = T1_class_instance.t1_fit(I, Q, delay_times)
@@ -190,13 +195,69 @@ class T1VsTime:
 
                             t1_vals[q_key].extend([T1_est])
                             date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
+                            t1_errors[q_key].append(T1_err)
+
+                            # --- NEW BLOCK: Collect combined plot data for Q2 ---
+                            if q_key == 1 and (round(T1_est, 2) == 16.73 or round(T1_est, 4) == 20.1815):
+                                q2_combined_fit_data.append({
+                                    'delay_times': delay_times,
+                                    'fit': q1_fit_exponential,
+                                    'T1_est': T1_est,
+                                    'plot_sig': plot_sig,
+                                    'Q': Q
+                                })
+                            # -------------------------------------------------------
 
                             del T1_class_instance
 
                 del H5_class_instance
-        return date_times, t1_vals
+        # --------------------------------------New, plotting two fits in a single plot-----------------------------
+        # After processing all files, if we collected any Q2 datasets with the desired T1 values,
+        # plot their fit curves on a combined figure.
+        # print(q2_combined_fit_data)
+        # print(len(q2_combined_fit_data))
+        if len(q2_combined_fit_data) == 2:  # Ensure exactly two fits are available
+            fig, ax = plt.subplots(figsize=(10, 6))
+            plt.rcParams.update({'font.size': 18})
 
-    def plot(self, date_times, t1_vals, show_legends):
+            # Center title above the subplot
+            plot_middle = (ax.get_position().x0 + ax.get_position().x1) / 2
+            fig.text(plot_middle, 0.98, "T1 Fits for Q2", fontsize=24, ha='center', va='top')
+
+            # Plot both fits
+            for idx, data in enumerate(q2_combined_fit_data):
+                # color = f"C{idx}"  # Use different colors for each dataset
+                color = 'grey'
+
+                #data
+                # ax.plot(data['delay_times'], data['Q'], color=color, linestyle='-', linewidth=1.5, label=f"Raw Q Data (T1={data['T1_est']:.2f} µs)")
+                ax.plot(data['delay_times'], data['Q'], color=color, linestyle='-', linewidth=1.5, label="_nolegend_")
+
+                #fits
+                ax.plot(data['delay_times'], data['fit'], linewidth=3, label=f"T1={data['T1_est']:.2f} µs")
+
+            # Formatting
+            ax.set_xlabel("Delay time (us)", fontsize=20)
+            ax.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
+            ax.tick_params(axis='both', which='major', labelsize=16)
+
+            # Add legend
+            ax.legend()
+
+            # Save the plot
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            combined_folder = os.path.join(analysis_folder, "Combined_Fits")
+            self.create_folder_if_not_exists(combined_folder)
+            now = datetime.datetime.now()
+            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            file_name = os.path.join(combined_folder, f"Combined_T1_Q2_fits_{formatted_datetime}.png")
+            fig.savefig(file_name, dpi=self.figure_quality, bbox_inches='tight')
+            plt.close(fig)
+        # --------------------------------------------------------------------------------------------------
+
+        return date_times, t1_vals, t1_errors
+
+    def plot(self, date_times, t1_vals, t1_errors, show_legends):
         #---------------------------------plot-----------------------------------------------------
         if self.fridge.upper() == 'QUIET':
             analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
@@ -212,15 +273,15 @@ class T1VsTime:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         #----------------To Plot a specific timeframe------------------
-        from datetime import datetime
-        year = 2025
-        month = 1
-        day1 = 22  # Start date
-        day2 = 23  # End date
-        hour_start = 0  # Start hour
-        hour_end = 23  # End hour
-        start_time = datetime(year, month, day1, hour_start, 0)
-        end_time = datetime(year, month, day2, hour_end, 59)
+        # from datetime import datetime
+        # year = 2025
+        # month = 2
+        # day1 = 1  # Start date
+        # day2 = 1  # End date
+        # hour_start = 0  # Start hour
+        # hour_end = 23  # End hour
+        # start_time = datetime(year, month, day1, hour_start, 0)
+        # end_time = datetime(year, month, day2, hour_end, 59)
         #-----------------------------------------------------------------
 
         font = 14
@@ -229,6 +290,14 @@ class T1VsTime:
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
         plt.title('T1 Values vs Time',fontsize = font)
         axes = axes.flatten()
+
+        #---------- fixed y axis ticks ---------------
+        # fixed_y_min = 10  # Set the fixed y-axis lower limit
+        # fixed_y_max = 28  # Set the fixed y-axis upper limit
+        # fixed_step_size = 2  # Set y-axis step size
+        #
+        # y_ticks = np.arange(fixed_y_min, fixed_y_max + fixed_step_size, fixed_step_size)
+        #-----------------------------------------------
 
         from datetime import datetime
         for i, ax in enumerate(axes):
@@ -241,12 +310,13 @@ class T1VsTime:
 
             x = date_times[i]
             y = t1_vals[i]
+            y_err = t1_errors[i]
 
             # Convert strings to datetime objects.
             datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
 
             # Combine datetime objects and y values into a list of tuples and sort by datetime.
-            combined = list(zip(datetime_objects, y))
+            combined = list(zip(datetime_objects, y,  y_err))
             combined.sort(reverse=True, key=lambda x: x[0])
 
             if len(combined) == 0:
@@ -255,20 +325,28 @@ class T1VsTime:
                 continue
 
             # Unpack them back into separate lists, in order from latest to most recent.
-            sorted_x, sorted_y = zip(*combined)
+            sorted_x, sorted_y,  sorted_y_err = zip(*combined)
+
+            #no error bars
             ax.scatter(sorted_x, sorted_y, color=colors[i])
+            # Add error bars
+            # ax.errorbar(sorted_x, sorted_y, yerr=sorted_y_err, fmt='o', color=colors[i], capsize=3,
+            #             label=f"Qubit {i + 1}")
 
             # Set x-axis limits for the specific timeframe
-            ax.set_xlim(start_time, end_time)
+            # ax.set_xlim(start_time, end_time)
 
             sorted_x = np.asarray(sorted(x))
             num_points = 5
             indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
 
             ax.xaxis.set_major_locator(mdates.AutoDateLocator())  # Automatically choose good tick locations
-            # ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # Show day and time
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
+            # ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # Show day and time
             ax.tick_params(axis='x', rotation=45)  # Rotate ticks for better readability
+
+            # ax.set_yticks(y_ticks)  # Apply uniform y-ticks
+            # ax.set_ylim(fixed_y_min, fixed_y_max)  # Set fixed y-axis range
 
             # Disable scientific notation and format y-ticks
             ax.ticklabel_format(style="plain", axis="y")
@@ -282,9 +360,9 @@ class T1VsTime:
             ax.tick_params(axis='both', which='major', labelsize=8)
 
         plt.tight_layout()
-        plt.savefig(analysis_folder + 'T1_vals.pdf', transparent=True, dpi=self.final_figure_quality)
-        print('Plot saved to: ', analysis_folder)
-        #plt.show()
+        plt.savefig(analysis_folder + 'T1_vals.png', transparent=False, dpi=self.final_figure_quality)
+        print('Plot saved at: ', analysis_folder)
+        # plt.show()
 
     def plot_allan_deviation(self, date_times, vals, show_legends, label="T1"):
 

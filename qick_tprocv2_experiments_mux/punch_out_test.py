@@ -36,7 +36,7 @@ experiment = QICK_experiment(outerFolder)
 punch_out   = PunchOut(number_of_qubits, outerFolder, experiment)
 
 # start_gain, stop_gain, num_points = 0.0, 1.0, 10 # for QUIET
-start_gain, stop_gain, num_points = 0.0, 0.8, 10 # for NEXUS
+start_gain, stop_gain, num_points = 0.01, 0.4, 8 # for NEXUS
 punch_out.run(experiment.soccfg, experiment.soc, start_gain, stop_gain, num_points, att_1, att_2, plot_Center_shift = False, plot_res_sweeps = True)
 
 del punch_out

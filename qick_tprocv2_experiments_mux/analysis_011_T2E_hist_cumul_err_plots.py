@@ -164,7 +164,7 @@ class T2eHistCumulErrPlots:
                         batch_num = load_data['T2E'][q_key].get('Batch Num', [])[0][dataset]
 
                         if len(I) > 0:
-                            T2E_class_instance = T2EMeasurement(q_key, self.list_of_all_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
+                            T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits, self.list_of_all_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                                fit_data=True)
                             try:
                                 fitted, T2E, T2E_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)

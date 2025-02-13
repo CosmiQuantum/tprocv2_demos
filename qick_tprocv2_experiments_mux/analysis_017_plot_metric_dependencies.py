@@ -18,20 +18,33 @@ class PlotMetricDependencies:
 
     def plot(self, date_times_1, metric_1, date_times_2, metric_2, metric_1_label,metric_2_label):
         #---------------------------------plot-----------------------------------------------------
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
-        self.create_folder_if_not_exists(analysis_folder)
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/metric_interdependencies/"
-        self.create_folder_if_not_exists(analysis_folder)
+        if self.fridge.upper() == 'QUIET':
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/metric_interdependencies/"
+            self.create_folder_if_not_exists(analysis_folder)
+        elif self.fridge.upper() == 'NEXUS':
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/metric_interdependencies/"
+            self.create_folder_if_not_exists(analysis_folder)
+        else:
+            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         font = 14
-        titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
         colors = ['orange','blue','purple','green','brown','pink']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
         plt.title('T2 Values vs Time',fontsize = font)
         axes = axes.flatten()
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
         from datetime import datetime
+
         for i, ax in enumerate(axes):
+
+            if i >= self.number_of_qubits: # If we have fewer qubits than subplots, stop plotting and hide the rest
+                ax.set_visible(False)
+                continue
+
             ax.set_title(titles[i], fontsize=font)
 
             datetime_objects_1 = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S")
@@ -41,6 +54,11 @@ class PlotMetricDependencies:
 
             combined_1 = list(zip(datetime_objects_1, metric_1[i]))  # frequency
             combined_2 = list(zip(datetime_objects_2, metric_2[i]))  # T1
+
+            if len(combined_1) == 0 or len(combined_2) ==0:
+                # If this qubit has no data, just skip
+                ax.set_visible(False)
+                continue
 
             combined_1.sort(reverse=True, key=lambda item: item[0])
             combined_2.sort(reverse=True, key=lambda item: item[0])
@@ -88,12 +106,12 @@ class PlotMetricDependencies:
 
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-        plt.savefig(analysis_folder + f'{metric_1_label}_vs_{metric_2_label}_correlation.pdf', transparent=True, dpi=self.final_figure_quality)
-
+        plt.savefig(analysis_folder + f'{metric_1_label}_vs_{metric_2_label}_correlation.png', transparent=False, dpi=self.final_figure_quality)
+        print('Plot saved at: ', analysis_folder)
         #plt.show()
 
     # -------------------------------- Single scatter plot for two metrics ---------------------------------------------
-    def plot_single_pair(self, date_times_1, metric_1, date_times_2, metric_2, metric_1_label="Qubit 1 T1", metric_2_label="Qubit 3 T1"):
+    def plot_single_pair(self, QubitIndex, date_times_1, metric_1, date_times_2, metric_2, metric_1_label="Qubit 1 T1", metric_2_label="Qubit 3 T1"):
         """
         Creates a SINGLE scatter plot of metric_1 vs metric_2,
         matching data points by the same 'closest timestamp' logic.
@@ -169,14 +187,60 @@ class PlotMetricDependencies:
         ax.scatter(matched_ref, matched_other, color='blue')
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)
-        ax.set_title(f"{metric_1_label} vs {metric_2_label}")
+        ax.set_title(f"{y_label} vs {x_label}")
 
         plt.tight_layout()
         #plt.show()
-        plt.savefig(analysis_folder + f'{metric_1_label}_vs_{metric_2_label}_correlation.png', transparent=False,
-                    dpi=self.final_figure_quality)
-        print('Plot saved at: ', analysis_folder)
+        # plt.savefig(analysis_folder + f'{y_label}_vs_{x_label}_correlation.png', transparent=False,
+        #             dpi=self.final_figure_quality)
+        # print('Plot saved at: ', analysis_folder)
 
+        #################################################################################################################
+
+        # creates the scatter plot but flips the x and y axes, in case you want to visualize it the other way too
+        fig2, ax2 = plt.subplots(figsize=(6, 4))
+        ax2.scatter(matched_other, matched_ref, color='blue', s=10)
+        ax2.set_xlabel(y_label)  # note the swap
+        ax2.set_ylabel(x_label)
+        ax2.set_title(f"{x_label} vs {y_label}")
+
+        # ------------------setting specific ticks on x axis for NEXUS qubits (Qubit frequencies)--------------------------------
+        if QubitIndex == 0:
+            xmin2, xmax2 = 4899, 4906
+            ax2.set_xlim([xmin2, xmax2])
+            num_ticks = 8
+            tick_values = np.round(np.linspace(xmin2, xmax2, num_ticks)).astype(int)
+            ax2.set_xticks(tick_values)
+        if QubitIndex == 1:
+            xmin2, xmax2 = 4732, 4739
+            ax2.set_xlim([xmin2, xmax2])
+            num_ticks = 8
+            tick_values = np.round(np.linspace(xmin2, xmax2, num_ticks)).astype(int)
+            ax2.set_xticks(tick_values)
+        if QubitIndex == 2:
+            xmin2, xmax2 = 4571, 4578
+            ax2.set_xlim([xmin2, xmax2])
+            num_ticks = 8
+            tick_values = np.round(np.linspace(xmin2, xmax2, num_ticks)).astype(int)
+            ax2.set_xticks(tick_values)
+        if QubitIndex == 3:
+            xmin2, xmax2 = 4752, 4759
+            ax2.set_xlim([xmin2, xmax2])
+            num_ticks = 8
+            tick_values = np.round(np.linspace(xmin2, xmax2, num_ticks)).astype(int)
+            ax2.set_xticks(tick_values)
+
+        # T1 values
+        ax2.set_ylim([10, 28])
+        ax2.set_yticks(np.arange(10, 29, 2))  # Steps of 2
+        # -------------------------------------------------------------------------------------
+
+        plt.tight_layout()
+        plot2_name = f"{x_label}_vs_{y_label}_correlation.png"
+        plt.savefig(analysis_folder + plot2_name, transparent=False,
+                    dpi=self.final_figure_quality)
+
+        print('Plot saved at: ', analysis_folder)
 
     #----------------------------------Plots T1 vs. Time  and other metrics vs time if data is provided --------------------------------------------
     def plot_q1_temp_and_t1( #works for any qubit, just provide the data corresponding to the qubit you want

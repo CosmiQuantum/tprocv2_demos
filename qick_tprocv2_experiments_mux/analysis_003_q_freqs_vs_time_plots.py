@@ -169,7 +169,7 @@ class QubitFreqsVsTime:
                         batch_num = load_data['QSpec'][q_key].get('Batch Num', [])[0][dataset]
 
                         if len(I) > 0:
-                            qspec_class_instance = QubitSpectroscopy(q_key, self.list_of_all_qubits, outerFolder_save_plots, round_num, self.signal,
+                            qspec_class_instance = QubitSpectroscopy(q_key, self.number_of_qubits, self.list_of_all_qubits, outerFolder_save_plots, round_num, self.signal,
                                                                      self.save_figs)
                             q_spec_cfg = ast.literal_eval(self.exp_config['qubit_spec_ge'].decode())
                             largest_amp_curve_mean, I_fit, Q_fit = qspec_class_instance.get_results(I, Q, freqs)
@@ -198,15 +198,15 @@ class QubitFreqsVsTime:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         # ----------------To Plot a specific timeframe------------------
-        from datetime import datetime
-        year = 2025
-        month = 1
-        day1 = 24  # Start date
-        day2 = 25  # End date
-        hour_start = 0  # Start hour
-        hour_end = 12  # End hour
-        start_time = datetime(year, month, day1, hour_start, 0)
-        end_time = datetime(year, month, day2, hour_end, 0)
+        # from datetime import datetime
+        # year = 2025
+        # month = 1
+        # day1 = 24  # Start date
+        # day2 = 25  # End date
+        # hour_start = 0  # Start hour
+        # hour_end = 12  # End hour
+        # start_time = datetime(year, month, day1, hour_start, 0)
+        # end_time = datetime(year, month, day2, hour_end, 0)
         # -----------------------------------------------------------------
 
         font = 14
@@ -244,7 +244,7 @@ class QubitFreqsVsTime:
             ax.scatter(sorted_x, sorted_y, color=colors[i])
 
             # Set x-axis limits for the specific timeframe
-            ax.set_xlim(start_time, end_time)
+            # ax.set_xlim(start_time, end_time)
 
             ax.set_ylim(sorted_y[0] - 2.0, sorted_y[0] + 2.0)
 
@@ -254,8 +254,8 @@ class QubitFreqsVsTime:
             indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
 
             ax.xaxis.set_major_locator(mdates.AutoDateLocator())  # Automatically choose good tick locations
-            # ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # Show day and time
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
+            # ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # Show day and time
             ax.tick_params(axis='x', rotation=45)  # Rotate ticks for better readability
 
             # Disable scientific notation and format y-ticks
@@ -271,6 +271,7 @@ class QubitFreqsVsTime:
 
 
         plt.tight_layout()
-        plt.savefig(analysis_folder + 'Q_Freqs.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'Q_Freqs.png', transparent=False, dpi=self.final_figure_quality)
+        print('Plot saved at: ', analysis_folder)
 
         #plt.show()

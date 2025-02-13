@@ -45,9 +45,9 @@ outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/", st
 
 ################################################ optimization outputs ##################################################
 # optimization outputs for NEXUS
-res_leng_vals = [5.6, 5.85, 6.35, 3.35] #from 1/31-2/1 optimization
-res_gain = [0.34, 0.3, 0.34, 0.34] #from 1/31-2/1 optimization, after implementing punchout threshold
-freq_offsets = [-0.32, -0.16, -0.08, -0.08] #from 1/31-2/1 optimization, after implementing punchout threshold
+res_leng_vals = [3.6, 3.6, 6.35, 3.6] # from 2/8/2025 optimization, after punchout test
+res_gain = [0.3, 0.2, 0.25, 0.25] # from 2/8/2025 optimization, after punchout test
+freq_offsets = [-0.1333, -0.0667, -0.2667, 0.0] # from 2/8/2025 optimization, after punchout test
 ####################################################### RR #############################################################
 
 def create_data_dict(keys, save_r, qs):
@@ -152,6 +152,7 @@ while j < n:
 
         ########################################## Single Shot Measurements ############################################
         try:
+            timestamp = time.strftime("%H%M%S")
             ss = SingleShot(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder,  j, save_figs, experiment)
             fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
             I_g = iq_list_g[QubitIndex][0].T[0]
@@ -161,6 +162,7 @@ while j < n:
 
             fid, threshold, angle, ig_new, ie_new = ss.hist_ssf(
                 data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
+            #np.savez(outerFolder+timestamp+'ssf'+f'Q{QubitIndex+1}'+f'round{j}', fid=fid, threshold=threshold, angle=angle, ig_new=ig_new, ie_new=ie_new)
 
         except Exception as e:
             print(f'Got the following error, continuing: {e}')
@@ -181,6 +183,7 @@ while j < n:
             t2r = T2RMeasurement(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
                                  increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey = t2r.run(experiment.soccfg, experiment.soc)
+            #np.savez(outerFolder+f'round{j}', t2r_I=t2r_I, t2r_Q=t2r_Q, t2r_delay_times=t2r_delay_times)
             del t2r
 
         except Exception as e:

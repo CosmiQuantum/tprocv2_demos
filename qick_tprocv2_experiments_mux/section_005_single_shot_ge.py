@@ -154,11 +154,11 @@ class SingleShot:
 
     def fidelity_test(self, soccfg, soc):
         # Run the single shot programs (g and e)
-        ssp_g = SingleShotProgram_g(soccfg, self.list_of_all_qubits, reps=1, final_delay=self.config['relax_delay'],
+        ssp_g = SingleShotProgram_g(soccfg, reps=1, final_delay=self.config['relax_delay'],
                                     cfg=self.config)
         iq_list_g = ssp_g.acquire(soc, soft_avgs=1, progress=False)
 
-        ssp_e = SingleShotProgram_e(soccfg, self.list_of_all_qubits, reps=1, final_delay=self.config['relax_delay'],
+        ssp_e = SingleShotProgram_e(soccfg, reps=1, final_delay=self.config['relax_delay'],
                                     cfg=self.config)
         iq_list_e = ssp_e.acquire(soc, soft_avgs=1, progress=False)
 
@@ -272,7 +272,7 @@ class SingleShot:
             file_name = os.path.join(outerFolder_expt,
                                      f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
 
-            axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
+            axs[2].set_title(f"Fidelity = {fid * 100:.2f}%, \n threshold={threshold}")
             fig.savefig(file_name,  dpi=fig_quality, bbox_inches='tight')
             plt.close(fig)
 
@@ -296,7 +296,7 @@ class GainFrequencySweep:
 
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
-        self.q_config = all_qubit_state(self.experiment)
+        self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
 
     def set_res_gain_ge(self, QUBIT_INDEX, set_gain, num_qubits=6):
