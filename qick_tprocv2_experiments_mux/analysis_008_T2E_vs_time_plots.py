@@ -24,7 +24,7 @@ from scipy.optimize import curve_fit
 
 class T2eVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config, fridge, list_of_all_qubits):
+                 signal, run_name, exp_config, fridge):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -35,7 +35,12 @@ class T2eVsTime:
         self.top_folder_dates = top_folder_dates
         self.exp_config = exp_config
         self.fridge = fridge
-        self.list_of_all_qubits = list_of_all_qubits
+
+        ramsey_ge_str = self.exp_config['Ramsey_ge'].decode('utf-8')
+        ramsey_ge_dict = ast.literal_eval(ramsey_ge_str)
+        self.reps = ramsey_ge_dict['reps']
+        self.rounds = ramsey_ge_dict['rounds']
+
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -110,11 +115,12 @@ class T2eVsTime:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run(self):
+    def run(self,return_errs=False):
         import datetime
 
         # ----------Load/get data------------------------
         t2e_vals = {i: [] for i in range(self.number_of_qubits)}
+        t2e_errs = {i: [] for i in range(self.number_of_qubits)}
         rounds = []
         reps = []
         file_names = []
@@ -184,14 +190,18 @@ class T2eVsTime:
                                 print("The value is above 50 us, this is a bad fit, continuing...")
                                 continue
                             t2e_vals[q_key].extend([t2e_est])
+                            t2e_errs[q_key].extend([t2e_err])
                             date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
 
                             del T2E_class_instance
                 del H5_class_instance
-        return date_times, t2e_vals
+        if return_errs:
+            return date_times, t2e_vals, t2e_errs
+        else:
+            return date_times, t2e_vals
 
-    def plot(self, date_times, t2e_vals, show_legends):
-        #---------------------------------plot-----------------------------------------------------
+    def plot_without_errs(self, date_times, t2e_vals, show_legends):
+        # ---------------------------------plot-----------------------------------------------------
         if self.fridge.upper() == 'QUIET':
             analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
             self.create_folder_if_not_exists(analysis_folder)
@@ -218,20 +228,20 @@ class T2eVsTime:
         # -----------------------------------------------------------------
 
         font = 14
-        titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
-        colors = ['orange','blue','purple','green','brown','pink']
+        titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
-        plt.title('T2E Values vs Time',fontsize = font)
+        plt.title('T2E Values vs Time', fontsize=font)
         axes = axes.flatten()
 
         from datetime import datetime
         for i, ax in enumerate(axes):
 
-            if i >= self.number_of_qubits: # If we have fewer qubits than subplots, stop plotting and hide the rest
+            if i >= self.number_of_qubits:  # If we have fewer qubits than subplots, stop plotting and hide the rest
                 ax.set_visible(False)
                 continue
 
-            ax.set_title(titles[i], fontsize = font)
+            ax.set_title(titles[i], fontsize=font)
 
             x = date_times[i]
             y = t2e_vals[i]
@@ -271,11 +281,102 @@ class T2eVsTime:
 
             if show_legends:
                 ax.legend(edgecolor='black')
-            ax.set_xlabel('Time (Days)', fontsize=font-2)
-            ax.set_ylabel('T2E (us)', fontsize=font-2)
+            ax.set_xlabel('Time (Days)', fontsize=font - 2)
+            ax.set_ylabel('T2E (us)', fontsize=font - 2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
         plt.tight_layout()
         plt.savefig(analysis_folder + 'T2E_vals.png', transparent=False, dpi=self.final_figure_quality)
         print('Plot saved at: ', analysis_folder)
-        #plt.show()
+        # plt.close()
+
+    def plot_with_errs(self, date_times, t2e_vals, t2e_fit_err, show_legends):
+        # ---------------------------------plot-----------------------------------------------------
+        if self.fridge.upper() == 'QUIET':
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
+        elif self.fridge.upper() == 'NEXUS':
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
+        else:
+            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+
+        # ----------------To Plot a specific timeframe------------------
+        from datetime import datetime
+        year = 2025
+        month = 1
+        day1 = 24
+        day2 = 25
+        hour_start = 0
+        hour_end = 12
+        start_time = datetime(year, month, day1, hour_start, 0)
+        end_time = datetime(year, month, day2, hour_end, 0)
+        # -----------------------------------------------------------------
+
+        font = 14
+        titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+        plt.suptitle('T2E Values vs Time', fontsize=font)
+        axes = axes.flatten()
+
+        import matplotlib.dates as mdates
+        from matplotlib.ticker import StrMethodFormatter
+
+        for i, ax in enumerate(axes):
+            if i >= self.number_of_qubits:
+                ax.set_visible(False)
+                continue
+
+            ax.set_title(titles[i], fontsize=font)
+
+            x = date_times[i]
+            y = t2e_vals[i]
+            err = t2e_fit_err[i]
+
+            datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
+
+            combined = list(zip(datetime_objects, y, err))
+            combined.sort(key=lambda tup: tup[0])
+            if len(combined) == 0:
+                ax.set_visible(False)
+                continue
+            sorted_x, sorted_y, sorted_err = zip(*combined)
+            sorted_x = np.array(sorted_x)
+
+            #ax.set_xlim(start_time, end_time)
+
+            ax.errorbar(
+                sorted_x, sorted_y, yerr=sorted_err,
+                fmt='none',
+                ecolor=colors[i],
+                elinewidth=1,
+                capsize=0
+            )
+
+            ax.scatter(
+                sorted_x, sorted_y,
+                s=10,
+                color=colors[i],
+                alpha=0.5
+            )
+
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
+            ax.tick_params(axis='x', rotation=45)
+
+            ax.ticklabel_format(style="plain", axis="y")
+
+            if show_legends:
+                ax.legend(edgecolor='black')
+            ax.set_xlabel('Time (Days)', fontsize=font - 2)
+            ax.set_ylabel('T2E (us)', fontsize=font - 2)
+            ax.tick_params(axis='both', which='major', labelsize=8)
+
+        plt.tight_layout()
+        plt.savefig(analysis_folder + 'T2E_vals.png', transparent=False, dpi=self.final_figure_quality)
+        print('Plot saved at: ', analysis_folder)
+        plt.close()

@@ -4,11 +4,10 @@ import numpy as np
 np.set_printoptions(threshold=int(1e15)) #need this so it saves absolutely everything returned from the classes
 import datetime
 import time
+import logging
 import visdom
-sys.path.append(os.path.abspath("/home/nexusadmin/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))  ## Change for quiet vs nexus
-# sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_001_time_of_flight import TOFExperiment
-from section_003_punch_out_ge_mux import PunchOut
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_004_qubit_spec_ge import QubitSpectroscopy
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
@@ -17,37 +16,52 @@ from section_005_single_shot_ge import SingleShot
 from section_008_save_data_to_h5 import Data_H5
 from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
+from system_config import QICK_experiment
+from section_003_punch_out_ge_mux import PunchOut
+from expt_config import expt_cfg, list_of_all_qubits
 
-from system_config_nexus import QICK_experiment  ## Change for quiet vs nexus
-# from system_config import QICK_experiment
-from expt_config_nexus import expt_cfg, list_of_all_qubits  ## Change for quiet vs nexus
-# from expt_config import expt_cfg, list_of_all_qubits
+################################################## Configure logging ###################################################
+logging.basicConfig(
+    level=logging.DEBUG,  # log all of the things
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("RR_script.log", mode='a'),
+        # also output log to the console (remove if you want only the file)
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
 ################################################ Run Configurations ####################################################
-
-n= 1000
+n= 100000
 save_r = 1            # how many rounds to save after
 signal = 'None'       #'I', or 'Q' depending on where the signal is (after optimization). Put'None' if no optimization
-save_figs = True    # save plots for everything as you go along the RR script?
+save_figs = False    # save plots for everything as you go along the RR script?
 live_plot = False      # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
-fit_data = True      # fit the data here and save or plot the fits?
+fit_data = False      # fit the data here and save or plot the fits?
 save_data_h5 = True   # save all of the data to h5 files?
-number_of_qubits = 4  #currently 4 for NEXUS, 6 for QUIET
 Qs_to_look_at = [0, 1, 2, 3] #only list the qubits you want to do the RR for
 
-increase_qubit_reps = False #if you want to increase the reps for a qubit, set to True
+increase_qubit_reps = True #if you want to increase the reps for a qubit, set to True
 qubit_to_increase_reps_for = 0 #only has impact if previous line is True
 multiply_qubit_reps_by = 2 #only has impact if the line two above is True
 
-custom_Ramsey=False
-
-outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/", str(datetime.date.today()))
-#outerFolder = os.path.join("/data/QICK_data/", str(datetime.date.today()))
+#outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/", str(datetime.date.today()))
+outerFolder = os.path.join("/data/QICK_data/", str(datetime.date.today()))
 
 ################################################ optimization outputs ##################################################
+<<<<<<< HEAD
 # optimization outputs for NEXUS
 res_leng_vals = [3.6, 3.6, 6.35, 3.6] # from 2/8/2025 optimization, after punchout test
 res_gain = [0.3, 0.2, 0.25, 0.25] # from 2/8/2025 optimization, after punchout test
 freq_offsets = [-0.1333, -0.0667, -0.2667, 0.0] # from 2/8/2025 optimization, after punchout test
+=======
+
+res_leng_vals = [3.25, 4.00, 2.25, 2.75, 3.5, 2.75] #Final decision, for Danso at 3.5V     2.75
+# res_gain = [0.9, 0.95, 0.95, 0.95, 0.9, 0.95]
+res_gain = [1,0.95,0.85,0.95,0.9,0.9]
+freq_offsets = [0, 0.1333, -0.1333, -0.2000, -0.2000, -0.1333] #-0.2000
+
+>>>>>>> 24d25fd5ee698fb6f86adb381b5b2f57a95faee8
 ####################################################### RR #############################################################
 
 def create_data_dict(keys, save_r, qs):
@@ -71,6 +85,10 @@ t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
 t2r_data = create_data_dict(t2r_keys, save_r, list_of_all_qubits)
 t2e_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
 
+#initialize a simple list to store the qspec values in incase a fit fails
+max_index = max(Qs_to_look_at)
+stored_qspec_list = [None] * (max_index + 1)
+
 batch_num=0
 j = 0
 angles=[]
@@ -92,7 +110,7 @@ while j < n:
 
         ################################################## Res spec ####################################################
         try:
-            res_spec   = ResonanceSpectroscopy(QubitIndex,number_of_qubits, list_of_all_qubits, outerFolder, j, save_figs, experiment)
+            res_spec   = ResonanceSpectroscopy(QubitIndex, list_of_all_qubits, outerFolder, j, save_figs, experiment)
             res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
             experiment.readout_cfg['res_freq_ge'] = res_freqs
             offset = freq_offsets[QubitIndex] #use optimized offset values
@@ -100,7 +118,7 @@ while j < n:
             experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
             del res_spec
         except Exception as e:
-            print(f'Got the following error at Res Spec, continuing: {e}')
+            logging.exception(f'Got the following error, continuing: {e}')
             continue #skip the rest of this qubit
 
         # ############################################ Roll Signal into I ##############################################
@@ -109,51 +127,60 @@ while j < n:
         # ss = SingleShot(QubitIndex, outerFolder, experiment, j, save_figs)
         # fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
         # angles.append(angle)
-        # #print(angles)
-        # #print('avg theta: ', np.average(angles))
+        # #logging.info(angles)
+        # #logging.info('avg theta: ', np.average(angles))
         # del ss
 
         ################################################## Qubit spec ##################################################
         try:
-            q_spec = QubitSpectroscopy(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot)
+            q_spec = QubitSpectroscopy(QubitIndex, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot)
             qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg,
                                                                                              experiment.soc)
-            # if these are None, fit didnt work
-            if (qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None):
-                print('QSpec fit didnt work, skipping the rest of this qubit')
-                continue #skip the rest of this qubit
+            # if these are None, fit didnt work. use the last value
+            if qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None:
+                if stored_qspec_list[QubitIndex] is not None:
+                    experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = stored_qspec_list[QubitIndex]
+                    logging.warning(f"Using previous stored value: {stored_qspec_list[QubitIndex]}")
+                else:
+                    logging.warning('There were no previous qubit spec values stored, skipping rest of this qubit')
+                    continue
 
             experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
-            print('Qubit freq for qubit ', QubitIndex + 1 ,' is: ',float(qubit_freq))
+            stored_qspec_list[QubitIndex] = float(qubit_freq)  # update the stored value
+            logging.info('Qubit freq for qubit ', QubitIndex + 1 ,' is: ',float(qubit_freq))
             del q_spec
 
         except Exception as e:
-            print(f'Got the following error, continuing: {e}')
+            logging.exception(f'Got the following error, continuing: {e}')
             continue #skip the rest of this qubit
 
         ###################################################### Rabi ####################################################
         try:
-            rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot,
+            rabi = AmplitudeRabiExperiment(QubitIndex, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot,
                                            increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save  = rabi.run(experiment.soccfg, experiment.soc)
 
             # if these are None, fit didnt work
             if (rabi_fit is None and pi_amp is None):
-                print('Rabi fit didnt work, skipping the rest of this qubit')
+                logging.info('Rabi fit didnt work, skipping the rest of this qubit')
                 continue  # skip the rest of this qubit
 
             experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
-            print('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
+            logging.info('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
             del rabi
 
         except Exception as e:
-            print(f'Got the following error, continuing: {e}')
+            logging.exception(f'Got the following error, continuing: {e}')
             continue #skip the rest of this qubit
 
         ########################################## Single Shot Measurements ############################################
         try:
+<<<<<<< HEAD
             timestamp = time.strftime("%H%M%S")
             ss = SingleShot(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder,  j, save_figs, experiment)
+=======
+            ss = SingleShot(QubitIndex, list_of_all_qubits, outerFolder,  j, save_figs, experiment)
+>>>>>>> 24d25fd5ee698fb6f86adb381b5b2f57a95faee8
             fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
             I_g = iq_list_g[QubitIndex][0].T[0]
             Q_g = iq_list_g[QubitIndex][0].T[1]
@@ -165,41 +192,42 @@ while j < n:
             #np.savez(outerFolder+timestamp+'ssf'+f'Q{QubitIndex+1}'+f'round{j}', fid=fid, threshold=threshold, angle=angle, ig_new=ig_new, ie_new=ie_new)
 
         except Exception as e:
-            print(f'Got the following error, continuing: {e}')
+            logging.exception(f'Got the following error, continuing: {e}')
             continue #skip the rest of this qubit
         ###################################################### T1 ######################################################
         try:
-            t1 = T1Measurement(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
+            t1 = T1Measurement(QubitIndex, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
                                increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential = t1.run(experiment.soccfg, experiment.soc)
             del t1
 
         except Exception as e:
-            print(f'Got the following error, continuing: {e}')
+            logging.exception(f'Got the following error, continuing: {e}')
             continue #skip the rest of this qubit
 
         ###################################################### T2R #####################################################
         try:
-            t2r = T2RMeasurement(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
+
+            t2r = T2RMeasurement(QubitIndex, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
                                  increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey = t2r.run(experiment.soccfg, experiment.soc)
             #np.savez(outerFolder+f'round{j}', t2r_I=t2r_I, t2r_Q=t2r_Q, t2r_delay_times=t2r_delay_times)
             del t2r
 
         except Exception as e:
-            print(f'Got the following error, continuing: {e}')
+            logging.exception(f'Got the following error, continuing: {e}')
             continue #skip the rest of this qubit
 
         ##################################################### T2E ######################################################
         try:
-            t2e = T2EMeasurement(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
+            t2e = T2EMeasurement(QubitIndex, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
                                  increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             t2e_est, t2e_err, t2e_I, t2e_Q, t2e_delay_times, fit_ramsey_t2e, sys_config_to_save = t2e.run(experiment.soccfg,
                                                                                                           experiment.soc)
             del t2e
 
         except Exception as e:
-            print(f'Got the following error, continuing: {e}')
+            logging.exception(f'Got the following error, continuing: {e}')
             continue #skip the rest of this qubit
 
         ############################################### Collect Results ################################################
