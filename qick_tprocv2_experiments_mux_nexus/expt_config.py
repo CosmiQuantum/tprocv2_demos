@@ -3,6 +3,7 @@ import numpy as np
 
 VNA_res = np.array([6187.8, 5828.3, 6074.6, 5959.3])
 VNA_qubit = np.array([4909, 4749.4, 4569, 4759]) # Found on NR25 with the QICK
+bias_spec_centers = np.array([4902.8, 4736.8, 4574.8, 4756.1])
 
 tot_num_of_qubits = 4
 list_of_all_qubits = list(range(tot_num_of_qubits))
@@ -15,25 +16,25 @@ expt_cfg = {
         "list_of_all_qubits": list_of_all_qubits,
     },
 
-    "res_spec": {
-        "reps": 500,
-        "rounds": 1,
-        "start": -3.5, # [MHz]
-        "step_size": 0.12,  # [MHz]
-        "steps": 101,
-        "relax_delay": 20,  # [us]
-        "list_of_all_qubits": list_of_all_qubits,
-    },
-
-    # "res_spec": { # Works for PUNCHOUT only 1/23 to do
+    # "res_spec": {
     #     "reps": 500,
     #     "rounds": 1,
-    #     "start": list(VNA_res - 1),  # [MHz]
-    #     "stop": list(VNA_res + 1),
+    #     "start": -3.5, # [MHz]
+    #     "step_size": 0.12,  # [MHz]
     #     "steps": 101,
     #     "relax_delay": 20,  # [us]
     #     "list_of_all_qubits": list_of_all_qubits,
     # },
+
+    "res_spec": { # Works for PUNCHOUT only 1/23 to do
+        "reps": 500,
+        "rounds": 1,
+        "start": list(VNA_res - 1),  # [MHz]
+        "stop": list(VNA_res + 1),
+        "steps": 101,
+        "relax_delay": 20,  # [us]
+        "list_of_all_qubits": list_of_all_qubits,
+    },
 
     "qubit_spec_ge": {
         "reps": 700, #100
@@ -48,8 +49,8 @@ expt_cfg = {
     "bias_qubit_spec_ge": {
         "reps": 700, #100
         "rounds": 1, #10
-        "start": list(VNA_qubit-7), # [MHz]
-        "stop":  list(VNA_qubit), # [MHz]
+        "start": list(bias_spec_centers-3), # [MHz]
+        "stop":  list(bias_spec_centers+3), # [MHz]
         "steps": 400,
         "relax_delay": 0.5, # [us]
         "list_of_all_qubits": list_of_all_qubits,
@@ -114,17 +115,42 @@ expt_cfg = {
     },
 
     "parity_ge":{
-        "steps": 10000,
-        "relax_delay": 500, # [us]
-        "wait_time": (np.pi /2)/(2*np.pi*1.199), # [us]
-    },
-
-    "tomography_ge":{
         "steps": 1,
-        "reps": 300,
+        "reps": 1,
         "rounds": 1,
         "relax_delay": 500, # [us]
-        "wait_time": 1/(4*(2.5)), # [us]
+        "wait_time": 1/2.7/4, # [us]
+    },
+
+    "tomography_ge_q1":{
+        "steps": 1,
+        "reps": 1000,
+        "rounds": 1,
+        "relax_delay": 500, # [us]
+        "wait_time": 1/2/4, # [us]    [2, 2.85, 4, 2.7]
+    },
+
+    "tomography_ge_q2":{
+        "steps": 1,
+        "reps": 1000,
+        "rounds": 1,
+        "relax_delay": 500, # [us]
+        "wait_time": 1/2.85/4, # [us]    [2, 2.85, 4, 2.7]
+    },
+    "tomography_ge_q3":{
+        "steps": 1,
+        "reps": 1000,
+        "rounds": 1,
+        "relax_delay": 500, # [us]
+        "wait_time": 1/4/4, # [us]    [2, 2.85, 4, 2.7]
+    },
+
+    "tomography_ge_q4":{
+        "steps": 1,
+        "reps": 1000,
+        "rounds": 1,
+        "relax_delay": 500, # [us]
+        "wait_time": 1/2.7/4, # [us]    [2, 2.85, 4, 2.7]
     }
 #
 

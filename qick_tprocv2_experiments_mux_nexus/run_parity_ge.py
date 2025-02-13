@@ -13,9 +13,9 @@ outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30", str
 
 
 
-qubit = 4  #Qubit to Run
+qubit = 1 #Qubit to Run
 
-voltage = 0.075
+voltage = 0
 timestamp = time.strftime("%H%M%S")
 experiment = QICK_experiment(outerFolder)
 parity_meas = ParityMeasurement(qubit-1, outerFolder, experiment)

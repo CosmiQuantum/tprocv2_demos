@@ -75,9 +75,9 @@ class QICK_experiment:
             "trig_time": 0.75,  # [Clock ticks] - get this value from TOF experiment
             # Changes related to the resonator output channel
             "mixer_freq": 5500, # [MHz]
-            "res_freq_ge": [6187.191, 5827.678, 6074.095, 5958.453], #MHz #5958.8 (Grace)
-            "res_gain_ge": [0.4, 0.4,0.4, 0.3875], #[0.15]*4, #[1, 1, 1, 1],
-            "res_length": 4.6, #10,  # [us] (1.0 for res spec)
+            "res_freq_ge": [6187.091, 5827.678, 6074.095, 5958.453 ], #MHz #5958.8 (Grace) #5958.453  6074.095
+            "res_gain_ge": [0.3, 0.2, 0.25, 0.25], #[0.4, 0.4,0.4, 0.3875], #[0.15]*4, #[1, 1, 1, 1],
+            "res_length": 3.6, #3.35, #[5.6, 5.85, 6.35, 3.35], #4.6, #10,  # [us] (1.0 for res spec)
             "res_phase": [0] * 4,
             "ro_phase": [0,0,0,0]#[0] * 4,  # Rotation Angle From QICK Function
         }
@@ -85,12 +85,12 @@ class QICK_experiment:
         # Qubit Configuration
         self.qubit_cfg = {
             "qubit_mixer_freq": 4300,  # [MHz]
-            "qubit_freq_ge": [4909, 4749.4, 4569, 4756],  # Freqs of Qubit g/e Transition
-            "qubit_gain_ge": [0.2] * 4, #[0.008] * 4,#[0.2, 0.2, 0.2, 0.01], #[0.2] * 4,  #0.07
+            "qubit_freq_ge": [4902.5883, 4736.8, 4574.53, 4755.67],  #[4902.5883, 4749.4, 4569, 4755.67],  # Freqs of Qubit g/e Transition
+            "qubit_gain_ge": [0.2] * 4,  # [0.08] * 4, #[0.008] * 4,#[0.2, 0.2, 0.2, 0.01], #[0.2] * 4,  #0.07
             "qubit_length_ge": 20,  # [us] for spec Pulse
             "qubit_phase": 0,  # [deg]
             "sigma": [0.04, 0.025, 0.04, 0.03], #[0.08, 0.15, 0.11, 0.09], # TO DO CHANGE THIS (11/26)
-            "pi_amp": [1.0, 0.93, 0.77, 0.846], # TO DO CHANGE THIS (11/26)
+            "pi_amp": [0.866, 0.98, 0.77, 0.916], #[0.866, 0.93, 0.77, 0.846], # TO DO CHANGE THIS (11/26)
 
             # "qubit_freqs_ge": [4909, 4749.4, 4569, 4759],  # Freqs of Qubit g/e Transition
             # "qubit_gains_ge": [1] * 4,  # [0.05] * 4

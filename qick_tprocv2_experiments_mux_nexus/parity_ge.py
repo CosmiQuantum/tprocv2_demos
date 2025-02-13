@@ -50,18 +50,18 @@ class ParityMeasurement:
 
 
     def run(self, soccfg, soc, v):
-        Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44',
-                      '192.168.0.41']  # IP address of bias PS (qubits 1-3 are the same PS)
-        Bias_ch = [1, 2, 3, 1]  # Channel number of qubit 1-4 on associated PS
-        qubit_index = int(self.QubitIndex)
-
-        BiasPS = E36300(Bias_PS_ip[qubit_index], server_port=5025)
-
-        BiasPS.setVoltage(0, Bias_ch[qubit_index])
-        BiasPS.enable(Bias_ch[qubit_index])
-
-        BiasPS.setVoltage(v, Bias_ch[qubit_index])
-        time.sleep(8)
+        # Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44',
+        #               '192.168.0.41']  # IP address of bias PS (qubits 1-3 are the same PS)
+        # Bias_ch = [1, 2, 3, 1]  # Channel number of qubit 1-4 on associated PS
+        # qubit_index = int(self.QubitIndex)
+        #
+        # BiasPS = E36300(Bias_PS_ip[qubit_index], server_port=5025)
+        #
+        # BiasPS.setVoltage(0, Bias_ch[qubit_index])
+        # BiasPS.enable(Bias_ch[qubit_index])
+        #
+        # BiasPS.setVoltage(v, Bias_ch[qubit_index])
+        # time.sleep(8)
         now = datetime.datetime.now()
 
         parity = ParityProgram(soccfg, reps=1, final_delay=self.exp_cfg['relax_delay'], cfg=self.config)
@@ -72,7 +72,7 @@ class ParityMeasurement:
         Q = iq_list[0][0].T[1]
         #print('I[:5]',I[:5])
         timetaken = time.time() - start_time
-        BiasPS.setVoltage(0, Bias_ch[qubit_index])
+        #BiasPS.setVoltage(0, Bias_ch[qubit_index])
 
         #frequencies, I_psd_value, Q_psd_value = self.PSDandPSDfit(I, Q, timetaken)
         #self.plot_results(self, I, Q, fig_quality=100)
