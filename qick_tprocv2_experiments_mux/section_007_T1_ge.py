@@ -4,7 +4,7 @@ from build_task import *
 from build_state import *
 # from expt_config import *
 from expt_config_nexus import * # Change for quiet vs nexus
-from system_config import *
+from system_config_nexus import *
 import copy
 import visdom
 
@@ -49,11 +49,14 @@ class T1Program(AveragerProgramV2):
 
 
 class T1Measurement:
-    def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
-                 fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
-                 multiply_qubit_reps_by = 0):
+    def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, round_num, signal, save_figs,
+                 experiment=None, live_plot=None,
+                 fit_data=None, increase_qubit_reps=False, qubit_to_increase_reps_for=None,
+                 multiply_qubit_reps_by=0):
+
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
+        self.list_of_all_qubits = list_of_all_qubits
         self.outerFolder = outerFolder
         self.expt_name = "T1_ge"
         self.fit_data = fit_data

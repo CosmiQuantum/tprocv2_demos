@@ -141,7 +141,8 @@ class T1HistCumulErrPlots:
                     datetime.date(2025, 1, 26), #power outage
                     datetime.date(2025, 1, 29), #HEMT Issues
                     datetime.date(2025, 1, 30), #HEMT Issues
-                    datetime.date(2025, 1, 31)  #Optimization Issues and non RR work in progress
+                    datetime.date(2025, 1, 31),  #Optimization Issues and non RR work in progress
+                    datetime.date(2025, 2, 11)  # TWPA optimization work, fridge pressure issues, touch tests at nexus
                 }
 
                 for q_key in load_data['T1']:
@@ -239,7 +240,7 @@ class T1HistCumulErrPlots:
             if len(t1_vals[i]) >1:
                 optimal_bin_num = self.optimal_bins(t1_vals[i])
                 # print(optimal_bin_num)
-                optimal_bin_num = 50
+                # optimal_bin_num = 50
                 # Fit a Gaussian to the raw data instead of the histogram
                 # get the mean and standard deviation of the data
                 mu_1, std_1 = norm.fit(t1_vals[i])
@@ -337,6 +338,7 @@ class T1HistCumulErrPlots:
             else:
                 date_label = ''
             ax.set_title(titles[i], fontsize = font)
+
             ax.scatter(t1_vals[i],t1_errs[i], label = date_label, color = colors[i])
             if show_legends:
                 ax.legend(edgecolor='black')

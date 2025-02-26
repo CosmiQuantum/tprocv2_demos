@@ -5,16 +5,202 @@ import matplotlib.pyplot as plt
 import numpy as np
 import csv
 import datetime
-import time
-from tqdm import tqdm
+#import time
+
 from NetDrivers import E36300
+
+class AllQubitParityMeasurement:
+    def __init__(self, outerFolder, experiment):
+        self.outerFolder = outerFolder
+        self.Q13_BiasPS = E36300('192.168.0.44', server_port=5025)
+        self.Q4_BiasPS = E36300('192.168.0.41', server_port=5025)
+        self.q1_expt_name = "Parity_ge_q1"
+        self.q2_expt_name = "Parity_ge_q2"
+        self.q3_expt_name = "Parity_ge_q3"
+        self.q4_expt_name = "Parity_ge_q4"
+        self.experiment = experiment
+        self.q1_exp_cfg = expt_cfg[self.q1_expt_name]
+        self.q2_exp_cfg = expt_cfg[self.q2_expt_name]
+        self.q3_exp_cfg = expt_cfg[self.q3_expt_name]
+        self.q4_exp_cfg = expt_cfg[self.q4_expt_name]
+        self.q_config = all_qubit_state(self.experiment)
+        self.q1_exp_cfg = add_qubit_experiment(expt_cfg, self.q1_expt_name, 0)
+        self.q1_config = {**self.q_config['Q0'], **self.q1_exp_cfg}
+        self.q2_exp_cfg = add_qubit_experiment(expt_cfg, self.q2_expt_name, 1)
+        self.q2_config = {**self.q_config['Q1'], **self.q2_exp_cfg}
+        self.q3_exp_cfg = add_qubit_experiment(expt_cfg, self.q3_expt_name, 2)
+        self.q3_config = {**self.q_config['Q2'], **self.q3_exp_cfg}
+        self.q4_exp_cfg = add_qubit_experiment(expt_cfg, self.q4_expt_name, 3)
+        self.q4_config = {**self.q_config['Q3'], **self.q4_exp_cfg}
+
+        print(f'Q1 Parity configuration: ', self.q1_config)
+        print(f'Q2 Parity configuration: ', self.q2_config)
+        print(f'Q3 Parity configuration: ', self.q3_config)
+        print(f'Q4 Parity configuration: ', self.q4_config)
+
+    def allq_run_Parity(self, soccfg, soc, start_volt, stop_volt, volt_pts, rounds, plot=True, save=True):
+
+        vsweep = np.linspace(start_volt, stop_volt, volt_pts, endpoint=True)
+        self.set_up_PS()
+        start_datetime = self.save_metadata(vsweep, rounds)
+        self.bias_sweep(soccfg, soc, vsweep, rounds, start_datetime, plot_data = plot, save_data = save)
+
+        return
+
+    def set_up_PS(self):
+        # Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44', '192.168.0.41']  # IP address of bias PS (qubits 1-3 are the same PS)
+        # Bias_ch = [1, 2, 3, 1]  # Channel number of qubit 1-4 on associated PS
+
+        self.Q13_BiasPS.setVoltage(0, 1)
+        self.Q13_BiasPS.enable(1)
+        self.Q13_BiasPS.setVoltage(0, 2)
+        self.Q13_BiasPS.enable(2)
+        self.Q13_BiasPS.setVoltage(0, 3)
+        self.Q13_BiasPS.enable(3)
+        self.Q4_BiasPS.setVoltage(0, 1)
+        self.Q4_BiasPS.enable(1)
+        return
+
+    def bias_sweep(self, soccfg, soc, vsweep, total_rounds, start_time, plot_data=False, save_data=True):
+        #overall for loop for total # of rounds:
+        for r in range(total_rounds):
+            ## so round_num starts at 1 not 0
+            round_num = r + 1
+
+            ## prepare signal arrays
+            Q1_Iarr = []
+            Q1_Qarr = []
+            Q2_Iarr = []
+            Q2_Qarr = []
+            Q3_Iarr = []
+            Q3_Qarr = []
+            Q4_Iarr = []
+            Q4_Qarr = []
+
+            ## sweep voltage and take data on all 4 qubits
+            for index, v in enumerate(vsweep):
+                self.Q13_BiasPS.setVoltage(v, 1)
+                self.Q13_BiasPS.setVoltage(v, 2)
+                self.Q13_BiasPS.setVoltage(v, 3)
+                self.Q4_BiasPS.setVoltage(v, 1)
+
+                ## Q1
+                q1_Parity = ParityProgram(soccfg, reps=self.q1_config['reps'], final_delay=self.q1_config['relax_delay'],
+                                                  cfg=self.q1_config)
+                q1_iq_list = q1_Parity.acquire(soc, soft_avgs=self.q1_config['rounds'], progress=True)
+                q1I = q1_iq_list[0][0, 0]
+                q1Q = q1_iq_list[0][0, 1]
+                Q1_Iarr.append(q1I)
+                Q1_Qarr.append(q1Q)
+
+                ## Q2
+                q2_Parity = ParityProgram(soccfg, reps=self.q2_config['reps'], final_delay=self.q2_config['relax_delay'],
+                                                  cfg=self.q2_config)
+                q2_iq_list = q2_Parity.acquire(soc, soft_avgs=self.q2_config['rounds'], progress=True)
+                q2I = q2_iq_list[1][0, 0]
+                q2Q = q2_iq_list[1][0, 1]
+                Q2_Iarr.append(q2I)
+                Q2_Qarr.append(q2Q)
+
+                ## Q3
+                q3_Parity = ParityProgram(soccfg, reps=self.q3_config['reps'], final_delay=self.q3_config['relax_delay'],
+                                                  cfg=self.q3_config)
+                q3_iq_list = q3_Parity.acquire(soc, soft_avgs=self.q3_config['rounds'], progress=True)
+                # print(np.shape(iq_list))
+                q3I = q3_iq_list[2][0, 0]
+                q3Q = q3_iq_list[2][0, 1]
+                Q3_Iarr.append(q3I)
+                Q3_Qarr.append(q3Q)
+
+                ## Q4
+                q4_Parity = ParityProgram(soccfg, reps=self.q4_config['reps'], final_delay=self.q4_config['relax_delay'],
+                                                  cfg=self.q4_config)
+                q4_iq_list = q4_Parity.acquire(soc, soft_avgs=self.q4_config['rounds'], progress=True)
+                q4I = q4_iq_list[3][0, 0]
+                q4Q = q4_iq_list[3][0, 1]
+                Q4_Iarr.append(q4I)
+                Q4_Qarr.append(q4Q)
+
+            self.Q13_BiasPS.setVoltage(0, 1)
+            self.Q13_BiasPS.setVoltage(0, 2)
+            self.Q13_BiasPS.setVoltage(0,3)
+            self.Q4_BiasPS.setVoltage(0,1)
+
+            ## put all the data together
+            all_data = np.array([Q1_Iarr, Q1_Qarr, Q2_Iarr, Q2_Qarr, Q3_Iarr, Q3_Qarr, Q4_Iarr, Q4_Qarr])
+
+            ## get time to give to save and plot funcs so they have the same timestamp
+            now = datetime.datetime.now()
+            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+
+            ## save and plot
+            if save_data:
+                self.save_all_Parity(all_data, round_num, formatted_datetime, start_time)
+            if plot_data:
+                self.plot_all_Parity(vsweep, all_data, round_num, formatted_datetime, start_time)
+
+        return
+
+    def save_metadata(self, vsweep, total_rounds):
+        now = datetime.datetime.now()
+        start_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+        outerFolder_expt = os.path.join(self.outerFolder, f'repeated_Parity_{start_datetime}')
+        self.experiment.create_folder_if_not_exists(outerFolder_expt)
+        file_name = os.path.join(outerFolder_expt, f"Parity_Metadata_AllQs_{start_datetime}")
+        np.savez(f"{file_name}", q1_cfg = self.q1_config, q2_cfg = self.q2_config, q3_cfg = self.q3_config, q4_cfg = self.q4_config,
+                 vsweep = vsweep, tot_rounds = total_rounds)
+        return start_datetime
+
+    def save_all_Parity(self, alldata, round_num, formatted_datetime, start_datetime):
+        outerFolder_expt = os.path.join(self.outerFolder, f'repeated_Parity_{start_datetime}')
+        self.experiment.create_folder_if_not_exists(outerFolder_expt)
+        file_name = os.path.join(outerFolder_expt, f"Parity_AllQs_R{round_num}_{formatted_datetime}")
+        np.savez(f"{file_name}", all_xi_xq=alldata)
+
+        ## Data for all qubits is saved together in one array of the form: [q1i, q1q, q2i, q2q, q3i, q3q, q4i, q4q]
+        ## where each of these is a 1d array - see how to access in plot_all_Parity function
+
+        return
+
+    def plot_all_Parity(self, vsweep, alldata, round_num, formatted_datetime, start_datetime):
+        plt.rcParams.update({
+            'font.size': 14,  # Base font size
+            'axes.titlesize': 18,  # Title font size
+            'axes.labelsize': 16,  # Axis label font size
+            'xtick.labelsize': 14,  # X-axis tick label size
+            'ytick.labelsize': 14,  # Y-axis tick label size
+            'legend.fontsize': 14,  # Legend font size
+        })
+
+        for q in range(0, 4):
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex='all')
+            ax1.set_ylabel("I Amplitude (a.u.)", fontsize=16)
+            ax1.tick_params(axis='both', which='major', labelsize=14)
+            ax1.plot(vsweep * 1000, alldata[q*2], linewidth=2)  # I_arr might be the wrong shape!
+
+            ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=16)
+            ax2.set_xlabel("Applied Voltage Bias (mV)", fontsize=16)
+            ax2.plot(vsweep * 1000, alldata[q*2 + 1], linewidth=2)  # Q_arr might be the wrong shape!
+
+            fig.suptitle(
+                f"Charge Parity Q{q+1}, Round {round_num}", fontsize=20)
+            plt.tight_layout()
+
+            plt.subplots_adjust(top=0.9)
+
+            outerFolder_expt = os.path.join(self.outerFolder, f'repeated_Parity_{start_datetime}')
+            self.experiment.create_folder_if_not_exists(outerFolder_expt)
+            file_name = os.path.join(outerFolder_expt, f"Parity_Q{q+1}_R{round_num}_{formatted_datetime}_.png")
+            fig.savefig(file_name, dpi=300, bbox_inches='tight')
+            plt.close(fig)
+        return
 
 
 class ParityMeasurement:
     def __init__(self, QubitIndex, outerFolder, experiment):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
-        self.expt_name = "parity_ge"
+        self.expt_name = "Parity_ge_q4"#"Parity_ge"
         self.experiment = experiment
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.exp_cfg = expt_cfg[self.expt_name]
@@ -24,49 +210,47 @@ class ParityMeasurement:
 
         print(f'Q {self.QubitIndex + 1} Parity configuration: ', self.config)
 
-    def run_parity(self, soccfg, soc, start_volt, stop_volt, volt_pts, plot=True, save=False):
-
-        #vsweep = np.linspace(start_volt, stop_volt, volt_pts, endpoint=True)
-        vsweep = np.linspace(0, 0, volt_pts, endpoint=True)
-        I_list, Q_list, amps, ts = self.bias_sweep(soccfg, soc, vsweep)
-        outerFolder_expt = os.path.join(self.outerFolder, 'parity')
-        self.experiment.create_folder_if_not_exists(outerFolder_expt)
+    def run_Parity(self, soccfg, soc, start_volt, stop_volt, volt_pts, plot=True, save=False):
         now = datetime.datetime.now()
-        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        np.savez(os.path.join(outerFolder_expt,
-                                      f"{formatted_datetime}_Parity_Q{self.QubitIndex + 1}_ts"), I_list=I_list, Q_list=Q_list, amps=amps, ts=ts )
+        vsweep = np.linspace(start_volt, stop_volt, volt_pts, endpoint=True)
+        I_list, Q_list, amps , timeTaken= self.bias_sweep(soccfg, soc, vsweep)
+        outerFolder_expt = os.path.join(self.outerFolder, 'Parity')
+        self.experiment.create_folder_if_not_exists(outerFolder_expt)
 
+        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+        name=os.path.join(outerFolder_expt,
+                                      f"{formatted_datetime}_Parity_Q{self.QubitIndex + 1}_parity_data")
+        np.savez(name,  I_list=I_list, Q_list=Q_list, amps=amps)
         if plot:
-            self.plot_Parity(vsweep, I_list, Q_list, ts)
+            self.plot_Parity(vsweep, I_list, Q_list, timeTaken)
 
         if save:
-            self.save_arrays(vsweep, I_list, Q_list, amps, ts)
+            self.save_arrays(vsweep, I_list, Q_list, amps)
 
         return
 
     def bias_sweep(self, soccfg, soc, vsweep):
-        # Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44',
-        #               '192.168.0.41']  # IP address of bias PS (qubits 1-3 are the same PS)
-        # Bias_ch = [1, 2, 3, 1]  # Channel number of qubit 1-4 on associated PS
-        # qubit_index = int(self.QubitIndex)
-        #
-        # BiasPS = E36300(Bias_PS_ip[qubit_index], server_port=5025)
-        #
-        # BiasPS.setVoltage(0, Bias_ch[qubit_index])
-        # BiasPS.enable(Bias_ch[qubit_index])
+        Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44',
+                      '192.168.0.41']  # IP address of bias PS (qubits 1-3 are the same PS)
+        Bias_ch = [1, 2, 3, 1]  # Channel number of qubit 1-4 on associated PS
+        qubit_index = int(self.QubitIndex)
+
+        BiasPS = E36300(Bias_PS_ip[qubit_index], server_port=5025)
+
+        BiasPS.setVoltage(0, Bias_ch[qubit_index])
+        BiasPS.enable(Bias_ch[qubit_index])
 
         #prepare signal arrays
         I_arr = []
         Q_arr = []
         amps_arr = []
 
-        for index, v in tqdm(enumerate(vsweep)):
-            starttime=time.time()
-            # BiasPS.setVoltage(v, Bias_ch[qubit_index])
-            time.sleep(0)
-
-            parity = ParityProgram(soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
-            iq_list = parity.acquire(soc, soft_avgs=self.config['rounds'], progress=True)
+        for index, v in enumerate(vsweep):
+            BiasPS.setVoltage(v, Bias_ch[qubit_index])
+            time.sleep(2)
+            startT=time.time()
+            Parity = ParityProgram(soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
+            iq_list = Parity.acquire(soc, soft_avgs=self.config['rounds'], progress=True)
             #print(np.shape(iq_list))
             I = iq_list[self.QubitIndex][0, 0]
             Q = iq_list[self.QubitIndex][0, 1]
@@ -75,33 +259,31 @@ class ParityMeasurement:
             I_arr.append(I)
             Q_arr.append(Q)
             amps_arr.append(amps)
-            endtime=time.time()
-            timetaken=endtime-starttime
-
-        ts = np.linspace(0, timetaken * len(vsweep), len(vsweep))
+            endT=time.time()
+            timeTaken=endT-startT
         #BiasPS.disable(Bias_ch[qubit_index])
-        # BiasPS.setVoltage(0, Bias_ch[qubit_index])
+        BiasPS.setVoltage(0, Bias_ch[qubit_index])
         #print(I_arr)
 
-        return I_arr, Q_arr, amps_arr, ts
+        return I_arr, Q_arr, amps_arr, timeTaken
 
-    def save_arrays(self, vsweep, I_arr, Q_arr, amps_arr, ts):
-        outerFolder_expt = os.path.join(self.outerFolder, 'parity')
+    def save_arrays(self, vsweep, I_arr, Q_arr, amps_arr):
+        outerFolder_expt = os.path.join(self.outerFolder, 'Parity')
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
 
-        file_name_ts = os.path.join(outerFolder_expt,
-                                      f"{formatted_datetime}_Parity_Q{self.QubitIndex + 1}_ts")
+        file_name_vsweep = os.path.join(outerFolder_expt,
+                                      f"{formatted_datetime}_Parity_Q{self.QubitIndex + 1}_vsweep")
         file_name_Iarr = os.path.join(outerFolder_expt,
                                       f"{formatted_datetime}_Parity_Q{self.QubitIndex + 1}_Iarr")
         file_name_Qarr = os.path.join(outerFolder_expt,
                                       f"{formatted_datetime}_Parity_Q{self.QubitIndex + 1}_Qarr")
         file_name_Amparr = os.path.join(outerFolder_expt,
                                         f"{formatted_datetime}_Parity_Q{self.QubitIndex + 1}_Amparr")
-        with open(f"{file_name_ts}.csv", 'w', newline='') as f:
+        with open(f"{file_name_vsweep}.csv", 'w', newline='') as f:
             writer = csv.writer(f)
-            writer.writerows(ts)
+            writer.writerows(vsweep)
         with open(f"{file_name_Iarr}.csv", 'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerows(I_arr)
@@ -114,7 +296,7 @@ class ParityMeasurement:
 
         return
 
-    def plot_Parity(self, vsweep, I_arr, Q_arr, ts):
+    def plot_Parity(self, vsweep, I_arr, Q_arr, timeTaken):
 
         plt.rcParams.update({
             'font.size': 14,  # Base font size
@@ -124,26 +306,26 @@ class ParityMeasurement:
             'ytick.labelsize': 14,  # Y-axis tick label size
             'legend.fontsize': 14,  # Legend font size
         })
-
+        t=np.linspace(0,timeTaken*len(vsweep), len(vsweep))
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10,8), sharex='all')
         ax1.set_ylabel("I Amplitude (a.u.)", fontsize=16)
         ax1.tick_params(axis='both', which='major', labelsize=14)
-        ax1.plot(ts, I_arr, linewidth=2)   # I_arr might be the wrong shape!
+        ax1.plot(t, I_arr, linewidth=2)   # I_arr might be the wrong shape!
 
         ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=16)
-        ax2.set_xlabel("time(s)", fontsize=16)
-        ax2.plot(ts, Q_arr, linewidth=2)   # Q_arr might be the wrong shape!
+        ax2.set_xlabel("time (s)", fontsize=16)
+        ax2.plot(t, Q_arr, linewidth=2)   # Q_arr might be the wrong shape!
 
-        fig.suptitle(f"Parity Qubit{self.QubitIndex + 1} \n Wait time: {round(self.exp_cfg['wait_time'], 3)} us, reps = 2000", fontsize=20)
+        fig.suptitle(f"Charge Parity Q{self.QubitIndex + 1} \n Wait time: {round(self.exp_cfg['wait_time'], 3)} us, qfreq = 4574.53 MHz, 50 pt", fontsize=20)
         plt.tight_layout()
 
         plt.subplots_adjust(top=0.9)
 
-        outerFolder_expt = os.path.join(self.outerFolder, 'parity')
+        outerFolder_expt = os.path.join(self.outerFolder, 'Parity')
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_Parity_Qubit{self.QubitIndex + 1}.png")
+        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_Parity_Q{self.QubitIndex + 1}.png")
         fig.savefig(file_name, dpi=300, bbox_inches='tight')
         plt.close(fig)
         return
@@ -183,7 +365,7 @@ class ParityProgram(AveragerProgramV2):
                        style="arb",
                        envelope="ramp",
                        freq=cfg['qubit_freq_ge'],
-                       phase=cfg['qubit_phase'] + 90,  # + cfg['wait_time']*360*cfg['ramsey_freq'], # current phase + time * 2pi * ramsey freq #how to do this for tomography?
+                       phase=cfg['qubit_phase'] + 90,  # + cfg['wait_time']*360*cfg['ramsey_freq'], # current phase + time * 2pi * ramsey freq #how to do this for Parity?
                        gain=cfg['pi_amp'] / 2,
                       )
 

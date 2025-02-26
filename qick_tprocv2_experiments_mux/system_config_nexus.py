@@ -76,11 +76,11 @@ class QICK_experiment:
             "trig_time": 0.75,  # [Clock ticks] - get this value from TOF experiment
             # Changes related to the resonator output channel
             "mixer_freq": 5500, # [MHz]
-            "res_freq_ge": [6187.191, 5827.678, 6074.095, 5958.453], #MHz #5958.8 (Grace)
-            "res_gain_ge": [0.4, 0.4,0.4, 0.3875], #[0.15]*4, #[1, 1, 1, 1],
-            "res_length": 4.6, #10,  # [us] (1.0 for res spec)
+            "res_freq_ge": [6187.411, 5827.898, 6073.955, 5958.553], #MHz
+            "res_gain_ge": [0.3143, 0.1857, 0.1429, 0.1857], # from 2/19 optimization
+            "res_length": 3.0, # Choose the one for the qubit you want: [5.15, 2.75, 5.35, 3.25] from 2/19 optimization
             "res_phase": [0] * 4,
-            "ro_phase": [0,0,0,0]#[0] * 4,  # Rotation Angle From QICK Function
+            "ro_phase": [0,0,0,0] # Rotation Angle From QICK Function
         }
 
         # Qubit Configuration

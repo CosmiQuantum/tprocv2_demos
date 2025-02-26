@@ -5,12 +5,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import csv
 import datetime
-import time
+#import time
 
 from NetDrivers import E36300
 
 class AllQubitTomographyMeasurement:
-    def __init__(self, outerFolder, experiment):
+    def __init__(self, outerFolder,number_of_qubits, experiment):
         self.outerFolder = outerFolder
         self.Q13_BiasPS = E36300('192.168.0.44', server_port=5025)
         self.Q4_BiasPS = E36300('192.168.0.41', server_port=5025)
@@ -18,12 +18,13 @@ class AllQubitTomographyMeasurement:
         self.q2_expt_name = "tomography_ge_q2"
         self.q3_expt_name = "tomography_ge_q3"
         self.q4_expt_name = "tomography_ge_q4"
+        self.number_of_qubits = number_of_qubits
         self.experiment = experiment
         self.q1_exp_cfg = expt_cfg[self.q1_expt_name]
         self.q2_exp_cfg = expt_cfg[self.q2_expt_name]
         self.q3_exp_cfg = expt_cfg[self.q3_expt_name]
         self.q4_exp_cfg = expt_cfg[self.q4_expt_name]
-        self.q_config = all_qubit_state(self.experiment)
+        self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
         self.q1_exp_cfg = add_qubit_experiment(expt_cfg, self.q1_expt_name, 0)
         self.q1_config = {**self.q_config['Q0'], **self.q1_exp_cfg}
         self.q2_exp_cfg = add_qubit_experiment(expt_cfg, self.q2_expt_name, 1)
@@ -42,8 +43,8 @@ class AllQubitTomographyMeasurement:
 
         vsweep = np.linspace(start_volt, stop_volt, volt_pts, endpoint=True)
         self.set_up_PS()
-        self.save_metadata(vsweep, rounds)
-        self.bias_sweep(soccfg, soc, vsweep, rounds, plot_data = plot, save_data = save)
+        start_datetime = self.save_metadata(vsweep, rounds)
+        self.bias_sweep(soccfg, soc, vsweep, rounds, start_datetime, plot_data = plot, save_data = save)
 
         return
 
@@ -61,10 +62,11 @@ class AllQubitTomographyMeasurement:
         self.Q4_BiasPS.enable(1)
         return
 
-    def bias_sweep(self, soccfg, soc, vsweep, total_rounds, plot_data=False, save_data=True):
+    def bias_sweep(self, soccfg, soc, vsweep, total_rounds, start_time, plot_data=False, save_data=True):
         #overall for loop for total # of rounds:
-        for r in total_rounds:
+        for r in range(total_rounds):
             ## so round_num starts at 1 not 0
+            print('tomography round=',r)
             round_num = r + 1
 
             ## prepare signal arrays
@@ -83,7 +85,7 @@ class AllQubitTomographyMeasurement:
                 self.Q13_BiasPS.setVoltage(v, 2)
                 self.Q13_BiasPS.setVoltage(v, 3)
                 self.Q4_BiasPS.setVoltage(v, 1)
-
+                print('Tomography round', r, 'Q1')
                 ## Q1
                 q1_tomography = TomographyProgram(soccfg, reps=self.q1_config['reps'], final_delay=self.q1_config['relax_delay'],
                                                   cfg=self.q1_config)
@@ -94,6 +96,7 @@ class AllQubitTomographyMeasurement:
                 Q1_Qarr.append(q1Q)
 
                 ## Q2
+                print('Tomography round', r, 'Q2')
                 q2_tomography = TomographyProgram(soccfg, reps=self.q2_config['reps'], final_delay=self.q2_config['relax_delay'],
                                                   cfg=self.q2_config)
                 q2_iq_list = q2_tomography.acquire(soc, soft_avgs=self.q2_config['rounds'], progress=True)
@@ -103,6 +106,7 @@ class AllQubitTomographyMeasurement:
                 Q2_Qarr.append(q2Q)
 
                 ## Q3
+                print('Tomography round', r, 'Q3')
                 q3_tomography = TomographyProgram(soccfg, reps=self.q3_config['reps'], final_delay=self.q3_config['relax_delay'],
                                                   cfg=self.q3_config)
                 q3_iq_list = q3_tomography.acquire(soc, soft_avgs=self.q3_config['rounds'], progress=True)
@@ -113,6 +117,7 @@ class AllQubitTomographyMeasurement:
                 Q3_Qarr.append(q3Q)
 
                 ## Q4
+                print('Tomography round', r, 'Q4')
                 q4_tomography = TomographyProgram(soccfg, reps=self.q4_config['reps'], final_delay=self.q4_config['relax_delay'],
                                                   cfg=self.q4_config)
                 q4_iq_list = q4_tomography.acquire(soc, soft_avgs=self.q4_config['rounds'], progress=True)
@@ -135,24 +140,24 @@ class AllQubitTomographyMeasurement:
 
             ## save and plot
             if save_data:
-                self.save_all_tomography(all_data, round_num, formatted_datetime)
+                self.save_all_tomography(all_data, round_num, formatted_datetime, start_time)
             if plot_data:
-                self.plot_all_tomography(vsweep, all_data, round_num, formatted_datetime)
+                self.plot_all_tomography(vsweep, all_data, round_num, formatted_datetime, start_time)
 
-            return
-
-    def save_metadata(self, vsweep, total_rounds):
-        outerFolder_expt = os.path.join(self.outerFolder, 'repeated_tomography')
-        self.experiment.create_folder_if_not_exists(outerFolder_expt)
-        now = datetime.datetime.now()
-        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = os.path.join(outerFolder_expt, f"Tomography_Metadata_AllQs_{formatted_datetime}")
-        np.savez(f"{file_name}", q1_cfg = self.q1_config, q2_cfg = self.q2_config, q3_cfg = self.q3_config, q4_cfg = self.q4_config,
-                 vsweep = vsweep, tot_rounds = total_rounds)
         return
 
-    def save_all_tomography(self, alldata, round_num, formatted_datetime):
-        outerFolder_expt = os.path.join(self.outerFolder, 'repeated_tomography')
+    def save_metadata(self, vsweep, total_rounds):
+        now = datetime.datetime.now()
+        start_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+        outerFolder_expt = os.path.join(self.outerFolder, f'repeated_tomography_{start_datetime}')
+        self.experiment.create_folder_if_not_exists(outerFolder_expt)
+        file_name = os.path.join(outerFolder_expt, f"Tomography_Metadata_AllQs_{start_datetime}")
+        np.savez(f"{file_name}", q1_cfg = self.q1_config, q2_cfg = self.q2_config, q3_cfg = self.q3_config, q4_cfg = self.q4_config,
+                 vsweep = vsweep, tot_rounds = total_rounds)
+        return start_datetime
+
+    def save_all_tomography(self, alldata, round_num, formatted_datetime, start_datetime):
+        outerFolder_expt = os.path.join(self.outerFolder, f'repeated_tomography_{start_datetime}')
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         file_name = os.path.join(outerFolder_expt, f"Tomography_AllQs_R{round_num}_{formatted_datetime}")
         np.savez(f"{file_name}", all_xi_xq=alldata)
@@ -162,7 +167,7 @@ class AllQubitTomographyMeasurement:
 
         return
 
-    def plot_all_tomography(self, vsweep, alldata, round_num, formatted_datetime):
+    def plot_all_tomography(self, vsweep, alldata, round_num, formatted_datetime, start_datetime):
         plt.rcParams.update({
             'font.size': 14,  # Base font size
             'axes.titlesize': 18,  # Title font size
@@ -188,7 +193,7 @@ class AllQubitTomographyMeasurement:
 
             plt.subplots_adjust(top=0.9)
 
-            outerFolder_expt = os.path.join(self.outerFolder, 'repeated_tomography')
+            outerFolder_expt = os.path.join(self.outerFolder, f'repeated_tomography_{start_datetime}')
             self.experiment.create_folder_if_not_exists(outerFolder_expt)
             file_name = os.path.join(outerFolder_expt, f"Tomography_Q{q+1}_R{round_num}_{formatted_datetime}_.png")
             fig.savefig(file_name, dpi=300, bbox_inches='tight')

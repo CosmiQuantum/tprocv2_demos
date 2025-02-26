@@ -33,15 +33,14 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
 class PunchOut:
-    def __init__(self, outerFolder, experiment):
+    def __init__(self, outerFolder, experiment, expt_cfg, number_of_qubits):
         self.outerFolder = outerFolder
         self.expt_name = "res_spec"
-
-        self.experiment = experiment
         self.Qubit = 'Q' + str(1)
         self.experiment = experiment
+        self.number_of_qubits = number_of_qubits
         self.exp_cfg = expt_cfg[self.expt_name]
-        self.q_config = all_qubit_state(experiment)
+        self.q_config = all_qubit_state(experiment, self.number_of_qubits)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
         print(f'Punch Out configuration: ', self.config)
 

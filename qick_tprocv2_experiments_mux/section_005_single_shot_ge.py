@@ -249,6 +249,7 @@ class SingleShot:
             ng, binsg, pg = axs[2].hist(ig_new, bins=numbins, range=xlims, color='b', label='g', alpha=0.5)
             ne, binse, pe = axs[2].hist(ie_new, bins=numbins, range=xlims, color='r', label='e', alpha=0.5)
 
+
             axs[2].set_xlabel('I(a.u.)')
         else:
             ng, binsg = np.histogram(ig_new, bins=numbins, range=xlims)
@@ -346,3 +347,62 @@ class GainFrequencySweep:
 
         return results
 
+    #--------------------------- New version of run_sweep function, does averages----------------------------
+
+    def run_sweep_avg(self, freq_range, gain_range, freq_steps, gain_steps):
+        print('Using Averaged version of the function.')
+        freq_step_size = (freq_range[1] - freq_range[0]) / freq_steps
+        gain_step_size = (gain_range[1] - gain_range[0]) / gain_steps
+        results = []
+
+        # Use the optimal readout length for the current qubit
+        readout_length = self.optimal_lengths[self.qubit_index]
+        print('readout_length for this qubit: ', readout_length)
+
+        num_repeats = 4  # Number of times to repeat each measurement
+
+        for freq_step in range(freq_steps):
+            freq = freq_range[0] + freq_step * freq_step_size
+            fid_results = []
+            for gain_step in range(gain_steps):
+                fidelity_sum = 0
+                for repeat in range(num_repeats):
+                    # Create a fresh copy of the experiment for each measurement
+                    fresh_experiment = copy.deepcopy(self.experiment)
+                    gain = gain_range[0] + gain_step * gain_step_size
+                    print('freq step index', freq_step)
+                    print('gain', gain)
+
+                    # Update config with current frequency and readout length
+                    fresh_experiment.readout_cfg['res_freq_ge'][self.qubit_index] = freq
+                    fresh_experiment.readout_cfg['res_length'] = readout_length
+
+                    # Update the gain configuration for the selected qubit
+                    res_gains = fresh_experiment.mask_gain_res(self.qubit_index, gain)
+                    fresh_experiment.readout_cfg['res_gain_ge'] = res_gains
+
+                    # Initialize SingleShot instance for fidelity calculation
+                    round_num = 0
+                    save_figs = False
+                    single_shot = SingleShot(
+                        self.qubit_index,
+                        self.number_of_qubits,
+                        self.list_of_all_qubits,
+                        self.output_folder,
+                        round_num,
+                        save_figs,
+                        fresh_experiment
+                    )
+                    fidelity = single_shot.fidelity_test(fresh_experiment.soccfg, fresh_experiment.soc)
+                    fidelity_sum += fidelity
+
+                    # Clean up to free memory
+                    del fresh_experiment
+                    del single_shot
+
+                # Compute the average fidelity for this frequency-gain pair
+                avg_fidelity = fidelity_sum / num_repeats
+                fid_results.append(avg_fidelity)
+            results.append(fid_results)
+
+        return results, num_repeats

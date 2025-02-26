@@ -33,7 +33,7 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
 class ResonanceSpectroscopy:
-    def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, save_figs, experiment = None):
+    def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, round_num, save_figs, experiment = None):
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
         self.outerFolder = outerFolder
@@ -43,6 +43,7 @@ class ResonanceSpectroscopy:
         self.save_figs = save_figs
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
+        self.list_of_all_qubits = list_of_all_qubits
         if experiment is not None:
             self.q_config = all_qubit_state(experiment, self.number_of_qubits)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}

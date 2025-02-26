@@ -24,7 +24,7 @@ from scipy.optimize import curve_fit
 
 class T2eVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config, fridge):
+                 signal, run_name, exp_config, fridge, list_of_all_qubits):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -35,7 +35,7 @@ class T2eVsTime:
         self.top_folder_dates = top_folder_dates
         self.exp_config = exp_config
         self.fridge = fridge
-
+        self.list_of_all_qubits = list_of_all_qubits
         ramsey_ge_str = self.exp_config['Ramsey_ge'].decode('utf-8')
         ramsey_ge_dict = ast.literal_eval(ramsey_ge_str)
         self.reps = ramsey_ge_dict['reps']
@@ -151,7 +151,8 @@ class T2eVsTime:
                     datetime.date(2025, 1, 26),  # power outage
                     datetime.date(2025, 1, 29),  # HEMT Issues
                     datetime.date(2025, 1, 30),  # HEMT Issues
-                    datetime.date(2025, 1, 31)  # Optimization Issues and non RR work in progress
+                    datetime.date(2025, 1, 31),  # Optimization Issues and non RR work in progress
+                    datetime.date(2025, 2, 11)  # TWPA optimization work, fridge pressure issues, touch tests at nexus
                 }
 
                 for q_key in load_data['T2E']:

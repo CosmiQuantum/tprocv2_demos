@@ -4,14 +4,16 @@ from scipy.optimize import curve_fit
 import datetime
 from build_task import *
 from build_state import *
-from expt_config import *
+# from expt_config import *
+from expt_config import * # Change for quiet vs nexus
 import copy
 import visdom
 
 class AmplitudeRabiExperiment:
-    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
+    def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits,  outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
                  increase_qubit_reps = False, qubit_to_increase_reps_for = None, multiply_qubit_reps_by = 0):
         self.QubitIndex = QubitIndex
+        self.number_of_qubits = number_of_qubits
         self.outerFolder = outerFolder
         self.expt_name = "power_rabi_ge"
         self.Qubit = 'Q' + str(self.QubitIndex)
@@ -21,8 +23,9 @@ class AmplitudeRabiExperiment:
         self.signal = signal
         self.save_figs = save_figs
         self.experiment = experiment
+        self.list_of_all_qubits = list_of_all_qubits
         if experiment is not None:
-            self.q_config = all_qubit_state(self.experiment)
+            self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
             if increase_qubit_reps:
@@ -260,7 +263,7 @@ class AmplitudeRabiProgram(AveragerProgramV2):
         self.add_pulse(ch=res_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
-                       mask=[0, 1, 2, 3],
+                       mask=cfg["list_of_all_qubits"],
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])

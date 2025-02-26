@@ -1,3 +1,4 @@
+import time
 import sys
 import os
 import numpy as np
@@ -31,6 +32,9 @@ save_figs = False   # save plots for everything as you go along the RR script?
 live_plot = False    # for live plotting open http://localhost:8097/ on firefox
 fit_data = False # always set to False
 
+number_of_qubits = 4 #for QUIET 6, for NEXUS 4
+list_of_all_qubits = [0, 1, 2, 3] #for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0, 1, 2, 3]
+
 outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30", str(datetime.date.today())) #change run number in each new run
 
 def create_folder_if_not_exists(folder_path):
@@ -45,26 +49,28 @@ output_folder =outerFolder + "/SingleShot_Test/"
 create_folder_if_not_exists(output_folder)
 
 n = 1  # Number of rounds
-n_loops = 5  # Number of repetitions per length to average
+n_loops = 5 # Number of repetitions per length to average
 
 # List of qubits and pulse lengths to measure
-Qs = [0]#[0,1,2,3]
-number_of_qubits = 4 #for QUIET 6, for NEXUS 4
-list_of_all_qubits = [0, 1, 2, 3] #for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0, 1, 2, 3]
-
+Qs = [0]
 
 #Change for NEXUS vs QUIET
-res_leng_vals = [4.6, 3.6, 5.35, 2.35] # from 2/8/2025 optimization
-res_gain = [0.3, 0.2, 0.25, 0.25] # from 2/8/2025 optimization
-freq_offsets = [-0.1333, -0.0667, -0.2667, 0.0] # from 2/8/2025 optimization
+res_leng_vals = [5.2, 2.4, 4.2, 4.4] # from 2/25/2025 optimization
+res_gain = [0.25, 0.3, 0.25, 0.25] # from 2/25/2025 optimization
+freq_offsets = [-0.5, 0.0667, -0.3333, -0.7333] # from 2/25/2025 optimization
 
 optimal_lengths = [None] * 4 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_freq_ge = [None] * 4 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
 
 j=0 #round number, from RR code. Not really used here since we just run it once for each qubit
 
-lengs = np.arange(0.01, 5, 0.1)
+# lengs = np.arange(2, 5.5, 0.2)
+lengs = np.arange(2.5, 5.5, 0.1)
 
+# # Record the starting time at the beginning of your script
+# start_time = time.time()
+
+average_sweeps = False
 
 for QubitIndex in Qs:
     # Get the config for this qubit
@@ -76,69 +82,56 @@ for QubitIndex in Qs:
     experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
 
     ################################################## Res spec ####################################################
-    try:
-        res_spec = ResonanceSpectroscopy(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, save_figs,
-                                         experiment)
-        res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
-        experiment.readout_cfg['res_freq_ge'] = res_freqs
 
-        # incorporating offset (if you don't want to, then set all values inside freq_offsets to zero)
-        offset = freq_offsets[QubitIndex]  # use optimized offset values
-        offset_res_freqs = [r + offset for r in res_freqs]
-        experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
+    res_spec = ResonanceSpectroscopy(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, save_figs,
+                                     experiment)
+    res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
+    experiment.readout_cfg['res_freq_ge'] = res_freqs
 
-        # Used later when optimizing res gains and freqs, make sure you are setting all freq_offsets to zero beforehand
-        this_res_freq = offset_res_freqs[QubitIndex]
-        res_freq_ge[QubitIndex] = float(this_res_freq)
+    # incorporating offset (if you don't want to, then set all values inside freq_offsets to zero)
+    offset = freq_offsets[QubitIndex]  # use optimized offset values
+    offset_res_freqs = [r + offset for r in res_freqs]
+    experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
 
-        del res_spec
-    except Exception as e:
-        print(f'Got the following error at Res Spec, continuing: {e}')
-        continue  # skip the rest of this qubit
+    # Used later when optimizing res gains and freqs, decide if you want to set the offsets to zero or not for the first round
+    this_res_freq = offset_res_freqs[QubitIndex]
+    res_freq_ge[QubitIndex] = float(this_res_freq)
+
+    del res_spec
 
     ################################################## Qubit spec ##################################################
-    try:
-        q_spec = QubitSpectroscopy(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal,
-                                   save_figs, experiment, live_plot)
-        qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg,
-                                                                                         experiment.soc)
-        # if these are None, fit didnt work
-        if (qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None):
-            print('QSpec fit didnt work, skipping the rest of this qubit')
-            continue  # skip the rest of this qubit
-
-        experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
-        print('Qubit freq for qubit ', QubitIndex + 1, ' is: ', float(qubit_freq))
-        del q_spec
-
-    except Exception as e:
-        print(f'Got the following error, continuing: {e}')
+    q_spec = QubitSpectroscopy(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal,
+                               save_figs, experiment, live_plot)
+    qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg,
+                                                                                     experiment.soc)
+    # if these are None, fit didnt work
+    if (qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None):
+        print('QSpec fit didnt work, skipping the rest of this qubit')
         continue  # skip the rest of this qubit
+
+    experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
+    print('Qubit freq for qubit ', QubitIndex + 1, ' is: ', float(qubit_freq))
+    del q_spec
 
     ###################################################### Rabi ####################################################
     increase_qubit_reps = False  # if you want to increase the reps for a qubit, set to True
     qubit_to_increase_reps_for = 0  # only has impact if previous line is True
     multiply_qubit_reps_by = 2  # only has impact if the line two above is True
 
-    try:
-        rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal,
-                                       save_figs, experiment, live_plot,
-                                       increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
-        rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save = rabi.run(experiment.soccfg,
-                                                                                    experiment.soc)
+    rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal,
+                                   save_figs, experiment, live_plot,
+                                   increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
+    rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save = rabi.run(experiment.soccfg,
+                                                                                experiment.soc)
 
-        # if these are None, fit didnt work
-        if (rabi_fit is None and pi_amp is None):
-            print('Rabi fit didnt work, skipping the rest of this qubit')
-            continue  # skip the rest of this qubit
-
-        experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
-        print('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
-        del rabi
-
-    except Exception as e:
-        print(f'Got the following error, continuing: {e}')
+    # if these are None, fit didnt work
+    if (rabi_fit is None and pi_amp is None):
+        print('Rabi fit didnt work, skipping the rest of this qubit')
         continue  # skip the rest of this qubit
+
+    experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
+    print('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
+    del rabi
 
 
     #MAKE DEEP COPY OF CONFIG, IMPORTANT!!!
@@ -179,6 +172,7 @@ for QubitIndex in Qs:
     #
     #             ss = SingleShot(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder,  j, save_figs, experiment)  # updated way
     #             fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
+    #
     #             fids.append(fid)
     #
     #             # Append IQ data for each loop
@@ -233,32 +227,50 @@ for QubitIndex in Qs:
     #
     # del avg_fids, rms_fids, avg_ground_iq, avg_excited_iq, loop_group, length_group
 
+    # end_time = time.time()
+    # elapsed_time = end_time - start_time
+    # print(f"Time taken for the res_leng sweep: {elapsed_time:.2f} seconds")
+
     #---------------------Res Gain and Res Freq Sweeps------------------------
-    optimal_lengths = [4.6, 3.6, 5.35, 2.35]
+    start_time = time.time()
+    optimal_lengths = [5.2, 2.4, 4.2, 4.4]
     date_str = str(datetime.date.today())
     output_folder = outerFolder + "/readout_opt/Gain_Freq_Sweeps/"
     # Ensure the output folder exists
     os.makedirs(output_folder, exist_ok=True)
 
     # Define sweeping parameters
-    gain_range = [0.1, 0.5]  # Gain range in a.u.
-    freq_steps = 30
-    gain_steps = 8
+    gain_range = [0.1, 0.3]  # Gain range in a.u.
+    freq_steps = 12
+    gain_steps = 4
 
     print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')
     # Select the reference frequency for the current resonator
     reference_frequency = res_freq_ge[QubitIndex]
 
-    freq_range = [reference_frequency - 1,reference_frequency + 1]# Frequency range in MHz
+    freq_range = [reference_frequency - 0.75 ,reference_frequency + 0.75]# Frequency range in MHz
 
     experiment = copy.deepcopy(tuned_experiment)
     sweep = GainFrequencySweep(QubitIndex, number_of_qubits, list_of_all_qubits, experiment, optimal_lengths=optimal_lengths, output_folder=output_folder)
-    results = sweep.run_sweep(freq_range, gain_range, freq_steps, gain_steps)
-    results = np.array(results)
 
-    # Save results and metadata in an HDF5 file
-    timestamp = time.strftime("%H%M%S")
-    h5_file = f"{outerFolder}Gain_Freq_Sweep_Qubit_{QubitIndex + 1}_{timestamp}.h5"
+    if average_sweeps: #With averages
+        results, num_repeats = sweep.run_sweep_avg(freq_range, gain_range, freq_steps, gain_steps)
+        results = np.array(results)
+
+        # Save results and metadata in an HDF5 file
+        timestamp = time.strftime("%H%M%S")
+        h5_file = os.path.join(output_folder, f"Gain_Freq_Sweep_Qubit_{QubitIndex + 1}_avgs{num_repeats}_{timestamp}.h5")
+        file = f"Gain_Freq_Sweep_Qubit_{QubitIndex + 1}_avgs{num_repeats}_{timestamp}.png"
+
+    else: #Without averages
+        results = sweep.run_sweep(freq_range, gain_range, freq_steps, gain_steps)
+        results = np.array(results)
+
+        #Save results and metadata in an HDF5 file
+        timestamp = time.strftime("%H%M%S")
+        h5_file = os.path.join(output_folder, f"Gain_Freq_Sweep_Qubit_{QubitIndex + 1}_{timestamp}.h5")
+        file = f"Gain_Freq_Sweep_Qubit_{QubitIndex + 1}_{timestamp}.png"
+
     with h5py.File(h5_file, "w") as f:
         # Store the data
         f.create_dataset("results", data=results)
@@ -281,9 +293,13 @@ for QubitIndex in Qs:
     plt.ylabel("Readout frequency offset (MHz)")  # Frequency on y-axis
     plt.title(f"Gain-Frequency Sweep for Qubit {QubitIndex + 1}")
     # plt.show()
-    file = f"{outerFolder}_Gain_Freq_Sweep_Qubit_{QubitIndex + 1}_{timestamp}.png"
-    plt.savefig(file, dpi=600, bbox_inches='tight')
+    file_path = os.path.join(output_folder, file)
+    plt.savefig(file_path, dpi=600, bbox_inches='tight')
 
     plt.close()  # Close the plot to free up memory
     del results, sweep
+
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f"Time taken for the res_leng sweep: {elapsed_time:.2f} seconds")
 

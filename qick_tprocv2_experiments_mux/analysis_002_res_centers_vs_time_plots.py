@@ -14,21 +14,26 @@ import re
 import datetime
 import ast
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from matplotlib.ticker import StrMethodFormatter
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
 class ResonatorFreqVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config):
+                 signal, run_name, exp_config, fridge, list_of_all_qubits, outerFolder):
         self.figure_quality = figure_quality
         self.number_of_qubits = number_of_qubits
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
         self.run_name = run_name
+        self.outerFolder = outerFolder
         self.top_folder_dates = top_folder_dates
         self.final_figure_quality = final_figure_quality
         self.exp_config = exp_config
+        self.fridge = fridge
+        self.list_of_all_qubits = list_of_all_qubits
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -115,11 +120,17 @@ class ResonatorFreqVsTime:
         mean_values = {}
 
         for folder_date in self.top_folder_dates:
-            outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
-            outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
+            if self.fridge.upper() == 'QUIET':
+                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
+                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
+            elif self.fridge.upper() == 'NEXUS':
+                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
+                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
+            else:
+                raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
             # ------------------------------------------Load/Plot/Save Res Spec------------------------------------
-            outerFolder_expt = outerFolder + "/Data_h5/Res_ge/"
+            outerFolder_expt = self.outerFolder + "/Data_h5/Res_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 
             for h5_file in h5_files:
@@ -130,30 +141,68 @@ class ResonatorFreqVsTime:
 
                 # just look at this resonator data, should have batch_num of arrays in each one
                 # right now the data writes the same thing batch_num of times, so it will do the same 5 datasets 5 times, until you fix this just grab the first one (All 5)
+
+                populated_keys = []
                 for q_key in load_data['Res']:
-                    # print("all batch_num datasets------------------------", load_data['Res'][q_key].get('Amps', [])[0])
-                    # print("one dataset------------------------",load_data['Res'][q_key].get('Amps', [])[0][0].decode())
+                    # Access 'Dates' for the current q_key
+                    dates_list = load_data['Res'][q_key].get('Dates', [[]])
+
+                    # Check if any entry in 'Dates' is not NaN
+                    if any(
+                            not np.isnan(date)
+                            for date in dates_list[0]  # Iterate over the first batch of dates
+                    ):
+                        populated_keys.append(q_key)
+
+                # Define specific days to exclude
+                exclude_dates = {
+                    datetime.date(2025, 1, 26),  # power outage
+                    datetime.date(2025, 1, 29),  # HEMT Issues
+                    datetime.date(2025, 1, 30),  # HEMT Issues
+                    datetime.date(2025, 1, 31)  # Optimization Issues and non RR work in progress
+                }
+
+                print(populated_keys)
+                for q_key in populated_keys:
                     # go through each dataset in the batch and plot
                     for dataset in range(len(load_data['Res'][q_key].get('Dates', [])[0])):
-                        if 'nan' in str(load_data['Res'][q_key].get('Dates', [])[0][dataset]):
-                            continue
-
                         date = datetime.datetime.fromtimestamp(
                             load_data['Res'][q_key].get('Dates', [])[0][dataset])  # single date per dataset
 
+                        if date.date() in exclude_dates:
+                            print(f"Skipping data for {date} (excluded date)")
+                            continue
+
                         freq_pts = self.process_h5_data(load_data['Res'][q_key].get('freq_pts', [])[0][
-                                                       dataset].decode())  # comes in as an array but put into a byte string, need to convert to list
-                        freq_center = self.process_h5_data(load_data['Res'][q_key].get('freq_center', [])[0][
-                                                          dataset].decode())  # comes in as an array but put into a string, need to convert to list
-                        freqs_found = self.string_to_float_list(load_data['Res'][q_key].get('Found Freqs', [])[0][
-                                                               dataset].decode())  # comes in as a list of floats in string format, need to convert
+                                                            dataset].decode())  # comes in as an array but put into a byte string, need to convert to list
+                        # print(freq_pts)
+                        print(load_data['Res'][q_key].get('freq_center', [])[0][dataset].decode())
+
+                        freq_center = self.process_h5_data(load_data['Res'][q_key].get('freq_center', [])[0][dataset].decode()) # comes in as an array but put into a string, need to convert to list
+                        freqs_found = self.string_to_float_list(load_data['Res'][q_key].get('Found Freqs', [])[0][dataset].decode())  # comes in as a list of floats in string format, need to convert
                         amps = self.process_string_of_nested_lists(
                             load_data['Res'][q_key].get('Amps', [])[0][dataset].decode())  # list of lists
+                        print('here: ', amps)
                         round_num = load_data['Res'][q_key].get('Round Num', [])[0][dataset]  # already a float
                         batch_num = load_data['Res'][q_key].get('Batch Num', [])[0][dataset]
+                        freq_pts_data = load_data['Res'][q_key].get('freq_pts', [])[0][dataset].decode()
 
+                        # Replace whitespace between numbers with commas to make it a valid list
+                        formatted_str = freq_pts_data.replace('  ', ',').replace('\n', '')
+                        formatted_str = formatted_str.replace(' ', ',').replace('\n', '')
+                        formatted_str = formatted_str.replace(',]', ']').replace('\n', '')
+                        formatted_str = formatted_str.replace('],[', '],[')
+                        formatted_str = re.sub(r",,", ",", formatted_str)
+                        formatted_str = re.sub(r",\s*([\]])", r"\1", formatted_str)
+                        formatted_str = re.sub(r"(\d+)\.,", r"\1.0,",
+                                               formatted_str)  # Fix malformed floating-point numbers (e.g., '5829.,' -> '5829.0')
+                        # Convert to NumPy array
+                        freq_points = np.array(eval(formatted_str))
+                        # print('here: ', freq_points)
                         if len(freq_pts) > 0:
-                            res_class_instance = ResonanceSpectroscopy(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.save_figs)
+                            res_class_instance = ResonanceSpectroscopy(q_key, self.number_of_qubits, self.list_of_all_qubits, outerFolder_save_plots, round_num,
+                                                                       self.save_figs)
+
                             res_spec_cfg = ast.literal_eval(self.exp_config['res_spec'].decode())
                             res_freqs = res_class_instance.get_results(freq_pts, freq_center, amps)
 
@@ -167,19 +216,29 @@ class ResonatorFreqVsTime:
 
     def plot(self, date_times, resonator_centers, show_legends):
         #---------------------------------plot-----------------------------------------------------
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
-        self.create_folder_if_not_exists(analysis_folder)
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
-        self.create_folder_if_not_exists(analysis_folder)
+        if self.fridge.upper() == 'QUIET':
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
+        elif self.fridge.upper() == 'NEXUS':
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
+        else:
+            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         font = 14
         colors = ['orange','blue','purple','green','brown','pink']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
-        plt.title('Resonator centers vs Time',fontsize = font)
         axes = axes.flatten()
         titles = [f"Res {i + 1}" for i in range(self.number_of_qubits)]
         from datetime import datetime
         for i, ax in enumerate(axes):
+            if i >= self.number_of_qubits:  # If we have fewer qubits than subplots, stop plotting and hide the rest
+                ax.set_visible(False)
+                continue
 
             ax.set_title(titles[i], fontsize = font)
 
@@ -193,6 +252,11 @@ class ResonatorFreqVsTime:
             combined = list(zip(datetime_objects, y))
             combined.sort(reverse=True, key=lambda x: x[0])
 
+            if len(combined) == 0:
+                # If this qubit has no data, just skip
+                ax.set_visible(False)
+                continue
+
             # Unpack them back into separate lists, in order from latest to most recent.
             sorted_x, sorted_y = zip(*combined)
             ax.scatter(sorted_x, sorted_y, color=colors[i])
@@ -202,11 +266,16 @@ class ResonatorFreqVsTime:
             num_points = 5
             indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
 
-            # Set new x-ticks using the datetime objects at the selected indices
-            ax.set_xticks(sorted_x[indices])
-            ax.set_xticklabels([dt for dt in sorted_x[indices]], rotation=45)
+            ax.xaxis.set_major_locator(mdates.AutoDateLocator())  # Automatically choose good tick locations
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
+            # ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # Show day and time
+            ax.tick_params(axis='x', rotation=45)  # Rotate ticks for better readability
 
-            ax.scatter(x, y, color=colors[i])
+            # Disable scientific notation and format y-ticks
+            ax.ticklabel_format(style="plain", axis="y")
+            ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.2f}"))  # 2 decimal places
+
+            # ax.scatter(x, y, color=colors[i])
             if show_legends:
                 ax.legend(edgecolor='black')
             ax.set_xlabel('Time (Days)', fontsize=font-2)
@@ -215,5 +284,5 @@ class ResonatorFreqVsTime:
 
         plt.tight_layout()
         plt.savefig(analysis_folder + 'Res_Centers.pdf', transparent=True, dpi=self.final_figure_quality)
-
+        print('Saved fig to: ', analysis_folder)
         #plt.show()

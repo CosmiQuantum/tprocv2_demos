@@ -345,11 +345,18 @@ class PlotMetricDependencies:
         Also plots qubit temp data, fridge thermometry data, Pi Amp, and qubit frequency data during this time frame IF provided.
         """
 
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
-        self.create_folder_if_not_exists(analysis_folder)
-        print(self.run_name)
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/correlations_singleplots/"
-        self.create_folder_if_not_exists(analysis_folder)
+        if self.fridge.upper() == 'QUIET':
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/correlations_singleplots/"
+            self.create_folder_if_not_exists(analysis_folder)
+        elif self.fridge.upper() == 'NEXUS':
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/correlations_singleplots/"
+            self.create_folder_if_not_exists(analysis_folder)
+        else:
+            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         # If timestamps are strings, convert them to datetime objects
         def ensure_datetime(ts_list):
@@ -402,12 +409,14 @@ class PlotMetricDependencies:
         ax1.grid(True, alpha=0.3)
 
         ############################# This sets a limit on the x axis if you only want to look at specific dates
-        year = 2024
-        month = 12
-        day1 = 14
-        day2 = 15
-        start_time = datetime(year, month, day1, 20, 0, 0, tzinfo=pytz.timezone("America/Chicago"))
-        end_time = datetime(year, month, day2, 14, 0, 0, tzinfo=pytz.timezone("America/Chicago"))
+        year = 2025
+        month = 2
+        day1 = 12  # Start date
+        day2 = 13  # End date
+        hour_start = 18  # Start hour
+        hour_end = 16  # End hour
+        start_time = datetime(year, month, day1, hour_start, 0, 0, tzinfo=pytz.timezone("America/Chicago"))
+        end_time = datetime(year, month, day2, hour_end, 0, 0, tzinfo=pytz.timezone("America/Chicago"))
         ax1.set_xlim(start_time, end_time)  # Set the x-axis limits
         #############################
 
@@ -466,6 +475,7 @@ class PlotMetricDependencies:
             ax3.scatter(Q1_dates_spec_dt, Q1_freqs, color='orchid', alpha=0.8, label=qspec_label, edgecolor='black')
             ax3.set_ylabel("Frequency (MHz)", color='purple')
             ax3.tick_params(axis='y', labelcolor='purple')
+            ax3.set_ylim(4570, 4590)  # Set y-axis limits for frequency, OPTIONAL
 
         # Plots frequency data on ax4
         ax4 = None
@@ -476,7 +486,7 @@ class PlotMetricDependencies:
             ax4.set_ylabel("Pi Amp (a.u.)", color='goldenrod')
             ax4.tick_params(axis='y', labelcolor='goldenrod')
 
-        plt.title(" Qubit 1 run5a: T1 , Freq, Temperature, and Pi Amp vs. Time")
+        plt.title(" Qubit 3, Run 30: T1, and Freq vs. Time")
 
         # Collect legend info from ax1 and ax2
         handles1, labels1 = ax1.get_legend_handles_labels() #always provided
@@ -490,7 +500,8 @@ class PlotMetricDependencies:
         fig.tight_layout()
 
         unique_str = datetime.now().strftime('%Y%m%d%H%M%S')
-        plot_filename = os.path.join(analysis_folder, f"Q1_Temp_and_T1_vs_Time_updatedcooldown_closeup_{unique_str}.png")
-        plt.savefig(plot_filename, transparent=False, dpi=self.final_figure_quality)
-        #plt.show()
-        plt.close()
+        plot_filename = os.path.join(analysis_folder, f"Q3freq_andT1_vsTime_{unique_str}.png")
+        print('Plot saved: ',analysis_folder)
+        # plt.savefig(plot_filename, transparent=False, dpi=self.final_figure_quality)
+        plt.show()
+        # plt.close()

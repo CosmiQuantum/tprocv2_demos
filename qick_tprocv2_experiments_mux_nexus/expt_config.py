@@ -16,25 +16,25 @@ expt_cfg = {
         "list_of_all_qubits": list_of_all_qubits,
     },
 
-    # "res_spec": {
-    #     "reps": 500,
-    #     "rounds": 1,
-    #     "start": -3.5, # [MHz]
-    #     "step_size": 0.12,  # [MHz]
-    #     "steps": 101,
-    #     "relax_delay": 20,  # [us]
-    #     "list_of_all_qubits": list_of_all_qubits,
-    # },
-
-    "res_spec": { # Works for PUNCHOUT only 1/23 to do
+    "res_spec": {
         "reps": 500,
         "rounds": 1,
-        "start": list(VNA_res - 1),  # [MHz]
-        "stop": list(VNA_res + 1),
+        "start": -3.5, # [MHz]
+        "step_size": 0.12,  # [MHz]
         "steps": 101,
         "relax_delay": 20,  # [us]
         "list_of_all_qubits": list_of_all_qubits,
     },
+
+    # "res_spec": {  # Works for PUNCHOUT only 1/23 to do
+    #     "reps": 500,
+    #     "rounds": 1,
+    #     "start": list(VNA_res - 1),  # [MHz]
+    #     "stop": list(VNA_res + 1),
+    #     "steps": 101,
+    #     "relax_delay": 20,  # [us]
+    #     "list_of_all_qubits": list_of_all_qubits,
+    # },
 
     "qubit_spec_ge": {
         "reps": 700, #100
@@ -114,12 +114,35 @@ expt_cfg = {
         "list_of_all_qubits": list_of_all_qubits,
     },
 
-    "parity_ge":{
+    "Parity_ge_q1":{
         "steps": 1,
-        "reps": 1,
+        "reps": 1000,
         "rounds": 1,
         "relax_delay": 500, # [us]
-        "wait_time": 1/2.7/4, # [us]
+        "wait_time": 1/2/4, # [us]    [2, 2.85, 4, 2.7]
+    },
+
+    "Parity_ge_q2":{
+        "steps": 1,
+        "reps": 1000,
+        "rounds": 1,
+        "relax_delay": 500, # [us]
+        "wait_time": 1/2.85/4, # [us]    [2, 2.85, 4, 2.7]
+    },
+    "Parity_ge_q3":{
+        "steps": 1,
+        "reps": 1000,
+        "rounds": 1,
+        "relax_delay": 500, # [us]
+        "wait_time": 1/4/4, # [us]    [2, 2.85, 4, 2.7]
+    },
+
+    "Parity_ge_q4":{
+        "steps": 1,
+        "reps": 500,
+        "rounds": 1,
+        "relax_delay": 500, # [us]
+        "wait_time": 1/2.7/8, # [us]    [2, 2.85, 4, 2.7]
     },
 
     "tomography_ge_q1":{

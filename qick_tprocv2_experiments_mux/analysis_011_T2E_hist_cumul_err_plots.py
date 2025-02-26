@@ -140,7 +140,8 @@ class T2eHistCumulErrPlots:
                     datetime.date(2025, 1, 26),  # power outage
                     datetime.date(2025, 1, 29),  # HEMT Issues
                     datetime.date(2025, 1, 30),  # HEMT Issues
-                    datetime.date(2025, 1, 31)  # Optimization Issues and non RR work in progress
+                    datetime.date(2025, 1, 31),  # Optimization Issues and non RR work in progress
+                    datetime.date(2025, 2, 11)  # TWPA optimization work, fridge pressure issues, touch tests at nexus
                 }
 
                 for q_key in load_data['T2E']:

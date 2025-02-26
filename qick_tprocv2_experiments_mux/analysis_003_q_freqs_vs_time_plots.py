@@ -24,7 +24,7 @@ from scipy.optimize import curve_fit
 
 class QubitFreqsVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config, fridge):
+                 signal, run_name, exp_config, fridge, list_of_all_qubits):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -35,6 +35,7 @@ class QubitFreqsVsTime:
         self.top_folder_dates = top_folder_dates
         self.exp_config = exp_config
         self.fridge = fridge
+        self.list_of_all_qubits = list_of_all_qubits
 
         qspec_ge_str = self.exp_config['qubit_spec_ge'].decode('utf-8')
         qspec_ge_dict = ast.literal_eval(qspec_ge_str)
@@ -114,7 +115,7 @@ class QubitFreqsVsTime:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run(self):
+    def run(self, return_errs = False):
         import datetime
 
         qubit_frequencies = {i: [] for i in range(self.number_of_qubits)}
@@ -151,7 +152,8 @@ class QubitFreqsVsTime:
                     datetime.date(2025, 1, 26),  # power outage
                     datetime.date(2025, 1, 29),  # HEMT Issues
                     datetime.date(2025, 1, 30),  # HEMT Issues
-                    datetime.date(2025, 1, 31)  # Optimization Issues and non RR work in progress
+                    datetime.date(2025, 1, 31),  # Optimization Issues and non RR work in progress
+                    datetime.date(2025, 2, 11)  # TWPA optimization work, fridge pressure issues, touch tests at nexus
                 }
 
                 for q_key in load_data['QSpec']:
@@ -185,7 +187,11 @@ class QubitFreqsVsTime:
                             del qspec_class_instance
 
                 del H5_class_instance
-        return date_times, qubit_frequencies, qspec_fit_errs
+        if return_errs:
+            return date_times, qubit_frequencies, qspec_fit_errs
+        else:
+            return date_times, qubit_frequencies
+
 
     def plot_without_errs(self, date_times, qubit_frequencies, show_legends):
         # ---------------------------------plot-----------------------------------------------------
@@ -203,15 +209,15 @@ class QubitFreqsVsTime:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         # ----------------To Plot a specific timeframe------------------
-        # from datetime import datetime
-        # year = 2025
-        # month = 1
-        # day1 = 24  # Start date
-        # day2 = 25  # End date
-        # hour_start = 0  # Start hour
-        # hour_end = 12  # End hour
-        # start_time = datetime(year, month, day1, hour_start, 0)
-        # end_time = datetime(year, month, day2, hour_end, 0)
+        from datetime import datetime
+        year = 2025
+        month = 2
+        day1 = 6  # Start date
+        day2 = 13  # End date
+        hour_start = 12  # Start hour
+        hour_end = 16  # End hour
+        start_time = datetime(year, month, day1, hour_start, 0)
+        end_time = datetime(year, month, day2, hour_end, 59)
         # -----------------------------------------------------------------
 
         font = 14
@@ -249,7 +255,7 @@ class QubitFreqsVsTime:
             ax.scatter(sorted_x, sorted_y, color=colors[i])
 
             # Set x-axis limits for the specific timeframe
-            # ax.set_xlim(start_time, end_time)
+            ax.set_xlim(start_time, end_time)
 
             ax.set_ylim(sorted_y[0] - 2.0, sorted_y[0] + 2.0)
 
@@ -259,8 +265,8 @@ class QubitFreqsVsTime:
             indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
 
             ax.xaxis.set_major_locator(mdates.AutoDateLocator())  # Automatically choose good tick locations
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
-            # ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # Show day and time
+            # ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # Show day and time
             ax.tick_params(axis='x', rotation=45)  # Rotate ticks for better readability
 
             # Disable scientific notation and format y-ticks
@@ -274,7 +280,7 @@ class QubitFreqsVsTime:
             ax.tick_params(axis='both', which='major', labelsize=8)
 
         plt.tight_layout()
-        plt.savefig(analysis_folder + 'Q_Freqs.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'Q_Freqs.png', transparent=False, dpi=self.final_figure_quality)
         plt.close()
 
     def plot_with_errs(self, date_times, qubit_frequencies, qspec_fit_err, show_legends):

@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Path to the HDF5 file for a specific qubit (replace with actual file path)
-h5_filename = '/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/2025-02-08/SingleShot_Test/qubit_3_data_20250208_173905.h5'  # Update with your file path
+h5_filename = '/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/2025-02-24/SingleShot_Test/qubit_1_data_20250224_200834.h5'  # Update with your file path
 
 
 # Lists to store pulse lengths, average fidelities, and RMS fidelities
@@ -13,7 +13,7 @@ rms_fidelities = []
 
 # Load data from the HDF5 file
 with h5py.File(h5_filename, 'r') as h5_file:
-    qubit_group = h5_file[f"Qubit_3"]
+    qubit_group = h5_file[f"Qubit_1"]
 
     # Iterate over each length to retrieve the avg_fidelity and rms_fidelity data
     for length_key in qubit_group.keys():
@@ -37,11 +37,12 @@ avg_fidelities = np.array(avg_fidelities)[sorted_indices]
 rms_fidelities = np.array(rms_fidelities)[sorted_indices]
 
 # Find the maximum average fidelity and corresponding length
-max_fidelity = max(avg_fidelities[:15])
+max_fidelity = max(avg_fidelities[:45])
 # max_fidelity = max(avg_fidelities)
 max_fid_index = avg_fidelities.tolist().index(max_fidelity)
 max_length = pulse_lengths[max_fid_index]
-print('first max length: ', max_length)
+# print('first max length: ', max_length)
+max_std_dev = rms_fidelities[max_fid_index]  # Standard deviation at max length
 
 # max_fidelity2 = max(avg_fidelities[:22])
 # max_fid_index2 = avg_fidelities.tolist().index(max_fidelity2)
@@ -52,11 +53,13 @@ print('first max length: ', max_length)
 plt.figure()
 plt.errorbar(pulse_lengths, avg_fidelities, yerr=rms_fidelities, fmt='-o', color='black', capsize=2)
 plt.axvline(x=max_length, linestyle="--", color="red")
+plt.text(max_length + 0.05, max_fidelity - 0.3, f'SD: {max_std_dev:.4f}', color='red', fontsize=12)  # Display standard deviation
+print(f'SD: {max_std_dev:.4f}')
 #plt.axvline(x=max_length2, linestyle="--", color="green")
 plt.text(max_length + 0.1, max_fidelity-0.2, f'{max_length:.2f}', color='red', fontsize=16)
 #plt.text(max_length2 + 0.1, max_fidelity2-0.2, f'max length {max_length2:.2f}', color='green')
 plt.xlabel('Readout and Pulse Length')
 plt.ylabel('Fidelity')
-plt.title('Avg Fidelity vs. Readout and Pulse Length for Qubit 3, (5 repetitions)', fontsize=10)
+plt.title('Avg Fidelity vs. Readout and Pulse Length for Qubit 1, (3 repetitions)', fontsize=10)
 plt.show()
 #plt.close()

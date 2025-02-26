@@ -25,7 +25,7 @@ from matplotlib.ticker import StrMethodFormatter
 
 class T1VsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config, fridge):
+                 signal, run_name, exp_config, fridge, list_of_all_qubits):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -35,6 +35,7 @@ class T1VsTime:
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
         self.exp_config = exp_config
+        self.list_of_all_qubits = list_of_all_qubits
         self.fridge = fridge
 
         t1_ge_str = self.exp_config['T1_ge'].decode('utf-8')
@@ -159,7 +160,8 @@ class T1VsTime:
                     datetime.date(2025, 1, 26),  # power outage
                     datetime.date(2025, 1, 29),  # HEMT Issues
                     datetime.date(2025, 1, 30),  # HEMT Issues
-                    datetime.date(2025, 1, 31)  # Optimization Issues and non RR work in progress
+                    datetime.date(2025, 1, 31),  # Optimization Issues and non RR work in progress
+                    datetime.date(2025, 2, 11)  # TWPA optimization work, fridge pressure issues, touch tests at nexus
                 }
 
                 for q_key in load_data['T1']:
@@ -204,14 +206,14 @@ class T1VsTime:
                             t1_errors[q_key].append(T1_err)
 
                             # --- NEW BLOCK: Collect combined plot data for Q2 ---
-                            if q_key == 1 and (round(T1_est, 2) == 16.73 or round(T1_est, 4) == 20.1815):
-                                q2_combined_fit_data.append({
-                                    'delay_times': delay_times,
-                                    'fit': q1_fit_exponential,
-                                    'T1_est': T1_est,
-                                    'plot_sig': plot_sig,
-                                    'Q': Q
-                                })
+                            # if q_key == 3 and (round(T1_est, 2) == 20.74 or round(T1_est, 2) == 25.38):
+                            #     q2_combined_fit_data.append({
+                            #         'delay_times': delay_times,
+                            #         'fit': q1_fit_exponential,
+                            #         'T1_est': T1_est,
+                            #         'plot_sig': plot_sig,
+                            #         'I': I
+                            #     })
                             # -------------------------------------------------------
 
                             del T1_class_instance
@@ -223,43 +225,43 @@ class T1VsTime:
         # plot their fit curves on a combined figure.
         # print(q2_combined_fit_data)
         # print(len(q2_combined_fit_data))
-        if len(q2_combined_fit_data) == 2:  # Ensure exactly two fits are available
-            fig, ax = plt.subplots(figsize=(10, 6))
-            plt.rcParams.update({'font.size': 18})
-
-            # Center title above the subplot
-            plot_middle = (ax.get_position().x0 + ax.get_position().x1) / 2
-            fig.text(plot_middle, 0.98, "T1 Fits for Q2", fontsize=24, ha='center', va='top')
-
-            # Plot both fits
-            for idx, data in enumerate(q2_combined_fit_data):
-                # color = f"C{idx}"  # Use different colors for each dataset
-                color = 'grey'
-
-                #data
-                # ax.plot(data['delay_times'], data['Q'], color=color, linestyle='-', linewidth=1.5, label=f"Raw Q Data (T1={data['T1_est']:.2f} µs)")
-                ax.plot(data['delay_times'], data['Q'], color=color, linestyle='-', linewidth=1.5, label="_nolegend_")
-
-                #fits
-                ax.plot(data['delay_times'], data['fit'], linewidth=3, label=f"T1={data['T1_est']:.2f} µs")
-
-            # Formatting
-            ax.set_xlabel("Delay time (us)", fontsize=20)
-            ax.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
-            ax.tick_params(axis='both', which='major', labelsize=16)
-
-            # Add legend
-            ax.legend()
-
-            # Save the plot
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
-            combined_folder = os.path.join(analysis_folder, "Combined_Fits")
-            self.create_folder_if_not_exists(combined_folder)
-            now = datetime.datetime.now()
-            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-            file_name = os.path.join(combined_folder, f"Combined_T1_Q2_fits_{formatted_datetime}.png")
-            fig.savefig(file_name, dpi=self.figure_quality, bbox_inches='tight')
-            plt.close(fig)
+        # if len(q2_combined_fit_data) == 2:  # Ensure exactly two fits are available
+        #     fig, ax = plt.subplots(figsize=(10, 6))
+        #     plt.rcParams.update({'font.size': 18})
+        #
+        #     # Center title above the subplot
+        #     plot_middle = (ax.get_position().x0 + ax.get_position().x1) / 2
+        #     fig.text(plot_middle, 0.98, "T1 Fits for Q4", fontsize=24, ha='center', va='top')
+        #
+        #     # Plot both fits
+        #     for idx, data in enumerate(q2_combined_fit_data):
+        #         # color = f"C{idx}"  # Use different colors for each dataset
+        #         color = 'grey'
+        #
+        #         #data
+        #         # ax.plot(data['delay_times'], data['Q'], color=color, linestyle='-', linewidth=1.5, label=f"Raw Q Data (T1={data['T1_est']:.2f} µs)")
+        #         ax.plot(data['delay_times'], data['I'], color=color, linestyle='-', linewidth=1.5, label="_nolegend_")
+        #
+        #         #fits
+        #         ax.plot(data['delay_times'], data['fit'], linewidth=3, label=f"T1={data['T1_est']:.2f} µs")
+        #
+        #     # Formatting
+        #     ax.set_xlabel("Delay time (us)", fontsize=20)
+        #     ax.set_ylabel("I Amplitude (a.u.)", fontsize=20)
+        #     ax.tick_params(axis='both', which='major', labelsize=16)
+        #
+        #     # Add legend
+        #     ax.legend()
+        #
+        #     # Save the plot
+        #     analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+        #     combined_folder = os.path.join(analysis_folder, "Combined_Fits")
+        #     self.create_folder_if_not_exists(combined_folder)
+        #     now = datetime.datetime.now()
+        #     formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+        #     file_name = os.path.join(combined_folder, f"Combined_T1_Q4_fits_{formatted_datetime}.png")
+        #     fig.savefig(file_name, dpi=self.figure_quality, bbox_inches='tight')
+        #     plt.close(fig)
         # --------------------------------------------------------------------------------------------------
 
         if return_errs:
@@ -283,15 +285,15 @@ class T1VsTime:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         #----------------To Plot a specific timeframe------------------
-        # from datetime import datetime
-        # year = 2025
-        # month = 2
-        # day1 = 1  # Start date
-        # day2 = 1  # End date
-        # hour_start = 0  # Start hour
-        # hour_end = 23  # End hour
-        # start_time = datetime(year, month, day1, hour_start, 0)
-        # end_time = datetime(year, month, day2, hour_end, 59)
+        from datetime import datetime
+        year = 2025
+        month = 2
+        day1 = 6  # Start date
+        day2 = 13  # End date
+        hour_start = 12  # Start hour
+        hour_end = 16  # End hour
+        start_time = datetime(year, month, day1, hour_start, 0)
+        end_time = datetime(year, month, day2, hour_end, 59)
         #-----------------------------------------------------------------
 
         font = 14
@@ -302,11 +304,11 @@ class T1VsTime:
         axes = axes.flatten()
 
         #---------- fixed y axis ticks ---------------
-        # fixed_y_min = 10  # Set the fixed y-axis lower limit
-        # fixed_y_max = 28  # Set the fixed y-axis upper limit
-        # fixed_step_size = 2  # Set y-axis step size
-        #
-        # y_ticks = np.arange(fixed_y_min, fixed_y_max + fixed_step_size, fixed_step_size)
+        fixed_y_min = 10  # Set the fixed y-axis lower limit
+        fixed_y_max = 28  # Set the fixed y-axis upper limit
+        fixed_step_size = 2  # Set y-axis step size
+
+        y_ticks = np.arange(fixed_y_min, fixed_y_max + fixed_step_size, fixed_step_size)
         #-----------------------------------------------
 
         from datetime import datetime
@@ -340,19 +342,19 @@ class T1VsTime:
             ax.scatter(sorted_x, sorted_y, color=colors[i])
 
             # Set x-axis limits for the specific timeframe
-            # ax.set_xlim(start_time, end_time)
+            ax.set_xlim(start_time, end_time)
 
             sorted_x = np.asarray(sorted(x))
             num_points = 5
             indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
 
             ax.xaxis.set_major_locator(mdates.AutoDateLocator())  # Automatically choose good tick locations
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
-            # ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # Show day and time
+            # ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # Show day and time
             ax.tick_params(axis='x', rotation=45)  # Rotate ticks for better readability
 
-            # ax.set_yticks(y_ticks)  # Apply uniform y-ticks
-            # ax.set_ylim(fixed_y_min, fixed_y_max)  # Set fixed y-axis range
+            ax.set_yticks(y_ticks)  # Apply uniform y-ticks
+            ax.set_ylim(fixed_y_min, fixed_y_max)  # Set fixed y-axis range
 
             # Disable scientific notation and format y-ticks
             ax.ticklabel_format(style="plain", axis="y")

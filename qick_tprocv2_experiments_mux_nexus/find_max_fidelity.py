@@ -5,7 +5,7 @@ import glob
 import datetime
 
 # Directory where your HDF5 files are stored
-outerFolder1 = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/2025-02-01")
+outerFolder1 = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/2025-02-19")
 outerFolder = outerFolder1 + "/readout_opt/Gain_Freq_Sweeps/"
 print('For files inside: ', outerFolder)
 
@@ -119,7 +119,9 @@ def find_configurations_below_threshold(file_path, threshold):
 
 #Now getting results
 # punchout_thresholds = [0.25, 0.20, 0.25, 0.35]  # Set the threshold values for resonator gain
-punchout_thresholds = [0.356, 0.356, 0.356, 0.356]  #updated R1 1/31/2025
+# punchout_thresholds = [0.204, 0.253, 0.119, 0.204]
+punchout_thresholds = [0.34, 0.2, 0.146, 0.2]
+
 for qubit_index in range(1, 5):
     file_pattern = os.path.join(outerFolder, f"*_Qubit_{qubit_index}_*.h5")
     file_list = glob.glob(file_pattern)
