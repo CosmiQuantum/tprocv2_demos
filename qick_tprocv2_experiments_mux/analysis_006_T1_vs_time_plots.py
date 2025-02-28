@@ -139,8 +139,13 @@ class T1VsTime:
                 outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
                 outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
             elif self.fridge.upper() == 'NEXUS':
-                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
-                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
+                #For Regular RR at NEXUS
+                # outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
+                # outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
+
+                #For Fast RR at NEXUS
+                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/" + folder_date + "/"
+                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/" + folder_date + "_plots/"
             else:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
@@ -205,7 +210,7 @@ class T1VsTime:
                             date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
                             t1_errors[q_key].append(T1_err)
 
-                            # --- NEW BLOCK: Collect combined plot data for Q2 ---
+                            # --- NEW BLOCK: Collect data of two specified T1 fits for one qubit ---
                             # if q_key == 3 and (round(T1_est, 2) == 20.74 or round(T1_est, 2) == 25.38):
                             #     q2_combined_fit_data.append({
                             #         'delay_times': delay_times,
@@ -220,7 +225,7 @@ class T1VsTime:
 
                 del H5_class_instance
 
-        # --------------------------------------New, plotting two fits in a single plot-----------------------------
+        # --------------------------------------New, plotting two T1 fits in a single plot-----------------------------
         # After processing all files, if we collected any Q2 datasets with the desired T1 values,
         # plot their fit curves on a combined figure.
         # print(q2_combined_fit_data)
@@ -277,23 +282,32 @@ class T1VsTime:
             analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
             self.create_folder_if_not_exists(analysis_folder)
         elif self.fridge.upper() == 'NEXUS':
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+
+            #For regular RR at NEXUS
+            # analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            # self.create_folder_if_not_exists(analysis_folder)
+            # analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            # self.create_folder_if_not_exists(analysis_folder)
+
+            #For fast RR at NEXUS
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/benchmark_analysis_plots/"
             self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/benchmark_analysis_plots/features_vs_time/"
             self.create_folder_if_not_exists(analysis_folder)
+
         else:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         #----------------To Plot a specific timeframe------------------
-        from datetime import datetime
-        year = 2025
-        month = 2
-        day1 = 6  # Start date
-        day2 = 13  # End date
-        hour_start = 12  # Start hour
-        hour_end = 16  # End hour
-        start_time = datetime(year, month, day1, hour_start, 0)
-        end_time = datetime(year, month, day2, hour_end, 59)
+        # from datetime import datetime
+        # year = 2025
+        # month = 2
+        # day1 = 6  # Start date
+        # day2 = 13  # End date
+        # hour_start = 12  # Start hour
+        # hour_end = 16  # End hour
+        # start_time = datetime(year, month, day1, hour_start, 0)
+        # end_time = datetime(year, month, day2, hour_end, 59)
         #-----------------------------------------------------------------
 
         font = 14
@@ -342,7 +356,7 @@ class T1VsTime:
             ax.scatter(sorted_x, sorted_y, color=colors[i])
 
             # Set x-axis limits for the specific timeframe
-            ax.set_xlim(start_time, end_time)
+            # ax.set_xlim(start_time, end_time)
 
             sorted_x = np.asarray(sorted(x))
             num_points = 5

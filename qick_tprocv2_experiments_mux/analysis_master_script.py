@@ -52,28 +52,32 @@ run_notes = ('Added more eccosorb filters and a lpf on mxc before and after the 
 #top_folder_dates = ['2024-12-20_warmup']
 
 #NEXUS
-top_folder_dates = ['2025-01-16', '2025-01-17', '2025-01-21', '2025-01-22', '2025-01-23', '2025-01-24', '2025-01-25', '2025-01-26',
-                      '2025-01-27', '2025-01-28', '2025-01-29', '2025-01-30', '2025-01-31', '2025-02-01', '2025-02-02', '2025-02-03',
-                    '2025-02-04', '2025-02-05', '2025-02-06', '2025-02-07', '2025-02-08', '2025-02-09', '2025-02-10', '2025-02-11', '2025-02-12',
-                    '2025-02-13', '2025-02-14', '2025-02-15', '2025-02-16', '2025-02-17', '2025-02-18', '2025-02-19', '2025-02-20', '2025-02-21',
-                    '2025-02-22', '2025-02-23', '2025-02-24', '2025-02-25']
+# top_folder_dates = ['2025-01-16', '2025-01-17', '2025-01-21', '2025-01-22', '2025-01-23', '2025-01-24', '2025-01-25', '2025-01-26',
+#                       '2025-01-27', '2025-01-28', '2025-01-29', '2025-01-30', '2025-01-31', '2025-02-01', '2025-02-02', '2025-02-03',
+#                     '2025-02-04', '2025-02-05', '2025-02-06', '2025-02-07', '2025-02-08', '2025-02-09', '2025-02-10', '2025-02-11', '2025-02-12',
+#                     '2025-02-13', '2025-02-14', '2025-02-15', '2025-02-16', '2025-02-17', '2025-02-18', '2025-02-19', '2025-02-20', '2025-02-21',
+#                     '2025-02-22', '2025-02-23', '2025-02-24', '2025-02-25']
 
+top_folder_dates = ['2025-02-26']
 ###################################### 00: Load Configs for Plotting Titles ############################################
-date = '2025-01-16'  #only plot all of the data for one date at a time because there is a lot
+date = '2025-02-26'  #only plot all of the data for one date at a time because there is a lot
 
 #QUIET
 # outerFolder = f"/data/QICK_data/{run_name}/" + date + "/"
 
 #NEXUS
-outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{run_name}/" + date + "/"
+# outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{run_name}/" + date + "/"
+
+#NEXUS Fast RR
+outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{run_name}/Fast_RR/" + date + "/"
 
 config_loader = LoadConfigs(outerFolder)
 sys_config, exp_config = config_loader.run()
 
 ################################################ 01: Get all data ######################################################
-res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
-                                       save_figs, fit_saved, signal, run_name, exp_config, fridge, list_of_all_qubits, outerFolder)
-date_times_res_spec, res_freqs = res_spec_vs_time.run()
+# res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
+#                                        save_figs, fit_saved, signal, run_name, exp_config, fridge, list_of_all_qubits, outerFolder)
+# date_times_res_spec, res_freqs = res_spec_vs_time.run()
 
 # q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
 #                                   save_figs, fit_saved, signal, run_name, exp_config, fridge, list_of_all_qubits)
@@ -84,10 +88,10 @@ date_times_res_spec, res_freqs = res_spec_vs_time.run()
 #                               fit_saved,signal, run_name, exp_config, fridge)
 # date_times_pi_amps, pi_amps = pi_amps_vs_time.run(plot_depths=False)
 
-# t1_vs_time = T1VsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-#                  signal, run_name, exp_config, fridge, list_of_all_qubits)
-# # date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True)
-# date_times_t1, t1_vals = t1_vs_time.run(return_errs=False)
+t1_vs_time = T1VsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+                 signal, run_name, exp_config, fridge, list_of_all_qubits)
+# date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True)
+date_times_t1, t1_vals = t1_vs_time.run(return_errs=False)
 #
 # t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, exp_config)
@@ -108,7 +112,7 @@ date_times_res_spec, res_freqs = res_spec_vs_time.run()
 #             plot_t2r = False, plot_t2e = False)
 
 # ########################################## 03: Resonator Freqs vs Time Plots ###########################################
-res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
+# res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
 #
 ############################################ 04: Qubit Freqs vs Time Plots #############################################
 # q_spec_vs_time.plot_without_errs(date_times_q_spec, q_freqs,show_legends)
@@ -143,7 +147,7 @@ res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
 # qtemp_vs_time.plot(qubit_temp_dates, qubit_temperatures, show_legends)
 #
 # ################################################# 06: T1 vs Time Plots #################################################
-# t1_vs_time.plot_without_errs(date_times_t1, t1_vals, show_legends)
+t1_vs_time.plot_without_errs(date_times_t1, t1_vals, show_legends)
 # t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends)
 #
 # ################################################# 07: T2R vs Time Plots ################################################

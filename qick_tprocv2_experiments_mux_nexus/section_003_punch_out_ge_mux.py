@@ -49,8 +49,8 @@ class PunchOut:
 
         resonance_vals, power_sweep, frequency_sweeps = self.sweep_power(soccfg, soc, fpts, start_gain, stop_gain, num_points)
 
-        # if plot_Center_shift:
-        #     self.plot_center_shift(resonance_vals, power_sweep, attn_1, attn_2)
+        if plot_Center_shift:
+            self.plot_center_shift(resonance_vals, power_sweep, attn_1, attn_2)
 
         if plot_res_sweeps:
             self.plot_res_sweeps(fpts, frequency_sweeps, power_sweep, attn_1, attn_2,)
@@ -65,6 +65,7 @@ class PunchOut:
         for p in power_sweep:
             power = round(p, 3)
             self.config['res_gain_ge'] = [power for i in range(0, len(self.config['res_freq_ge']))]
+            # self.config['res_gain_ge'] = [power, 0, 0, 0]
             amps = np.zeros((len(self.config['res_freq_ge']), len(fpts)))
             for index, f in enumerate(tqdm(fpts)):
                 self.config["res_freq_ge"] = f

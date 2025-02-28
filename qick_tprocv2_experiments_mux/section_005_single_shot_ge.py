@@ -359,7 +359,7 @@ class GainFrequencySweep:
         readout_length = self.optimal_lengths[self.qubit_index]
         print('readout_length for this qubit: ', readout_length)
 
-        num_repeats = 4  # Number of times to repeat each measurement
+        num_repeats = 3  # Number of times to repeat each measurement
 
         for freq_step in range(freq_steps):
             freq = freq_range[0] + freq_step * freq_step_size

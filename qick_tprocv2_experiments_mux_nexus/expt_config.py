@@ -16,25 +16,25 @@ expt_cfg = {
         "list_of_all_qubits": list_of_all_qubits,
     },
 
-    "res_spec": {
-        "reps": 500,
-        "rounds": 1,
-        "start": -3.5, # [MHz]
-        "step_size": 0.12,  # [MHz]
-        "steps": 101,
-        "relax_delay": 20,  # [us]
-        "list_of_all_qubits": list_of_all_qubits,
-    },
-
-    # "res_spec": {  # Works for PUNCHOUT only 1/23 to do
+    # "res_spec": {
     #     "reps": 500,
     #     "rounds": 1,
-    #     "start": list(VNA_res - 1),  # [MHz]
-    #     "stop": list(VNA_res + 1),
+    #     "start": -3.5, # [MHz]
+    #     "step_size": 0.12,  # [MHz]
     #     "steps": 101,
     #     "relax_delay": 20,  # [us]
     #     "list_of_all_qubits": list_of_all_qubits,
     # },
+
+    "res_spec": {  # Works for PUNCHOUT only 1/23 to do
+        "reps": 500,
+        "rounds": 1,
+        "start": list(VNA_res - 1),  # [MHz]
+        "stop": list(VNA_res + 1),
+        "steps": 101,
+        "relax_delay": 20,  # [us]
+        "list_of_all_qubits": list_of_all_qubits,
+    },
 
     "qubit_spec_ge": {
         "reps": 700, #100

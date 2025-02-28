@@ -130,7 +130,7 @@ class SingleShotProgram_e(AveragerProgramV2):
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 class SingleShot:
-    def __init__(self, QubitIndex, outerFolder, round_num, save_figs=False, experiment = None):
+    def __init__(self, QubitIndex, num_qubits, list_of_all_qubits, outerFolder, round_num, save_figs=False, experiment = None):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "Readout_Optimization"
@@ -138,9 +138,11 @@ class SingleShot:
         self.round_num = round_num
         self.save_figs = save_figs
         self.experiment = experiment
+        self.num_qubits=num_qubits
+        self.list_of_all_qubits = list_of_all_qubits
 
         if experiment is not None:
-            self.q_config = all_qubit_state(self.experiment)
+            self.q_config = all_qubit_state(self.experiment, self.num_qubits)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} Single Shot configuration: ', self.config)

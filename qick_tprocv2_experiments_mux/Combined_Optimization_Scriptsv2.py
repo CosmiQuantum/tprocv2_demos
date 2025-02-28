@@ -52,12 +52,12 @@ n = 1  # Number of rounds
 n_loops = 5 # Number of repetitions per length to average
 
 # List of qubits and pulse lengths to measure
-Qs = [0]
+Qs = [3]
 
 #Change for NEXUS vs QUIET
-res_leng_vals = [5.2, 2.4, 4.2, 4.4] # from 2/25/2025 optimization
-res_gain = [0.25, 0.3, 0.25, 0.25] # from 2/25/2025 optimization
-freq_offsets = [-0.5, 0.0667, -0.3333, -0.7333] # from 2/25/2025 optimization
+res_leng_vals = [5.1, 2.9, 4.5, 6.25] # from 2/27/2025 optimization
+res_gain = [0.365, 0.295, 0.255, 0.325] # from 2/27/2025 optimization
+freq_offsets = [0.1333, -0.0667, -0.0667, -0.6667] # from 2/27/2025 optimization
 
 optimal_lengths = [None] * 4 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_freq_ge = [None] * 4 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
@@ -65,10 +65,10 @@ res_freq_ge = [None] * 4 # creates list where the script will be storing the fre
 j=0 #round number, from RR code. Not really used here since we just run it once for each qubit
 
 # lengs = np.arange(2, 5.5, 0.2)
-lengs = np.arange(2.5, 5.5, 0.1)
+lengs = np.arange(2.5, 6.5, 0.15)
 
-# # Record the starting time at the beginning of your script
-# start_time = time.time()
+# Record the starting time at the beginning of your script
+start_time = time.time()
 
 average_sweeps = False
 
@@ -226,29 +226,40 @@ for QubitIndex in Qs:
     # plt.close()
     #
     # del avg_fids, rms_fids, avg_ground_iq, avg_excited_iq, loop_group, length_group
-
+    #
     # end_time = time.time()
     # elapsed_time = end_time - start_time
     # print(f"Time taken for the res_leng sweep: {elapsed_time:.2f} seconds")
 
     #---------------------Res Gain and Res Freq Sweeps------------------------
     start_time = time.time()
-    optimal_lengths = [5.2, 2.4, 4.2, 4.4]
+    optimal_lengths = [5.1, 2.9, 4.5, 6.25]
     date_str = str(datetime.date.today())
     output_folder = outerFolder + "/readout_opt/Gain_Freq_Sweeps/"
     # Ensure the output folder exists
     os.makedirs(output_folder, exist_ok=True)
 
     # Define sweeping parameters
-    gain_range = [0.1, 0.3]  # Gain range in a.u.
-    freq_steps = 12
-    gain_steps = 4
+    freq_steps = 30
+
+    if QubitIndex == 0:
+        gain_range = [0.29, 0.39]  # Gain range in a.u.
+        gain_steps = 4
+    if QubitIndex == 1:
+        gain_range = [0.22, 0.32]  # Gain range in a.u.
+        gain_steps = 4
+    if QubitIndex == 2:
+        gain_range = [0.18, 0.28]  # Gain range in a.u.
+        gain_steps = 4
+    if QubitIndex == 3:
+        gain_range = [0.3, 0.4]  # Gain range in a.u.
+        gain_steps = 4
 
     print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')
     # Select the reference frequency for the current resonator
     reference_frequency = res_freq_ge[QubitIndex]
 
-    freq_range = [reference_frequency - 0.75 ,reference_frequency + 0.75]# Frequency range in MHz
+    freq_range = [reference_frequency - 1.0 ,reference_frequency + 1.0]# Frequency range in MHz
 
     experiment = copy.deepcopy(tuned_experiment)
     sweep = GainFrequencySweep(QubitIndex, number_of_qubits, list_of_all_qubits, experiment, optimal_lengths=optimal_lengths, output_folder=output_folder)

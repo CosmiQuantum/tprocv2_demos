@@ -64,6 +64,7 @@ angles=[]
 rfreqs=np.zeros(4)
 qfreqs=np.zeros(4)
 rabiGs=np.zeros(4)
+resPhases=np.zeros(4)
 while j < n:
     j += 1
     for QubitIndex in Qs_to_look_at:
@@ -160,7 +161,29 @@ while j < n:
             print(f'Got the following error, continuing: {e}')
             continue #skip the rest of this qubit
 
+    ##################### SSF #######################################################
+            ########################################## Single Shot Measurements ############################################
+        # try:
+            # experiment.readout_cfg['res_phases'] = res_phases
+            #timestamp = time.strftime("%H%M%S")
+        ss = SingleShot(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder,  j, save_figs, experiment)
+        fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
+        I_g = iq_list_g[QubitIndex][0].T[0]
+        Q_g = iq_list_g[QubitIndex][0].T[1]
+        I_e = iq_list_e[QubitIndex][0].T[0]
+        Q_e = iq_list_e[QubitIndex][0].T[1]
 
+        fid, threshold, angle, ig_new, ie_new = ss.hist_ssf(
+            data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
+        resPhases[QubitIndex]=angle
+        # experiment.qubit_cfg['res_phase'][QubitIndex] = angle
+        # res_phases[QubitIndex]=angle
+        # np.savez(outerFolder+timestamp+'ssf'+f'Q{QubitIndex+1}'+f'round{j}', fid=fid, threshold=threshold, angle=angle, ig_new=ig_new, ie_new=ie_new)
+
+        # except Exception as e:
+        #     # logging.exception(f'Got the following error, continuing: {e}')
+        #     print(f'Got the following error, continuing: {e}')
+        #     continue  # skip the rest of this qubit
 
 
 
@@ -172,12 +195,12 @@ while j < n:
     try:
         ## Repeated All Qubit Tomography
         start_voltage = 0  # V
-        stop_voltage = 0.15  # 0.1 #V
-        voltage_pts = 45
+        stop_voltage = 0.1  # 0.1 #V
+        voltage_pts = 30#45
 
         ## Get num of rounds to use by total time you want, or just set manually below:
         run_time = 3  # hrs, 11pm to 730am, ~8.5 hrs
-        round_time = 2.4  # min, actually more like 1.5 min but want to leave extra time
+        round_time = 1.5  # min, actually more like 1.5 min but want to leave extra time
         round_num = int(run_time * 60 / round_time)
 
         #rounds = 25
@@ -185,6 +208,8 @@ while j < n:
         #experiment = QICK_experiment(outerFolder)
         experiment = QICK_experiment(outerFolder, DAC_attenuator1=5, DAC_attenuator2=10, ADC_attenuator=10)
         experiment.readout_cfg['res_freq_ge'] = rfreqs
+        experiment.readout_cfg['res_phase'] = resPhases
+        #print("experiment.readout_cfg['res_phase']",experiment.readout_cfg['res_phase'])
         experiment.qubit_cfg['qubit_freq_ge'] = qfreqs
         experiment.qubit_cfg['pi_amp'] = rabiGs
 
