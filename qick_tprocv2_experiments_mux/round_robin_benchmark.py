@@ -49,19 +49,12 @@ multiply_qubit_reps_by = 2 #only has impact if the line two above is True
 outerFolder = os.path.join("/data/QICK_data/", str(datetime.date.today()))
 
 ################################################ optimization outputs ##################################################
-<<<<<<< HEAD
-# optimization outputs for NEXUS
-res_leng_vals = [3.6, 3.6, 6.35, 3.6] # from 2/8/2025 optimization, after punchout test
-res_gain = [0.3, 0.2, 0.25, 0.25] # from 2/8/2025 optimization, after punchout test
-freq_offsets = [-0.1333, -0.0667, -0.2667, 0.0] # from 2/8/2025 optimization, after punchout test
-=======
 
 res_leng_vals = [3.25, 4.00, 2.25, 2.75, 3.5, 2.75] #Final decision, for Danso at 3.5V     2.75
 # res_gain = [0.9, 0.95, 0.95, 0.95, 0.9, 0.95]
 res_gain = [1,0.95,0.85,0.95,0.9,0.9]
 freq_offsets = [0, 0.1333, -0.1333, -0.2000, -0.2000, -0.1333] #-0.2000
 
->>>>>>> 24d25fd5ee698fb6f86adb381b5b2f57a95faee8
 ####################################################### RR #############################################################
 
 def create_data_dict(keys, save_r, qs):
