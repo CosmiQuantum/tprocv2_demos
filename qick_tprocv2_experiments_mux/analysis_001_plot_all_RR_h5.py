@@ -7,6 +7,8 @@ from section_008_save_data_to_h5 import Data_H5
 from section_005_single_shot_ge import SingleShot
 from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
+from section_005_single_shot_gef import SingleShot_ef
+from section_011_qubit_temperatures_efRabipt3 import Temps_EFAmpRabiExperiment
 #from expt_config import *
 import glob
 import re
@@ -18,7 +20,7 @@ sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/
 
 class PlotAllRR:
     def __init__(self,  date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
-                 outerFolder_save_plots, exp_config):
+                 outerFolder_save_plots):
         self.date = date
         self.figure_quality = figure_quality
         self.save_figs = save_figs
@@ -28,7 +30,6 @@ class PlotAllRR:
         self.number_of_qubits = number_of_qubits
         self.outerFolder = outerFolder
         self.outerFolder_save_plots = outerFolder_save_plots
-        self.exp_config = exp_config
 
     def process_string_of_nested_lists(self, data):
         # Remove extra whitespace and non-numeric characters.
@@ -78,30 +79,40 @@ class PlotAllRR:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
     
-    def run(self, plot_res_spec = True, plot_q_spec = True, plot_rabi = True, plot_ss = True, plot_t1 = True,
-            plot_t2r = True, plot_t2e = True):
+    def run(self, plot_res_spec = True, plot_q_spec = True, plot_rabi = True, rabi_rolling_avg=False, plot_ss = True,
+            plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = True, plot_t1 = True,
+            plot_t2r = True, plot_t2e = True, plot_rabis_Qtemps = False):
 
         if plot_res_spec:
-            self.load_plot_save_res_spec(self.exp_config)
+            self.load_plot_save_res_spec()
         if plot_q_spec:
-            self.load_plot_save_q_spec(self.exp_config)
+            self.load_plot_save_q_spec()
+        if plot_rabis_Qtemps:
+            list_of_all_qubits= [i for i in range(self.number_of_qubits + 1)]
+            self.load_plot_save_rabis_Qtemps(list_of_all_qubits)
         if plot_rabi:
-            self.load_plot_save_rabi(self.exp_config)
+            if rabi_rolling_avg:
+                self.load_plot_save_rabi(rabi_rolling_avg=True)
+            else:
+                self.load_plot_save_rabi()
         if plot_ss:
-            self.load_plot_save_ss(self.exp_config)
+            self.load_plot_save_ss(plot_ss_hist_only = plot_ss_hist_only, plot_title = ss_plot_title)
+        if ss_plot_gef:
+            self.load_plot_save_ss_gef(plot_ssf_gef = ss_plot_gef)
         if plot_t1:
-            self.load_plot_save_t1(self.exp_config)
+            self.load_plot_save_t1()
         if plot_t2r:
-            self.load_plot_save_t2r(self.exp_config)
+            self.load_plot_save_t2r()
         if plot_t2e:
-            self.load_plot_save_t2e(self.exp_config)
+            self.load_plot_save_t2e()
         
 
-    def load_plot_save_res_spec(self, exp_config):
+    def load_plot_save_res_spec(self):
         # ------------------------------------------Load/Plot/Save Res Spec------------------------------------
-        outerFolder_expt = self.outerFolder + "/Data_h5/Res_ge/"
-        h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
-        
+        outerFolder_expt = os.path.join(self.outerFolder, "Data_h5")
+        h5_files = glob.glob(os.path.join(outerFolder_expt, "Res_ge", "*.h5"))
+        h5_files += glob.glob(os.path.join(outerFolder_expt, "Res", "*.h5"))
+        print(outerFolder_expt)
         for h5_file in h5_files:
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
             H5_class_instance = Data_H5(h5_file)
@@ -128,12 +139,16 @@ class PlotAllRR:
                 for dataset in range(len(load_data['Res'][q_key].get('Dates', [])[0])):
                     date = datetime.datetime.fromtimestamp(load_data['Res'][q_key].get('Dates', [])[0][dataset])   #single date per dataset
                     freq_pts = self.process_h5_data(load_data['Res'][q_key].get('freq_pts', [])[0][dataset].decode())   # comes in as an array but put into a byte string, need to convert to list
-                    #print(freq_pts)
 
                     freq_center = self.process_h5_data(load_data['Res'][q_key].get('freq_center', [])[0][dataset].decode()) # comes in as an array but put into a string, need to convert to list
                     freqs_found = self.string_to_float_list(load_data['Res'][q_key].get('Found Freqs', [])[0][dataset].decode()) #comes in as a list of floats in string format, need to convert
                     amps =  self.process_string_of_nested_lists(load_data['Res'][q_key].get('Amps', [])[0][dataset].decode())  #list of lists
-                    print('here: ', amps)
+                    syst_config = load_data['Res'][q_key].get('Syst Config', [])[0][dataset].decode()
+                    exp_config = load_data['Res'][q_key].get('Exp Config', [])[0][dataset].decode()
+                    safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                    syst_config = eval(syst_config, safe_globals)
+                    exp_config = eval(exp_config, safe_globals)
+
                     round_num = load_data['Res'][q_key].get('Round Num', [])[0][dataset] #already a float
                     batch_num = load_data['Res'][q_key].get('Batch Num', [])[0][dataset]
                     freq_pts_data = load_data['Res'][q_key].get('freq_pts', [])[0][dataset].decode()
@@ -151,14 +166,14 @@ class PlotAllRR:
                     freq_points = np.array(eval(formatted_str))
                     #print('here: ', freq_points)
                     if len(freq_pts) > 0:
-                        res_class_instance = ResonanceSpectroscopy(q_key, self.number_of_qubits, self.list_of_all_qubits, self.outerFolder_save_plots, round_num, self.save_figs)
-                        res_spec_cfg = ast.literal_eval(self.exp_config['res_spec'].decode())
+                        res_class_instance = ResonanceSpectroscopy(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.save_figs)
+                        res_spec_cfg = exp_config['res_spec']
                         res_class_instance.plot_results(freq_points, freq_center, amps, res_spec_cfg, self.figure_quality)
                         del res_class_instance
         
             del H5_class_instance
 
-    def load_plot_save_q_spec(self, exp_config):
+    def load_plot_save_q_spec(self):
         # ----------------------------------------------Load/Plot/Save QSpec------------------------------------
         outerFolder_expt = self.outerFolder + "/Data_h5/QSpec_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -190,18 +205,32 @@ class PlotAllRR:
                     freqs = self.process_h5_data(load_data['QSpec'][q_key].get('Frequencies', [])[0][dataset].decode())
                     round_num = load_data['QSpec'][q_key].get('Round Num', [])[0][dataset]
                     batch_num = load_data['QSpec'][q_key].get('Batch Num', [])[0][dataset]
+
+                    exp_config = load_data['QSpec'][q_key].get('Exp Config', [])[0][dataset].decode()
+                    safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+
+                    exp_config = eval(exp_config, safe_globals)
         
                     if len(I)>0:
         
-                        qspec_class_instance = QubitSpectroscopy(q_key, self.list_of_all_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs)
-                        q_spec_cfg = ast.literal_eval(self.exp_config['qubit_spec_ge'].decode())
+                        qspec_class_instance = QubitSpectroscopy(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs)
+                        q_spec_cfg = exp_config['qubit_spec_ge']
                         #print('q_spec_cfg: ', q_spec_cfg)
                         qspec_class_instance.plot_results(I, Q, freqs, q_spec_cfg, self.figure_quality)
                         del qspec_class_instance
         
             del H5_class_instance
 
-    def load_plot_save_rabi(self, exp_config):
+    def roll(self, data: np.ndarray) -> np.ndarray:
+
+        kernel = np.ones(5) / 5
+        smoothed = np.convolve(data, kernel, mode='valid')
+
+        # Preserve the original array's shape by padding the edges
+        pad_size = (len(data) - len(smoothed)) // 2
+        return np.concatenate((data[:pad_size], smoothed, data[-pad_size:]))
+
+    def load_plot_save_rabi(self, rabi_rolling_avg=False):
         # ------------------------------------------------Load/Plot/Save Rabi---------------------------------------
         outerFolder_expt = self.outerFolder + "/Data_h5/Rabi_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -233,20 +262,29 @@ class PlotAllRR:
                     #fit = load_data['Rabi'][q_key].get('Fit', [])[0][dataset]
                     round_num = load_data['Rabi'][q_key].get('Round Num', [])[0][dataset]
                     batch_num = load_data['Rabi'][q_key].get('Batch Num', [])[0][dataset]
+                    syst_config = load_data['Rabi'][q_key].get('Syst Config', [])[0][dataset].decode()
+                    exp_config = load_data['Rabi'][q_key].get('Exp Config', [])[0][dataset].decode()
+                    safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                    exp_config = eval(exp_config, safe_globals)
         
                     if len(I)>0:
         
-                        rabi_class_instance = AmplitudeRabiExperiment(q_key, self.list_of_all_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs)
-                        rabi_cfg = ast.literal_eval(self.exp_config['power_rabi_ge'].decode())
+                        rabi_class_instance = AmplitudeRabiExperiment(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs)
+                        rabi_cfg = exp_config['power_rabi_ge']
                         I = np.asarray(I)
                         Q = np.asarray(Q)
+
+                        if rabi_rolling_avg:
+                            I = self.roll(I)
+                            Q = self.roll(Q)
+
                         gains = np.asarray(gains)
                         rabi_class_instance.plot_results(I, Q, gains, rabi_cfg, self.figure_quality)
                         del rabi_class_instance
         
             del H5_class_instance
 
-    def load_plot_save_ss(self, exp_config):
+    def load_plot_save_ss(self, plot_ss_hist_only, plot_title):
         
         # ------------------------------------------------Load/Plot/Save SS---------------------------------------
         outerFolder_expt = self.outerFolder + "/Data_h5/SS_ge/"
@@ -281,21 +319,37 @@ class PlotAllRR:
                     Q_e = self.process_h5_data(load_data['SS'][q_key].get('Q_e', [])[0][dataset].decode())
                     round_num = load_data['SS'][q_key].get('Round Num', [])[0][dataset]
                     batch_num = load_data['SS'][q_key].get('Batch Num', [])[0][dataset]
-        
+                    # syst_config = load_data['SS'][q_key].get('Syst Config', [])[0][dataset].decode()
+                    # exp_config = load_data['SS'][q_key].get('Exp Config', [])[0][dataset].decode()
+                    # safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                    # syst_config = eval(syst_config, safe_globals)
+                    # exp_config = eval(exp_config, safe_globals)
+                    from expt_config import expt_cfg as exp_config
                     I_g = np.array(I_g)
                     Q_g = np.array(Q_g)
                     I_e = np.array(I_e)
                     Q_e = np.array(Q_e)
         
                     if len(Q_g)>0:
-                        ss_class_instance = SingleShot(q_key, self.list_of_all_qubits, self.outerFolder_save_plots, round_num, self.save_figs)
-                        ss_cfg = ast.literal_eval(self.exp_config['Readout_Optimization'].decode())
-                        ss_class_instance.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=True)
+                        ss_class_instance = SingleShot(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.save_figs)
+
+                        if type(exp_config) is dict:
+                            readout_opt = exp_config['Readout_Optimization']
+                            if isinstance(readout_opt, str):
+                                ss_cfg = ast.literal_eval(readout_opt)
+                            else:
+                                ss_cfg = readout_opt
+                        else:
+                            ss_cfg = ast.literal_eval(exp_config['Readout_Optimization'].decode())
+                        if plot_ss_hist_only:
+                            ss_class_instance.only_hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=True, plot_title=plot_title)
+                        else:
+                            ss_class_instance.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=True)
                         del ss_class_instance
         
             del H5_class_instance
 
-    def load_plot_save_t1(self, exp_config):
+    def load_plot_save_t1(self):
         # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
         outerFolder_expt = self.outerFolder + "/Data_h5/T1_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -329,16 +383,21 @@ class PlotAllRR:
                     #fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
                     round_num = load_data['T1'][q_key].get('Round Num', [])[0][dataset]
                     batch_num = load_data['T1'][q_key].get('Batch Num', [])[0][dataset]
+
+                    exp_config = load_data['T1'][q_key].get('Exp Config', [])[0][dataset].decode()
+                    safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+
+                    exp_config = eval(exp_config, safe_globals)
         
                     if len(I)>0:
-                        T1_class_instance = T1Measurement(q_key, self.list_of_all_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
-                        T1_spec_cfg = ast.literal_eval(self.exp_config['T1_ge'].decode())
+                        T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
+                        T1_spec_cfg = exp_config['T1_ge']
                         T1_class_instance.plot_results(I, Q, delay_times, date, T1_spec_cfg, self.figure_quality)
                         del T1_class_instance
         
             del H5_class_instance
 
-    def load_plot_save_t2r(self, exp_config):
+    def load_plot_save_t2r(self):
         # -------------------------------------------------------Load/Plot/Save T2R------------------------------------------
         outerFolder_expt = self.outerFolder + "/Data_h5/T2_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -371,21 +430,26 @@ class PlotAllRR:
                     #fit = load_data['T2'][q_key].get('Fit', [])[0][dataset]
                     round_num = load_data['T2'][q_key].get('Round Num', [])[0][dataset]
                     batch_num = load_data['T2'][q_key].get('Batch Num', [])[0][dataset]
+
+                    exp_config = load_data['T2'][q_key].get('Exp Config', [])[0][dataset].decode()
+                    safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+
+                    exp_config = eval(exp_config, safe_globals)
         
                     if len(I) > 0:
-                        T2_class_instance = T2RMeasurement(q_key, self.list_of_all_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
+                        T2_class_instance = T2RMeasurement(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
                         try:
                             fitted, t2r_est, t2r_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)
                         except Exception as e:
                             print('Fit didnt work due to error: ', e)
                             continue
-                        T2_cfg = ast.literal_eval(self.exp_config['Ramsey_ge'].decode())
+                        T2_cfg = exp_config['Ramsey_ge']
                         T2_class_instance.plot_results(I, Q, delay_times, date, fitted, t2r_est, t2r_err, plot_sig, config = T2_cfg, fig_quality=self.figure_quality)
                         del T2_class_instance
         
             del H5_class_instance
 
-    def load_plot_save_t2e(self, exp_config):
+    def load_plot_save_t2e(self):
         # -------------------------------------------------------Load/Plot/Save T2E------------------------------------------
         outerFolder_expt = self.outerFolder + "/Data_h5/T2E_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -417,16 +481,175 @@ class PlotAllRR:
                     #fit = load_data['T2E'][q_key].get('Fit', [])[0][dataset]
                     round_num = load_data['T2E'][q_key].get('Round Num', [])[0][dataset]
                     batch_num = load_data['T2E'][q_key].get('Batch Num', [])[0][dataset]
+
+                    exp_config = load_data['T2E'][q_key].get('Exp Config', [])[0][dataset].decode()
+                    safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+
+                    exp_config = eval(exp_config, safe_globals)
         
                     if len(I) > 0:
-                        T2E_class_instance = T2EMeasurement(q_key, self.list_of_all_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
+                        T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
                         try:
                             fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
                         except Exception as e:
                             print('Fit didnt work due to error: ', e)
                             continue
-                        T2E_cfg = ast.literal_eval(self.exp_config['SpinEcho_ge'].decode())
+                        T2E_cfg = exp_config['SpinEcho_ge']
                         T2E_class_instance.plot_results(I, Q, delay_times, date, fitted, t2e_est, t2e_err, plot_sig, config = T2E_cfg, fig_quality=self.figure_quality)
                         del T2E_class_instance
         
+            del H5_class_instance
+
+    def load_plot_save_ss_gef(self, plot_ssf_gef, process_one_file = False, file_to_process = None, qubit_index = None):
+
+        # ------------------------------------------------Load/Plot/Save g-e-f SS---------------------------------------
+        outerFolder_expt = self.outerFolder + "/Data_h5/SS_gef/" #checks folder for a single date
+
+        if process_one_file == False:
+            h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+        if process_one_file == True:
+            h5_files = [file_to_process]
+
+        for h5_file in h5_files:
+
+            save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
+            H5_class_instance = Data_H5(h5_file)
+            load_data = H5_class_instance.load_from_h5(data_type='SS_gef', save_r=int(save_round))
+
+            # If a specific qubit is specified, filter the loaded data.
+            if qubit_index is not None:
+                if qubit_index in load_data['SS_gef']:
+                    # Keep only the data for the selected qubit.
+                    load_data['SS_gef'] = {qubit_index: load_data['SS_gef'][qubit_index]}
+                else:
+                    print(f"No data for qubit with index {qubit_index} found in file {h5_file}.")
+                    continue  # move to next file
+
+            populated_keys = []
+            for q_key in load_data['SS_gef']:
+                # Access 'Dates' for the current q_key
+                dates_list = load_data['SS_gef'][q_key].get('Dates', [[]])
+
+                # Check if any entry in 'Dates' is not NaN
+                if any(
+                        not np.isnan(date)
+                        for date in dates_list[0]  # Iterate over the first batch of dates
+                ):
+                    populated_keys.append(q_key)
+
+            for q_key in populated_keys:
+                for dataset in range(len(load_data['SS_gef'][q_key].get('Dates', [])[0])):
+                    date = datetime.datetime.fromtimestamp(load_data['SS_gef'][q_key].get('Dates', [])[0][dataset])
+                    angle = load_data['SS_gef'][q_key].get('Angle_ge', [])[0][dataset]
+                    # fidelity = load_data['SS_gef'][q_key].get('Fidelity', [])[0][dataset]
+                    I_g = self.process_h5_data(load_data['SS_gef'][q_key].get('I_g', [])[0][dataset].decode())
+                    Q_g = self.process_h5_data(load_data['SS_gef'][q_key].get('Q_g', [])[0][dataset].decode())
+                    I_e = self.process_h5_data(load_data['SS_gef'][q_key].get('I_e', [])[0][dataset].decode())
+                    Q_e = self.process_h5_data(load_data['SS_gef'][q_key].get('Q_e', [])[0][dataset].decode())
+                    I_f = self.process_h5_data(load_data['SS_gef'][q_key].get('I_f', [])[0][dataset].decode())
+                    Q_f = self.process_h5_data(load_data['SS_gef'][q_key].get('Q_f', [])[0][dataset].decode())
+                    round_num = load_data['SS_gef'][q_key].get('Round Num', [])[0][dataset]
+                    batch_num = load_data['SS_gef'][q_key].get('Batch Num', [])[0][dataset]
+                    # syst_config = load_data['SS_gef'][q_key].get('Syst Config', [])[0][dataset].decode()
+                    # exp_config = load_data['SS_gef'][q_key].get('Exp Config', [])[0][dataset].decode()
+                    # safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                    # syst_config = eval(syst_config, safe_globals)
+                    # exp_config = eval(exp_config, safe_globals)
+                    from expt_config import expt_cfg as exp_config
+                    I_g = np.array(I_g)
+                    Q_g = np.array(Q_g)
+                    I_e = np.array(I_e)
+                    Q_e = np.array(Q_e)
+                    I_f = np.array(I_f)
+                    Q_f = np.array(Q_f)
+
+                    if len(Q_g) > 0:
+                        ss_class_instance = SingleShot_ef(q_key, self.number_of_qubits, self.outerFolder_save_plots,
+                                                       round_num, self.save_figs)
+
+                        if type(exp_config) is dict:
+                            readout_opt = exp_config['Readout_Optimization']
+                            if isinstance(readout_opt, str):
+                                ss_cfg = ast.literal_eval(readout_opt)
+                            else:
+                                ss_cfg = readout_opt
+                        else:
+                            ss_cfg = ast.literal_eval(exp_config['Readout_Optimization'].decode())
+                        if plot_ssf_gef:
+                            ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge = ss_class_instance.hist_ssf(data=[I_g, Q_g, I_e, Q_e, I_f, Q_f], cfg=ss_cfg, plot=True, fig_quality = 200)
+                        else:
+                            ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge = ss_class_instance.hist_ssf(
+                                data=[I_g, Q_g, I_e, Q_e, I_f, Q_f], cfg=ss_cfg, plot=False, fig_quality=200)
+                        del ss_class_instance
+                        del H5_class_instance
+            return I_g, Q_g, I_e, Q_e, I_f, Q_f, ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge # new arrays are the rotated data
+
+
+#---------------NEW Arianna
+    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits):
+        # ------------------------------------------------Load/Plot/Save Rabi---------------------------------------
+        outerFolder_expt = self.outerFolder + "/Data_h5/Qtemps/"
+        h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+
+        for h5_file in h5_files:
+
+            save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
+            H5_class_instance = Data_H5(h5_file)
+            load_data = H5_class_instance.load_from_h5(data_type='Qtemps', save_r=int(save_round))
+
+            populated_keys = []
+            for q_key in load_data['Qtemps']:
+                # Access 'Dates' for the current q_key
+                dates_list = load_data['Qtemps'][q_key].get('Dates', [[]])
+
+                # Check if any entry in 'Dates' is not NaN
+                if any(
+                        not np.isnan(date)
+                        for date in dates_list[0]  # Iterate over the first batch of dates
+                ):
+                    populated_keys.append(q_key)
+
+            for q_key in populated_keys:
+                for dataset in range(len(load_data['Qtemps'][q_key].get('Dates', [])[0])):
+                    date = datetime.datetime.fromtimestamp(load_data['Qtemps'][q_key].get('Dates', [])[0][dataset])
+
+                    I1 = self.process_h5_data(load_data['Qtemps'][q_key].get('I1', [])[0][dataset].decode())
+                    Q1 = self.process_h5_data(load_data['Qtemps'][q_key].get('Q1', [])[0][dataset].decode())
+                    gains1 = self.process_h5_data(load_data['Qtemps'][q_key].get('Gains1', [])[0][dataset].decode())
+
+                    I2 = self.process_h5_data(load_data['Qtemps'][q_key].get('I2', [])[0][dataset].decode())
+                    Q2 = self.process_h5_data(load_data['Qtemps'][q_key].get('Q2', [])[0][dataset].decode())
+                    gains2 = self.process_h5_data(load_data['Qtemps'][q_key].get('Gains2', [])[0][dataset].decode())
+
+                    round_num = load_data['Qtemps'][q_key].get('Round Num', [])[0][dataset]
+                    batch_num = load_data['Qtemps'][q_key].get('Batch Num', [])[0][dataset]
+                    syst_config = load_data['Qtemps'][q_key].get('Syst Config', [])[0][dataset].decode()
+                    exp_config = load_data['Qtemps'][q_key].get('Exp Config', [])[0][dataset].decode()
+                    safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                    exp_config = eval(exp_config, safe_globals)
+
+                    if len(I1) > 0:
+                        rabi_class_instance = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits, list_of_all_qubits,
+                                                                      self.outerFolder_save_plots, round_num,
+                                                                      self.signal, self.save_figs)
+                        rabi_cfg = exp_config['power_rabi_ef']
+                        I1 = np.asarray(I1)
+                        Q1 = np.asarray(Q1)
+                        gains1 = np.asarray(gains1)
+                        rabi_class_instance.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality)
+
+                    if len(I2) > 0:
+                        rabi_class_instance = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits,
+                                                                        list_of_all_qubits,
+                                                                        self.outerFolder_save_plots, round_num,
+                                                                        self.signal, self.save_figs)
+                        rabi_cfg = exp_config['power_rabi_ef']
+                        I2 = np.asarray(I2)
+                        Q2 = np.asarray(Q2)
+                        gains2 = np.asarray(gains2)
+                        rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality)
+
+
+                        del rabi_class_instance
+
             del H5_class_instance

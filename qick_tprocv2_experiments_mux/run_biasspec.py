@@ -3,12 +3,13 @@ import os
 sys.path.append(os.path.abspath("/home/nexusadmin/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux"))
 from system_config import QICK_experiment
 from bias_qubit_spec import BiasQubitSpectroscopy
+from expt_config import FRIDGE
 import datetime
 import numpy as np
 
 outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30", str(datetime.date.today()))
 
-experiment = QICK_experiment(outerFolder)
+experiment = QICK_experiment(outerFolder, fridge=FRIDGE)
 #resGs=np.linspace(0.1,0.5,11)
 #resFs=np.linspace(5958.673-1.5, 5958.673+1.5, 11)
 qubit = 4 #Qubit to Run

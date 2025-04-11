@@ -21,7 +21,7 @@ from scipy.optimize import curve_fit
 
 class T2rHistCumulErrPlots:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config):
+                 signal, run_name, fridge):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -30,7 +30,7 @@ class T2rHistCumulErrPlots:
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
-        self.exp_config = exp_config
+        self.fridge = fridge
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -143,16 +143,19 @@ class T2rHistCumulErrPlots:
                         # fit = load_data['T2'][q_key].get('Fit', [])[0][dataset]
                         round_num = load_data['T2'][q_key].get('Round Num', [])[0][dataset]
                         batch_num = load_data['T2'][q_key].get('Batch Num', [])[0][dataset]
+                        exp_config = load_data['T2'][q_key].get('Exp Config', [])[0][dataset].decode()
+                        safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                        exp_config = eval(exp_config, safe_globals)
 
                         if len(I) > 0:
-                            T2_class_instance = T2RMeasurement(q_key, outerFolder_save_plots, round_num, self.signal, self.save_figs,
+                            T2_class_instance = T2RMeasurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                                fit_data=True)
                             try:
                                 fitted, T2, T2_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)
                             except Exception as e:
                                 print('Fit didnt work due to error: ', e)
                                 continue
-                            T2_cfg = ast.literal_eval(self.exp_config['Ramsey_ge'].decode())
+                            T2_cfg = exp_config['Ramsey_ge']
                             if T2 < 0:
                                 print("The value is negative, continuing...")
                                 continue
@@ -195,7 +198,7 @@ class T2rHistCumulErrPlots:
 
 
             if len(t2r_vals[i]) >1:
-                optimal_bin_num = self.optimal_bins(t2r_vals[i])
+                optimal_bin_num = 45 #self.optimal_bins(t2r_vals[i])
 
                 # Fit a Gaussian to the raw data instead of the histogram
                 # get the mean and standard deviation of the data

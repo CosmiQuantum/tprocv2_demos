@@ -22,7 +22,7 @@ from scipy.optimize import curve_fit
 
 class T2rVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config):
+                 signal, run_name):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -31,12 +31,6 @@ class T2rVsTime:
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
-        self.exp_config = exp_config
-
-        echo_ge_str = self.exp_config['SpinEcho_ge'].decode('utf-8')
-        echo_ge_dict = ast.literal_eval(echo_ge_str)
-        self.reps = echo_ge_dict['reps']
-        self.rounds = echo_ge_dict['rounds']
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -151,6 +145,10 @@ class T2rVsTime:
                         round_num = load_data['T2'][q_key].get('Round Num', [])[0][dataset]
                         batch_num = load_data['T2'][q_key].get('Batch Num', [])[0][dataset]
 
+                        exp_config = load_data['T2'][q_key].get('Exp Config', [])[0][dataset].decode()
+                        safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                        exp_config = eval(exp_config, safe_globals)
+
                         if len(I) > 0:
                             T2_class_instance = T2RMeasurement(q_key,self.number_of_qubits, outerFolder_save_plots, round_num, self.signal,
                                                                self.save_figs, fit_data=True)
@@ -158,12 +156,16 @@ class T2rVsTime:
                                 fitted, t2r_est, t2r_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)
                             except:
                                 continue
-                            T2_cfg = ast.literal_eval(self.exp_config['Ramsey_ge'].decode())
+                            T2_cfg = exp_config['Ramsey_ge']
                             if t2r_est < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            if t2r_est > 50:
-                                print("The value is above 50 us, this is a bad fit, continuing...")
+                            if t2r_est > 300:
+                                print("The value is above 300 us, this is a bad fit, continuing...")
+                                continue
+                            if t2r_err >= 0.8 * t2r_est:
+                                print(
+                                    f"Skipping T2R = {t2r_est:.3f} µs because its error {t2r_err:.3f} µs is >= 80% of its value.")
                                 continue
                             t2_vals[q_key].extend([t2r_est])
                             t2_errs[q_key].extend([t2r_err])
@@ -224,7 +226,7 @@ class T2rVsTime:
             ax.scatter(x, y, color=colors[i])
             if show_legends:
                 ax.legend(edgecolor='black')
-            ax.set_xlabel('Time (Days)', fontsize=font - 2)
+            ax.set_xlabel('Time', fontsize=font - 2)
             ax.set_ylabel('T2R (us)', fontsize=font - 2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
@@ -288,10 +290,48 @@ class T2rVsTime:
 
             if show_legends:
                 ax.legend(edgecolor='black')
-            ax.set_xlabel('Time (Days)', fontsize=font - 2)
+            ax.set_xlabel('Time', fontsize=font - 2)
             ax.set_ylabel('T2R (us)', fontsize=font - 2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
         plt.tight_layout()
         plt.savefig(analysis_folder + 'T2R_vals.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.close()
+
+    def plot_with_errs_single_plot(self, date_times, t2_vals, t2_fit_err, show_legends):
+        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+        self.create_folder_if_not_exists(analysis_folder)
+        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+        self.create_folder_if_not_exists(analysis_folder)
+        font = 14
+        titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots(figsize=(12, 8))
+        fig.suptitle('T2R Values vs Time', fontsize=font)
+        from datetime import datetime
+        import matplotlib.dates as mdates
+        for i in range(self.number_of_qubits):
+            x = date_times[i]
+            y = t2_vals[i]
+            err = t2_fit_err[i]
+            datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
+            combined = list(zip(datetime_objects, y, err))
+            combined.sort(key=lambda tup: tup[0])
+            if len(combined) == 0:
+                continue
+            sorted_x, sorted_y, sorted_err = zip(*combined)
+            sorted_x = np.array(sorted_x)
+            ax.errorbar(sorted_x, sorted_y, yerr=sorted_err, fmt='none', ecolor=colors[i], elinewidth=1, capsize=0,
+                        label=titles[i] if show_legends else None)
+            ax.scatter(sorted_x, sorted_y, s=10, color=colors[i], alpha=0.5)
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
+        ax.tick_params(axis='x', rotation=45)
+        if show_legends:
+            ax.legend(edgecolor='black')
+        ax.set_xlabel('Time', fontsize=font - 2)
+        ax.set_ylabel('T2R (us)', fontsize=font - 2)
+        ax.tick_params(axis='both', which='major', labelsize=8)
+        plt.tight_layout()
+        plt.savefig(analysis_folder + 'T2R_vals_single_plot.pdf', transparent=True, dpi=self.final_figure_quality)
         plt.close()

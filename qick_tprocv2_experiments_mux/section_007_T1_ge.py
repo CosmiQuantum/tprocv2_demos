@@ -2,11 +2,11 @@ from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 from build_task import *
 from build_state import *
-# from expt_config import *
-from expt_config_nexus import * # Change for quiet vs nexus
+from expt_config import *
 from system_config import *
 import copy
 import visdom
+import logging
 
 class T1Program(AveragerProgramV2):
     def _initialize(self, cfg):
@@ -49,9 +49,10 @@ class T1Program(AveragerProgramV2):
 
 
 class T1Measurement:
-    def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
-                 fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
-                 multiply_qubit_reps_by = 0):
+    def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, signal, save_figs, experiment = None,
+                 live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
+                 multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True):
+        self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
         self.outerFolder = outerFolder
@@ -64,24 +65,34 @@ class T1Measurement:
         self.live_plot = live_plot
         self.signal = signal
         self.save_figs = save_figs
+        self.verbose = verbose
+        self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
+
         if experiment is not None:
             self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
             if increase_qubit_reps:
                     if self.QubitIndex==qubit_to_increase_reps_for:
-                        print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
+                        self.logger.info(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
+                        if self.verbose: print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
                         self.config["reps"] *= multiply_qubit_reps_by
-            print(f'Q {self.QubitIndex + 1} Round {self.round_num} T1 configuration: ', self.config)
+            if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} T1 configuration: {self.config}')
+            self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} T1 configuration: {self.config}')
 
-    def run(self, soccfg, soc):
+    def run(self, thresholding=False):
         now = datetime.datetime.now()
-        t1 = T1Program(soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
+        t1 = T1Program(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
 
         if self.live_plot:
-            I, Q, delay_times = self.live_plotting(t1, soc)
+            I, Q, delay_times = self.live_plotting(t1, thresholding)
         else:
-            iq_list = t1.acquire(soc, soft_avgs=self.config['rounds'], progress=True)
+            if thresholding:
+                iq_list = t1.acquire(self.experiment.soc, soft_avgs=self.config['rounds'],
+                                           threshold=self.experiment.readout_cfg["threshold"],
+                                           angle=self.experiment.readout_cfg["ro_phase"], progress=True)
+            else:
+                iq_list = t1.acquire(self.experiment.soc, soft_avgs=self.config['rounds'], progress=True)
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
             delay_times = t1.get_time_param('wait', "t", as_array=True)
@@ -94,14 +105,21 @@ class T1Measurement:
         if self.plot_results:
             self.plot_results( I, Q, delay_times, now)
 
-        return  T1_est, T1_err, I, Q, delay_times, q1_fit_exponential
+        return  T1_est, T1_err, I, Q, delay_times, q1_fit_exponential, self.config
 
-    def live_plotting(self, t1, soc):
+    def live_plotting(self, t1, thresholding):
         I = Q = expt_mags = expt_phases = expt_pop = None
         viz = visdom.Visdom()
-        assert viz.check_connection(timeout_seconds=5), "Visdom server not connected!"
+        if not viz.check_connection(timeout_seconds=5):
+            raise RuntimeError("Visdom server not connected!")
         for ii in range(self.config["rounds"]):
-            iq_list = t1.acquire(soc, soft_avgs=1, progress=True)
+            #iq_list = t1.acquire(self.experiment.soc, soft_avgs=1, progress=True)
+            if thresholding:
+                iq_list = t1.acquire(self.experiment.soc, soft_avgs=1,
+                                           threshold=self.experiment.readout_cfg["threshold"],
+                                           angle=self.experiment.readout_cfg["ro_phase"], progress=True)
+            else:
+                iq_list = t1.acquire(self.experiment.soc, soft_avgs=1, progress=True)
             delay_times = t1.get_time_param('wait', "t", as_array=True)
 
             this_I = iq_list[self.QubitIndex][0, :, 0]

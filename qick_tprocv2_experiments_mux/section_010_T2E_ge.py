@@ -3,10 +3,8 @@ from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 from build_task import *
 from build_state import *
-# from expt_config import *
-# from system_config import *
-from expt_config_nexus import * # Change for quiet vs nexus
-from system_config_nexus import * # Change for quiet vs nexus
+from expt_config import *
+from system_config import *
 import copy
 import visdom
 from scipy import optimize
@@ -18,6 +16,8 @@ import json
 import numpy as np
 import warnings
 from scipy.optimize import OptimizeWarning
+import logging
+
 class Fit:
     """
     This class takes care of the fitting to the measured data.
@@ -204,9 +204,10 @@ class T2EProgram(AveragerProgramV2):
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 class T2EMeasurement:
-    def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
-                 fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
-                 multiply_qubit_reps_by = 0):
+    def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_figs, experiment = None,
+                 live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
+                 multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True):
+        self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.fit_data = fit_data
@@ -219,16 +220,21 @@ class T2EMeasurement:
         self.save_figs = save_figs
         self.live_plot = live_plot
         self.number_of_qubits = number_of_qubits
+        self.verbose = verbose
+        self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
+
         if experiment is not None:
             self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
             if increase_qubit_reps:
                     if self.QubitIndex==qubit_to_increase_reps_for:
-                        print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
+                        if self.verbose: print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
+                        self.logger.info(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
                         self.config["reps"] *=multiply_qubit_reps_by
                         # self.config['ramsey_freq'] = 2 * self.config['ramsey_freq']
-            print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2E configuration: ', self.config)
+            if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2E configuration: ', self.config)
+            self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} T2E configuration: {self.config}')
 
     def t2_fit(self, x_data, I, Q, verbose = False, guess=None, plot=False):
         #fitting code adapted from https://github.com/qua-platform/py-qua-tools/blob/37c741ade5a8f91888419c6fd23fd34e14372b06/qualang_tools/plot/fitting.py
@@ -376,19 +382,25 @@ class T2EMeasurement:
         t2e_err = out['T2'][1] #in ns
         return fit_type(x, popt) * y_normal, t2e_est, t2e_err, plot_sig
 
-    def run(self, soccfg, soc):
+    def run(self, thresholding=False):
         now = datetime.datetime.now()
-        ramsey = T2EProgram(soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
+        echo = T2EProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
                          cfg=self.config)
         # for live plotting open http://localhost:8097/ on firefox
         if self.live_plot:
-            I, Q, delay_times = self.live_plotting(ramsey, soc)
+            I, Q, delay_times = self.live_plotting(echo, thresholding)
         else:
-            iq_list = ramsey.acquire(soc, soft_avgs=self.config['rounds'], progress=True)
+            if thresholding:
+                iq_list = echo.acquire(self.experiment.soc, soft_avgs=self.config['rounds'],
+                                           threshold=self.experiment.readout_cfg["threshold"],
+                                           angle=self.experiment.readout_cfg["ro_phase"], progress=self.qick_verbose)
+            else:
+                iq_list = echo.acquire(self.experiment.soc, soft_avgs=self.config['rounds'], progress=self.qick_verbose)
+
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
-            delay_times1 = ramsey.get_time_param('wait1', "t", as_array=True)
-            delay_times2 = ramsey.get_time_param('wait2', "t", as_array=True)
+            delay_times1 = echo.get_time_param('wait1', "t", as_array=True)
+            delay_times2 = echo.get_time_param('wait2', "t", as_array=True)
             delay_times = delay_times1+delay_times2
 
         if self.fit_data:
@@ -401,14 +413,21 @@ class T2EMeasurement:
 
         return  t2e_est, t2e_err, I, Q, delay_times, fit, self.config
 
-    def live_plotting(self, ramsey, soc):
+    def live_plotting(self, echo,thresholding):
         I = Q = expt_mags = expt_phases = expt_pop = None
         viz = visdom.Visdom()
-        assert viz.check_connection(timeout_seconds=5), "Visdom server not connected!"
+        if not viz.check_connection(timeout_seconds=5):
+            raise RuntimeError("Visdom server not connected!")
         for ii in range(self.config["rounds"]):
-            iq_list = ramsey.acquire(soc, soft_avgs=1, progress=True)
-            delay_times1 = ramsey.get_time_param('wait1', "t", as_array=True)
-            delay_times2 = ramsey.get_time_param('wait2', "t", as_array=True)
+            if thresholding:
+                iq_list = echo.acquire(self.experiment.soc, soft_avgs=1,
+                                       threshold=self.experiment.readout_cfg["threshold"],
+                                       angle=self.experiment.readout_cfg["ro_phase"], progress=self.qick_verbose)
+            else:
+                iq_list = echo.acquire(self.experiment.soc, soft_avgs=1, progress=self.qick_verbose)
+
+            delay_times1 = echo.get_time_param('wait1', "t", as_array=True)
+            delay_times2 = echo.get_time_param('wait2', "t", as_array=True)
             delay_times = delay_times1 + delay_times2
 
             this_I = iq_list[self.QubitIndex][0, :, 0]

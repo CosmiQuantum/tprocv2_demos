@@ -24,7 +24,7 @@ from scipy.optimize import curve_fit
 
 class T2eVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config, fridge):
+                 signal, run_name, fridge):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -33,14 +33,7 @@ class T2eVsTime:
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
-        self.exp_config = exp_config
         self.fridge = fridge
-
-        ramsey_ge_str = self.exp_config['Ramsey_ge'].decode('utf-8')
-        ramsey_ge_dict = ast.literal_eval(ramsey_ge_str)
-        self.reps = ramsey_ge_dict['reps']
-        self.rounds = ramsey_ge_dict['rounds']
-
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -173,6 +166,10 @@ class T2eVsTime:
                         # fit = load_data['T2E'][q_key].get('Fit', [])[0][dataset]
                         round_num = load_data['T2E'][q_key].get('Round Num', [])[0][dataset]
                         batch_num = load_data['T2E'][q_key].get('Batch Num', [])[0][dataset]
+                        syst_config = load_data['T2E'][q_key].get('Syst Config', [])[0][dataset].decode()
+                        exp_config = load_data['T2E'][q_key].get('Exp Config', [])[0][dataset].decode()
+                        safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                        exp_config = eval(exp_config, safe_globals)
 
                         if len(I) > 0:
                             T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
@@ -182,12 +179,16 @@ class T2eVsTime:
                             except Exception as e:
                                 print(f"good fit not found, error: {e}")
                                 continue
-                            T2E_cfg = ast.literal_eval(self.exp_config['SpinEcho_ge'].decode())
+                            T2E_cfg = exp_config['SpinEcho_ge']
                             if t2e_est < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            if t2e_est > 50:
-                                print("The value is above 50 us, this is a bad fit, continuing...")
+                            if t2e_est > 300:
+                                print("The value is above 300 us, this is a bad fit, continuing...")
+                                continue
+                            if t2e_err >= 0.8 * t2e_est:
+                                print(
+                                    f"Skipping T2R = {t2e_est:.3f} µs because its error {t2e_err:.3f} µs is >= 80% of its value.")
                                 continue
                             t2e_vals[q_key].extend([t2e_est])
                             t2e_errs[q_key].extend([t2e_err])
@@ -281,14 +282,14 @@ class T2eVsTime:
 
             if show_legends:
                 ax.legend(edgecolor='black')
-            ax.set_xlabel('Time (Days)', fontsize=font - 2)
+            ax.set_xlabel('Time', fontsize=font - 2)
             ax.set_ylabel('T2E (us)', fontsize=font - 2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
         plt.tight_layout()
         plt.savefig(analysis_folder + 'T2E_vals.png', transparent=False, dpi=self.final_figure_quality)
         print('Plot saved at: ', analysis_folder)
-        # plt.close()
+        plt.close()
 
     def plot_with_errs(self, date_times, t2e_vals, t2e_fit_err, show_legends):
         # ---------------------------------plot-----------------------------------------------------
@@ -372,7 +373,7 @@ class T2eVsTime:
 
             if show_legends:
                 ax.legend(edgecolor='black')
-            ax.set_xlabel('Time (Days)', fontsize=font - 2)
+            ax.set_xlabel('Time', fontsize=font - 2)
             ax.set_ylabel('T2E (us)', fontsize=font - 2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
@@ -380,3 +381,61 @@ class T2eVsTime:
         plt.savefig(analysis_folder + 'T2E_vals.png', transparent=False, dpi=self.final_figure_quality)
         print('Plot saved at: ', analysis_folder)
         plt.close()
+
+    def plot_with_errs_single_plot(self, date_times, t2e_vals, t2e_fit_err, show_legends):
+        if self.fridge.upper() == 'QUIET':
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
+        elif self.fridge.upper() == 'NEXUS':
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
+        else:
+            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+        from datetime import datetime
+        year = 2025
+        month = 1
+        day1 = 24
+        day2 = 25
+        hour_start = 0
+        hour_end = 12
+        start_time = datetime(year, month, day1, hour_start, 0)
+        end_time = datetime(year, month, day2, hour_end, 0)
+        font = 14
+        titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots(figsize=(12, 8))
+        fig.suptitle('T2E Values vs Time', fontsize=font)
+        import matplotlib.dates as mdates
+        from matplotlib.ticker import StrMethodFormatter
+        for i in range(self.number_of_qubits):
+            x = date_times[i]
+            y = t2e_vals[i]
+            err = t2e_fit_err[i]
+            datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
+            combined = list(zip(datetime_objects, y, err))
+            combined.sort(key=lambda tup: tup[0])
+            if len(combined) == 0:
+                continue
+            sorted_x, sorted_y, sorted_err = zip(*combined)
+            sorted_x = np.array(sorted_x)
+            ax.errorbar(sorted_x, sorted_y, yerr=sorted_err, fmt='none', ecolor=colors[i], elinewidth=1, capsize=0,
+                        label=titles[i] if show_legends else None)
+            ax.scatter(sorted_x, sorted_y, s=10, color=colors[i], alpha=0.5)
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
+        ax.tick_params(axis='x', rotation=45)
+        ax.ticklabel_format(style="plain", axis="y")
+        if show_legends:
+            ax.legend(edgecolor='black')
+        ax.set_xlabel('Time', fontsize=font - 2)
+        ax.set_ylabel('T2E (us)', fontsize=font - 2)
+        ax.tick_params(axis='both', which='major', labelsize=8)
+        plt.tight_layout()
+        plt.savefig(analysis_folder + 'T2E_vals_single_plot.png', transparent=False, dpi=self.final_figure_quality)
+        print('Plot saved at: ', analysis_folder)
+        plt.close()
+

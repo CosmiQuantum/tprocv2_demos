@@ -25,7 +25,7 @@ from matplotlib.ticker import StrMethodFormatter
 
 class T1VsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config, fridge):
+                 signal, run_name, fridge, exp_name = 'ge'):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -34,13 +34,8 @@ class T1VsTime:
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
-        self.exp_config = exp_config
         self.fridge = fridge
-
-        t1_ge_str = self.exp_config['T1_ge'].decode('utf-8')
-        t1_ge_dict = ast.literal_eval(t1_ge_str)
-        self.reps = t1_ge_dict['reps']
-        self.rounds = t1_ge_dict['rounds']
+        self.exp_name = exp_name
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -116,7 +111,7 @@ class T1VsTime:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run(self, return_errs = False):
+    def run(self, return_errs = False, exp_extension=''):
         import datetime
 
         # ----------Load/get data------------------------
@@ -139,14 +134,17 @@ class T1VsTime:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
             # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
-            outerFolder_expt = outerFolder + "/Data_h5/T1_ge/"
+            if '_' in exp_extension:
+                outerFolder_expt = outerFolder + f"/Data_h5/T1{exp_extension}/"
+            else:
+                outerFolder_expt = outerFolder + "/Data_h5/T1_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
             #print(outerFolder_expt)
             for h5_file in h5_files:
 
                 save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
                 H5_class_instance = Data_H5(h5_file)
-                load_data = H5_class_instance.load_from_h5(data_type='T1', save_r=int(save_round))
+                load_data = H5_class_instance.load_from_h5(data_type=f'T1{exp_extension}', save_r=int(save_round))
                 # if '01-27' in outerFolder_expt:
                 #     print(load_data)
                 # Define specific days to exclude
@@ -157,31 +155,35 @@ class T1VsTime:
                     datetime.date(2025, 1, 31)  # Optimization Issues and non RR work in progress
                 }
 
-                for q_key in load_data['T1']:
-                    for dataset in range(len(load_data['T1'][q_key].get('Dates', [])[0])):
-                        if 'nan' in str(load_data['T1'][q_key].get('Dates', [])[0][dataset]):
+                for q_key in load_data[f'T1{exp_extension}']:
+                    for dataset in range(len(load_data[f'T1{exp_extension}'][q_key].get('Dates', [])[0])):
+                        if 'nan' in str(load_data[f'T1{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
                             continue
                         # T1 = load_data['T1'][q_key].get('T1', [])[0][dataset]
                         # errors = load_data['T1'][q_key].get('Errors', [])[0][dataset]
-                        date = datetime.datetime.fromtimestamp(load_data['T1'][q_key].get('Dates', [])[0][dataset])
+                        date = datetime.datetime.fromtimestamp(load_data[f'T1{exp_extension}'][q_key].get('Dates', [])[0][dataset])
 
                         # Skip processing if the date (as a date object) is in the excluded set
                         if date.date() in exclude_dates:
                             print(f"Skipping data for {date} (excluded date)")
                             continue
 
-                        I = self.process_h5_data(load_data['T1'][q_key].get('I', [])[0][dataset].decode())
-                        Q = self.process_h5_data(load_data['T1'][q_key].get('Q', [])[0][dataset].decode())
-                        delay_times = self.process_h5_data(load_data['T1'][q_key].get('Delay Times', [])[0][dataset].decode())
+                        I = self.process_h5_data(load_data[f'T1{exp_extension}'][q_key].get('I', [])[0][dataset].decode())
+                        Q = self.process_h5_data(load_data[f'T1{exp_extension}'][q_key].get('Q', [])[0][dataset].decode())
+                        delay_times = self.process_h5_data(load_data[f'T1{exp_extension}'][q_key].get('Delay Times', [])[0][dataset].decode())
                         # fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
-                        round_num = load_data['T1'][q_key].get('Round Num', [])[0][dataset]
-                        batch_num = load_data['T1'][q_key].get('Batch Num', [])[0][dataset]
+                        round_num = load_data[f'T1{exp_extension}'][q_key].get('Round Num', [])[0][dataset]
+                        batch_num = load_data[f'T1{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
+                        syst_config = load_data[f'T1{exp_extension}'][q_key].get('Syst Config', [])[0][dataset].decode()
+                        exp_config = load_data[f'T1{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
+                        safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                        exp_config = eval(exp_config, safe_globals)
 
                         if len(I) > 0:
 
                             T1_class_instance = T1Measurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                               fit_data=True)
-                            T1_spec_cfg = ast.literal_eval(self.exp_config['T1_ge'].decode())
+                            T1_spec_cfg = exp_config['T1_ge']
                             q1_fit_exponential, T1_err, T1_est, plot_sig = T1_class_instance.t1_fit(I, Q, delay_times)
                             if T1_est < 0:
                                 print("The value is negative, continuing...")
@@ -287,7 +289,7 @@ class T1VsTime:
 
             if show_legends:
                 ax.legend(edgecolor='black')
-            ax.set_xlabel('Time (Days)', fontsize=font-2)
+            ax.set_xlabel('Time', fontsize=font-2)
             ax.set_ylabel('T1 (us)', fontsize=font-2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
@@ -296,7 +298,7 @@ class T1VsTime:
         print('Plot saved to: ', analysis_folder)
         plt.close()
 
-    def plot_with_errs(self, date_times, t1_vals, t1_fit_err, show_legends):
+    def plot_with_errs(self, date_times, t1_vals, t1_fit_err, show_legends,exp_extension=''):
         # ---------------------------------plot-----------------------------------------------------
         if self.fridge.upper() == 'QUIET':
             analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
@@ -327,7 +329,8 @@ class T1VsTime:
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
-        plt.suptitle('T1 Values vs Time', fontsize=font)
+        ext = exp_extension.replace('_', '')
+        plt.suptitle(f'T1 Values vs Time {ext}', fontsize=font)
         axes = axes.flatten()
 
         import matplotlib.dates as mdates
@@ -378,12 +381,69 @@ class T1VsTime:
 
             if show_legends:
                 ax.legend(edgecolor='black')
-            ax.set_xlabel('Time (Days)', fontsize=font - 2)
+            ax.set_xlabel('Time', fontsize=font - 2)
             ax.set_ylabel('T1 (us)', fontsize=font - 2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
         plt.tight_layout()
-        plt.savefig(analysis_folder + 'T1_vals.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + f'T1_vals{exp_extension}.pdf', transparent=True, dpi=self.final_figure_quality)
+        print('Plot saved to:', analysis_folder)
+        plt.close()
+
+    def plot_with_errs_single_plot(self, date_times, t1_vals, t1_fit_err, show_legends):
+        if self.fridge.upper() == 'QUIET':
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
+        elif self.fridge.upper() == 'NEXUS':
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
+        else:
+            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+        from datetime import datetime
+        year = 2025
+        month = 1
+        day1 = 22
+        day2 = 23
+        hour_start = 0
+        hour_end = 23
+        start_time = datetime(year, month, day1, hour_start, 0)
+        end_time = datetime(year, month, day2, hour_end, 59)
+        font = 14
+        titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots(figsize=(12, 8))
+        fig.suptitle('T1 Values vs Time', fontsize=font)
+        import matplotlib.dates as mdates
+        from matplotlib.ticker import StrMethodFormatter
+        for i in range(self.number_of_qubits):
+            x = date_times[i]
+            y = t1_vals[i]
+            err = t1_fit_err[i]
+            datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
+            combined = list(zip(datetime_objects, y, err))
+            combined.sort(key=lambda tup: tup[0])
+            if len(combined) == 0:
+                continue
+            sorted_x, sorted_y, sorted_err = zip(*combined)
+            sorted_x = np.array(sorted_x)
+            ax.errorbar(sorted_x, sorted_y, yerr=sorted_err, fmt='none', ecolor=colors[i], elinewidth=1, capsize=0,
+                        label=titles[i] if show_legends else None)
+            ax.scatter(sorted_x, sorted_y, s=10, color=colors[i], alpha=0.5)
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
+        ax.tick_params(axis='x', rotation=45)
+        ax.ticklabel_format(style="plain", axis="y")
+        if show_legends:
+            ax.legend(edgecolor='black')
+        ax.set_xlabel('Time', fontsize=font - 2)
+        ax.set_ylabel('T1 (us)', fontsize=font - 2)
+        ax.tick_params(axis='both', which='major', labelsize=8)
+        plt.tight_layout()
+        plt.savefig(analysis_folder + 'T1_vals_single_plot.pdf', transparent=True, dpi=self.final_figure_quality)
         print('Plot saved to:', analysis_folder)
         plt.close()
 

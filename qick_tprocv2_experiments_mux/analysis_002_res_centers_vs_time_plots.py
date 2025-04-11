@@ -19,7 +19,7 @@ from scipy.optimize import curve_fit
 
 class ResonatorFreqVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config):
+                 signal, run_name):
         self.figure_quality = figure_quality
         self.number_of_qubits = number_of_qubits
         self.save_figs = save_figs
@@ -28,7 +28,7 @@ class ResonatorFreqVsTime:
         self.run_name = run_name
         self.top_folder_dates = top_folder_dates
         self.final_figure_quality = final_figure_quality
-        self.exp_config = exp_config
+
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -104,7 +104,7 @@ class ResonatorFreqVsTime:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run(self):
+    def run(self,exp_extension=''):
         import datetime
         # ----------Load/get data------------------------
         resonator_centers = {i: [] for i in range(self.number_of_qubits)}
@@ -119,42 +119,56 @@ class ResonatorFreqVsTime:
             outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
 
             # ------------------------------------------Load/Plot/Save Res Spec------------------------------------
-            outerFolder_expt = outerFolder + "/Data_h5/Res_ge/"
+
+            if '_' in exp_extension:
+                outerFolder_expt = outerFolder + f"/Data_h5/Res{exp_extension}/"
+            else:
+                outerFolder_expt = outerFolder + "/Data_h5/Res_ge/"
+
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 
             for h5_file in h5_files:
                 save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
                 H5_class_instance = Data_H5(h5_file)
-                # H5_class_instance.print_h5_contents(h5_file)
-                load_data = H5_class_instance.load_from_h5(data_type='Res', save_r=int(save_round))
+                #H5_class_instance.print_h5_contents(h5_file)
+                load_data = H5_class_instance.load_from_h5(data_type=f'Res{exp_extension}', save_r=int(save_round))
+
 
                 # just look at this resonator data, should have batch_num of arrays in each one
                 # right now the data writes the same thing batch_num of times, so it will do the same 5 datasets 5 times, until you fix this just grab the first one (All 5)
-                for q_key in load_data['Res']:
+                for q_key in load_data[f'Res{exp_extension}']:
                     # print("all batch_num datasets------------------------", load_data['Res'][q_key].get('Amps', [])[0])
                     # print("one dataset------------------------",load_data['Res'][q_key].get('Amps', [])[0][0].decode())
                     # go through each dataset in the batch and plot
-                    for dataset in range(len(load_data['Res'][q_key].get('Dates', [])[0])):
-                        if 'nan' in str(load_data['Res'][q_key].get('Dates', [])[0][dataset]):
+                    for dataset in range(len(load_data[f'Res{exp_extension}'][q_key].get('Dates', [])[0])):
+                        if 'nan' in str(load_data[f'Res{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
                             continue
 
                         date = datetime.datetime.fromtimestamp(
-                            load_data['Res'][q_key].get('Dates', [])[0][dataset])  # single date per dataset
+                            load_data[f'Res{exp_extension}'][q_key].get('Dates', [])[0][dataset])  # single date per dataset
 
-                        freq_pts = self.process_h5_data(load_data['Res'][q_key].get('freq_pts', [])[0][
+                        freq_pts = self.process_h5_data(load_data[f'Res{exp_extension}'][q_key].get('freq_pts', [])[0][
                                                        dataset].decode())  # comes in as an array but put into a byte string, need to convert to list
-                        freq_center = self.process_h5_data(load_data['Res'][q_key].get('freq_center', [])[0][
+                        freq_center = self.process_h5_data(load_data[f'Res{exp_extension}'][q_key].get('freq_center', [])[0][
                                                           dataset].decode())  # comes in as an array but put into a string, need to convert to list
-                        freqs_found = self.string_to_float_list(load_data['Res'][q_key].get('Found Freqs', [])[0][
+                        freqs_found = self.string_to_float_list(load_data[f'Res{exp_extension}'][q_key].get('Found Freqs', [])[0][
                                                                dataset].decode())  # comes in as a list of floats in string format, need to convert
                         amps = self.process_string_of_nested_lists(
-                            load_data['Res'][q_key].get('Amps', [])[0][dataset].decode())  # list of lists
-                        round_num = load_data['Res'][q_key].get('Round Num', [])[0][dataset]  # already a float
-                        batch_num = load_data['Res'][q_key].get('Batch Num', [])[0][dataset]
+                            load_data[f'Res{exp_extension}'][q_key].get('Amps', [])[0][dataset].decode())  # list of lists
+                        round_num = load_data[f'Res{exp_extension}'][q_key].get('Round Num', [])[0][dataset]  # already a float
+                        batch_num = load_data[f'Res{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
+
+
+                        exp_config = load_data[f'Res{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
+                        safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+
+                        exp_config = eval(exp_config, safe_globals)
+
+
 
                         if len(freq_pts) > 0:
                             res_class_instance = ResonanceSpectroscopy(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.save_figs)
-                            res_spec_cfg = ast.literal_eval(self.exp_config['res_spec'].decode())
+                            res_spec_cfg = exp_config['res_spec']
                             res_freqs = res_class_instance.get_results(freq_pts, freq_center, amps)
 
                             resonator_centers[q_key].extend([res_freqs[q_key]])
@@ -165,7 +179,7 @@ class ResonatorFreqVsTime:
                 del H5_class_instance
         return date_times, resonator_centers
 
-    def plot(self, date_times, resonator_centers, show_legends):
+    def plot(self, date_times, resonator_centers, show_legends, exp_extension = ''):
         #---------------------------------plot-----------------------------------------------------
         analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
@@ -175,7 +189,8 @@ class ResonatorFreqVsTime:
         font = 14
         colors = ['orange','blue','purple','green','brown','pink']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
-        plt.title('Resonator centers vs Time',fontsize = font)
+        ext = exp_extension.split('_')[0]
+        plt.title(f'Resonator centers vs Time {ext}',fontsize = font)
         axes = axes.flatten()
         titles = [f"Res {i + 1}" for i in range(self.number_of_qubits)]
         from datetime import datetime
@@ -214,6 +229,6 @@ class ResonatorFreqVsTime:
             ax.tick_params(axis='both', which='major', labelsize=8)
 
         plt.tight_layout()
-        plt.savefig(analysis_folder + 'Res_Centers.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + f'Res_Centers{exp_extension}.pdf', transparent=True, dpi=self.final_figure_quality)
 
         #plt.show()

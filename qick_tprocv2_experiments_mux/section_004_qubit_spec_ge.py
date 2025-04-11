@@ -1,57 +1,116 @@
 from build_task import *
 from build_state import *
-# from expt_config import *
-from expt_config_nexus import * # Change for quiet vs nexus
+from expt_config import *
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
 import datetime
 import copy
 import visdom
+import logging
 
 class QubitSpectroscopy:
-    def __init__(self, QubitIndex, number_of_qubits, outerFolder,  round_num, signal, save_figs, experiment = None, live_plot = None):
+    def __init__(self, QubitIndex, number_of_qubits,  outerFolder,  round_num, signal, save_figs, experiment = None,
+                 live_plot = None, verbose = False, logger = None, qick_verbose=True, increase_reps = False,
+                 increase_reps_to = 500, plot_fit=True, zeno_stark=False, zeno_stark_pulse_gain=None):
+        self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
-        self.expt_name = "qubit_spec_ge"
+        self.plot_fit=plot_fit
+        self.zeno_stark = zeno_stark
+        self.zeno_stark_pulse_gain = zeno_stark_pulse_gain
+        if self.zeno_stark:
+            self.expt_name = "qubit_spec_ge_zeno_stark"
+        else:
+            self.expt_name = "qubit_spec_ge"
         self.signal = signal
         self.save_figs = save_figs
         self.experiment = experiment
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.exp_cfg = expt_cfg[self.expt_name]
         self.round_num = round_num
-
         self.number_of_qubits = number_of_qubits
+        self.verbose = verbose
+        self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
+        self.increase_reps = increase_reps
+        self.increase_reps_to = increase_reps_to
+
+
         if experiment is not None:
+            if self.zeno_stark:
+                qze_mask = np.arange(0, self.number_of_qubits + 1)
+                qze_mask = np.delete(qze_mask, QubitIndex)
+                self.exp_cfg['qze_mask'] = qze_mask
+                self.experiment.readout_cfg['res_gain_qze'] = [self.experiment.readout_cfg['res_gain_ge'][QubitIndex],
+                                                               0, 0, 0, 0, 0, self.zeno_stark_pulse_gain]
+                self.experiment.readout_cfg['res_freq_qze'] = self.experiment.readout_cfg['res_freq_ge']
+                self.experiment.readout_cfg['res_phase_qze'] = self.experiment.readout_cfg['res_phase']
+                if len(self.experiment.readout_cfg['res_freq_qze']) < 7:  # otherise it keeps appending
+                    self.experiment.readout_cfg['res_freq_qze'].append(
+                        experiment.readout_cfg['res_freq_qze'][self.QubitIndex])
+                    self.experiment.readout_cfg['res_phase_qze'].append(
+                        experiment.readout_cfg['res_phase_qze'][self.QubitIndex])
+
             self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
             self.live_plot = live_plot
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} Qubit Spec configuration: ', self.config)
+            self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} Qubit Spec configuration: {self.config}')
 
-            print(f'Q {self.QubitIndex + 1} Round {self.round_num} Qubit Spec configuration: ', self.config)
+    def run(self,return_fwhm=False):
 
-    def run(self, soccfg, soc):
-        qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'], final_delay=0.5, cfg=self.config)
+        if self.increase_reps:
+            self.config['reps'] = self.increase_reps_to
+
+        qspec = PulseProbeSpectroscopyProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=0.5, cfg=self.config)
 
         # iq_lists= []
         if self.live_plot:
-            I, Q, freqs = self.live_plotting(qspec, soc)
+            I, Q, freqs = self.live_plotting(qspec)
         else:
-            iq_list = qspec.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=True)
+            iq_list = qspec.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=self.qick_verbose)
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
             freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
 
-        largest_amp_curve_mean, I_fit, Q_fit = self.plot_results(I, Q, freqs, config = self.config)
-        return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean
+        if return_fwhm:
+            largest_amp_curve_mean, I_fit, Q_fit, fwhm = self.plot_results(I, Q, freqs, config=self.config,
+                                                                           return_fwhm=return_fwhm)
+            return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config, fwhm
+        else:
+            largest_amp_curve_mean, I_fit, Q_fit = self.plot_results(I, Q, freqs, config=self.config,
+                                                                           return_fwhm=return_fwhm)
+            return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config
 
-    def live_plotting(self, qspec, soc):
+    def run_with_stark_tone(self, length, wait_for_res_ring_up=False):
+        #soc = self.experiment.soccfg
+        #cfg = self.config
+        self.config['qubit_length_ge'] = length
+        if self.increase_reps:
+            self.config['reps'] = self.increase_reps_to
+        if wait_for_res_ring_up:
+            qspec = PulseProbeSpectroscopyProgram_WithStark_WaitForRingUp(self.experiment.soccfg, reps=self.config['reps'] * 2,
+                                                             final_delay=0.5, cfg=self.config)
+        else:
+            qspec = PulseProbeSpectroscopyProgram_WithStark(self.experiment.soccfg, reps=self.config['reps']*2, final_delay=0.5, cfg=self.config)
+
+        iq_list = qspec.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"],)
+        I = iq_list[self.QubitIndex][0, :, 0]
+        Q = iq_list[self.QubitIndex][0, :, 1]
+        freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
+
+        largest_amp_curve_mean, I_fit, Q_fit, fwhm = self.plot_results(I, Q, freqs, config = self.config, sigma_guess = 10, return_fwhm=True)
+        return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config, fwhm
+
+    def live_plotting(self, qspec):
         I = Q = expt_mags = expt_phases = expt_pop = None
         viz = visdom.Visdom()
-        assert viz.check_connection(timeout_seconds=5), "Visdom server not connected!"
+        if not viz.check_connection(timeout_seconds=5):
+            raise RuntimeError("Visdom server not connected!")
         viz.close(win=None)  # close previous plots
         for ii in range(self.config["rounds"]):
-            iq_list = qspec.acquire(soc, soft_avgs=1, progress=True)
+            iq_list = qspec.acquire(self.experiment.soc, soft_avgs=1, progress=self.qick_verbose)
             freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
 
             this_I = iq_list[self.QubitIndex][0, :, 0]
@@ -67,12 +126,12 @@ class QubitSpectroscopy:
             viz.line(X=freqs, Y=Q, opts=dict(height=400, width=700, title='Qubit Spectroscopy Q', showlegend=True, xlabel='expt_pts'),win='QSpec_Q')
         return I, Q, freqs
 
-    def plot_results(self, I, Q, freqs, config=None, fig_quality=100):
+    def plot_results(self, I, Q, freqs, config=None, fig_quality=100, sigma_guess=1, return_fwhm=False):
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
 
         mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, fit_err = self.fit_lorenzian(I, Q, freqs,
-                                                                                                          freq_q)
+                                                                                                          freq_q,sigma_guess)
 
         # Check if the returned values are all None
         if (mean_I is None and mean_Q is None and I_fit is None and Q_fit is None
@@ -96,32 +155,45 @@ class QubitSpectroscopy:
         ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
         ax2.tick_params(axis='both', which='major', labelsize=16)
         ax2.legend()
-
         # Plot the fits
-        ax1.plot(freqs, I_fit, 'r--', label='Lorentzian Fit')
-        ax1.axvline(largest_amp_curve_mean, color='orange', linestyle='--', linewidth=2)
+        if self.plot_fit:
+            ax1.plot(freqs, I_fit, 'r--', label='Lorentzian Fit')
+            ax1.axvline(largest_amp_curve_mean, color='orange', linestyle='--', linewidth=2)
 
-        ax2.plot(freqs, Q_fit, 'r--', label='Lorentzian Fit')
-        ax2.axvline(largest_amp_curve_mean, color='orange', linestyle='--', linewidth=2)
+            ax2.plot(freqs, Q_fit, 'r--', label='Lorentzian Fit')
+            ax2.axvline(largest_amp_curve_mean, color='orange', linestyle='--', linewidth=2)
 
         # Calculate the middle of the plot area
         plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
 
-        # Add title, centered on the plot area
-        if config is not None:  # then its been passed to this definition, so use that
-            fig.text(plot_middle, 0.98,
-                     f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean +
-                     f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
-                     f", {config['reps']}*{config['rounds']} avgs",
-                     fontsize=24, ha='center', va='top')
+        if self.plot_fit:
+            # Add title, centered on the plot area
+            if config is not None:  # then its been passed to this definition, so use that
+                fig.text(plot_middle, 0.98,
+                         f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean +
+                         f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
+                         f", {config['reps']}*{config['rounds']} avgs",
+                         fontsize=24, ha='center', va='top')
+            else:
+                fig.text(plot_middle, 0.98,
+                         f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean +
+                         f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
+                         f", {self.config['reps']}*{self.config['rounds']} avgs",
+                         fontsize=24, ha='center', va='top')
         else:
-            fig.text(plot_middle, 0.98,
-                     f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean +
-                     f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
-                     f", {self.config['reps']}*{self.config['rounds']} avgs",
-                     fontsize=24, ha='center', va='top')
+            # Add title, centered on the plot area
+            if config is not None:  # then its been passed to this definition, so use that
+                fig.text(plot_middle, 0.98,
+                         f"Qubit Spectroscopy Q{self.QubitIndex + 1}" +
+                         f", {config['reps']}*{config['rounds']} avgs",
+                         fontsize=24, ha='center', va='top')
+            else:
+                fig.text(plot_middle, 0.98,
+                         f"Qubit Spectroscopy Q{self.QubitIndex + 1}",
+                         fontsize=24, ha='center', va='top')
 
-        # Adjust spacing
+
+                # Adjust spacing
         plt.tight_layout()
 
         # Adjust the top margin to make room for the title
@@ -137,7 +209,10 @@ class QubitSpectroscopy:
                                      f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
             fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
         plt.close(fig)
-        return largest_amp_curve_mean, I_fit, Q_fit
+        if return_fwhm:
+            return largest_amp_curve_mean, I_fit, Q_fit, largest_amp_curve_fwhm
+        else:
+            return largest_amp_curve_mean, I_fit, Q_fit
 
     def get_results(self, I, Q, freqs):
         freqs = np.array(freqs)
@@ -149,6 +224,7 @@ class QubitSpectroscopy:
 
 
     def lorentzian(self, f, f0, gamma, A, B):
+
         return A * gamma ** 2 / ((f - f0) ** 2 + gamma ** 2) + B
 
     def max_offset_difference_with_x(self, x_values, y_values, offset):
@@ -171,11 +247,11 @@ class QubitSpectroscopy:
 
         return corresponding_x, max_average_difference
 
-    def fit_lorenzian(self, I, Q, freqs, freq_q):
+    def fit_lorenzian(self, I, Q, freqs, freq_q, sigma_guess = 1):
         try:
             # Initial guesses for I and Q
-            initial_guess_I = [freq_q, 1, np.max(I), np.min(I)]
-            initial_guess_Q = [freq_q, 1, np.max(Q), np.min(Q)]
+            initial_guess_I = [freq_q, sigma_guess, np.max(I), np.min(I)]
+            initial_guess_Q = [freq_q, sigma_guess, np.max(Q), np.min(Q)]
 
             # First round of fits (to get rough estimates)
             params_I, _ = curve_fit(self.lorentzian, freqs, I, p0=initial_guess_I)
@@ -184,8 +260,8 @@ class QubitSpectroscopy:
             # Use these fits to refine guesses
             x_max_diff_I, max_diff_I = self.max_offset_difference_with_x(freqs, I, params_I[3])
             x_max_diff_Q, max_diff_Q = self.max_offset_difference_with_x(freqs, Q, params_Q[3])
-            initial_guess_I = [x_max_diff_I, 1, np.max(I), np.min(I)]
-            initial_guess_Q = [x_max_diff_Q, 1, np.max(Q), np.min(Q)]
+            initial_guess_I = [x_max_diff_I, sigma_guess, np.max(I), np.min(I)]
+            initial_guess_Q = [x_max_diff_Q, sigma_guess, np.max(Q), np.min(Q)]
 
             # Second (refined) round of fits, this time capturing the covariance matrices
             params_I, cov_I = curve_fit(self.lorentzian, freqs, I, p0=initial_guess_I)
@@ -210,7 +286,7 @@ class QubitSpectroscopy:
             amp_Q_fit = abs(np.max(Q_fit) - np.min(Q_fit))
 
             # Choose which curve to use based on the input signal indicator
-            if 'None' in self.signal:
+            if 'None' in self.signal or self.signal is None:
                 if amp_I_fit > amp_Q_fit:
                     largest_amp_curve_mean = mean_I
                     largest_amp_curve_fwhm = fwhm_I
@@ -236,7 +312,8 @@ class QubitSpectroscopy:
             return mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, qspec_fit_err
 
         except Exception as e:
-            print("Error during Lorentzian fit:", e)
+            if self.verbose: print("Error during Lorentzian fit:", e)
+            self.logger.info(f'Error during Lorentzian fit: {e}')
             return None, None,None,None,None,None,None
 
     def create_folder_if_not_exists(self, folder_path):
@@ -281,4 +358,96 @@ class PulseProbeSpectroscopyProgram(AveragerProgramV2):
         self.delay_auto(t=0.01, tag='waiting')  # Wait til qubit pulse is done before proceeding
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+
+class PulseProbeSpectroscopyProgram_WithStark(AveragerProgramV2):
+    def _initialize(self, cfg):
+        ro_ch = cfg['ro_ch']
+        res_ch = cfg['res_ch']
+        qubit_ch = cfg['qubit_ch']
+
+        self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
+                         mux_freqs=cfg['res_freq_qze'],
+                         mux_gains=cfg['res_gain_qze'],  # has 7 values not just 6, extra one for the zeno/stark
+                         mux_phases=cfg['res_phase_qze'],
+                         mixer_freq=cfg['mixer_freq'])
+
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
+            self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
+
+        self.add_pulse(ch=res_ch, name="res_pulse",
+                       style="const",
+                       length=cfg["res_length"],
+                       mask=cfg["list_of_all_qubits"],
+                       )
+
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+        self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_ch[0],
+                       style="const",
+                       length=cfg['qubit_length_ge']-0.11,#
+                       freq=cfg['qubit_freq_ge'],
+                       phase=0,
+                       gain=cfg['qubit_gain_ge'],
+                       )
+
+        self.add_pulse(ch=res_ch, name="proj_pulse",
+                       style="const",
+                       length=cfg['qubit_length_ge'] - 0.11,#
+                       mask=cfg['qze_mask'],
+                       )
+
+        self.add_loop("freqloop", cfg["steps"])
+
+    def _body(self, cfg):
+        self.pulse(ch=cfg['res_ch'], name="proj_pulse", t=0)
+        self.pulse(ch=cfg["qubit_ch"], name="qubit_pulse", t=0)  # play probe pulse
+        self.delay_auto(t=0, tag='waiting')  # Wait til qubit pulse is done before proceeding
+        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+
+class PulseProbeSpectroscopyProgram_WithStark_WaitForRingUp(AveragerProgramV2):
+    def _initialize(self, cfg):
+        ro_ch = cfg['ro_ch']
+        res_ch = cfg['res_ch']
+        qubit_ch = cfg['qubit_ch']
+
+        self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
+                         mux_freqs=cfg['res_freq_qze'],
+                         mux_gains=cfg['res_gain_qze'],  # has 7 values not just 6, extra one for the zeno/stark
+                         mux_phases=cfg['res_phase_qze'],
+                         mixer_freq=cfg['mixer_freq'])
+
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
+            self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
+
+        self.add_pulse(ch=res_ch, name="res_pulse",
+                       style="const",
+                       length=cfg["res_length"],
+                       mask=cfg["list_of_all_qubits"],
+                       )
+
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+        self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_ch[0],
+                       style="const",
+                       length=cfg['qubit_length_ge'] - 0.11,  #
+                       freq=cfg['qubit_freq_ge'],
+                       phase=0,
+                       gain=cfg['qubit_gain_ge'],
+                       )
+
+        self.add_pulse(ch=res_ch, name="proj_pulse",
+                       style="const",
+                       length=cfg['qubit_length_ge'] - 0.11 + 3,  #add ring up time, 1.1 for this resonators linewidth
+                       mask=cfg['qze_mask'],
+                       )
+
+        self.add_loop("freqloop", cfg["steps"])
+
+    def _body(self, cfg):
+        self.pulse(ch=cfg['res_ch'], name="proj_pulse", t=0)
+        self.pulse(ch=cfg["qubit_ch"], name="qubit_pulse", t=3)  # play probe pulse after res ring up to get saturated resonator stark/zeno tone
+        self.delay_auto(t=0, tag='waiting')  # Wait til qubit pulse is done before proceeding
+        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+
+
 

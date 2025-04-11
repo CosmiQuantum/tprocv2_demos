@@ -5,7 +5,7 @@ from expt_config import *
 from system_config import *
 
 class TOFExperiment:
-    def __init__(self, QubitIndex,  outerFolder, experiment, round_num = 1, save_figs = True, title = False):
+    def __init__(self, QubitIndex,  outerFolder, experiment, round_num = 1, save_figs = True, title = False, qick_verbose=True):
         # every time a class instance is created, these definitions are set
         self.expt_name = "tof"
         self.QubitIndex = QubitIndex
@@ -15,10 +15,11 @@ class TOFExperiment:
         self.experiment = experiment
         self.save_figs = save_figs
         self.title = title
+        self.qick_verbose=qick_verbose
 
-        self.q_config = all_qubit_state(self.experiment)
+        self.q_config = all_qubit_state(self.experiment,6)
         self.round_num = round_num
-        if 'All' in self.QubitIndex:
+        if 'All' in self.Qubit:
             self.config = {**self.q_config['Q0'], **self.exp_cfg}
             print(f'Q {self.QubitIndex} Round {round_num} TOF configuration: ', self.config)
         else:
@@ -26,7 +27,7 @@ class TOFExperiment:
             print(f'Q {self.QubitIndex + 1} Round {round_num} TOF configuration: ',self.config)
 
 
-    def run(self, soccfg, soc):
+    def run(self):
         class MuxProgram(AveragerProgramV2):
             def _initialize(self, cfg):
                 ro_chs = cfg['ro_ch']
@@ -34,12 +35,12 @@ class TOFExperiment:
 
                 self.declare_gen(
                     ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
-                    mux_freqs=cfg['res_freq_ge'],
-                    mux_gains=cfg['res_gain_ge'],
+                    mux_freqs=[f+1 for f in cfg['res_freq_ge']],
+                    mux_gains=[1,0,0,0,0,0],#cfg['res_gain_ge'], #[1,0,0,0,0,0]
                     mux_phases=cfg['res_phase'],
                     mixer_freq=cfg['mixer_freq']
                 )
-                for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
+                for ch, f, ph in zip(cfg['ro_ch'], [f+1 for f in cfg['res_freq_ge']], cfg['ro_phase']):
                     self.declare_readout(
                         ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch
                     )
@@ -47,7 +48,7 @@ class TOFExperiment:
                 self.add_pulse(
                     ch=gen_ch, name="mymux",
                     style="const",
-                    length=cfg["res_length"],
+                    length=9,#cfg["res_length"],
                     mask=cfg["list_of_all_qubits"],
                 )
 
@@ -55,8 +56,8 @@ class TOFExperiment:
                 self.trigger(ros=cfg['ro_ch'], pins=[0], t=0, ddr4=True)
                 self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
-        prog = MuxProgram(soccfg, reps=1, final_delay=0.5, cfg=self.config)
-        iq_list = prog.acquire_decimated(soc, soft_avgs=self.config['soft_avgs'])
+        prog = MuxProgram(self.experiment.soccfg, reps=1, final_delay=0.5, cfg=self.config)
+        iq_list = prog.acquire_decimated(self.experiment.soc, soft_avgs=self.config['soft_avgs'])
         if self.save_figs:
             (average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, DAC_attenuator1, DAC_attenuator2, ADC_attenuator) = self.plot_results(prog, iq_list)
         else:
@@ -140,11 +141,12 @@ class TOFExperiment:
             self.experiment.create_folder_if_not_exists(outerFolder_expt)
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-            if 'All' in self.QubitIndex:
+            if 'All' in self.Qubit:
                 file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}" + f"Q_{self.QubitIndex}" + f"{formatted_datetime}_" + self.expt_name + ".png")
             else:
                 file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + ".png")
             plt.savefig(file_name, dpi=50)
+            plt.show()
             plt.close(fig)
 
         return average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, self.experiment.DAC_attenuator1, self.experiment.DAC_attenuator2, self.experiment.ADC_attenuator

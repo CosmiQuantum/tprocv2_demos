@@ -25,7 +25,7 @@ from scipy.optimize import curve_fit
 
 class AllanWelchStats:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config):
+                 signal, run_name):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -34,7 +34,6 @@ class AllanWelchStats:
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
-        self.exp_config = exp_config
 
     def create_folder_if_not_exists(self, folder):
         """Creates a folder at the given path if it doesn't already exist."""
@@ -57,7 +56,7 @@ class AllanWelchStats:
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
 
         # -----------------------------------------------------------------------
-        # 2) For each qubit, sort data by timestamp, compute Oadev, and plot
+        #  For each qubit, sort data by timestamp, compute Oadev, and plot
         # -----------------------------------------------------------------------
         for i, ax in enumerate(axes):
             # Hide extra subplots if you have fewer than 6 qubits
@@ -96,9 +95,9 @@ class AllanWelchStats:
                 avg_dt = 1.0
             rate = 1.0 / avg_dt
 
-            # Compute overlapping Allan deviation
+            # overlapping Allan deviation
             # Use 'freq' data_type since label is not a phase measure.
-            # We'll auto-select tau points with taus='decade' or you could supply np.logspace(...).
+            #  auto-select tau points with taus='decade' or you could supply np.logspace(...).
             taus_out, ad, ade, ns = allantools.oadev(
                 vals_array,
                 rate=rate,

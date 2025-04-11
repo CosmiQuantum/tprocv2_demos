@@ -21,7 +21,7 @@ while j < n:
 
         # ---------------------TOF---------------------
         tof = TOFExperiment(QubitIndex, outerFolder, j)
-        tof.run(soccfg, soc)
+        tof.run()
         #
         # #---------------------Res spec---------------------
         # res_spec = ResonanceSpectroscopy(QubitIndex, outerFolder, j)

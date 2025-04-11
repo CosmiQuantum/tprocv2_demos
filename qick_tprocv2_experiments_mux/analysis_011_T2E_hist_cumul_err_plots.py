@@ -21,7 +21,7 @@ from scipy.optimize import curve_fit
 
 class T2eHistCumulErrPlots:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config, fridge, list_of_all_qubits):
+                 signal, run_name, fridge):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -30,9 +30,7 @@ class T2eHistCumulErrPlots:
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
-        self.exp_config = exp_config
         self.fridge = fridge
-        self.list_of_all_qubits = list_of_all_qubits
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -162,9 +160,12 @@ class T2eHistCumulErrPlots:
                         # fit = load_data['T2E'][q_key].get('Fit', [])[0][dataset]
                         round_num = load_data['T2E'][q_key].get('Round Num', [])[0][dataset]
                         batch_num = load_data['T2E'][q_key].get('Batch Num', [])[0][dataset]
+                        exp_config = load_data['T2E'][q_key].get('Exp Config', [])[0][dataset].decode()
+                        safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                        exp_config = eval(exp_config, safe_globals)
 
                         if len(I) > 0:
-                            T2E_class_instance = T2EMeasurement(q_key, self.list_of_all_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
+                            T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                                fit_data=True)
                             try:
                                 fitted, T2E, T2E_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
@@ -172,7 +173,7 @@ class T2eHistCumulErrPlots:
                                 print('Fit didnt work due to error: ', e)
                                 continue
 
-                            T2E_cfg = ast.literal_eval(self.exp_config['SpinEcho_ge'].decode())
+                            T2E_cfg = exp_config['SpinEcho_ge']
                             if T2E < 0:
                                 print("The value is negative, continuing...")
                                 continue
@@ -237,7 +238,7 @@ class T2eHistCumulErrPlots:
 
 
             if len(t2e_vals[i]) >1:
-                optimal_bin_num = self.optimal_bins(t2e_vals[i])
+                optimal_bin_num = 45#self.optimal_bins(t2e_vals[i])
 
                 # Fit a Gaussian to the raw data instead of the histogram
                 # get the mean and standard deviation of the data

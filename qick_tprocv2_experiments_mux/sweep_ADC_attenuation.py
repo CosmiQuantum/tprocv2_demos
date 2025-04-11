@@ -6,6 +6,7 @@ import numpy as np
 
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from system_config import QICK_experiment
+from expt_config import FRIDGE
 from section_003_punch_out_ge_mux import PunchOut
 import datetime
 from section_001_time_of_flight import TOFExperiment
@@ -27,11 +28,11 @@ for DAC_att1 in DAC_att_1:
     DAC_attenuator2 = None
     ADC_attenuator = None
     for att_1 in sweep_ADC_attenuator:
-        experiment = QICK_experiment(outerFolder,DAC_attenuator1 = DAC_att1, DAC_attenuator2 = 10, ADC_attenuator = round(float(att_1),3))
+        experiment = QICK_experiment(outerFolder,DAC_attenuator1 = DAC_att1, DAC_attenuator2 = 10, ADC_attenuator = round(float(att_1),3), fridge=FRIDGE)
         #put Arianna style code here
 
         tof = TOFExperiment('All', outerFolder, experiment,save_figs = True, title=True)
-        (average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, DAC_attenuator1, DAC_attenuator2, ADC_attenuator) = tof.run(experiment.soccfg, experiment.soc)
+        (average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, DAC_attenuator1, DAC_attenuator2, ADC_attenuator) = tof.run()
 
         avg_mag_y_mid.append(average_y_mag_values_mid)
         avg_mag_y_oct.append(average_y_mag_values_oct)

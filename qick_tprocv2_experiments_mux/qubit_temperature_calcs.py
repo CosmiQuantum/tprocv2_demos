@@ -6,6 +6,7 @@ from system_config import QICK_experiment
 import datetime
 from sklearn.mixture import GaussianMixture
 import matplotlib.pyplot as plt
+from expt_config import FRIDGE
 
 def calculate_qubit_temperature(frequency_mhz, ground_state_population, excited_state_population):
     k_B = 1.380649e-23  # Boltzmann constant in J/K
@@ -71,15 +72,15 @@ for qubit_index, params in qubits.items():
 
     # Initialize experiment
     QubitIndex = qubit_index - 1
-    experiment = QICK_experiment(output_folder)
+    experiment = QICK_experiment(output_folder, fridge=FRIDGE)
     experiment.readout_cfg['res_length'] = length
     experiment.readout_cfg['res_freq_ge'][QubitIndex] = frequency
-    res_gains = experiment.mask_gain_res(QubitIndex, gain)
+    res_gains = experiment.mask_gain_res(QubitIndex, gain, num_qubits=tot_num_of_qubits)
     experiment.readout_cfg['res_gain_ge'] = res_gains
 
     # Run the single-shot experiment
     ss = SingleShot(QubitIndex,list_of_all_qubits, output_folder, experiment, round_num=0, save_figs=False)
-    fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
+    fid, angle, iq_list_g, iq_list_e = ss.run()
 
     I_g = iq_list_g[QubitIndex][0].T[0]  # Ground-state I data
     Q_g = iq_list_g[QubitIndex][0].T[1]

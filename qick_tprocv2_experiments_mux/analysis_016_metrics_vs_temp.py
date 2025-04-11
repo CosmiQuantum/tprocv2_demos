@@ -52,7 +52,7 @@ class GetThermData:
 
 class ResonatorFreqVsTemp:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config):
+                 signal, run_name):
         self.figure_quality = figure_quality
         self.number_of_qubits = number_of_qubits
         self.save_figs = save_figs
@@ -61,7 +61,6 @@ class ResonatorFreqVsTemp:
         self.run_name = run_name
         self.top_folder_dates = top_folder_dates
         self.final_figure_quality = final_figure_quality
-        self.exp_config = exp_config
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -259,7 +258,7 @@ class ResonatorFreqVsTemp:
         #plt.show()
 class QubitFreqsVsTemp:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config):
+                 signal, run_name):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -268,7 +267,6 @@ class QubitFreqsVsTemp:
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
-        self.exp_config = exp_config
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -463,7 +461,7 @@ class QubitFreqsVsTemp:
 
 class PiAmpsVsTemp:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config):
+                 signal, run_name):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -472,7 +470,6 @@ class PiAmpsVsTemp:
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
-        self.exp_config = exp_config
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -673,7 +670,7 @@ class PiAmpsVsTemp:
 
 class T1VsTemp:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config):
+                 signal, run_name):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -682,8 +679,6 @@ class T1VsTemp:
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
-        self.exp_config = exp_config
-
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
         unix_timestamp = int(dt.timestamp())
@@ -884,7 +879,7 @@ class T1VsTemp:
 
 class T2rVsTemp:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config):
+                 signal, run_name):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -893,7 +888,7 @@ class T2rVsTemp:
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
-        self.exp_config = exp_config
+
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -1095,7 +1090,7 @@ class T2rVsTemp:
 
 class T2eVsTemp:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config):
+                 signal, run_name):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -1104,7 +1099,6 @@ class T2eVsTemp:
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
-        self.exp_config = exp_config
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp

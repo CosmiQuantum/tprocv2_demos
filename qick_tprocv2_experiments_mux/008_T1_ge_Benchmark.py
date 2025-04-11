@@ -186,7 +186,7 @@ while j < n:
     ### Save the T1 and error into arrays and pickle them
     q1_t1.append(T1_est)
     q1_t1_err.append(T1_err)
-    print(q1_t1, q1_t1_err, dates)
+    #print(q1_t1, q1_t1_err, dates)
 
     with open(outerFolder_expt + "T1_benchmark_Q1_" + f"{formatted_starttime}_"+ str(n) + "x.pkl", 'wb') as f:
         pickle.dump(q1_t1, f)

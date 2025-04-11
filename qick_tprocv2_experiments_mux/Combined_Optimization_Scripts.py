@@ -74,19 +74,19 @@ for QubitIndex in Qs:
                 # ------------------------Single Shot-------------------------
                 # Initialize experiment for each loop iteration
                 #experiment = QICK_experiment(output_folder)
-                experiment = QICK_experiment(output_folder, DAC_attenuator1=10, DAC_attenuator2=5, ADC_attenuator=10)
+                experiment = QICK_experiment(output_folder, DAC_attenuator1=10, DAC_attenuator2=5, ADC_attenuator=10, fridge=FRIDGE)
                 # Set specific configuration values for each iteration
                 experiment.readout_cfg['res_length'] = leng  # Set the current readout pulse length
 
                 # Set gain for the current qubit
                 gain = res_gain[QubitIndex]
-                res_gains = experiment.mask_gain_res(QubitIndex, gain)  # Set gain for current qubit only
+                res_gains = experiment.mask_gain_res(QubitIndex, gain, num_qubits=tot_num_of_qubits)  # Set gain for current qubit only
 
                 experiment.readout_cfg['res_gain_ge'] = res_gains
 
                 # ss = SingleShot(QubitIndex,list_of_all_qubits, output_folder, k, round(leng, 3)) #Old way
                 ss = SingleShot(QubitIndex,list_of_all_qubits, output_folder, experiment, round_num=k, save_figs=False)  # New way
-                fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
+                fid, angle, iq_list_g, iq_list_e = ss.run()
                 fids.append(fid)
                 print(f'FID (round {k}) = {fid}')
 

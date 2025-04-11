@@ -19,16 +19,16 @@ while j < n:
 
         # ---------------------TOF------------------------
         #tof = TOFExperiment(QubitIndex, outerFolder, j)
-        #tof.run(soccfg, soc)
+        #tof.run()
 
         #---------------------Res spec---------------------
         res_spec = ResonanceSpectroscopy(QubitIndex, outerFolder, j)
-        res_freqs = res_spec.run(soccfg, soc)
+        res_freqs = res_spec.run()
 
         #-----------------Roll Signal into I---------------
         #get the average theta value, then use that to rotate the signal. Plug that value into system_config res_phase
         ss = SingleShot(QubitIndex, '/data', j, round(4, 3))
-        fid, angle = ss.run(soccfg, soc)
+        fid, angle = ss.run()
         angles[QubitIndex].append(angle)
 
 for i in range(0, 6):

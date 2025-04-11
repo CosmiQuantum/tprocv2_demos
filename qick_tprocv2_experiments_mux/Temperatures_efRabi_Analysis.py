@@ -1,0 +1,40 @@
+import sys
+import os
+import numpy as np
+np.set_printoptions(threshold=int(1e15)) #need this so it saves absolutely everything returned from the classes
+import datetime
+import time
+sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
+from analysis_001_plot_all_RR_h5 import PlotAllRR
+import os
+import sys
+import h5py
+from sklearn.mixture import GaussianMixture
+import matplotlib.pyplot as plt
+from matplotlib.patches import Ellipse
+from analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
+
+#---------------------------------------------------------Folders and Paths-------------------------------------------------------------------
+sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+
+plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
+figure_quality = 200
+save_figs = True # If you are running plotter.run, do you want to save all of the plots for the chosen experiment?
+fit_saved = False # Not used here, set to false
+signal = 'None' # Do not change
+
+run_name = 'run6/6transmon/'
+date = '2025-04-10'  # only go through all of the data for one date at a time because there is a lot
+
+# Where plots are saved
+outerFolder = f"/data/QICK_data/run6/6transmon/ef_studies/QubitTemps_efRabi_method/" + date + "/Study_Data"
+outerFolder_qtemps_plots = os.path.join("/data/QICK_data/run6/6transmon/ef_studies/QubitTemps_efRabi_method/", date, "/Study_Data", "plots/")
+#------------------------------------------------Initialize the Plotting class------------------------------------------------
+plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, tot_num_of_qubits, outerFolder,
+                  outerFolder_qtemps_plots)
+
+#------------------------------------To re-plot the g-e-f SSF plots, or any other data from the selected date-----------------------------------------------------
+plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_ss = False,  ss_plot_gef = True, plot_t1 = False,
+            plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = True)
+
