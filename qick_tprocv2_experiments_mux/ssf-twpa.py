@@ -17,8 +17,8 @@ from section_005_single_shot_ge import SingleShot
 from section_008_save_data_to_h5 import Data_H5
 from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
-
-from system_config_nexus import QICK_experiment  ## Change for quiet vs nexus
+from expt_config_nexus import *
+from system_config_nexus import * #QICK_experiment  ## Change for quiet vs nexus
 # from system_config import QICK_experiment
 from expt_config_nexus import expt_cfg, list_of_all_qubits  ## Change for quiet vs nexus
 from windfreak import SynthHD
@@ -29,12 +29,12 @@ import copy
 n= 1
 save_r = 1            # how many rounds to save after
 signal = 'None'       #'I', or 'Q' depending on where the signal is (after optimization). Put'None' if no optimization
-save_figs = True    # save plots for everything as you go along the RR script?
+save_figs = False    # save plots for everything as you go along the RR script?
 live_plot = False      # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
 fit_data = True      # fit the data here and save or plot the fits?
 save_data_h5 = True   # save all of the data to h5 files?
 number_of_qubits = 4  #currently 4 for NEXUS, 6 for QUIET
-Qs_to_look_at = [0]#, 1, 2, 3] #only list the qubits you want to do the RR for
+Qs_to_look_at = [0, 1, 2, 3] #only list the qubits you want to do the RR for
 
 increase_qubit_reps = False #if you want to increase the reps for a qubit, set to True
 qubit_to_increase_reps_for = 0 #only has impact if previous line is True
@@ -72,7 +72,7 @@ def create_data_dict(keys, save_r, qs):
 # t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
 # t2r_data = create_data_dict(t2r_keys, save_r, list_of_all_qubits)
 # t2e_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
-
+start_time = time.time()
 batch_num=0
 j = 0
 angles=[]
@@ -104,128 +104,168 @@ time.sleep(5)
 # tof        = TOFExperiment(QubitIndex, outerFolder, experiment, j, save_figs)
 # tof.run(experiment.soccfg, experiment.soc)
 # del tof
-while j < n:
-    j=j+1
-    ################################################## Res spec ####################################################
-    try:
-        res_spec   = ResonanceSpectroscopy(QubitIndex,number_of_qubits, list_of_all_qubits, outerFolder, j, save_figs, experiment)
-        res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
-        experiment.readout_cfg['res_freq_ge'] = res_freqs
-        offset = freq_offsets[QubitIndex] #use optimized offset values
-        offset_res_freqs = [r + offset for r in res_freqs]
-        experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
-        del res_spec
-    except Exception as e:
-        print(f'Got the following error at Res Spec, continuing: {e}')
-        continue ###skip the rest of this qubit
+# while j < n:
+#     j=j+1
+#
+#
+#
+#
+#
+#     ########################################## Single Shot Measurements ############################################
+#     #try:
+    # start_time = time.time()
+startF =7.3e9 #- 0.5e9 #- 0.05e9  #  7.8239e9 - 0.5e9
+stopF  = 7.5e9 #+0.5e9  #+ 0.1e9  #7.8239e9  + 0.5e9
+Fnumpts=5
+startA = -13.5 #-13 #-1.5#-12.5 - 0.5#-12.5 - 1
+stopA  = -13 #-11 #1.5 #-12.5 + 0.5#-12.5 + 1
+Anumpts=5
 
-    # ############################################ Roll Signal into I ##############################################
-    # #get the average theta value, then use that to rotate the signal. Plug that value into system_config res_phase
-    # leng=4
-    # ss = SingleShot(QubitIndex, outerFolder, experiment, j, save_figs)
-    # fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
-    # angles.append(angle)
-    # #print(angles)
-    # #print('avg theta: ', np.average(angles))
-    # del ss
-
-    ################################################## Qubit spec ##################################################
-    try:
-        q_spec = QubitSpectroscopy(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot)
-        qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg,
-                                                                                         experiment.soc)
-        # if these are None, fit didnt work
-        if (qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None):
-            print('QSpec fit didnt work, skipping the rest of this qubit')
-            continue #skip the rest of this qubit
-
-        experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
-        print('Qubit freq for qubit ', QubitIndex + 1 ,' is: ',float(qubit_freq))
-        del q_spec
-
-    except Exception as e:
-        print(f'Got the following error, continuing: {e}')
-        continue #skip the rest of this qubit
-
-
-    ###################################################### Rabi ####################################################
-    try:
-        rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal,
-                                       save_figs, experiment, live_plot,
-                                       increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
-        rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save = rabi.run(experiment.soccfg, experiment.soc)
-
-        # if these are None, fit didnt work
-        if (rabi_fit is None and pi_amp is None):
-            print('Rabi fit didnt work, skipping the rest of this qubit')
-            continue  # skip the rest of this qubit
-
-        experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
-        print('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
-        del rabi
-    except Exception as e:
-        print(f'Got the following error, continuing: {e}')
-        continue #skip the rest of this qubit
-    tuned_experiment = copy.deepcopy(experiment)
-    ########################################## Single Shot Measurements ############################################
-    #try:
-    start_time = time.time()
-    startF=7.8239e9 - 0.5e9 #- 0.05e9  #  7.8239e9 - 0.5e9
-    stopF= 7.8239e9 +0.5e9  #+ 0.1e9  #7.8239e9  + 0.5e9
-    Fnumpts=10
-    startA= -12.5 -1.5#-12.5 - 0.5#-12.5 - 1
-    stopA= -12.5 +1.5 #-12.5 + 0.5#-12.5 + 1
-    Anumpts=10
-
-    twpaFs = np.linspace(startF, stopF, Fnumpts)
-    twpaAs = np.linspace(startA, stopA, Anumpts)
-    num=0
-    fidelity=np.zeros((len(twpaFs),len(twpaAs)))
-    experiment = copy.deepcopy(tuned_experiment)
-    for fi in range(len(twpaFs)):
-
-        for Ai in range(len(twpaAs)):
-
-            synth = SynthHD('/dev/ttyACM1')
-            synth[0].power = twpaAs[Ai]
-            synth[0].frequency = twpaFs[fi]
-            synth[0].enable = True
-            time.sleep(5)
-
-            fids=[]
-            for i in range(5):#
+twpaFs = np.linspace(startF, stopF, Fnumpts)
+twpaAs = np.linspace(startA, stopA, Anumpts)
+num=0
+reps=1
+synth = SynthHD('/dev/ttyACM1')
+res_leng_vals = [5.8, 3.8, 4, 4.6] #[6.15, 5.85, 6.45, 5.7] # from 2/19/2025 optimization, after punchout test
+res_gain = [0.38, 0.26, 0.28, 0.31]#[0.3143, 0.1857, 0.1429, 0.1857] # from 2/19/2025 optimization, after punchout test
+res_fs = [0.38, 0.26, 0.28, 0.31]
+fidelity = np.zeros((4,len(twpaFs), len(twpaAs)))
+sumamps = np.zeros((len(twpaFs), len(twpaAs)))
+start_time = time.time()
+for fi in range(len(twpaFs)):
+    for Ai in range(len(twpaAs)):
+        ampreps= np.zeros((4,reps))
+        for i in range(reps):
+            for QubitIndex in Qs_to_look_at:
+                print('QubitIndex=',QubitIndex)
+                synth[0].power = twpaAs[Ai]
+                synth[0].frequency = twpaFs[fi]
+                synth[0].enable = True
+                time.sleep(0.5)
+#             ################################################## Res spec ####################################################
+#                 try:
+                expt_cfg["res_spec"]['start']=experiment.readout_cfg['res_freq_ge'][QubitIndex]
+                expt_cfg["res_spec"]['steps']=1
+                expt_cfg["res_spec"]['step_size']=0
+                experiment.readout_cfg['res_gain_ge'] = res_gain
+                experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
                 res_spec = ResonanceSpectroscopy(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j,
                                                  save_figs, experiment)
-                # experiment.readout_cfg['res_phases'] = res_phases
                 res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
-                # print('fnum=', num)
-                # print('iteration,', i)
-                # #timestamp = time.strftime("%H%M%S")
-                # ss = SingleShot(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder,  j, save_figs, experiment)
-                # fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
-                # print('fid=',fid)
-                # # I_g = iq_list_g[QubitIndex][0].T[0]
-                # # Q_g = iq_list_g[QubitIndex][0].T[1]
-                # # I_e = iq_list_e[QubitIndex][0].T[0]
-                # # Q_e = iq_list_e[QubitIndex][0].T[1]
-                # #
-                # # fid, threshold, angle, ig_new, ie_new = ss.hist_ssf(
-                # #     data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)save_figs
-                # fids.append(fid)
-                # ienews.append(ie_new)
-            fid_avg=np.mean(np.array(fids))
-            fidelity[fi][Ai]=fid_avg
+                # experiment.readout_cfg['res_freq_ge'] = res_freqs
+                # offset = freq_offsets[QubitIndex]  # use optimized offset values
+                # offset_res_freqs = [r + offset for r in res_freqs]
+                # experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
+                ampreps[QubitIndex][i]=amps[QubitIndex][0]
+                del res_spec
 
-        num=num+1
-    np.savez(outerFolder +  f'TWPASSF_Q{QubitIndex + 1}' , fidelity=fidelity)
-    synth[0].power = -12.5
-    synth[0].frequency = 7.8239e9
-    synth[0].enable = True
-    time.sleep(5)
+        r1amp = np.mean(ampreps[0])
+        r2amp = np.mean(ampreps[1])
+        r3amp = np.mean(ampreps[2])
+        r4amp = np.mean(ampreps[3])
+        rsum = r1amp + r2amp +  r3amp +  r4amp
+        sumamps[fi][Ai]=rsum
+        print('twpaAs[Ai]', twpaAs[Ai])
+        print('twpaAs[fi]', twpaFs[fi])
+        rsum = r1amp + r2amp +  r3amp +  r4amp
+        print('rsum = ',rsum )
+
+np.savez(outerFolder +  f'TWPA_ramps' , sumamps=sumamps)   #, fidelitySTD=fidelitySTD)
+end_time = time.time()
+elapsed_time = end_time - start_time
+print(f"Time taken for the twpa sweep: {elapsed_time:.2f} seconds")
+
+
+                # except Exception as e:
+                #     print(f'Got the following error at Res Spec, continuing: {e}')
+                #     continue  ###skip the rest of this qubit
+#                 #
+#                 # # ############################################ Roll Signal into I ##############################################
+#                 # # #get the average theta value, then use that to rotate the signal. Plug that value into system_config res_phase
+#                 # # leng=4
+#                 # # ss = SingleShot(QubitIndex, outerFolder, experiment, j, save_figs)
+#                 # # fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
+#                 # # angles.append(angle)
+#                 # # #print(angles)
+#                 # # #print('avg theta: ', np.average(angles))
+#                 # # del ss
+#                 #
+#                 # ################################################## Qubit spec ##################################################
+#                 # try:
+#                 #     q_spec = QubitSpectroscopy(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal,
+#                 #                                save_figs, experiment, live_plot)
+#                 #     qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg,
+#                 #                                                                                      experiment.soc)
+#                 #     # if these are None, fit didnt work
+#                 #     if (qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None):
+#                 #         print('QSpec fit didnt work, skipping the rest of this qubit')
+#                 #         continue  # skip the rest of this qubit
+#                 #
+#                 #     experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
+#                 #     print('Qubit freq for qubit ', QubitIndex + 1, ' is: ', float(qubit_freq))
+#                 #     del q_spec
+#                 #
+#                 # except Exception as e:
+#                 #     print(f'Got the following error, continuing: {e}')
+#                 #     continue  # skip the rest of this qubit
+#
+#                 ###################################################### Rabi ####################################################
+#                 try:
+#                     rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j,
+#                                                    signal,
+#                                                    save_figs, experiment, live_plot,
+#                                                    increase_qubit_reps, qubit_to_increase_reps_for,
+#                                                    multiply_qubit_reps_by)
+#                     rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save = rabi.run(experiment.soccfg,
+#                                                                                                 experiment.soc)
+#
+#                     # if these are None, fit didnt work
+#                     if (rabi_fit is None and pi_amp is None):
+#                         print('Rabi fit didnt work, skipping the rest of this qubit')
+#                         continue  # skip the rest of this qubit
+#
+#                     experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
+#                     print('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
+#                     del rabi
+#                 except Exception as e:
+#                     print(f'Got the following error, continuing: {e}')
+#                     continue  # skip the rest of this qubit
+#                 tuned_experiment = copy.deepcopy(experiment)
+#
+#                 synth = SynthHD('/dev/ttyACM1')
+#                 synth[0].power = twpaAs[Ai]
+#                 synth[0].frequency = twpaFs[fi]
+#                 synth[0].enable = True
+#                 time.sleep(0.1)
+#
+#                 fids=[]
+#
+#                 for i in range(3):#
+#
+#                     print('fnum=', num)
+#                     print('iteration,', i)
+#                     experiment = copy.deepcopy(tuned_experiment)
+#                     #timestamp = time.strftime("%H%M%S")
+#                     ss = SingleShot(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder,  j, save_figs, experiment)
+#                     fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
+#                     print('fid=',fid)
+#
+#                     fids.append(fid)
+#                 fid_avg=np.mean(np.array(fids))
+#                 fidelity[QubitIndex][fi][Ai]=fid_avg
+#
+#         num=num+1
+#     print('fidelity',fidelity)
+#     # print('fidelitySTD', fidelitySTD)
+#     np.savez(outerFolder +  f'TWPASSF' , fidelity=fidelity)   #, fidelitySTD=fidelitySTD)
+#     synth[0].power = -12.5
+#     synth[0].frequency = 7.8239e9
+#     synth[0].enable = True
+#     time.sleep(5)
 # end_time = time.time()
 # elapsed_time = end_time - start_time
-#print(f"Time taken for the twpa sweep: {elapsed_time:.2f} seconds")
-# except Exception as e:
-#     print(f'Got the following error, continuing: {e}')
-#     continue #skip the rest of this qubit
-
+# print(f"Time taken for the twpa sweep: {elapsed_time:.2f} seconds")
+# # except Exception as e:
+# #     print(f'Got the following error, continuing: {e}')
+# #     continue #skip the rest of this qubit
+#

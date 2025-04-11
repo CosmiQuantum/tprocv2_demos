@@ -20,7 +20,7 @@ expt_cfg = {
         "rounds": 1,
         "start": -3.5, # [MHz]
         "step_size": 0.12,  # [MHz]
-        "steps": 101,
+        "steps": 58,#101,
         "relax_delay": 20,  # [us]
         "list_of_all_qubits": list_of_all_qubits,
     },
@@ -38,8 +38,8 @@ expt_cfg = {
     "qubit_spec_ge": {
         "reps": 700, #100
         "rounds": 1, #10
-        "start": list(VNA_qubit-70), # [MHz]
-        "stop":  list(VNA_qubit+70), # [MHz]
+        "start": list(VNA_qubit-35),#70), # [MHz]
+        "stop":  list(VNA_qubit+35),#70), # [MHz]
         "steps": 300,
         "relax_delay": 0.5, # [us]
         "list_of_all_qubits": list_of_all_qubits,
@@ -60,7 +60,7 @@ expt_cfg = {
         "rounds": 1, #5
         "start": [0.0] * 6, # [DAC units]
         "stop":  [1.0] * 6, # [DAC units]
-        "steps": 100,
+        "steps": 200,
         "relax_delay": 500, # [us]
         "list_of_all_qubits": list_of_all_qubits,
     },
@@ -84,7 +84,7 @@ expt_cfg = {
         "start": [0.0]*6,  # [us]
         "stop": [150]*6, #[250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
         "steps": 80,
-        "relax_delay": 500,  # [us] ### Should be >10x T1!
+        "relax_delay": 200,  # [us] ### Should be >10x T1!
         "wait_time": 0.0,  # [us]
         "list_of_all_qubits": list_of_all_qubits,
     },

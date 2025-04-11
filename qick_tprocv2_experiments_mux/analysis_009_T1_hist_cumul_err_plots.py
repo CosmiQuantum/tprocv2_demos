@@ -117,13 +117,21 @@ class T1HistCumulErrPlots:
         file_names = []
         dates = {i: [] for i in range(self.number_of_qubits)}
 
+        cutoff_date = datetime.datetime.strptime('2025-02-28', '%Y-%m-%d')
         for folder_date in self.top_folder_dates:
+            current_date = datetime.datetime.strptime(folder_date, '%Y-%m-%d')
             if self.fridge.upper() == 'QUIET':
                 outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
                 outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
             elif self.fridge.upper() == 'NEXUS':
-                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
-                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
+                if current_date < cutoff_date:
+                    # For Regular RR at NEXUS
+                    outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
+                    outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
+                else:
+                    # #For Fast RR at NEXUS
+                    outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/" + folder_date + "/"
+                    outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/" + folder_date + "_plots/"
             else:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
@@ -142,7 +150,8 @@ class T1HistCumulErrPlots:
                     datetime.date(2025, 1, 29), #HEMT Issues
                     datetime.date(2025, 1, 30), #HEMT Issues
                     datetime.date(2025, 1, 31),  #Optimization Issues and non RR work in progress
-                    datetime.date(2025, 2, 11)  # TWPA optimization work, fridge pressure issues, touch tests at nexus
+                    datetime.date(2025, 2, 11),  # TWPA optimization work, fridge pressure issues, touch tests at nexus
+                    datetime.date(2025, 2, 3)  # Removing Feb 3 date, since Ba source was installed at some point but elog does not exist. Not clear what happened that day.
                 }
 
                 for q_key in load_data['T1']:
@@ -152,6 +161,11 @@ class T1HistCumulErrPlots:
                         #T1 = load_data['T1'][q_key].get('T1', [])[0][dataset]
                         #errors = load_data['T1'][q_key].get('Errors', [])[0][dataset]
                         date= datetime.datetime.fromtimestamp(load_data['T1'][q_key].get('Dates', [])[0][dataset])
+
+                        # Disregard data for qubit 4 (key 3) in the specific timeframe.
+                        if q_key == 3 and datetime.datetime(2025, 3, 11, 21, 44, 8) <= date <= datetime.datetime(2025,3, 11,22, 45,36):
+                            print(f"Skipping data for qubit 4 at {date} (specific timeframe), due to failed Pi Amp detected by Arianna")
+                            continue
 
                         # Skip processing if the date (as a date object) is in the excluded set
                         if date.date() in exclude_dates:
@@ -203,9 +217,16 @@ class T1HistCumulErrPlots:
             analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/T1/"
             self.create_folder_if_not_exists(analysis_folder)
         elif self.fridge.upper() == 'NEXUS':
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            # #For regular RR at NEXUS
+            # analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            # self.create_folder_if_not_exists(analysis_folder)
+            # analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/T1/"
+            # self.create_folder_if_not_exists(analysis_folder)
+
+            # #For fast RR at NEXUS
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/benchmark_analysis_plots/"
             self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/T1/"
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/benchmark_analysis_plots/T1/"
             self.create_folder_if_not_exists(analysis_folder)
         else:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
@@ -353,4 +374,62 @@ class T1HistCumulErrPlots:
         return std_values, mean_values
 
 
+    def plot_combined_histograms(self, all_dates, all_t1_vals, all_t1_errs, dataset_labels=None, show_legends=True):
+        analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/RegularRR_FastRR_Comparisons/"
+        self.create_folder_if_not_exists(analysis_folder)
 
+        num_qubits = self.number_of_qubits
+        fig, axes = plt.subplots(1, self.number_of_qubits, figsize=(6 * self.number_of_qubits, 8))
+        if self.number_of_qubits == 1:
+            axes = [axes]  # Ensure axes is iterable if only one subplot
+
+        titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
+        colors = ['blue', 'green', 'orange', 'red', 'purple']  # Adjust or expand as needed
+
+        num_datasets = len(all_dates)
+        alphas = np.linspace(1, 0.5, num_datasets)  # Automatically generated alphas
+
+        for i, ax in enumerate(axes):
+            ax.set_title(titles[i], fontsize=14)
+            ax.set_xlabel('T1 (µs)', fontsize=14)
+            ax.set_xlim(8,28)
+            ax.set_ylabel('Frequency', fontsize=14)
+            ax.set_ylim(0, 18)
+
+            for dataset_idx, (dates, t1_vals, t1_errs) in enumerate(zip(all_dates, all_t1_vals, all_t1_errs)):
+                if i not in dates or i not in t1_vals:
+                    continue
+
+                if len(t1_vals[i]) > 1:
+                    # optimal_bin_num = self.optimal_bins(t1_vals[i])
+                    optimal_bin_num = 45
+                    # Fit Gaussian using scipy.stats.norm
+                    mu, std = norm.fit(t1_vals[i])
+                    x_fit = np.linspace(min(t1_vals[i]), max(t1_vals[i]), optimal_bin_num)
+                    p_fit = norm.pdf(x_fit, mu, std)
+
+                    # Histogram data
+                    hist_data, bins = np.histogram(t1_vals[i], bins=optimal_bin_num)
+                    bin_width = np.diff(bins)
+
+                    # Scale Gaussian to match histogram
+                    gaussian_scaled = p_fit * bin_width * hist_data.sum()
+                    # alpha = alphas[dataset_idx]
+                    ax.hist(t1_vals[i], bins=optimal_bin_num,
+                            alpha=alphas[dataset_idx], color=colors[dataset_idx % len(colors)], edgecolor='black', fill=True,
+                            label=f"{dataset_labels[dataset_idx]}: {dates[i][0].split(' ')[0]} to {dates[i][-1].split(' ')[0]}")
+
+                    ax.plot(x_fit, gaussian_scaled, linestyle='--', linewidth=2,
+                            color=colors[dataset_idx % len(colors)],
+                            label=f"Fit: µ={mu:.2f}, s={std:.2f}")
+
+            if show_legends:
+                ax.legend(fontsize=14, bbox_to_anchor=(0.5, -0.15), loc='upper center', ncol=1)
+
+            ax.set_title(titles[i], fontsize=16)
+
+        plt.tight_layout()
+        #plt.show()
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        plt.savefig(f"{analysis_folder}combined_histograms_{timestamp}.png", dpi=self.final_figure_quality)
+        print('Plots saved to: ', analysis_folder)

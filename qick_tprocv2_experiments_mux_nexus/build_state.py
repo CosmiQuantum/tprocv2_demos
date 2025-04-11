@@ -27,8 +27,10 @@ def add_readout_cfg(system_config, QubitIndex):
 # Add Qubit Frequency and Constant Drive Gain Parameters
 def add_qubit_cfg(system_config, QubitIndex):
     qubit_config = copy.deepcopy(system_config.qubit_cfg)
-    var = ["qubit_freq_ge", "qubit_gain_ge", "sigma", "pi_amp"] # "qubit_freq_ef",  "qubit_gain_ef"]
+    var = ["qubit_freq_ge", "qubit_gain_ge", "sigma", "sigma_ef", "sigma_ftores", "pi_amp",  "pi_ef_amp", "qubit_freq_ef",  "qubit_gain_ef", 'qubit_freq_ftores', 'qubit_gain_ftores', "qubit_length_ftores"]
     for Index in var:
+        # print('Index',Index)
+        # print('value list', qubit_config[Index])
         value = qubit_config[Index][QubitIndex]
         qubit_config.update([(Index,value)])
     return qubit_config

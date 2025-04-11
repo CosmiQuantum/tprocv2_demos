@@ -48,18 +48,26 @@ def add_single_qubit_experiment(expt_cfg, expt_name, QubitIndex):
         exp_cfg.update([('qubit_freq_ge', QickSweep1D('freqloop', start, stop))])
     elif expt_name == 'bias_qubit_spec_ge':
         exp_cfg.update([('bias_qubit_freq_ge', QickSweep1D('freqloop', start, stop))])
+    elif expt_name == 'bias_qubit_spec_ef':
+        exp_cfg.update([('bias_qubit_freq_ef', QickSweep1D('freqloop', start, stop))])
     elif expt_name == 'time_rabi_ge' or expt_name == 'qubit_temp':
         exp_cfg.update([('expts', expts), ('start', start)])
     elif expt_name == 'power_rabi_ge':
         exp_cfg.update([('qubit_gain_ge', QickSweep1D('gainloop', start, stop))])
+    elif expt_name == 'power_rabi_ef':
+        exp_cfg.update([('qubit_gain_ef', QickSweep1D('gainloop', start, stop))])
     elif expt_name == 'Ramsey_ge' or expt_name == 'SpinEcho_ge' or expt_name == 'T1_ge' or expt_name == 'Ramsey_ef':
         exp_cfg.update([('wait_time', QickSweep1D('waitloop', start, stop))])
     elif expt_name == 'res_spec_ef':
         exp_cfg.update([('res_freq_ef', QickSweep1D('freqloop', start, stop))])
     elif expt_name == 'qubit_spec_ef':
         exp_cfg.update([('qubit_freq_ef', QickSweep1D('freqloop', start, stop))])
+    elif expt_name == "qubit_spec_ftores":
+        exp_cfg.update([('qubit_freq_ftores', QickSweep1D('freqloop', start, stop))])
     elif expt_name == 'power_rabi_ef':
         exp_cfg.update([('qubit_gain_ef', QickSweep1D('gainloop', start, stop))])
+    elif expt_name == 'len_rabi_ftores':
+        exp_cfg.update([("qubit_length_ftores", QickSweep1D('lengloop', start, stop))])
     
     return exp_cfg
 

@@ -130,8 +130,13 @@ class QubitFreqsVsTime:
                 outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
                 outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
             elif self.fridge.upper() == 'NEXUS':
-                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
-                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
+                # For Regular RR at NEXUS
+                # outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
+                # outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
+
+                # For Fast RR at NEXUS
+                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/" + folder_date + "/"
+                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/" + folder_date + "_plots/"
             else:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
@@ -162,6 +167,11 @@ class QubitFreqsVsTime:
                             continue
                         date = datetime.datetime.fromtimestamp(load_data['QSpec'][q_key].get('Dates', [])[0][dataset])
 
+                        # Disregard data for qubit 4 (key 3) in the specific timeframe.
+                        if q_key == 3 and datetime.datetime(2025, 3, 11, 21, 44, 8) <= date < datetime.datetime(2025,3, 11,22, 45,36):
+                            print(f"Skipping data for qubit 4 at {date} (specific timeframe), due to failed Pi Amp detected by Arianna")
+                            continue
+
                         # Skip processing if the date (as a date object) is in the excluded set
                         if date.date() in exclude_dates:
                             print(f"Skipping data for {date} (excluded date)")
@@ -180,9 +190,15 @@ class QubitFreqsVsTime:
                                                                      self.save_figs)
                             q_spec_cfg = ast.literal_eval(self.exp_config['qubit_spec_ge'].decode())
                             largest_amp_curve_mean, I_fit, Q_fit, qspec_fit_err = qspec_class_instance.get_results(I, Q, freqs)
-                            qubit_frequencies[q_key].extend([largest_amp_curve_mean])
-                            qspec_fit_errs[q_key].extend([qspec_fit_err])
-                            date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
+
+                            if qspec_fit_err is None:
+                                print(f"Skipping file {h5_file} for qubit {q_key} on {date} due to a fit error")
+                                # Optionally, you can continue to the next iteration if appropriate
+                                continue  # if this is inside a loop
+                            else:
+                                qubit_frequencies[q_key].extend([largest_amp_curve_mean])
+                                qspec_fit_errs[q_key].extend([qspec_fit_err])
+                                date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
 
                             del qspec_class_instance
 
@@ -201,23 +217,30 @@ class QubitFreqsVsTime:
             analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
             self.create_folder_if_not_exists(analysis_folder)
         elif self.fridge.upper() == 'NEXUS':
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            # For regular RR at NEXUS
+            # analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            # self.create_folder_if_not_exists(analysis_folder)
+            # analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            # self.create_folder_if_not_exists(analysis_folder)
+
+            # For fast RR at NEXUS
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/benchmark_analysis_plots/"
             self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/benchmark_analysis_plots/features_vs_time/"
             self.create_folder_if_not_exists(analysis_folder)
         else:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         # ----------------To Plot a specific timeframe------------------
-        from datetime import datetime
-        year = 2025
-        month = 2
-        day1 = 6  # Start date
-        day2 = 13  # End date
-        hour_start = 12  # Start hour
-        hour_end = 16  # End hour
-        start_time = datetime(year, month, day1, hour_start, 0)
-        end_time = datetime(year, month, day2, hour_end, 59)
+        # from datetime import datetime
+        # year = 2025
+        # month = 2
+        # day1 = 6  # Start date
+        # day2 = 13  # End date
+        # hour_start = 12  # Start hour
+        # hour_end = 16  # End hour
+        # start_time = datetime(year, month, day1, hour_start, 0)
+        # end_time = datetime(year, month, day2, hour_end, 59)
         # -----------------------------------------------------------------
 
         font = 14
@@ -255,9 +278,7 @@ class QubitFreqsVsTime:
             ax.scatter(sorted_x, sorted_y, color=colors[i])
 
             # Set x-axis limits for the specific timeframe
-            ax.set_xlim(start_time, end_time)
-
-            ax.set_ylim(sorted_y[0] - 2.0, sorted_y[0] + 2.0)
+            # ax.set_xlim(start_time, end_time)
 
             sorted_x = np.asarray(sorted(x))
 
@@ -291,23 +312,31 @@ class QubitFreqsVsTime:
             analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
             self.create_folder_if_not_exists(analysis_folder)
         elif self.fridge.upper() == 'NEXUS':
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            # For regular RR at NEXUS
+            # analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            # self.create_folder_if_not_exists(analysis_folder)
+            # analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            # self.create_folder_if_not_exists(analysis_folder)
+
+            # For fast RR at NEXUS
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/benchmark_analysis_plots/"
             self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/benchmark_analysis_plots/features_vs_time/"
             self.create_folder_if_not_exists(analysis_folder)
         else:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         # ----------------To Plot a specific timeframe------------------
-        from datetime import datetime
-        year = 2025
-        month = 1
-        day1 = 24  # Start date
-        day2 = 25  # End date
-        hour_start = 0  # Start hour
-        hour_end = 12  # End hour
-        start_time = datetime(year, month, day1, hour_start, 0)
-        end_time = datetime(year, month, day2, hour_end, 0)
+        # from datetime import datetime
+        # year = 2025
+        # month1 = 3
+        # month2 = 3
+        # day1 = 7  # Start date
+        # day2 = 8  # End date
+        # hour_start = 14  # Start hour
+        # hour_end = 1  # End hour
+        # start_time = datetime(year, month1, day1, hour_start, 0)
+        # end_time = datetime(year, month2, day2, hour_end, 0)
         # -----------------------------------------------------------------
 
         font = 14
@@ -360,14 +389,58 @@ class QubitFreqsVsTime:
                 alpha=0.5
             )
 
+            # # Set x-axis limits for the specific timeframe
+            # ax.set_xlim(start_time, end_time)
+
+            # ------------------setting specific ticks on x axis for NEXUS qubits (Qubit frequencies)--------------------------------
+            if i == 0:
+                ymin, ymax = 4901.0, 4903.55
+                ax.set_ylim([ymin, ymax])
+                num_ticks = 8
+                tick_values = np.linspace(ymin, ymax, num_ticks)
+                tick_values = np.round(tick_values, 2)  # round each point to 2 decimals
+                ax.set_yticks(tick_values)
+            if i == 1:
+                ymin, ymax = 4734.0, 4736.55
+                ax.set_ylim([ymin, ymax])
+                num_ticks = 8
+                tick_values = np.linspace(ymin, ymax, num_ticks)
+                tick_values = np.round(tick_values, 2)  # round each point to 2 decimals
+                ax.set_yticks(tick_values)
+            if i == 2:
+                ymin, ymax = 4573.0, 4575.55
+                ax.set_ylim([ymin, ymax])
+                num_ticks = 8
+                tick_values = np.linspace(ymin, ymax, num_ticks)
+                tick_values = np.round(tick_values, 2)  # round each point to 2 decimals
+                ax.set_yticks(tick_values)
+            if i == 3:
+                ymin, ymax = 4754.0, 4756.55
+                ax.set_ylim([ymin, ymax])
+                num_ticks = 8
+                tick_values = np.linspace(ymin, ymax, num_ticks)
+                tick_values = np.round(tick_values, 2)  # round each point to 2 decimals
+                ax.set_yticks(tick_values)
+            #-------------------------------------------------------------------------------------------------
+
             num_points = 5
             indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
-            ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
-            ax.tick_params(axis='x', rotation=45)
+            ax.xaxis.set_major_locator(mdates.AutoDateLocator())  # Automatically choose good tick locations
 
+            # start_ordinal = mdates.date2num(start_time)
+            # end_ordinal = mdates.date2num(end_time)
+            # num_ticks = 9
+            # tick_positions = np.linspace(start_ordinal, end_ordinal, num_ticks)
+            # ax.set_xticks(tick_positions)
+
+            # ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # Show day and time
+            ax.tick_params(axis='x', rotation=45)  # Rotate ticks for better readability
+
+            # Disable scientific notation and format y-ticks
             ax.ticklabel_format(style="plain", axis="y")
-            ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.2f}"))
+            ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.2f}"))  # 2 decimal places
+            # ax.set_ylim(sorted_y[0] - 1.0, sorted_y[0] + 1.0)
 
             if show_legends:
                 ax.legend(edgecolor='black')
@@ -376,7 +449,8 @@ class QubitFreqsVsTime:
             ax.tick_params(axis='both', which='major', labelsize=8)
 
         plt.tight_layout()
-        plt.savefig(analysis_folder + 'Q_Freqs.png', transparent=False, dpi=self.final_figure_quality)
-        print('Plot saved at: ', analysis_folder)
+        # plt.savefig(analysis_folder + 'Q_Freqs.png', transparent=False, dpi=self.final_figure_quality)
+        # print('Plot saved at: ', analysis_folder)
+        plt.show()
 
 

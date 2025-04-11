@@ -13,11 +13,11 @@ import time
 
 from NetDrivers import E36300
 
-class BiasQubitSpectroscopy:
+class EFBiasQubitSpectroscopy:
     def __init__(self, QubitIndex, outerFolder, experiment, number_of_qubits):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
-        self.expt_name = "bias_qubit_spec_ge"
+        self.expt_name = "bias_qubit_spec_ef"
         self.experiment = experiment
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.exp_cfg = expt_cfg[self.expt_name]
@@ -30,32 +30,33 @@ class BiasQubitSpectroscopy:
 
         print(f'Q {self.QubitIndex + 1} Qubit Spec configuration: ', self.config)
 
-    def run(self, soccfg, soc, start_volt, stop_volt, volt_pts, plot_sweeps=True, plot_3d=True, plot_3d_backsub = True):
+    def run(self, soccfg, soc, start_volt, stop_volt, volt_pts, plot_sweeps=True, plot_3d=True, plot_3d_backsub=True):
 
         vsweep = np.linspace(start_volt, stop_volt, volt_pts, endpoint=True)
         Is, Qs, amps, freqs = self.sweep_bias(soccfg, soc, vsweep, save_csvs=True)
-        #print('freqs',freqs)
+        #print('freqs', freqs)
         if plot_sweeps:
-            self.plot_sweeps(vsweep, Is, Qs, freqs)
+            self.efplot_sweeps(vsweep, Is, Qs, freqs)
 
         if plot_3d:
-            self.plot_colormap(vsweep, Is, Qs, amps, freqs)
+            self.efplot_colormap(vsweep, Is, Qs, amps, freqs)
 
         if plot_3d_backsub:
-            self.plot_colormap_backsub(vsweep, Is, Qs, amps, freqs)
+            self.efplot_colormap_backsub(vsweep, Is, Qs, amps, freqs)
 
         return
 
     def sweep_bias(self, soccfg, soc, vsweep, save_csvs=True):
 
-        Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44', '192.168.0.41'] #IP address of bias PS (qubits 1-3 are the same PS)
-        Bias_ch = [1, 2, 3, 1] #Channel number of qubit 1-4 on associated PS
+        Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44',
+                      '192.168.0.41']  # IP address of bias PS (qubits 1-3 are the same PS)
+        Bias_ch = [1, 2, 3, 1]  # Channel number of qubit 1-4 on associated PS
         qubit_index = int(self.QubitIndex)
 
-        BiasPS = E36300(Bias_PS_ip[qubit_index], server_port = 5025)
+        BiasPS = E36300(Bias_PS_ip[qubit_index], server_port=5025)
 
-        # BiasPS.setVoltage(0, Bias_ch[qubit_index])
-        # BiasPS.enable(Bias_ch[qubit_index])
+        BiasPS.setVoltage(0, Bias_ch[qubit_index])
+        BiasPS.enable(Bias_ch[qubit_index])
 
         I_arr = []
         Q_arr = []
@@ -63,35 +64,40 @@ class BiasQubitSpectroscopy:
         freq_arr = []
 
         for index, v in enumerate(vsweep):
-            #print(f"Setting bias to {v}V")
-            voltage = round(v,3)
-            #print(voltage)
-            # BiasPS.setVoltage(voltage, Bias_ch[qubit_index])
+            print(f"vpt{index}: Setting bias to {v}V")
+            voltage = round(v, 3)
+            print(voltage)
+            BiasPS.setVoltage(voltage, Bias_ch[qubit_index])
             time.sleep(8)
 
-            qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'], final_delay = self.exp_cfg['relax_delay'], cfg=self.config)
-            iq_list = qspec.acquire(soc, soft_avgs = self.exp_cfg["rounds"], progress=True)
+            qspec = EFPulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'],
+                                                  final_delay=self.exp_cfg['relax_delay'], cfg=self.config)
+            iq_list = qspec.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=True)
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
             amps = np.abs(I + 1j * Q)
             freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
-            print('freqs',freqs)
+            #print('freqs', freqs)
             I_arr.append(I)
             Q_arr.append(Q)
             amps_arr.append(amps)
             freq_arr.append(freqs)
         #BiasPS.disable(Bias_ch[qubit_index])
-        # BiasPS.setVoltage(0, Bias_ch[qubit_index])
+        BiasPS.setVoltage(0, Bias_ch[qubit_index])
 
-        if save_csvs==True:
-            outerFolder_expt = os.path.join(self.outerFolder, 'bias_spec')
+        if save_csvs == True:
+            outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
             self.experiment.create_folder_if_not_exists(outerFolder_expt)
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-            file_name_Iarr = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex + 1}_Iarr")
-            file_name_Qarr = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex + 1}_Qarr")
-            file_name_Amparr = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex + 1}_Amparr")
-            file_name_freqarr = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex + 1}_freqarr")
+            file_name_Iarr = os.path.join(outerFolder_expt,
+                                          f"{formatted_datetime}_efBiasSpec_Q{self.QubitIndex + 1}_Iarr")
+            file_name_Qarr = os.path.join(outerFolder_expt,
+                                          f"{formatted_datetime}_efBiasSpec_Q{self.QubitIndex + 1}_Qarr")
+            file_name_Amparr = os.path.join(outerFolder_expt,
+                                            f"{formatted_datetime}_efBiasSpec_Q{self.QubitIndex + 1}_Amparr")
+            file_name_freqarr = os.path.join(outerFolder_expt,
+                                             f"{formatted_datetime}_efBiasSpec_Q{self.QubitIndex + 1}_freqarr")
             with open(f"{file_name_Iarr}.csv", 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerows(I_arr)
@@ -107,7 +113,7 @@ class BiasQubitSpectroscopy:
 
         return I_arr, Q_arr, amps_arr, freq_arr
 
-    def plot_sweeps(self, vsweep, I_arr, Q_arr, freq_arr):
+    def efplot_sweeps(self, vsweep, I_arr, Q_arr, freq_arr):
         #plt.figure(figsize=(12, 8))
 
         # Set larger font sizes
@@ -134,14 +140,14 @@ class BiasQubitSpectroscopy:
 
         ax1.legend(fontsize='6', title='Voltage')
         ax2.legend(fontsize='6', title='Voltage')
-        fig.suptitle(f"Qubit Spectroscopy Q{self.QubitIndex+1} at Voltage Bias Points", fontsize=18)
+        fig.suptitle(f"EF Qubit Spectroscopy Q{self.QubitIndex+1} at Voltage Bias Points", fontsize=18)
 
         plt.tight_layout()
 
         # Adjust the top margin to make room for the title
         plt.subplots_adjust(top=0.93)
 
-        outerFolder_expt = os.path.join(self.outerFolder, 'bias_spec')
+        outerFolder_expt = os.path.join(self.outerFolder, 'ef_bias_spec')
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
@@ -150,7 +156,7 @@ class BiasQubitSpectroscopy:
         plt.close(fig)
         return
 
-    def plot_colormap(self, vsweep, I_arr, Q_arr, amps_arr, freq_arr):
+    def efplot_colormap(self, vsweep, I_arr, Q_arr, amps_arr, freq_arr):
         Is = np.array(I_arr)
         I_val = Is.astype(float)
         Qs = np.array(Q_arr)
@@ -173,7 +179,7 @@ class BiasQubitSpectroscopy:
         #fig.suptitle(f"Bias Spectroscopy Q{self.QubitIndex + 1}, ", fontsize=24)
         #fig.suptitle(f"Bias Spectroscopy Q{self.QubitIndex + 1}, \n resf={self.config['res_freq_ge'][self.QubitIndex]} \n resg={self.config['res_gain_ge'][self.QubitIndex]}", fontsize=24)
         #fig.suptitle(f"Bias Spectroscopy Q{self.QubitIndex + 1}, \n resf={self.config['res_freq_ge'][self.QubitIndex]}, Qgain = 0.06, 20dB atten", fontsize=18)
-        fig.suptitle(f"Bias Spectroscopy Q{self.QubitIndex + 1}, \n res gain= {self.config['res_gain_ge'][self.QubitIndex]}, res len = {self.config['res_length']}", fontsize=18)
+        fig.suptitle(f"EFBias Spectroscopy Q{self.QubitIndex + 1}, \n res gain= {self.config['res_gain_ge'][self.QubitIndex]}, res len = {self.config['res_length']}", fontsize=18)
 
 
         plt.tight_layout()
@@ -182,7 +188,7 @@ class BiasQubitSpectroscopy:
         plt.subplots_adjust(top=0.89)
 
         # Save the plot
-        outerFolder_expt = os.path.join(self.outerFolder, 'bias_spec')
+        outerFolder_expt = os.path.join(self.outerFolder, 'ef_bias_spec')
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
@@ -191,7 +197,7 @@ class BiasQubitSpectroscopy:
         plt.close()
         return
 
-    def plot_colormap_backsub(self, vsweep, I_arr, Q_arr, amps_arr, freq_arr):
+    def efplot_colormap_backsub(self, vsweep, I_arr, Q_arr, amps_arr, freq_arr):
         Is = np.array(I_arr)
         I_val = Is.astype(float)
         I_background = np.zeros_like(I_val)
@@ -222,7 +228,7 @@ class BiasQubitSpectroscopy:
         #fig.suptitle(f"Bias Spectroscopy Q{self.QubitIndex + 1}, ", fontsize=24)
         #fig.suptitle(f"Bias Spectroscopy Q{self.QubitIndex + 1}, \n resf={self.config['res_freq_ge'][self.QubitIndex]} \n resg={self.config['res_gain_ge'][self.QubitIndex]}", fontsize=24)
         #fig.suptitle(f"Bias Spectroscopy Q{self.QubitIndex + 1}, \n resf={self.config['res_freq_ge'][self.QubitIndex]}, Qgain = 0.06, 20dB atten", fontsize=18)
-        fig.suptitle(f"Bias Spectroscopy Q{self.QubitIndex + 1}, \n res gain= {self.config['res_gain_ge'][self.QubitIndex]}, res len = {self.config['res_length']}", fontsize=18)
+        fig.suptitle(f"EFBias Spectroscopy Q{self.QubitIndex + 1}, \n res gain= {self.config['res_gain_ge'][self.QubitIndex]}, res len = {self.config['res_length']}", fontsize=18)
 
 
         plt.tight_layout()
@@ -231,7 +237,7 @@ class BiasQubitSpectroscopy:
         plt.subplots_adjust(top=0.89)
 
         # Save the plot
-        outerFolder_expt = os.path.join(self.outerFolder, 'bias_spec')
+        outerFolder_expt = os.path.join(self.outerFolder, 'ef_bias_spec')
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
@@ -240,7 +246,7 @@ class BiasQubitSpectroscopy:
         plt.close()
         return
 
-class PulseProbeSpectroscopyProgram(AveragerProgramV2):
+class EFPulseProbeSpectroscopyProgram(AveragerProgramV2):
     def _initialize(self, cfg):
         ro_ch = cfg['ro_ch']
         res_ch = cfg['res_ch']
@@ -254,29 +260,41 @@ class PulseProbeSpectroscopyProgram(AveragerProgramV2):
         for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
 
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+
+        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+        self.add_pulse(ch=qubit_ch, name="pi_ge",
+                       style="arb",
+                       envelope="ramp",
+                       freq=cfg['qubit_freq_ge'],
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['pi_amp'],
+                       )
+
+        #self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
         self.add_pulse(ch=res_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
-                       mask=[0, 1, 2, 3],
-
+                       mask=cfg["list_of_all_qubits"],
                        )
 
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+
         self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_ch[0],
                        style="const",
                        length=cfg['qubit_length_ge'],
-                       freq=cfg['bias_qubit_freq_ge'],
+                       freq=cfg['bias_qubit_freq_ef'],
                        phase=0,
-                       gain=cfg['qubit_gain_ge'],
-                       #mode="periodic",
+                       gain=cfg['qubit_gain_ef'],
                        )
+
 
         self.add_loop("freqloop", cfg["steps"])
 
     def _body(self, cfg):
+        self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play ge pi pulse
+        self.delay_auto(t=0.0, tag='waiting after pi')  # Wait til qubit pulse is done before proceeding
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play probe pulse
         self.delay_auto(t=0.01, tag='waiting')  # Wait til qubit pulse is done before proceeding
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
-# Biasclass = bias qubit spec with init stuff then can call function

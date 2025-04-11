@@ -6,13 +6,14 @@ np.set_printoptions(threshold=int(1e15)) #need this so it saves absolutely every
 import datetime
 import time
 import copy
+from windfreak import SynthHD
 sys.path.append(os.path.abspath("/home/nexusadmin/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_004_qubit_spec_ge import QubitSpectroscopy
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
 from section_007_T1_ge import T1Measurement
 from section_008_save_data_to_h5 import Data_H5
-
+from NetDrivers import E36300
 from system_config_nexus import QICK_experiment
 from expt_config_nexus import expt_cfg, list_of_all_qubits
 
@@ -27,7 +28,7 @@ fit_data = True      # fit the data here and save or plot the fits?
 save_data_h5 = True   # save all of the data to h5 files?
 
 number_of_qubits = 4 # currently 4 for NEXUS, 6 for QUIET
-Qs_to_look_at = [0, 1, 2, 3] #only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,3] #only list the qubits you want to do the RR for
 
 increase_qubit_reps = False #if you want to increase the reps for a qubit, set to True
 qubit_to_increase_reps_for = 0 #only has impact if previous line is True
@@ -43,9 +44,27 @@ outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/Fast_
 create_folder_if_not_exists(outerFolder)
 ################################################ optimizated parameters ##################################################
 # For NEXUS
-res_leng_vals = [5.1, 3.3, 4.5, 6.25] # from 2/27/2025 optimization
-res_gain = [0.365, 0.295, 0.255, 0.325] # from 2/27/2025 optimization
-freq_offsets = [0.1333, -0.0667, -0.0667, -0.6667] # from 2/27/2025 optimization
+res_leng_vals = [5.8, 3.8, 4, 4.6] #[6.15, 5.85, 6.45, 5.7] # from 2/19/2025 optimization, after punchout test
+res_gain = [0.38, 0.26, 0.28, 0.31]#[0.3143, 0.1857, 0.1429, 0.1857] # from 2/19/2025 optimization, after punchout test
+freq_offsets = [0, 0, 0, 0] #[0.0, -0.0667, -0.2667, -0.400] # from 2/19/2025 optimization, after punchout test
+
+#TWPA
+synth = SynthHD('/dev/ttyACM1')
+synth[0].power =     -12.85
+synth[0].frequency = 7.826e9
+synth[0].enable = True
+time.sleep(5)
+
+#Turning off HEMT power supply channels for bias lines
+start_voltage = 0
+Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44',
+                  '192.168.0.41']  # IP address of bias PS (qubits 1-3 are the same PS)
+Bias_ch = [1, 2, 3, 1]  # Channel number of qubit 1-4 on associated PS
+for Q in range(4):
+    BiasPS = E36300(Bias_PS_ip[Q], server_port=5025)
+
+    BiasPS.setVoltage(start_voltage, Bias_ch[Q])
+    BiasPS.enable(Bias_ch[Q])
 ####################################################### RR #############################################################
 
 def create_data_dict(keys, save_r, qs):
@@ -69,7 +88,7 @@ max_index = max(Qs_to_look_at)
 stored_qspec_list = [None] * (max_index + 1)
 
 #################################### Total Run Time & Timer Setup ##############################################
-num_hours_runtime = 8 # Total hours that you want this program to run for
+num_hours_runtime = 1 # Total hours that you want this program to run for
 update_interval = 3600  # Seconds. How often you want to do res spec, qubit spec and rabi. For normal operation (1 hour) use 3600, which is the number of seconds in an hour
 total_runtime = num_hours_runtime * update_interval
 start_total = time.time()
@@ -139,6 +158,11 @@ while time.time() - start_total < total_runtime:
                                                    increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
                     rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save = rabi.run(experiment.soccfg,
                                                                                                 experiment.soc)
+                    if float(pi_amp) < 0.2:
+                        print(f"Rabi amplitude {pi_amp} for qubit {QubitIndex + 1} is below threshold. Retrying...")
+                        del rabi
+                        continue
+
                     experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
                     print('Hourly update - Pi amplitude for qubit', QubitIndex + 1, 'is:', float(pi_amp))
                     del rabi

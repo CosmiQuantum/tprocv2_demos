@@ -37,7 +37,7 @@ show_legends = False
 signal = 'None'
 number_of_qubits = 4 #6 for quiet, 4 for nexus
 run_number = 2 #starting from first run with qubits. Run 1 = run4a at quiet, run 2 = run5a at quiet
-figure_quality = 100 #ramp this up to like 500 for presentation plots
+figure_quality = 300 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
 # run_name = '6transmon_run5' #quiet
@@ -56,42 +56,75 @@ run_notes = ('Added more eccosorb filters and a lpf on mxc before and after the 
 #                       '2025-01-27', '2025-01-28', '2025-01-29', '2025-01-30', '2025-01-31', '2025-02-01', '2025-02-02', '2025-02-03',
 #                     '2025-02-04', '2025-02-05', '2025-02-06', '2025-02-07', '2025-02-08', '2025-02-09', '2025-02-10', '2025-02-11', '2025-02-12',
 #                     '2025-02-13', '2025-02-14', '2025-02-15', '2025-02-16', '2025-02-17', '2025-02-18', '2025-02-19', '2025-02-20', '2025-02-21',
-#                     '2025-02-22', '2025-02-23', '2025-02-24', '2025-02-25']
+#                     '2025-02-22', '2025-02-23', '2025-02-24', '2025-02-25', '2025-02-26', '2025-02-27', '2025-02-28', '2025-03-06', '2025-03-07',
+#                     '2025-03-11', '2025-03-12', '2025-03-13', '2025-03-14', '2025-03-15', '2025-03-16', '2025-03-25']
 
-top_folder_dates = ['2025-02-26']
+# top_folder_dates = ['2025-01-21', '2025-01-22', '2025-01-23', '2025-01-24', '2025-01-25', '2025-01-26',
+#                       '2025-01-27', '2025-01-28', '2025-01-29', '2025-01-30', '2025-01-31', '2025-02-01', '2025-02-02', '2025-02-03',
+#                     '2025-02-04', '2025-02-05', '2025-02-06', '2025-02-07', '2025-02-08', '2025-02-09', '2025-02-10', '2025-02-11', '2025-02-12',
+#                     '2025-02-13', '2025-02-14', '2025-02-15', '2025-02-16', '2025-02-17', '2025-02-18', '2025-02-19', '2025-02-20', '2025-02-21',
+#                     '2025-02-22', '2025-02-23', '2025-02-24', '2025-02-25', '2025-02-26', '2025-02-27', '2025-02-28', '2025-03-06', '2025-03-07',
+#                     '2025-03-11', '2025-03-12', '2025-03-13', '2025-03-14', '2025-03-15', '2025-03-16', '2025-03-25']
+
+#For comparisons
+# top_folder_dates_1 = ['2025-01-21', '2025-01-22', '2025-01-23', '2025-01-24', '2025-01-25', '2025-01-26',
+#                       '2025-01-27', '2025-01-28', '2025-01-29', '2025-01-30', '2025-01-31', '2025-02-01', '2025-02-02']
+# top_folder_dates_2 = ['2025-02-04', '2025-02-05', '2025-02-06', '2025-02-07', '2025-02-08', '2025-02-09',
+#                       '2025-02-10', '2025-02-11', '2025-02-12', '2025-02-13', '2025-02-14', '2025-02-15', '2025-02-16', '2025-02-17']
+# top_folder_dates_3 = ['2025-02-18', '2025-02-19', '2025-02-20', '2025-02-21', '2025-02-22', '2025-02-23', '2025-02-24', '2025-02-25',
+#                       '2025-02-26', '2025-02-27']
+# top_folder_dates_4 = ['2025-02-28'] #started fast RR data-collection
+# top_folder_dates_5 = ['2025-03-06', '2025-03-07']
+# top_folder_dates_6 = ['2025-03-11', '2025-03-12']
+# top_folder_dates_7 = ['2025-03-13']
+# top_folder_dates_8 = ['2025-03-14']
+# top_folder_dates_9 = ['2025-03-15', '2025-03-16']
+# top_folder_dates_10 = ['2025-03-25'] #this dataset goes a bit into the 26th of march by like 20min
+
+#Fast RR dates, from Ba (close config) until the end of the run
+# top_folder_dates = ['2025-02-28', '2025-03-06', '2025-03-07', '2025-03-11', '2025-03-12', '2025-03-13', '2025-03-14', '2025-03-15', '2025-03-16', '2025-03-25']
+top_folder_dates = ['2025-03-25',]
 ###################################### 00: Load Configs for Plotting Titles ############################################
-date = '2025-02-26'  #only plot all of the data for one date at a time because there is a lot
-
-#QUIET
-# outerFolder = f"/data/QICK_data/{run_name}/" + date + "/"
-
-#NEXUS
-# outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{run_name}/" + date + "/"
+# date = '2025-01-21'  #only plot all of the data for one date at a time because there is a lot
+# #
+# # #QUIET
+# # # outerFolder = f"/data/QICK_data/{run_name}/" + date + "/"
+# #
+# # #NEXUS
+# outerFolder1 = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{run_name}/" + date + "/"
 
 #NEXUS Fast RR
+date = '2025-03-25'  #only plot all of the data for one date at a time because there is a lot
 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{run_name}/Fast_RR/" + date + "/"
+# outerFolder2 = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{run_name}/Fast_RR/" + date + "/"
 
 config_loader = LoadConfigs(outerFolder)
 sys_config, exp_config = config_loader.run()
+
+# config_loader1 = LoadConfigs(outerFolder1)
+# sys_config1, exp_config1 = config_loader1.run()
+# #
+# config_loader2 = LoadConfigs(outerFolder2)
+# sys_config2, exp_config2 = config_loader2.run()
 
 ################################################ 01: Get all data ######################################################
 # res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
 #                                        save_figs, fit_saved, signal, run_name, exp_config, fridge, list_of_all_qubits, outerFolder)
 # date_times_res_spec, res_freqs = res_spec_vs_time.run()
 
-# q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
-#                                   save_figs, fit_saved, signal, run_name, exp_config, fridge, list_of_all_qubits)
-# # date_times_q_spec, q_freqs, qspec_errs = q_spec_vs_time.run(return_errs=True)
+q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
+                                  save_figs, fit_saved, signal, run_name, exp_config, fridge, list_of_all_qubits)
+date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(return_errs=True)
 # date_times_q_spec, q_freqs = q_spec_vs_time.run(return_errs=False)
 
 # pi_amps_vs_time = PiAmpsVsTime(figure_quality, final_figure_quality, number_of_qubits, list_of_all_qubits, top_folder_dates, save_figs,
 #                               fit_saved,signal, run_name, exp_config, fridge)
 # date_times_pi_amps, pi_amps = pi_amps_vs_time.run(plot_depths=False)
-
-t1_vs_time = T1VsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config, fridge, list_of_all_qubits)
+#
+# t1_vs_time = T1VsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+#                  signal, run_name, exp_config, fridge, list_of_all_qubits)
 # date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True)
-date_times_t1, t1_vals = t1_vs_time.run(return_errs=False)
+#date_times_t1, t1_vals = t1_vs_time.run(return_errs=False)
 #
 # t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, exp_config)
@@ -116,7 +149,7 @@ date_times_t1, t1_vals = t1_vs_time.run(return_errs=False)
 #
 ############################################ 04: Qubit Freqs vs Time Plots #############################################
 # q_spec_vs_time.plot_without_errs(date_times_q_spec, q_freqs,show_legends)
-# q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends)
+q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends)
 
 # ############################################## 05: Pi Amp vs Time Plots ###############################################
 # pi_amps_vs_time.plot(date_times_pi_amps, pi_amps, show_legends)
@@ -147,7 +180,7 @@ date_times_t1, t1_vals = t1_vs_time.run(return_errs=False)
 # qtemp_vs_time.plot(qubit_temp_dates, qubit_temperatures, show_legends)
 #
 # ################################################# 06: T1 vs Time Plots #################################################
-t1_vs_time.plot_without_errs(date_times_t1, t1_vals, show_legends)
+# t1_vs_time.plot_without_errs(date_times_t1, t1_vals, show_legends)
 # t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends)
 #
 # ################################################# 07: T2R vs Time Plots ################################################
@@ -159,12 +192,89 @@ t1_vs_time.plot_without_errs(date_times_t1, t1_vals, show_legends)
 # t2e_vs_time.plot_with_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
 
 # ############################################## 09: T1 hist/cumul/err Plots #############################################
+#previous version
 # t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
 #                                             save_figs, fit_saved, signal, run_name, run_notes, run_number, exp_config,
 #                                             fridge, list_of_all_qubits)
 #
 # dates, t1_vals, t1_errs = t1_distribution_plots.run()
 # t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
+
+#No Source, regular RR
+# t1_distribution_plots1 = T1HistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates_1,
+#                                             save_figs, fit_saved, signal, run_name, run_notes, run_number, exp_config1,
+#                                             fridge, list_of_all_qubits)
+# dates_1, t1_vals_1, t1_errs_1 = t1_distribution_plots1.run()
+
+#Ba, regular RR
+# t1_distribution_plots2 = T1HistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates_2,
+#                                             save_figs, fit_saved, signal, run_name, run_notes, run_number, exp_config1,
+#                                             fridge, list_of_all_qubits)
+# dates_2, t1_vals_2, t1_errs_2 = t1_distribution_plots2.run()
+
+#Ba closer, regular RR
+# t1_distribution_plots3 = T1HistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates_3,
+#                                             save_figs, fit_saved, signal, run_name, run_notes, run_number, exp_config1,
+#                                             fridge, list_of_all_qubits)
+# dates_3, t1_vals_3, t1_errs_3 = t1_distribution_plots3.run()
+
+#Ba closer, fast RR
+# t1_distribution_plots4 = T1HistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates_4,
+#                                             save_figs, fit_saved, signal, run_name, run_notes, run_number, exp_config2,
+#                                             fridge, list_of_all_qubits)
+# dates_4, t1_vals_4, t1_errs_4 = t1_distribution_plots4.run()
+
+#Cs, 9 sheets, fast RR
+# t1_distribution_plots5 = T1HistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates_5,
+#                                             save_figs, fit_saved, signal, run_name, run_notes, run_number, exp_config2,
+#                                             fridge, list_of_all_qubits)
+# dates_5, t1_vals_5, t1_errs_5 = t1_distribution_plots5.run()
+
+#No sources, fast RR
+# t1_distribution_plots6 = T1HistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates_6,
+#                                             save_figs, fit_saved, signal, run_name, run_notes, run_number, exp_config2,
+#                                             fridge, list_of_all_qubits)
+# dates_6, t1_vals_6, t1_errs_6 = t1_distribution_plots6.run()
+
+#Cs, 6 sheets, fast RR
+# t1_distribution_plots7 = T1HistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates_7,
+#                                             save_figs, fit_saved, signal, run_name, run_notes, run_number, exp_config2,
+#                                             fridge, list_of_all_qubits)
+# dates_7, t1_vals_7, t1_errs_7= t1_distribution_plots7.run()
+
+#Cs, 3 sheets, fast RR
+# t1_distribution_plots8 = T1HistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates_8,
+#                                             save_figs, fit_saved, signal, run_name, run_notes, run_number, exp_config2,
+#                                             fridge, list_of_all_qubits)
+# dates_8, t1_vals_8, t1_errs_8 = t1_distribution_plots8.run()
+
+#Cs, 0 sheets, fast RR
+# t1_distribution_plots9 = T1HistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates_9,
+#                                             save_figs, fit_saved, signal, run_name, run_notes, run_number, exp_config2,
+#                                             fridge, list_of_all_qubits)
+# dates_9, t1_vals_9, t1_errs_9 = t1_distribution_plots9.run()
+
+#No source, fast RR
+# t1_distribution_plots10 = T1HistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates_10,
+#                                             save_figs, fit_saved, signal, run_name, run_notes, run_number, exp_config2,
+#                                             fridge, list_of_all_qubits)
+# dates_10, t1_vals_10, t1_errs_10 = t1_distribution_plots10.run()
+
+#if you want to plot all histograms together (messy, do not recommend)
+# t1_distribution_plots1.plot_combined_histograms(
+#     [dates_1, dates_2, dates_3, dates_4, dates_5, dates_6, dates_7, dates_8, dates_9, dates_10],
+#     [t1_vals_1, t1_vals_2, t1_vals_3, t1_vals_4, t1_vals_5], t1_vals_6, t1_vals_7, t1_vals_8, t1_vals_9, t1_vals_10],
+#     [t1_errs_1, t1_errs_2, t1_errs_3, t1_errs_4, t1_errs_5, t1_errs_6, t1_errs_7, t1_errs_8, t1_errs_9, t1_errs_10],
+#     show_legends=True)
+
+
+# t1_distribution_plots1.plot_combined_histograms(
+#     [dates_6, dates_10],
+#     [t1_vals_6, t1_vals_10],
+#     [t1_errs_6, t1_errs_10],
+#     dataset_labels=['No sources, fast RR', 'No sources, fast RR'], #['No sources, regular RR', 'Ba, regular RR', 'Ba closer, regular RR', 'Ba closer, fast RR', 'Cs, 9 sheets, fast RR', 'No sources, fast RR', 'Cs, 6 sheets, fast RR', 'Cs, 3 sheets, fast RR', 'Cs, 0 sheets, fast RR', 'No sources, fast RR']
+#     show_legends=True)
+
 #
 # ############################################## 10: T2R hist/cumul/err Plots ############################################
 # t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,

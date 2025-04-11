@@ -17,6 +17,7 @@ import datetime
 import ast
 import os
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 # import allantools #commented this out for now since it was giving the error ModuleNotFoundError: No module named 'allantools'
 from scipy.stats import norm
 from scipy.optimize import curve_fit
@@ -134,18 +135,22 @@ class T1VsTime:
         #print(self.top_folder_dates)
         t1_errors = {i: [] for i in range(self.number_of_qubits)}
 
+        cutoff_date = datetime.datetime.strptime('2025-02-28', '%Y-%m-%d')
         for folder_date in self.top_folder_dates:
+            current_date = datetime.datetime.strptime(folder_date, '%Y-%m-%d')
             if self.fridge.upper() == 'QUIET':
                 outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
                 outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
             elif self.fridge.upper() == 'NEXUS':
-                #For Regular RR at NEXUS
-                # outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
-                # outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
+                if current_date < cutoff_date:
+                    #For Regular RR at NEXUS
+                    outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
+                    outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
 
-                #For Fast RR at NEXUS
-                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/" + folder_date + "/"
-                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/" + folder_date + "_plots/"
+                else:
+                    # #For Fast RR at NEXUS
+                    outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/" + folder_date + "/"
+                    outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/" + folder_date + "_plots/"
             else:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
@@ -166,7 +171,7 @@ class T1VsTime:
                     datetime.date(2025, 1, 29),  # HEMT Issues
                     datetime.date(2025, 1, 30),  # HEMT Issues
                     datetime.date(2025, 1, 31),  # Optimization Issues and non RR work in progress
-                    datetime.date(2025, 2, 11)  # TWPA optimization work, fridge pressure issues, touch tests at nexus
+                    datetime.date(2025, 2, 11),  # TWPA optimization work, fridge pressure issues, touch tests at nexus
                 }
 
                 for q_key in load_data['T1']:
@@ -176,6 +181,12 @@ class T1VsTime:
                         # T1 = load_data['T1'][q_key].get('T1', [])[0][dataset]
                         # errors = load_data['T1'][q_key].get('Errors', [])[0][dataset]
                         date = datetime.datetime.fromtimestamp(load_data['T1'][q_key].get('Dates', [])[0][dataset])
+
+                        # Disregard data for qubit 4 (key 3) in the specific timeframe.
+                        if q_key == 3 and datetime.datetime(2025, 3, 11, 21, 44, 8) <= date <= datetime.datetime(2025,
+                                                            3, 11,22, 45,36):
+                            print(f"Skipping data for qubit 4 at {date} (specific timeframe), due to failed Pi Amp detected by Arianna")
+                            continue
 
                         # Skip processing if the date (as a date object) is in the excluded set
                         if date.date() in exclude_dates:
@@ -282,18 +293,17 @@ class T1VsTime:
             analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
             self.create_folder_if_not_exists(analysis_folder)
         elif self.fridge.upper() == 'NEXUS':
-
             #For regular RR at NEXUS
-            # analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
-            # self.create_folder_if_not_exists(analysis_folder)
-            # analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
-            # self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
 
             #For fast RR at NEXUS
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/benchmark_analysis_plots/"
-            self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/benchmark_analysis_plots/features_vs_time/"
-            self.create_folder_if_not_exists(analysis_folder)
+            # analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/benchmark_analysis_plots/"
+            # self.create_folder_if_not_exists(analysis_folder)
+            # analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/benchmark_analysis_plots/features_vs_time/"
+            # self.create_folder_if_not_exists(analysis_folder)
 
         else:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
@@ -318,8 +328,8 @@ class T1VsTime:
         axes = axes.flatten()
 
         #---------- fixed y axis ticks ---------------
-        fixed_y_min = 10  # Set the fixed y-axis lower limit
-        fixed_y_max = 28  # Set the fixed y-axis upper limit
+        fixed_y_min = 8 # Set the fixed y-axis lower limit
+        fixed_y_max = 30  # Set the fixed y-axis upper limit
         fixed_step_size = 2  # Set y-axis step size
 
         y_ticks = np.arange(fixed_y_min, fixed_y_max + fixed_step_size, fixed_step_size)
@@ -363,8 +373,8 @@ class T1VsTime:
             indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
 
             ax.xaxis.set_major_locator(mdates.AutoDateLocator())  # Automatically choose good tick locations
-            # ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # Show day and time
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
+            # ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # Show day and time
             ax.tick_params(axis='x', rotation=45)  # Rotate ticks for better readability
 
             ax.set_yticks(y_ticks)  # Apply uniform y-ticks
@@ -396,34 +406,87 @@ class T1VsTime:
             analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
             self.create_folder_if_not_exists(analysis_folder)
         elif self.fridge.upper() == 'NEXUS':
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            # For regular RR at NEXUS
+            # analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            # self.create_folder_if_not_exists(analysis_folder)
+            # analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            # self.create_folder_if_not_exists(analysis_folder)
+
+            # For fast RR at NEXUS
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/benchmark_analysis_plots/"
             self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/Fast_RR/benchmark_analysis_plots/features_vs_time/"
             self.create_folder_if_not_exists(analysis_folder)
         else:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         # ----------------To Plot a specific timeframe------------------
-        from datetime import datetime
-        year = 2025
-        month = 1
-        day1 = 22  # Start date
-        day2 = 23  # End date
-        hour_start = 0  # Start hour
-        hour_end = 23  # End hour
-        start_time = datetime(year, month, day1, hour_start, 0)
-        end_time = datetime(year, month, day2, hour_end, 59)
+        # from datetime import datetime
+        # year = 2025
+        # month1 = 3
+        # month2 = 3
+        # day1 = 7  # Start date
+        # day2 = 8  # End date
+        # hour_start = 14  # Start hour
+        # hour_end = 1  # End hour
+        # start_time = datetime(year, month1, day1, hour_start, 0)
+        # end_time = datetime(year, month2, day2, hour_end, 0)
         # -----------------------------------------------------------------
 
         font = 14
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
-        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        # colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        colors = ['black', 'black', 'black', 'black', 'black', 'black']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
         plt.suptitle('T1 Values vs Time', fontsize=font)
         axes = axes.flatten()
 
+        # ---------- fixed y axis ticks ---------------
+        fixed_y_min = 8  # Set the fixed y-axis lower limit
+        fixed_y_max = 30  # Set the fixed y-axis upper limit
+        fixed_step_size = 2  # Set y-axis step size
+
+        y_ticks = np.arange(fixed_y_min, fixed_y_max + fixed_step_size, fixed_step_size)
+
         import matplotlib.dates as mdates
         from matplotlib.ticker import StrMethodFormatter
+        from datetime import datetime
+
+        #-------------------------------------------------------------------------------------
+        # Define background intervals and corresponding named colors.
+        bg_intervals = [
+            # (datetime(2025, 1, 21), datetime(2025, 2, 3)),  # Jan 21-Feb 2
+            # (datetime(2025, 2, 4), datetime(2025, 2, 18)),  # Feb 4-17
+            # (datetime(2025, 2, 18), datetime(2025, 2, 28)),  # Feb 18-27
+
+            (datetime(2025, 2, 28), datetime(2025, 3, 1)),  # Feb 28
+            (datetime(2025, 3, 6), datetime(2025, 3, 8)),  # March 6-7
+            (datetime(2025, 3, 11), datetime(2025, 3, 13)),  # March 11-12
+            (datetime(2025, 3, 13), datetime(2025, 3, 14)),  # March 13
+            (datetime(2025, 3, 14), datetime(2025, 3, 15)),  # March 14
+            (datetime(2025, 3, 15), datetime(2025, 3, 18)),  # March 15-16
+            (datetime(2025, 3, 25), datetime(2025, 3, 27))  # March 25 and a little bit of the 26th after 12am
+        ]
+        bg_colors = plt.get_cmap("tab10").colors[:10]
+        bg_labels = [
+            # "Jan 21 - Feb 2: No sources, regular RR",
+            # "Feb 4-17: Ba source, regular RR",
+            # "Feb 18-27: Ba source (Close, regular RR)",
+
+            "Feb 28: Ba source (Close, fast RR)",
+            "Mar 6-7: Cs source, 9 sheets, fast RR",
+            "Mar 11-12: No sources, fast RR",
+            "Mar 13: Cs source, 6 sheets, fast RR",
+            "Mar 14: Cs source, 3 sheets, fast RR",
+            "Mar 15-16: Cs source, no sheets, fast RR",
+            "Mar 25-26: No sources, fast RR"
+        ]
+        # Create Patch objects for the intervals so we can make a single figure-level legend.
+        # interval_patches = [
+        #     mpatches.Patch(facecolor=c, alpha=0.6, label=lbl)
+        #     for c, lbl in zip(bg_colors, bg_labels)
+        # ]
+        #-----------------------------------------------------------------------------------------
 
         for i, ax in enumerate(axes):
             if i >= self.number_of_qubits:
@@ -446,7 +509,13 @@ class T1VsTime:
             sorted_x, sorted_y, sorted_err = zip(*combined)
             sorted_x = np.array(sorted_x)
 
-            #ax.set_xlim(start_time, end_time)
+            #limit x axis
+            # ax.set_xlim(start_time, end_time)
+
+            # -----------------Add background shading--------------------
+            # for (start, end), shade_color in zip(bg_intervals, bg_colors):
+            #     ax.axvspan(start, end, facecolor=shade_color, alpha=0.6)
+            # -----------------------------------------------------------
 
             ax.errorbar(
                 sorted_x, sorted_y, yerr=sorted_err,
@@ -463,10 +532,24 @@ class T1VsTime:
                 alpha=0.5
             )
 
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
-            ax.tick_params(axis='x', rotation=45)
+            ax.xaxis.set_major_locator(mdates.AutoDateLocator())  # Automatically choose good tick locations
 
+            # start_ordinal = mdates.date2num(start_time)
+            # end_ordinal = mdates.date2num(end_time)
+            # num_ticks = 9
+            # tick_positions = np.linspace(start_ordinal, end_ordinal, num_ticks)
+            # ax.set_xticks(tick_positions)
+
+            # ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))  # Format as month-day
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # Show day and time
+            ax.tick_params(axis='x', rotation=45)  # Rotate ticks for better readability
+
+            ax.set_yticks(y_ticks)  # Apply uniform y-ticks
+            ax.set_ylim(fixed_y_min, fixed_y_max)  # Set fixed y-axis range
+
+            # Disable scientific notation and format y-ticks
             ax.ticklabel_format(style="plain", axis="y")
+            ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.0f}"))  # decimal places
 
             if show_legends:
                 ax.legend(edgecolor='black')
@@ -474,10 +557,19 @@ class T1VsTime:
             ax.set_ylabel('T1 (us)', fontsize=font - 2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
+        # ---------------------Add a figure-level legend showing what each shaded area corresponds to-------------------------------
+        # fig.legend(
+        #     handles=interval_patches,
+        #     loc='lower right',  # Choose where you want it placed
+        #     title='Shaded Intervals',
+        #     fancybox=False)
+        # ------------------------------------------------------------------------------------------------
+
         plt.tight_layout()
-        plt.savefig(analysis_folder + 'T1_vals.pdf', transparent=True, dpi=self.final_figure_quality)
-        print('Plot saved to:', analysis_folder)
-        plt.close()
+        # plt.savefig(analysis_folder + 'T1_vals.png', transparent=False, dpi=self.final_figure_quality)
+        # print('Plot saved to:', analysis_folder)
+        plt.show()
+        # plt.close()
 
 
     def plot_allan_deviation(self, date_times, vals, show_legends, label="T1"):

@@ -5,7 +5,7 @@ import datetime
 from build_task import *
 from build_state import *
 # from expt_config import *
-from expt_config_nexus import * # Change for quiet vs nexus
+from expt_config import * # Change for quiet vs nexus
 import copy
 import visdom
 
@@ -267,18 +267,30 @@ class AmplitudeRabiProgram(AveragerProgramV2):
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
-        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+
+        self.add_gauss(ch=qubit_ch, name="ge_ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+        self.add_pulse(ch=qubit_ch, name="pi_pulse",
+                       style="arb",
+                       envelope="ge_ramp",
+                       freq=cfg['qubit_freq_ge'],
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['pi_amp'],
+                       )
+
+        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma_ef'], length=cfg['sigma_ef'] * 4, even_length=False)
         self.add_pulse(ch=qubit_ch, name="qubit_pulse",
                        style="arb",
                        envelope="ramp",
-                       freq=cfg['qubit_freq_ge'],
+                       freq=cfg['qubit_freq_ef'],
                        phase=cfg['qubit_phase'],
-                       gain=cfg['qubit_gain_ge'],
+                       gain=cfg['qubit_gain_ef'],
                        )
 
         self.add_loop("gainloop", cfg["steps"])
 
     def _body(self, cfg):
+        self.pulse(ch=self.cfg["qubit_ch"], name="pi_pulse", t=0)
+        self.delay_auto(t=0.01, tag='waiting')
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
         self.delay_auto(t=0.0, tag='waiting')
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
