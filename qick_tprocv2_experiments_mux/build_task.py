@@ -4,7 +4,7 @@ import numpy as np
 # from expt_config import expt_cfg
 import time
 
-# the main program class
+## the main program class
 from qick.asm_v2 import AveragerProgramV2
 # for defining sweeps
 from qick.asm_v2 import QickSpan, QickSweep1D
@@ -44,7 +44,7 @@ def add_single_qubit_experiment(expt_cfg, expt_name, QubitIndex):
     # Decide what parameter we are changing.
     if expt_name == 'res_spec_ge':
         exp_cfg.update([('res_freq_ge', QickSweep1D('freqloop', start, stop))])
-    elif expt_name == 'qubit_spec_ge' or expt_name == 'qubit_spec_ge_zeno_stark':
+    elif expt_name == 'qubit_spec_ge' or expt_name == 'qubit_spec_ge_zeno_stark' or expt_name == 'qubit_spec_ge_extended' or expt_name == 'qubit_spec_ge_high_gain':
         exp_cfg.update([('qubit_freq_ge', QickSweep1D('freqloop', start, stop))])
     elif expt_name == 'time_rabi_ge' or expt_name == 'qubit_temp':
         expt_cfg.update([('expts', expts), ('start', start)])

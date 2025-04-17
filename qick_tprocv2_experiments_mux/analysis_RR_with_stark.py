@@ -543,7 +543,7 @@ q_new = I[0][0][:] * np.sin(theta) + Q[0][0][:] * np.cos(theta)
 #kmeans = KMeans(n_clusters=3).fit(np.transpose([i_new, q_new]))
 
 fig2, axes = plt.subplots(2,3)
-time_idx = 0
+time_idx = 22
 j = 0
 m = 0
 for i in (np.arange(0,6) * round((gain_pts-5)/5)):
@@ -665,7 +665,7 @@ plt.show()
 
 
 
-check = [0, 22]
+check = [21, 22, 23]
 fig3, ax3 = plt.subplots(2,len(check))
 for j in np.arange(0, len(check)):
     check_idx = check[j]

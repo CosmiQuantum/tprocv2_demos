@@ -173,17 +173,20 @@ class T1VsTime:
                         delay_times = self.process_h5_data(load_data[f'T1{exp_extension}'][q_key].get('Delay Times', [])[0][dataset].decode())
                         # fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
                         round_num = load_data[f'T1{exp_extension}'][q_key].get('Round Num', [])[0][dataset]
-                        batch_num = load_data[f'T1{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
-                        syst_config = load_data[f'T1{exp_extension}'][q_key].get('Syst Config', [])[0][dataset].decode()
-                        exp_config = load_data[f'T1{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
-                        safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-                        exp_config = eval(exp_config, safe_globals)
+                        try:
+                            batch_num = load_data[f'T1{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
+                            syst_config = load_data[f'T1{exp_extension}'][q_key].get('Syst Config', [])[0][dataset].decode()
+                            exp_config = load_data[f'T1{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
+                            safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                            exp_config = eval(exp_config, safe_globals)
+                        except:
+                            exp_config =None
 
                         if len(I) > 0:
 
                             T1_class_instance = T1Measurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                               fit_data=True)
-                            T1_spec_cfg = exp_config['T1_ge']
+                            #T1_spec_cfg = exp_config['T1_ge']
                             q1_fit_exponential, T1_err, T1_est, plot_sig = T1_class_instance.t1_fit(I, Q, delay_times)
                             if T1_est < 0:
                                 print("The value is negative, continuing...")

@@ -143,9 +143,12 @@ class T2rHistCumulErrPlots:
                         # fit = load_data['T2'][q_key].get('Fit', [])[0][dataset]
                         round_num = load_data['T2'][q_key].get('Round Num', [])[0][dataset]
                         batch_num = load_data['T2'][q_key].get('Batch Num', [])[0][dataset]
-                        exp_config = load_data['T2'][q_key].get('Exp Config', [])[0][dataset].decode()
-                        safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-                        exp_config = eval(exp_config, safe_globals)
+                        try:
+                            exp_config = load_data['T2'][q_key].get('Exp Config', [])[0][dataset].decode()
+                            safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                            exp_config = eval(exp_config, safe_globals)
+                        except:
+                            exp_config =None
 
                         if len(I) > 0:
                             T2_class_instance = T2RMeasurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
@@ -155,7 +158,7 @@ class T2rHistCumulErrPlots:
                             except Exception as e:
                                 print('Fit didnt work due to error: ', e)
                                 continue
-                            T2_cfg = exp_config['Ramsey_ge']
+                            #T2_cfg = exp_config['Ramsey_ge']
                             if T2 < 0:
                                 print("The value is negative, continuing...")
                                 continue

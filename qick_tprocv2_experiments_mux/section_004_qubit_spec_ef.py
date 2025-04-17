@@ -298,9 +298,9 @@ class EFPulseProbeSpectroscopyProgram(AveragerProgramV2):
 
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play ge pi pulse
-        self.delay_auto(t=0.01, tag='waiting after pi')  # Wait til qubit pulse is done before proceeding
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play probe pulse
-        self.delay_auto(t=0.01, tag='waiting')  # Wait til qubit pulse is done before proceeding
-        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        self.delay_auto(t=0.0, tag='waiting after pi')  # Wait til qubit pulse is done before proceeding
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play e-f pulse
+        self.delay_auto(t=0.01, tag='waiting')  # Wait til qubit e-f pulse is done before proceeding
+        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0) #readout
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 

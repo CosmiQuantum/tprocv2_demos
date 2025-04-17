@@ -40,8 +40,8 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
                        )
 
     def _body(self, cfg):
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play probe pulse
-        self.delay_auto(0.0)  # wait_time after last pulse
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play pi pulse
+        self.delay_auto(0.01)  # wait_time after last pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'], ddr4=True)
         self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
@@ -53,7 +53,7 @@ class ResonanceSpectroscopyEF:
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
         self.outerFolder = outerFolder
-        self.expt_name = "res_spec"
+        self.expt_name = "res_spec_ef"
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.round_num = round_num
         self.save_figs = save_figs
@@ -121,7 +121,7 @@ class ResonanceSpectroscopyEF:
 
         if self.save_figs:
             # outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
-            outerFolder_expt = os.path.join(self.outerFolder, self.expt_name + "_ef")
+            outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
             self.create_folder_if_not_exists(outerFolder_expt)
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")

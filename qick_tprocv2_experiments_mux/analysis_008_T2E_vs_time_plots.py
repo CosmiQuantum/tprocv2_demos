@@ -166,10 +166,13 @@ class T2eVsTime:
                         # fit = load_data['T2E'][q_key].get('Fit', [])[0][dataset]
                         round_num = load_data['T2E'][q_key].get('Round Num', [])[0][dataset]
                         batch_num = load_data['T2E'][q_key].get('Batch Num', [])[0][dataset]
-                        syst_config = load_data['T2E'][q_key].get('Syst Config', [])[0][dataset].decode()
-                        exp_config = load_data['T2E'][q_key].get('Exp Config', [])[0][dataset].decode()
-                        safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-                        exp_config = eval(exp_config, safe_globals)
+                        try:
+                            syst_config = load_data['T2E'][q_key].get('Syst Config', [])[0][dataset].decode()
+                            exp_config = load_data['T2E'][q_key].get('Exp Config', [])[0][dataset].decode()
+                            safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                            exp_config = eval(exp_config, safe_globals)
+                        except:
+                            exp_config =None
 
                         if len(I) > 0:
                             T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
@@ -179,7 +182,7 @@ class T2eVsTime:
                             except Exception as e:
                                 print(f"good fit not found, error: {e}")
                                 continue
-                            T2E_cfg = exp_config['SpinEcho_ge']
+                            #T2E_cfg = exp_config['SpinEcho_ge']
                             if t2e_est < 0:
                                 print("The value is negative, continuing...")
                                 continue

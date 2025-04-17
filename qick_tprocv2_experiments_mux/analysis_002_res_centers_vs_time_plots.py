@@ -158,17 +158,18 @@ class ResonatorFreqVsTime:
                         round_num = load_data[f'Res{exp_extension}'][q_key].get('Round Num', [])[0][dataset]  # already a float
                         batch_num = load_data[f'Res{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
 
-
-                        exp_config = load_data[f'Res{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
-                        safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-
-                        exp_config = eval(exp_config, safe_globals)
+                        try:
+                            exp_config = load_data[f'Res{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
+                            safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                            exp_config = eval(exp_config, safe_globals)
+                        except:
+                            exp_config = None
 
 
 
                         if len(freq_pts) > 0:
                             res_class_instance = ResonanceSpectroscopy(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.save_figs)
-                            res_spec_cfg = exp_config['res_spec']
+                            #res_spec_cfg = exp_config['res_spec']
                             res_freqs = res_class_instance.get_results(freq_pts, freq_center, amps)
 
                             resonator_centers[q_key].extend([res_freqs[q_key]])

@@ -27,18 +27,27 @@ class StarkShift2D:
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
             print(f'Q {self.QubitIndex} Stark Shift 2D configuration: ', self.config)
 
-    def run(self):
+    def run(self, set_pos_detuning = True):
+
+        if set_pos_detuning is True:
+            self.config['detuning'] = np.abs(self.config['detuning'][self.QubitIndex])
+            self.config['start_freq'] = -1 * np.abs(self.config['max_freq'])
+            self.config['end_freq'] = np.abs(self.config['min_freq'])
+        else:
+            self.config['detuning'] = -1 * np.abs(self.config['detuning'][self.QubitIndex])
+            self.config['start_freq'] = -1 * np.abs(self.config['min_freq'])
+            self.config['end_freq'] = np.abs(self.config['max_freq'])
 
         prog = StarkShift2DProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay = 0.5, cfg=self.config)
         iq_list = prog.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=True) #check soft_avgs
         I = iq_list[self.QubitIndex][0,:,:,0]
         Q = iq_list[self.QubitIndex][0,:,:,1]
-        print(np.shape(I))
 
         qu_freq_sweep = prog.get_pulse_param('qubit_pulse', "freq", as_array=True)
         gain_sweep = prog.get_pulse_param("stark_tone", "gain", as_array=True)
 
         return I, Q, qu_freq_sweep, gain_sweep, self.config
+
 
     def plot(self, I, Q, qu_freq_sweep, res_gain_sweep):
         fig, axes = plt.subplots(1, 3, figsize=(9, 3))
@@ -116,7 +125,7 @@ class StarkShift2DProgram(AveragerProgramV2):
         # self.add_pulse(ch=qubit_ch, name="qubit_pulse",
         #                style="arb",
         #                envelope="ramp",
-        #                freq=QickSweep1D("qubit_pulse_loop", cfg["start_freq"], cfg["end_freq"]),
+        #                freq=QickSweep1D("qubit_pulse_loop", cfg["qubit_freq_ge"] + cfg["start_freq"], cfg["qubit_freq_ge"] + cfg["end_freq"]),
         #                phase=cfg['qubit_phase'],
         #                gain=cfg['pi_amp'],
         #                )
@@ -143,7 +152,7 @@ class ResStarkShift2D:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, res_freq_stark, res_phase_stark, save_figs, experiment=None, signal=None):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
-        self.expt_name = "stark_shift_2D"
+        self.expt_name = "res_stark_shift_2D"
         self.save_figs = save_figs
         self.experiment = experiment
         self.Qubit = 'Q' + str(self.QubitIndex)
@@ -169,8 +178,8 @@ class ResStarkShift2D:
         gain_sweep = np.linspace(self.config['start_gain'], self.config['end_gain'], self.config['gain_steps'])
         for g in gain_sweep:
             gain = round(g, 3)
-            self.config['stark_gain'] = np.concatenate((res_gain_ge, gain))  #readout pulse gain, stark tone gain
-            prog = StarkShift2DProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay = 0.5, cfg=self.config)
+            self.config['stark_gain'] = np.concatenate((res_gain_ge, [gain]))  #readout pulse gain, stark tone gain
+            prog = ResStarkShift2DProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay = 0.5, cfg=self.config)
             iq_list = prog.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=True) #check soft_avgs
             I.append(iq_list[self.QubitIndex][0,:,0])
             Q.append(iq_list[self.QubitIndex][0,:,1])
@@ -245,7 +254,7 @@ class ResStarkShift2DProgram(AveragerProgramV2):
         # self.add_pulse(ch=qubit_ch, name="qubit_pulse",
         #                style="arb",
         #                envelope="ramp",
-        #                freq=QickSweep1D("qubit_pulse_loop", cfg["start_freq"], cfg["end_freq"]),
+        #                freq=QickSweep1D("qubit_pulse_loop", cfg['qubit_freq_ge'] + cfg["start_freq"], cfg['qubit_freq_ge'] + cfg["end_freq"]),
         #                phase=cfg['qubit_phase'],
         #                gain=cfg['pi_amp'],
         #                )
@@ -253,7 +262,7 @@ class ResStarkShift2DProgram(AveragerProgramV2):
         self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_ch[0],
                        style="const",
                        length=cfg['qubit_length_ge'],
-                       freq=QickSweep1D("qubit_pulse_loop", cfg["start_freq"], cfg["end_freq"]),
+                       freq=QickSweep1D("qubit_pulse_loop", cfg['qubit_freq_ge'] + cfg["start_freq"], cfg['qubit_freq_ge'] + cfg["end_freq"]),
                        phase=0,
                        gain=cfg['qubit_gain_ge'],
                        )
@@ -327,6 +336,7 @@ class StarkShiftSpec:
             count +=1
 
     def run_with_qick_sweep(self):
+        self.config['detuning'] = self.config['detuning'][self.QubitIndex]
 
         # run with negative detuning
         self.config['stark_gain'] = QickSweep1D("gain_loop", -1 *self.config['end_gain'], self.config['start_gain'])
@@ -456,6 +466,7 @@ class StarkShiftSpectroscopyProgram(AveragerProgramV2):
                                phase=cfg['qubit_phase'],
                                gain=cfg['pi_amp'],
                                )
+
 
         self.add_loop("gain_loop", cfg["gain_steps"])
         self.add_gauss(ch=stark_ch, name="stark_ramp", sigma=cfg['stark_sigma'], length = cfg['stark_sigma'] *2)

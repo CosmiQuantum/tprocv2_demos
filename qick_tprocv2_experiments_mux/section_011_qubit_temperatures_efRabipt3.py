@@ -192,7 +192,7 @@ class Temps_EFAmpRabiExperiment:
             # --- Extract the amplitude parameter A directly ---
             # A_amplitude = abs(amp_popt[0])
             A_amplitude = amp_popt[0]
-            print("Amplitude parameter A from cosine fit:", A_amplitude)
+            # print("Amplitude parameter A from cosine fit:", A_amplitude)
 
 
             # --- Plot amplitude data and its cosine fit on the third subplot ---

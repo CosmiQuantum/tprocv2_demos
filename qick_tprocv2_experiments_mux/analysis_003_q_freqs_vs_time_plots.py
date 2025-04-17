@@ -171,18 +171,21 @@ class QubitFreqsVsTime:
                         freqs = self.process_h5_data(load_data[f'QSpec{exp_extension}'][q_key].get('Frequencies', [])[0][dataset].decode())
                         round_num = load_data[f'QSpec{exp_extension}'][q_key].get('Round Num', [])[0][dataset]
                         batch_num = load_data[f'QSpec{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
-                        syst_config = load_data[f'QSpec{exp_extension}'][q_key].get('Syst Config', [])[0][dataset].decode()
-                        exp_config = load_data[f'QSpec{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
-                        safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-                        exp_config = eval(exp_config, safe_globals)
+                        try:
+                            syst_config = load_data[f'QSpec{exp_extension}'][q_key].get('Syst Config', [])[0][dataset].decode()
+                            exp_config = load_data[f'QSpec{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
+                            safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                            exp_config = eval(exp_config, safe_globals)
+                        except:
+                            exp_config =None
 
                         if len(I) > 0:
                             qspec_class_instance = QubitSpectroscopy(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal,
                                                                      self.save_figs)
-                            if '_' in exp_extension:
-                                q_spec_cfg = exp_config[f'qubit_spec{exp_extension}']
-                            else:
-                                q_spec_cfg = exp_config['qubit_spec_ge']
+                            # if '_' in exp_extension:
+                            #     q_spec_cfg = exp_config[f'qubit_spec{exp_extension}']
+                            # else:
+                            #     q_spec_cfg = exp_config['qubit_spec_ge']
                             largest_amp_curve_mean, I_fit, Q_fit, qspec_fit_err = qspec_class_instance.get_results(I, Q, freqs)
                             if qspec_fit_err is not None and qspec_fit_err < 1: #above 1 MHz fit err is probably not a good fit
                                 qubit_frequencies[q_key].extend([largest_amp_curve_mean])

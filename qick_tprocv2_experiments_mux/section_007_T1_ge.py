@@ -51,7 +51,9 @@ class T1Program(AveragerProgramV2):
 class T1Measurement:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, signal, save_figs, experiment = None,
                  live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
-                 multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True):
+                 multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, save_shots=False,
+                 set_relax_delay=False, relax_delay=1000):
+
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
@@ -66,6 +68,8 @@ class T1Measurement:
         self.signal = signal
         self.save_figs = save_figs
         self.verbose = verbose
+        self.save_shots = save_shots
+        self.set_relax_delay = set_relax_delay
         self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
 
         if experiment is not None:
@@ -79,6 +83,9 @@ class T1Measurement:
                         self.config["reps"] *= multiply_qubit_reps_by
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} T1 configuration: {self.config}')
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} T1 configuration: {self.config}')
+            if self.set_relax_delay:
+                self.config['relax_delay'] = relax_delay
+                print(f'set t1 relax delay to {relax_delay} us')
 
     def run(self, thresholding=False):
         now = datetime.datetime.now()
@@ -93,9 +100,12 @@ class T1Measurement:
                                            angle=self.experiment.readout_cfg["ro_phase"], progress=True)
             else:
                 iq_list = t1.acquire(self.experiment.soc, soft_avgs=self.config['rounds'], progress=True)
+
+
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
             delay_times = t1.get_time_param('wait', "t", as_array=True)
+
 
         if self.fit_data:
             q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit(I, Q, delay_times)
@@ -105,7 +115,14 @@ class T1Measurement:
         if self.plot_results:
             self.plot_results( I, Q, delay_times, now)
 
-        return  T1_est, T1_err, I, Q, delay_times, q1_fit_exponential, self.config
+        if self.save_shots:
+            raw_0 = t1.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
+            Ishots = raw_0[self.QubitIndex][:, :, 0, 0]
+            Qshots = raw_0[self.QubitIndex][:, :, 0, 1]
+            return T1_est, T1_err, Ishots, Qshots, delay_times, q1_fit_exponential, self.config
+
+        else:
+            return  T1_est, T1_err, I, Q, delay_times, q1_fit_exponential, self.config
 
     def live_plotting(self, t1, thresholding):
         I = Q = expt_mags = expt_phases = expt_pop = None

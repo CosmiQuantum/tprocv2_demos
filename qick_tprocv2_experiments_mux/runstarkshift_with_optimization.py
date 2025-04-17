@@ -18,6 +18,7 @@ from section_005_single_shot_ge import SingleShot
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
 from section_008_save_data_to_h5 import Data_H5
 from starkshift import StarkShift2D
+from starkshift import ResStarkShift2D
 from starkshift import ResStarkShiftSpec
 from starkshift import StarkShiftSpec
 from system_config import QICK_experiment
@@ -26,10 +27,10 @@ from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 ################################################
 # Run Configurations and Optimization Params
 ################################################
-ssf_avgs_per_opt_pt = 5
-freq_offset_steps = 20
+ssf_avgs_per_opt_pt = 1
+freq_offset_steps = 2
 res_sample_number = 3 #10
-ss_sample_number = 5
+ss_sample_number = 3
 n = 1  # number of rounds for fast repetitive runs
 save_r = 1  # how many rounds to save after
 signal = 'None'  # 'I', or 'Q' depending on where the signal is
@@ -43,10 +44,10 @@ debug_mode = False  # if True, errors will stop the run immediately
 increase_qubit_reps = False
 qubit_to_increase_reps_for = 0
 multiply_qubit_reps_by = 2
-Qs_to_look_at = [5]  # list of qubits to process
+Qs_to_look_at = [4]  # list of qubits to process
 
 # Set which experiments to run
-run_flags = {"optimization": True, "stark2D": False, "starkRamsey": False, "starkSpec": False}
+run_flags = {"optimization": False, "stark2D": True, "starkRamsey": False, "starkSpec": False}
 
 # Optimization parameters for resonator spectroscopy
 #res_leng_vals = [4.3, 5, 5, 4, 5.8, 4.5]
@@ -409,10 +410,10 @@ def run_starkSpec(experiment, QubitIndex):
             res_phase_stark.append(res_phase_stark[QubitIndex])
 
             stark_shift_spec = StarkShiftSpec(QubitIndex, tot_num_of_qubits, qubitFolder, save_figs,
-                                              experiment=experiment)
+                                             experiment=experiment)
             I, Q, P, shots, gain_sweep, sys_config = stark_shift_spec.run_with_qick_sweep()
-            #stark_shift_spec.plot(P, gain_sweep)
-            #stark_shift_spec.plot_shots(I, Q, shots, gain_sweep, gain_index=0)
+            stark_shift_spec.plot(P, gain_sweep)
+            stark_shift_spec.plot_shots(I, Q, shots, gain_sweep, gain_index=0)
 
             # res_stark_shift_spec = ResStarkShiftSpec(QubitIndex, tot_num_of_qubits, qubitFolder, res_freq_stark, res_phase_stark, save_figs,
             #                                  experiment=experiment)

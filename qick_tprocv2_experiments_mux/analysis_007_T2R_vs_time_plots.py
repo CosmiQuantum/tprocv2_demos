@@ -144,10 +144,12 @@ class T2rVsTime:
                         # fit = load_data['T2'][q_key].get('Fit', [])[0][dataset]
                         round_num = load_data['T2'][q_key].get('Round Num', [])[0][dataset]
                         batch_num = load_data['T2'][q_key].get('Batch Num', [])[0][dataset]
-
-                        exp_config = load_data['T2'][q_key].get('Exp Config', [])[0][dataset].decode()
-                        safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-                        exp_config = eval(exp_config, safe_globals)
+                        try:
+                            exp_config = load_data['T2'][q_key].get('Exp Config', [])[0][dataset].decode()
+                            safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                            exp_config = eval(exp_config, safe_globals)
+                        except:
+                            exp_config =None
 
                         if len(I) > 0:
                             T2_class_instance = T2RMeasurement(q_key,self.number_of_qubits, outerFolder_save_plots, round_num, self.signal,
@@ -156,7 +158,7 @@ class T2rVsTime:
                                 fitted, t2r_est, t2r_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)
                             except:
                                 continue
-                            T2_cfg = exp_config['Ramsey_ge']
+                            #T2_cfg = exp_config['Ramsey_ge']
                             if t2r_est < 0:
                                 print("The value is negative, continuing...")
                                 continue

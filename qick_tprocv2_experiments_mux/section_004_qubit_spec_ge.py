@@ -12,15 +12,24 @@ import logging
 class QubitSpectroscopy:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder,  round_num, signal, save_figs, experiment = None,
                  live_plot = None, verbose = False, logger = None, qick_verbose=True, increase_reps = False,
-                 increase_reps_to = 500, plot_fit=True, zeno_stark=False, zeno_stark_pulse_gain=None):
+                 increase_reps_to = 500, plot_fit=True, zeno_stark=False, zeno_stark_pulse_gain=None,
+                 ext_q_spec=False, high_gain_q_spec=False, fit_data=True):
+
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.plot_fit=plot_fit
         self.zeno_stark = zeno_stark
         self.zeno_stark_pulse_gain = zeno_stark_pulse_gain
+        self.ext_q_spec = ext_q_spec
+        self.fit_data = fit_data
+        self.high_gain_q_spec = high_gain_q_spec
         if self.zeno_stark:
             self.expt_name = "qubit_spec_ge_zeno_stark"
+        elif self.ext_q_spec:
+            self.expt_name = "qubit_spec_ge_extended"
+        elif self.high_gain_q_spec:
+            self.expt_name = "qubit_spec_ge_high_gain"
         else:
             self.expt_name = "qubit_spec_ge"
         self.signal = signal
@@ -74,14 +83,17 @@ class QubitSpectroscopy:
             Q = iq_list[self.QubitIndex][0, :, 1]
             freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
 
-        if return_fwhm:
-            largest_amp_curve_mean, I_fit, Q_fit, fwhm = self.plot_results(I, Q, freqs, config=self.config,
+        if self.fit_data:
+            if return_fwhm:
+                largest_amp_curve_mean, I_fit, Q_fit, fwhm = self.plot_results(I, Q, freqs, config=self.config,
                                                                            return_fwhm=return_fwhm)
-            return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config, fwhm
+                return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config, fwhm
+            else:
+                largest_amp_curve_mean, I_fit, Q_fit = self.plot_results(I, Q, freqs, config=self.config,
+                                                                           return_fwhm=return_fwhm)
+                return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config
         else:
-            largest_amp_curve_mean, I_fit, Q_fit = self.plot_results(I, Q, freqs, config=self.config,
-                                                                           return_fwhm=return_fwhm)
-            return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config
+            return I, Q, freqs, None, None, None, self.config
 
     def run_with_stark_tone(self, length, wait_for_res_ring_up=False):
         #soc = self.experiment.soccfg

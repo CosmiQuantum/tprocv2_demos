@@ -28,19 +28,46 @@ if FRIDGE == "QUIET":
             "start": -2,  # [MHz]
             "step_size": 0.05,  # [MHz]
             "steps": 100,
-            "relax_delay": 20,  # [us]
+            "relax_delay": 10,  # [us]
+            "list_of_all_qubits": list_of_all_qubits,
+        },
+        "res_spec_ef": {
+            "reps": 200,
+            "rounds": 1,
+            "start": -2,  # [MHz]
+            "step_size": 0.05,  # [MHz]
+            "steps": 100,
+            "relax_delay": 600,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
         "qubit_spec_ge": {
-            "reps": 300, #300
+            "reps": 500, #300
             "rounds": 1, #10
-            "start": list(VNA_qubit-60), # [MHz] #-300 #-15
-            "stop": list(VNA_qubit+60), # [MHz] #+15
-            #"start": list(VNA_qubit - 100),  # [MHz] #-300 #-15
-            #"stop": list(VNA_qubit + 100),  # [MHz] #+15
-            "steps": 600, #100
-            "relax_delay": 700, #1000, # [us]
+            "start": list(VNA_qubit-10), # [MHz] #-300 #-15
+            "stop": list(VNA_qubit+10), # [MHz] #+15
+            "steps": 250, #100
+            "relax_delay": 10, #1000, # [us]
+            "list_of_all_qubits": list_of_all_qubits,
+        },
+
+        "qubit_spec_ge_extended": {
+            "reps": 500,  # 300
+            "rounds": 1,  # 10
+            "start": list(VNA_qubit - 250),  # [MHz]
+            "stop": list(VNA_qubit + 100),  # [MHz]
+            "steps": 1000,  # 100
+            "relax_delay": 10,  # 1000, # [us]
+            "list_of_all_qubits": list_of_all_qubits,
+        },
+
+        "qubit_spec_ge_high_gain": {
+            "reps": 500,  # 300
+            "rounds": 1,  # 10
+            "start": list(VNA_qubit - 30),  # [MHz]
+            "stop": list(VNA_qubit + 30),  # [MHz]
+            "steps": 1200,  # 100
+            "relax_delay": 10,  # 1000, # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
@@ -63,7 +90,7 @@ if FRIDGE == "QUIET":
             "start": list(ef_freqs - 8),  # [MHz] #-300
             "stop": list(ef_freqs + 8),  # [MHz]
             "steps": 400,  # 1000
-            "relax_delay": 700, #1000,  # [us]
+            "relax_delay": 600, #1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
         "qubit_spec_ftores": {
@@ -75,15 +102,6 @@ if FRIDGE == "QUIET":
             "relax_delay": 0.5,  # 1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
-        # "qubit_spec_ge": { #
-        #     "reps": 4000,
-        #     "rounds": 1,  # 10
-        #     "start": list(VNA_qubit - 500),  # [MHz] #-300
-        #     "stop": list(VNA_qubit + 10),  # [MHz]
-        #     "steps": 3000,  # 1000
-        #     "relax_delay": 5000,  # [us]
-        #     "list_of_all_qubits": list_of_all_qubits,
-        # },
 
         "bias_qubit_spec_ge": {
             "reps": 700,  # 100
@@ -95,22 +113,13 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
         },
 
-        # "power_rabi_ge": {
-        #     "reps": 100, #100
-        #     "rounds": 1, #5
-        #     "start": [0.0] * 6, # [DAC units]
-        #     "stop":  [1.0] * 6, # [DAC units]
-        #     "steps": 100,
-        #     "relax_delay": 1000, # [us]
-        #     "list_of_all_qubits": list_of_all_qubits,
-        # },
         "power_rabi_ge": {
             "reps": 200,#500,
             "rounds": 1,  # 5
             "start": [0] * 6,  # [DAC units]
             "stop": [1.0] * 6,  # [DAC units]
             "steps": 100, #50,
-            "relax_delay": 1000,  # [us]
+            "relax_delay": 600,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
         "length_rabi_ge": {
@@ -148,20 +157,20 @@ if FRIDGE == "QUIET":
 
         "power_rabi_ef": {
             "reps": 200,
-            "reps2": 800, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
+            "reps2": 700, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
             "stop": [1.0] * 6,  # [DAC units]
             "steps": 150,
-            "relax_delay": 800,  # [us]
+            "relax_delay": 600,  # [us]
         },
         "T1_ge": {
             "reps": 200, #300
             "rounds": 1, #1
             "start": [0.0] * 6,  # [us]
             "stop": [200]*6, #[250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
-            "steps": 150,
-            "relax_delay": 1000,  # [us] ### Should be >10x T1!
+            "steps": 30,
+            "relax_delay": 600,  # [us] ### Should be >10x T1!
             "wait_time": 0.0,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -188,24 +197,42 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
         },
 
-        "stark_shift_2D": {
-            "reps": 300,
+        "res_stark_shift_2D": {
+            "reps": 200,
             "rounds": 1,
             "list_of_all_qubits": list_of_all_qubits,
             "qubit_pulse_delay": 0.5, #[us] time to wait for qubit pulse after stark tone is sent
             "stark_length": 16,  # [us] stark tone length for 2D scan, overlaps qubit pulse
-            "gain_steps": 3,
+            "gain_steps": 20,
             "start_gain": 0.00,
-            "end_gain": 0.01, #res gain values between -1 and 1
-            "qubit_pulse_steps": 500,
-            "start_freq": - 25, #[MHz] from qubit freq
-            "end_freq":  25, # [MHz] from qubit freq
+            "end_gain": 1.0, #res gain values between -1 and 1
+            "qubit_pulse_steps": 400,
+            "start_freq": -35, #[MHz] from qubit freq
+            "end_freq":  3, # [MHz] from qubit freq
             "readout_pulse_delay": 2, #2/kappa
-            "detuning": 10, #[MHz]
             "stark_gain": [],
             "res_freq_stark": [],
             "res_phase_stark": [],
             "stark_mask": [],
+        },
+
+        "stark_shift_2D": {
+            "reps": 200,
+            "rounds": 1,
+            "list_of_all_qubits": list_of_all_qubits,
+            "qubit_pulse_delay": 0.5,  # [us] time to wait for qubit pulse after stark tone is sent
+            "stark_length": 16,  # [us] stark tone length for 2D scan, overlaps qubit pulse
+            "gain_steps": 20,
+            "start_gain": 0.00,
+            "end_gain": 1.0,  # res gain values between -1 and 1
+            "qubit_pulse_steps": 400,
+            "min_freq": 3,  # [MHz] from qubit freq
+            "max_freq": 15,  # [MHz] from qubit freq
+            "start_freq": 0,
+            "end_freq": 0,
+            "readout_pulse_delay": 2,  # 2/kappa
+            "detuning": [-20, -10, -10, -10, -10, -10],  # [MHz]
+            "stark_gain": [],
         },
 
         "stark_shift_spec": {
@@ -215,12 +242,12 @@ if FRIDGE == "QUIET":
             "stark_length": 25, # [us] stark tone length for TLS spectroscopy, try 10-30% of T1
             "max_shift": 20, # [MHz] specify frequency range of stark shift
             "duffing_constant": [500000,500000,50000,50000,500000,500000], #constant for duffing oscillator model from stark ramsey measurement, update for each qubit
-            "gain_steps": 100,
+            "gain_steps": 100, #for each branch of pos,neg detuning stark and for entire res stark
             "start_gain": 0.0,
             "end_gain": 1.0, #res gain values between -1 and 1, convert to qubit freq shift w/ stark ramsey
             "readout_pulse_delay": 2, #10/kappa
-            "relax_delay": 200, #[us]
-            "detuning": -10, #[MHz] start w/negative detuning, script flips to positive halfway thru scan
+            "relax_delay": 400, #[us]
+            "detuning": [-20, -10, -10, -10, -10, -10], #[MHz] start w/negative detuning, script flips to positive halfway thru scan
             "stark_sigma": 0.01,  # [us] 10 ns
             "stark_gain": [],
             "anharmonicity": [172.34, 176.38, 167.13, 172.57, 172.03, 161.14],
@@ -348,7 +375,7 @@ if FRIDGE == "QUIET":
             "freq_start" : [6176.0, 0, 0, 0],
             "freq_stop" : [6178.0, 0, 0, 0],
             "freq_step" : 0.1,
-            "relax_delay": 1000, # [us]
+            "relax_delay": 600, # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
@@ -376,6 +403,16 @@ elif FRIDGE == "NEXUS":
             "step_size": 0.12,  # [MHz]
             "steps": 101,
             "relax_delay": 20,  # [us]
+            "relax_delay_ef": 600,
+            "list_of_all_qubits": list_of_all_qubits,
+        },
+        "res_spec_ef": {
+            "reps": 500,
+            "rounds": 1,
+            "start": -3.5,  # [MHz]
+            "step_size": 0.12,  # [MHz]
+            "steps": 101,
+            "relax_delay": 600,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
