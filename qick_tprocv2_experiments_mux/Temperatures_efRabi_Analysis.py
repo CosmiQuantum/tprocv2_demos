@@ -40,7 +40,20 @@ plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name
 # plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_ss = False,  ss_plot_gef = True, plot_t1 = False,
 #             plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = True)
 
+# Load data
 qtemp_data = plotter.load_plot_save_rabis_Qtemps(list_of_all_qubits)
-plotter.plot_qubit_temperatures_vs_time(qtemp_data)
+
+#Qubit temperatures vs time
+# plotter.plot_qubit_temperatures_vs_time(qtemp_data)
+
+#Histograms of Qubit temperatures
 # plotter.plot_qubit_temperature_histograms(qtemp_data)
-plotter.plot_qubit_pe_vs_time(qtemp_data)
+
+#Excited state populations (P_e) vs time
+# plotter.plot_qubit_pe_vs_time(qtemp_data)
+
+#Qubit temp and P_e vs time in the same plot
+# plotter.plot_qubit_temp_and_pe_vs_time(qtemp_data)
+
+#Qubit temp, P_e, and g-e qubit freq vs time in the same plot
+plotter.plot_qubit_temp_pe_freq_vs_time(qtemp_data)

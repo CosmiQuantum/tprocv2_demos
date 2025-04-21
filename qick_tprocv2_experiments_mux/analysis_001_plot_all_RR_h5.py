@@ -733,13 +733,14 @@ class PlotAllRR:
                         results = self.Qubit_Temperature_Convert(A_e, A_g, qubit_freq_MHz)
                         if results is None:
                             continue  # Skip this dataset
-                        T_K, T_mK, P_e = results
-                        print(f"Q{q_key} calculated Temperature:{T_mK}, with P_e = {P_e}")
+                        T_K, T_mK, P_e, qubit_freq = results
+                        print(f"Q{q_key} calculated Temperature:{T_mK}, with P_e = {P_e}, and Qfreq {qubit_freq_MHz} MHz")
                         file_result['qubits'][int(q_key)] = {
                             'A1': A_amplitude1,
                             'A2': A_amplitude2,
                             'T_mK': T_mK,
                             'P_e': P_e,
+                            'qubit_freq_MHz': qubit_freq,
                             'date': date.timestamp()}
 
             all_files_Qtemp_results.append(file_result)
@@ -763,7 +764,7 @@ class PlotAllRR:
         hbar = 1.05 * 10 ** -34
         T_K = hbar * qubit_freq_Hz / (k_B * np.log(P_g/ P_e))  # Temperature in the unit Kelvin
         T_mK = T_K * 1000  # Convert to millikelvin
-        return T_K, T_mK, P_e
+        return T_K, T_mK, P_e, qubit_freq_MHz
 
     def plot_qubit_temperatures_vs_time(self, all_files_Qtemp_results, num_qubits=6):
         """
@@ -970,5 +971,180 @@ class PlotAllRR:
         timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         save_path = os.path.join(self.outerFolder_save_plots, f"QubitPe_vs_Time_{timestp}.png")
         print("Plot saved to:", save_path)
+        plt.savefig(save_path, dpi=self.figure_quality)
+        plt.close(fig)
+        # plt.show()
+
+    def plot_qubit_temp_and_pe_vs_time(self, all_files_Qtemp_results, num_qubits=6):
+        """
+        Plots qubit temperature (T_mK) and P_e vs. time using scatter points for each qubit (dual y-axes).
+        """
+        colors = ["orange", "blue", "purple", "green", "brown", "pink"]
+        font = 14
+
+        ncols = min(num_qubits, 3)
+        nrows = math.ceil(num_qubits / 3)
+
+        fig, axes = plt.subplots(nrows=nrows, ncols=ncols,
+                                 figsize=(4 * ncols, 4 * nrows),
+                                 constrained_layout=True)
+
+        axes = axes.flatten() if isinstance(axes, (list, np.ndarray)) else [axes]
+        fig.suptitle("Qubit Temperature and $P_e$ vs. Time", fontsize=font + 2)
+
+        for q in range(num_qubits):
+            times = []
+            temps = []
+            pe_values = []
+
+            for file_result in all_files_Qtemp_results:
+                qubit_data = file_result['qubits'].get(q)
+                if qubit_data:
+                    timestamp = qubit_data['date']
+                    times.append(datetime.datetime.fromtimestamp(timestamp))
+                    temps.append(qubit_data['T_mK'])
+                    pe_values.append(qubit_data.get('P_e', None))
+
+            if not times:
+                axes[q].set_visible(False)
+                continue
+
+
+            ax1 = axes[q]
+            ax2 = ax1.twinx()
+
+            ax1.set_title(f"Q{q + 1}", fontsize=font)
+            ax1.set_xlabel("Time", fontsize=font)
+
+            # Temperature (left axis)
+            ax1.set_ylabel("Temp (mK)", color=colors[q % len(colors)], fontsize=font)
+            ax1.scatter(times, temps, color=colors[q % len(colors)], marker='o')
+            ax1.tick_params(axis='y', labelcolor=colors[q % len(colors)])
+            ax1.set_ylim(80, 400)
+
+            # Pe (right axis)
+            start_time = datetime.datetime(2025, 4, 11, 12, 30)
+            ax1.set_xlim(left=start_time)
+
+            ax2.set_ylabel("$P_e$", color="black", fontsize=font)
+            ax2.scatter(times, pe_values, color="black", marker='x')
+            ax2.tick_params(axis='y', labelcolor="black")
+            ax2.set_ylim(0, 0.6)
+
+            # Format x-axis
+            ax1.xaxis.set_major_locator(mdates.AutoDateLocator())
+            ax1.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))
+            ax1.tick_params(axis='x', rotation=45, labelsize=10)
+
+        timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        save_path = os.path.join(self.outerFolder_save_plots, f"QubitTemps_and_Pe_vs_Time_{timestp}.png")
+        print("Combined plot saved to:", save_path)
+        plt.savefig(save_path, dpi=self.figure_quality)
+        plt.close(fig)
+        # plt.show()
+
+    def plot_qubit_temp_pe_freq_vs_time(self, all_files_Qtemp_results, num_qubits=6):
+        """
+        Plots qubit temperature (T_mK), P_e, and qubit frequency vs. time using triple y-axes.
+        """
+        colors = ["orange", "blue", "purple", "green", "brown", "pink"]
+        font = 14
+
+        ncols = min(num_qubits, 3)
+        nrows = math.ceil(num_qubits / 3)
+
+        fig, axes = plt.subplots(nrows=nrows, ncols=ncols,
+                                 figsize=(5 * ncols, 4.5 * nrows),
+                                 constrained_layout=True)
+
+        axes = axes.flatten() if isinstance(axes, (list, np.ndarray)) else [axes]
+        fig.suptitle("Qubit Temp, $P_e$, and Freq vs. Time", fontsize=font + 2)
+
+        for q in range(num_qubits):
+            times, temps, pe_values, freqs = [], [], [], []
+            yaxis_limit = 700
+
+            for file_result in all_files_Qtemp_results:
+                qubit_data = file_result['qubits'].get(q)
+                if qubit_data:
+                    T_mK = qubit_data['T_mK']
+                    if T_mK <= yaxis_limit:
+                        timestamp = qubit_data['date']
+                        times.append(datetime.datetime.fromtimestamp(timestamp))
+                        temps.append(T_mK)
+                        pe_values.append(qubit_data['P_e'])
+                        freqs.append(qubit_data.get('qubit_freq_MHz'))
+
+                    # P_e = pe_values[-1]
+                    # if 0.4 <= P_e <= 0.55:
+                    #     print(
+                    #         f"Q{q}  |  P_e = {P_e:.3f}  |  T_mK = {qubit_data['T_mK']:.2f}  |  Freq = {qubit_data['qubit_freq_MHz']:.3f} MHz  |  Timestamp = {datetime.datetime.fromtimestamp(qubit_data['date'])}")
+
+            if not times:
+                axes[q].set_visible(False)
+                continue
+
+            ax1 = axes[q]
+            ax2 = ax1.twinx()  # Right y-axis for P_e
+            ax3 = ax1.twinx()  # New outer-right axis for qubit frequency
+            ax3.spines.right.set_position(("outward", 60))  # offset third axis
+
+            # Temp (left axis)
+            ax1.set_ylabel("Temp (mK)", color=colors[q % len(colors)], fontsize=font)
+            ax1.scatter(times, temps, color=colors[q % len(colors)], marker='o')
+            ax1.tick_params(axis='y', labelcolor=colors[q % len(colors)])
+            # ax1.set_ylim(100, 400)
+
+            # Pe (middle right axis)
+            ax2.set_ylabel("$P_e$", color="black", fontsize=font)
+            ax2.scatter(times, pe_values, color="black", marker='x')
+            ax2.tick_params(axis='y', labelcolor="black")
+            ax2.set_ylim(0, 0.6)
+
+            # Freq (outer right axis)
+            ax3.set_ylabel("Qubit Freq (MHz)", color="gray", fontsize=font)
+            ax3.scatter(times, freqs, color="gray", marker='^')
+            ax3.tick_params(axis='y', labelcolor="gray")
+            ax3.set_ylim(min(freqs) * 0.998, max(freqs) * 1.002)  # dynamic range
+
+            # Time axis (x)
+            start_time = datetime.datetime(2025, 4, 11, 12, 30)
+            ax1.set_xlim(left=start_time)
+            ax1.set_xlabel("Time", fontsize=font)
+            ax1.set_title(f"Q{q + 1} Temp, Qfreq & P_e vs. Time", fontsize=font)
+
+            # Add vertical dashed lines for experiment events
+            experiment_date = datetime.date(2025, 4, 11)
+            event_info = [
+                ("13:11", "DC Bias Sweep", "red"),
+                ("14:51", "Pump Freq Sweep (early)", "blue"),
+                ("15:20", "Pump Freq Sweep", "blue"),
+                ("15:43", "Pump Freq Sweep", "blue"),
+                ("16:19", "Pump Power Sweep", "green"),
+                ("16:53", "Pump Power Sweep", "green"),
+                ("17:10", "DC Bias Sweep", "red")
+            ]
+
+            plotted_labels = set()
+
+            for time_str, label, color in event_info:
+                dt = datetime.datetime.strptime(f"{experiment_date} {time_str}", "%Y-%m-%d %H:%M")
+                label_to_use = label if label not in plotted_labels else None
+                ax1.axvline(x=dt, color=color, linestyle='--', linewidth=1.5, label=label_to_use)
+                if label_to_use:
+                    plotted_labels.add(label)
+
+            # Only show legend on first subplot (optional)
+            if q == 0:
+                ax1.legend(loc='upper left', fontsize=10)
+
+            ax1.xaxis.set_major_locator(mdates.AutoDateLocator())
+            ax1.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))
+            ax1.tick_params(axis='x', rotation=45, labelsize=10)
+
+        timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+        save_path = os.path.join(self.outerFolder_save_plots, f"QubitTemps_Pe_Freq_vs_Time_{timestp}.png")
+        print("Combined plot saved to:", save_path)
         plt.savefig(save_path, dpi=self.figure_quality)
         plt.close(fig)
