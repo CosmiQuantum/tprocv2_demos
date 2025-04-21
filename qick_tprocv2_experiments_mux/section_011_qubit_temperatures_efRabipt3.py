@@ -7,7 +7,7 @@ from build_state import *
 # from expt_config import *
 from expt_config import *
 import copy
-import visdom
+# import visdom
 from scipy.signal import argrelextrema
 
 class Temps_EFAmpRabiExperiment:
