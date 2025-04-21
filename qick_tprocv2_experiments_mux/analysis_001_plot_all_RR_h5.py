@@ -609,7 +609,7 @@ class PlotAllRR:
 
     def load_plot_save_rabis_Qtemps(self, list_of_all_qubits):
         # ------------------------------------------------Load/Plot/Save Rabi---------------------------------------
-        outerFolder_expt_qtemps = self.unique_folder_path+ "/Data_h5/Qtemps/"
+        outerFolder_expt_qtemps = self.unique_folder_path+ "/Data_h5/q_temperatures/"
         h5_files = glob.glob(os.path.join(outerFolder_expt_qtemps, "*.h5"))
         all_files_Qtemp_results = [] #to store qubit temperature results
         cutoff_timestamp = datetime.datetime(2025, 4, 11, 19, 0).timestamp()  # when I started saving qubit freqs in the same files

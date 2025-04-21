@@ -26,9 +26,16 @@ run_name = 'run6/6transmon/'
 date = '2025-04-11'  # only go through all of the data for one date at a time because there is a lot
 
 # Where plots are saved
-outerFolder = f"/data/QICK_data/run6/6transmon/ef_studies/QubitTemps_efRabi_method/{date}/Optimization/Round_Robin_mode"
-outerFolder_qtemps_data = f"/data/QICK_data/run6/6transmon/ef_studies/QubitTemps_efRabi_method/{date}/Study_Data"
-outerFolder_qtemps_plots = os.path.join(outerFolder_qtemps_data, "analysis_plots")
+# outerFolder = f"/data/QICK_data/run6/6transmon/ef_studies/QubitTemps_efRabi_method/{date}/Optimization/Round_Robin_mode"
+# outerFolder_qtemps_data = f"/data/QICK_data/run6/6transmon/ef_studies/QubitTemps_efRabi_method/{date}/Study_Data"
+# outerFolder_qtemps_plots = os.path.join(outerFolder_qtemps_data, "analysis_plots")
+
+# For analysis at cosmiqgpvm02
+outerFolder = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_12-51-09/optimization"
+outerFolder_qtemps_data = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_12-51-09/optimization"
+outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/params_vs_time"
+
+
 if not os.path.exists(outerFolder): os.makedirs(outerFolder)
 if not os.path.exists(outerFolder_qtemps_data): os.makedirs(outerFolder_qtemps_data)
 if not os.path.exists(outerFolder_qtemps_plots): os.makedirs(outerFolder_qtemps_plots)
