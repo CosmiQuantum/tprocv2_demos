@@ -11,7 +11,7 @@ from collections import defaultdict
 from bisect import bisect_left
 from scipy.stats import norm
 # from build_task import *
-from build_state_noqick import *
+# from build_state_noqick import *
 from expt_config import *
 import matplotlib.pyplot as plt
 import numpy as np
@@ -74,7 +74,7 @@ class QubitSpectroscopy:
                     self.experiment.readout_cfg['res_phase_qze'].append(
                         experiment.readout_cfg['res_phase_qze'][self.QubitIndex])
 
-            self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
+            # self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
             self.live_plot = live_plot
             # self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             # self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
