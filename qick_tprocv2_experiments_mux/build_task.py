@@ -1,5 +1,5 @@
-from qick import *
-from qick.pyro import make_proxy
+# from qick import *
+# from qick.pyro import make_proxy
 import numpy as np
 # from expt_config import expt_cfg
 import time
