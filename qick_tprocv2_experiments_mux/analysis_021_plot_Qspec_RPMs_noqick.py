@@ -11,7 +11,7 @@ from collections import defaultdict
 from bisect import bisect_left
 from scipy.stats import norm
 # from build_task import *
-from build_state import *
+from build_state_noqick import *
 from expt_config import *
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,6 +20,7 @@ from scipy.optimize import curve_fit
 import datetime
 import re
 import logging
+import os
 
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 
