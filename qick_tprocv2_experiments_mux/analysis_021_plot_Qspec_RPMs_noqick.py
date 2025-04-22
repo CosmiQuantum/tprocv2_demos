@@ -4,7 +4,8 @@ from typing import List
 from matplotlib.axes import Axes
 import glob
 import sys
-from section_011_qubit_temperatures_efRabipt3 import Temps_EFAmpRabiExperiment
+# from section_011_qubit_temperatures_efRabipt3 import Temps_EFAmpRabiExperiment #uses qick modoule
+from section_011_qubit_temperatures_efRabipt3_noqick_analysis import Temps_EFAmpRabiExperiment
 import math
 from collections import defaultdict
 from bisect import bisect_left
