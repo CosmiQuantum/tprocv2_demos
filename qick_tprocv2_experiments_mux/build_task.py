@@ -5,7 +5,7 @@ import numpy as np
 import time
 
 ## the main program class
-from qick.asm_v2 import AveragerProgramV2
+# from qick.asm_v2 import AveragerProgramV2
 # for defining sweeps
 from qick.asm_v2 import QickSpan, QickSweep1D
 

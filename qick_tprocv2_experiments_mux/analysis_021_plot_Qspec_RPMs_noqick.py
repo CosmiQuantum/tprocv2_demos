@@ -9,7 +9,7 @@ import math
 from collections import defaultdict
 from bisect import bisect_left
 from scipy.stats import norm
-from build_task import *
+# from build_task import *
 from build_state import *
 from expt_config import *
 import matplotlib.pyplot as plt
@@ -57,7 +57,6 @@ class QubitSpectroscopy:
         self.increase_reps = increase_reps
         self.increase_reps_to = increase_reps_to
 
-
         if experiment is not None:
             if self.zeno_stark:
                 qze_mask = np.arange(0, self.number_of_qubits + 1)
@@ -75,10 +74,10 @@ class QubitSpectroscopy:
 
             self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
             self.live_plot = live_plot
-            self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
-            self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-            if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} Qubit Spec configuration: ', self.config)
-            self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} Qubit Spec configuration: {self.config}')
+            # self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
+            # self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            # if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} Qubit Spec configuration: ', self.config)
+            # self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} Qubit Spec configuration: {self.config}')
 
 
     def plot_results(self, I, Q, freqs, config=None, fig_quality=100, sigma_guess=1, return_fwhm=False):
