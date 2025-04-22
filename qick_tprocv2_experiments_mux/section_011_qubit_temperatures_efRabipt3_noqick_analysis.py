@@ -3,12 +3,14 @@ import numpy as np
 from scipy.optimize import curve_fit
 import datetime
 # from build_task import *
-from build_state import *
+# from build_state import *
+from build_state_noqick import *
 # from expt_config import *
 from expt_config import *
 import copy
 # import visdom
 from scipy.signal import argrelextrema
+import os
 
 class Temps_EFAmpRabiExperiment:
     def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits,  outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
