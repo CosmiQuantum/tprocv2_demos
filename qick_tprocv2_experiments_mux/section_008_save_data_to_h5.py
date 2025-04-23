@@ -92,14 +92,21 @@ class Data_H5:
 
     def load_from_h5(self, data_type,  save_r=1):  # Added save_r as parameter.
         """Loads data from an HDF5 file into specified dictionary format."""
+        mode = 'r'
+        if data_type == 'Qtemps': #to switch from old naming convention to new naming convention for qubit temp data
+            data_type = 'q_temperatures'
+            mode = 'r+'
 
         data = {data_type: {}}  # Initialize the main dictionary with the data_type.
 
-        with h5py.File(self.outerFolder_expt, 'r') as f:
+        with h5py.File(self.outerFolder_expt, mode) as f:
             for qubit_group in f.keys():
                 qubit_index = int(qubit_group[1:]) - 1
                 qubit_data = {}
                 group = f[qubit_group]
+
+                if 'Qtemps' in group and 'q_temperatures' not in group: #to switch from old naming convention to new naming convention for qubit temp data
+                    group.move('Qtemps', 'q_temperatures')
 
                 for dataset_name in group.keys():
                     # Attempt to map HDF5 keys to the target dictionaries' keys.
@@ -118,7 +125,7 @@ class Data_H5:
                                        'Round Num': 'Round Num', 'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
                                        'Syst Config': 'Syst Config'}
 
-                    elif data_type == 'Qtemps':
+                    elif data_type == 'q_temperatures':
                         target_keys = {'Dates': 'Dates', 'Qfreq_ge': 'Qfreq_ge',
                                        'I1': 'I1', 'Q1': 'Q1', 'Gains1': 'Gains1', 'Fit1': 'Fit1',
                                        'I2': 'I2', 'Q2': 'Q2', 'Gains2': 'Gains2', 'Fit2': 'Fit2',

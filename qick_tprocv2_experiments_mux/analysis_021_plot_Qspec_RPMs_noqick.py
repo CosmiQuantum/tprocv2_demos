@@ -1,33 +1,284 @@
-import numpy as np
-from section_002_res_spec_ge_mux import ResonanceSpectroscopy
-from section_004_qubit_spec_ge import QubitSpectroscopy
-from section_006_amp_rabi_ge import AmplitudeRabiExperiment
-from section_007_T1_ge import T1Measurement
 from section_008_save_data_to_h5 import Data_H5
-from section_005_single_shot_ge import SingleShot
-from section_009_T2R_ge import T2RMeasurement
-from section_010_T2E_ge import T2EMeasurement
-from section_005_single_shot_gef import SingleShot_ef
-from section_011_qubit_temperatures_efRabipt3 import Temps_EFAmpRabiExperiment
 import matplotlib.dates as mdates
 from typing import List
 from matplotlib.axes import Axes
-#from expt_config import *
 import glob
-import re
-import datetime
-import ast
-import os
 import sys
+# from section_011_qubit_temperatures_efRabipt3 import Temps_EFAmpRabiExperiment #uses qick modoule
+from section_011_qubit_temperatures_efRabipt3_noqick_analysis import Temps_EFAmpRabiExperiment
 import math
-import matplotlib.pyplot as plt
 from collections import defaultdict
 from bisect import bisect_left
 from scipy.stats import norm
+# from build_task import *
+# from build_state_noqick import *
+from expt_config import *
+import matplotlib.pyplot as plt
+import numpy as np
+import ast
+from scipy.optimize import curve_fit
+import datetime
+import re
+import logging
+import os
 
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 
-class PlotAllRR:
+class QubitSpectroscopy:
+    def __init__(self, QubitIndex, number_of_qubits,  outerFolder,  round_num, signal, save_figs, experiment = None,
+                 live_plot = None, verbose = False, logger = None, qick_verbose=True, increase_reps = False,
+                 increase_reps_to = 500, plot_fit=True, zeno_stark=False, zeno_stark_pulse_gain=None,
+                 ext_q_spec=False, high_gain_q_spec=False, fit_data=True):
+
+        self.qick_verbose = qick_verbose
+        self.QubitIndex = QubitIndex
+        self.outerFolder = outerFolder
+        self.plot_fit=plot_fit
+        self.zeno_stark = zeno_stark
+        self.zeno_stark_pulse_gain = zeno_stark_pulse_gain
+        self.ext_q_spec = ext_q_spec
+        self.fit_data = fit_data
+        self.high_gain_q_spec = high_gain_q_spec
+        if self.zeno_stark:
+            self.expt_name = "qubit_spec_ge_zeno_stark"
+        elif self.ext_q_spec:
+            self.expt_name = "qubit_spec_ge_extended"
+        elif self.high_gain_q_spec:
+            self.expt_name = "qubit_spec_ge_high_gain"
+        else:
+            self.expt_name = "qubit_spec_ge"
+        self.signal = signal
+        self.save_figs = save_figs
+        self.experiment = experiment
+        self.Qubit = 'Q' + str(self.QubitIndex)
+        self.exp_cfg = expt_cfg[self.expt_name]
+        self.round_num = round_num
+        self.number_of_qubits = number_of_qubits
+        self.verbose = verbose
+        self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
+        self.increase_reps = increase_reps
+        self.increase_reps_to = increase_reps_to
+
+        if experiment is not None:
+            if self.zeno_stark:
+                qze_mask = np.arange(0, self.number_of_qubits + 1)
+                qze_mask = np.delete(qze_mask, QubitIndex)
+                self.exp_cfg['qze_mask'] = qze_mask
+                self.experiment.readout_cfg['res_gain_qze'] = [self.experiment.readout_cfg['res_gain_ge'][QubitIndex],
+                                                               0, 0, 0, 0, 0, self.zeno_stark_pulse_gain]
+                self.experiment.readout_cfg['res_freq_qze'] = self.experiment.readout_cfg['res_freq_ge']
+                self.experiment.readout_cfg['res_phase_qze'] = self.experiment.readout_cfg['res_phase']
+                if len(self.experiment.readout_cfg['res_freq_qze']) < 7:  # otherise it keeps appending
+                    self.experiment.readout_cfg['res_freq_qze'].append(
+                        experiment.readout_cfg['res_freq_qze'][self.QubitIndex])
+                    self.experiment.readout_cfg['res_phase_qze'].append(
+                        experiment.readout_cfg['res_phase_qze'][self.QubitIndex])
+
+            # self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
+            self.live_plot = live_plot
+            # self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
+            # self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            # if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} Qubit Spec configuration: ', self.config)
+            # self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} Qubit Spec configuration: {self.config}')
+
+
+    def plot_results(self, I, Q, freqs, config=None, fig_quality=100, sigma_guess=1, return_fwhm=False):
+        freqs = np.array(freqs)
+        freq_q = freqs[np.argmax(I)]
+
+        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, fit_err = self.fit_lorenzian(I, Q, freqs,
+                                                                                                          freq_q,sigma_guess)
+
+        # Check if the returned values are all None
+        if (mean_I is None and mean_Q is None and I_fit is None and Q_fit is None
+                and largest_amp_curve_mean is None and largest_amp_curve_fwhm is None):
+            # If so, return None for the values in this definition as well
+            return None, None, None
+
+        # If we get here, the fit was successful and we can proceed with plotting
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+        plt.rcParams.update({'font.size': 18})
+
+        # I subplot
+        ax1.plot(freqs, I, label='I', linewidth=2)
+        ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
+        ax1.tick_params(axis='both', which='major', labelsize=16)
+        ax1.legend()
+
+        # Q subplot
+        ax2.plot(freqs, Q, label='Q', linewidth=2)
+        ax2.set_xlabel("Qubit Frequency (MHz)", fontsize=20)
+        ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
+        ax2.tick_params(axis='both', which='major', labelsize=16)
+        ax2.legend()
+        # Plot the fits
+        if self.plot_fit:
+            ax1.plot(freqs, I_fit, 'r--', label='Lorentzian Fit')
+            ax1.axvline(largest_amp_curve_mean, color='orange', linestyle='--', linewidth=2)
+
+            ax2.plot(freqs, Q_fit, 'r--', label='Lorentzian Fit')
+            ax2.axvline(largest_amp_curve_mean, color='orange', linestyle='--', linewidth=2)
+
+        # Calculate the middle of the plot area
+        plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
+
+        if self.plot_fit:
+            # Add title, centered on the plot area
+            if config is not None:  # then its been passed to this definition, so use that
+                fig.text(plot_middle, 0.98,
+                         f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean +
+                         f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
+                         f", {config['reps']}*{config['rounds']} avgs",
+                         fontsize=24, ha='center', va='top')
+            else:
+                fig.text(plot_middle, 0.98,
+                         f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean +
+                         f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
+                         f", {self.config['reps']}*{self.config['rounds']} avgs",
+                         fontsize=24, ha='center', va='top')
+        else:
+            # Add title, centered on the plot area
+            if config is not None:  # then its been passed to this definition, so use that
+                fig.text(plot_middle, 0.98,
+                         f"Qubit Spectroscopy Q{self.QubitIndex + 1}" +
+                         f", {config['reps']}*{config['rounds']} avgs",
+                         fontsize=24, ha='center', va='top')
+            else:
+                fig.text(plot_middle, 0.98,
+                         f"Qubit Spectroscopy Q{self.QubitIndex + 1}",
+                         fontsize=24, ha='center', va='top')
+
+
+                # Adjust spacing
+        plt.tight_layout()
+
+        # Adjust the top margin to make room for the title
+        plt.subplots_adjust(top=0.93)
+
+        ### Save figure
+        if self.save_figs:
+            outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
+            self.create_folder_if_not_exists(outerFolder_expt)
+            now = datetime.datetime.now()
+            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" +
+                                     f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
+            fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
+        plt.close(fig)
+        if return_fwhm:
+            return largest_amp_curve_mean, I_fit, Q_fit, largest_amp_curve_fwhm
+        else:
+            return largest_amp_curve_mean, I_fit, Q_fit
+
+    def get_results(self, I, Q, freqs):
+        freqs = np.array(freqs)
+        freq_q = freqs[np.argmax(I)]
+
+        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, qspec_fit_err = self.fit_lorenzian(I, Q, freqs, freq_q)
+
+        return largest_amp_curve_mean, I_fit, Q_fit, qspec_fit_err
+
+
+    def lorentzian(self, f, f0, gamma, A, B):
+
+        return A * gamma ** 2 / ((f - f0) ** 2 + gamma ** 2) + B
+
+    def max_offset_difference_with_x(self, x_values, y_values, offset):
+        max_average_difference = -1
+        corresponding_x = None
+
+        # average all 3 to avoid noise spikes
+        for i in range(len(y_values) - 2):
+            # group 3 vals
+            y_triplet = y_values[i:i + 3]
+
+            # avg differences for these 3 vals
+            average_difference = sum(abs(y - offset) for y in y_triplet) / 3
+
+            # see if this is the highest difference yet
+            if average_difference > max_average_difference:
+                max_average_difference = average_difference
+                # x value for the middle y value in the 3 vals
+                corresponding_x = x_values[i + 1]
+
+        return corresponding_x, max_average_difference
+
+    def fit_lorenzian(self, I, Q, freqs, freq_q, sigma_guess = 1):
+        try:
+            # Initial guesses for I and Q
+            initial_guess_I = [freq_q, sigma_guess, np.max(I), np.min(I)]
+            initial_guess_Q = [freq_q, sigma_guess, np.max(Q), np.min(Q)]
+
+            # First round of fits (to get rough estimates)
+            params_I, _ = curve_fit(self.lorentzian, freqs, I, p0=initial_guess_I)
+            params_Q, _ = curve_fit(self.lorentzian, freqs, Q, p0=initial_guess_Q)
+
+            # Use these fits to refine guesses
+            x_max_diff_I, max_diff_I = self.max_offset_difference_with_x(freqs, I, params_I[3])
+            x_max_diff_Q, max_diff_Q = self.max_offset_difference_with_x(freqs, Q, params_Q[3])
+            initial_guess_I = [x_max_diff_I, sigma_guess, np.max(I), np.min(I)]
+            initial_guess_Q = [x_max_diff_Q, sigma_guess, np.max(Q), np.min(Q)]
+
+            # Second (refined) round of fits, this time capturing the covariance matrices
+            params_I, cov_I = curve_fit(self.lorentzian, freqs, I, p0=initial_guess_I)
+            params_Q, cov_Q = curve_fit(self.lorentzian, freqs, Q, p0=initial_guess_Q)
+
+            # Create the fitted curves
+            I_fit = self.lorentzian(freqs, *params_I)
+            Q_fit = self.lorentzian(freqs, *params_Q)
+
+            # Calculate errors from the covariance matrices
+            fit_err_I = np.sqrt(np.diag(cov_I))
+            fit_err_Q = np.sqrt(np.diag(cov_Q))
+
+            # Extract fitted means and FWHM (assuming params[0] is the mean and params[1] relates to the width)
+            mean_I = params_I[0]
+            mean_Q = params_Q[0]
+            fwhm_I = 2 * params_I[1]
+            fwhm_Q = 2 * params_Q[1]
+
+            # Calculate the amplitude differences from the fitted curves
+            amp_I_fit = abs(np.max(I_fit) - np.min(I_fit))
+            amp_Q_fit = abs(np.max(Q_fit) - np.min(Q_fit))
+
+            # Choose which curve to use based on the input signal indicator
+            if 'None' in self.signal or self.signal is None:
+                if amp_I_fit > amp_Q_fit:
+                    largest_amp_curve_mean = mean_I
+                    largest_amp_curve_fwhm = fwhm_I
+                    # error on the Q fit's center frequency (first parameter):
+                    qspec_fit_err = fit_err_I[0]
+                else:
+                    largest_amp_curve_mean = mean_Q
+                    largest_amp_curve_fwhm = fwhm_Q
+                    qspec_fit_err = fit_err_Q[0]
+            elif 'I' in self.signal:
+                largest_amp_curve_mean = mean_I
+                largest_amp_curve_fwhm = fwhm_I
+                qspec_fit_err = fit_err_I[0]
+            elif 'Q' in self.signal:
+                largest_amp_curve_mean = mean_Q
+                largest_amp_curve_fwhm = fwhm_Q
+                qspec_fit_err = fit_err_Q[0]
+            else:
+                print('Invalid signal passed, please choose "I", "Q", or "None".')
+                return None
+
+            # Return all desired results including the error on the Q fit
+            return mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, qspec_fit_err
+
+        except Exception as e:
+            if self.verbose: print("Error during Lorentzian fit:", e)
+            self.logger.info(f'Error during Lorentzian fit: {e}')
+            return None, None,None,None,None,None,None
+
+    def create_folder_if_not_exists(self, folder_path):
+        import os
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
+
+class PlotRR_noQick:
     def __init__(self,  date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
                  outerFolder_save_plots, unique_folder_path):
         self.date = date
@@ -88,100 +339,33 @@ class PlotAllRR:
         except (ValueError, SyntaxError, TypeError):
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
-    
-    def run(self, plot_res_spec = True, plot_q_spec = True, plot_rabi = True, rabi_rolling_avg=False, plot_ss = True,
-            plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = True, plot_t1 = True,
-            plot_t2r = True, plot_t2e = True, plot_rabis_Qtemps = False):
 
-        if plot_res_spec:
-            self.load_plot_save_res_spec()
-        if plot_q_spec:
-            self.load_plot_save_q_spec()
+    def run(self, plot_res_spec=True, plot_q_spec=True, plot_rabi=True, rabi_rolling_avg=False, plot_ss=True,
+            plot_ss_hist_only=False, ss_plot_title=None, ss_plot_gef=True, plot_t1=True,
+            plot_t2r=True, plot_t2e=True, plot_rabis_Qtemps=False):
+
+        # if plot_res_spec:
+        #     self.load_plot_save_res_spec()
+        # if plot_q_spec:
+        #     self.load_plot_save_q_spec()
         if plot_rabis_Qtemps:
-            list_of_all_qubits= [i for i in range(self.number_of_qubits + 1)]
+            list_of_all_qubits = [i for i in range(self.number_of_qubits + 1)]
             self.load_plot_save_rabis_Qtemps(list_of_all_qubits)
-        if plot_rabi:
-            if rabi_rolling_avg:
-                self.load_plot_save_rabi(rabi_rolling_avg=True)
-            else:
-                self.load_plot_save_rabi()
-        if plot_ss:
-            self.load_plot_save_ss(plot_ss_hist_only = plot_ss_hist_only, plot_title = ss_plot_title)
-        if ss_plot_gef:
-            self.load_plot_save_ss_gef(plot_ssf_gef = ss_plot_gef)
-        if plot_t1:
-            self.load_plot_save_t1()
-        if plot_t2r:
-            self.load_plot_save_t2r()
-        if plot_t2e:
-            self.load_plot_save_t2e()
-        
-
-    def load_plot_save_res_spec(self):
-        # ------------------------------------------Load/Plot/Save Res Spec------------------------------------
-        outerFolder_expt = os.path.join(self.outerFolder, "Data_h5")
-        h5_files = glob.glob(os.path.join(outerFolder_expt, "Res_ge", "*.h5"))
-        h5_files += glob.glob(os.path.join(outerFolder_expt, "Res", "*.h5"))
-        print(outerFolder_expt)
-        for h5_file in h5_files:
-            save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
-            H5_class_instance = Data_H5(h5_file)
-            #H5_class_instance.print_h5_contents(h5_file)
-            load_data = H5_class_instance.load_from_h5(data_type=  'Res', save_r = int(save_round))
-        
-            #just look at this resonator data, should have batch_num of arrays in each one
-            #right now the data writes the same thing batch_num of times, so it will do the same 5 datasets 5 times, until you fix this just grab the first one (All 5)
-        
-            populated_keys = []
-            for q_key in load_data['Res']:
-                # Access 'Dates' for the current q_key
-                dates_list = load_data['Res'][q_key].get('Dates', [[]])
-        
-                # Check if any entry in 'Dates' is not NaN
-                if any(
-                        not np.isnan(date)
-                        for date in dates_list[0]  # Iterate over the first batch of dates
-                ):
-                    populated_keys.append(q_key)
-        
-            for q_key in populated_keys:
-                #go through each dataset in the batch and plot
-                for dataset in range(len(load_data['Res'][q_key].get('Dates', [])[0])):
-                    date = datetime.datetime.fromtimestamp(load_data['Res'][q_key].get('Dates', [])[0][dataset])   #single date per dataset
-                    freq_pts = self.process_h5_data(load_data['Res'][q_key].get('freq_pts', [])[0][dataset].decode())   # comes in as an array but put into a byte string, need to convert to list
-
-                    freq_center = self.process_h5_data(load_data['Res'][q_key].get('freq_center', [])[0][dataset].decode()) # comes in as an array but put into a string, need to convert to list
-                    freqs_found = self.string_to_float_list(load_data['Res'][q_key].get('Found Freqs', [])[0][dataset].decode()) #comes in as a list of floats in string format, need to convert
-                    amps =  self.process_string_of_nested_lists(load_data['Res'][q_key].get('Amps', [])[0][dataset].decode())  #list of lists
-                    syst_config = load_data['Res'][q_key].get('Syst Config', [])[0][dataset].decode()
-                    exp_config = load_data['Res'][q_key].get('Exp Config', [])[0][dataset].decode()
-                    safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-                    syst_config = eval(syst_config, safe_globals)
-                    exp_config = eval(exp_config, safe_globals)
-
-                    round_num = load_data['Res'][q_key].get('Round Num', [])[0][dataset] #already a float
-                    batch_num = load_data['Res'][q_key].get('Batch Num', [])[0][dataset]
-                    freq_pts_data = load_data['Res'][q_key].get('freq_pts', [])[0][dataset].decode()
-        
-                    # Replace whitespace between numbers with commas to make it a valid list
-                    formatted_str = freq_pts_data.replace('  ', ',').replace('\n', '')
-                    formatted_str = formatted_str.replace(' ', ',').replace('\n', '')
-                    formatted_str = formatted_str.replace(',]', ']').replace('\n', '')
-                    formatted_str = formatted_str.replace('],[', '],[')
-                    formatted_str = re.sub(r",,", ",", formatted_str)
-                    formatted_str = re.sub(r",\s*([\]])", r"\1", formatted_str)
-                    formatted_str = re.sub(r"(\d+)\.,", r"\1.0,",
-                                           formatted_str)  # Fix malformed floating-point numbers (e.g., '5829.,' -> '5829.0')
-                    # Convert to NumPy array
-                    freq_points = np.array(eval(formatted_str))
-                    #print('here: ', freq_points)
-                    if len(freq_pts) > 0:
-                        res_class_instance = ResonanceSpectroscopy(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.save_figs)
-                        res_spec_cfg = exp_config['res_spec']
-                        res_class_instance.plot_results(freq_points, freq_center, amps, res_spec_cfg, self.figure_quality)
-                        del res_class_instance
-        
-            del H5_class_instance
+        # if plot_rabi:
+        #     if rabi_rolling_avg:
+        #         self.load_plot_save_rabi(rabi_rolling_avg=True)
+        #     else:
+        #         self.load_plot_save_rabi()
+        # if plot_ss:
+        #     self.load_plot_save_ss(plot_ss_hist_only=plot_ss_hist_only, plot_title=ss_plot_title)
+        # if ss_plot_gef:
+        #     self.load_plot_save_ss_gef(plot_ssf_gef=ss_plot_gef)
+        # if plot_t1:
+        #     self.load_plot_save_t1()
+        # if plot_t2r:
+        #     self.load_plot_save_t2r()
+        # if plot_t2e:
+        #     self.load_plot_save_t2e()
 
     def load_plot_save_q_spec(self):
         # ----------------------------------------------Load/Plot/Save QSpec------------------------------------
@@ -191,27 +375,27 @@ class PlotAllRR:
         for h5_file in h5_files:
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
             H5_class_instance = Data_H5(h5_file)
-            load_data = H5_class_instance.load_from_h5(data_type=  'QSpec', save_r = int(save_round))
-        
+            load_data = H5_class_instance.load_from_h5(data_type='QSpec', save_r=int(save_round))
+
             populated_keys = []
             for q_key in load_data['QSpec']:
                 # Access 'Dates' for the current q_key
                 dates_list = load_data['QSpec'][q_key].get('Dates', [[]])
-        
+
                 # Check if any entry in 'Dates' is not NaN
                 if any(
                         not np.isnan(date)
                         for date in dates_list[0]  # Iterate over the first batch of dates
                 ):
                     populated_keys.append(q_key)
-        
+
             for q_key in populated_keys:
                 for dataset in range(len(load_data['QSpec'][q_key].get('Dates', [])[0])):
                     date = datetime.datetime.fromtimestamp(load_data['QSpec'][q_key].get('Dates', [])[0][dataset])
                     I = self.process_h5_data(load_data['QSpec'][q_key].get('I', [])[0][dataset].decode())
                     Q = self.process_h5_data(load_data['QSpec'][q_key].get('Q', [])[0][dataset].decode())
-                    #I_fit = load_data['QSpec'][q_key].get('I Fit', [])[0][dataset]
-                    #Q_fit = load_data['QSpec'][q_key].get('Q Fit', [])[0][dataset]
+                    # I_fit = load_data['QSpec'][q_key].get('I Fit', [])[0][dataset]
+                    # Q_fit = load_data['QSpec'][q_key].get('Q Fit', [])[0][dataset]
                     freqs = self.process_h5_data(load_data['QSpec'][q_key].get('Frequencies', [])[0][dataset].decode())
                     round_num = load_data['QSpec'][q_key].get('Round Num', [])[0][dataset]
                     batch_num = load_data['QSpec'][q_key].get('Batch Num', [])[0][dataset]
@@ -220,13 +404,15 @@ class PlotAllRR:
                     safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
 
                     exp_config = eval(exp_config, safe_globals)
-        
-                    if len(I)>0:
-        
-                        qspec_class_instance = QubitSpectroscopy(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs)
+
+                    if len(I) > 0:
+                        qspec_class_instance = QubitSpectroscopy(q_key, self.number_of_qubits,
+                                                                 self.outerFolder_save_plots, round_num, self.signal,
+                                                                 self.save_figs)
                         q_spec_cfg = exp_config['qubit_spec_ge']
-                        #print('q_spec_cfg: ', q_spec_cfg)
-                        qubit_freq, _, _ = qspec_class_instance.plot_results(I, Q, freqs, q_spec_cfg, self.figure_quality)
+                        # print('q_spec_cfg: ', q_spec_cfg)
+                        qubit_freq, _, _ = qspec_class_instance.plot_results(I, Q, freqs, q_spec_cfg,
+                                                                             self.figure_quality)
                         del qspec_class_instance
 
                         extracted_freqs.append({
@@ -238,374 +424,10 @@ class PlotAllRR:
                             "freq_MHz": qubit_freq,
                             "timestamp": date.timestamp()
                         })
-        
+
             del H5_class_instance
 
         return extracted_freqs
-
-    def roll(self, data: np.ndarray) -> np.ndarray:
-
-        kernel = np.ones(5) / 5
-        smoothed = np.convolve(data, kernel, mode='valid')
-
-        # Preserve the original array's shape by padding the edges
-        pad_size = (len(data) - len(smoothed)) // 2
-        return np.concatenate((data[:pad_size], smoothed, data[-pad_size:]))
-
-    def load_plot_save_rabi(self, rabi_rolling_avg=False):
-        # ------------------------------------------------Load/Plot/Save Rabi---------------------------------------
-        outerFolder_expt = self.outerFolder + "/Data_h5/Rabi_ge/"
-        h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
-        
-        for h5_file in h5_files:
-        
-            save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
-            H5_class_instance = Data_H5(h5_file)
-            load_data = H5_class_instance.load_from_h5(data_type=  'Rabi', save_r = int(save_round))
-        
-            populated_keys = []
-            for q_key in load_data['Rabi']:
-                # Access 'Dates' for the current q_key
-                dates_list = load_data['Rabi'][q_key].get('Dates', [[]])
-        
-                # Check if any entry in 'Dates' is not NaN
-                if any(
-                        not np.isnan(date)
-                        for date in dates_list[0]  # Iterate over the first batch of dates
-                ):
-                    populated_keys.append(q_key)
-        
-            for q_key in populated_keys:
-                for dataset in range(len(load_data['Rabi'][q_key].get('Dates', [])[0])):
-                    date= datetime.datetime.fromtimestamp(load_data['Rabi'][q_key].get('Dates', [])[0][dataset])
-                    I = self.process_h5_data(load_data['Rabi'][q_key].get('I', [])[0][dataset].decode())
-                    Q = self.process_h5_data(load_data['Rabi'][q_key].get('Q', [])[0][dataset].decode())
-                    gains = self.process_h5_data(load_data['Rabi'][q_key].get('Gains', [])[0][dataset].decode())
-                    #fit = load_data['Rabi'][q_key].get('Fit', [])[0][dataset]
-                    round_num = load_data['Rabi'][q_key].get('Round Num', [])[0][dataset]
-                    batch_num = load_data['Rabi'][q_key].get('Batch Num', [])[0][dataset]
-                    syst_config = load_data['Rabi'][q_key].get('Syst Config', [])[0][dataset].decode()
-                    exp_config = load_data['Rabi'][q_key].get('Exp Config', [])[0][dataset].decode()
-                    safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-                    exp_config = eval(exp_config, safe_globals)
-        
-                    if len(I)>0:
-        
-                        rabi_class_instance = AmplitudeRabiExperiment(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs)
-                        rabi_cfg = exp_config['power_rabi_ge']
-                        I = np.asarray(I)
-                        Q = np.asarray(Q)
-
-                        if rabi_rolling_avg:
-                            I = self.roll(I)
-                            Q = self.roll(Q)
-
-                        gains = np.asarray(gains)
-                        rabi_class_instance.plot_results(I, Q, gains, rabi_cfg, self.figure_quality)
-                        del rabi_class_instance
-        
-            del H5_class_instance
-
-    def load_plot_save_ss(self, plot_ss_hist_only, plot_title):
-        
-        # ------------------------------------------------Load/Plot/Save SS---------------------------------------
-        outerFolder_expt = self.outerFolder + "/Data_h5/SS_ge/"
-        h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
-        
-        for h5_file in h5_files:
-        
-            save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
-            H5_class_instance = Data_H5(h5_file)
-            load_data = H5_class_instance.load_from_h5(data_type=  'SS', save_r = int(save_round))
-        
-            populated_keys = []
-            for q_key in load_data['SS']:
-                # Access 'Dates' for the current q_key
-                dates_list = load_data['SS'][q_key].get('Dates', [[]])
-        
-                # Check if any entry in 'Dates' is not NaN
-                if any(
-                        not np.isnan(date)
-                        for date in dates_list[0]  # Iterate over the first batch of dates
-                ):
-                    populated_keys.append(q_key)
-        
-            for q_key in populated_keys:
-                for dataset in range(len(load_data['SS'][q_key].get('Dates', [])[0])):
-                    date= datetime.datetime.fromtimestamp(load_data['SS'][q_key].get('Dates', [])[0][dataset])
-                    angle = load_data['SS'][q_key].get('Angle', [])[0][dataset]
-                    fidelity = load_data['SS'][q_key].get('Fidelity', [])[0][dataset]
-                    I_g = self.process_h5_data(load_data['SS'][q_key].get('I_g', [])[0][dataset].decode())
-                    Q_g = self.process_h5_data(load_data['SS'][q_key].get('Q_g', [])[0][dataset].decode())
-                    I_e = self.process_h5_data(load_data['SS'][q_key].get('I_e', [])[0][dataset].decode())
-                    Q_e = self.process_h5_data(load_data['SS'][q_key].get('Q_e', [])[0][dataset].decode())
-                    round_num = load_data['SS'][q_key].get('Round Num', [])[0][dataset]
-                    batch_num = load_data['SS'][q_key].get('Batch Num', [])[0][dataset]
-                    # syst_config = load_data['SS'][q_key].get('Syst Config', [])[0][dataset].decode()
-                    # exp_config = load_data['SS'][q_key].get('Exp Config', [])[0][dataset].decode()
-                    # safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-                    # syst_config = eval(syst_config, safe_globals)
-                    # exp_config = eval(exp_config, safe_globals)
-                    from expt_config import expt_cfg as exp_config
-                    I_g = np.array(I_g)
-                    Q_g = np.array(Q_g)
-                    I_e = np.array(I_e)
-                    Q_e = np.array(Q_e)
-        
-                    if len(Q_g)>0:
-                        ss_class_instance = SingleShot(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.save_figs)
-
-                        if type(exp_config) is dict:
-                            readout_opt = exp_config['Readout_Optimization']
-                            if isinstance(readout_opt, str):
-                                ss_cfg = ast.literal_eval(readout_opt)
-                            else:
-                                ss_cfg = readout_opt
-                        else:
-                            ss_cfg = ast.literal_eval(exp_config['Readout_Optimization'].decode())
-                        if plot_ss_hist_only:
-                            ss_class_instance.only_hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=True, plot_title=plot_title)
-                        else:
-                            ss_class_instance.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=True)
-                        del ss_class_instance
-        
-            del H5_class_instance
-
-    def load_plot_save_t1(self):
-        # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
-        outerFolder_expt = self.outerFolder + "/Data_h5/T1_ge/"
-        h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
-        
-        for h5_file in h5_files:
-        
-            save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
-            H5_class_instance = Data_H5(h5_file)
-            load_data = H5_class_instance.load_from_h5(data_type=  'T1', save_r = int(save_round))
-        
-            populated_keys = []
-            for q_key in load_data['T1']:
-                # Access 'Dates' for the current q_key
-                dates_list = load_data['T1'][q_key].get('Dates', [[]])
-        
-                # Check if any entry in 'Dates' is not NaN
-                if any(
-                        not np.isnan(date)
-                        for date in dates_list[0]  # Iterate over the first batch of dates
-                ):
-                    populated_keys.append(q_key)
-        
-            for q_key in populated_keys:
-                for dataset in range(len(load_data['T1'][q_key].get('Dates', [])[0])):
-                    #T1 = load_data['T1'][q_key].get('T1', [])[0][dataset]
-                    #errors = load_data['T1'][q_key].get('Errors', [])[0][dataset]
-                    date= datetime.datetime.fromtimestamp(load_data['T1'][q_key].get('Dates', [])[0][dataset])
-                    I = self.process_h5_data(load_data['T1'][q_key].get('I', [])[0][dataset].decode())
-                    Q = self.process_h5_data(load_data['T1'][q_key].get('Q', [])[0][dataset].decode())
-                    delay_times = self.process_h5_data(load_data['T1'][q_key].get('Delay Times', [])[0][dataset].decode())
-                    #fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
-                    round_num = load_data['T1'][q_key].get('Round Num', [])[0][dataset]
-                    batch_num = load_data['T1'][q_key].get('Batch Num', [])[0][dataset]
-
-                    exp_config = load_data['T1'][q_key].get('Exp Config', [])[0][dataset].decode()
-                    safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-
-                    exp_config = eval(exp_config, safe_globals)
-        
-                    if len(I)>0:
-                        T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
-                        T1_spec_cfg = exp_config['T1_ge']
-                        T1_class_instance.plot_results(I, Q, delay_times, date, T1_spec_cfg, self.figure_quality)
-                        del T1_class_instance
-        
-            del H5_class_instance
-
-    def load_plot_save_t2r(self):
-        # -------------------------------------------------------Load/Plot/Save T2R------------------------------------------
-        outerFolder_expt = self.outerFolder + "/Data_h5/T2_ge/"
-        h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
-        
-        for h5_file in h5_files:
-            save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
-            H5_class_instance = Data_H5(h5_file)
-            load_data = H5_class_instance.load_from_h5(data_type=  'T2', save_r = int(save_round))
-        
-            populated_keys = []
-            for q_key in load_data['T2']:
-                # Access 'Dates' for the current q_key
-                dates_list = load_data['T2'][q_key].get('Dates', [[]])
-        
-                # Check if any entry in 'Dates' is not NaN
-                if any(
-                        not np.isnan(date)
-                        for date in dates_list[0]  # Iterate over the first batch of dates
-                ):
-                    populated_keys.append(q_key)
-        
-            for q_key in populated_keys:
-                for dataset in range(len(load_data['T2'][q_key].get('Dates', [])[0])):
-                    #T2 = load_data['T2'][q_key].get('T2', [])[0][dataset]
-                    #errors = load_data['T2'][q_key].get('Errors', [])[0][dataset]
-                    date = datetime.datetime.fromtimestamp(load_data['T2'][q_key].get('Dates', [])[0][dataset])
-                    I = self.process_h5_data(load_data['T2'][q_key].get('I', [])[0][dataset].decode())
-                    Q = self.process_h5_data(load_data['T2'][q_key].get('Q', [])[0][dataset].decode())
-                    delay_times = self.process_h5_data(load_data['T2'][q_key].get('Delay Times', [])[0][dataset].decode())
-                    #fit = load_data['T2'][q_key].get('Fit', [])[0][dataset]
-                    round_num = load_data['T2'][q_key].get('Round Num', [])[0][dataset]
-                    batch_num = load_data['T2'][q_key].get('Batch Num', [])[0][dataset]
-
-                    exp_config = load_data['T2'][q_key].get('Exp Config', [])[0][dataset].decode()
-                    safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-
-                    exp_config = eval(exp_config, safe_globals)
-        
-                    if len(I) > 0:
-                        T2_class_instance = T2RMeasurement(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
-                        try:
-                            fitted, t2r_est, t2r_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)
-                        except Exception as e:
-                            print('Fit didnt work due to error: ', e)
-                            continue
-                        T2_cfg = exp_config['Ramsey_ge']
-                        T2_class_instance.plot_results(I, Q, delay_times, date, fitted, t2r_est, t2r_err, plot_sig, config = T2_cfg, fig_quality=self.figure_quality)
-                        del T2_class_instance
-        
-            del H5_class_instance
-
-    def load_plot_save_t2e(self):
-        # -------------------------------------------------------Load/Plot/Save T2E------------------------------------------
-        outerFolder_expt = self.outerFolder + "/Data_h5/T2E_ge/"
-        h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
-        
-        for h5_file in h5_files:
-            save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
-            H5_class_instance = Data_H5(h5_file)
-            load_data = H5_class_instance.load_from_h5(data_type=  'T2E', save_r = int(save_round))
-            populated_keys = []
-            for q_key in load_data['T2E']:
-                # Access 'Dates' for the current q_key
-                dates_list = load_data['T2E'][q_key].get('Dates', [[]])
-        
-                # Check if any entry in 'Dates' is not NaN
-                if any(
-                        not np.isnan(date)
-                        for date in dates_list[0]  # Iterate over the first batch of dates
-                ):
-                    populated_keys.append(q_key)
-        
-            for q_key in populated_keys:
-                for dataset in range(len(load_data['T2E'][q_key].get('Dates', [])[0])):
-                    #T2 = load_data['T2E'][q_key].get('T2', [])[0][dataset]
-                    #errors = load_data['T2E'][q_key].get('Errors', [])[0][dataset]
-                    date = datetime.datetime.fromtimestamp(load_data['T2E'][q_key].get('Dates', [])[0][dataset])
-                    I = self.process_h5_data(load_data['T2E'][q_key].get('I', [])[0][dataset].decode())
-                    Q = self.process_h5_data(load_data['T2E'][q_key].get('Q', [])[0][dataset].decode())
-                    delay_times = self.process_h5_data(load_data['T2E'][q_key].get('Delay Times', [])[0][dataset].decode())
-                    #fit = load_data['T2E'][q_key].get('Fit', [])[0][dataset]
-                    round_num = load_data['T2E'][q_key].get('Round Num', [])[0][dataset]
-                    batch_num = load_data['T2E'][q_key].get('Batch Num', [])[0][dataset]
-
-                    exp_config = load_data['T2E'][q_key].get('Exp Config', [])[0][dataset].decode()
-                    safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-
-                    exp_config = eval(exp_config, safe_globals)
-        
-                    if len(I) > 0:
-                        T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
-                        try:
-                            fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
-                        except Exception as e:
-                            print('Fit didnt work due to error: ', e)
-                            continue
-                        T2E_cfg = exp_config['SpinEcho_ge']
-                        T2E_class_instance.plot_results(I, Q, delay_times, date, fitted, t2e_est, t2e_err, plot_sig, config = T2E_cfg, fig_quality=self.figure_quality)
-                        del T2E_class_instance
-        
-            del H5_class_instance
-
-    def load_plot_save_ss_gef(self, plot_ssf_gef, process_one_file = False, file_to_process = None, qubit_index = None):
-
-        # ------------------------------------------------Load/Plot/Save g-e-f SS---------------------------------------
-        outerFolder_expt = self.outerFolder + "/Data_h5/SS_gef/" #checks folder for a single date
-
-        if process_one_file == False:
-            h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
-        if process_one_file == True:
-            h5_files = [file_to_process]
-
-        for h5_file in h5_files:
-
-            save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
-            H5_class_instance = Data_H5(h5_file)
-            load_data = H5_class_instance.load_from_h5(data_type='SS_gef', save_r=int(save_round))
-
-            # If a specific qubit is specified, filter the loaded data.
-            if qubit_index is not None:
-                if qubit_index in load_data['SS_gef']:
-                    # Keep only the data for the selected qubit.
-                    load_data['SS_gef'] = {qubit_index: load_data['SS_gef'][qubit_index]}
-                else:
-                    print(f"No data for qubit with index {qubit_index} found in file {h5_file}.")
-                    continue  # move to next file
-
-            populated_keys = []
-            for q_key in load_data['SS_gef']:
-                # Access 'Dates' for the current q_key
-                dates_list = load_data['SS_gef'][q_key].get('Dates', [[]])
-
-                # Check if any entry in 'Dates' is not NaN
-                if any(
-                        not np.isnan(date)
-                        for date in dates_list[0]  # Iterate over the first batch of dates
-                ):
-                    populated_keys.append(q_key)
-
-            for q_key in populated_keys:
-                for dataset in range(len(load_data['SS_gef'][q_key].get('Dates', [])[0])):
-                    date = datetime.datetime.fromtimestamp(load_data['SS_gef'][q_key].get('Dates', [])[0][dataset])
-                    angle = load_data['SS_gef'][q_key].get('Angle_ge', [])[0][dataset]
-                    # fidelity = load_data['SS_gef'][q_key].get('Fidelity', [])[0][dataset]
-                    I_g = self.process_h5_data(load_data['SS_gef'][q_key].get('I_g', [])[0][dataset].decode())
-                    Q_g = self.process_h5_data(load_data['SS_gef'][q_key].get('Q_g', [])[0][dataset].decode())
-                    I_e = self.process_h5_data(load_data['SS_gef'][q_key].get('I_e', [])[0][dataset].decode())
-                    Q_e = self.process_h5_data(load_data['SS_gef'][q_key].get('Q_e', [])[0][dataset].decode())
-                    I_f = self.process_h5_data(load_data['SS_gef'][q_key].get('I_f', [])[0][dataset].decode())
-                    Q_f = self.process_h5_data(load_data['SS_gef'][q_key].get('Q_f', [])[0][dataset].decode())
-                    round_num = load_data['SS_gef'][q_key].get('Round Num', [])[0][dataset]
-                    batch_num = load_data['SS_gef'][q_key].get('Batch Num', [])[0][dataset]
-                    # syst_config = load_data['SS_gef'][q_key].get('Syst Config', [])[0][dataset].decode()
-                    # exp_config = load_data['SS_gef'][q_key].get('Exp Config', [])[0][dataset].decode()
-                    # safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-                    # syst_config = eval(syst_config, safe_globals)
-                    # exp_config = eval(exp_config, safe_globals)
-                    from expt_config import expt_cfg as exp_config
-                    I_g = np.array(I_g)
-                    Q_g = np.array(Q_g)
-                    I_e = np.array(I_e)
-                    Q_e = np.array(Q_e)
-                    I_f = np.array(I_f)
-                    Q_f = np.array(Q_f)
-
-                    if len(Q_g) > 0:
-                        ss_class_instance = SingleShot_ef(q_key, self.number_of_qubits, self.outerFolder_save_plots,
-                                                       round_num, self.save_figs)
-
-                        if type(exp_config) is dict:
-                            readout_opt = exp_config['Readout_Optimization']
-                            if isinstance(readout_opt, str):
-                                ss_cfg = ast.literal_eval(readout_opt)
-                            else:
-                                ss_cfg = readout_opt
-                        else:
-                            ss_cfg = ast.literal_eval(exp_config['Readout_Optimization'].decode())
-                        if plot_ssf_gef:
-                            ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge = ss_class_instance.hist_ssf(data=[I_g, Q_g, I_e, Q_e, I_f, Q_f], cfg=ss_cfg, plot=True, fig_quality = 200)
-                        else:
-                            ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge = ss_class_instance.hist_ssf(
-                                data=[I_g, Q_g, I_e, Q_e, I_f, Q_f], cfg=ss_cfg, plot=False, fig_quality=200)
-                        del ss_class_instance
-                        del H5_class_instance
-            return I_g, Q_g, I_e, Q_e, I_f, Q_f, ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge # new arrays are the rotated data
-
 
     def load_plot_save_rabis_Qtemps(self, list_of_all_qubits):
         # ------------------------------------------------Load/Plot/Save Rabi---------------------------------------
@@ -809,11 +631,11 @@ class PlotAllRR:
             ax.grid(False)
 
             # Format the x-axis to show dates in a nice format
-            ax.set_ylim(100, 400)
-            # ax.set_yticks(np.linspace(25, 300, 12))
+            # ax.set_ylim(25, 300)
+            ax.set_yticks(np.linspace(25, 500, 12))
 
-            start_time = datetime.datetime(2025, 4, 11, 12, 30)
-            ax.set_xlim(left=start_time)
+            # start_time = datetime.datetime(2025, 4, 11, 12, 30)
+            # ax.set_xlim(left=start_time)
 
             ax.xaxis.set_major_locator(mdates.AutoDateLocator())
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))

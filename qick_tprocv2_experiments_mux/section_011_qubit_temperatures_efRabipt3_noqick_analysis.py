@@ -2,13 +2,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
 import datetime
-from build_task import *
-from build_state import *
+# from build_task import *
+# from build_state import *
+# from build_state_noqick import *
 # from expt_config import *
 from expt_config import *
 import copy
 # import visdom
 from scipy.signal import argrelextrema
+import os
 
 class Temps_EFAmpRabiExperiment:
     def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits,  outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
@@ -25,66 +27,15 @@ class Temps_EFAmpRabiExperiment:
         self.save_figs = save_figs
         self.experiment = experiment
         self.list_of_all_qubits = list_of_all_qubits
-        if experiment is not None:
-            self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
-            self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
-            self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-            if increase_qubit_reps:
-                    if self.QubitIndex==qubit_to_increase_reps_for:
-                        print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
-                        self.config["reps"] *= multiply_qubit_reps_by
-            print(f'Q {self.QubitIndex + 1} Round {self.round_num} EF Rabi configuration: ', self.config)
-
-
-    def run(self, soccfg, soc):
-        print(self.config)
-        amp_rabi1 = AmplitudeRabiProgram1(soccfg, reps=self.config['reps2'], final_delay=self.config['relax_delay'], cfg=self.config)
-        if self.live_plot:
-            I1, Q1, gains1 = self.live_plotting(amp_rabi1, soc)
-        else:
-            iq_list1 = amp_rabi1.acquire(soc, soft_avgs=self.config["rounds"], progress=True)
-            I1 = iq_list1[self.QubitIndex][0, :, 0]
-            Q1 = iq_list1[self.QubitIndex][0, :, 1]
-            gains1 = amp_rabi1.get_pulse_param('qubit_pulse', "gain", as_array=True)
-        q1_fit_cosine1, pi_amp1, A_amplitude1, amp_fit1 = self.plot_results( I1, Q1, gains1, config = self.config)
-
-
-        amp_rabi2 = AmplitudeRabiProgram2(soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
-                                          cfg=self.config)
-        if self.live_plot:
-            I2, Q2, gains2 = self.live_plotting(amp_rabi2, soc)
-        else:
-            iq_list2 = amp_rabi2.acquire(soc, soft_avgs=self.config["rounds"], progress=True)
-            I2 = iq_list2[self.QubitIndex][0, :, 0]
-            Q2 = iq_list2[self.QubitIndex][0, :, 1]
-            gains2 = amp_rabi2.get_pulse_param('qubit_pulse', "gain", as_array=True)
-        q1_fit_cosine2, pi_amp2, A_amplitude2, amp_fit2 = self.plot_results(I2, Q2, gains2, config=self.config)
-
-
-        return I1, Q1, gains1, q1_fit_cosine1, pi_amp1, A_amplitude1, amp_fit1, I2, Q2, gains2, q1_fit_cosine2, pi_amp2, A_amplitude2, amp_fit2, self.config
-
-
-    def live_plotting(self, amp_rabi, soc):
-        I = Q = expt_mags = expt_phases = expt_pop = None
-        viz = visdom.Visdom()
-        assert viz.check_connection(timeout_seconds=5), "Visdom server not connected!"
-
-        for ii in range(self.config["rounds"]):
-            iq_list = amp_rabi.acquire(soc, soft_avgs=1, progress=True)
-            gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
-
-            this_I = iq_list[self.QubitIndex][0, :, 0]
-            this_Q = iq_list[self.QubitIndex][0, :, 1]
-
-            if I is None:  # ii == 0
-                I, Q = this_I, this_Q
-            else:
-                I = (I * ii + this_I) / (ii + 1.0)
-                Q = (Q * ii + this_Q) / (ii + 1.0)
-
-            viz.line(X=gains, Y=I, opts=dict(height=400, width=700, title='Rabi I', showlegend=True, xlabel='expt_pts'),win='Rabi_I')
-            viz.line(X=gains, Y=Q, opts=dict(height=400, width=700, title='Rabi Q', showlegend=True, xlabel='expt_pts'),win='Rabi_Q')
-        return I, Q, gains
+        # if experiment is not None:
+        #     self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
+        #     self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
+        #     self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+        #     if increase_qubit_reps:
+        #             if self.QubitIndex==qubit_to_increase_reps_for:
+        #                 print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
+        #                 self.config["reps"] *= multiply_qubit_reps_by
+        #     print(f'Q {self.QubitIndex + 1} Round {self.round_num} EF Rabi configuration: ', self.config)
 
     def cosine(self, x, a, b, c, d):
 
@@ -299,110 +250,3 @@ class Temps_EFAmpRabiExperiment:
         """Creates a folder at the given path if it doesn't already exist."""
         if not os.path.exists(folder):
             os.makedirs(folder)
-
-
-class AmplitudeRabiProgram1(AveragerProgramV2):
-    def _initialize(self, cfg):
-        ro_ch = cfg['ro_ch']
-        res_ch = cfg['res_ch']
-        qubit_ch = cfg['qubit_ch']
-        self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
-                         mux_freqs=cfg['res_freq_ef'],
-                         mux_gains=cfg['res_gain_ef'],
-                         mux_phases=cfg['res_phase'],
-                         mixer_freq=cfg['mixer_freq'])
-        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ef'], cfg['ro_phase']):
-            self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
-
-        self.add_pulse(ch=res_ch, name="res_pulse",
-                       style="const",
-                       length=cfg["res_length"],
-                       mask=cfg["list_of_all_qubits"],
-                       )
-
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
-
-        self.add_gauss(ch=qubit_ch, name="ge_ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
-        self.add_pulse(ch=qubit_ch, name="pi_ge",
-                       style="arb",
-                       envelope="ge_ramp",
-                       freq=cfg['qubit_freq_ge'],
-                       phase=cfg['qubit_phase'],
-                       gain=cfg['pi_amp'],
-                       )
-
-        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma_ef'], length=cfg['sigma_ef'] * 4, even_length=False)
-        self.add_pulse(ch=qubit_ch, name="qubit_pulse",
-                       style="arb",
-                       envelope="ramp",
-                       freq=cfg['qubit_freq_ef'],
-                       phase=cfg['qubit_phase'],
-                       gain=cfg['qubit_gain_ef'],
-                       )
-
-        self.add_loop("gainloop", cfg["steps"])
-
-    def _body(self, cfg): #this gives A_e
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # f-e pulse
-        self.delay_auto(t=0.0, tag='waiting')  # wait
-
-        self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play ge pi pulse
-        self.delay_auto(t=0.0, tag='waiting after pi')  # Wait til ge pi pulse is done before proceeding
-
-        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # probe pulse
-        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
-
-class AmplitudeRabiProgram2(AveragerProgramV2):
-    def _initialize(self, cfg):
-        ro_ch = cfg['ro_ch']
-        res_ch = cfg['res_ch']
-        qubit_ch = cfg['qubit_ch']
-        self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
-                         mux_freqs=cfg['res_freq_ef'],
-                         mux_gains=cfg['res_gain_ef'],
-                         mux_phases=cfg['res_phase'],
-                         mixer_freq=cfg['mixer_freq'])
-        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ef'], cfg['ro_phase']):
-            self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
-
-        self.add_pulse(ch=res_ch, name="res_pulse",
-                       style="const",
-                       length=cfg["res_length"],
-                       mask=cfg["list_of_all_qubits"],
-                       )
-
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
-
-        self.add_gauss(ch=qubit_ch, name="ge_ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
-        self.add_pulse(ch=qubit_ch, name="pi_ge",
-                       style="arb",
-                       envelope="ge_ramp",
-                       freq=cfg['qubit_freq_ge'],
-                       phase=cfg['qubit_phase'],
-                       gain=cfg['pi_amp'],
-                       )
-
-        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma_ef'], length=cfg['sigma_ef'] * 4,
-                       even_length=False)
-        self.add_pulse(ch=qubit_ch, name="qubit_pulse",
-                       style="arb",
-                       envelope="ramp",
-                       freq=cfg['qubit_freq_ef'],
-                       phase=cfg['qubit_phase'],
-                       gain=cfg['qubit_gain_ef'],
-                       )
-
-        self.add_loop("gainloop", cfg["steps"])
-
-    def _body(self, cfg): # this gives A_g
-        self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play ge pi pulse
-        self.delay_auto(t=0.0, tag='waiting after pi')  # Wait til ge pi pulse is done before proceeding
-
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # f-e pulse
-        self.delay_auto(t=0.0, tag='waiting')  # wait
-
-        self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play ge pi pulse
-        self.delay_auto(t=0.0, tag='2nd waiting after pi')  # Wait til ge pi pulse is done before proceeding
-
-        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # probe pulse
-        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
