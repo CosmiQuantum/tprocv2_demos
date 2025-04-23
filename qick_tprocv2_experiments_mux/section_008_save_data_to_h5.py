@@ -92,13 +92,14 @@ class Data_H5:
 
     def load_from_h5(self, data_type,  save_r=1):  # Added save_r as parameter.
         """Loads data from an HDF5 file into specified dictionary format."""
-
+        mode = 'r'
         if data_type == 'Qtemps': #to switch from old naming convention to new naming convention for qubit temp data
             data_type = 'q_temperatures'
+            mode = 'r+'
 
         data = {data_type: {}}  # Initialize the main dictionary with the data_type.
 
-        with h5py.File(self.outerFolder_expt, 'r+') as f:
+        with h5py.File(self.outerFolder_expt, mode) as f:
             for qubit_group in f.keys():
                 qubit_index = int(qubit_group[1:]) - 1
                 qubit_data = {}
