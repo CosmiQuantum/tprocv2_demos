@@ -41,12 +41,14 @@ outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemp
 os.makedirs(outerFolder_qtemps_plots, exist_ok=True)
 
 # --- Walking through all the subdirectories ---
+filter_keyword = 'source_off'  # or 'source_on'
 combined_qtemp_data = [] # list of results from different .h5 files
 for root, dirs, files in os.walk(base_dir):
     for d in dirs:
+        full_path = os.path.join(root, d)
         # Match folders like '2025-04-16_11-47-09' based on prefix date
-        if any(d.startswith(date) for date in target_dates) and len(d) >= 19:
-            optimization_path = os.path.join(root, d, "optimization")
+        if any(d.startswith(date) for date in target_dates) and len(d) >= 19 and filter_keyword in full_path: # also checks if path includes the keyword (source_off or source_on)
+            optimization_path = os.path.join(full_path, "optimization")
             if os.path.isdir(optimization_path):
                 date_string = d[:10]  # Extract 'YYYY-MM-DD'
                 print(f"Analyzing: {optimization_path}")
@@ -72,7 +74,7 @@ for root, dirs, files in os.walk(base_dir):
 plotter.plot_qubit_temperatures_vs_time(combined_qtemp_data)
 
 #Histograms of Qubit temperatures
-# plotter.plot_qubit_temperature_histograms(combined_qtemp_data)
+plotter.plot_qubit_temperature_histograms(combined_qtemp_data)
 
 #Excited state populations (P_e) vs time
 # plotter.plot_qubit_pe_vs_time(combined_qtemp_data)
