@@ -66,7 +66,7 @@ if FRIDGE == "QUIET":
             "rounds": 1,  # 10
             "start": list(VNA_qubit - 30),  # [MHz]
             "stop": list(VNA_qubit + 30),  # [MHz]
-            "steps": 1200,  # 100
+            "steps": 600,  # 100
             "relax_delay": 10,  # 1000, # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -169,7 +169,7 @@ if FRIDGE == "QUIET":
             "rounds": 1, #1
             "start": [0.0] * 6,  # [us]
             "stop": [200]*6, #[250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
-            "steps": 30,
+            "steps": 60,
             "relax_delay": 600,  # [us] ### Should be >10x T1!
             "wait_time": 0.0,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
@@ -231,7 +231,7 @@ if FRIDGE == "QUIET":
             "start_freq": 0,
             "end_freq": 0,
             "readout_pulse_delay": 2,  # 2/kappa
-            "detuning": [-20, -10, -10, -10, -10, -10],  # [MHz]
+            "detuning": [-20, -10, -10, -10, -15, -10],  # [MHz]
             "stark_gain": [],
         },
 
@@ -245,9 +245,9 @@ if FRIDGE == "QUIET":
             "gain_steps": 100, #for each branch of pos,neg detuning stark and for entire res stark
             "start_gain": 0.0,
             "end_gain": 1.0, #res gain values between -1 and 1, convert to qubit freq shift w/ stark ramsey
-            "readout_pulse_delay": 2, #10/kappa
+            "readout_pulse_delay": 2, #2/kappa
             "relax_delay": 400, #[us]
-            "detuning": [-20, -10, -10, -10, -10, -10], #[MHz] start w/negative detuning, script flips to positive halfway thru scan
+            "detuning": [-20, -10, -10, -10, -15, -10], #[MHz] start w/negative detuning, script flips to positive halfway thru scan
             "stark_sigma": 0.01,  # [us] 10 ns
             "stark_gain": [],
             "anharmonicity": [172.34, 176.38, 167.13, 172.57, 172.03, 161.14],

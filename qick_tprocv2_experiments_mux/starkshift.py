@@ -339,7 +339,8 @@ class StarkShiftSpec:
         self.config['detuning'] = self.config['detuning'][self.QubitIndex]
 
         # run with negative detuning
-        self.config['stark_gain'] = QickSweep1D("gain_loop", -1 *self.config['end_gain'], self.config['start_gain'])
+        #self.config['stark_gain'] = QickSweep1D("gain_loop", -1 *self.config['end_gain'], self.config['start_gain'])
+        self.config['stark_gain'] = QickSweep1D("gain_loop", self.config['start_gain'], self.config['end_gain'])
         prog_neg = StarkShiftSpectroscopyProgram(self.experiment.soccfg, reps=self.config['reps'],
                                              final_delay=self.config['relax_delay'],
                                              cfg=self.config)
@@ -350,11 +351,12 @@ class StarkShiftSpec:
         raw_0 = prog_neg.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
         shots_0 = prog_neg.get_shots()  # state assignment from built in thresholding
 
-        I_neg = np.transpose(raw_0[self.QubitIndex][:,:,0,0])
-        Q_neg = np.transpose(raw_0[self.QubitIndex][:,:,0,1])
-        shots_neg = np.transpose(shots_0[self.QubitIndex][:,:,0])
-        P_neg = np.transpose(iq_list[self.QubitIndex][:,:,0])
-        gain_sweep_neg = prog_neg.get_pulse_param("stark_tone", "gain", as_array=True)
+        #flip all data for continuous frequency sweep format
+        I_neg = np.flip(np.transpose(raw_0[self.QubitIndex][:,:,0,0]), axis=0)
+        Q_neg = np.flip(np.transpose(raw_0[self.QubitIndex][:,:,0,1]), axis=0)
+        shots_neg = np.flip(np.transpose(shots_0[self.QubitIndex][:,:,0]), axis=0)
+        P_neg = np.flip(np.transpose(iq_list[self.QubitIndex][:,:,0]),axis=0)
+        gain_sweep_neg = np.flip(prog_neg.get_pulse_param("stark_tone", "gain", as_array=True),axis=0)
 
         # run with positive detuning
         self.config['detuning'] = self.config['detuning'] * -1
