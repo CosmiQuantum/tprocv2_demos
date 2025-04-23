@@ -338,49 +338,49 @@ def run_optimization(QubitIndex, ss_sample_number, res_sample_number, experiment
     t2 = time.perf_counter()
     print(f"g-e Qspec took {t2 - t1:.4f} seconds")
 
-#   ################################################ Extended Qubit Spec ################################################
-#   rr_logger.info("----------------- Optimization: Starting Extended Freq Range Qubit Spec g-e  -----------------")
-#   if verbose:
-#       print("----------------- Optimization: Starting Extended Freq Range Qubit Spec g-e -----------------")
-#
-#   ext_qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
-#   qubit_gain_temp = experiment.qubit_cfg['qubit_gain_ge']
-#   try:
-#       experiment.qubit_cfg['qubit_gain_ge'] = np.ones(len(qubit_gain_temp))
-#       ext_q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, 0,
-#                                  signal, save_figs=save_figs, experiment=experiment,
-#                                  live_plot=live_plot, verbose=verbose, logger=rr_logger,
-#                                  qick_verbose=qick_verbose, increase_reps = True, increase_reps_to = 500,
-#                                  ext_q_spec=True, fit_data=False)
-#       (ext_qspec_I, ext_qspec_Q, ext_qspec_freqs, ext_qspec_I_fit, ext_qspec_Q_fit,
-#        ext_qubit_freq, sys_config_ext_qspec) = ext_q_spec.run()
-#
-#       del ext_q_spec
-#
-#       ext_qspec_data[QubitIndex]['Dates'][0] = (
-#           time.mktime(datetime.datetime.now().timetuple()))
-#       ext_qspec_data[QubitIndex]['I'][0] = ext_qspec_I
-#       ext_qspec_data[QubitIndex]['Q'][0] = ext_qspec_Q
-#       ext_qspec_data[QubitIndex]['Frequencies'][0] = ext_qspec_freqs
-#       ext_qspec_data[QubitIndex]['Round Num'][0] = 0
-#       ext_qspec_data[QubitIndex]['Batch Num'][0] = 0
-#       ext_qspec_data[QubitIndex]['Exp Config'][0] = expt_cfg
-#       ext_qspec_data[QubitIndex]['Syst Config'][0] = sys_config_ext_qspec
-#
-#       saver_ext_qspec = Data_H5(optimizationFolder, ext_qspec_data, 0, save_r)
-#       saver_ext_qspec.save_to_h5('extended_qspec_ge')
-#       del saver_ext_qspec
-#       del ext_qspec_data
-#
-#   except Exception as e:
-#       if debug_mode:
-#           raise  # In debug mode, re-raise the exception immediately
-#       rr_logger.exception(f"Extended QubitSpectroscopy error on qubit {QubitIndex +1}: {e}")
-#       return
-#   experiment.qubit_cfg['qubit_gain_ge'] = qubit_gain_temp
-#
-   t3 = time.perf_counter()
-   print(f"Extended Qspec took {t3 - t2:.4f} seconds")
+    #   ################################################ Extended Qubit Spec ################################################
+    #   rr_logger.info("----------------- Optimization: Starting Extended Freq Range Qubit Spec g-e  -----------------")
+    #   if verbose:
+    #       print("----------------- Optimization: Starting Extended Freq Range Qubit Spec g-e -----------------")
+    #
+    #   ext_qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
+    #   qubit_gain_temp = experiment.qubit_cfg['qubit_gain_ge']
+    #   try:
+    #       experiment.qubit_cfg['qubit_gain_ge'] = np.ones(len(qubit_gain_temp))
+    #       ext_q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, 0,
+    #                                  signal, save_figs=save_figs, experiment=experiment,
+    #                                  live_plot=live_plot, verbose=verbose, logger=rr_logger,
+    #                                  qick_verbose=qick_verbose, increase_reps = True, increase_reps_to = 500,
+    #                                  ext_q_spec=True, fit_data=False)
+    #       (ext_qspec_I, ext_qspec_Q, ext_qspec_freqs, ext_qspec_I_fit, ext_qspec_Q_fit,
+    #        ext_qubit_freq, sys_config_ext_qspec) = ext_q_spec.run()
+    #
+    #       del ext_q_spec
+    #
+    #       ext_qspec_data[QubitIndex]['Dates'][0] = (
+    #           time.mktime(datetime.datetime.now().timetuple()))
+    #       ext_qspec_data[QubitIndex]['I'][0] = ext_qspec_I
+    #       ext_qspec_data[QubitIndex]['Q'][0] = ext_qspec_Q
+    #       ext_qspec_data[QubitIndex]['Frequencies'][0] = ext_qspec_freqs
+    #       ext_qspec_data[QubitIndex]['Round Num'][0] = 0
+    #       ext_qspec_data[QubitIndex]['Batch Num'][0] = 0
+    #       ext_qspec_data[QubitIndex]['Exp Config'][0] = expt_cfg
+    #       ext_qspec_data[QubitIndex]['Syst Config'][0] = sys_config_ext_qspec
+    #
+    #       saver_ext_qspec = Data_H5(optimizationFolder, ext_qspec_data, 0, save_r)
+    #       saver_ext_qspec.save_to_h5('extended_qspec_ge')
+    #       del saver_ext_qspec
+    #       del ext_qspec_data
+    #
+    #   except Exception as e:
+    #       if debug_mode:
+    #           raise  # In debug mode, re-raise the exception immediately
+    #       rr_logger.exception(f"Extended QubitSpectroscopy error on qubit {QubitIndex +1}: {e}")
+    #       return
+    #   experiment.qubit_cfg['qubit_gain_ge'] = qubit_gain_temp
+    #
+    t3 = time.perf_counter()
+    print(f"Extended Qspec took {t3 - t2:.4f} seconds")
 #
 #   ################################################ g-e amp rabi ################################################
     rr_logger.info("----------------- Optimization: Starting Amplitude Rabi g-e  -----------------")
@@ -562,112 +562,112 @@ def run_optimization(QubitIndex, ss_sample_number, res_sample_number, experiment
     t7 = time.perf_counter()
     print(f"g-e T1 with long relax delay took {t7 - t6:.4f} seconds")
 
-#    ############################################ stark shift calibration ########################################
-#
-#    rr_logger.info("----------------- Optimization: Starting stark shift calibration   -----------------")
-#    if verbose:
-#        print("----------------- Optimization: Starting stark shift calibration  -----------------")
-#
-#    stark_pos_data = create_data_dict(stark2D_keys, save_r, list_of_all_qubits) #for positive detuning
-#    stark_neg_data = create_data_dict(stark2D_keys, save_r, list_of_all_qubits) #for negative detuning
-#
-#    try:
-#        stark_shift_2D_pos = StarkShift2D(QubitIndex, tot_num_of_qubits, optimizationFolder, save_figs, experiment=experiment)
-#        stark_pos_I, stark_pos_Q, stark_pos_qu_freq_sweep, stark_pos_gain_sweep, sys_config_stark_pos = stark_shift_2D_pos.run(set_pos_detuning=True)
-#
-#        stark_pos_data[QubitIndex]['Dates'][0] = time.mktime(datetime.datetime.now().timetuple())
-#        stark_pos_data[QubitIndex]['I'][0] = stark_pos_I
-#        stark_pos_data[QubitIndex]['Q'][0] = stark_pos_Q
-#        stark_pos_data[QubitIndex]['Qu Frequency Sweep'][0] = stark_pos_qu_freq_sweep
-#        stark_pos_data[QubitIndex]['Res Gain Sweep'][0] = stark_pos_gain_sweep
-#        stark_pos_data[QubitIndex]['Round Num'][0] = 0
-#        stark_pos_data[QubitIndex]['Batch Num'][0] = 0
-#        stark_pos_data[QubitIndex]['Exp Config'][0] = expt_cfg
-#        stark_pos_data[QubitIndex]['Syst Config'][0] = sys_config_stark_pos
-#
-#        saver_stark_pos = Data_H5(optimizationFolder, stark_pos_data, 0, save_r)
-#        saver_stark_pos.save_to_h5('stark_pos_detuning_calibration')
-#
-#        del saver_stark_pos
-#        del stark_shift_2D_pos
-#        del stark_pos_data
-#
-#        stark_shift_2D_neg = StarkShift2D(QubitIndex, tot_num_of_qubits, optimizationFolder, save_figs, experiment=experiment)
-#        stark_neg_I, stark_neg_Q, stark_neg_qu_freq_sweep, stark_neg_gain_sweep, sys_config_stark_neg = stark_shift_2D_neg.run(set_pos_detuning=False)
-#
-#        stark_neg_data[QubitIndex]['Dates'][0] = time.mktime(datetime.datetime.now().timetuple())
-#        stark_neg_data[QubitIndex]['I'][0] = stark_neg_I
-#        stark_neg_data[QubitIndex]['Q'][0] = stark_neg_Q
-#        stark_neg_data[QubitIndex]['Qu Frequency Sweep'][0] = stark_neg_qu_freq_sweep
-#        stark_neg_data[QubitIndex]['Res Gain Sweep'][0] = stark_neg_gain_sweep
-#        stark_neg_data[QubitIndex]['Round Num'][0] = 0
-#        stark_neg_data[QubitIndex]['Batch Num'][0] = 0
-#        stark_neg_data[QubitIndex]['Exp Config'][0] = expt_cfg
-#        stark_neg_data[QubitIndex]['Syst Config'][0] = sys_config_stark_neg
-#
-#        saver_stark_neg = Data_H5(optimizationFolder, stark_neg_data, 0, save_r)
-#        saver_stark_neg.save_to_h5('stark_neg_detuning_calibration')
-#
-#        del saver_stark_neg
-#        del stark_shift_2D_neg
-#        del stark_neg_data
-#        gc.collect()
-#
-#    except Exception as e:
-#        if debug_mode:
-#            raise  # In debug mode, re-raise the exception immediately
-#        else:
-#            rr_logger.exception(f'Got the following error, continuing: {e}')
-#            if verbose: print(f'Got the following error, continuing: {e}')
-#
+    #    ############################################ stark shift calibration ########################################
+    #
+    #    rr_logger.info("----------------- Optimization: Starting stark shift calibration   -----------------")
+    #    if verbose:
+    #        print("----------------- Optimization: Starting stark shift calibration  -----------------")
+    #
+    #    stark_pos_data = create_data_dict(stark2D_keys, save_r, list_of_all_qubits) #for positive detuning
+    #    stark_neg_data = create_data_dict(stark2D_keys, save_r, list_of_all_qubits) #for negative detuning
+    #
+    #    try:
+    #        stark_shift_2D_pos = StarkShift2D(QubitIndex, tot_num_of_qubits, optimizationFolder, save_figs, experiment=experiment)
+    #        stark_pos_I, stark_pos_Q, stark_pos_qu_freq_sweep, stark_pos_gain_sweep, sys_config_stark_pos = stark_shift_2D_pos.run(set_pos_detuning=True)
+    #
+    #        stark_pos_data[QubitIndex]['Dates'][0] = time.mktime(datetime.datetime.now().timetuple())
+    #        stark_pos_data[QubitIndex]['I'][0] = stark_pos_I
+    #        stark_pos_data[QubitIndex]['Q'][0] = stark_pos_Q
+    #        stark_pos_data[QubitIndex]['Qu Frequency Sweep'][0] = stark_pos_qu_freq_sweep
+    #        stark_pos_data[QubitIndex]['Res Gain Sweep'][0] = stark_pos_gain_sweep
+    #        stark_pos_data[QubitIndex]['Round Num'][0] = 0
+    #        stark_pos_data[QubitIndex]['Batch Num'][0] = 0
+    #        stark_pos_data[QubitIndex]['Exp Config'][0] = expt_cfg
+    #        stark_pos_data[QubitIndex]['Syst Config'][0] = sys_config_stark_pos
+    #
+    #        saver_stark_pos = Data_H5(optimizationFolder, stark_pos_data, 0, save_r)
+    #        saver_stark_pos.save_to_h5('stark_pos_detuning_calibration')
+    #
+    #        del saver_stark_pos
+    #        del stark_shift_2D_pos
+    #        del stark_pos_data
+    #
+    #        stark_shift_2D_neg = StarkShift2D(QubitIndex, tot_num_of_qubits, optimizationFolder, save_figs, experiment=experiment)
+    #        stark_neg_I, stark_neg_Q, stark_neg_qu_freq_sweep, stark_neg_gain_sweep, sys_config_stark_neg = stark_shift_2D_neg.run(set_pos_detuning=False)
+    #
+    #        stark_neg_data[QubitIndex]['Dates'][0] = time.mktime(datetime.datetime.now().timetuple())
+    #        stark_neg_data[QubitIndex]['I'][0] = stark_neg_I
+    #        stark_neg_data[QubitIndex]['Q'][0] = stark_neg_Q
+    #        stark_neg_data[QubitIndex]['Qu Frequency Sweep'][0] = stark_neg_qu_freq_sweep
+    #        stark_neg_data[QubitIndex]['Res Gain Sweep'][0] = stark_neg_gain_sweep
+    #        stark_neg_data[QubitIndex]['Round Num'][0] = 0
+    #        stark_neg_data[QubitIndex]['Batch Num'][0] = 0
+    #        stark_neg_data[QubitIndex]['Exp Config'][0] = expt_cfg
+    #        stark_neg_data[QubitIndex]['Syst Config'][0] = sys_config_stark_neg
+    #
+    #        saver_stark_neg = Data_H5(optimizationFolder, stark_neg_data, 0, save_r)
+    #        saver_stark_neg.save_to_h5('stark_neg_detuning_calibration')
+    #
+    #        del saver_stark_neg
+    #        del stark_shift_2D_neg
+    #        del stark_neg_data
+    #        gc.collect()
+    #
+    #    except Exception as e:
+    #        if debug_mode:
+    #            raise  # In debug mode, re-raise the exception immediately
+    #        else:
+    #            rr_logger.exception(f'Got the following error, continuing: {e}')
+    #            if verbose: print(f'Got the following error, continuing: {e}')
+    #
     t8 = time.perf_counter()
     print(f"fixed detuning stark shift calibration took {t8 - t7:.4f} seconds")
-#
-#    ############################################ resonator stark shift calibration ########################################
-#
-#    rr_logger.info("----------------- Optimization: Starting resonator stark shift calibration   -----------------")
-#    if verbose:
-#            print("----------------- Optimization: Starting resonator stark shift calibration  -----------------")
-#
-#    res_stark_data = create_data_dict(stark2D_keys, save_r, list_of_all_qubits)
-#    res_freq_stark = copy.deepcopy(experiment.readout_cfg['res_freq_ge'])
-#    res_freq_stark.append(res_freq_stark[QubitIndex])
-#
-#    res_phase_stark = copy.deepcopy(experiment.readout_cfg['res_phase'])
-#    res_phase_stark.append(res_phase_stark[QubitIndex])
-#
-#    try:
-#            res_stark_shift_2D = ResStarkShift2D(QubitIndex, tot_num_of_qubits, optimizationFolder, res_freq_stark, res_phase_stark, save_figs, experiment=experiment)
-#            stark_res_I, stark_res_Q, stark_res_qu_freq_sweep, stark_res_gain_sweep, sys_config_stark_res = res_stark_shift_2D.run()
-#
-#            res_stark_data[QubitIndex]['Dates'][0] = time.mktime(datetime.datetime.now().timetuple())
-#            res_stark_data[QubitIndex]['I'][0] = stark_res_I
-#            res_stark_data[QubitIndex]['Q'][0] = stark_res_Q
-#            res_stark_data[QubitIndex]['Qu Frequency Sweep'][0] = stark_res_qu_freq_sweep
-#            res_stark_data[QubitIndex]['Res Gain Sweep'][0] = stark_res_gain_sweep
-#            res_stark_data[QubitIndex]['Round Num'][0] = 0
-#            res_stark_data[QubitIndex]['Batch Num'][0] = 0
-#            res_stark_data[QubitIndex]['Exp Config'][0] = expt_cfg
-#            res_stark_data[QubitIndex]['Syst Config'][0] = sys_config_stark_res
-#
-#            saver_stark_res = Data_H5(optimizationFolder, res_stark_data, 0, save_r)
-#            saver_stark_res.save_to_h5('stark_res_calibration')
-#
-#            del saver_stark_res
-#            del res_stark_shift_2D
-#            del res_stark_data
-#            gc.collect()
-#
-#    except Exception as e:
-#            if debug_mode:
-#                raise  # In debug mode, re-raise the exception immediately
-#            else:
-#                rr_logger.exception(f'Got the following error, continuing: {e}')
-#                if verbose: print(f'Got the following error, continuing: {e}')
-#
+    #
+    #    ############################################ resonator stark shift calibration ########################################
+    #
+    #    rr_logger.info("----------------- Optimization: Starting resonator stark shift calibration   -----------------")
+    #    if verbose:
+    #            print("----------------- Optimization: Starting resonator stark shift calibration  -----------------")
+    #
+    #    res_stark_data = create_data_dict(stark2D_keys, save_r, list_of_all_qubits)
+    #    res_freq_stark = copy.deepcopy(experiment.readout_cfg['res_freq_ge'])
+    #    res_freq_stark.append(res_freq_stark[QubitIndex])
+    #
+    #    res_phase_stark = copy.deepcopy(experiment.readout_cfg['res_phase'])
+    #    res_phase_stark.append(res_phase_stark[QubitIndex])
+    #
+    #    try:
+    #            res_stark_shift_2D = ResStarkShift2D(QubitIndex, tot_num_of_qubits, optimizationFolder, res_freq_stark, res_phase_stark, save_figs, experiment=experiment)
+    #            stark_res_I, stark_res_Q, stark_res_qu_freq_sweep, stark_res_gain_sweep, sys_config_stark_res = res_stark_shift_2D.run()
+    #
+    #            res_stark_data[QubitIndex]['Dates'][0] = time.mktime(datetime.datetime.now().timetuple())
+    #            res_stark_data[QubitIndex]['I'][0] = stark_res_I
+    #            res_stark_data[QubitIndex]['Q'][0] = stark_res_Q
+    #            res_stark_data[QubitIndex]['Qu Frequency Sweep'][0] = stark_res_qu_freq_sweep
+    #            res_stark_data[QubitIndex]['Res Gain Sweep'][0] = stark_res_gain_sweep
+    #            res_stark_data[QubitIndex]['Round Num'][0] = 0
+    #            res_stark_data[QubitIndex]['Batch Num'][0] = 0
+    #            res_stark_data[QubitIndex]['Exp Config'][0] = expt_cfg
+    #            res_stark_data[QubitIndex]['Syst Config'][0] = sys_config_stark_res
+    #
+    #            saver_stark_res = Data_H5(optimizationFolder, res_stark_data, 0, save_r)
+    #            saver_stark_res.save_to_h5('stark_res_calibration')
+    #
+    #            del saver_stark_res
+    #            del res_stark_shift_2D
+    #            del res_stark_data
+    #            gc.collect()
+    #
+    #    except Exception as e:
+    #            if debug_mode:
+    #                raise  # In debug mode, re-raise the exception immediately
+    #            else:
+    #                rr_logger.exception(f'Got the following error, continuing: {e}')
+    #                if verbose: print(f'Got the following error, continuing: {e}')
+    #
     t9 = time.perf_counter()
     print(f"resonator stark shift calibration took {t9 - t8:.4f} seconds")
-#
+    #
     ############################################## res spec ef ####################################################
     rr_logger.info("----------------- Optimization: Starting Res Spec EF  -----------------")
     if verbose:
