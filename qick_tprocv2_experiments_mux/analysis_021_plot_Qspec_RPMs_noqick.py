@@ -671,7 +671,7 @@ class PlotRR_noQick:
                 end_time = datetime.datetime.combine(date_to_plot, time_end)
                 #Use finer ticks with hour detail
                 ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))
+                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H'))
             else:
                 #Use coarse ticks with just date
                 ax.xaxis.set_major_locator(mdates.DayLocator())
