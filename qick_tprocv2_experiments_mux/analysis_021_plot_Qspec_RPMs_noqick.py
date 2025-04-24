@@ -670,7 +670,6 @@ class PlotRR_noQick:
             if restrict_time_xaxis:
                 start_time = localize_cdt(datetime.datetime.combine(date_to_plot, time_start))
                 end_time = localize_cdt(datetime.datetime.combine(date_to_plot, time_end))
-                ax.set_xlim(start_time, end_time)
                 #Use finer ticks with hour detail
                 ax.xaxis.set_major_locator(mdates.AutoDateLocator())
                 ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))
@@ -715,6 +714,9 @@ class PlotRR_noQick:
                 ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
                 ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90,
                         verticalalignment='top', horizontalalignment='right', fontsize=10)
+
+            if restrict_time_xaxis:
+                ax.set_xlim(start_time, end_time)
 
         # Add a shared X label
         for ax in axes:
