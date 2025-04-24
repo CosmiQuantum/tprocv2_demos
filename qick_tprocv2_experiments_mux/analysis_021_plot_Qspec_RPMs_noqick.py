@@ -657,9 +657,6 @@ class PlotRR_noQick:
 
             ax = axes[q]
 
-            ax.xaxis.set_major_locator(mdates.DayLocator())  # one tick per day
-            ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))  # format: MM-DD
-
             if not times:
                 ax.set_visible(False)
                 continue
@@ -674,8 +671,13 @@ class PlotRR_noQick:
                 start_time = localize_cdt(datetime.datetime.combine(date_to_plot, time_start))
                 end_time = localize_cdt(datetime.datetime.combine(date_to_plot, time_end))
                 ax.set_xlim(start_time, end_time)
+                #Use finer ticks with hour detail
                 ax.xaxis.set_major_locator(mdates.AutoDateLocator())
                 ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))
+            else:
+                #Use coarse ticks with just date
+                ax.xaxis.set_major_locator(mdates.DayLocator())
+                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
 
             # Use scatter instead of plot to avoid connecting lines
             ax.scatter(times, temps, marker='o', color=colors[q % len(colors)], label=f"Q{q + 1}")
