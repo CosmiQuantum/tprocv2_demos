@@ -728,7 +728,7 @@ class PlotRR_noQick:
                 color = label_to_color[label]
                 ax.axvline(vtime, color=color, linestyle='--', linewidth=1)
                 if label not in used_labels:
-                    legend_handles.append(Line2D([0], [0], color=color, linestyle='--', label=label))
+                    legend_handles.append(Line2D([0], [0], color=color, linestyle='--', label=label, alpha=1.0))
                     used_labels.add(label)
 
             if restrict_time_xaxis:
