@@ -713,6 +713,10 @@ class PlotRR_noQick:
                   for t, label in events_0423)
             ]
 
+            # Only keep events within the plot window if restrict_time_xaxis is True
+            if restrict_time_xaxis:
+                extra_events = [(vtime, label) for vtime, label in extra_events if start_time <= vtime <= end_time]
+
             # Map each unique label to a unique color
             unique_labels = list(dict.fromkeys(label for _, label in extra_events))
             # cmap = cm.get_cmap('tab20', len(unique_labels)) pastels
