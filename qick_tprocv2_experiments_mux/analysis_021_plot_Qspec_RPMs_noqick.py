@@ -611,10 +611,33 @@ class PlotRR_noQick:
 
         fig.suptitle("Qubit Temperatures vs. Time", fontsize=16)
 
-        #radiation source timestamps
         cdt = pytz.timezone('America/Chicago')
+
+        def localize_cdt(dt):
+            return dt if dt.tzinfo else cdt.localize(dt)
+
+        # radiation source timestamps
         co60_time = cdt.localize(datetime.datetime(2025, 4, 21, 12, 35))
         cs137_time = cdt.localize(datetime.datetime(2025, 4, 23, 12, 53))
+
+        events_0418 = [
+            ("11:50", "Daniel Entry"),
+            ("13:30", "Daniel Exit"),
+            ("14:53", "Daniel Entry"),
+            ("15:00", "Door Intermission"),
+            ("15:06", "Exit/Re-entry Daniel"),
+            ("15:12", "Ryan"),
+            ("15:40", "Door Intermission"),
+            ("16:11", "Daniel Exit"),
+            ("16:12", "Daniel Re-entry"),
+            ("16:16", "Daniel Final Exit")]
+
+        events_0423 = [
+            ("12:50", "Dan-Joyce Entry"),
+            ("13:47", "Grace Entry"),
+            ("16:40", "Kester-Grace Entry")]
+
+
 
         for q in range(num_qubits):
             times = []
@@ -656,6 +679,18 @@ class PlotRR_noQick:
                 ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90, verticalalignment='top',
                         horizontalalignment='right', fontsize=10)
 
+            event_date_0418 = datetime.date(2025, 4, 18)
+            event_date_0423 = datetime.date(2025, 4, 23)
+            extra_events = [
+                *((localize_cdt(datetime.datetime.combine(event_date_0418, datetime.time.fromisoformat(t))), label)
+                  for t, label in events_0418),
+                *((localize_cdt(datetime.datetime.combine(event_date_0423, datetime.time.fromisoformat(t))), label)
+                  for t, label in events_0423)
+            ]
+            for vtime, label in extra_events:
+                ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
+                ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90,
+                        verticalalignment='top', horizontalalignment='right', fontsize=10)
 
         # Add a shared X label
         for ax in axes:
