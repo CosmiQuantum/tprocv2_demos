@@ -610,6 +610,10 @@ class PlotRR_noQick:
 
         fig.suptitle("Qubit Temperatures vs. Time", fontsize=16)
 
+        #radiation source timestamps
+        co60_time = datetime.datetime(2025, 4, 21, 12, 35)
+        cs137_time = datetime.datetime(2025, 4, 23, 12, 53)
+
         for q in range(num_qubits):
             times = []
             temps = []
@@ -642,8 +646,14 @@ class PlotRR_noQick:
             ax.tick_params(axis='x', labelrotation=45, labelsize=12)
             ax.tick_params(axis='y', labelsize=12)
 
+            # --- Add vertical lines for known radiation events ---
+            for vtime, label in [(co60_time, "Co-60"), (cs137_time, "Cs-137")]:
+                ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
+                ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90, verticalalignment='top',
+                        horizontalalignment='right', fontsize=10)
 
-        # Add a shared X label if desired (comment out if not needed)
+
+        # Add a shared X label
         for ax in axes:
             ax.set_xlabel("Time")
 
