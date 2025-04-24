@@ -625,7 +625,8 @@ class PlotRR_noQick:
                 if qubit_data:
                     timestamp = qubit_data['date']
                     T_mK = qubit_data['T_mK']
-                    times.append(datetime.datetime.fromtimestamp(timestamp))
+                    # times.append(datetime.datetime.fromtimestamp(timestamp))
+                    times.append(cdt.localize(datetime.datetime.fromtimestamp(timestamp)))
                     temps.append(T_mK)
 
             ax = axes[q]
