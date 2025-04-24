@@ -617,8 +617,8 @@ class PlotRR_noQick:
             return dt if dt.tzinfo else cdt.localize(dt)
 
         # radiation source timestamps
-        co60_time = cdt.localize(datetime.datetime(2025, 4, 21, 12, 35))
-        cs137_time = cdt.localize(datetime.datetime(2025, 4, 23, 12, 53))
+        co60_time = localize_cdt(datetime.datetime(2025, 4, 21, 12, 35))
+        cs137_time = localize_cdt(datetime.datetime(2025, 4, 23, 12, 53))
 
         events_0418 = [
             ("11:50", "Daniel Entry"),
@@ -652,7 +652,7 @@ class PlotRR_noQick:
                     timestamp = qubit_data['date']
                     T_mK = qubit_data['T_mK']
                     # times.append(datetime.datetime.fromtimestamp(timestamp))
-                    times.append(cdt.localize(datetime.datetime.fromtimestamp(timestamp)))
+                    times.append(localize_cdt(datetime.datetime.fromtimestamp(timestamp)))
                     temps.append(T_mK)
 
             ax = axes[q]
@@ -662,7 +662,7 @@ class PlotRR_noQick:
                 continue
 
             # --- Optional: Restrict plot to specific date and time window ---
-            restrict_time_xaxis = True  # Set to False to show full range
+            restrict_time_xaxis = False  # Set to False to show full range
             date_to_plot = datetime.date(2025, 4, 18)
             time_start = datetime.time(8, 0)  # Start of the window
             time_end = datetime.time(17, 0)  # End of the window
@@ -672,11 +672,11 @@ class PlotRR_noQick:
                 end_time = localize_cdt(datetime.datetime.combine(date_to_plot, time_end))
                 #Use finer ticks with hour detail
                 ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))
+                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M', tz=cdt))
             else:
                 #Use coarse ticks with just date
                 ax.xaxis.set_major_locator(mdates.DayLocator())
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d', tz=cdt))
 
             # Use scatter instead of plot to avoid connecting lines
             ax.scatter(times, temps, marker='o', color=colors[q % len(colors)], label=f"Q{q + 1}")
@@ -706,9 +706,9 @@ class PlotRR_noQick:
             event_date_0423 = datetime.date(2025, 4, 23)
             extra_events = [
                 *((localize_cdt(datetime.datetime.combine(event_date_0418, datetime.time.fromisoformat(t))), label)
-                  for t, label in events_0418),
+                for t, label in events_0418),
                 *((localize_cdt(datetime.datetime.combine(event_date_0423, datetime.time.fromisoformat(t))), label)
-                  for t, label in events_0423)
+                for t, label in events_0423)
             ]
             for vtime, label in extra_events:
                 ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
@@ -724,9 +724,9 @@ class PlotRR_noQick:
             from matplotlib.dates import num2date
             print("Interpreted xlim:", [num2date(x) for x in ax.get_xlim()])
 
-            # Add a shared X label
-            for ax in axes:
-                ax.set_xlabel("Time")
+        # Add a shared X label
+        for ax in axes:
+            ax.set_xlabel("Time")
 
         # plt.tight_layout(rect=[0, 0, 1, 0.95])
 
