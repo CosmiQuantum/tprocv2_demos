@@ -2,9 +2,9 @@ from section_008_save_data_to_h5 import Data_H5
 import matplotlib.dates as mdates
 from typing import List
 from matplotlib.axes import Axes
-from matplotlib.lines import Line2D
-import matplotlib.colors as mcolors
 import glob
+from matplotlib.lines import Line2D
+from matplotlib import cm, colors as mcolors
 import sys
 # from section_011_qubit_temperatures_efRabipt3 import Temps_EFAmpRabiExperiment #uses qick modoule
 from section_011_qubit_temperatures_efRabipt3_noqick_analysis import Temps_EFAmpRabiExperiment
@@ -712,19 +712,22 @@ class PlotRR_noQick:
                   for t, label in events_0423)
             ]
 
-            # Get all extra event labels (exclude Co-60 and Cs-137 from color mapping)
-            extra_event_labels = [label for _, label in extra_events]
-            unique_labels = list(dict.fromkeys(extra_event_labels))  # maintain order, remove duplicates
-
-            # Create a colormap for the extra events only
+            # Map each unique label to a unique color
+            unique_labels = list(dict.fromkeys(label for _, label in extra_events))
             cmap = cm.get_cmap('tab20', len(unique_labels))
             label_to_color = {label: mcolors.to_hex(cmap(i)) for i, label in enumerate(unique_labels)}
 
-            event_lines = []
+            # Track which labels were already used in the legend
+            legend_handles = []
+            used_labels = set()
+
+            # Plot vertical lines for each event, reusing colors
             for vtime, label in extra_events:
                 color = label_to_color[label]
                 ax.axvline(vtime, color=color, linestyle='--', linewidth=1)
-                event_lines.append(Line2D([0], [0], color=color, linestyle='--', label=label))
+                if label not in used_labels:
+                    legend_handles.append(Line2D([0], [0], color=color, linestyle='--', label=label))
+                    used_labels.add(label)
 
             if restrict_time_xaxis:
                 ax.set_xlim(start_time, end_time)
@@ -733,12 +736,12 @@ class PlotRR_noQick:
             # Add a combined legend (only once)
             if q == 0:
                 ax.legend(
-                    handles=event_lines,
-                    loc='upper right',
-                    bbox_to_anchor=(1.05, 1),
+                    handles=legend_handles,
+                    loc='center left',
+                    bbox_to_anchor=(1.01, 0.5),
+                    bbox_transform=fig.transFigure,
                     fontsize=9,
-                    frameon=True,
-                    borderaxespad=0.
+                    frameon=True
                 )
 
         # Add a shared X label
