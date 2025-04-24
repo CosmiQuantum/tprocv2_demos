@@ -611,7 +611,7 @@ class PlotRR_noQick:
 
         fig.suptitle("Qubit Temperatures vs. Time", fontsize=16)
 
-        cdt = pytz.timezone('America/Chicago')
+        # cdt = pytz.timezone('America/Chicago')
 
         # def localize_cdt(dt):
         #     return dt if dt.tzinfo else cdt.localize(dt)
@@ -662,7 +662,7 @@ class PlotRR_noQick:
 
             # --- Optional: Restrict plot to specific date and time window ---
             restrict_time_xaxis = True  # Set to False to show full range
-            date_to_plot = datetime.date(2025, 4, 18)
+            date_to_plot = datetime.date(2025, 4, 23)
             time_start = datetime.time(0, 0)  # Start of the window
             time_end = datetime.time(23, 59)  # End of the window
 
