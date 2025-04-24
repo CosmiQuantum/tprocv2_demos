@@ -716,7 +716,7 @@ class PlotRR_noQick:
             # Map each unique label to a unique color
             unique_labels = list(dict.fromkeys(label for _, label in extra_events))
             # cmap = cm.get_cmap('tab20', len(unique_labels)) pastels
-            cmap = cm.get_cmap('Dark2', len(unique_labels)) #dark colors
+            cmap = cm.get_cmap('Set1', len(unique_labels)) #dark colors
             label_to_color = {label: mcolors.to_hex(cmap(i)) for i, label in enumerate(unique_labels)}
 
             # Track which labels were already used in the legend
@@ -739,10 +739,6 @@ class PlotRR_noQick:
             if q == 0:
                 fig.legend(
                     handles= legend_handles,
-                    loc='center left',
-                    bbox_to_anchor=(1.01, 0.5),
-                    fontsize=9,
-                    frameon=True
                 )
 
         # Add a shared X label
