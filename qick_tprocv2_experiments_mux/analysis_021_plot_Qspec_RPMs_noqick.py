@@ -702,27 +702,27 @@ class PlotRR_noQick:
                         horizontalalignment='right', fontsize=10)
 
             #----------------------Now for other events------------------------
-            event_date_0418 = datetime.date(2025, 4, 18)
-            event_date_0423 = datetime.date(2025, 4, 23)
-            extra_events = [
-                *((localize_cdt(datetime.datetime.combine(event_date_0418, datetime.time.fromisoformat(t))), label)
-                for t, label in events_0418),
-                *((localize_cdt(datetime.datetime.combine(event_date_0423, datetime.time.fromisoformat(t))), label)
-                for t, label in events_0423)
-            ]
-            for vtime, label in extra_events:
-                ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
-                ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90,
-                        verticalalignment='top', horizontalalignment='right', fontsize=10)
-
-
-            if restrict_time_xaxis:
-                ax.set_xlim(start_time, end_time)
-                ax.set_autoscale_on(False)
-
-            print(ax.get_xlim())
-            from matplotlib.dates import num2date
-            print("Interpreted xlim:", [num2date(x) for x in ax.get_xlim()])
+            # event_date_0418 = datetime.date(2025, 4, 18)
+            # event_date_0423 = datetime.date(2025, 4, 23)
+            # extra_events = [
+            #     *((localize_cdt(datetime.datetime.combine(event_date_0418, datetime.time.fromisoformat(t))), label)
+            #     for t, label in events_0418),
+            #     *((localize_cdt(datetime.datetime.combine(event_date_0423, datetime.time.fromisoformat(t))), label)
+            #     for t, label in events_0423)
+            # ]
+            # for vtime, label in extra_events:
+            #     ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
+            #     ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90,
+            #             verticalalignment='top', horizontalalignment='right', fontsize=10)
+            #
+            #
+            # if restrict_time_xaxis:
+            #     ax.set_xlim(start_time, end_time)
+            #     ax.set_autoscale_on(False)
+            #
+            # print(ax.get_xlim())
+            # from matplotlib.dates import num2date
+            # print("Interpreted xlim:", [num2date(x) for x in ax.get_xlim()])
 
         # Add a shared X label
         for ax in axes:
