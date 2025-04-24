@@ -654,6 +654,10 @@ class PlotRR_noQick:
 
             ax = axes[q]
 
+            if not times:
+                ax.set_visible(False)
+                continue
+
             # --- Optional: Restrict plot to specific date and time window ---
             restrict_to_day = True  # Set to False to show full range
             date_to_plot = datetime.date(2025, 4, 18)
