@@ -10,6 +10,7 @@ import math
 from collections import defaultdict
 from bisect import bisect_left
 from scipy.stats import norm
+import pytz
 # from build_task import *
 # from build_state_noqick import *
 from expt_config import *
@@ -611,8 +612,9 @@ class PlotRR_noQick:
         fig.suptitle("Qubit Temperatures vs. Time", fontsize=16)
 
         #radiation source timestamps
-        co60_time = datetime.datetime(2025, 4, 21, 12, 35)
-        cs137_time = datetime.datetime(2025, 4, 23, 12, 53)
+        cdt = pytz.timezone('America/Chicago')
+        co60_time = cdt.localize(datetime.datetime(2025, 4, 21, 12, 35))
+        cs137_time = cdt.localize(datetime.datetime(2025, 4, 23, 12, 53))
 
         for q in range(num_qubits):
             times = []
