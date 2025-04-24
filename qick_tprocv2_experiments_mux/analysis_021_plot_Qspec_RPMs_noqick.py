@@ -156,7 +156,7 @@ class QubitSpectroscopy:
         plt.tight_layout()
 
         # Adjust the top margin to make room for the title
-        plt.subplots_adjust(top=0.93)
+        plt.subplots_adjust(top=0.93, right=0.78)
 
         ### Save figure
         if self.save_figs:
@@ -698,9 +698,10 @@ class PlotRR_noQick:
 
             # --- Add vertical lines for known radiation events ---
             for vtime, label in [(co60_time, "Co-60"), (cs137_time, "Cs-137")]:
-                ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
-                ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90, verticalalignment='top',
-                        horizontalalignment='right', fontsize=10)
+                if not restrict_time_xaxis or (restrict_time_xaxis and start_time <= vtime <= end_time):
+                    ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
+                    ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90,
+                            verticalalignment='top', horizontalalignment='right', fontsize=10)
 
             #----------------------Now for other events------------------------
             event_date_0418 = datetime.date(2025, 4, 18)
