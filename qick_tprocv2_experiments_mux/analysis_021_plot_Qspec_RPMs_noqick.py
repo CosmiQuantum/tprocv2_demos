@@ -2,6 +2,8 @@ from section_008_save_data_to_h5 import Data_H5
 import matplotlib.dates as mdates
 from typing import List
 from matplotlib.axes import Axes
+from matplotlib.lines import Line2D
+import matplotlib.colors as mcolors
 import glob
 import sys
 # from section_011_qubit_temperatures_efRabipt3 import Temps_EFAmpRabiExperiment #uses qick modoule
@@ -709,15 +711,35 @@ class PlotRR_noQick:
                 *((datetime.datetime.combine(event_date_0423, datetime.time.fromisoformat(t)), label)
                   for t, label in events_0423)
             ]
-            for vtime, label in extra_events:
-                ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
-                ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90,
-                        verticalalignment='top', horizontalalignment='right', fontsize=10)
 
+            # Get all extra event labels (exclude Co-60 and Cs-137 from color mapping)
+            extra_event_labels = [label for _, label in extra_events]
+            unique_labels = list(dict.fromkeys(extra_event_labels))  # maintain order, remove duplicates
+
+            # Create a colormap for the extra events only
+            cmap = cm.get_cmap('tab20', len(unique_labels))
+            label_to_color = {label: mcolors.to_hex(cmap(i)) for i, label in enumerate(unique_labels)}
+
+            event_lines = []
+            for vtime, label in extra_events:
+                color = label_to_color[label]
+                ax.axvline(vtime, color=color, linestyle='--', linewidth=1)
+                event_lines.append(Line2D([0], [0], color=color, linestyle='--', label=label))
 
             if restrict_time_xaxis:
                 ax.set_xlim(start_time, end_time)
                 ax.set_autoscale_on(False)
+
+            # Add a combined legend (only once)
+            if q == 0:
+                ax.legend(
+                    handles=event_lines,
+                    loc='upper right',
+                    bbox_to_anchor=(1.05, 1),
+                    fontsize=9,
+                    frameon=True,
+                    borderaxespad=0.
+                )
 
         # Add a shared X label
         for ax in axes:
