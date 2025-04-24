@@ -653,6 +653,18 @@ class PlotRR_noQick:
                     temps.append(T_mK)
 
             ax = axes[q]
+
+            # --- Optional: Restrict plot to specific date and time window ---
+            restrict_to_day = True  # Set to False to show full range
+            date_to_plot = datetime.date(2025, 4, 18)
+            time_start = datetime.time(0, 0)  # Start of the window
+            time_end = datetime.time(23, 59)  # End of the window
+
+            if restrict_to_day:
+                start_time = localize_cdt(datetime.datetime.combine(date_to_plot, time_start))
+                end_time = localize_cdt(datetime.datetime.combine(date_to_plot, time_end))
+                ax.set_xlim(start_time, end_time)
+
             # Use scatter instead of plot to avoid connecting lines
             ax.scatter(times, temps, marker='o', color=colors[q % len(colors)], label=f"Q{q + 1}")
 
@@ -679,6 +691,7 @@ class PlotRR_noQick:
                 ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90, verticalalignment='top',
                         horizontalalignment='right', fontsize=10)
 
+            #----------------------Now for other events------------------------
             event_date_0418 = datetime.date(2025, 4, 18)
             event_date_0423 = datetime.date(2025, 4, 23)
             extra_events = [
