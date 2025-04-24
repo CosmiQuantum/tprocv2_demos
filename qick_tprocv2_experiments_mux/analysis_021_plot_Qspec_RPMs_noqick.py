@@ -628,11 +628,11 @@ class PlotRR_noQick:
             ("14:53", "Daniel Entry"),
             ("15:00", "Door Intermission"),
             ("15:06", "Exit/Re-entry Daniel"),
-            ("15:12", "Ryan"),
+            ("15:12", "Ryan Entry"),
             ("15:40", "Door Intermission"),
             ("16:11", "Daniel Exit"),
-            ("16:12", "Daniel Re-entry"),
-            ("16:16", "Daniel Final Exit")]
+            ("16:12", "Daniel Entry"),
+            ("16:16", "Daniel Exit")]
 
         events_0423 = [
             ("12:50", "Dan-Joyce Entry"),
