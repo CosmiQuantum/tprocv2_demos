@@ -613,12 +613,12 @@ class PlotRR_noQick:
 
         cdt = pytz.timezone('America/Chicago')
 
-        def localize_cdt(dt):
-            return dt if dt.tzinfo else cdt.localize(dt)
+        # def localize_cdt(dt):
+        #     return dt if dt.tzinfo else cdt.localize(dt)
 
         # radiation source timestamps
-        co60_time = localize_cdt(datetime.datetime(2025, 4, 21, 12, 35))
-        cs137_time = localize_cdt(datetime.datetime(2025, 4, 23, 12, 53))
+        co60_time = datetime.datetime(2025, 4, 21, 12, 35)
+        cs137_time = datetime.datetime(2025, 4, 23, 12, 53)
 
         events_0418 = [
             ("11:50", "Daniel Entry"),
@@ -651,8 +651,7 @@ class PlotRR_noQick:
                 if qubit_data:
                     timestamp = qubit_data['date']
                     T_mK = qubit_data['T_mK']
-                    # times.append(datetime.datetime.fromtimestamp(timestamp))
-                    times.append(localize_cdt(datetime.datetime.fromtimestamp(timestamp)))
+                    times.append(datetime.datetime.fromtimestamp(timestamp))
                     temps.append(T_mK)
 
             ax = axes[q]
@@ -668,15 +667,15 @@ class PlotRR_noQick:
             time_end = datetime.time(23, 59)  # End of the window
 
             if restrict_time_xaxis:
-                start_time = localize_cdt(datetime.datetime.combine(date_to_plot, time_start))
-                end_time = localize_cdt(datetime.datetime.combine(date_to_plot, time_end))
+                start_time = datetime.datetime.combine(date_to_plot, time_start)
+                end_time = datetime.datetime.combine(date_to_plot, time_end)
                 #Use finer ticks with hour detail
                 ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M', tz=cdt))
+                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))
             else:
                 #Use coarse ticks with just date
                 ax.xaxis.set_major_locator(mdates.DayLocator())
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d', tz=cdt))
+                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
 
             # Use scatter instead of plot to avoid connecting lines
             ax.scatter(times, temps, marker='o', color=colors[q % len(colors)], label=f"Q{q + 1}")
@@ -705,10 +704,10 @@ class PlotRR_noQick:
             event_date_0418 = datetime.date(2025, 4, 18)
             event_date_0423 = datetime.date(2025, 4, 23)
             extra_events = [
-                *((localize_cdt(datetime.datetime.combine(event_date_0418, datetime.time.fromisoformat(t))), label)
-                for t, label in events_0418),
-                *((localize_cdt(datetime.datetime.combine(event_date_0423, datetime.time.fromisoformat(t))), label)
-                for t, label in events_0423)
+                *((datetime.datetime.combine(event_date_0418, datetime.time.fromisoformat(t)), label)
+                  for t, label in events_0418),
+                *((datetime.datetime.combine(event_date_0423, datetime.time.fromisoformat(t)), label)
+                  for t, label in events_0423)
             ]
             for vtime, label in extra_events:
                 ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
@@ -719,10 +718,6 @@ class PlotRR_noQick:
             if restrict_time_xaxis:
                 ax.set_xlim(start_time, end_time)
                 ax.set_autoscale_on(False)
-
-            print(ax.get_xlim())
-            from matplotlib.dates import num2date
-            print("Interpreted xlim:", [num2date(x) for x in ax.get_xlim()])
 
         # Add a shared X label
         for ax in axes:
@@ -747,6 +742,8 @@ class PlotRR_noQick:
         Parameters:
         - all_files_Qtemp_results: list of dicts returned by load_plot_save_rabis_Qtemps
         - num_qubits: total number of qubits to plot (default is 6)
+
+        # Note: All datetime objects are naive and assumed to be in Central Time (local system time).
         """
         # Set up the subplots grid (2 rows x 3 columns for 6 qubits)
         ncols = min(num_qubits, 3)
