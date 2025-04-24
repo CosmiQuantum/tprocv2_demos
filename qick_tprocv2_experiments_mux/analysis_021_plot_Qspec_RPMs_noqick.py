@@ -654,20 +654,25 @@ class PlotRR_noQick:
 
             ax = axes[q]
 
+            ax.xaxis.set_major_locator(mdates.DayLocator())  # one tick per day
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))  # format: MM-DD
+
             if not times:
                 ax.set_visible(False)
                 continue
 
             # --- Optional: Restrict plot to specific date and time window ---
-            restrict_to_day = True  # Set to False to show full range
+            restrict_time_xaxis = True  # Set to False to show full range
             date_to_plot = datetime.date(2025, 4, 18)
-            time_start = datetime.time(0, 0)  # Start of the window
-            time_end = datetime.time(23, 59)  # End of the window
+            time_start = datetime.time(11, 0)  # Start of the window
+            time_end = datetime.time(17, 0)  # End of the window
 
-            if restrict_to_day:
+            if restrict_time_xaxis:
                 start_time = localize_cdt(datetime.datetime.combine(date_to_plot, time_start))
                 end_time = localize_cdt(datetime.datetime.combine(date_to_plot, time_end))
                 ax.set_xlim(start_time, end_time)
+                ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))
 
             # Use scatter instead of plot to avoid connecting lines
             ax.scatter(times, temps, marker='o', color=colors[q % len(colors)], label=f"Q{q + 1}")
@@ -682,9 +687,6 @@ class PlotRR_noQick:
 
             # start_time = datetime.datetime(2025, 4, 11, 12, 30)
             # ax.set_xlim(left=start_time)
-
-            ax.xaxis.set_major_locator(mdates.DayLocator())  # one tick per day
-            ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))  # format: MM-DD
 
             ax.tick_params(axis='x', labelrotation=45, labelsize=12)
             ax.tick_params(axis='y', labelsize=12)
