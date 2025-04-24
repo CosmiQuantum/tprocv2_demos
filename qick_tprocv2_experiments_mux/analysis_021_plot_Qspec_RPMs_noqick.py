@@ -663,8 +663,8 @@ class PlotRR_noQick:
 
             # --- Optional: Restrict plot to specific date and time window ---
             restrict_time_xaxis = True  # Set to False to show full range
-            date_to_plot = datetime.date(2025, 4, 18)
-            time_start = datetime.time(11, 0)  # Start of the window
+            date_to_plot = datetime.date(2025, 4, 23)
+            time_start = datetime.time(12, 0)  # Start of the window
             time_end = datetime.time(17, 0)  # End of the window
 
             if restrict_time_xaxis:
