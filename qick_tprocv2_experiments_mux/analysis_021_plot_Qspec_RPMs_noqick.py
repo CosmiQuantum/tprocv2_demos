@@ -634,8 +634,11 @@ class PlotRR_noQick:
 
         events_0423 = [
             ("12:50", "Dan-Joyce Entry"),
-            ("13:47", "Grace Entry"),
-            ("16:40", "Kester-Grace Entry")]
+            ("12:54", "Dan-Joyce Exit"),
+            ("13:40", "Grace Entry"),
+            ("13:47", "Grace Exit"),
+            ("16:40", "Kester-Grace Entry"),
+            ("16:48", "Kester-Grace Exit")]
 
 
 
