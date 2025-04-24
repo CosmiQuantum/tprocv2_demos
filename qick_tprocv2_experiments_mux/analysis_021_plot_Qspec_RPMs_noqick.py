@@ -715,15 +715,18 @@ class PlotRR_noQick:
                 ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90,
                         verticalalignment='top', horizontalalignment='right', fontsize=10)
 
-            print(f"Restricting Q{q + 1} to: {start_time} — {end_time}")
-            print(f"Data range: {min(times)} — {max(times)}")
+
             if restrict_time_xaxis:
                 ax.set_xlim(start_time, end_time)
                 ax.set_autoscale_on(False)
 
-                # Add a shared X label
-        for ax in axes:
-            ax.set_xlabel("Time")
+            print(ax.get_xlim())
+            from matplotlib.dates import num2date
+            print("Interpreted xlim:", [num2date(x) for x in ax.get_xlim()])
+
+            # Add a shared X label
+            for ax in axes:
+                ax.set_xlabel("Time")
 
         # plt.tight_layout(rect=[0, 0, 1, 0.95])
 
