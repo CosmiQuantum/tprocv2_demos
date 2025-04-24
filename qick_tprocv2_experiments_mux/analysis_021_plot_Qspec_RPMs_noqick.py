@@ -691,7 +691,7 @@ class PlotRR_noQick:
             # start_time = datetime.datetime(2025, 4, 11, 12, 30)
             # ax.set_xlim(left=start_time)
 
-            ax.tick_params(axis='x', labelrotation=45, labelsize=12)
+            ax.tick_params(axis='x', labelrotation=90, labelsize=12)
             ax.tick_params(axis='y', labelsize=12)
 
             # --- Add vertical lines for known radiation events ---
