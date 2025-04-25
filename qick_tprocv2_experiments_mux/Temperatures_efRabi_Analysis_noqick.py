@@ -5,7 +5,7 @@ np.set_printoptions(threshold=int(1e15)) #need this so it saves absolutely every
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 # from analysis_001_plot_all_RR_h5 import PlotAllRR
-from analysis_021_plot_Qspec_RPMs_noqick import PlotRR_noQick
+from analysis_021_plot_allRR_noqick import PlotRR_noQick
 import os
 #---------------------------------------------------------Folders and Paths-------------------------------------------------------------------
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
@@ -14,7 +14,6 @@ save_figs = False # If you are running plotter.run, do you want to save all of t
 fit_saved = False # Not used here, set to false
 signal = 'None' # Do not change
 run_name = 'run6/6transmon/'
-
 
 # For quiet pc
 # date = '2025-04-12'  # only go through all of the data for one date at a time because there is a lot
@@ -35,9 +34,10 @@ target_dates = [
     "2025-04-18",
     "2025-04-19",
     "2025-04-20",
-    "2025-04-21", #starts source on
+    "2025-04-21", #starts source on (Co)
     "2025-04-22",
-    "2025-04-23"]
+    "2025-04-23", #switches source (to Cs)
+    "2025-04-24"]
 base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study"
 outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/params_vs_time"
 os.makedirs(outerFolder_qtemps_plots, exist_ok=True)

@@ -22,7 +22,7 @@ class QICK_experiment:
             self.ADC_attenuator = ADC_attenuator
 
             # Make proxy to the QICK
-            self.soc, self.soccfg = makeProxy()
+            # self.soc, self.soccfg = makeProxy()
             #print(self.soccfg)
 
             self.FSGEN_CH =  2 # 0 for "old QICK", 6 for RF board
@@ -147,7 +147,7 @@ class QICK_experiment:
             self.ADC_attenuator = ADC_attenuator
 
             # Make proxy to the QICK
-            self.soc, self.soccfg = makeProxy()
+            # self.soc, self.soccfg = makeProxy()
             print(self.soccfg)
 
             self.FSGEN_CH = 10  # set to 8 for bias spectroscopy, and 10 for everything else (pi pulses, RR)

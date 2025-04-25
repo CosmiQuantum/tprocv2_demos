@@ -21,9 +21,7 @@ class PlotMetricDependencies:
     from datetime import datetime
 
     def plot(self, date_times_1, metric_1, date_times_2, metric_2, metric_1_label, metric_2_label):
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
-        self.create_folder_if_not_exists(analysis_folder)
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/metric_interdependencies/"
+        analysis_folder = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/metrics_vs_eachother"
         self.create_folder_if_not_exists(analysis_folder)
 
         font = 14
@@ -62,12 +60,21 @@ class PlotMetricDependencies:
             # For each timestamp in the reference metric, find the closest timestamp in the other metric.
             matched_ref_metrics = []
             matched_other_metrics = []
+
+            used_indices = set()
+
             for t_ref, m_ref in zip(ref_times, ref_metrics):
-                # Compute the absolute differences between the reference time and all other times.
-                time_differences = np.abs(np.array([(t_ref - t).total_seconds() for t in other_times]))
-                idx_closest = np.argmin(time_differences)
+                # Compute time differences only with unused indices
+                valid_indices = [j for j in range(len(other_times)) if j not in used_indices]
+                if not valid_indices:
+                    break  # No more unmatched points in other_times
+
+                diffs = np.abs(np.array([(t_ref - other_times[j]).total_seconds() for j in valid_indices]))
+                idx_closest = valid_indices[np.argmin(diffs)]
+
                 matched_ref_metrics.append(m_ref)
                 matched_other_metrics.append(other_metrics[idx_closest])
+                used_indices.add(idx_closest)
 
             matched_ref_metrics = np.array(matched_ref_metrics)
             matched_other_metrics = np.array(matched_other_metrics)
@@ -77,7 +84,7 @@ class PlotMetricDependencies:
             ax.set_ylabel(metric_2_label, fontsize=font - 2)
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-        save_path = analysis_folder + f'{metric_1_label}_vs_{metric_2_label}_correlation.pdf'
+        save_path = os.path.join(analysis_folder, f'{metric_1_label}_vs_{metric_2_label}_correlation.png')
         plt.savefig(save_path, transparent=True, dpi=self.final_figure_quality)
         # plt.show()
 
