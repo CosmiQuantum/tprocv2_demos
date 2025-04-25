@@ -148,7 +148,8 @@ class PlotMetricDependencies:
 
         for i, ax in enumerate(axes):
             ax.set_title(titles[i], fontsize=font)
-
+            print(f"Qubit {i + 1} date_times_1: {date_times_1[i]}")
+            print(f"Qubit {i + 1} date_times_2: {date_times_2[i]}")
             datetime_objects_1 = [datetime.strptime(dt, "%Y-%m-%d %H:%M:%S") for dt in date_times_1[i]]
             datetime_objects_2 = [datetime.strptime(dt, "%Y-%m-%d %H:%M:%S") for dt in date_times_2[i]]
 
