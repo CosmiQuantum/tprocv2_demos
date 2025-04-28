@@ -86,6 +86,7 @@ class PlotMetricDependencies:
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
         save_path = os.path.join(analysis_folder, f'{metric_1_label}_vs_{metric_2_label}_correlation.png')
         plt.savefig(save_path, transparent=True, dpi=self.final_figure_quality)
+        print('Plot saved to: ', analysis_folder)
         # plt.show()
 
     def plot_shared_datetimes(self, date_times, metric_1, metric_2, metric_1_label, metric_2_label):
