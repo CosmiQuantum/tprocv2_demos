@@ -176,16 +176,15 @@ class PlotMetricDependencies:
         # plt.show()
 
     # -------------------------------- Single scatter plot for two metrics ---------------------------------------------
-    def plot_single_pair(self, date_times_1, metric_1, date_times_2, metric_2, metric_1_label="Qubit 1 T1", metric_2_label="Qubit 3 T1"):
+    def plot_single_pair(self, date_times_1, metric_1, date_times_2, metric_2,
+                         metric_1_label="Qubit 1 T1", metric_2_label="Qubit 3 T1"):
         """
         Creates a SINGLE scatter plot of metric_1 vs metric_2,
-        matching data points by the same 'closest timestamp' logic.
+        matching data points by the same 'closest timestamp' logic (no repeated matches),
+        picking the shorter list as reference.
         """
-
         if self.fridge.upper() == 'QUIET':
-            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
-            self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/correlations_singleplots/"
+            analysis_folder = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/metrics_vs_eachother"
             self.create_folder_if_not_exists(analysis_folder)
         elif self.fridge.upper() == 'NEXUS':
             analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
@@ -195,31 +194,26 @@ class PlotMetricDependencies:
         else:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
+        # Convert timestamps to datetime objects
+        datetime_objects_1 = [datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S") for dt_str in date_times_1]
+        datetime_objects_2 = [datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S") for dt_str in date_times_2]
 
-        #Converts timestamps from strings to datetime objects
-        datetime_objects_1 = [datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
-                              for dt_str in date_times_1]
-        datetime_objects_2 = [datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
-                              for dt_str in date_times_2]
-
-        #Zip up times+metrics and sort descending by time
+        # Zip and sort by time descending
         combined_1 = list(zip(datetime_objects_1, metric_1))
         combined_2 = list(zip(datetime_objects_2, metric_2))
-
         combined_1.sort(reverse=True, key=lambda item: item[0])
         combined_2.sort(reverse=True, key=lambda item: item[0])
 
-        #Unzip
+        # Unzip
         sorted_date_times_1, sorted_metric_1 = zip(*combined_1) if combined_1 else ([], [])
         sorted_date_times_2, sorted_metric_2 = zip(*combined_2) if combined_2 else ([], [])
 
-        #Convert to np.array for easy math
         sorted_date_times_1 = np.array(sorted_date_times_1)
         sorted_metric_1 = np.array(sorted_metric_1)
         sorted_date_times_2 = np.array(sorted_date_times_2)
         sorted_metric_2 = np.array(sorted_metric_2)
 
-        #Pick the shorter array as reference
+        # Pick the shorter array as reference
         if len(sorted_date_times_1) <= len(sorted_date_times_2):
             ref_times = sorted_date_times_1
             ref_metrics = sorted_metric_1
@@ -235,19 +229,27 @@ class PlotMetricDependencies:
             x_label = metric_2_label
             y_label = metric_1_label
 
-        #Match each ref timestamp with the closest timestamp in other_times
+        # Match with no repeated points
         matched_ref = []
         matched_other = []
+        used_indices = set()
 
         for t_ref, m_ref in zip(ref_times, ref_metrics):
-            idx_closest = np.argmin(np.abs(other_times - t_ref))
+            valid_indices = [j for j in range(len(other_times)) if j not in used_indices]
+            if not valid_indices:
+                break
+
+            diffs = np.abs(np.array([(t_ref - other_times[j]).total_seconds() for j in valid_indices]))
+            idx_closest = valid_indices[np.argmin(diffs)]
+
             matched_ref.append(m_ref)
             matched_other.append(other_metrics[idx_closest])
+            used_indices.add(idx_closest)
 
         matched_ref = np.array(matched_ref)
         matched_other = np.array(matched_other)
 
-        # Creates a SINGLE scatter plot
+        # Plot
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.scatter(matched_ref, matched_other, color='blue')
         ax.set_xlabel(x_label)
@@ -255,11 +257,12 @@ class PlotMetricDependencies:
         ax.set_title(f"{metric_1_label} vs {metric_2_label}")
 
         plt.tight_layout()
-        #plt.show()
-        plt.savefig(analysis_folder + f'{metric_1_label}_vs_{metric_2_label}_correlation.png', transparent=False,
-                    dpi=self.final_figure_quality)
-        print('Plot saved at: ', analysis_folder)
 
+        filename = f"{metric_1_label}_vs_{metric_2_label}_correlation.png".replace(' ', '_').replace('(', '').replace(
+            ')', '')
+        save_path = os.path.join(analysis_folder, filename)
+        plt.savefig(save_path, transparent=False, dpi=self.final_figure_quality)
+        print('Plot saved at:', save_path)
 
     #----------------------------------Plots T1 vs. Time  and other metrics vs time if data is provided --------------------------------------------
     def plot_q1_temp_and_t1( #works for any qubit, just provide the data corresponding to the qubit you want
@@ -436,3 +439,46 @@ class PlotMetricDependencies:
         plt.savefig(plot_filename, transparent=False, dpi=self.final_figure_quality)
         #plt.show()
         plt.close()
+
+    def plot_autocorrelation(times, metric_values, label, qubit_index):
+        """
+        Plots the autocorrelation of a metric (like T1 or Qubit Frequency) for a given qubit.
+
+        Parameters:
+        - times: list of datetime objects (or strings that can be parsed)
+        - values: list or np.array of metric values (floats)
+        - label: string, label for what you're autocorrelating (e.g., "T1 (us)" or "Qubit Frequency (MHz)")
+        - qubit_index: int, which qubit it is (for title/saving)
+        """
+        analysis_folder = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Autocorrelations"
+        os.makedirs(analysis_folder, exist_ok=True)
+
+        # make sure values are numpy array
+        values = np.array(metric_values)
+
+        # subtract mean
+        values_centered = values - np.mean(values)
+
+        # autocorrelation
+        autocorr = np.correlate(values_centered, values_centered, mode='full')
+        autocorr = autocorr[autocorr.size // 2:]  # Take only positive lags
+        autocorr /= autocorr[0]  # Normalize
+
+        # create lags
+        lags = np.arange(len(autocorr))
+
+        #plot
+        plt.figure(figsize=(8, 5))
+        plt.plot(lags, autocorr, marker='o')
+        plt.title(f"Autocorrelation of {label} (Qubit {qubit_index + 1})", fontsize=14)
+        plt.xlabel("Lag (number of points)", fontsize=12)
+        plt.ylabel("Autocorrelation", fontsize=12)
+        plt.grid(True)
+        plt.tight_layout()
+
+
+        save_path = os.path.join(analysis_folder,
+                                 f"Autocorrelation_Qubit{qubit_index + 1}_{label.replace(' ', '_').replace('(', '').replace(')', '')}.png")
+        plt.savefig(save_path, dpi=300)
+        plt.close()
+        print(f"Plot for Qubit {qubit_index + 1} saved to: {save_path}")
