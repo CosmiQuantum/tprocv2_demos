@@ -122,7 +122,6 @@ for path in paths:
 Q1_freqs = all_qspec_freqs[0]
 Q1_dates_spec = all_qspec_dates[0]
 
-#This collects qubit spec data for Q5 only
 Q5_freqs = all_qspec_freqs[4]
 Q5_dates_spec = all_qspec_dates[4]
 

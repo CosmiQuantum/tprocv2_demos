@@ -440,10 +440,9 @@ class PlotMetricDependencies:
         #plt.show()
         plt.close()
 
-    def plot_autocorrelation(times, metric_values, label, qubit_index):
+    def plot_autocorrelation(self, times, metric_values, label, qubit_index):
         """
         Plots the autocorrelation of a metric (like T1 or Qubit Frequency) for a given qubit.
-
         Parameters:
         - times: list of datetime objects (or strings that can be parsed)
         - values: list or np.array of metric values (floats)
@@ -453,29 +452,35 @@ class PlotMetricDependencies:
         analysis_folder = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Autocorrelations"
         os.makedirs(analysis_folder, exist_ok=True)
 
-        # make sure values are numpy array
-        values = np.array(metric_values)
+        values = np.array(metric_values) #input T1 values or Qfreq values, etc
 
-        # subtract mean
-        values_centered = values - np.mean(values)
+        # Manual method
+        # # subtract mean
+        # values_centered = values - np.mean(values) #since we are just interested in the fluctuations in the data over time
+        # # autocorrelation
+        # autocorr = np.correlate(values_centered, values_centered, mode='full')
+        # autocorr = autocorr[autocorr.size // 2:]  # Take only positive lags
+        # autocorr /= autocorr[0]  # Normalize to initial val
+        # # create lags
+        # lags = np.arange(len(autocorr))
+        # # plot
+        # plt.figure(figsize=(8, 5))
+        # plt.plot(lags, autocorr, marker='o')
+        # plt.title(f"Autocorrelation of {label} (Qubit {qubit_index + 1})", fontsize=14)
+        # plt.xlabel("Lag (number of points)", fontsize=12)
+        # plt.ylabel("Autocorrelation", fontsize=12)
+        # plt.grid(True)
+        # plt.tight_layout()
 
-        # autocorrelation
-        autocorr = np.correlate(values_centered, values_centered, mode='full')
-        autocorr = autocorr[autocorr.size // 2:]  # Take only positive lags
-        autocorr /= autocorr[0]  # Normalize
-
-        # create lags
-        lags = np.arange(len(autocorr))
-
-        #plot
+        # Matplotlib method
+        # Plot autocorrelation
         plt.figure(figsize=(8, 5))
-        plt.plot(lags, autocorr, marker='o')
+        plt.acorr(values, maxlags=9)
         plt.title(f"Autocorrelation of {label} (Qubit {qubit_index + 1})", fontsize=14)
-        plt.xlabel("Lag (number of points)", fontsize=12)
+        plt.xlabel("Lag (number of points)", fontsize=12) #check label
         plt.ylabel("Autocorrelation", fontsize=12)
         plt.grid(True)
         plt.tight_layout()
-
 
         save_path = os.path.join(analysis_folder,
                                  f"Autocorrelation_Qubit{qubit_index + 1}_{label.replace(' ', '_').replace('(', '').replace(')', '')}.png")
