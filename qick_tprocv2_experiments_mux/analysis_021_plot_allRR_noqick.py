@@ -1785,6 +1785,7 @@ class PlotRR_noQick:
         # radiation source timestamps
         co60_time = datetime.datetime(2025, 4, 21, 12, 35)
         cs137_time = datetime.datetime(2025, 4, 23, 12, 53)
+        cs137_closer_time = datetime.datetime(2025, 4, 28, 9, 40)
 
         events_0418 = [
             ("11:50", "Daniel Entry"),
@@ -1861,7 +1862,7 @@ class PlotRR_noQick:
             ax.tick_params(axis='y', labelsize=12)
 
             # --- Add vertical lines for known radiation events ---
-            for vtime, label in [(co60_time, "Co-60"), (cs137_time, "Cs-137")]:
+            for vtime, label in [(co60_time, "Co-60"), (cs137_time, "Cs-137"), (cs137_closer_time, "Cs-137 Closer")]:
                 if not restrict_time_xaxis or (restrict_time_xaxis and start_time <= vtime <= end_time):
                     ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
                     ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90,

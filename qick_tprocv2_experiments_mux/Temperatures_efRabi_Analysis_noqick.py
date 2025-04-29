@@ -37,7 +37,11 @@ target_dates = [
     "2025-04-21", #starts source on (Co)
     "2025-04-22",
     "2025-04-23", #switches source (to Cs)
-    "2025-04-24"]
+    "2025-04-24",
+    "2025-04-25"
+    "2025-04-26"
+    "2025-04-27"
+    "2025-04-28"] #Cs source moved closer
 base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study"
 outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/params_vs_time"
 os.makedirs(outerFolder_qtemps_plots, exist_ok=True)
@@ -58,8 +62,8 @@ for root, dirs, files in os.walk(base_dir):
                 outerFolder = optimization_path #RR data (g-e Qspec) folder path before Data_h5
                 outerFolder_qtemps_data = optimization_path #Qubit temps data folder path before Data_h5
 
-                if not os.path.exists(outerFolder): os.makedirs(outerFolder)
-                if not os.path.exists(outerFolder_qtemps_data): os.makedirs(outerFolder_qtemps_data)
+                # if not os.path.exists(outerFolder): os.makedirs(outerFolder)
+                # if not os.path.exists(outerFolder_qtemps_data): os.makedirs(outerFolder_qtemps_data)
                 #------------------------------------------------Initialize the Plotting class------------------------------------------------
                 plotter = PlotRR_noQick(date_string, figure_quality, save_figs, fit_saved, signal, run_name, tot_num_of_qubits, outerFolder,
                                   outerFolder_qtemps_plots, outerFolder_qtemps_data)
