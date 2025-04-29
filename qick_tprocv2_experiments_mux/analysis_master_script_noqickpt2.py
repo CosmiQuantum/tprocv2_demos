@@ -89,8 +89,9 @@ paths = [
     "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-26_18-15-55"
 ] # data folders
 ################################################# Get all data ######################################################
-for path in paths:
-    dataset = os.path.basename(path)  # e.g., "2025-04-16_11-47-09"
+for full_path in paths:
+    path = os.path.dirname(full_path)  # one level up from the dataset
+    dataset = os.path.basename(full_path)  # just the '2025-04-16_11-47-09' part
 
     for QubitIndex in [0,4]: # We are only taking science data for qubits 1 and 5
         try:
