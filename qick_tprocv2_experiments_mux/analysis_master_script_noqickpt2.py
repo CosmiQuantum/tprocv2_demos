@@ -133,11 +133,15 @@ qubit1_t1 = all_t1_vals[0]
 qubit5_t1times = all_t1_dates[4]
 qubit5_t1 = all_t1_vals[4]
 
+#re-format date times before passing them through plotting function
+Q1_dates_spec_str = [dt.strftime("%Y-%m-%d %H:%M:%S") for dt in Q1_dates_spec]
+qubit1_t1times_str = [dt.strftime("%Y-%m-%d %H:%M:%S") for dt in qubit1_t1times]
+
 # Initialize class
 plotter = PlotMetricDependencies(run_name, tot_num_of_qubits, final_figure_quality, fridge=FRIDGE)
 
 # Q1 Freq vs Q1 T1
-plotter.plot(Q1_dates_spec, Q1_freqs, qubit1_t1times, qubit1_t1, metric_1_label = 'Q1 Freq (MHz)',
+plotter.plot(Q1_dates_spec_str, Q1_freqs, qubit1_t1times_str, qubit1_t1, metric_1_label = 'Q1 Freq (MHz)',
              metric_2_label = 'T1 (us)')
 
 # # Q5 Freq vs Q5 T1
