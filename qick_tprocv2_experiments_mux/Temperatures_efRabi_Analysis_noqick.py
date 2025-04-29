@@ -38,9 +38,9 @@ target_dates = [
     "2025-04-22",
     "2025-04-23", #switches source (to Cs)
     "2025-04-24",
-    "2025-04-25"
-    "2025-04-26"
-    "2025-04-27"
+    "2025-04-25",
+    "2025-04-26",
+    "2025-04-27",
     "2025-04-28"] #Cs source moved closer
 base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study"
 outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/params_vs_time"
