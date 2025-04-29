@@ -53,14 +53,15 @@ def optimization_report_ge(substudy_dir, dataset, QubitIndex):
     plot.set_title(f'qspec_ge: {np.round(qspec_freq, 2)} +/- {np.round(qspec_fit_err, 2)} MHz, fwhm: {np.round(qspec_fwhm, 2)} MHz',fontsize=10)
     col = col + 1
 
-    qspec_probe_freqs, mag, qspec_date = get_ext_qspec_data(data_path, QubitIndex)
-    plot = ax_opt[row, col]
-    plot.plot(qspec_probe_freqs, mag)
-    plot.set_xlabel('qubit probe frequency [MHz]',fontsize=10)
-    plot.set_ylabel('I,Q magnitude [a.u.]',fontsize=10)
-    plot.set_title('extended_qspec_ge',fontsize=10)
+    
+   # qspec_probe_freqs, mag, qspec_date = get_ext_qspec_data(data_path, QubitIndex)
+   # plot = ax_opt[row, col]
+   # plot.plot(qspec_probe_freqs, mag)
+   # plot.set_xlabel('qubit probe frequency [MHz]',fontsize=10)
+   # plot.set_ylabel('I,Q magnitude [a.u.]',fontsize=10)
+   # plot.set_title('extended_qspec_ge',fontsize=10)
 
-    ################ rabi ##########################
+    ################ Rabi ##########################
     col = 0
     row = 1
 

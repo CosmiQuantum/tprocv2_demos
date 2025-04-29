@@ -40,7 +40,7 @@ ef_res_sample_number = 1
 ss_sample_number = 1
 qspec_sample_number = 50 #1
 med_gain = 0.5 #set medium gain qspec gain
-high_gain = 0.5 #set high gain qspec gain
+high_gain = 1.0 #set high gain qspec gain
 n = 80 # number of rounds for fast repetitive runs
 save_r = 1  # how many rounds to save after
 signal = 'None'  # 'I', or 'Q' depending on where the signal is
@@ -57,8 +57,8 @@ multiply_qubit_reps_by = 2
 # increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
 increase_steps_to_ef = 600
 study = 'TLS_Comprehensive_Study'
-sub_study = 'source_on_substudy4'
-substudy_txt_notes = '60Co source with substudy4 parameter updates. Austerity cuts made to ensure we do not crash.'
+sub_study = 'source_on_substudy6'
+substudy_txt_notes = '137Cs run with highest rate configuration, back to using 1.0 for high gain.'
 Qs_to_look_at = [0,4]  # list of qubits to process
 
 # Set which experiments to run
