@@ -1755,13 +1755,15 @@ class PlotRR_noQick:
         T_mK = T_K * 1000  # Convert to millikelvin
         return T_K, T_mK, P_e, qubit_freq_MHz
 
-    def plot_qubit_temperatures_vs_time(self, all_files_Qtemp_results, num_qubits=6):
+    def plot_qubit_temperatures_vs_time(self, all_files_Qtemp_results, num_qubits=6, restrict_time_xaxis = False, plot_extra_event_lines = False):
         """
         Plots qubit temperatures vs. time for each qubit in a separate subplot (max 3 columns).
 
         Parameters:
         - all_files_Qtemp_results: list of dicts returned by `load_plot_save_rabis_Qtemps`
         - num_qubits: total number of qubits to plot (default is 6)
+        - restrict_time_xaxis : do you want to plot only a certain region of time?
+        - plot_extra_event_lines: do you want to plot vertical dashed lines to mark extra events that happened (besides source instalattion)?
         """
 
         # Define the colors you want for each qubit
@@ -1807,7 +1809,10 @@ class PlotRR_noQick:
             ("16:40", "Kester-Grace Entry"),
             ("16:48", "Kester-Grace Exit")]
 
-
+        # Optional: Restrict plot to specific date and time window. Will only go into effect if restrict_time_xaxis = True
+        date_to_plot = datetime.date(2025, 4, 18)
+        time_start = datetime.time(0, 0)  # Start of the window
+        time_end = datetime.time(23, 59)  # End of the window
 
         for q in range(num_qubits):
             times = []
@@ -1826,12 +1831,6 @@ class PlotRR_noQick:
             if not times:
                 ax.set_visible(False)
                 continue
-
-            # --- Optional: Restrict plot to specific date and time window ---
-            restrict_time_xaxis = False  # Set to False to show full range
-            date_to_plot = datetime.date(2025, 4, 18)
-            time_start = datetime.time(0, 0)  # Start of the window
-            time_end = datetime.time(23, 59)  # End of the window
 
             if restrict_time_xaxis:
                 start_time = datetime.datetime.combine(date_to_plot, time_start)
@@ -1878,46 +1877,42 @@ class PlotRR_noQick:
                   for t, label in events_0423)
             ]
 
-            # Only keep events within the plot window if restrict_time_xaxis is True
-            if restrict_time_xaxis:
-                extra_events = [(vtime, label) for vtime, label in extra_events if start_time <= vtime <= end_time]
-
-            # Map each unique label to a unique color
-            unique_labels = list(dict.fromkeys(label for _, label in extra_events))
-            # cmap = cm.get_cmap('tab20', len(unique_labels)) pastels
-            cmap = cm.get_cmap('Set1', len(unique_labels)) #dark colors
-            label_to_color = {label: mcolors.to_hex(cmap(i)) for i, label in enumerate(unique_labels)}
-
-            # Track which labels were already used in the legend
-            legend_handles = []
-            used_labels = set()
-
-            # Plot vertical lines for each event, reusing colors
-            for vtime, label in extra_events:
-                color = label_to_color[label]
-                ax.axvline(vtime, color=color, linestyle='--', linewidth=1)
-                if label not in used_labels:
-                    legend_handles.append(Line2D([0], [0], color=color, linestyle='--', label=label, alpha=1.0))
-                    used_labels.add(label)
-
             if restrict_time_xaxis:
                 ax.set_xlim(start_time, end_time)
                 ax.set_autoscale_on(False)
 
-            # Add a combined legend (only once)
-            if q == 0:
-                fig.legend(
-                    handles= legend_handles,
-                )
+            if plot_extra_event_lines:
+                # Only keep events within the plot window if restrict_time_xaxis is True
+                if restrict_time_xaxis:
+                    extra_events = [(vtime, label) for vtime, label in extra_events if start_time <= vtime <= end_time]
+
+                # Map each unique label to a unique color
+                unique_labels = list(dict.fromkeys(label for _, label in extra_events))
+                # cmap = cm.get_cmap('tab20', len(unique_labels)) pastels
+                cmap = cm.get_cmap('Set1', len(unique_labels)) #dark colors
+                label_to_color = {label: mcolors.to_hex(cmap(i)) for i, label in enumerate(unique_labels)}
+
+                # Track which labels were already used in the legend
+                legend_handles = []
+                used_labels = set()
+
+                # Plot vertical lines for each event, reusing colors
+                for vtime, label in extra_events:
+                    color = label_to_color[label]
+                    ax.axvline(vtime, color=color, linestyle='--', linewidth=1)
+                    if label not in used_labels:
+                        legend_handles.append(Line2D([0], [0], color=color, linestyle='--', label=label, alpha=1.0))
+                        used_labels.add(label)
+
+                # Add a combined legend (only once)
+                if q == 0:
+                    fig.legend(
+                        handles= legend_handles,
+                    )
 
         # Add a shared X label
         for ax in axes:
             ax.set_xlabel("Time")
-
-        # plt.tight_layout(rect=[0, 0, 1, 0.95])
-
-        # Optionally, auto-format the x-axis date labels
-        # fig.autofmt_xdate()
 
         # Save the figure
         timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
