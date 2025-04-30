@@ -1730,7 +1730,8 @@ class PlotRR_noQick:
                             'T_mK': T_mK,
                             'P_e': P_e,
                             'qubit_freq_MHz': qubit_freq,
-                            'date': date.timestamp()}
+                            'date': date.timestamp(),
+                            'filepath': h5_file}
 
             all_files_Qtemp_results.append(file_result)
             del H5_class_instance
@@ -1825,6 +1826,9 @@ class PlotRR_noQick:
                     T_mK = qubit_data['T_mK']
                     times.append(datetime.datetime.fromtimestamp(timestamp))
                     temps.append(T_mK)
+
+                    if T_mK > 300:
+                        print(f"High temperature ({T_mK:.1f} mK) in file {file_result['filepath']} for Q{q + 1}")
 
             ax = axes[q]
 

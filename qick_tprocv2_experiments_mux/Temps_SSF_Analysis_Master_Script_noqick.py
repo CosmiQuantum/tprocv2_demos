@@ -1,7 +1,7 @@
 from analysis_021_plot_allRR_noqick import QubitSpectroscopy
 from qicklab.analysis import qspec, t1, ssf
 from section_008_save_data_to_h5 import Data_H5
-from analysis_014_temperature_calcsandplots_cosmiqgpvm import TempCalcAndPlots
+from analysis_014_ssf_temp_calcsandplots_cosmiqgpvm import TempCalcAndPlots
 from expt_config import expt_cfg, list_of_all_qubits, FRIDGE
 import glob
 import re
