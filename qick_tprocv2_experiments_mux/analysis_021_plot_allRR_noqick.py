@@ -1827,7 +1827,7 @@ class PlotRR_noQick:
                     times.append(datetime.datetime.fromtimestamp(timestamp))
                     temps.append(T_mK)
 
-                    if T_mK < 150:
+                    if T_mK > 800:
                         print(f"High temperature ({T_mK:.1f} mK) in file {qubit_data['filepath']} for Q{q + 1}")
 
             ax = axes[q]
