@@ -1828,7 +1828,7 @@ class PlotRR_noQick:
                     temps.append(T_mK)
 
                     if T_mK < 105:
-                        print(f"Low Temperature ({T_mK:.1f} mK) in file {qubit_data['filepath']} for Q{q + 1}. A1={qubit_data['A1']}, A2={qubit_data['A2']}.")
+                        print(f"Low Temperature ({T_mK:.1f} mK) in file {qubit_data['filepath']} for Q{q + 1}. A1={qubit_data['A1']}, A2={qubit_data['A2']}, Qfreq={qubit_data['qubit_freq_MHz']}.")
 
             ax = axes[q]
 
