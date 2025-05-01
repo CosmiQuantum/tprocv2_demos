@@ -1,46 +1,30 @@
-from section_008_save_data_to_h5 import Data_H5
-import re
-import datetime as dt
 from bisect import bisect_left
-import glob
 import re
-import datetime
 import ast
-import os
-import sys
-from matplotlib.dates import DateFormatter
 import numpy as np
 import h5py
 from sklearn.mixture import GaussianMixture
 from qicklab.analysis import qspec, t1, ssf
-import matplotlib.pyplot as plt
 import math
+import os
+import datetime
+import matplotlib.pyplot as plt
+from matplotlib.dates import DateFormatter
 
 save_figs = True
-fit_saved = False
-signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 
 
 class TempCalcAndPlots:
-    def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, outerFolder, fridge):
-
+    def __init__(self, figure_quality, number_of_qubits, save_figs, outerFolder):
         self.save_figs = save_figs
-        self.fit_saved = fit_saved
-        self.signal = signal
         self.figure_quality = figure_quality
-        self.run_name = run_name
         self.number_of_qubits = number_of_qubits
-        self.final_figure_quality = final_figure_quality
-        self.top_folder_dates = top_folder_dates
         self.outerFolder = outerFolder
-        self.temperature_folder = os.path.join(self.outerFolder, "Temperatures")
-        self.fridge = fridge
 
         # Create the folder if it doesn't exist
-        if not os.path.exists(self.temperature_folder):
-            os.makedirs(self.temperature_folder)
+        if not os.path.exists(self.outerFolder):
+            os.makedirs(self.outerFolder)
 
     def calculate_qubit_temperature(self, frequency_mhz, ground_state_population, excited_state_population):
         k_B = 1.380649e-23  # Boltzmann constant in J/K
@@ -146,180 +130,47 @@ class TempCalcAndPlots:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run(self, pairs_by_qubit, science_qubits=(0, 4), tolerance_seconds=10):
+    def run(self, pairs_info, limit_temp_k=0.8):
         """
         Parameters
         ----------
-        pairs_by_qubit : dict {QubitIndex : [(qspec_h5, ssf_h5), …]}
-        science_qubits : iterable[int]      which qubits to analyse
-        tolerance_seconds : int             (kept only for completeness)
+        pairs_info : dict
+            {qubit: [ {"qspec":..., "ssf":..., "freq":<MHz>,
+                        "Ig":<np.ndarray>, "ts":<unix-time> }, … ]}
+        limit_temp_k : float
+            Discard temperatures above this value (default 0.8 K → 800 mK).
 
         Returns
         -------
-        all_qubit_temps      dict {QubitIndex : [temp_mK,   …]}
-        all_qubit_timestamps dict {QubitIndex : [unix_time, …]}
+        all_qubit_temperatures : dict {qubit: [temp_mK, …]}
+        all_qubit_timestamps   : dict {qubit: [datetime, …]}
         """
-
-        all_qubit_temps = {q: [] for q in science_qubits}
-        all_qubit_timestamps = {q: [] for q in science_qubits}
-
-        # helper to split a full file path → (parent_path, dataset)
-        def split_paths(h5_path):
-            ts_dir = os.path.dirname(os.path.dirname(os.path.dirname(h5_path)))
-            return os.path.dirname(ts_dir), os.path.basename(ts_dir)
-
-        for QubitIndex in science_qubits:
-
-            for qspec_h5, ssf_h5 in pairs_by_qubit.get(QubitIndex, []):
-
-                parent_path, dataset = split_paths(qspec_h5)  # same for SSF
-
-                # --------------------- QSpec : get qubit_frequency --------------------
-                try:
-                    qspec_obj = qspec(parent_path, dataset, QubitIndex)
-                    qs_dates, qs_n, qs_probe_f, qs_I, qs_Q = qspec_obj.load_all()
-                    qs_freqs, *_ = qspec_obj.get_all_qspec_freq(qs_probe_f, qs_I, qs_Q, qs_n)
-
-                    file_ts_qspec = self.timestamp(qspec_h5).timestamp() # extracts the time stamp embedded in the file name
-                    idx_qspec = int(np.argmin(np.abs(np.array(qs_dates) -
-                                                     file_ts_qspec)))
-                    qubit_frequency = float(qs_freqs[idx_qspec])  # [MHz]
-                except Exception as e:
-                    print(f"[run] QSpec load/fit failed (Q{QubitIndex}) → {e}")
-                    continue
-
-                # --------------------- SSF : get Ig slice -----------------------------
-                try:
-                    ssf_obj = ssf(parent_path, dataset, QubitIndex)
-                    ss_dates, ss_n, I_g, Q_g, I_e, Q_e, fid, angles = ssf_obj.load_all()
-
-                    file_ts_ssf = self.timestamp(ssf_h5).timestamp()
-                    idx_ssf = int(np.argmin(np.abs(np.array(ss_dates) -
-                                                   file_ts_ssf)))
-                    ig_new = np.array(I_g[idx_ssf])  # 1-D Ig samples
-                except Exception as e:
-                    print(f"[run] SSF load failed (Q{QubitIndex}) → {e}")
-                    continue
-
-                # --------------------- Double-Gaussian fit -----------------------------
-                try:
-                    (ground_state_population,
-                     excited_state_population_overlap,
-                     gmm, means, covariances, weights,
-                     crossing_point,
-                     ground_gaussian, excited_gaussian,
-                     ground_data, excited_data,
-                     iq_data) = self.fit_double_gaussian_with_full_coverage(ig_new)
-                except Exception as e:
-                    print(f"[run] Gaussian fit failed (Q{QubitIndex}) → {e}")
-                    continue
-
-                # --------------------- Temperature calculation -------------------------
-                temperature_k = self.calculate_qubit_temperature(
-                    qubit_frequency,
-                    ground_state_population,
-                    excited_state_population_overlap)
-
-                if temperature_k is None:
-                    continue  # skip unphysical or bad dataset
-
-                all_qubit_temps[QubitIndex].append(temperature_k * 1e3)  # K→mK
-                all_qubit_timestamps[QubitIndex].append(ss_dates[idx_ssf])  # unix
-
-        return all_qubit_temps, all_qubit_timestamps
-
-    def ran(self, QubitIndex):
-        q_key = QubitIndex
+        # initialise output arrays
         all_qubit_temperatures = {i: [] for i in range(self.number_of_qubits)}
         all_qubit_timestamps = {i: [] for i in range(self.number_of_qubits)}
-        # ----------------------------------------------Load/Plot/Save QSpec------------------------------------
-        for date in self.top_folder_dates:
-            if self.fridge.upper() == 'QUIET':
-                outerFolder = f"/data/QICK_data/{self.run_name}/" + date + "/"
-                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + date + "_plots/"
-            elif self.fridge.upper() == 'NEXUS':
-                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + date + "/"
-                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + date + "_plots/"
-            else:
-                raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
-            # Update self.temperature_folder for the current date
-            self.temperature_folder = os.path.join(outerFolder, "Temperatures")
-            if not os.path.exists(self.temperature_folder):
-                os.makedirs(self.temperature_folder)
+        for qid, records in pairs_info.items():  # loop over qubits
+            for rec in records:  # …and every pair
+                freq_mhz = rec["qfreq_MHz"]
+                ig_new = rec["ig_new"]
+                ts_unix = rec["data_timestamp"]
 
-            outerFolder_expt = outerFolder + "/Data_h5/QSpec_ge/"
-            h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+                # -------- double-Gaussian fit on ground state data --------------------------
+                Pg, Pe, *_ = self.fit_double_gaussian_with_full_coverage(ig_new)
+                temp_k = self.calculate_qubit_temperature(freq_mhz, Pg, Pe)
 
-            qubit_frequencies = []
-
-            for h5_file in h5_files:
-                #print(h5_file)
-                save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
-                H5_class_instance = Data_H5(h5_file)
-                load_data = H5_class_instance.load_from_h5(data_type=  'QSpec', save_r = int(save_round))
-
-                # Define the time frame to exclude
-                # exclude_start = datetime.datetime(2025, 1, 26)  # Start date (inclusive)
-                # exclude_end = datetime.datetime(2025, 1, 27)  # End date (inclusive)
-
-                # Extract the relevant portion of the file name for matching
-                base_h5_file = "_".join(h5_file.split('/')[-1].split('_')[:2])  # Extract up to 2024-12-11_11-45-27
-                #print(f"Base H5 File for Matching: {base_h5_file}")
-
-                # Convert current file's timestamp to a datetime object
-                current_timestamp = datetime.datetime.strptime(base_h5_file, "%Y-%m-%d_%H-%M-%S")
-
-                #new way (matches time stamps in the file names within 10 seconds of eachother)
-                qubit_frequency = [
-                    entry['largest_amp_curve_mean']
-                    for entry in qubit_frequencies
-                    if entry['q_key'] == q_key and abs(
-                        (datetime.datetime.strptime(
-                            "_".join(entry['h5_file'].split('/')[-1].split('_')[:2]), "%Y-%m-%d_%H-%M-%S") - current_timestamp).total_seconds()) <= 10]
-
-                if len(qubit_frequency) == 0:
-                    print(f"No match found for h5_file: {base_h5_file}, q_key: {q_key}. Skipping.")
+                # -------- screening -----------------------------------------
+                if temp_k is None:
+                    # un-physical (Pg/Pe ≤ 1) – skip
+                    continue
+                if temp_k > limit_temp_k:
+                    print(f"[run]  Q{qid}: {temp_k * 1e3:.1f} mK  > {limit_temp_k * 1e3:.0f} mK  → dropped")
                     continue
 
-                qubit_frequency = qubit_frequency[0] #there should only be one value inside this list
-                #print('qubit_frequency is: ', qubit_frequency)
-                ground_state_population, excited_state_population_overlap, gmm, means, covariances, weights, crossing_point, ground_gaussian, excited_gaussian, ground_data, excited_data, iq_data = self.fit_double_gaussian_with_full_coverage(ig_new)
-                temperature_k = self.calculate_qubit_temperature(qubit_frequency, ground_state_population,
-                                                            excited_state_population_overlap)
-
-                limit_temp = 0.5 #kelvin, equivalent to 500mK
-                if temperature_k is not None and temperature_k <= limit_temp:
-                    temperature_mk = temperature_k * 1e3
-                    # print(f"Ground state population: {ground_state_population}")
-                    # print(f"Excited state (leakage) population: {excited_state_population_overlap}")
-                    # print(f"Qubit {q_key + 1} Temperature: {temperature_mk:.2f} mK", "\n")
-                    qubit_temperatures[q_key].append((temperature_mk, timestamp))
-
-                    # temperature_mk = temperature_k * 1e3
-                    # print(f"Ground state population: {ground_state_population}")
-                    # print(f"Excited state (leakage) population: {excited_state_population_overlap}")
-                    # print(f"Qubit {q_key + 1} Temperature: {temperature_mk:.2f} mK", "\n")
-                    # qubit_temperatures[q_key].append((temperature_mk, timestamp))#save temps for each qubit
-
-                else:
-                    # Distinguish between unphysical value or out-of-range value
-                    if temperature_k is None:
-                        print(f"Warning: Unphysical temperature for Qubit {q_key + 1}. Skipping.")
-                        pass # Skip this dataset
-                    else:
-                        temperature_mk = temperature_k * 1e3
-                        limit_temp_mk = limit_temp * 1e3  # Convert K to mK
-                        print(f"Warning: Temperature {temperature_mk:.2f} mK exceeds {limit_temp_mk} mK for Qubit {q_key + 1}. Skipping this dataset.")
-                        pass  # Skip this dataset
-
-                del H5_class_instance
-
-            #Saving data for all days
-            for q_id in range(self.number_of_qubits):
-                for (temp_mk, ts) in qubit_temperatures[q_id]:
-                    all_qubit_temperatures[q_id].append(temp_mk)
-                    all_qubit_timestamps[q_id].append(datetime.datetime.fromtimestamp(ts)) # Convert timestamp to datetime for easier plotting later
+                # -------- save qubit temps and timestamps ----------------------------------------------
+                all_qubit_temperatures[qid].append(temp_k * 1e3)  # mK
+                all_qubit_timestamps[qid].append(
+                    datetime.datetime.fromtimestamp(ts_unix))
 
         return all_qubit_temperatures, all_qubit_timestamps
 
@@ -411,7 +262,7 @@ class TempCalcAndPlots:
         m = ts_re.search(os.path.basename(fname))
         if m is None:
             raise ValueError("No timestamp found in: {}".format(fname))
-        return dt.datetime.strptime(m.group(1), "%Y-%m-%d_%H-%M-%S")
+        return datetime.datetime.strptime(m.group(1), "%Y-%m-%d_%H-%M-%S")
 
     # -------------------------------- helper to discover qubit index
     def qubit_of(self, h5_path):
@@ -487,3 +338,147 @@ class TempCalcAndPlots:
             unmatched_ssf[qi] = list(free_ssf)
 
         return pairs_by_qubit, unmatched_qspec, unmatched_ssf
+
+    #  Scatter – temperatures vs. time  (all dates, each qubit its own subplot)
+    def plot_all_qubits_scatter(self, all_qubit_temperatures,
+                                all_qubit_timestamps,
+                                out_dir,
+                                colors=None):
+        if colors is None:
+            colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+
+        os.makedirs(out_dir, exist_ok=True)
+
+        plt.figure(figsize=(15, 10))
+        date_fmt = DateFormatter('%m-%d\n%H:%M')
+
+        for q in all_qubit_temperatures.keys():
+            temps = all_qubit_temperatures[q]
+            times = all_qubit_timestamps[q]
+            if not temps:
+                continue
+
+            ax = plt.subplot(2, 3, q + 1)
+            ax.scatter(times, temps,
+                       color=colors[q], alpha=0.7, edgecolor='black',
+                       label=f"Q{q + 1}")
+            ax.set_title(f"Qubit {q + 1} Temperature vs Time")
+            ax.set_xlabel("Time")
+            ax.set_ylabel("Temperature (mK)")
+            ax.grid(alpha=0.3)
+            ax.legend()
+            ax.xaxis.set_major_formatter(date_fmt)
+            plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
+
+        plt.tight_layout()
+        fname = os.path.join(
+            out_dir,
+            f"AllQubits_Temps_vs_Time_{datetime.datetime.now():%Y%m%d%H%M%S}.png")
+        plt.savefig(fname, dpi=300)
+        plt.close()
+        print("Saved all-dates scatter →", fname)
+
+    # Histograms – temperature distributions  (all dates, each qubit subplot)
+    def plot_all_qubits_hist(self, all_qubit_temperatures,
+                             out_dir,
+                             colors=None,
+                             bins=20):
+        if colors is None:
+            colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+
+        os.makedirs(out_dir, exist_ok=True)
+
+        plt.figure(figsize=(15, 10))
+
+        for q in all_qubit_temperatures.keys():
+            temps = all_qubit_temperatures[q]
+            if not temps:
+                continue
+
+            ax = plt.subplot(2, 3, q + 1)
+            ax.hist(temps, bins=bins,
+                    color=colors[q], alpha=0.7, edgecolor='black')
+            ax.set_title(f"Qubit {q + 1} Temperature Distribution")
+            ax.set_xlabel("Temperature (mK)")
+            ax.set_ylabel("Count")
+            ax.grid(alpha=0.3)
+
+        plt.tight_layout()
+        fname = os.path.join(
+            out_dir,
+            f"AllQubits_Temp_Hist_{datetime.datetime.now():%Y%m%d%H%M%S}.png")
+        plt.savefig(fname, dpi=300)
+        plt.close()
+        print("Saved all-dates histogram →", fname)
+
+    # Temperature histograms   --------------------------------------------------
+    def plot_temp_histograms(self, qubit_temperatures, out_dir, bins=20):
+        """
+        Parameters
+        ----------
+        qubit_temperatures : dict {qubit: [(temp_mK, unix_ts), …]}
+        out_dir            : str   folder that will receive the PNG
+        colors             : list  colour per qubit (defaults if None)
+        bins               : int   histogram bins
+        """
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+
+        os.makedirs(out_dir, exist_ok=True)
+
+        plt.figure(figsize=(15, 10))
+        for q, data in qubit_temperatures.items():
+            temps = [t for t, _ in data]
+            plt.subplot(2, 3, q + 1)
+            plt.hist(temps, bins=bins, color=colors[q], alpha=0.7,
+                     edgecolor='black')
+            plt.title(f"Qubit {q + 1} Temperature Distribution")
+            plt.xlabel("Temperature (mK)")
+            plt.ylabel("Count")
+            plt.grid(alpha=0.3)
+
+        plt.tight_layout()
+        fname = os.path.join(
+            out_dir,
+            f"Temperature_Histograms_{datetime.datetime.now():%Y%m%d%H%M%S}.png")
+        plt.savefig(fname, dpi=300)
+        plt.close()
+        print("Saved histogram →", fname)
+
+    # Temperature-vs-time scatter --------------------------------------------
+    def plot_temp_scatter(self, qubit_temperatures, out_dir):
+        """
+        Parameters
+        ----------
+        qubit_temperatures : dict {qubit: [(temp_mK, unix_ts), …]}
+        out_dir            : str   folder that will receive the PNG
+        colors             : list  color per qubit (defaults if None)
+        """
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+
+        os.makedirs(out_dir, exist_ok=True)
+
+        plt.figure(figsize=(15, 10))
+        date_fmt = DateFormatter('%m-%d\n%H:%M')
+
+        for q, data in qubit_temperatures.items():
+            if not data:
+                continue
+            temps, ts = zip(*data)
+            times = [datetime.datetime.fromtimestamp(t) for t in ts]
+
+            ax = plt.subplot(2, 3, q + 1)
+            ax.scatter(times, temps, color=colors[q], alpha=0.7, edgecolor='black')
+            ax.set_title(f"Qubit {q + 1} Temperature vs Time")
+            ax.set_xlabel("Time")
+            ax.set_ylabel("Temperature (mK)")
+            ax.grid(alpha=0.3)
+            ax.xaxis.set_major_formatter(date_fmt)
+            plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
+
+        plt.tight_layout()
+        fname = os.path.join(
+            out_dir,
+            f"Temperature_Scatter_{datetime.datetime.now():%Y%m%d%H%M%S}.png")
+        plt.savefig(fname, dpi=300)
+        plt.close()
+        print("Saved scatter →", fname)
