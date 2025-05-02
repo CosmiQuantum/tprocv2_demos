@@ -145,6 +145,25 @@ class TempCalcAndPlots:
         -------
         all_qubit_temperatures : dict {qubit: [temp_mK, …]}
         all_qubit_timestamps   : dict {qubit: [datetime, …]}
+
+        fit_results : dict
+        { qubit_index: [
+          {
+            "dataset": <int>,
+            "timestamp": <datetime>,
+            "temperature_mK": <float>,
+            "fid": <float>,
+            "ig_new": np.ndarray,
+            "ground_data": np.ndarray,
+            "excited_data": np.ndarray,
+            "ground_gaussian": <int>,
+            "excited_gaussian": <int>,
+            "crossing_point": <float>,
+            "weights": np.ndarray(shape=(2,)),
+            "covariances": np.ndarray(shape=(2,)),
+            "means": np.ndarray(shape=(2,))
+          }, …
+            ]}
         """
         # initialise output arrays
         all_qubit_temperatures = {i: [] for i in range(self.number_of_qubits)}
