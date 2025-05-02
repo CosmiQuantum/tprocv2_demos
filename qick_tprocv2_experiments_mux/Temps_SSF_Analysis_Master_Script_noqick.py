@@ -154,15 +154,15 @@ ssf_h5s   = {q: [] for q in Science_Qubits}
 # Match ssf and Qspec files by time stamps
 for tdir in paths:
     # ---------- QSpec ----------
-    for f in glob.glob(os.path.join(tdir, "study_data", "Data_h5", "qspec_ge", "*_qspec_ge*_results_*.h5")):
-        with h5py.File(f, "r") as h5:
-            qi = int(next(k for k in h5.keys() if k.isdigit()))  # 0 or 4
+    qspec_pattern = os.path.join(tdir, "study_data", "Data_h5", "qspec_ge", "*_qspec_ge*_results_*.h5")
+    for f in glob.glob(qspec_pattern):
+        qi = temps_class_obj.qubit_of(f)
         qspec_h5s[qi].append(f)
 
     # ---------- SSF ------------
-    for f in glob.glob(os.path.join(tdir, "study_data", "Data_h5", "ss_ge", "*_ss_ge*_results_*.h5")):
-        with h5py.File(f, "r") as h5:
-            qi = int(next(k for k in h5.keys() if k.isdigit()))
+    ssf_pattern = os.path.join(tdir, "study_data", "Data_h5", "ss_ge", "*_ss_ge*_results_*.h5")
+    for f in glob.glob(ssf_pattern):
+        qi = temps_class_obj.qubit_of(f)
         ssf_h5s[qi].append(f)
 
 print("About to pair QSpec files:", qspec_h5s)
