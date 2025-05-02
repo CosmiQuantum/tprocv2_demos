@@ -9,6 +9,7 @@ import math
 import os
 import datetime
 import matplotlib.pyplot as plt
+from bisect import bisect_left
 from matplotlib.dates import DateFormatter
 
 save_figs = True
@@ -266,9 +267,12 @@ class TempCalcAndPlots:
 
     # -------------------------------- helper to discover qubit index
     def qubit_of(self, h5_path):
-        with h5py.File(h5_path, "r") as h5:
-            k = next(g for g in h5.keys() if g.isdigit())  # first top-level group
-            return int(k)
+        with h5py.File(h5_path, "r") as f:
+            for key in f.keys():
+                # match "Q1", "Q2", ...
+                if key.startswith("Q") and key[1:].isdigit():
+                    return int(key[1:])
+        raise ValueError(f"No Q<digit> group in {h5_path}")
 
     def pair_qspec_and_ssf(self, qspec_files, ssf_files, tolerance_seconds=10):
         """
@@ -277,63 +281,53 @@ class TempCalcAndPlots:
         qspec_files: dict[int, list[str]] OR list[str]
             If dict, keys are qubit indices and values are lists of full‐path .h5 files.
         ssf_files:  same shape as qspec_files
+        tolerance_seconds: maximum allowed pairing offset in seconds
         """
 
-        # If user gave us the per‐qubit dicts, just use them:
+        # Build per‐qubit buckets
         if isinstance(qspec_files, dict):
-            qspec_by_q = {qi: list(files) for qi, files in qspec_files.items()}
+            qspec_by_q = {qi: list(lst) for qi, lst in qspec_files.items()}
         else:
-            #   fallback: discover qubit index by opening the file
-            def qubit_of(path):
-                with h5py.File(path, "r") as h5:
-                    return int(next(k for k in h5.keys() if k.isdigit()))
-
             qspec_by_q = {}
             for f in qspec_files:
-                qi = qubit_of(f)
+                qi = self.qubit_of(f)  # calls your existing helper
                 qspec_by_q.setdefault(qi, []).append(f)
 
         if isinstance(ssf_files, dict):
-            ssf_by_q = {qi: list(files) for qi, files in ssf_files.items()}
+            ssf_by_q = {qi: list(lst) for qi, lst in ssf_files.items()}
         else:
-            def qubit_of(path):
-                with h5py.File(path, "r") as h5:
-                    return int(next(k for k in h5.keys() if k.isdigit()))
-
             ssf_by_q = {}
             for f in ssf_files:
-                qi = qubit_of(f)
+                qi = self.qubit_of(f)
                 ssf_by_q.setdefault(qi, []).append(f)
 
-        # Now qspec_by_q and ssf_by_q are both dict[qubit -> list of files]
         pairs_by_qubit = {}
         unmatched_qspec = {}
         unmatched_ssf = {}
 
+        # For each qubit, match QSpec → SSF by nearest‐timestamp
         for qi in set(qspec_by_q) | set(ssf_by_q):
-            # get lists, sort by *internal* timestamp if you like
-            spec_list = sorted(qspec_by_q.get(qi, []),
-                               key=lambda f: self.timestamp(f))
-            ssf_list = sorted(ssf_by_q.get(qi, []),
-                              key=lambda f: self.timestamp(f))
+            spec_list = sorted(qspec_by_q.get(qi, []), key=lambda p: self.timestamp(p))
+            ssf_list = sorted(ssf_by_q.get(qi, []), key=lambda p: self.timestamp(p))
 
-            spec_times = [self.timestamp(f) for f in spec_list]
-            ssf_times = [self.timestamp(f) for f in ssf_list]
+            spec_times = [self.timestamp(p) for p in spec_list]
+            ssf_times = [self.timestamp(p) for p in ssf_list]
             free_ssf = set(ssf_list)
 
             matches, lonely_spec = [], []
             for t_spec, f_spec in zip(spec_times, spec_list):
-                # find the best SSF within tolerance
                 idx = bisect_left(ssf_times, t_spec)
                 candidates = []
-                if idx < len(ssf_list):     candidates.append((ssf_times[idx], ssf_list[idx]))
-                if idx > 0:                  candidates.append((ssf_times[idx - 1], ssf_list[idx - 1]))
+                if idx < len(ssf_list):
+                    candidates.append((ssf_times[idx], ssf_list[idx]))
+                if idx > 0:
+                    candidates.append((ssf_times[idx - 1], ssf_list[idx - 1]))
 
                 best = None
                 for t_ssf, f_ssf in candidates:
-                    if abs((t_ssf - t_spec).total_seconds()) <= tolerance_seconds:
-                        if best is None or abs(t_ssf - t_spec) < abs(best[0] - t_spec):
-                            best = (t_ssf, f_ssf)
+                    delta = abs((t_ssf - t_spec).total_seconds())
+                    if delta <= tolerance_seconds and (best is None or delta < abs((best[0] - t_spec).total_seconds())):
+                        best = (t_ssf, f_ssf)
 
                 if best and best[1] in free_ssf:
                     matches.append((f_spec, best[1]))
