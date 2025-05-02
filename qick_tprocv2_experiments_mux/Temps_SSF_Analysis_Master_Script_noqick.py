@@ -94,12 +94,14 @@ path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plo
 #     "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-26_14-49-55",
 #     "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-26_18-15-55"
 # ] # data folders
-paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_11-47-09"]
+paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_11-47-09",
+         "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_12-51-09"]
 ################################################# Get all data ######################################################
 Science_Qubits = [0,4]
 freq_cache = {}
 ig_new_cache = {}
 timestamp_ssf_cache= {}
+fid_cache = {}
 for full_path in paths:
     path = os.path.dirname(full_path)  # one level up from the dataset
     dataset = os.path.basename(full_path)  # just the '2025-04-16_11-47-09' part
@@ -141,6 +143,7 @@ for full_path in paths:
                 key = (ssf_paths[i], QubitIndex)
                 ig_new_cache[key] = ig_new
                 timestamp_ssf_cache[key] = ssf_dates[i]
+                fid_cache[key] = fid[i]
 
         except Exception as e:
             print(f"Failed loading SSF for qubit {QubitIndex} from {full_path}: {e}")
@@ -180,9 +183,34 @@ for q in Science_Qubits:
             "ssf_path"  : ssf_path,
             "qfreq_MHz" : freq_cache[fq_key],     # MHz
             "ig_new"   : ig_new_cache[ss_key],
-            "data_timestamp" : timestamp_ssf_cache[ss_key].timestamp()# unix-timestamps
+            "data_timestamp" : timestamp_ssf_cache[ss_key].timestamp(),# unix-timestamps
+            "fid": fid_cache[ss_key]
         })
 
 #-------------------------------------------- Calculate Temperatures ---------------------------------------------------
-all_qubit_temps, all_qubit_times = temps_class_obj.run(pairs_info, limit_temp_k=0.8)
-temps_class_obj.plot_all_qubits_scatter(all_qubit_temps, all_qubit_times, path_saveplots)
+all_qubit_temps, all_qubit_times, fit_results  = temps_class_obj.run(pairs_info, limit_temp_k=0.8)
+#---------------------------------------- Temperatures vs Time Scatter Plot --------------------------------------------
+# temps_class_obj.plot_all_qubits_scatter(all_qubit_temps, all_qubit_times, path_saveplots)
+#-------------------------------------------Check Gaussian Fits (Plots)-------------------------------------------------
+path_saveplots_fits = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Gaussian_Fits"
+for q_key, recs in fit_results.items():
+    # e.g. path_saveplots/Q1, Q2, etc.
+    qubit_folder = os.path.join(path_saveplots_fits, f"Q{q_key+1}")
+    os.makedirs(qubit_folder, exist_ok=True)
+
+    for rec in recs:
+        temps_class_obj.plot_gaussians_qtemps(
+            q_key,
+            qubit_folder,
+            rec["fid"],
+            rec["ig_new"],
+            rec["ground_data"],
+            rec["excited_data"],
+            rec["ground_gaussian"],
+            rec["excited_gaussian"],
+            rec["crossing_point"],
+            rec["temperature_mK"],
+            rec["dataset"],
+            rec["weights"],
+            rec["covariances"],
+            rec["means"])

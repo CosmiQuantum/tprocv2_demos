@@ -47,7 +47,7 @@ class TempCalcAndPlots:
         return T
 
 
-    def fit_double_gaussian_with_full_coverage(self, iq_data):
+    def fit_double_gaussian_with_full_coverage(self, iq_data): #iq_data is ig_new (IQ data post-rotation)
         gmm = GaussianMixture(n_components=2)
         gmm.fit(iq_data.reshape(-1, 1))
 
@@ -149,15 +149,17 @@ class TempCalcAndPlots:
         # initialise output arrays
         all_qubit_temperatures = {i: [] for i in range(self.number_of_qubits)}
         all_qubit_timestamps = {i: [] for i in range(self.number_of_qubits)}
-
+        fit_results = {qid: [] for qid in range(self.number_of_qubits)}
         for qid, records in pairs_info.items():  # loop over qubits
-            for rec in records:  # …and every pair
+            for idx, rec in enumerate(records):  # …and every pair
                 freq_mhz = rec["qfreq_MHz"]
                 ig_new = rec["ig_new"]
                 ts_unix = rec["data_timestamp"]
+                fid = rec["fid"]
 
                 # -------- double-Gaussian fit on ground state data --------------------------
-                Pg, Pe, *_ = self.fit_double_gaussian_with_full_coverage(ig_new)
+                (Pg, Pe, gmm, means, covariances, weights, crossing_point, ground_gaussian, excited_gaussian,
+                ground_data, excited_data, iq_data) = self.fit_double_gaussian_with_full_coverage(ig_new)
                 temp_k = self.calculate_qubit_temperature(freq_mhz, Pg, Pe)
                 print(temp_k)
                 # -------- screening -----------------------------------------
@@ -172,8 +174,23 @@ class TempCalcAndPlots:
                 all_qubit_temperatures[qid].append(temp_k * 1e3)  # mK
                 all_qubit_timestamps[qid].append(
                     datetime.datetime.fromtimestamp(ts_unix))
+                fit_results[qid].append({
+                    "dataset": idx,
+                    "timestamp": datetime.datetime.fromtimestamp(ts_unix),
+                    "temperature_mK": temp_k * 1e3,
+                    "fid": fid,
+                    "ig_new": ig_new,
+                    "ground_data": ground_data,
+                    "excited_data": excited_data,
+                    "ground_gaussian": ground_gaussian,
+                    "excited_gaussian": excited_gaussian,
+                    "crossing_point": crossing_point,
+                    "weights": weights,
+                    "covariances": covariances,
+                    "means": means
+                })
 
-        return all_qubit_temperatures, all_qubit_timestamps
+        return all_qubit_temperatures, all_qubit_timestamps, fit_results
 
     def plot_gaussians_qtemps(self, q_key, qubit_folder, fidelity, ig_new, ground_data, excited_data, ground_gaussian, excited_gaussian, crossing_point, temperature_mk, dataset, weights, covariances, means):
         # -----------------PLOTS TO CHECK FITS AND THRESHOLDS---------------
@@ -247,7 +264,7 @@ class TempCalcAndPlots:
 
         # Save the plot to the Temperatures folder
         plot_filename = os.path.join(qubit_folder,
-                                     f"Qubit{q_key + 1}_Fidelityhist_gaussianfit_Dataset{dataset}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
+                                     f"Q{q_key + 1}_SSFhist_gaussianfit_Dataset{dataset}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
         plt.savefig(plot_filename)
         # print(f"Plot saved to {plot_filename}")
         plt.close()
