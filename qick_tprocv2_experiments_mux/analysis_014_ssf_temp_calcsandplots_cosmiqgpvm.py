@@ -158,7 +158,7 @@ class TempCalcAndPlots:
                 # -------- double-Gaussian fit on ground state data --------------------------
                 Pg, Pe, *_ = self.fit_double_gaussian_with_full_coverage(ig_new)
                 temp_k = self.calculate_qubit_temperature(freq_mhz, Pg, Pe)
-
+                print(temp_k)
                 # -------- screening -----------------------------------------
                 if temp_k is None:
                     # un-physical (Pg/Pe ≤ 1) – skip
