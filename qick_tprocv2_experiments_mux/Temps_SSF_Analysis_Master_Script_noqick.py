@@ -144,6 +144,7 @@ for full_path in paths:
                 ig_new_cache[key] = ig_new
                 timestamp_ssf_cache[key] = ssf_dates[i]
                 fid_cache[key] = fid[i]
+                print(fid_cache)
 
         except Exception as e:
             print(f"Failed loading SSF for qubit {QubitIndex} from {full_path}: {e}")
