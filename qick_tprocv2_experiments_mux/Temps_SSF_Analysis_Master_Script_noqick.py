@@ -34,7 +34,7 @@ signal = 'None'
 run_number = 3 #starting from first run with qubits. Run 1 = run4a at quiet, run 2 = run5a at quiet, etc
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 run_name = 'run6/6transmon'
-path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod"
+path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Qtemps_vs_Time"
 ################################################## File Paths #################################################################
 paths = [
     "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_11-47-09",
@@ -185,3 +185,4 @@ for q in Science_Qubits:
 
 #-------------------------------------------- Calculate Temperatures ---------------------------------------------------
 all_qubit_temps, all_qubit_times = temps_class_obj.run(pairs_info, limit_temp_k=0.8)
+temps_class_obj.plot_all_qubits_scatter(all_qubit_temps, all_qubit_times, path_saveplots)

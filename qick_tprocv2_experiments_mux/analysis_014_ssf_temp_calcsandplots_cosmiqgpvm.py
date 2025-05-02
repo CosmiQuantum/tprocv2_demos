@@ -340,12 +340,8 @@ class TempCalcAndPlots:
         return pairs_by_qubit, unmatched_qspec, unmatched_ssf
 
     #  Scatter – temperatures vs. time  (all dates, each qubit its own subplot)
-    def plot_all_qubits_scatter(self, all_qubit_temperatures,
-                                all_qubit_timestamps,
-                                out_dir,
-                                colors=None):
-        if colors is None:
-            colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+    def plot_all_qubits_scatter(self, all_qubit_temperatures, all_qubit_timestamps, out_dir):
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
 
         os.makedirs(out_dir, exist_ok=True)
 
@@ -379,12 +375,8 @@ class TempCalcAndPlots:
         print("Saved all-dates scatter →", fname)
 
     # Histograms – temperature distributions  (all dates, each qubit subplot)
-    def plot_all_qubits_hist(self, all_qubit_temperatures,
-                             out_dir,
-                             colors=None,
-                             bins=20):
-        if colors is None:
-            colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+    def plot_all_qubits_hist(self, all_qubit_temperatures, out_dir, bins=20):
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
 
         os.makedirs(out_dir, exist_ok=True)
 
