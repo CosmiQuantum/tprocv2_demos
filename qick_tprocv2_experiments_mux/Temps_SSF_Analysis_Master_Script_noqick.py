@@ -165,11 +165,7 @@ for tdir in paths:
         qi = temps_class_obj.qubit_of(f)
         ssf_h5s[qi].append(f)
 
-print("About to pair QSpec files:", qspec_h5s)
-print("About to pair SSF   files:", ssf_h5s)
-
-pairs_by_qubit, lonely_qspec, lonely_ssf = temps_class_obj.pair_qspec_and_ssf(qspec_h5s, ssf_h5s, tolerance_seconds = 35)
-print('pairs_by_qubit: ',pairs_by_qubit)
+pairs_by_qubit, lonely_qspec, lonely_ssf = temps_class_obj.pair_qspec_and_ssf(qspec_h5s, ssf_h5s, tolerance_seconds = 30)
 # Store relevant info for these pairs in a dictionary
 pairs_info = {q: [] for q in Science_Qubits}
 for q in Science_Qubits:
