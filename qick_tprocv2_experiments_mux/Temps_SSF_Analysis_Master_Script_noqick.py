@@ -165,7 +165,7 @@ for tdir in paths:
             qi = int(next(k for k in h5.keys() if k.isdigit()))
         ssf_h5s[qi].append(f)
 
-pairs_by_qubit, lonely_qspec, lonely_ssf = temps_class_obj.pair_qspec_and_ssf(qspec_h5s, ssf_h5s, tolerance_seconds = 10)
+pairs_by_qubit, lonely_qspec, lonely_ssf = temps_class_obj.pair_qspec_and_ssf(qspec_h5s, ssf_h5s, tolerance_seconds = 30)
 print(pairs_by_qubit)
 # Store relevant info for these pairs in a dictionary
 pairs_info = {q: [] for q in Science_Qubits}
