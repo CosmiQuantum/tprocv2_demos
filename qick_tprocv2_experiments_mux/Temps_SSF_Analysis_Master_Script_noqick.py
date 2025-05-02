@@ -180,7 +180,7 @@ for q in Science_Qubits:
             "ssf_path"  : ssf_path,
             "qfreq_MHz" : freq_cache[fq_key],     # MHz
             "ig_new"   : ig_new_cache[ss_key],
-            "data_timestamp" : timestamp_ssf_cache[ss_key] # unix-timestamps
+            "data_timestamp" : timestamp_ssf_cache[ss_key].timestamp()# unix-timestamps
         })
 
 #-------------------------------------------- Calculate Temperatures ---------------------------------------------------
