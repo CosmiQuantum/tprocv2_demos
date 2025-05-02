@@ -271,7 +271,7 @@ class TempCalcAndPlots:
             for key in f.keys():
                 # match "Q1", "Q2", ...
                 if key.startswith("Q") and key[1:].isdigit():
-                    return int(key[1:])
+                    return int(key[1:]) - 1
         raise ValueError(f"No Q<digit> group in {h5_path}")
 
     def pair_qspec_and_ssf(self, qspec_files, ssf_files, tolerance_seconds=10):
