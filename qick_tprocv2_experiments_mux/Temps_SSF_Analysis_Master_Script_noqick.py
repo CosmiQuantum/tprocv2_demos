@@ -115,6 +115,7 @@ for full_path in paths:
             qspec_dir = os.path.join(path, dataset, qspec_obj.folder, "Data_h5", qspec_obj.expt_name)
             h5_files = sorted(os.listdir(qspec_dir))
             h5_paths = [os.path.join(qspec_dir, f) for f in h5_files]
+            print('h5_files: ',h5_files)
 
             for i in range(qspec_n):
                 freq_cache[(h5_paths[i], QubitIndex)] = qspec_freqs[i]
@@ -129,7 +130,7 @@ for full_path in paths:
             # recreate the list of SSF-file paths in the SAME order the helper used
             ssf_dir = os.path.join(path, dataset, ssf_ge.folder, "Data_h5", ssf_ge.expt_name)
             ssf_paths = [os.path.join(ssf_dir, f) for f in sorted(os.listdir(ssf_dir))]  # length==ssf_n
-
+            print('ssf_paths: ', ssf_paths)
             # iterate through every round (file)
             for i in range(ssf_n):
                 try:
