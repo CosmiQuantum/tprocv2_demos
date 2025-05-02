@@ -272,69 +272,77 @@ class TempCalcAndPlots:
 
     def pair_qspec_and_ssf(self, qspec_files, ssf_files, tolerance_seconds=10):
         """
-        Return
-        -------
-        pairs_by_qubit   dict {qubit_index: [(qspec_path, ssf_path), …]}
-        unmatched_qspec  dict {qubit_index: [qspec_path, …]}
-        unmatched_ssf    dict {qubit_index: [ssf_path,   …]}
+        Params
+        ------
+        qspec_files: dict[int, list[str]] OR list[str]
+            If dict, keys are qubit indices and values are lists of full‐path .h5 files.
+        ssf_files:  same shape as qspec_files
         """
-        #This is currently the case
+
+        # If user gave us the per‐qubit dicts, just use them:
         if isinstance(qspec_files, dict):
-            qspec_files = [f for lst in qspec_files.values() for f in lst]
+            qspec_by_q = {qi: list(files) for qi, files in qspec_files.items()}
+        else:
+            #   fallback: discover qubit index by opening the file
+            def qubit_of(path):
+                with h5py.File(path, "r") as h5:
+                    return int(next(k for k in h5.keys() if k.isdigit()))
+
+            qspec_by_q = {}
+            for f in qspec_files:
+                qi = qubit_of(f)
+                qspec_by_q.setdefault(qi, []).append(f)
+
         if isinstance(ssf_files, dict):
-            ssf_files = [f for lst in ssf_files.values() for f in lst]
+            ssf_by_q = {qi: list(files) for qi, files in ssf_files.items()}
+        else:
+            def qubit_of(path):
+                with h5py.File(path, "r") as h5:
+                    return int(next(k for k in h5.keys() if k.isdigit()))
 
-        # -------------------------------- helper to discover qubit index
-        def qubit_of(h5_path):
-            with h5py.File(h5_path, "r") as h5:
-                k = next(g for g in h5.keys() if g.isdigit())  # first top-level group
-                return int(k)
+            ssf_by_q = {}
+            for f in ssf_files:
+                qi = qubit_of(f)
+                ssf_by_q.setdefault(qi, []).append(f)
 
-        # -------------------------------- bucket files by qubit index
-        qspec_by_q = {}
-        for f in qspec_files:
-            qi = qubit_of(f)
-            qspec_by_q.setdefault(qi, []).append(f)
-
-        ssf_by_q = {}
-        for f in ssf_files:
-            qi = qubit_of(f)
-            ssf_by_q.setdefault(qi, []).append(f)
-
-        # -------------------------------- pair inside each bucket
+        # Now qspec_by_q and ssf_by_q are both dict[qubit -> list of files]
         pairs_by_qubit = {}
         unmatched_qspec = {}
         unmatched_ssf = {}
 
-        for qi in qspec_by_q.keys() | ssf_by_q.keys():  # union of keys
-            qspec = sorted((self.timestamp(f), f) for f in qspec_by_q.get(qi, []))
-            ssf = sorted((self.timestamp(f), f) for f in ssf_by_q.get(qi, []))
+        for qi in set(qspec_by_q) | set(ssf_by_q):
+            # get lists, sort by *internal* timestamp if you like
+            spec_list = sorted(qspec_by_q.get(qi, []),
+                               key=lambda f: self.timestamp(f))
+            ssf_list = sorted(ssf_by_q.get(qi, []),
+                              key=lambda f: self.timestamp(f))
 
-            ssf_times = [t for t, _ in ssf]
-            free_ssf = {f for _, f in ssf}
+            spec_times = [self.timestamp(f) for f in spec_list]
+            ssf_times = [self.timestamp(f) for f in ssf_list]
+            free_ssf = set(ssf_list)
 
-            pairs, lonely_q = [], []
-
-            for tq, fq in qspec:
-                i = bisect_left(ssf_times, tq)
-                cands = []
-                if i < len(ssf): cands.append(ssf[i])
-                if i:            cands.append(ssf[i - 1])
+            matches, lonely_spec = [], []
+            for t_spec, f_spec in zip(spec_times, spec_list):
+                # find the best SSF within tolerance
+                idx = bisect_left(ssf_times, t_spec)
+                candidates = []
+                if idx < len(ssf_list):     candidates.append((ssf_times[idx], ssf_list[idx]))
+                if idx > 0:                  candidates.append((ssf_times[idx - 1], ssf_list[idx - 1]))
 
                 best = None
-                for ts, fs in cands:
-                    if abs((ts - tq).total_seconds()) <= tolerance_seconds:
-                        if best is None or abs(ts - tq) < abs(best[0] - tq):
-                            best = (ts, fs)
+                for t_ssf, f_ssf in candidates:
+                    if abs((t_ssf - t_spec).total_seconds()) <= tolerance_seconds:
+                        if best is None or abs(t_ssf - t_spec) < abs(best[0] - t_spec):
+                            best = (t_ssf, f_ssf)
 
                 if best and best[1] in free_ssf:
-                    pairs.append((fq, best[1]))
+                    matches.append((f_spec, best[1]))
                     free_ssf.remove(best[1])
                 else:
-                    lonely_q.append(fq)
+                    lonely_spec.append(f_spec)
 
-            pairs_by_qubit[qi] = pairs
-            unmatched_qspec[qi] = lonely_q
+            pairs_by_qubit[qi] = matches
+            unmatched_qspec[qi] = lonely_spec
             unmatched_ssf[qi] = list(free_ssf)
 
         return pairs_by_qubit, unmatched_qspec, unmatched_ssf
