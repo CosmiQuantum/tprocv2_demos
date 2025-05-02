@@ -265,7 +265,7 @@ class TempCalcAndPlots:
             raise ValueError("No timestamp found in: {}".format(fname))
         return datetime.datetime.strptime(m.group(1), "%Y-%m-%d_%H-%M-%S")
 
-    # -------------------------------- helper to discover qubit index
+    # -------------------------------- helper to extract qubit from h5 file. For qubit 1 index is zero, qubit 2 is index 1, etc.
     def qubit_of(self, h5_path):
         with h5py.File(h5_path, "r") as f:
             for key in f.keys():
