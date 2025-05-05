@@ -1856,8 +1856,8 @@ class PlotRR_noQick:
             ax.grid(False)
 
             # Format the x-axis to show dates in a nice format
-            ax.set_ylim(50, 950)
-            ax.set_yticks(np.linspace(50, 950, 10))
+            ax.set_ylim(50, 250)
+            ax.set_yticks(np.linspace(50, 250, 10))
 
             # start_time = datetime.datetime(2025, 4, 11, 12, 30)
             # ax.set_xlim(left=start_time)
