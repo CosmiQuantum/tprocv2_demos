@@ -156,7 +156,7 @@ if analysis_flags["Gaussian_Fits"]:
         for rec in recs:
             temps_class_obj.plot_gaussians_qtemps(
                 q_key,
-                qubit_folder,
+                made_on_folder,
                 rec["fid"],
                 rec["ig_new"],
                 rec["ground_data"],
