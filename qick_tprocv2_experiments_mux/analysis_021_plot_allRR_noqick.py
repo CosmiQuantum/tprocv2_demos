@@ -1856,8 +1856,8 @@ class PlotRR_noQick:
             ax.grid(False)
 
             # Format the x-axis to show dates in a nice format
-            ax.set_ylim(50, 250)
-            ax.set_yticks(np.linspace(50, 250, 10))
+            ax.set_ylim(50, 950)
+            ax.set_yticks(np.linspace(50, 950, 10))
 
             # start_time = datetime.datetime(2025, 4, 11, 12, 30)
             # ax.set_xlim(left=start_time)
@@ -1865,12 +1865,12 @@ class PlotRR_noQick:
             ax.tick_params(axis='x', labelrotation=90, labelsize=12)
             ax.tick_params(axis='y', labelsize=12)
 
-            # --- Add vertical lines for known radiation events ---
-            # for vtime, label in [(co60_time, "Co-60"), (cs137_time, "Cs-137"), (cs137_closer_time, "Cs-137 Closer"), (cs137_removed_time, "Cs-137 Removed")]:
-            #     if not restrict_time_xaxis or (restrict_time_xaxis and start_time <= vtime <= end_time):
-            #         ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
-            #         ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90,
-            #                 verticalalignment='top', horizontalalignment='right', fontsize=10)
+            #--- Add vertical lines for known radiation events ---
+            for vtime, label in [(co60_time, "Co-60"), (cs137_time, "Cs-137"), (cs137_closer_time, "Cs-137 Closer"), (cs137_removed_time, "Cs-137 Removed")]:
+                if not restrict_time_xaxis or (restrict_time_xaxis and start_time <= vtime <= end_time):
+                    ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
+                    ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90,
+                            verticalalignment='top', horizontalalignment='right', fontsize=10)
 
             #----------------------Optional: Now for other events------------------------
             event_date_0418 = datetime.date(2025, 4, 18)

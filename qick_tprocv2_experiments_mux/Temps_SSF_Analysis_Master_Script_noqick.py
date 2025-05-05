@@ -36,8 +36,19 @@ figure_quality = 100 #ramp this up to like 500 for presentation plots
 run_name = 'run6/6transmon'
 path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Qtemps_vs_Time"
 ################################################## File Paths #################################################################
-paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_11-47-09",
-         "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_12-51-09"]
+paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-26_00-54-11",
+        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-26_04-21-21",
+        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-26_07-55-49",
+        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-26_11-24-18",
+        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-26_14-49-55",
+        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-26_18-15-55",
+        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-26_21-48-38",
+        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-27_01-16-44",
+        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-27_04-48-04",
+        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-27_08-17-01",
+        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-27_11-46-15",
+        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-27_18-46-03",
+        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-27_22-13-30"]
 ################################################# Get all data ######################################################
 Science_Qubits = [0,4]
 freq_cache = {}
@@ -133,31 +144,31 @@ for q in Science_Qubits:
 #-------------------------------------------- Calculate Temperatures ---------------------------------------------------
 all_qubit_temps, all_qubit_times, fit_results  = temps_class_obj.run(pairs_info, limit_temp_k=0.8)
 #---------------------------------------- Temperatures vs Time Scatter Plot --------------------------------------------
-# temps_class_obj.plot_all_qubits_scatter(all_qubit_temps, all_qubit_times, path_saveplots)
+temps_class_obj.plot_all_qubits_scatter(all_qubit_temps, all_qubit_times, path_saveplots)
 #-------------------------------------------Check Gaussian Fits (Plots)-------------------------------------------------
-path_saveplots_fits = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Gaussian_Fits"
-for q_key, recs in fit_results.items():
-    # path_saveplots/Q1, Q2, etc.
-    qubit_folder = os.path.join(path_saveplots_fits, f"Q{q_key+1}")
-    os.makedirs(qubit_folder, exist_ok=True)
-    # Make a date‐stamped subfolder
-    date_str = datetime.datetime.now().strftime("%Y-%m-%d")
-    made_on_folder = os.path.join(qubit_folder, f"made_on_{date_str}")
-    os.makedirs(made_on_folder, exist_ok=True)
-
-    for rec in recs:
-        temps_class_obj.plot_gaussians_qtemps(
-            q_key,
-            qubit_folder,
-            rec["fid"],
-            rec["ig_new"],
-            rec["ground_data"],
-            rec["excited_data"],
-            rec["ground_gaussian"],
-            rec["excited_gaussian"],
-            rec["crossing_point"],
-            rec["temperature_mK"],
-            rec["dataset"],
-            rec["weights"],
-            rec["covariances"],
-            rec["means"])
+# path_saveplots_fits = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Gaussian_Fits"
+# for q_key, recs in fit_results.items():
+#     # path_saveplots/Q1, Q2, etc.
+#     qubit_folder = os.path.join(path_saveplots_fits, f"Q{q_key+1}")
+#     os.makedirs(qubit_folder, exist_ok=True)
+#     # Make a date‐stamped subfolder
+#     date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+#     made_on_folder = os.path.join(qubit_folder, f"made_on_{date_str}")
+#     os.makedirs(made_on_folder, exist_ok=True)
+#
+#     for rec in recs:
+#         temps_class_obj.plot_gaussians_qtemps(
+#             q_key,
+#             qubit_folder,
+#             rec["fid"],
+#             rec["ig_new"],
+#             rec["ground_data"],
+#             rec["excited_data"],
+#             rec["ground_gaussian"],
+#             rec["excited_gaussian"],
+#             rec["crossing_point"],
+#             rec["temperature_mK"],
+#             rec["dataset"],
+#             rec["weights"],
+#             rec["covariances"],
+#             rec["means"])

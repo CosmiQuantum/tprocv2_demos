@@ -399,7 +399,7 @@ class TempCalcAndPlots:
             ax.set_title(f"Qubit {q + 1} Temperature vs Time")
             ax.set_xlabel("Time")
             ax.set_ylabel("Temperature (mK)")
-            ax.grid(alpha=0.3)
+            # ax.grid(alpha=0.3)
             ax.legend()
             ax.xaxis.set_major_formatter(date_fmt)
             plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
