@@ -579,3 +579,40 @@ class TempCalcAndPlots:
         plt.savefig(fname, dpi=300)
         plt.close()
         print("Saved scatter →", fname)
+
+    def plot_threshold_split(self, q_key: int,rec: dict, out_folder: str):
+        """
+        Plot a simple histogram split at the SSF threshold.
+
+        Parameters
+        ----------
+        q_key : int
+            Zero-based qubit index (so Q1→0, Q5→4, etc).
+        rec : dict
+            One entry from fit_results, must contain
+            "ig_new", "crossing_point", and "dataset".
+        out_folder : str
+            Directory where the .png should be saved.
+        """
+        ig = rec["ig_new"]  # rotated SSF I values
+        thresh = rec["crossing_point"]  # data_threshold
+        dataset = rec["dataset"]
+
+        steps = 3000
+        # numbins = round(math.sqrt(steps))
+        numbins = 64
+
+        fig, ax = plt.subplots()
+        ax.hist(ig, bins=numbins, alpha=0.3, color="grey", label="all shots")
+        ax.hist(ig[ig <= thresh], bins=numbins, alpha=0.7, label="|g⟩ shots", color="blue")
+        ax.hist(ig[ig > thresh], bins=numbins, alpha=0.7, label="|e⟩ shots", color="red")
+        ax.axvline(thresh, linestyle="--", color="black", label=f"threshold={thresh:.2f}")
+        ax.set_title(f"Q{q_key + 1} SSF Threshold Split (ds {dataset})")
+        ax.set_xlabel("I'")
+        ax.set_ylabel("Counts")
+        ax.legend()
+
+        os.makedirs(out_folder, exist_ok=True)
+        fname = os.path.join( out_folder, f"Q{q_key + 1}_threshold_split_{dataset}.png" )
+        fig.savefig(fname, dpi=self.figure_quality)
+        plt.close(fig)

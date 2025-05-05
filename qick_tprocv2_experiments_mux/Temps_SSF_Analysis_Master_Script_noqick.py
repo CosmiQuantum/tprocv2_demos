@@ -21,7 +21,7 @@ save_figs = False
 fit_saved = False
 signal = 'None'
 run_number = 3 #starting from first run with qubits. Run 1 = run4a at quiet, run 2 = run5a at quiet, etc
-figure_quality = 100 #ramp this up to like 500 for presentation plots
+figure_quality = 200 #ramp this up to like 500 for presentation plots
 run_name = 'run6/6transmon'
 path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Qtemps_vs_Time"
 
@@ -154,18 +154,26 @@ if analysis_flags["Gaussian_Fits"]:
         os.makedirs(made_on_folder, exist_ok=True)
 
         for rec in recs:
-            temps_class_obj.plot_gaussians_qtemps(
-                q_key,
-                made_on_folder,
-                rec["fid"],
-                rec["ig_new"],
-                rec["ground_data"],
-                rec["excited_data"],
-                rec["ground_gaussian"],
-                rec["excited_gaussian"],
-                rec["crossing_point"],
-                rec["temperature_mK"],
-                rec["dataset"],
-                rec["weights"],
-                rec["covariances"],
-                rec["means"])
+            uses_thr = rec.get("uses_ssf_data_threshold", False) #Looks up the key "uses_ssf_data_threshold" in the result dictionary. If it’s missing (or False), the code did not use the SSF threshold.
+            used_fb = rec.get("used_fallback_method", False) # similar check for fall back option
+
+            if not uses_thr and not used_fb: #if uses_ssf_data_threshold was False or used_fallback_method was False / not used
+                # double-gaussian plot
+                temps_class_obj.plot_gaussians_qtemps(
+                    q_key,
+                    made_on_folder,
+                    rec["fid"],
+                    rec["ig_new"],
+                    rec["ground_data"],
+                    rec["excited_data"],
+                    rec["ground_gaussian"],
+                    rec["excited_gaussian"],
+                    rec["crossing_point"],
+                    rec["temperature_mK"],
+                    rec["dataset"],
+                    rec["weights"],
+                    rec["covariances"],
+                    rec["means"])
+            else:
+                # fallback/threshold‐only plot
+                temps_class_obj.plot_threshold_split(q_key, rec, made_on_folder)
