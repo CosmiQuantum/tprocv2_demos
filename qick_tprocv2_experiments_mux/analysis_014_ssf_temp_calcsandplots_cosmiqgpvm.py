@@ -219,7 +219,8 @@ class TempCalcAndPlots:
 
         # Plot histogram for `ig_new`
         steps = 3000
-        numbins = round(math.sqrt(steps))
+        # numbins = round(math.sqrt(steps))
+        numbins = 64
         n, bins, _ = plt.hist(ig_new, bins=numbins, range=xlims, density=False, alpha=0.5,
                               label='Histogram of $I_g$',
                               color='gray')
