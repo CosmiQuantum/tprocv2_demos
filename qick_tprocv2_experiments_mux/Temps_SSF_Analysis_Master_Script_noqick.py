@@ -14,20 +14,9 @@ import matplotlib.pyplot as plt
 import math
 import h5py
 ###################################################### Set These #######################################################
-# Setup
-QubitIndex = 0  # or whatever qubit you are analyzing
 theta = 0
 threshold = 0
-
-# Initialize outputs
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
-all_qspec_dates = [[] for _ in range(tot_num_of_qubits)]
-all_qspec_freqs = [[] for _ in range(tot_num_of_qubits)]
-
-all_ssf_qtemp_dates = [[] for _ in range(tot_num_of_qubits)]
-all_ssf_qtemps = [[] for _ in range(tot_num_of_qubits)]
-
-# # Other params
 save_figs = False
 fit_saved = False
 signal = 'None'
@@ -35,6 +24,7 @@ run_number = 3 #starting from first run with qubits. Run 1 = run4a at quiet, run
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 run_name = 'run6/6transmon'
 path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Qtemps_vs_Time"
+
 ################################################## File Paths #################################################################
 # paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-26_00-54-11",
 #         "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-26_04-21-21",
@@ -50,12 +40,22 @@ path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plo
 #         "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-27_18-46-03",
 #         "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-27_22-13-30"]
 paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-26_00-54-11"]
-################################################# Get all data ######################################################
-Science_Qubits = [0,4]
-freq_cache = {}
-ig_new_cache = {}
-timestamp_ssf_cache= {}
-fid_cache = {}
+
+################################################# Load all data ##############################################################
+Science_Qubits = [4]
+analysis_flags = {"Qtemps_vs_time": False, "Gaussian_Fits": True}
+
+all_qspec_dates = [[] for _ in range(tot_num_of_qubits)]
+all_qspec_freqs = [[] for _ in range(tot_num_of_qubits)]
+
+all_ssf_qtemp_dates = [[] for _ in range(tot_num_of_qubits)]
+all_ssf_qtemps = [[] for _ in range(tot_num_of_qubits)]
+
+freq_cache = {} #for qubit freqs
+ig_new_cache = {} #for roated IQ data (SSF)
+timestamp_ssf_cache= {} #for ssf data time stamps (qubit temperature time stamps)
+fid_cache = {} #for ssf ge fidelities
+
 for full_path in paths:
     path = os.path.dirname(full_path)  # one level up from the dataset
     dataset = os.path.basename(full_path)  # just the '2025-04-16_11-47-09' part
@@ -103,10 +103,7 @@ for full_path in paths:
         except Exception as e:
             print(f"Failed loading SSF for qubit {QubitIndex} from {full_path}: {e}")
 
-########################################## Pair up Qspec_ge data and ssf_ge h5 files ###########################################
-temps_class_obj = TempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs, path_saveplots)
-
-#Organize files by type and qubit index
+#Organize files by type and qubit index after loading all the data
 qspec_h5s = {q: [] for q in Science_Qubits}
 for (path, qidx) in freq_cache.keys():
     qspec_h5s[qidx].append(path)
@@ -115,6 +112,8 @@ ssf_h5s = {q: [] for q in Science_Qubits}
 for (path, qidx) in ig_new_cache.keys():
     ssf_h5s[qidx].append(path)
 
+########################################## Pair up Qspec_ge data and ssf_ge h5 files ###########################################
+temps_class_obj = TempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs, path_saveplots)
 pairs_by_qubit, lonely_qspec, lonely_ssf = temps_class_obj.pair_qspec_and_ssf(qspec_h5s, ssf_h5s, tolerance_seconds = 10)
 
 # Store relevant info for these pairs in a dictionary
@@ -135,34 +134,38 @@ for q in Science_Qubits:
             "fid": fid_cache[ss_key]
         })
 
-#-------------------------------------------- Calculate Temperatures ---------------------------------------------------
+############################################## Calculate Temperatures ##################################################
 all_qubit_temps, all_qubit_times, fit_results  = temps_class_obj.run(pairs_info, limit_temp_k=0.8)
-#---------------------------------------- Temperatures vs Time Scatter Plot --------------------------------------------
-temps_class_obj.plot_all_qubits_scatter(all_qubit_temps, all_qubit_times, path_saveplots)
-#-------------------------------------------Check Gaussian Fits (Plots)-------------------------------------------------
-# path_saveplots_fits = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Gaussian_Fits"
-# for q_key, recs in fit_results.items():
-#     # path_saveplots/Q1, Q2, etc.
-#     qubit_folder = os.path.join(path_saveplots_fits, f"Q{q_key+1}")
-#     os.makedirs(qubit_folder, exist_ok=True)
-#     # Make a date‐stamped subfolder
-#     date_str = datetime.datetime.now().strftime("%Y-%m-%d")
-#     made_on_folder = os.path.join(qubit_folder, f"made_on_{date_str}")
-#     os.makedirs(made_on_folder, exist_ok=True)
-#
-#     for rec in recs:
-#         temps_class_obj.plot_gaussians_qtemps(
-#             q_key,
-#             qubit_folder,
-#             rec["fid"],
-#             rec["ig_new"],
-#             rec["ground_data"],
-#             rec["excited_data"],
-#             rec["ground_gaussian"],
-#             rec["excited_gaussian"],
-#             rec["crossing_point"],
-#             rec["temperature_mK"],
-#             rec["dataset"],
-#             rec["weights"],
-#             rec["covariances"],
-#             rec["means"])
+
+######################################### Temperatures vs Time Scatter Plot #############################################
+if analysis_flags["Qtemps_vs_time"]:
+    temps_class_obj.plot_all_qubits_scatter(all_qubit_temps, all_qubit_times, path_saveplots)
+
+############################################# Check Gaussian Fits (Plots) #############################################
+if analysis_flags["Gaussian_Fits"]:
+    path_saveplots_fits = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Gaussian_Fits"
+    for q_key, recs in fit_results.items():
+        # path_saveplots/Q1, Q2, etc.
+        qubit_folder = os.path.join(path_saveplots_fits, f"Q{q_key+1}")
+        os.makedirs(qubit_folder, exist_ok=True)
+        # Make a date‐stamped subfolder
+        date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+        made_on_folder = os.path.join(qubit_folder, f"made_on_{date_str}")
+        os.makedirs(made_on_folder, exist_ok=True)
+
+        for rec in recs:
+            temps_class_obj.plot_gaussians_qtemps(
+                q_key,
+                qubit_folder,
+                rec["fid"],
+                rec["ig_new"],
+                rec["ground_data"],
+                rec["excited_data"],
+                rec["ground_gaussian"],
+                rec["excited_gaussian"],
+                rec["crossing_point"],
+                rec["temperature_mK"],
+                rec["dataset"],
+                rec["weights"],
+                rec["covariances"],
+                rec["means"])
