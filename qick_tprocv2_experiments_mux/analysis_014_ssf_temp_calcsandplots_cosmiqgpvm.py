@@ -144,7 +144,8 @@ class TempCalcAndPlots:
         data_threshold : float or None
             If set, use this g-e-SSF threshold from the original h5 files for P_g/P_e instead
             of using the double Gaussian crossing point as a threshold.
-
+        fallback_to_threshold: bool
+            If True, uses data_threshold as a fallback method when double gaussian fits are bad
         Returns
         -------
         all_qubit_temperatures : dict {qubit: [temp_mK, …]}
@@ -165,7 +166,9 @@ class TempCalcAndPlots:
             "crossing_point": <float>,
             "weights": np.ndarray(shape=(2,)),
             "covariances": np.ndarray(shape=(2,)),
-            "means": np.ndarray(shape=(2,))
+            "means": np.ndarray(shape=(2,)),
+            "Pg": Pg,
+            "Pe": Pe,
           }]}
         """
         if fallback_to_threshold and data_threshold is None:
