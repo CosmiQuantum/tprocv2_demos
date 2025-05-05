@@ -36,12 +36,18 @@ target_dates = [
     "2025-04-20",
     "2025-04-21", #starts source on (Co)
     "2025-04-22",
-    "2025-04-23", #switches source (to Cs)
+    "2025-04-23", #switched source (to Cs)
     "2025-04-24",
     "2025-04-25",
     "2025-04-26",
     "2025-04-27",
-    "2025-04-28"] #Cs source moved closer
+    "2025-04-28", #Cs source moved closer
+    "2025-04-29",
+    "2025-04-30",
+    "2025-05-01",
+    "2025-05-02",
+    "2025-05-03",
+    "2025-05-04"] # Cs source removed. No sources in Cleanroom.
 base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study"
 outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/params_vs_time"
 os.makedirs(outerFolder_qtemps_plots, exist_ok=True)
