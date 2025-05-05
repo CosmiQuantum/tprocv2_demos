@@ -106,27 +106,17 @@ for full_path in paths:
 ########################################## Pair up Qspec_ge data and ssf_ge h5 files ###########################################
 temps_class_obj = TempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs, path_saveplots)
 
-# Collect every QSpec-GE and SSF-GE HDF5 path (down to each specific file name)
+#Organize files by type and qubit index
 qspec_h5s = {q: [] for q in Science_Qubits}
-ssf_h5s   = {q: [] for q in Science_Qubits}
-# print(qspec_h5s)
-# print(ssf_h5s)
-# Match ssf and Qspec files by time stamps
-for tdir in paths:
-    # ---------- QSpec ----------
-    qspec_pattern = os.path.join(tdir, "study_data", "Data_h5", "qspec_ge", "*_qspec_ge*_results_*.h5")
-    for f in glob.glob(qspec_pattern):
-        qi = temps_class_obj.qubit_of(f)
-        qspec_h5s[qi].append(f)
+for (path, qidx) in freq_cache.keys():
+    qspec_h5s[qidx].append(path)
 
-    # ---------- SSF ------------
-    ssf_pattern = os.path.join(tdir, "study_data", "Data_h5", "ss_ge", "*_ss_ge*_results_*.h5")
-    for f in glob.glob(ssf_pattern):
-        qi = temps_class_obj.qubit_of(f)
-        ssf_h5s[qi].append(f)
+ssf_h5s = {q: [] for q in Science_Qubits}
+for (path, qidx) in ig_new_cache.keys():
+    ssf_h5s[qidx].append(path)
 
-# print("Q5 QSpec files:", qspec_h5s[4])
-# print("Q5 SSF  files:", ssf_h5s[4])
+print("Q5 QSpec files:", qspec_h5s[4])
+print("Q5 SSF  files:", ssf_h5s[4])
 
 pairs_by_qubit, lonely_qspec, lonely_ssf = temps_class_obj.pair_qspec_and_ssf(qspec_h5s, ssf_h5s, tolerance_seconds = 10)
 
