@@ -51,7 +51,7 @@ path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plo
 #         "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-27_22-13-30"]
 paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-26_00-54-11"]
 ################################################# Get all data ######################################################
-Science_Qubits = [4]
+Science_Qubits = [0,4]
 freq_cache = {}
 ig_new_cache = {}
 timestamp_ssf_cache= {}
@@ -114,9 +114,6 @@ for (path, qidx) in freq_cache.keys():
 ssf_h5s = {q: [] for q in Science_Qubits}
 for (path, qidx) in ig_new_cache.keys():
     ssf_h5s[qidx].append(path)
-
-print("Q5 QSpec files:", qspec_h5s[4])
-print("Q5 SSF  files:", ssf_h5s[4])
 
 pairs_by_qubit, lonely_qspec, lonely_ssf = temps_class_obj.pair_qspec_and_ssf(qspec_h5s, ssf_h5s, tolerance_seconds = 10)
 
