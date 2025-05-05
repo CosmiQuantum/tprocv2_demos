@@ -131,7 +131,7 @@ class TempCalcAndPlots:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run(self, pairs_info, limit_temp_k=0.8):
+    def run(self, pairs_info, limit_temp_k=0.8, data_threshold: float = None, fallback_to_threshold: bool = False):
         """
         Parameters
         ----------
@@ -140,6 +140,10 @@ class TempCalcAndPlots:
                         "Ig":<np.ndarray>, "ts":<unix-time> }, … ]}
         limit_temp_k : float
             Discard temperatures above this value (default 0.8 K → 800 mK).
+
+        data_threshold : float or None
+            If set, use this g-e-SSF threshold from the original h5 files for P_g/P_e instead
+            of using the double Gaussian crossing point as a threshold.
 
         Returns
         -------
@@ -162,31 +166,86 @@ class TempCalcAndPlots:
             "weights": np.ndarray(shape=(2,)),
             "covariances": np.ndarray(shape=(2,)),
             "means": np.ndarray(shape=(2,))
-          }, …
-            ]}
+          }]}
         """
+        if fallback_to_threshold and data_threshold is None:
+            raise ValueError(
+                "fallback_to_threshold=True requires you to also specify a data_threshold")
+
         # initialise output arrays
         all_qubit_temperatures = {i: [] for i in range(self.number_of_qubits)}
         all_qubit_timestamps = {i: [] for i in range(self.number_of_qubits)}
         fit_results = {qid: [] for qid in range(self.number_of_qubits)}
+
+        # Options
+        use_ssf_thresh_only = (data_threshold is not None and not fallback_to_threshold)
+        use_gmm_only = (data_threshold is None)
+        use_gmm_with_fb = (data_threshold is not None and fallback_to_threshold)
+
         for qid, records in pairs_info.items():  # loop over qubits
             for idx, rec in enumerate(records):  # …and every pair
+                # Trackers for what happens
+                used_threshold = False
+                used_fallback = False
+
                 freq_mhz = rec["qfreq_MHz"]
                 ig_new = rec["ig_new"]
                 ts_unix = rec["data_timestamp"]
                 fid = rec["fid"]
 
-                # -------- double-Gaussian fit on ground state data --------------------------
-                (Pg, Pe, gmm, means, covariances, weights, crossing_point, ground_gaussian, excited_gaussian,
-                ground_data, excited_data, iq_data) = self.fit_double_gaussian_with_full_coverage(ig_new)
+                # Decide which threshold approach to use
+                if use_ssf_thresh_only:
+                    #---------------Only using g-e SSF experiment threshold extracted from h5 files---------------
+                    mask = (ig_new <= data_threshold)
+                    Pg = mask.mean()
+                    Pe = 1.0 - Pg
+                    crossing_point = data_threshold
+                    ground_gaussian = None
+                    excited_gaussian = None
+                    ground_data = excited_data = None
+                    means = covariances = weights = None
+                    used_threshold = True
+
+                elif use_gmm_only:
+                    # -------- Only using double-Gaussian fit on ground state data, without fallback method --------------------------
+                    (Pg, Pe, gmm, means, covariances, weights, crossing_point, ground_gaussian, excited_gaussian,
+                    ground_data, excited_data,_) = self.fit_double_gaussian_with_full_coverage(ig_new)
+
+
+                else: #use_gmm_with_fb
+                    # -------- double-Gaussian fit on ground state data, with fallback method --------------------------
+                    try:
+                        (Pg, Pe, gmm, means, covariances, weights, crossing_point, ground_gaussian, excited_gaussian,
+                         ground_data, excited_data, _) = self.fit_double_gaussian_with_full_coverage(ig_new)
+
+                        # Ensure crossing point (where threshold is set) isn’t too close to the ground histogram mean
+                        mu_g = means[0]
+                        sigma_g = np.sqrt(covariances[0])
+                        if (crossing_point - mu_g) <= sigma_g:
+                            raise ValueError("Crossing point too close to ground mean. Probably incorrect fitting, switching to fallback method.")
+
+                    except Exception:
+                        # Use fallback method: using g-e SSF experiment threshold extracted from h5 files
+                        print(f"[run] Q{qid + 1} dataset {idx}: GMM fit failed or too‐close crossing → falling back to SSF threshold")
+                        crossing_point = data_threshold
+                        mask = (ig_new <= data_threshold)
+                        Pg = mask.mean()
+                        Pe = 1.0 - Pg
+                        ground_gaussian = excited_gaussian = None
+                        ground_data = excited_data = None
+                        means = covariances = weights = None
+                        used_threshold = True
+                        used_fallback = True
+
+                #Calculate qubit temps using Pg and Pe
                 temp_k = self.calculate_qubit_temperature(freq_mhz, Pg, Pe)
-                print(temp_k)
+
                 # -------- screening -----------------------------------------
                 if temp_k is None:
                     # un-physical (Pg/Pe ≤ 1) – skip
                     continue
                 if temp_k > limit_temp_k:
-                    print(f"[run]  Q{qid}: {temp_k * 1e3:.1f} mK  > {limit_temp_k * 1e3:.0f} mK  → dropped")
+                    print(f"[run]  Q{qid + 1}: {temp_k * 1e3:.1f} mK  > {limit_temp_k * 1e3:.0f} mK  → dropped")
                     continue
 
                 # -------- save qubit temps and timestamps ----------------------------------------------
@@ -206,7 +265,11 @@ class TempCalcAndPlots:
                     "crossing_point": crossing_point,
                     "weights": weights,
                     "covariances": covariances,
-                    "means": means
+                    "means": means,
+                    "Pg": Pg,
+                    "Pe": Pe,
+                    "uses_ssf_data_threshold": used_threshold,
+                    "used_fallback_method": used_fallback
                 })
 
         return all_qubit_temperatures, all_qubit_timestamps, fit_results
@@ -286,7 +349,7 @@ class TempCalcAndPlots:
         plot_filename = os.path.join(qubit_folder,
                                      f"Q{q_key + 1}_SSFhist_gaussianfit_Dataset{dataset}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
         plt.savefig(plot_filename)
-        # print(f"Plot saved to {plot_filename}")
+        print(f"Plot saved to: {qubit_folder}")
         plt.close()
 
     def timestamp(self, fname):
