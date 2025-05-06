@@ -20,26 +20,63 @@ class Data_H5:
         return [str(x) if not isinstance(x, (int, float, np.float64)) else x for x in data_list]
 
     def create_dataset(self, name, value, group):
-        if value is not None:
-            if name == "Dates":  # Handle timestamps directly
-                try:
-                    value = np.array(value, dtype=np.float64)  # Store as floats
-                except ValueError as e:
-                    #print(f"Warning: Could not convert dates for '{name}'. Error: {e}")
-                    value = np.array(value, dtype='S')  # Fallback to string if needed
-            elif isinstance(value, list) and 'None' in str(value[0]):
-                value = np.array([])
-            else:
-                try:
-                    # need to do this because sometimes a list has not all floats, but a float and sometimes a list
-                    value = self.convert_non_floats_to_strings(value)
-                    value = np.array(value, dtype=np.float64)
-                except ValueError:
-                    #print(f"Warning: Could not convert data for '{name}' to float. Saving as string.")
-                    value = np.array(value, dtype='S')
-            group.create_dataset(name, data=value)
-        else:
-            group.create_dataset(name, data=np.array([]))
+        ## Check that name/value are alright
+        if (type(name)!=type("")) or (value is None):
+            raise ValueError("name must be a string and value cannot be NoneType")
+            return -1
+
+        ## Check that we aren't trying to save a dictionary directly
+        if isinstance(value, dict):
+            raise ValueError("Cannot create a dataset directly from a dictionary.")
+            return -1
+
+        ## Get the shape of the data
+        datashape = np.shape(value)
+        testval   = value
+
+        ## This is a scalar value
+        if len(datashape)==0:
+            ## Save the numpy array of the data we want to write to h5
+            datatype  = type(testval)
+            writedata = np.array([value]).astype(datatype)
+        
+        ## This is a list/tuple/np.array (this is mutually exclusive so elif not needed)
+        if len(datashape)>0:
+            ## Note that casting a list of lists, or a list of tuples to an np array just works
+            ## and the resulting type is np.ndarray
+            ## Also if you have an np.ndarray and you re-cast it to an np.ndarray, it does nothing
+            ## Now we will loop over the shape of the data to pull out the first scalar value, for which
+            ## we will check its type
+            for i in np.arange(len(datashape)):
+                testval = testval[0]
+
+            ## Get the type of scalar data and create a numpy array from the input value
+            ## forcing it to be the correct datatype
+            datatype  = type(testval)
+
+            if datatype == datetime.datetime:
+                ## Do something
+            elif datatype == np.datetime64:
+                ## Do something else
+            elif data_type == type(None):
+                raise ValueError("The scalar data type is NoneType, skipping the write.")
+                return -1
+
+            ## Save the numpy array of the data we want to write to h5
+            writedata = np.array(value).astype(datatype)
+
+        ## Show the user a warning if for some reason the data is being saved as a string
+        if datatype == type(""): 
+             print("WARNING: Writing data for "+name+" as a string. Check that this is intended!")
+
+        ## Now try to write the data
+        try:
+            group.create_dataset(name, data=writedata)
+        except Exception as e:
+            print("Error: ",e)
+            return -1
+
+        return writedata
 
     def save_to_h5(self, data_type):
         self.outerFolder_expt = os.path.join(self.outerFolder_expt, "Data_h5", f"{data_type}_ge")
