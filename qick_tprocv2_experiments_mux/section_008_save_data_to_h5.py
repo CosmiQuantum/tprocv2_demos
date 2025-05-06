@@ -55,9 +55,11 @@ class Data_H5:
             datatype  = type(testval)
 
             if datatype == datetime.datetime:
-                ## Do something
+                value = [time.mktime(vdt.timetuple()) for vdt in value]
+                datatype = type(value[0])
             elif datatype == np.datetime64:
-                ## Do something else
+                value = [vdt64.astype('datetime64[s]').astype('int64') for vdt64 in value]
+                datatype = type(value[0])
             elif data_type == type(None):
                 raise ValueError("The scalar data type is NoneType, skipping the write.")
                 return -1
