@@ -55,6 +55,7 @@ freq_cache = {} #for qubit freqs
 ig_new_cache = {} #for roated IQ data (SSF)
 timestamp_ssf_cache= {} #for ssf data time stamps (qubit temperature time stamps)
 fid_cache = {} #for ssf ge fidelities
+threshold_cache  = {} #for ssf thresholds
 
 for full_path in paths:
     path = os.path.dirname(full_path)  # one level up from the dataset
@@ -80,7 +81,7 @@ for full_path in paths:
         try:
             # --- Load SSF ---
             ssf_ge = ssf(path, dataset, QubitIndex)
-            ssf_dates, ssf_n, I_g, Q_g, I_e, Q_e, fid, angles = ssf_ge.load_all()
+            ssf_dates, ssf_n, I_g, Q_g, I_e, Q_e, _ , _ = ssf_ge.load_all()
 
             # recreate the list of SSF-file paths in the SAME order the helper used
             ssf_dir = os.path.join(path, dataset, ssf_ge.folder, "Data_h5", ssf_ge.expt_name)
@@ -89,7 +90,7 @@ for full_path in paths:
             # iterate through every round (file)
             for i in range(ssf_n):
                 try:
-                    ig_new, *_ = ssf_ge.get_ssf_in_round(I_g, Q_g, I_e, Q_e, i)
+                    theta, threshold, fid, ig_new, *_= ssf_ge.get_ssf_in_round(I_g, Q_g, I_e, Q_e, i)
                 except Exception as e:
                     print(f"rotate-Ig failed ({ssf_paths[i]}): {e}")
                     continue
@@ -99,6 +100,7 @@ for full_path in paths:
                 timestamp_ssf_cache[key] = ssf_dates[i]
                 raw_fid = fid[i]
                 fid_cache[key] = raw_fid.item()
+                threshold_cache[key] = threshold
 
         except Exception as e:
             print(f"Failed loading SSF for qubit {QubitIndex} from {full_path}: {e}")
@@ -130,8 +132,9 @@ for q in Science_Qubits:
             "ssf_path"  : ssf_path,
             "qfreq_MHz" : freq_cache[fq_key],     # MHz
             "ig_new"   : ig_new_cache[ss_key],
-            "data_timestamp" : timestamp_ssf_cache[ss_key].timestamp(),# unix-timestamps
-            "fid": fid_cache[ss_key]
+            "data_timestamp" : timestamp_ssf_cache[ss_key].timestamp(), # unix-timestamps
+            "fid": fid_cache[ss_key],
+            "ssf_threshold": threshold_cache[ss_key]
         })
 
 ############################################## Calculate Temperatures ##################################################
@@ -154,7 +157,7 @@ if analysis_flags["Gaussian_Fits"]:
         os.makedirs(made_on_folder, exist_ok=True)
 
         for rec in recs:
-            uses_thr = rec.get("uses_ssf_data_threshold", False) #Looks up the key "uses_ssf_data_threshold" in the result dictionary. If it’s missing (or False), the code did not use the SSF threshold.
+            uses_thr = rec.get("used_ssf_thresh_only", False) #Looks up the key "uses_ssf_data_threshold" in the result dictionary. If it’s missing (or False), the code did not use the SSF threshold.
             used_fb = rec.get("used_fallback_method", False) # similar check for fall back option
 
             if not uses_thr and not used_fb: #if uses_ssf_data_threshold was False or used_fallback_method was False / not used
@@ -168,7 +171,7 @@ if analysis_flags["Gaussian_Fits"]:
                     rec["excited_data"],
                     rec["ground_gaussian"],
                     rec["excited_gaussian"],
-                    rec["crossing_point"],
+                    rec["pop_threshold"],
                     rec["temperature_mK"],
                     rec["dataset"],
                     rec["weights"],
