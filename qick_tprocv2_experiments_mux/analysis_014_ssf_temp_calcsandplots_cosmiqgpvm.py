@@ -232,6 +232,7 @@ class TempCalcAndPlots:
 
                     pop_threshold = crossing_point
 
+                pop_threshold = float(pop_threshold)
                 #Calculate qubit temps using Pg and Pe
                 temp_k = self.calculate_qubit_temperature(freq_mhz, Pg, Pe)
 
