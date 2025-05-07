@@ -98,10 +98,8 @@ for full_path in paths:
                 key = (ssf_paths[i], QubitIndex)
                 ig_new_cache[key] = ig_new
                 timestamp_ssf_cache[key] = ssf_dates[i]
-                raw_fid = fid[i]
-                fid_cache[key] = raw_fid.item()
-                raw_thresh = threshold
-                threshold_cache[key] = raw_thresh.item()
+                fid_cache[key] = float(fid)
+                threshold_cache[key] = float(threshold)
 
         except Exception as e:
             print(f"Failed loading SSF for qubit {QubitIndex} from {full_path}: {e}")
