@@ -98,8 +98,8 @@ for full_path in paths:
                 key = (ssf_paths[i], QubitIndex)
                 ig_new_cache[key] = ig_new
                 timestamp_ssf_cache[key] = ssf_dates[i]
-                print('fid ',fid)
-                print('thresh ', threshold)
+                print('fid: ',fid)
+                # print('thresh ', threshold)
                 fid_cache[key] = float(fid)
                 threshold_cache[key] = float(threshold)
 
