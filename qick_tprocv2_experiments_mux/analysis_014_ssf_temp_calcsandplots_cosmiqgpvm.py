@@ -215,7 +215,7 @@ class TempCalcAndPlots:
 
                     except Exception:
                         # Use fallback method: using g-e SSF experiment threshold extracted from h5 files
-                        print(f"[run] Q{qid + 1} dataset {idx}: GMM fit failed or too‐close crossing → falling back to SSF threshold")
+                        print(f"[run] Q{qid + 1} dataset {idx}: GMM fit failed or too close crossing → falling back to SSF threshold")
                         pop_threshold = data_threshold
                         mask = (ig_new <= data_threshold)
                         Pg = mask.mean()
@@ -587,7 +587,7 @@ class TempCalcAndPlots:
             Directory where the .png should be saved.
         """
         ig = rec["ig_new"]  # rotated SSF I values
-        thresh = rec["crossing_point"]  # data_threshold
+        thresh = rec["pop_threshold"]  # data_threshold
         dataset = rec["dataset"]
 
         steps = 3000
