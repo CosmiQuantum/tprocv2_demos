@@ -90,7 +90,7 @@ for full_path in paths:
             # iterate through every round (file)
             for i in range(ssf_n):
                 try:
-                    theta, threshold, fid, ig_new, *_= ssf_ge.get_ssf_in_round(I_g, Q_g, I_e, Q_e, i)
+                    theta, thresh, fidelity, ig_new, *_= ssf_ge.get_ssf_in_round(I_g, Q_g, I_e, Q_e, i)
                 except Exception as e:
                     print(f"rotate-Ig failed ({ssf_paths[i]}): {e}")
                     continue
@@ -98,10 +98,10 @@ for full_path in paths:
                 key = (ssf_paths[i], QubitIndex)
                 ig_new_cache[key] = ig_new
                 timestamp_ssf_cache[key] = ssf_dates[i]
-                print('fid: ',fid)
+                print('fid: ',fidelity)
                 # print('thresh ', threshold)
-                fid_cache[key] = float(fid)
-                threshold_cache[key] = float(threshold)
+                fid_cache[key] = float(fidelity)
+                threshold_cache[key] = float(thresh)
 
 
         except Exception as e:
