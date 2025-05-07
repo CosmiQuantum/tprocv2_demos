@@ -99,9 +99,10 @@ for full_path in paths:
                 ig_new_cache[key] = ig_new
                 timestamp_ssf_cache[key] = ssf_dates[i]
                 print('fid ',fid)
-                print('thresh ',thresh)
+                print('thresh ', threshold)
                 fid_cache[key] = float(fid)
                 threshold_cache[key] = float(threshold)
+
 
         except Exception as e:
             print(f"Failed loading SSF for qubit {QubitIndex} from {full_path}: {e}")
