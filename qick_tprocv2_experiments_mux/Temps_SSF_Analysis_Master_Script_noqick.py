@@ -88,6 +88,7 @@ for full_path in paths:
             ssf_paths = [os.path.join(ssf_dir, f) for f in sorted(os.listdir(ssf_dir))]  # length==ssf_n
 
             # iterate through every round (file)
+            print(ssf_n)
             for i in range(ssf_n):
                 try:
                     theta, thresh, fidelity, ig_new, *_= ssf_ge.get_ssf_in_round(I_g, Q_g, I_e, Q_e, i)
@@ -98,7 +99,7 @@ for full_path in paths:
                 key = (ssf_paths[i], QubitIndex)
                 ig_new_cache[key] = ig_new
                 timestamp_ssf_cache[key] = ssf_dates[i]
-                print('fid: ',fidelity)
+                # print('fid: ',fidelity)
                 # print('thresh ', threshold)
                 fid_cache[key] = float(fidelity)
                 threshold_cache[key] = float(thresh)
