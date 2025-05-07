@@ -138,7 +138,7 @@ for q in Science_Qubits:
         })
 
 ############################################## Calculate Temperatures ##################################################
-all_qubit_temps, all_qubit_times, fit_results  = temps_class_obj.run(pairs_info, limit_temp_k=0.8)
+all_qubit_temps, all_qubit_times, fit_results  = temps_class_obj.run(pairs_info, limit_temp_k=0.8, use_ssf_thresh_only = False, fallback_to_threshold = True)
 
 ######################################### Temperatures vs Time Scatter Plot #############################################
 if analysis_flags["Qtemps_vs_time"]:
