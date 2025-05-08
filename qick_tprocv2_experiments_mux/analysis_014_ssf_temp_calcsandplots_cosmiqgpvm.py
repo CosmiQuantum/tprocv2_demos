@@ -333,8 +333,9 @@ class TempCalcAndPlots:
                                         sigmas[excited_idx]) ** 2))
 
                 # scale PDFs roughly to histogram height for visibility
-                bin_w = edges[1] - edges[0]
-                scale = len(all_i) / bin_w
+                bin_w = edges[1] - edges[0]  # histogram bin‑width  Δx
+                scale = len(all_i) * bin_w  # N · Δx
+
                 ax.plot(x_grid, g_pdf * scale, color="blue", lw=2,
                         label="ground Gaussian")
                 ax.plot(x_grid, e_pdf * scale, color="red", lw=2,
