@@ -78,9 +78,9 @@ class TempCalcAndPlots:
         excited_data = iq_data[(labels == excited_gaussian) & (iq_data > crossing_point)]
 
         ground_state_population = len(ground_data) / len(iq_data)
-        excited_state_population_overlap = len(excited_data) / len(iq_data)
+        excited_state_population_leakage = len(excited_data) / len(iq_data)
 
-        return ground_state_population, excited_state_population_overlap, gmm, means, covariances, weights, crossing_point, ground_gaussian, excited_gaussian, ground_data, excited_data, iq_data
+        return ground_state_population, excited_state_population_leakage, gmm, means, covariances, weights, crossing_point, ground_gaussian, excited_gaussian, ground_data, excited_data, iq_data
 
 
     def process_string_of_nested_lists(self, data):
@@ -228,10 +228,10 @@ class TempCalcAndPlots:
 
                 else:
                     # -------- Only using double-Gaussian fit on ground state data, without fallback method --------------------------
-                    (Pg, Pe, gmm, means, covariances, weights, crossing_point, ground_gaussian, excited_gaussian,
-                     ground_data, excited_data, _) = self.fit_double_gaussian_with_full_coverage(ig_new)
+                    (Pg, Pe, gmm, means, covariances, weights, threshold_mid, ground_gaussian, excited_gaussian,
+                     ground_data, excited_data, _) = self.fit_double_gaussian_midpoint(ig_new)
 
-                    pop_threshold = crossing_point
+                    pop_threshold = threshold_mid
 
                 pop_threshold = float(pop_threshold)
                 #Calculate qubit temps using Pg and Pe
@@ -609,3 +609,85 @@ class TempCalcAndPlots:
         fname = os.path.join( out_folder, f"Q{q_key + 1}_threshold_split.png" )
         fig.savefig(fname, dpi=self.figure_quality)
         plt.close(fig)
+
+    def single_gaussian_wthresh(self, iq_data: np.ndarray, k_sigma: float = 3.0, n_points: int = 500):
+        """
+        Fit a single Gaussian to iq_data (ig_new), choose threshold = μ + k_sigma·σ,
+        and also return x & y arrays for the fitted Gaussian curve.
+
+        Returns
+        -------
+        Pg : float
+          P(|g⟩) = fraction of points ≤ thresh
+        Pe : float
+          P(|e⟩) = 1 − Pg
+        thresh : float
+          μ + k_sigma·σ
+        mu : float
+          mean of iq_data
+        sigma : float
+          std­dev of iq_data
+        ground_data : np.ndarray
+        excited_data : np.ndarray
+        x_gauss : np.ndarray
+          abscissa for Gaussian curve
+        y_gauss : np.ndarray
+          ordinate (pdf) of Gaussian at x_gauss
+        """
+        #fit mean & std
+        mu = np.mean(iq_data)
+        sigma = np.std(iq_data, ddof=1)
+
+        #define threshold
+        thresh = mu + k_sigma * sigma
+
+        #calculate populations
+        Pg = np.mean(iq_data <= thresh)
+        Pe = 1.0 - Pg
+
+        #split data
+        ground_data = iq_data[iq_data <= thresh]
+        excited_data = iq_data[iq_data > thresh]
+
+        #build Gaussian curve
+        x_gauss = np.linspace(iq_data.min(), iq_data.max(), n_points)
+        y_gauss = (1 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x_gauss - mu) / sigma) ** 2)
+
+        return Pg, Pe, thresh, mu, sigma, ground_data, excited_data, x_gauss, y_gauss
+
+    def fit_double_gaussian_midpoint(self, iq_data): #iq_data is ig_new
+        """
+        Same as fit_double_gaussian_with_full_coverage, but sets the threshold
+        to the simple midpoint between the two Gaussian means.
+        Returns:
+          Pg, Pe, gmm, means, covariances, weights,
+          threshold_mid, ground_gaussian, excited_gaussian,
+          ground_data, excited_data, iq_data
+        """
+        # fit GMM
+        gmm = GaussianMixture(n_components=2)
+        gmm.fit(iq_data.reshape(-1, 1))
+
+        means = gmm.means_.flatten()
+        covariances = np.sqrt(gmm.covariances_).flatten()
+        weights = gmm.weights_
+
+        # identify which component is "ground" (lower mean)
+        ground_gaussian = np.argmin(means)
+        excited_gaussian = 1 - ground_gaussian
+
+        #compute midpoint threshold
+        threshold_mid = 0.5 * (means[ground_gaussian] + means[excited_gaussian])
+
+        labels = gmm.predict(iq_data.reshape(-1, 1))
+
+        # split into ground vs excited (using midpoint of gaussian means as a threshold)
+        ground_data = iq_data[(labels == ground_gaussian) & (iq_data <= threshold_mid)]
+        excited_data = iq_data[(labels == excited_gaussian) & (iq_data > threshold_mid)]
+
+        # calculate populations
+        Pg = len(ground_data) / len(iq_data)
+        Pe = len(excited_data) / len(iq_data)
+
+        return Pg, Pe, gmm, means, covariances, weights, threshold_mid, ground_gaussian, excited_gaussian, ground_data, excited_data, iq_data
+

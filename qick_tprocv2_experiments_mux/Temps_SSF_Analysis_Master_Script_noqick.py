@@ -39,7 +39,7 @@ path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plo
 #         "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-27_11-46-15",
 #         "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-27_18-46-03",
 #         "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-27_22-13-30"]
-paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-26_00-54-11"]
+paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-27_01-16-44"]
 
 ################################################# Load all data ##############################################################
 Science_Qubits = [4]
@@ -137,7 +137,7 @@ for q in Science_Qubits:
         })
 
 ############################################## Calculate Temperatures ##################################################
-all_qubit_temps, all_qubit_times, fit_results  = temps_class_obj.run(pairs_info, limit_temp_k=0.8, use_ssf_thresh_only = False, fallback_to_threshold = True)
+all_qubit_temps, all_qubit_times, fit_results  = temps_class_obj.run(pairs_info, limit_temp_k=0.8, use_ssf_thresh_only = False, fallback_to_threshold = False)
 
 ######################################### Temperatures vs Time Scatter Plot #############################################
 if analysis_flags["Qtemps_vs_time"]:
