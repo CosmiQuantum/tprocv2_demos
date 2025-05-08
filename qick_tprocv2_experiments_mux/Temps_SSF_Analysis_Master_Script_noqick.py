@@ -42,7 +42,7 @@ path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plo
 paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_on_substudy4/2025-04-27_01-16-44"]
 
 ################################################# Load all data ##############################################################
-Science_Qubits = [4]
+Science_Qubits = [0]
 analysis_flags = {"Qtemps_vs_time": False, "Gaussian_Fits": True}
 
 all_qspec_dates = [[] for _ in range(tot_num_of_qubits)]
@@ -179,3 +179,5 @@ if analysis_flags["Gaussian_Fits"]:
             else:
                 # fallback/threshold‐only plot
                 temps_class_obj.plot_threshold_split(q_key, rec, made_on_folder)
+
+    print('Plots saved to: ', made_on_folder)
