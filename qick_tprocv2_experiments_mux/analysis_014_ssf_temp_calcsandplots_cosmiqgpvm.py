@@ -210,12 +210,13 @@ class TempCalcAndPlots:
                         # Ensure crossing point (where threshold is set) isn’t too close to the ground histogram mean
                         mu_g = means[0]
                         sigma_g = np.sqrt(covariances[0])
-                        if (crossing_point - mu_g) <= sigma_g:
+                        n_sigma = 1.5
+                        if (crossing_point - mu_g) <= n_sigma * sigma_g:
                             raise ValueError("Crossing point too close to ground mean. Probably incorrect fitting, switching to fallback method.")
 
                     except Exception:
                         # Use fallback method: using g-e SSF experiment threshold extracted from h5 files
-                        print(f"[run] Q{qid + 1} dataset {idx}: GMM fit failed or too close crossing → falling back to SSF threshold")
+                        print(f"[run] Q{qid + 1} dataset {idx}: GMM fit failed or too close crossing. Falling back to SSF threshold")
                         pop_threshold = data_threshold
                         mask = (ig_new <= data_threshold)
                         Pg = mask.mean()
@@ -345,7 +346,7 @@ class TempCalcAndPlots:
         plot_filename = os.path.join(qubit_folder,
                                      f"Q{q_key + 1}_SSFhist_gaussianfit_Dataset{dataset}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
         plt.savefig(plot_filename)
-        print(f"Plot saved to: {qubit_folder}")
+        # print(f"Plot saved to: {qubit_folder}")
         plt.close()
 
     def timestamp(self, fname):
@@ -589,7 +590,6 @@ class TempCalcAndPlots:
         """
         ig = rec["ig_new"]  # rotated SSF I values
         thresh = rec["pop_threshold"]  # data_threshold
-        dataset = rec["dataset"]
 
         steps = 3000
         # numbins = round(math.sqrt(steps))
@@ -597,15 +597,15 @@ class TempCalcAndPlots:
 
         fig, ax = plt.subplots()
         ax.hist(ig, bins=numbins, alpha=0.3, color="grey", label="all shots")
-        ax.hist(ig[ig <= thresh], bins=numbins, alpha=0.7, label="|g⟩ shots", color="blue")
-        ax.hist(ig[ig > thresh], bins=numbins, alpha=0.7, label="|e⟩ shots", color="red")
+        ax.hist(ig[ig <= thresh], bins=numbins, alpha=0.7, label="|g⟩ data", color="blue")
+        ax.hist(ig[ig > thresh], bins=numbins, alpha=0.7, label="|e⟩ leakage", color="red")
         ax.axvline(thresh, linestyle="--", color="black", label=f"threshold={thresh:.2f}")
-        ax.set_title(f"Q{q_key + 1} SSF Threshold Split (ds {dataset})")
+        ax.set_title(f"Q{q_key + 1} SSF Threshold Split")
         ax.set_xlabel("I'")
         ax.set_ylabel("Counts")
         ax.legend()
 
         os.makedirs(out_folder, exist_ok=True)
-        fname = os.path.join( out_folder, f"Q{q_key + 1}_threshold_split_{dataset}.png" )
+        fname = os.path.join( out_folder, f"Q{q_key + 1}_threshold_split.png" )
         fig.savefig(fname, dpi=self.figure_quality)
         plt.close(fig)
