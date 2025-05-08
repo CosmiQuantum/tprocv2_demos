@@ -302,6 +302,11 @@ class TempCalcAndPlots:
             q_folder = os.path.join(plotting_path, f"Q{qid + 1}")
             os.makedirs(q_folder, exist_ok=True)
 
+            # Make a date‐stamped subfolder
+            date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+            made_on_folder = os.path.join(q_folder, f"made_on_{date_str}")
+            os.makedirs(made_on_folder, exist_ok=True)
+
             for rec in records:
                 ig_new = rec["ig_new"] #prepared ground state data (rotated I values)
                 ie_new = rec["ie_new"] #prepared first excited state data (rotated I values)
