@@ -352,7 +352,7 @@ class TempCalcAndPlots:
                 ax.legend(frameon=False)
                 fig.tight_layout()
 
-                fname = os.path.join(q_folder, f"Q{qid + 1}_ds{ds}_midpoint_fit.png")
+                fname = os.path.join(made_on_folder, f"Q{qid + 1}_midpoint_fit_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
                 fig.savefig(fname, dpi=self.figure_quality)
                 plt.close(fig)
 
@@ -437,8 +437,7 @@ class TempCalcAndPlots:
         # plt.show()
 
         # Save the plot to the Temperatures folder
-        plot_filename = os.path.join(qubit_folder,
-                                     f"Q{q_key + 1}_SSFhist_gaussianfit_Dataset{dataset}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
+        plot_filename = os.path.join(qubit_folder, f"Q{q_key + 1}_SSFhist_gaussianfit_Dataset{dataset}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
         plt.savefig(plot_filename)
         # print(f"Plot saved to: {qubit_folder}")
         plt.close()
