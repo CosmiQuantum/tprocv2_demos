@@ -42,6 +42,8 @@ multiply_qubit_reps_by = 2 #only has impact if the line two above is True
 
 outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30", str(datetime.date.today()))
 
+
+
 now = datetime.datetime.now()
 formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
 

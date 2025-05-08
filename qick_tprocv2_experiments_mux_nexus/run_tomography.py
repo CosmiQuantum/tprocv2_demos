@@ -6,7 +6,14 @@ from tomography import TomographyMeasurement
 from tomography import AllQubitTomographyMeasurement
 
 import datetime
-outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30", str(datetime.date.today()))
+
+studyFolder='Tomography_Study'
+substudyFolder='' #Junk, Ba_sub_study, Cs_3plates_sub_study, Cs_6plates_sub_study, Cs_9plates_sub_study
+calibration='calibration'
+data_folder='data'
+outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run31/",  str(datetime.date.today()))
+data_outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run31/", studyFolder, substudyFolder, data_folder, str(datetime.date.today()))
+calibration_outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run31/", studyFolder, substudyFolder, calibration, str(datetime.date.today()))
 
 ## Unblock one of the follow block to do single qubit tomography or repeated tomography for all qubits
 
