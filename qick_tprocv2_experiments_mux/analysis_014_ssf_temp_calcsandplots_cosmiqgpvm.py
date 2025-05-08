@@ -320,7 +320,7 @@ class TempCalcAndPlots:
                 all_i = np.concatenate([ig_new, ie_new])
 
                 # histogram of *all* shots
-                ax.hist(all_i, bins=numbins, alpha=0.35, color="grey", label="all shots")
+                n, edges, _ = ax.hist(all_i, bins=numbins, alpha=0.35, color="grey", label="all shots")
 
                 x_grid = np.linspace(all_i.min(), all_i.max(), 400)
                 g_pdf = (weights[ground_idx] /
@@ -333,7 +333,8 @@ class TempCalcAndPlots:
                                         sigmas[excited_idx]) ** 2))
 
                 # scale PDFs roughly to histogram height for visibility
-                scale = len(all_i) * (x_grid[1] - x_grid[0])
+                bin_w = edges[1] - edges[0]
+                scale = len(all_i) / bin_w
                 ax.plot(x_grid, g_pdf * scale, color="blue", lw=2,
                         label="ground Gaussian")
                 ax.plot(x_grid, e_pdf * scale, color="red", lw=2,
