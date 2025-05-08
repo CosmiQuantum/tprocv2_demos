@@ -39,7 +39,8 @@ all_ssf_qtemp_dates = [[] for _ in range(tot_num_of_qubits)]
 all_ssf_qtemps = [[] for _ in range(tot_num_of_qubits)]
 
 freq_cache = {} #for qubit freqs
-ig_new_cache = {} #for roated IQ data (SSF)
+ig_new_cache = {} #for ground state roated I data (SSF)
+ie_new_cache = {} #for first excited state roated I data (SSF)
 timestamp_ssf_cache= {} #for ssf data time stamps (qubit temperature time stamps)
 fid_cache = {} #for ssf ge fidelities
 threshold_cache  = {} #for ssf thresholds
@@ -77,13 +78,14 @@ for full_path in paths:
             # iterate through every round (file)
             for i in range(ssf_n):
                 try:
-                    theta, thresh, fidelity, ig_new, *_= ssf_ge.get_ssf_in_round(I_g, Q_g, I_e, Q_e, i)
+                    theta, thresh, fidelity, ig_new, _, ie_new, _, _, _, _, _ = ssf_ge.get_ssf_in_round(I_g, Q_g, I_e, Q_e, i)
                 except Exception as e:
                     print(f"rotate-Ig failed ({ssf_paths[i]}): {e}")
                     continue
 
                 key = (ssf_paths[i], QubitIndex)
                 ig_new_cache[key] = ig_new
+                ie_new_cache[key] = ie_new
                 timestamp_ssf_cache[key] = ssf_dates[i]
                 fid_cache[key] = float(fidelity)
                 threshold_cache[key] = float(thresh)
@@ -118,6 +120,7 @@ for q in Science_Qubits:
             "ssf_path"  : ssf_path,
             "qfreq_MHz" : freq_cache[fq_key],     # MHz
             "ig_new"   : ig_new_cache[ss_key],
+            "ie_new": ie_new_cache[ss_key],
             "data_timestamp" : timestamp_ssf_cache[ss_key].timestamp(), # unix-timestamps
             "fid": fid_cache[ss_key],
             "ssf_threshold": threshold_cache[ss_key]

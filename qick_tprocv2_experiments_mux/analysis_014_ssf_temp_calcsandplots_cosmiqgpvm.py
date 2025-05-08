@@ -183,6 +183,7 @@ class TempCalcAndPlots:
 
                 freq_mhz = rec["qfreq_MHz"]
                 ig_new = rec["ig_new"]
+                ie_new = rec["ie_new"]
                 ts_unix = rec["data_timestamp"]
                 fid = rec["fid"]
                 data_threshold = rec["ssf_threshold"]
@@ -272,6 +273,10 @@ class TempCalcAndPlots:
         return all_qubit_temperatures, all_qubit_timestamps, fit_results
 
     def plot_gaussians_qtemps(self, q_key, qubit_folder, fidelity, ig_new, ground_data, excited_data, ground_gaussian, excited_gaussian, crossing_point, temperature_mk, dataset, weights, covariances, means):
+        # Note: crossing point is the threshold that is used to determine Pg and Pe.
+        # Originally it was the crossing point between the two gaussians.
+        # You can provide something else to be used as the threshold tho (such as the midpoint between the two gaussian means)
+
         # -----------------PLOTS TO CHECK FITS AND THRESHOLDS---------------
         # Plotting double gaussian distributions and fitting
         xlims = [np.min(ig_new), np.max(ig_new)]
@@ -313,7 +318,7 @@ class TempCalcAndPlots:
         plt.plot(x, ground_gaussian_fit, label='Ground Gaussian Fit', color='blue', linewidth=2)
         plt.plot(x, excited_gaussian_fit, label='Excited (leakage) Gaussian Fit', color='red', linewidth=2)
         plt.axvline(crossing_point, color='black', linestyle='--', linewidth=1,
-                    label=f'Crossing Point ({crossing_point:.2f})')
+                    label=f'Threshold ({crossing_point:.2f})')
 
         # Add shading for ground and excited state regions
         x_vals = np.linspace(np.min(ig_new), np.max(ig_new), 1000)
@@ -337,7 +342,7 @@ class TempCalcAndPlots:
 
         plt.title(
             f"Fidelity Histogram and Double Gaussian Fit ; Qubit {q_key + 1}; Fidelity = {fidelity * 100:.2f}% ; Temp= {temperature_mk:2f} mK")
-        plt.xlabel('$I_g$', fontsize=14)
+        plt.xlabel('Rot $I_g$' , fontsize=14)
         # plt.ylabel('Probability Density', fontsize=14) or is it counts? i think it might just be counts
         plt.legend()
         # plt.show()
@@ -690,4 +695,39 @@ class TempCalcAndPlots:
         Pe = len(excited_data) / len(iq_data)
 
         return Pg, Pe, gmm, means, covariances, weights, threshold_mid, ground_gaussian, excited_gaussian, ground_data, excited_data, iq_data
+
+    import numpy as np
+    from sklearn.mixture import GaussianMixture
+
+    def fit_two_gaussians_midpoint(self, ig_new: np.ndarray, ie_new: np.ndarray):
+        """
+        Fits a 2‑component GMM (double gaussian) to all shots (ig_new + ie_new) and chooses the
+        threshold as the midpoint between the two component means.
+
+        Returns
+        -------
+        thresh           : (μ_g + μ_e) / 2
+        means, sigmas    : np.ndarray shape (2,)
+        weights          : np.ndarray shape (2,)
+        ground_idx       : component index for ground cluster
+        excited_idx      : component index for excited cluster
+        """
+
+        # Fit a 2‑component Gaussian mixture
+        all_i = np.concatenate([ig_new, ie_new]).reshape(-1, 1)
+
+        gmm = GaussianMixture(n_components=2, covariance_type="full")
+        gmm.fit(all_i)
+
+        means = gmm.means_.flatten()
+        sigmas = np.sqrt(gmm.covariances_).flatten()
+        weights = gmm.weights_
+
+        ground_idx, excited_idx = np.argsort(means)  # smaller mean = ground
+        mu_g, mu_e = means[ground_idx], means[excited_idx]
+
+        # Mid‑point threshold
+        threshold = 0.5 * (mu_g + mu_e)
+
+        return threshold, means, sigmas, weights, ground_idx, excited_idx
 
