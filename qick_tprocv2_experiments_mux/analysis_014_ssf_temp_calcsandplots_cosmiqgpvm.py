@@ -5,6 +5,7 @@ import numpy as np
 import h5py
 from sklearn.mixture import GaussianMixture
 from qicklab.analysis import qspec, t1, ssf
+from matplotlib.ticker import MaxNLocator
 import math
 import os
 import datetime
@@ -271,6 +272,89 @@ class TempCalcAndPlots:
                 })
 
         return all_qubit_temperatures, all_qubit_timestamps, fit_results
+
+    # -------------------- NEW “threshold only” runner -----------------
+    def run_thresh(self, pairs_info: dict, plotting_path: str, numbins: int = 64,):
+        """
+        For every (qubit,dataset) in `pairs_info`:
+        •fit a two–Gaussian GMM to ig_new + ie_new
+        •use the midpoint of the component means as threshold
+        •save a diagnostic plot
+        •collect numerical results in a return‑dict
+
+        Parameters
+        ----------
+        pairs_info  : { qubit_index : [record,…] } – must contain
+                      ig_new  and  ie_new  per record.
+        out_root    : top‑level directory where plots will be written.
+        numbins     : histogram bins for the diagnostic plot.
+
+        Returns
+        -------
+        thresh_results : { qubit_index : [ {dataset,threshold,means,sigmas,
+                                            weights,ground_idx,excited_idx}, … ] }
+        """
+
+        thresh_results = {q: [] for q in pairs_info}
+
+        for qid, records in pairs_info.items():
+            # one folder per qubit
+            q_folder = os.path.join(plotting_path, f"Q{qid + 1}")
+            os.makedirs(q_folder, exist_ok=True)
+
+            for rec in records:
+                ig_new = rec["ig_new"] #prepared ground state data (rotated I values)
+                ie_new = rec["ie_new"] #prepared first excited state data (rotated I values)
+                ds = rec.get("dataset", "NA")
+
+                # ---------- fit & extract numbers ----------
+                thresh, means, sigmas, weights, ground_idx, excited_idx = self.fit_two_gaussians_midpoint(ig_new, ie_new)
+
+                # ---------- plot to check things fitted correctly ----------
+                fig, ax = plt.subplots(figsize=(7, 4))
+                all_i = np.concatenate([ig_new, ie_new])
+
+                # histogram of *all* shots
+                ax.hist(all_i, bins=numbins, alpha=0.35, color="grey", label="all shots")
+
+                x_grid = np.linspace(all_i.min(), all_i.max(), 400)
+                g_pdf = (weights[ground_idx] /
+                         (np.sqrt(2 * np.pi) * sigmas[ground_idx]) *
+                         np.exp(-0.5 * ((x_grid - means[ground_idx]) /
+                                        sigmas[ground_idx]) ** 2))
+                e_pdf = (weights[excited_idx] /
+                         (np.sqrt(2 * np.pi) * sigmas[excited_idx]) *
+                         np.exp(-0.5 * ((x_grid - means[excited_idx]) /
+                                        sigmas[excited_idx]) ** 2))
+
+                # scale PDFs roughly to histogram height for visibility
+                scale = len(all_i) * (x_grid[1] - x_grid[0])
+                ax.plot(x_grid, g_pdf * scale, color="blue", lw=2,
+                        label="ground Gaussian")
+                ax.plot(x_grid, e_pdf * scale, color="red", lw=2,
+                        label="excited Gaussian")
+
+                # vertical markers
+                ax.axvline(means[ground_idx], color="blue", ls="--")
+                ax.axvline(means[excited_idx], color="red", ls="--")
+                ax.axvline(thresh, color="black", ls=":",
+                           label=f"threshold = {thresh:.2f}")
+
+                ax.set_title(f"Q{qid + 1}")
+                ax.set_xlabel("I'  (rotated)")
+                ax.set_ylabel("Counts")
+                ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+                ax.legend(frameon=False)
+                fig.tight_layout()
+
+                fname = os.path.join(q_folder, f"Q{qid + 1}_ds{ds}_midpoint_fit.png")
+                fig.savefig(fname, dpi=self.figure_quality)
+                plt.close(fig)
+
+                # ---------- store numbers ----------
+                thresh_results[qid].append(dict(dataset=ds, threshold=thresh, means=means, sigmas=sigmas, weights=weights, ground_idx=int(ground_idx), excited_idx=int(excited_idx)))
+        print('Plots saved to:', plotting_path)
+        return thresh_results
 
     def plot_gaussians_qtemps(self, q_key, qubit_folder, fidelity, ig_new, ground_data, excited_data, ground_gaussian, excited_gaussian, crossing_point, temperature_mk, dataset, weights, covariances, means):
         # Note: crossing point is the threshold that is used to determine Pg and Pe.

@@ -30,7 +30,7 @@ paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Stud
 
 ################################################# Load all data ##############################################################
 Science_Qubits = [0]
-analysis_flags = {"Qtemps_vs_time": False, "Gaussian_Fits": True}
+analysis_flags = {"Qtemps_vs_time": False, "Gaussian_Fits_Qtemps": False, "Gaussian_Fits_General": True}
 
 all_qspec_dates = [[] for _ in range(tot_num_of_qubits)]
 all_qspec_freqs = [[] for _ in range(tot_num_of_qubits)]
@@ -133,8 +133,8 @@ all_qubit_temps, all_qubit_times, fit_results  = temps_class_obj.run(pairs_info,
 if analysis_flags["Qtemps_vs_time"]:
     temps_class_obj.plot_all_qubits_scatter(all_qubit_temps, all_qubit_times, path_saveplots)
 
-############################################# Check Gaussian Fits (Plots) #############################################
-if analysis_flags["Gaussian_Fits"]:
+###################################### Check Gaussian Fits (Plots) for Qubit Temperature Calcs #############################################
+if analysis_flags["Gaussian_Fits_Qtemps"]:
     path_saveplots_fits = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Gaussian_Fits"
     for q_key, recs in fit_results.items():
         # path_saveplots/Q1, Q2, etc.
@@ -169,4 +169,10 @@ if analysis_flags["Gaussian_Fits"]:
             else:
                 # fallback/threshold‐only plot
                 temps_class_obj.plot_threshold_split(q_key, rec, made_on_folder)
+
+############################################# Check General SSF Double Gaussian Fits #############################################
+if analysis_flags["Gaussian_Fits_General"]:
+    path_saveplots_fits = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Gaussian_Fits"
+    thresh_results = temps_class_obj.run_thresh(pairs_info=pairs_info, plotting_path=path_saveplots_fits)
+
 
