@@ -1,5 +1,3 @@
-import sys
-sys.path.insert(0, "/exp/cosmiq/data/home/acolonce/QICK_Qubit_LabSuite/src")
 from analysis_021_plot_allRR_noqick import QubitSpectroscopy
 from qicklab.analysis import qspec, t1, ssf
 from section_008_save_data_to_h5 import Data_H5
