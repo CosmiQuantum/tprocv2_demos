@@ -339,11 +339,12 @@ class TempCalcAndPlots:
 
                 # scale PDFs roughly to histogram height for visibility
                 bin_w = edges[1] - edges[0]
-                scale = len(all_i) * bin_w
+                scale_g = len(ig_new) * bin_w  # ground shots · Δx
+                scale_e = len(ie_new) * bin_w  # excited shots · Δx
 
-                ax.plot(x_grid, g_pdf * scale, color="blue", lw=2,
+                ax.plot(x_grid, g_pdf * scale_g, color="blue", lw=2,
                         label="ground Gaussian")
-                ax.plot(x_grid, e_pdf * scale, color="red", lw=2,
+                ax.plot(x_grid, e_pdf * scale_e, color="red", lw=2,
                         label="excited Gaussian")
 
                 # vertical markers
