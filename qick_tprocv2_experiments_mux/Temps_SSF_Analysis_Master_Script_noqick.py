@@ -26,10 +26,10 @@ run_name = 'run6/6transmon'
 path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Qtemps_vs_Time"
 
 ################################################## File Paths #################################################################
-paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy2/2025-04-17_08-42-24/"]
+paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_10-18-53"]
 
 ################################################# Load all data ##############################################################
-Science_Qubits = [0]
+Science_Qubits = [0,4]
 analysis_flags = {"Qtemps_vs_time": False, "Gaussian_Fits_Qtemps": False, "Gaussian_Fits_General": True}
 
 all_qspec_dates = [[] for _ in range(tot_num_of_qubits)]
