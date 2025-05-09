@@ -321,10 +321,10 @@ class TempCalcAndPlots:
 
                 # histogram of *all* shots (does not show overlaps)
                 # n, edges, _ = ax.hist(all_i, bins=numbins, alpha=0.35, color="grey", label="all shots")
-                counts, edges = np.histogram(all_i, bins=numbins) # just extracting edges
+                # counts, edges = np.histogram(all_i, bins=numbins) # just extracting edges
 
                 # Plot g and e histograms separately (shows populations that overlap)
-                # edges_plt = np.linspace(all_i.min(), all_i.max(), numbins + 1)
+                edges = np.linspace(all_i.min(), all_i.max(), numbins + 1)
                 ax.hist(ig_new, bins=edges, alpha=0.55, color="royalblue", label="g-state")
                 ax.hist(ie_new, bins=edges, alpha=0.55, color="crimson", label="e-state")
 
@@ -338,13 +338,19 @@ class TempCalcAndPlots:
                          np.exp(-0.5 * ((x_grid - means[excited_idx]) /
                                         sigmas[excited_idx]) ** 2))
 
-                # scale PDFs roughly to histogram height for visibility. This is purely aesthetic.
+                # component‑specific scaling -----------
+                # ground:   only g‑prep shots that lie LEFT of the threshold
+                # excited:  only e‑prep shots that lie RIGHT of the threshold
                 bin_w = edges[1] - edges[0]
-                scale = len(all_i) * bin_w
+                n_g_left = np.count_nonzero(ig_new <= thresh)
+                n_e_right = np.count_nonzero(ie_new > thresh)
 
-                ax.plot(x_grid, g_pdf, color="blue", lw=2,
+                scale_g = n_g_left * bin_w
+                scale_e = n_e_right * bin_w
+
+                ax.plot(x_grid, g_pdf * scale_g, color="blue", lw=2,
                         label="ground Gaussian")
-                ax.plot(x_grid, e_pdf, color="red", lw=2,
+                ax.plot(x_grid, e_pdf * scale_e, color="red", lw=2,
                         label="excited Gaussian")
 
                 # vertical markers
