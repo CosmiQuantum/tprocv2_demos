@@ -367,9 +367,7 @@ class TempCalcAndPlots:
                 ax.legend(frameon=False)
                 fig.tight_layout()
 
-                # fname = os.path.join(made_on_folder, f"Q{qid + 1}_midpoint_fit_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
-                fname = os.path.join(made_on_folder,
-                                     f"Q{qid + 1}_midpoint_fit_{ds}.png")
+                fname = os.path.join(made_on_folder, f"Q{qid + 1}_midpoint_fit_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
                 fig.savefig(fname, dpi=self.figure_quality)
                 plt.close(fig)
 
