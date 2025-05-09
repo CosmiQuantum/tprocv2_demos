@@ -342,9 +342,9 @@ class TempCalcAndPlots:
                 bin_w = edges[1] - edges[0]
                 scale = len(all_i) * bin_w
 
-                ax.plot(x_grid, g_pdf * scale, color="blue", lw=2,
+                ax.plot(x_grid, g_pdf, color="blue", lw=2,
                         label="ground Gaussian")
-                ax.plot(x_grid, e_pdf * scale, color="red", lw=2,
+                ax.plot(x_grid, e_pdf, color="red", lw=2,
                         label="excited Gaussian")
 
                 # vertical markers
