@@ -338,15 +338,16 @@ class TempCalcAndPlots:
                          np.exp(-0.5 * ((x_grid - means[excited_idx]) /
                                         sigmas[excited_idx]) ** 2))
 
-                # component‑specific scaling -----------
-                # ground:   only g‑prep shots that lie LEFT of the threshold
-                # excited:  only e‑prep shots that lie RIGHT of the threshold
-                bin_w = edges[1] - edges[0]
-                n_g_left = np.count_nonzero(ig_new <= thresh)
-                n_e_right = np.count_nonzero(ie_new > thresh)
+                # Component‑specific scaling. We scale since we want to plot y-axis in counts instead of PDFs to match original SSF plots
+                counts_g, _ = np.histogram(ig_new, bins=edges)
+                counts_e, _ = np.histogram(ie_new, bins=edges)
 
-                scale_g = n_g_left * bin_w
-                scale_e = n_e_right * bin_w
+                peak_g = counts_g.max()
+                peak_e = counts_e.max()
+
+                # factor that makes the PDF peak equal the tallest bar
+                scale_g = peak_g / g_pdf.max()
+                scale_e = peak_e / e_pdf.max()
 
                 ax.plot(x_grid, g_pdf * scale_g, color="blue", lw=2,
                         label="ground Gaussian")
