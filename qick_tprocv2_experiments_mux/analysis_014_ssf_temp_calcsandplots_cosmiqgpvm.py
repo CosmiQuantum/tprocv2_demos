@@ -321,11 +321,12 @@ class TempCalcAndPlots:
 
                 # histogram of *all* shots (does not show overlaps)
                 # n, edges, _ = ax.hist(all_i, bins=numbins, alpha=0.35, color="grey", label="all shots")
+                counts, edges = np.histogram(all_i, bins=numbins) # just extracting edges
 
                 # Plot g and e histograms separately (shows populations that overlap)
-                edges = np.linspace(all_i.min(), all_i.max(), numbins + 1)
-                ax.hist(ig_new, bins=edges, alpha=0.55, color="royalblue", label="g-state")
-                ax.hist(ie_new, bins=edges, alpha=0.55, color="crimson", label="e-state")
+                edges_plt = np.linspace(all_i.min(), all_i.max(), numbins + 1)
+                ax.hist(ig_new, bins=edges_plt, alpha=0.55, color="royalblue", label="g-state")
+                ax.hist(ie_new, bins=edges_plt, alpha=0.55, color="crimson", label="e-state")
 
                 x_grid = np.linspace(all_i.min(), all_i.max(), 400)
                 g_pdf = (weights[ground_idx] /
@@ -339,7 +340,7 @@ class TempCalcAndPlots:
 
                 # scale PDFs roughly to histogram height for visibility. This is purely aesthetic.
                 bin_w = edges[1] - edges[0]
-                scale  = len(all_i) * bin_w
+                scale = len(all_i) * bin_w
 
                 ax.plot(x_grid, g_pdf * scale, color="blue", lw=2,
                         label="ground Gaussian")
