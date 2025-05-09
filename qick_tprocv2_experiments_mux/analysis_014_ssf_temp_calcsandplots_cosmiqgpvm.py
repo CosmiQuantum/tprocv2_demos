@@ -274,7 +274,7 @@ class TempCalcAndPlots:
         return all_qubit_temperatures, all_qubit_timestamps, fit_results
 
     # -------------------- NEW “threshold only” runner -----------------
-    def run_thresh(self, pairs_info: dict, plotting_path: str, numbins: int = 64,):
+    def run_thresh(self, pairs_info: dict, plotting_path: str, numbins: int = 64):
         """
         For every (qubit,dataset) in `pairs_info`:
         •fit a two–Gaussian GMM to ig_new + ie_new
@@ -319,8 +319,13 @@ class TempCalcAndPlots:
                 fig, ax = plt.subplots(figsize=(7, 4))
                 all_i = np.concatenate([ig_new, ie_new])
 
-                # histogram of *all* shots
-                n, edges, _ = ax.hist(all_i, bins=numbins, alpha=0.35, color="grey", label="all shots")
+                # histogram of *all* shots (does not show overlaps)
+                # n, edges, _ = ax.hist(all_i, bins=numbins, alpha=0.35, color="grey", label="all shots")
+
+                # Plot g and e histograms separately (shows populations that overlap)
+                edges = np.linspace(all_i.min(), all_i.max(), numbins + 1)
+                ax.hist(ig_new, bins=edges, alpha=0.55, color="royalblue", label="g-state")
+                ax.hist(ie_new, bins=edges, alpha=0.55, color="crimson", label="e-state")
 
                 x_grid = np.linspace(all_i.min(), all_i.max(), 400)
                 g_pdf = (weights[ground_idx] /
@@ -333,8 +338,8 @@ class TempCalcAndPlots:
                                         sigmas[excited_idx]) ** 2))
 
                 # scale PDFs roughly to histogram height for visibility
-                bin_w = edges[1] - edges[0]  # histogram bin‑width  Δx
-                scale = len(all_i) * bin_w  # N · Δx
+                bin_w = edges[1] - edges[0]
+                scale = len(all_i) * bin_w
 
                 ax.plot(x_grid, g_pdf * scale, color="blue", lw=2,
                         label="ground Gaussian")
