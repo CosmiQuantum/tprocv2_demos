@@ -361,7 +361,7 @@ class TempCalcAndPlots:
                 ax.axvline(means[ground_idx], color="blue", ls="--")
                 ax.axvline(means[excited_idx], color="red", ls="--")
                 ax.axvline(thresh, color="black", ls=":",
-                           label=f"threshold = {thresh:.2f}")
+                           label=f"g-e threshold = {thresh:.2f}")
 
                 ax.set_title(f"Q{qid + 1}")
                 ax.set_xlabel("I'  (rotated)")
