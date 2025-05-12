@@ -448,14 +448,14 @@ class TempCalcAndPlots:
         # )
 
         plt.title(
-            f"SSF Histogram and Double Gaussian Fit ; Qubit {q_key + 1} ; Temp= {temperature_mk:2f} mK")
-        plt.xlabel('Rot $I_g$' , fontsize=14)
+            f"Method: Ground-state double gaussian fit ; Qubit {q_key + 1} ; Temp= {temperature_mk:2f} mK")
+        plt.xlabel("$I_g$' " , fontsize=14)
         plt.ylabel('Counts', fontsize=14)
         plt.legend()
         # plt.show()
 
         # Save the plot to the Temperatures folder
-        plot_filename = os.path.join(qubit_folder, f"Q{q_key + 1}_SSFhist_gaussianfit_Dataset{dataset}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
+        plot_filename = os.path.join(qubit_folder, f"Q{q_key + 1}_SSF_ground_gaussianfit_Dataset{dataset}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
         plt.savefig(plot_filename)
         # print(f"Plot saved to: {qubit_folder}")
         plt.close()
@@ -703,6 +703,7 @@ class TempCalcAndPlots:
         """
         ig = rec["ig_new"]  # rotated SSF I values
         thresh = rec["pop_threshold"]  # data_threshold
+        temp_mk = rec["temperature_mK"]
 
         steps = 3000
         # numbins = round(math.sqrt(steps))
@@ -712,14 +713,14 @@ class TempCalcAndPlots:
         ax.hist(ig, bins=numbins, alpha=0.3, color="grey", label="all shots")
         ax.hist(ig[ig <= thresh], bins=numbins, alpha=0.7, label="|g⟩ data", color="blue")
         ax.hist(ig[ig > thresh], bins=numbins, alpha=0.7, label="|e⟩ leakage", color="red")
-        ax.axvline(thresh, linestyle="--", color="black", label=f"threshold={thresh:.2f}")
-        ax.set_title(f"Q{q_key + 1} SSF Threshold Split")
-        ax.set_xlabel("I'")
+        ax.axvline(thresh, linestyle="--", color="black", label=f"ssf g-e threshold={thresh:.2f}")
+        ax.set_title(f"Method: ground AND excited state double gaussian fit ; Q{q_key + 1}; Temp= {temp_mk:2f} mK")
+        ax.set_xlabel("$I_g$' and $I_e$'")
         ax.set_ylabel("Counts")
         ax.legend()
 
         os.makedirs(out_folder, exist_ok=True)
-        fname = os.path.join( out_folder, f"Q{q_key + 1}_threshold_split.png" )
+        fname = os.path.join( out_folder, f"Q{q_key + 1}_SSF_ge_threshold_split.png" )
         fig.savefig(fname, dpi=self.figure_quality)
         plt.close(fig)
 

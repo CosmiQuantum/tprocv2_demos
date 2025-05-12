@@ -1457,17 +1457,17 @@ class PlotRR_noQick:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    # def run(self, plot_res_spec=True, plot_q_spec=True, plot_rabi=True, rabi_rolling_avg=False, plot_ss=True,
-    #         plot_ss_hist_only=False, ss_plot_title=None, ss_plot_gef=True, plot_t1=True,
-    #         plot_t2r=True, plot_t2e=True, plot_rabis_Qtemps=False):
+    def run(self, plot_res_spec=False, plot_q_spec=False, plot_rabi=False, rabi_rolling_avg=False, plot_ss=False,
+            plot_ss_hist_only=False, ss_plot_title=None, ss_plot_gef=False, plot_t1=False,
+            plot_t2r=False, plot_t2e=False, plot_rabis_Qtemps=False):
 
         # if plot_res_spec:
         #     self.load_plot_save_res_spec()
         # if plot_q_spec:
         #     self.load_plot_save_q_spec()
-        # if plot_rabis_Qtemps:
-        #     list_of_all_qubits = [i for i in range(self.number_of_qubits + 1)]
-        #     self.load_plot_save_rabis_Qtemps(list_of_all_qubits)
+        if plot_rabis_Qtemps:
+            list_of_all_qubits = [i for i in range(self.number_of_qubits + 1)]
+            self.load_plot_save_rabis_Qtemps(list_of_all_qubits)
         # if plot_rabi:
         #     if rabi_rolling_avg:
         #         self.load_plot_save_rabi(rabi_rolling_avg=True)

@@ -7,14 +7,15 @@ from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 # from analysis_001_plot_all_RR_h5 import PlotAllRR
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 import os
-#---------------------------------------------------------Folders and Paths-------------------------------------------------------------------
+
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
 figure_quality = 200
-save_figs = False # If you are running plotter.run, do you want to save all of the plots for the chosen experiment?
+save_figs = True # If you are running plotter.run, do you want to save all of the plots for the chosen experiment?
 fit_saved = False # Not used here, set to false
 signal = 'None' # Do not change
 run_name = 'run6/6transmon/'
 
+#------------------------------------------------ Load all the data -------------------------------------------------
 # For quiet pc
 # date = '2025-04-12'  # only go through all of the data for one date at a time because there is a lot
 # outerFolder = f"/data/QICK_data/run6/6transmon/ef_studies/QubitTemps_efRabi_method/{date}/Optimization/Round_Robin_mode"
@@ -50,8 +51,6 @@ run_name = 'run6/6transmon/'
 #     "2025-05-04"] # Cs source removed. No sources in Cleanroom.
 target_dates = ["2025-05-05"]
 base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study"
-outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/params_vs_time"
-os.makedirs(outerFolder_qtemps_plots, exist_ok=True)
 
 # --- Walking through all the subdirectories ---
 filter_keywords = ['source_off', 'source_on']
@@ -69,31 +68,41 @@ for root, dirs, files in os.walk(base_dir):
                 outerFolder = optimization_path #RR data (g-e Qspec) folder path before Data_h5
                 outerFolder_qtemps_data = optimization_path #Qubit temps data folder path before Data_h5
 
-                # if not os.path.exists(outerFolder): os.makedirs(outerFolder)
-                # if not os.path.exists(outerFolder_qtemps_data): os.makedirs(outerFolder_qtemps_data)
-                #------------------------------------------------Initialize the Plotting class------------------------------------------------
+                if not os.path.exists(outerFolder): os.makedirs(outerFolder)
+                if not os.path.exists(outerFolder_qtemps_data): os.makedirs(outerFolder_qtemps_data)
+
+                #---------------------------------------- Initialize the PlotRR_noQick class ------------------------------------------------
+                outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/PlotRR"
+                os.makedirs(outerFolder_qtemps_plots, exist_ok=True)
                 plotter = PlotRR_noQick(date_string, figure_quality, save_figs, fit_saved, signal, run_name, tot_num_of_qubits, outerFolder,
                                   outerFolder_qtemps_plots, outerFolder_qtemps_data)
 
-                #------------------------------------To re-plot the g-e-f SSF plots, or any other data from the selected date-----------------------------------------------------
-                # plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_ss = False,  ss_plot_gef = True, plot_t1 = False,
+                #------------------------------------To re-plot the RPM plots, or any other data from the selected date-----------------------------------------------------
+                # plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_ss = False,  ss_plot_gef = False, plot_t1 = False,
                 #             plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = True)
 
-                # Load data and append to list spanning multiple dates
+                #---------------------------------------- Load data and append to list spanning multiple dates --------------------------------------------------
                 qtemp_data = plotter.load_plot_save_rabis_Qtemps(list_of_all_qubits)
                 combined_qtemp_data.extend(qtemp_data)
 
-#Qubit temperatures vs time
-plotter.plot_qubit_temperatures_vs_time(combined_qtemp_data, restrict_time_xaxis = False, plot_extra_event_lines = False)
 
-#Histograms of Qubit temperatures
+#--------------------------------------------- Initialize the PlotRR_noQick class ------------------------------------------------
+# outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/params_vs_time"
+# os.makedirs(outerFolder_qtemps_plots, exist_ok=True)
+# plotter = PlotRR_noQick(date_string, figure_quality, save_figs, fit_saved, signal, run_name, tot_num_of_qubits, outerFolder,
+#                   outerFolder_qtemps_plots, outerFolder_qtemps_data)
+
+# ------------------------------------------------ Qubit temperatures vs time ----------------------------------------------------
+# plotter.plot_qubit_temperatures_vs_time(combined_qtemp_data, restrict_time_xaxis = False, plot_extra_event_lines = False)
+
+# ----------------------------------------------- Histograms of Qubit temperatures -----------------------------------------------
 # plotter.plot_qubit_temperature_histograms(combined_qtemp_data)
 
-#Excited state populations (P_e) vs time
+# ----------------------------------------------- Excited state populations (P_e) vs time ----------------------------------------
 # plotter.plot_qubit_pe_vs_time(combined_qtemp_data)
 
-#Qubit temp and P_e vs time in the same plot
+# ----------------------------------------------- Qubit temp and P_e vs time in the same plot ------------------------------------
 # plotter.plot_qubit_temp_and_pe_vs_time(combined_qtemp_data)
 
-#Qubit temp, P_e, and g-e qubit freq vs time in the same plot
+# ----------------------------------------- Qubit temp, P_e, and g-e qubit freq vs time in the same plot --------------------------
 # plotter.plot_qubit_temp_pe_freq_vs_time(combined_qtemp_data)

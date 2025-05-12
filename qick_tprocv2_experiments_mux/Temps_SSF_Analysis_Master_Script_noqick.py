@@ -35,7 +35,7 @@ paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Stud
 
 ################################################# Load all data ##############################################################
 Science_Qubits = [0, 4]
-analysis_flags = {"Qtemps_vs_time": True, "Threshold_Check_Qtemps": False, "ge_thresh_check_ssf": False}
+analysis_flags = {"Qtemps_vs_time": False, "Threshold_Check_Qtemps": True, "ge_thresh_check_ssf": False}
 
 all_qspec_dates = [[] for _ in range(tot_num_of_qubits)]
 all_qspec_freqs = [[] for _ in range(tot_num_of_qubits)]
