@@ -379,7 +379,7 @@ class TempCalcAndPlots:
         print('Plots saved to:', plotting_path)
         return thresh_results
 
-    def plot_gaussians_qtemps(self, q_key, qubit_folder, ig_new, ground_data, excited_data, ground_gaussian, excited_gaussian, crossing_point, temperature_mk, dataset, weights, sigmas, means):
+    def plot_gaussians_qtemps(self, q_key, qubit_folder, ig_new, ground_data, excited_data, ground_gaussian, excited_gaussian, pop_threshold, temperature_mk, dataset, weights, sigmas, means):
         # Note: crossing point is the threshold that is used to determine Pg and Pe.
         # Originally it was the crossing point between the two gaussians.
         # You can provide something else to be used as the threshold tho (such as the midpoint between the two gaussian means)
@@ -399,8 +399,8 @@ class TempCalcAndPlots:
         # print(numbins)
         # Use the midpoints of bins to create boolean masks
         bin_centers = (bins[:-1] + bins[1:]) / 2
-        ground_region = (bin_centers < crossing_point)
-        excited_region = (bin_centers >= crossing_point)
+        ground_region = (bin_centers <= pop_threshold)
+        excited_region = (bin_centers > pop_threshold)
 
         # Calculate scaling factors for each region
         scaling_factor_ground = max(n[ground_region]) / max(
@@ -424,8 +424,8 @@ class TempCalcAndPlots:
 
         plt.plot(x, ground_gaussian_fit, label='Ground Gaussian Fit', color='blue', linewidth=2)
         plt.plot(x, excited_gaussian_fit, label='Excited (leakage) Gaussian Fit', color='red', linewidth=2)
-        plt.axvline(crossing_point, color='black', linestyle='--', linewidth=1,
-                    label=f'Threshold ({crossing_point:.2f})')
+        plt.axvline(pop_threshold, color='black', linestyle='--', linewidth=1,
+                    label=f'Threshold ({pop_threshold:.2f})')
 
         # Add shading for ground and excited state regions
         x_vals = np.linspace(np.min(ig_new), np.max(ig_new), 1000)
