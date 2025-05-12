@@ -798,13 +798,11 @@ class TempCalcAndPlots:
         #compute midpoint threshold
         threshold_mid = 0.5 * (means[ground_gaussian] + means[excited_gaussian])
 
-        labels = gmm.predict(iq_data.reshape(-1, 1))
+        # Split using threshold
+        ground_data = iq_data[iq_data <= threshold_mid]
+        excited_data = iq_data[iq_data > threshold_mid]
 
-        # split into ground vs excited (using midpoint of gaussian means as a threshold)
-        ground_data = iq_data[(labels == ground_gaussian) & (iq_data <= threshold_mid)]
-        excited_data = iq_data[(labels == excited_gaussian) & (iq_data > threshold_mid)]
-
-        # calculate populations
+        # Compute populations
         Pg = len(ground_data) / len(iq_data)
         Pe = len(excited_data) / len(iq_data)
 
