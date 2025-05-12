@@ -48,7 +48,7 @@ run_name = 'run6/6transmon/'
 #     "2025-05-02",
 #     "2025-05-03",
 #     "2025-05-04"] # Cs source removed. No sources in Cleanroom.
-target_dates = ["2025-04-26", "2025-04-27"]
+target_dates = ["2025-05-05"]
 base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study"
 outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/params_vs_time"
 os.makedirs(outerFolder_qtemps_plots, exist_ok=True)

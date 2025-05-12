@@ -1780,11 +1780,6 @@ class PlotRR_noQick:
 
         fig.suptitle("Qubit Temperatures vs. Time", fontsize=16)
 
-        # cdt = pytz.timezone('America/Chicago')
-
-        # def localize_cdt(dt):
-        #     return dt if dt.tzinfo else cdt.localize(dt)
-
         # radiation source timestamps
         co60_time = datetime.datetime(2025, 4, 21, 12, 35)
         cs137_time = datetime.datetime(2025, 4, 23, 12, 53)
@@ -1842,11 +1837,11 @@ class PlotRR_noQick:
                 end_time = datetime.datetime.combine(date_to_plot, time_end)
                 #Use finer ticks with hour detail
                 ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H'))
+                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d\n%H:%M'))
             else:
                 #Use coarse ticks with just date
                 ax.xaxis.set_major_locator(mdates.DayLocator())
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d\n%H:%M'))
 
             # Use scatter instead of plot to avoid connecting lines
             ax.scatter(times, temps, marker='o', color=colors[q % len(colors)], label=f"Q{q + 1}")
@@ -1865,12 +1860,12 @@ class PlotRR_noQick:
             ax.tick_params(axis='x', labelrotation=90, labelsize=12)
             ax.tick_params(axis='y', labelsize=12)
 
-            #--- Add vertical lines for known radiation events ---
-            for vtime, label in [(co60_time, "Co-60"), (cs137_time, "Cs-137"), (cs137_closer_time, "Cs-137 Closer"), (cs137_removed_time, "Cs-137 Removed")]:
-                if not restrict_time_xaxis or (restrict_time_xaxis and start_time <= vtime <= end_time):
-                    ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
-                    ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90,
-                            verticalalignment='top', horizontalalignment='right', fontsize=10)
+            # #--- Add vertical lines for known radiation events ---
+            # for vtime, label in [(co60_time, "Co-60"), (cs137_time, "Cs-137"), (cs137_closer_time, "Cs-137 Closer"), (cs137_removed_time, "Cs-137 Removed")]:
+            #     if not restrict_time_xaxis or (restrict_time_xaxis and start_time <= vtime <= end_time):
+            #         ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
+            #         ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90,
+            #                 verticalalignment='top', horizontalalignment='right', fontsize=10)
 
             #----------------------Optional: Now for other events------------------------
             event_date_0418 = datetime.date(2025, 4, 18)
