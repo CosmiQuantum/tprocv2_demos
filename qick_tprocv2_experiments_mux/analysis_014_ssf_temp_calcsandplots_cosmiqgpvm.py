@@ -716,8 +716,8 @@ class TempCalcAndPlots:
         bin_edges = np.histogram_bin_edges(ig, bins=numbins)
 
         ax.hist(ig, bins=bin_edges, alpha=0.3, color="grey", label="all g-state data", zorder=1)
-        ax.hist(ig[ig <= thresh], bins=bin_edges, alpha=0.7, label="|g⟩ data", color="blue", zorder=2)
-        ax.hist(ig[ig > thresh], bins=bin_edges, alpha=0.7, label="|e⟩ leakage", color="red", zorder=3)
+        ax.hist(ig[ig <= thresh], bins=bin_edges, alpha=0.7, label="|g⟩ region", color="blue", zorder=2)
+        ax.hist(ig[ig > thresh], bins=bin_edges, alpha=0.7, label="|e⟩ leakage region", color="red", zorder=3)
 
         ax.axvline(thresh, linestyle="--", color="black", label=f"ssf g-e threshold={thresh:.2f}")
         ax.set_title(f"Method: g-e double gaussian fit ; Q{q_key + 1}; Temp= {temp_mk:2f} mK")
