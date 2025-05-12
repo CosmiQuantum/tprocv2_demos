@@ -6,10 +6,13 @@ import datetime
 from sklearn.mixture import GaussianMixture
 
 class ssf:
-    def fit_two_gaussians_midpoint(self, ig_new: np.ndarray, ie_new: np.ndarray):
+    def ssf_fit_two_gaussians_midpoint(self, ig_new: np.ndarray, ie_new: np.ndarray):
         """
-        Fits a 2‑component GMM (double gaussian) to all shots (ig_new + ie_new) and chooses the
-        threshold as the midpoint between the two component means.
+        Fits a 2‑component GMM (double gaussian) to all shots (ig_new + ie_new) from an ssf file
+        and chooses the threshold as the midpoint between the two component means.
+
+        ig_new is the rotated I data for the ground state in a g-e SSF measurement.
+        ie_new is the rotated I data for the first excited state in a g-e SSF measurement.
 
         Returns
         -------
@@ -38,14 +41,17 @@ class ssf:
 
         return threshold, means, sigmas, weights, ground_idx, excited_idx
 
-    def run_thresh(self, QubitIndex: int, ig_new: np.ndarray, ie_new: np.ndarray, plotting_path: str, numbins: int = 64, figure_quality: int = 200):
+    def plot_ssf_ge_thresh(self, QubitIndex: int, ig_new: np.ndarray, ie_new: np.ndarray, plotting_path: str, numbins: int = 64, figure_quality: int = 200):
         """
         This function plots the SSF data + the two gaussian fits + the means of the gaussians + the g-e threshold for visualization.
+        ig_new is the rotated I data for the ground state in a g-e SSF measurement.
+        ie_new is the rotated I data for the first excited state in a g-e SSF measurement.
+        QubitIndex is expected to start at 0 for qubit 1 and so forth.
         """
         os.makedirs(plotting_path, exist_ok=True)
 
         # fit & extract numbers
-        thresh, means, sigmas, weights, ground_idx, excited_idx = self.fit_two_gaussians_midpoint(ig_new, ie_new)
+        thresh, means, sigmas, weights, ground_idx, excited_idx = self.ssf_fit_two_gaussians_midpoint(ig_new, ie_new)
 
         # plot to check things fitted correctly
         fig, ax = plt.subplots(figsize=(7, 4))

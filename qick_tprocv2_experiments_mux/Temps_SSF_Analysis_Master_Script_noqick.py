@@ -30,7 +30,7 @@ paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Stud
 
 ################################################# Load all data ##############################################################
 Science_Qubits = [4]
-analysis_flags = {"Qtemps_vs_time": False, "Gaussian_Fits_Qtemps": False, "Gaussian_Fits_General": True}
+analysis_flags = {"Qtemps_vs_time": False, "Threshold_Check_Qtemps": False, "ge_thresh_check_ssf": True}
 
 all_qspec_dates = [[] for _ in range(tot_num_of_qubits)]
 all_qspec_freqs = [[] for _ in range(tot_num_of_qubits)]
@@ -42,8 +42,6 @@ freq_cache = {} #for qubit freqs
 ig_new_cache = {} #for ground state roated I data (SSF)
 ie_new_cache = {} #for first excited state roated I data (SSF)
 timestamp_ssf_cache= {} #for ssf data time stamps (qubit temperature time stamps)
-fid_cache = {} #for ssf ge fidelities
-threshold_cache  = {} #for ssf thresholds
 
 for full_path in paths:
     path = os.path.dirname(full_path)  # one level up from the dataset
@@ -78,7 +76,7 @@ for full_path in paths:
             # iterate through every round (file)
             for i in range(ssf_n):
                 try:
-                    theta, thresh, fidelity, ig_new, _, ie_new, _, _, _, _, _ = ssf_ge.get_ssf_in_round(I_g, Q_g, I_e, Q_e, i)
+                    _, _, _, ig_new, _, ie_new, _, _, _, _, _ = ssf_ge.get_ssf_in_round(I_g, Q_g, I_e, Q_e, i)
                 except Exception as e:
                     print(f"rotate-Ig failed ({ssf_paths[i]}): {e}")
                     continue
@@ -87,8 +85,6 @@ for full_path in paths:
                 ig_new_cache[key] = ig_new
                 ie_new_cache[key] = ie_new
                 timestamp_ssf_cache[key] = ssf_dates[i]
-                fid_cache[key] = float(fidelity)
-                threshold_cache[key] = float(thresh)
 
         except Exception as e:
             print(f"Failed loading SSF for qubit {QubitIndex} from {full_path}: {e}")
@@ -122,19 +118,22 @@ for q in Science_Qubits:
             "ig_new"   : ig_new_cache[ss_key],
             "ie_new": ie_new_cache[ss_key],
             "data_timestamp" : timestamp_ssf_cache[ss_key].timestamp(), # unix-timestamps
-            "fid": fid_cache[ss_key],
-            "ssf_threshold": threshold_cache[ss_key]
         })
 
 ############################################## Calculate Temperatures ##################################################
-all_qubit_temps, all_qubit_times, fit_results  = temps_class_obj.run(pairs_info, limit_temp_k=0.8, use_ssf_thresh_only = False, fallback_to_threshold = False)
+all_qubit_temps, all_qubit_times, fit_results  = temps_class_obj.run(pairs_info, limit_temp_k=0.8, use_gessf_thresh_only = False, fallback_to_threshold = False)
 
 ######################################### Temperatures vs Time Scatter Plot #############################################
 if analysis_flags["Qtemps_vs_time"]:
     temps_class_obj.plot_all_qubits_scatter(all_qubit_temps, all_qubit_times, path_saveplots)
 
-###################################### Check Gaussian Fits (Plots) for Qubit Temperature Calcs #############################################
-if analysis_flags["Gaussian_Fits_Qtemps"]:
+######################################## Check General SSF Double Gaussian Fits and g-e threshold #############################################
+if analysis_flags["ge_thresh_check_ssf"]:
+    path_saveplots_fits = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Gaussian_Fits"
+    thresh_results = temps_class_obj.plot_ssf_ge_thresh(pairs_info=pairs_info, plotting_path=path_saveplots_fits)
+
+################################### Check population threshold for Qubit Temperature Calcs via both SSF methods #############################################
+if analysis_flags["Threshold_Check_Qtemps"]:
     path_saveplots_fits = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Gaussian_Fits"
     for q_key, recs in fit_results.items():
         # path_saveplots/Q1, Q2, etc.
@@ -146,15 +145,14 @@ if analysis_flags["Gaussian_Fits_Qtemps"]:
         os.makedirs(made_on_folder, exist_ok=True)
 
         for rec in recs:
-            uses_thr = rec.get("used_ssf_thresh_only", False) #Looks up the key "uses_ssf_data_threshold" in the result dictionary. If it’s missing (or False), the code did not use the SSF threshold.
+            uses_thr = rec.get("used_gessf_thresh_only", False) #Looks up the key "uses_ssf_data_threshold" in the result dictionary. If it’s missing (or False), the code did not use the SSF threshold.
             used_fb = rec.get("used_fallback_method", False) # similar check for fall back option
 
-            if not uses_thr and not used_fb: #if uses_ssf_data_threshold was False or used_fallback_method was False / not used
-                # double-gaussian plot
+            if not uses_thr and not used_fb: #if 'uses_gessf_data_threshold' was False or used_fallback_method was False / not used
+                # plots the double-gaussian fits on the ground state data and shows where the population threshold was set (midpoint of the means)
                 temps_class_obj.plot_gaussians_qtemps(
                     q_key,
                     made_on_folder,
-                    rec["fid"],
                     rec["ig_new"],
                     rec["ground_data"],
                     rec["excited_data"],
@@ -164,15 +162,12 @@ if analysis_flags["Gaussian_Fits_Qtemps"]:
                     rec["temperature_mK"],
                     rec["dataset"],
                     rec["weights"],
-                    rec["covariances"],
+                    rec["sigmas"],
                     rec["means"])
             else:
-                # fallback/threshold‐only plot
+                # plots the g-e threshold and the ground state data to show how the g-e threshold was used to determine Pg and Pe
                 temps_class_obj.plot_threshold_split(q_key, rec, made_on_folder)
 
-############################################# Check General SSF Double Gaussian Fits #############################################
-if analysis_flags["Gaussian_Fits_General"]:
-    path_saveplots_fits = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Gaussian_Fits"
-    thresh_results = temps_class_obj.run_thresh(pairs_info=pairs_info, plotting_path=path_saveplots_fits)
+
 
 
