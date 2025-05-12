@@ -1840,7 +1840,9 @@ class PlotRR_noQick:
                 ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d\n%H:%M'))
             else:
                 #Use coarse ticks with just date
-                ax.xaxis.set_major_locator(mdates.DayLocator())
+                # ax.xaxis.set_major_locator(mdates.DayLocator())
+                # ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d\n%H:%M'))
+                ax.xaxis.set_major_locator(mdates.AutoDateLocator())
                 ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d\n%H:%M'))
 
             # Use scatter instead of plot to avoid connecting lines
