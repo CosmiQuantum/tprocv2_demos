@@ -1837,13 +1837,13 @@ class PlotRR_noQick:
                 end_time = datetime.datetime.combine(date_to_plot, time_end)
                 #Use finer ticks with hour detail
                 ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d\n%H:%M'))
+                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d-%H'))
             else:
                 #Use coarse ticks with just date
                 # ax.xaxis.set_major_locator(mdates.DayLocator())
                 # ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d\n%H:%M'))
                 ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d\n%H:%M'))
+                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d-%H'))
 
             # Use scatter instead of plot to avoid connecting lines
             ax.scatter(times, temps, marker='o', color=colors[q % len(colors)], label=f"Q{q + 1}")
@@ -1853,14 +1853,14 @@ class PlotRR_noQick:
             ax.grid(False)
 
             # Format the x-axis to show dates in a nice format
-            ax.set_ylim(50, 800)
+            ax.set_ylim(50, 950)
             ax.set_yticks(np.linspace(50, 950, 10))
 
             # start_time = datetime.datetime(2025, 4, 11, 12, 30)
             # ax.set_xlim(left=start_time)
 
-            ax.tick_params(axis='x', labelrotation=45, labelsize=12)
-            ax.tick_params(axis='y', labelsize=12)
+            ax.tick_params(axis='x', labelrotation=45, labelsize=10)
+            ax.tick_params(axis='y', labelsize=10)
 
             # #--- Add vertical lines for known radiation events ---
             # for vtime, label in [(co60_time, "Co-60"), (cs137_time, "Cs-137"), (cs137_closer_time, "Cs-137 Closer"), (cs137_removed_time, "Cs-137 Removed")]:
