@@ -576,7 +576,7 @@ class TempCalcAndPlots:
             ax.xaxis.set_major_formatter(date_fmt)
             plt.setp(ax.get_xticklabels(), rotation=45, fontsize=10)
             ax.set_ylim(50, 950)
-            ax.set_yticks(np.linspace(50, 950, 10), labelsize=10)
+            ax.set_yticks(np.linspace(50, 950, 10), fontsize=10)
 
         plt.tight_layout()
         fname = os.path.join(
