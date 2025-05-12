@@ -23,7 +23,6 @@ signal = 'None'
 run_number = 3 #starting from first run with qubits. Run 1 = run4a at quiet, run 2 = run5a at quiet, etc
 figure_quality = 200 #ramp this up to like 500 for presentation plots
 run_name = 'run6/6transmon'
-path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Qtemps_vs_Time"
 
 ################################################## File Paths #################################################################
 paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_03-03-40",
@@ -35,7 +34,7 @@ paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Stud
 
 ################################################# Load all data ##############################################################
 Science_Qubits = [0, 4]
-analysis_flags = {"Qtemps_vs_time": False, "Threshold_Check_Qtemps": True, "ge_thresh_check_ssf": False}
+analysis_flags = {"Qtemps_vs_time": False, "Threshold_Check_Qtemps": False, "ge_thresh_check_ssf": True}
 
 all_qspec_dates = [[] for _ in range(tot_num_of_qubits)]
 all_qspec_freqs = [[] for _ in range(tot_num_of_qubits)]
@@ -104,6 +103,7 @@ for (path, qidx) in ig_new_cache.keys():
     ssf_h5s[qidx].append(path)
 
 ########################################## Pair up Qspec_ge data and ssf_ge h5 files ###########################################
+path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Qtemps_vs_Time" #not used to pair up the files but we need to define one to initialize the class
 temps_class_obj = TempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs, path_saveplots)
 pairs_by_qubit, lonely_qspec, lonely_ssf = temps_class_obj.pair_qspec_and_ssf(qspec_h5s, ssf_h5s, tolerance_seconds = 10)
 
@@ -130,11 +130,12 @@ all_qubit_temps, all_qubit_times, fit_results  = temps_class_obj.run(pairs_info,
 
 ######################################### Temperatures vs Time Scatter Plot #############################################
 if analysis_flags["Qtemps_vs_time"]:
+    path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Qtemps_vs_Time"
     temps_class_obj.plot_all_qubits_scatter(all_qubit_temps, all_qubit_times, path_saveplots)
 
 ######################################## Check General SSF Double Gaussian Fits and g-e threshold #############################################
 if analysis_flags["ge_thresh_check_ssf"]:
-    path_saveplots_fits = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Gaussian_Fits"
+    path_saveplots_fits = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/geSSF_Fits"
     thresh_results = temps_class_obj.plot_ssf_ge_thresh(pairs_info=pairs_info, plotting_path=path_saveplots_fits)
 
 ################################### Check population threshold for Qubit Temperature Calcs via both SSF methods #############################################
