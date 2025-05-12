@@ -701,6 +701,7 @@ class TempCalcAndPlots:
         out_folder : str
             Directory where the .png should be saved.
         """
+        print('Processing plots...')
         ig = rec["ig_new"]  # rotated SSF I values
         thresh = rec["pop_threshold"]  # data_threshold
         temp_mk = rec["temperature_mK"]
@@ -710,11 +711,15 @@ class TempCalcAndPlots:
         numbins = 64
 
         fig, ax = plt.subplots()
-        ax.hist(ig, bins=numbins, alpha=0.3, color="grey", label="all shots")
-        ax.hist(ig[ig <= thresh], bins=numbins, alpha=0.7, label="|g⟩ data", color="blue")
-        ax.hist(ig[ig > thresh], bins=numbins, alpha=0.7, label="|e⟩ leakage", color="red")
+
+        bin_edges = np.histogram_bin_edges(ig, bins=numbins)
+
+        ax.hist(ig, bins=bin_edges, alpha=0.3, color="grey", label="all shots", zorder=1)
+        ax.hist(ig[ig <= thresh], bins=bin_edges, alpha=0.7, label="|g⟩ data", color="blue", zorder=2)
+        ax.hist(ig[ig > thresh], bins=bin_edges, alpha=0.7, label="|e⟩ leakage", color="red", zorder=3)
+
         ax.axvline(thresh, linestyle="--", color="black", label=f"ssf g-e threshold={thresh:.2f}")
-        ax.set_title(f"Method: ground AND excited state double gaussian fit ; Q{q_key + 1}; Temp= {temp_mk:2f} mK")
+        ax.set_title(f"Method: g AND e-state double gaussian fit ; Q{q_key + 1}; Temp= {temp_mk:2f} mK")
         ax.set_xlabel("$I_g$' and $I_e$'")
         ax.set_ylabel("Counts")
         ax.legend()
