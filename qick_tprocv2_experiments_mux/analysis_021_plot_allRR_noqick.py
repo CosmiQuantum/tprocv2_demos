@@ -1853,13 +1853,13 @@ class PlotRR_noQick:
             ax.grid(False)
 
             # Format the x-axis to show dates in a nice format
-            ax.set_ylim(50, 950)
+            ax.set_ylim(50, 800)
             ax.set_yticks(np.linspace(50, 950, 10))
 
             # start_time = datetime.datetime(2025, 4, 11, 12, 30)
             # ax.set_xlim(left=start_time)
 
-            ax.tick_params(axis='x', labelrotation=90, labelsize=12)
+            ax.tick_params(axis='x', labelrotation=45, labelsize=12)
             ax.tick_params(axis='y', labelsize=12)
 
             # #--- Add vertical lines for known radiation events ---
