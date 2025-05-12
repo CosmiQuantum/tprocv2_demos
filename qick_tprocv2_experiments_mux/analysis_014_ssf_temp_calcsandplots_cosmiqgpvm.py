@@ -689,7 +689,7 @@ class TempCalcAndPlots:
 
     def plot_threshold_split(self, q_key: int,rec: dict, out_folder: str):
         """
-        Plot a simple histogram split at the SSF threshold.
+        Plot a simple histogram split at the g-e SSF threshold.
 
         Parameters
         ----------
@@ -705,6 +705,7 @@ class TempCalcAndPlots:
         ig = rec["ig_new"]  # rotated SSF I values
         thresh = rec["pop_threshold"]  # data_threshold
         temp_mk = rec["temperature_mK"]
+        dataset = rec["dataset"]
 
         steps = 3000
         # numbins = round(math.sqrt(steps))
@@ -725,7 +726,7 @@ class TempCalcAndPlots:
         ax.legend()
 
         os.makedirs(out_folder, exist_ok=True)
-        fname = os.path.join( out_folder, f"Q{q_key + 1}_SSF_ge_threshold_split.png" )
+        fname = os.path.join( out_folder, f"Q{q_key + 1}_SSF_ge_threshold_split_{dataset}.png" )
         fig.savefig(fname, dpi=self.figure_quality)
         plt.close(fig)
 
