@@ -34,7 +34,7 @@ paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Stud
         "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_21-18-14"]
 
 ################################################# Load all data ##############################################################
-Science_Qubits = [4]
+Science_Qubits = [0, 4]
 analysis_flags = {"Qtemps_vs_time": True, "Threshold_Check_Qtemps": False, "ge_thresh_check_ssf": False}
 
 all_qspec_dates = [[] for _ in range(tot_num_of_qubits)]
