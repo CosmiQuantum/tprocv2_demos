@@ -29,27 +29,38 @@ run_name = 'run6/6transmon/'
 # outerFolder_qtemps_plots = os.path.join(outerFolder_qtemps_data, "analysis_plots_localpc")
 
 # For analysis at cosmiqgpvm02
-# target_dates = [
-#     "2025-04-16",
-#     "2025-04-17",
-#     "2025-04-18",
-#     "2025-04-19",
-#     "2025-04-20",
-#     "2025-04-21", #starts source on (Co)
-#     "2025-04-22",
-#     "2025-04-23", #switched source (to Cs)
-#     "2025-04-24",
-#     "2025-04-25",
-#     "2025-04-26",
-#     "2025-04-27",
-#     "2025-04-28", #Cs source moved closer
-#     "2025-04-29",
-#     "2025-04-30",
-#     "2025-05-01",
-#     "2025-05-02",
-#     "2025-05-03",
-#     "2025-05-04"] # Cs source removed. No sources in Cleanroom.
-target_dates = ["2025-05-05"]
+target_dates = [
+    "2025-04-16",
+    "2025-04-17",
+    "2025-04-18",
+    "2025-04-19",
+    "2025-04-20",
+    "2025-04-21", #starts source on (Co)
+    "2025-04-22",
+    "2025-04-23", #switched source (to Cs)
+    "2025-04-24",
+    "2025-04-25",
+    "2025-04-26",
+    "2025-04-27",
+    "2025-04-28", #Cs source moved closer
+    "2025-04-29",
+    "2025-04-30",
+    "2025-05-01",
+    "2025-05-02",
+    "2025-05-03",
+    "2025-05-04", # Cs source removed. No sources in Cleanroom.
+    "2025-05-05",
+    "2025-05-06",
+    "2025-05-07",
+    "2025-05-08",
+    "2025-05-09",
+    "2025-05-10",
+    "2025-05-11",
+    "2025-05-12",
+    "2025-05-13",
+    "2025-05-14"
+    ]
+
 base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study"
 
 # --- Walking through all the subdirectories ---
@@ -72,7 +83,12 @@ for root, dirs, files in os.walk(base_dir):
                 if not os.path.exists(outerFolder_qtemps_data): os.makedirs(outerFolder_qtemps_data)
 
                 #---------------------------------------- Initialize the PlotRR_noQick class ------------------------------------------------
-                outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/PlotRR"
+                # For RR plots
+                # outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/PlotRR"
+
+                # For Analysis
+                outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/params_vs_time"
+
                 os.makedirs(outerFolder_qtemps_plots, exist_ok=True)
                 plotter = PlotRR_noQick(date_string, figure_quality, save_figs, fit_saved, signal, run_name, tot_num_of_qubits, outerFolder,
                                   outerFolder_qtemps_plots, outerFolder_qtemps_data)
@@ -86,14 +102,8 @@ for root, dirs, files in os.walk(base_dir):
                 combined_qtemp_data.extend(qtemp_data)
 
 
-#--------------------------------------------- Initialize the PlotRR_noQick class ------------------------------------------------
-# outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/params_vs_time"
-# os.makedirs(outerFolder_qtemps_plots, exist_ok=True)
-# plotter = PlotRR_noQick(date_string, figure_quality, save_figs, fit_saved, signal, run_name, tot_num_of_qubits, outerFolder,
-#                   outerFolder_qtemps_plots, outerFolder_qtemps_data)
-
-# ------------------------------------------------ Qubit temperatures vs time ----------------------------------------------------
-# plotter.plot_qubit_temperatures_vs_time(combined_qtemp_data, restrict_time_xaxis = False, plot_extra_event_lines = False)
+#----------------------------------------------- Qubit temperatures vs time ----------------------------------------------------
+plotter.plot_qubit_temperatures_vs_time(combined_qtemp_data, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = True)
 
 # ----------------------------------------------- Histograms of Qubit temperatures -----------------------------------------------
 # plotter.plot_qubit_temperature_histograms(combined_qtemp_data)

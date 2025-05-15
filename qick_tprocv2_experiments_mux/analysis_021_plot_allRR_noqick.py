@@ -1756,7 +1756,7 @@ class PlotRR_noQick:
         T_mK = T_K * 1000  # Convert to millikelvin
         return T_K, T_mK, P_e, qubit_freq_MHz
 
-    def plot_qubit_temperatures_vs_time(self, all_files_Qtemp_results, num_qubits=6, restrict_time_xaxis = False, plot_extra_event_lines = False):
+    def plot_qubit_temperatures_vs_time(self, all_files_Qtemp_results, num_qubits=6, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = True):
         """
         Plots qubit temperatures vs. time for each qubit in a separate subplot (max 3 columns).
 
@@ -1862,22 +1862,23 @@ class PlotRR_noQick:
             ax.tick_params(axis='x', labelrotation=45, labelsize=10)
             ax.tick_params(axis='y', labelsize=10)
 
-            # #--- Add vertical lines for known radiation events ---
-            # for vtime, label in [(co60_time, "Co-60"), (cs137_time, "Cs-137"), (cs137_closer_time, "Cs-137 Closer"), (cs137_removed_time, "Cs-137 Removed")]:
-            #     if not restrict_time_xaxis or (restrict_time_xaxis and start_time <= vtime <= end_time):
-            #         ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
-            #         ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90,
-            #                 verticalalignment='top', horizontalalignment='right', fontsize=10)
+            if rad_events_plot_lines:
+                #--- Add vertical lines for known radiation events ---
+                for vtime, label in [(co60_time, "Co-60"), (cs137_time, "Cs-137"), (cs137_closer_time, "Cs-137 Closer"), (cs137_removed_time, "Cs-137 Removed")]:
+                    if not restrict_time_xaxis or (restrict_time_xaxis and start_time <= vtime <= end_time):
+                        ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
+                        ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90,
+                                verticalalignment='top', horizontalalignment='right', fontsize=10)
 
             #----------------------Optional: Now for other events------------------------
+            # Only relevant if plot_extra_event_lines is set to True
             event_date_0418 = datetime.date(2025, 4, 18)
             event_date_0423 = datetime.date(2025, 4, 23)
             extra_events = [
                 *((datetime.datetime.combine(event_date_0418, datetime.time.fromisoformat(t)), label)
                   for t, label in events_0418),
                 *((datetime.datetime.combine(event_date_0423, datetime.time.fromisoformat(t)), label)
-                  for t, label in events_0423)
-            ]
+                  for t, label in events_0423)]
 
             if restrict_time_xaxis:
                 ax.set_xlim(start_time, end_time)
