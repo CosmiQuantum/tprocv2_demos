@@ -70,7 +70,7 @@ for root, dirs, files in os.walk(base_dir):
     for d in dirs:
         full_path = os.path.join(root, d)
         # Match folders like '2025-04-16_11-47-09' based on prefix date
-        if any(d.startswith(date) for date in target_dates) and len(d) >= 19 and any(keyword in full_path for keyword in filter_keywords): # also checks if path includes the keyword (source_off or source_on)
+        if any(d.startswith(date) for date in target_dates) and len(d) >= 19 and any(keyword in full_path for keyword in filter_keywords): # also checks if path includes each keyword (source_off or source_on)
             optimization_path = os.path.join(full_path, "optimization")
             if os.path.isdir(optimization_path):
                 date_string = d[:10]  # Extract 'YYYY-MM-DD'

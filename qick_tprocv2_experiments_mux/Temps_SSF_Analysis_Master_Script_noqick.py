@@ -1,7 +1,7 @@
 from analysis_021_plot_allRR_noqick import QubitSpectroscopy
 from qicklab.analysis import qspec, t1, ssf
 from section_008_save_data_to_h5 import Data_H5
-from analysis_014_ssf_temp_calcsandplots_cosmiqgpvm import TempCalcAndPlots
+from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 from expt_config import expt_cfg, list_of_all_qubits, FRIDGE
 import glob
 import re
@@ -34,7 +34,7 @@ paths = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Stud
 
 ################################################# Load all data ##############################################################
 Science_Qubits = [0, 4]
-analysis_flags = {"Qtemps_vs_time": True, "Threshold_Check_Qtemps": False, "ge_thresh_check_ssf": False}
+analysis_flags = {"Qtemps_vs_time_viaSSF": True, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False}
 
 all_qspec_dates = [[] for _ in range(tot_num_of_qubits)]
 all_qspec_freqs = [[] for _ in range(tot_num_of_qubits)]
@@ -104,7 +104,7 @@ for (path, qidx) in ig_new_cache.keys():
 
 ########################################## Pair up Qspec_ge data and ssf_ge h5 files ###########################################
 path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Qtemps_vs_Time" #not used to pair up the files but we need to define one to initialize the class
-temps_class_obj = TempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs, path_saveplots)
+temps_class_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs, path_saveplots)
 pairs_by_qubit, lonely_qspec, lonely_ssf = temps_class_obj.pair_qspec_and_ssf(qspec_h5s, ssf_h5s, tolerance_seconds = 10)
 
 # Store relevant info for these pairs in a dictionary
@@ -126,10 +126,10 @@ for q in Science_Qubits:
         })
 
 ############################################## Calculate Temperatures ##################################################
-all_qubit_temps, all_qubit_times, fit_results  = temps_class_obj.run(pairs_info, limit_temp_k=0.8, use_gessf_thresh_only = True, fallback_to_threshold = False)
+all_qubit_temps, all_qubit_times, fit_results  = temps_class_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.8, use_gessf_thresh_only = True, fallback_to_threshold = False)
 
 ######################################### Temperatures vs Time Scatter Plot #############################################
-if analysis_flags["Qtemps_vs_time"]:
+if analysis_flags["Qtemps_vs_time_viaSSF"]:
     path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Qtemps_vs_Time"
     temps_class_obj.plot_all_qubits_scatter(all_qubit_temps, all_qubit_times, path_saveplots)
 
@@ -139,7 +139,7 @@ if analysis_flags["ge_thresh_check_ssf"]:
     thresh_results = temps_class_obj.plot_ssf_ge_thresh(pairs_info=pairs_info, plotting_path=path_saveplots_fits)
 
 ################################### Check population threshold for Qubit Temperature Calcs via both SSF methods #############################################
-if analysis_flags["Threshold_Check_Qtemps"]:
+if analysis_flags["Threshold_Check_Qtemps_viaSSF"]:
     path_saveplots_fits = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Gaussian_Fits"
     for q_key, recs in fit_results.items():
         # path_saveplots/Q1, Q2, etc.

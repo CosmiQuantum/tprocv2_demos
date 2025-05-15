@@ -6,6 +6,7 @@ import h5py
 from sklearn.mixture import GaussianMixture
 from qicklab.analysis import qspec, t1, ssf
 from matplotlib.ticker import MaxNLocator
+from analysis_021_plot_allRR_noqick import PlotRR_noQick
 import math
 import os
 import datetime
@@ -17,7 +18,7 @@ save_figs = True
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 
 
-class TempCalcAndPlots:
+class SSFTempCalcAndPlots:
     def __init__(self, figure_quality, number_of_qubits, save_figs, outerFolder):
         self.save_figs = save_figs
         self.figure_quality = figure_quality
@@ -132,7 +133,7 @@ class TempCalcAndPlots:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run(self, pairs_info, limit_temp_k=0.8, use_gessf_thresh_only: bool = False, fallback_to_threshold: bool = False):
+    def run_ssf_qtemps(self, pairs_info, limit_temp_k=0.8, use_gessf_thresh_only: bool = False, fallback_to_threshold: bool = False):
         """
         Parameters
         ----------
@@ -846,3 +847,52 @@ class TempCalcAndPlots:
 
         return threshold, means, sigmas, weights, ground_idx, excited_idx
 
+
+class RPMTempCalcAndPlots:
+    def __init__(self, figure_quality, number_of_qubits, save_figs):
+        self.save_figs = save_figs
+        self.figure_quality = figure_quality
+        self.number_of_qubits = number_of_qubits
+
+    def run_RPMqtemps(self, base_dir, target_dates, filter_keywords, fit_saved, signal, run_name, list_of_all_qubits, tot_num_of_qubits,
+                     outerFolder_RR_plots, replot_RPMs = False, get_qtemp_data = False, figure_quality = 200, save_figsRR = False):
+
+        combined_qtemp_data = []  # list of results from different .h5 files
+
+        os.makedirs(outerFolder_RR_plots, exist_ok=True)
+
+        #------------------------------------------ Looping through data folders and files -------------------------------------------------------
+        # Note: this is tailored for how things are organized in cosmiqgpvm02
+        for root, dirs, files in os.walk(base_dir):
+            for d in dirs:
+                full_path = os.path.join(root, d)
+                # Match folders like '2025-04-16_11-47-09' based on prefix date
+                if any(d.startswith(date) for date in target_dates) and len(d) >= 19 and any(
+                        keyword in full_path for keyword in
+                        filter_keywords):  # also checks if path includes each keyword (source_off or source_on)
+                    optimization_path = os.path.join(full_path, "optimization")
+                    if os.path.isdir(optimization_path):
+                        date_string = d[:10]  # Extract 'YYYY-MM-DD'
+                        print(f"Analyzing: {optimization_path}")
+
+                        outerFolder = optimization_path  # RR data (g-e Qspec) folder path before Data_h5
+                        outerFolder_qtemps_data = optimization_path  # Qubit temps data folder path before Data_h5
+
+                        if not os.path.exists(outerFolder): os.makedirs(outerFolder)
+                        if not os.path.exists(outerFolder_qtemps_data): os.makedirs(outerFolder_qtemps_data)
+
+                        # ---------------------------------------- Initialize the PlotRR_noQick class ------------------------------------------------
+                        plotter = PlotRR_noQick(date_string, figure_quality, save_figsRR, fit_saved, signal, run_name,
+                                                tot_num_of_qubits, outerFolder, outerFolder_RR_plots, outerFolder_qtemps_data)
+
+                        if replot_RPMs:
+                            # ------------------------------------To re-plot the RPM plots, or any other data from the selected date-----------------------------------------------------
+                            plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_ss = False,  ss_plot_gef = False, plot_t1 = False,
+                                        plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = True)
+
+                        if get_qtemp_data:
+                            # ---------------------------------------- Load data and append to list spanning multiple dates --------------------------------------------------
+                            qtemp_data = plotter.load_plot_save_rabis_Qtemps(list_of_all_qubits)
+                            combined_qtemp_data.extend(qtemp_data)
+
+        return combined_qtemp_data # Will be empty if get_qtemp_data is set to False
