@@ -103,7 +103,7 @@ for root, dirs, files in os.walk(base_dir):
 
 
 #----------------------------------------------- Qubit temperatures vs time ----------------------------------------------------
-plotter.plot_qubit_temperatures_vs_time(combined_qtemp_data, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = True)
+plotter.plot_qubit_temperatures_vs_time(combined_qtemp_data, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
 
 # ----------------------------------------------- Histograms of Qubit temperatures -----------------------------------------------
 # plotter.plot_qubit_temperature_histograms(combined_qtemp_data)
