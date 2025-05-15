@@ -1918,8 +1918,11 @@ class PlotRR_noQick:
             ax.set_xlabel("Time")
 
         # Save the figure
+        paramvstime_dir = os.path.join(self.outerFolder_save_plots, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+
         timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        save_path = os.path.join(self.outerFolder_save_plots, f"QubitTemps_vs_Time_{timestp}.png")
+        save_path = os.path.join(paramvstime_dir, f"QubitTemps_vs_Time_{timestp}.png")
         print("Plot saved to: ", save_path)
         plt.savefig(save_path, dpi=self.figure_quality)
         plt.close(fig)
@@ -1997,9 +2000,12 @@ class PlotRR_noQick:
             ax.tick_params(axis='both', which='major', labelsize=font)
 
         plt.tight_layout()
-        # Save the figure with a timestamp in the filename
+
+        hist_dir = os.path.join(self.outerFolder_save_plots, "qtemps_hists")
+        os.makedirs(hist_dir, exist_ok=True)
+
         timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        save_path = os.path.join(self.outerFolder_save_plots, f"QubitTemps_Histograms_{timestp}.png")
+        save_path = os.path.join(hist_dir, f"QubitTemps_Histograms_{timestp}.png")
         print("Histogram plot saved to:", save_path)
         plt.savefig(save_path, dpi=200)
         plt.close(fig)
@@ -2057,8 +2063,11 @@ class PlotRR_noQick:
         for ax in axes:
             ax.set_xlabel("Time", fontsize=font)
 
+        paramvstime_dir = os.path.join(self.outerFolder_save_plots, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+
         timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        save_path = os.path.join(self.outerFolder_save_plots, f"QubitPe_vs_Time_{timestp}.png")
+        save_path = os.path.join(paramvstime_dir, f"QubitPe_vs_Time_{timestp}.png")
         print("Plot saved to:", save_path)
         plt.savefig(save_path, dpi=self.figure_quality)
         plt.close(fig)
@@ -2125,8 +2134,11 @@ class PlotRR_noQick:
             ax1.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))
             ax1.tick_params(axis='x', rotation=45, labelsize=10)
 
+        paramvstime_dir = os.path.join(self.outerFolder_save_plots, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+
         timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        save_path = os.path.join(self.outerFolder_save_plots, f"QubitTemps_and_Pe_vs_Time_{timestp}.png")
+        save_path = os.path.join(paramvstime_dir, f"QubitTemps_and_Pe_vs_Time_{timestp}.png")
         print("Combined plot saved to:", save_path)
         plt.savefig(save_path, dpi=self.figure_quality)
         plt.close(fig)
@@ -2231,9 +2243,12 @@ class PlotRR_noQick:
             ax1.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))
             ax1.tick_params(axis='x', rotation=45, labelsize=10)
 
+        paramvstime_dir = os.path.join(self.outerFolder_save_plots, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+
         timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-        save_path = os.path.join(self.outerFolder_save_plots, f"QubitTemps_Pe_Freq_vs_Time_{timestp}.png")
+        save_path = os.path.join(paramvstime_dir, f"QubitTemps_Pe_Freq_vs_Time_{timestp}.png")
         print("Combined plot saved to:", save_path)
         plt.savefig(save_path, dpi=self.figure_quality)
         plt.close(fig)

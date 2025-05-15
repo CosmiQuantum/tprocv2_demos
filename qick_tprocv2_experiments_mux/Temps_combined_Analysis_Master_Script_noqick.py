@@ -84,7 +84,7 @@ base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_St
 outerFolder_qtemps_plots_RR = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/PlotRR"
 
 # For Analysis
-outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots" #params_vs_time
+outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots"
 
 filter_keywords = ['source_off', 'source_on']
 
@@ -99,7 +99,7 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
     #----------------------------------------------------------------------- RPM Analysis -------------------------------------------------------------------------
     # These are not used in the definitions that follow, are just needed to initialize the class
     outerFolder = ""
-    outerFolder_qtemps_plots = ""
+    outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots"
     outerFolder_qtemps_data = ""
     date_string = ""
     RPM_plotter = PlotRR_noQick(date_string, figure_quality, save_figs, fit_saved, signal, run_name, tot_num_of_qubits, outerFolder, outerFolder_qtemps_plots, outerFolder_qtemps_data)
