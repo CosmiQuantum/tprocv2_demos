@@ -231,7 +231,7 @@ if FRIDGE == "QUIET":
             "start_freq": 0,
             "end_freq": 0,
             "readout_pulse_delay": 2,  # 2/kappa
-            "detuning": [-20, -10, -10, -10, -15, -10],  # [MHz]
+            "detuning": [-17, -10, -10, -10, -15, -10],  # [MHz]
             "stark_gain": [],
         },
 
@@ -247,7 +247,7 @@ if FRIDGE == "QUIET":
             "end_gain": 1.0, #res gain values between -1 and 1, convert to qubit freq shift w/ stark ramsey
             "readout_pulse_delay": 2, #2/kappa
             "relax_delay": 400, #[us]
-            "detuning": [-20, -10, -10, -10, -15, -10], #[MHz] start w/negative detuning, script flips to positive halfway thru scan
+            "detuning": [-17, -10, -10, -10, -15, -10], #[MHz] start w/negative detuning, script flips to positive halfway thru scan
             "stark_sigma": 0.01,  # [us] 10 ns
             "stark_gain": [],
             "anharmonicity": [172.34, 176.38, 167.13, 172.57, 172.03, 161.14],

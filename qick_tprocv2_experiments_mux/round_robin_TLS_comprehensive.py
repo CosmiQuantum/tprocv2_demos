@@ -57,8 +57,8 @@ multiply_qubit_reps_by = 2
 # increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
 increase_steps_to_ef = 600
 study = 'TLS_Comprehensive_Study'
-sub_study = 'source_on_substudy6'
-substudy_txt_notes = '137Cs run with highest rate configuration, back to using 1.0 for high gain.'
+sub_study = 'source_off_detuning_17MHz_Q1_substudy1'
+substudy_txt_notes = 'Source removed, temperatures returning to base. Qubit 5 qubit freq found as minimum of qspec ge. Q1 stark detuning set to 17 MHz.'
 Qs_to_look_at = [0,4]  # list of qubits to process
 
 # Set which experiments to run
@@ -88,6 +88,27 @@ starkspec_keys = ['Dates', 'I', 'Q', 'P', 'shots','Gain Sweep','Round Num', 'Bat
 stark2D_keys = ['Dates', 'I', 'Q', 'Qu Frequency Sweep', 'Res Gain Sweep','Round Num', 'Batch Num', 'Exp Config', 'Syst Config']
 rabi_keys_ef_Qtemps = ['Dates', 'Qfreq_ge', 'I1', 'Q1', 'Gains1', 'Fit1', 'I2', 'Q2', 'Gains2', 'Fit2', 'Round Num', 'Batch Num', 'Exp Config', 'Syst Config']
 
+def get_min_qspec(I, Q, probe_freqs):
+
+    #find max signal in I or Q
+    diff_I = np.abs(np.max(I) - np.min(I))
+    diff_Q = np.abs(np.max(Q) - np.min(Q))
+    if diff_I > diff_Q:
+        signal = I
+    else:
+        signal = Q
+
+    baseline = np.mean(signal[0:3]) #sample points at beginning of qspec scan for baseline
+    diff_max = np.abs(np.max(signal) - baseline) #find if max or min of signal is different from baseline
+    diff_min = np.abs(np.min(signal) - baseline)
+    if diff_max > diff_min: #max of signal differs from baseline
+        idx = np.argmax(signal)
+    else: #min of signal differs from baseline
+        idx = np.argmin(signal)
+
+    qubit_freq = probe_freqs[idx] #get qubit frequency at selected min/max of signal
+
+    return qubit_freq
 
 def sweep_frequency_offset(experiment, QubitIndex, offset_values, n_loops=10, number_of_qubits=6,
                            outerFolder="", studyDocumentationFolder="",optimizationFolder="", j=0):
@@ -292,17 +313,21 @@ def run_optimization(QubitIndex, ss_sample_number, res_sample_number, experiment
             (qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit,
             qubit_freq, sys_config_qspec) = q_spec.run()
 
-
-            if qubit_freq is None:
-                #fit failed save previous value and set flag to True
-                recycled_qfreq = True
-                qubit_freq = stored_qspec
-                rr_logger.info(f"Optimization block Qubit {QubitIndex + 1} qspec_ge failed on round {i} using stored qspec")
-                if verbose:
-                    print(f"Optimization block Qubit {QubitIndex + 1} qspec_ge failed on round {i} using stored qspec")
-            else:
-                recycled_qfreq = False
+            if QubitIndex == 4:
+                qubit_freq = get_min_qspec(qspec_I, qspec_Q, qspec_freqs) #replace with min for Qubit 5 only
                 stored_qspec = float(qubit_freq)
+
+            else: #for qubit 1, continue normal catch for a failed fit
+                if qubit_freq is None:
+                #fit failed save previous value and set flag to True
+                    recycled_qfreq = True
+                    qubit_freq = stored_qspec
+                    rr_logger.info(f"Optimization block Qubit {QubitIndex + 1} qspec_ge failed on round {i} using stored qspec")
+                    if verbose:
+                        print(f"Optimization block Qubit {QubitIndex + 1} qspec_ge failed on round {i} using stored qspec")
+                else:
+                    recycled_qfreq = False
+                    stored_qspec = float(qubit_freq)
 
             experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
 
@@ -876,24 +901,36 @@ def run_dataset(Qs_to_look_at, experiment, j, batch_num):
                 q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyFolder, j,
                                            signal, save_figs, experiment=experiment,
                                            live_plot=live_plot, verbose=verbose, logger=rr_logger,
-                                           qick_verbose=qick_verbose, high_gain_q_spec=False) #uses high gain qspec range
+                                           qick_verbose=qick_verbose, high_gain_q_spec=False)
                 (qspec_I, qspec_Q, qspec_freqs, qspec_I_fit,
                  qspec_Q_fit, qubit_freq, sys_config_qspec) = q_spec.run()
 
-                if qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None:
-                    # Use the previously stored qubit frequency in the expt config if the fit fails
-                    #experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = stored_qspec
-                    recycled_qfreq = True
-                    #qubit_freq = stored_qspec
-                    if verbose:
-                        print(f"Using previous stored value: {experiment.qubit_cfg['qubit_freq_ge']}")
-                else:
+                if QubitIndex == 4: #if qubit 5, replace fit frequency with minimum of qspec
+                    qubit_freq = get_min_qspec(qspec_I, qspec_Q, qspec_freqs)
                     recycled_qfreq = False
-                    experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
-                    #stored_qspec = float(qubit_freq)
-                rr_logger.info(f"RR: Qubit {QubitIndex +1} frequency: {float(qubit_freq)}")
+                    experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq) #update experimental config
+                    rr_logger.info(f"RR: Qubit {QubitIndex + 1} frequency: {float(qubit_freq)} MHz")
+                    if verbose:
+                        print(f"Qubit {QubitIndex + 1} frequency found as minimum: {float(qubit_freq)} MHz")
+
+                else: #for qubit 1, continue with usual handling of qubit freq fit result
+                    if qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None:
+                        # Use the previously stored qubit frequency in the expt config if the fit fails
+                        #experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = stored_qspec
+                        recycled_qfreq = True
+                        #qubit_freq = stored_qspec
+                        rr_logger.info(f"RR: Qubit {QubitIndex}: Using previous stored value: {experiment.qubit_cfg['qubit_freq_ge'][QubitIndex]}")
+                        if verbose:
+                            print(f"Using previous stored value: {experiment.qubit_cfg['qubit_freq_ge'][QubitIndex]}")
+                    else:
+                        recycled_qfreq = False
+                        experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
+                        #stored_qspec = float(qubit_freq)
+                        rr_logger.info(f"RR: Qubit {QubitIndex +1} frequency: {float(qubit_freq)}")
+                
                 del q_spec
                 gc.collect()
+            
             except Exception as e:
                 if debug_mode:
                     raise  # In debug mode, re-raise the exception immediately
@@ -946,7 +983,7 @@ def run_dataset(Qs_to_look_at, experiment, j, batch_num):
         t3 = time.perf_counter()
         print(f"Data taking: T1 took {t3 - t2:.4f} seconds")
 
-        # high gain qspec
+        # med gain qspec
         if run_flags["med_gain_q_spec"]:
             qubit_gain_temp = experiment.qubit_cfg['qubit_gain_ge']  # save current config parameters
             try:

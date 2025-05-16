@@ -47,7 +47,7 @@ multiply_qubit_reps_by = 2
 Qs_to_look_at = [0]  # list of qubits to process
 
 # Set which experiments to run
-run_flags = {"optimization": False, "stark2D": False, "starkRamsey": False, "starkSpec": True}
+run_flags = {"optimization": False, "stark2D": True, "starkRamsey": False, "starkSpec": False}
 
 # Optimization parameters for resonator spectroscopy
 #res_leng_vals = [4.3, 5, 5, 4, 5.8, 4.5]
@@ -59,7 +59,7 @@ res_gain = [0.96, 1, 0.76, 0.58, 0.75, 0.57]
 #Logging
 now = datetime.datetime.now()
 formatted_datetime = now.strftime("%Y-%m-%d")
-outerFolder = os.path.join("/data/QICK_data/run6/6transmon/StarkShift/Junkyard/", f"{formatted_datetime}")
+outerFolder = os.path.join("/data/QICK_data/run6/6transmon/StarkShift/calibration_test_Q1_23MHz/", f"{formatted_datetime}")
 if not os.path.exists(outerFolder):
     os.makedirs(outerFolder)
 log_file = os.path.join(outerFolder, "starkshift_script.log")
@@ -358,7 +358,7 @@ def run_stark2D(experiment, QubitIndex):
         try:
             #stark_shift_2D = ResStarkShift2D(QubitIndex, tot_num_of_qubits, qubitFolder, res_freq_stark, res_phase_stark, save_figs, experiment=experiment)
             stark_shift_2D = StarkShift2D(QubitIndex, tot_num_of_qubits, qubitFolder, save_figs, experiment = experiment)
-            I, Q, qu_freq_sweep, res_gain_sweep, sys_config = stark_shift_2D.run()
+            I, Q, qu_freq_sweep, res_gain_sweep, sys_config = stark_shift_2D.run(set_pos_detuning = False)
             stark_shift_2D.plot(I, Q, qu_freq_sweep, res_gain_sweep)
 
             stark2D_data[QubitIndex]['Dates'][0] = time.mktime(datetime.datetime.now().timetuple())
@@ -413,7 +413,7 @@ def run_starkSpec(experiment, QubitIndex):
                                              experiment=experiment)
             I, Q, P, shots, gain_sweep, sys_config = stark_shift_spec.run_with_qick_sweep()
             stark_shift_spec.plot(P, gain_sweep)
-            #stark_shift_spec.plot_shots(I, Q, shots, gain_sweep, gain_index=0)
+            stark_shift_spec.plot_shots(I, Q, shots, gain_sweep, gain_index=0)
 
             # res_stark_shift_spec = ResStarkShiftSpec(QubitIndex, tot_num_of_qubits, qubitFolder, res_freq_stark, res_phase_stark, save_figs,
             #                                  experiment=experiment)

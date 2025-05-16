@@ -323,6 +323,7 @@ class StarkShiftSpec:
             print(g)
             prog = StarkShiftSpectroscopyProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
                                                  cfg=self.config)
+
             iq_list = prog.acquire(self.experiment.soc, soft_avgs=self.config["rounds"],
                                 threshold=self.experiment.readout_cfg["threshold"],
                                 angle=self.experiment.readout_cfg["ro_phase"],
@@ -365,6 +366,7 @@ class StarkShiftSpec:
         prog_pos = StarkShiftSpectroscopyProgram(self.experiment.soccfg, reps=self.config['reps'],
                                              final_delay=self.config['relax_delay'],
                                              cfg=self.config)
+
         iq_list = prog_pos.acquire(self.experiment.soc, soft_avgs=self.config["rounds"],
                                threshold=self.experiment.readout_cfg["threshold"],
                                angle=self.experiment.readout_cfg["ro_phase"],
@@ -471,6 +473,7 @@ class StarkShiftSpectroscopyProgram(AveragerProgramV2):
 
 
         self.add_loop("gain_loop", cfg["gain_steps"])
+        self.declare_gen(ch=stark_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
         self.add_gauss(ch=stark_ch, name="stark_ramp", sigma=cfg['stark_sigma'], length = cfg['stark_sigma'] *2)
         self.add_pulse(ch=stark_ch, name="stark_tone",
                        style="flat_top",

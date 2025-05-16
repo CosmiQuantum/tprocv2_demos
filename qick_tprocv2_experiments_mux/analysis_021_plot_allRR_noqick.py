@@ -1457,17 +1457,17 @@ class PlotRR_noQick:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    # def run(self, plot_res_spec=True, plot_q_spec=True, plot_rabi=True, rabi_rolling_avg=False, plot_ss=True,
-    #         plot_ss_hist_only=False, ss_plot_title=None, ss_plot_gef=True, plot_t1=True,
-    #         plot_t2r=True, plot_t2e=True, plot_rabis_Qtemps=False):
+    def run(self, plot_res_spec=False, plot_q_spec=False, plot_rabi=False, rabi_rolling_avg=False, plot_ss=False,
+            plot_ss_hist_only=False, ss_plot_title=None, ss_plot_gef=False, plot_t1=False,
+            plot_t2r=False, plot_t2e=False, plot_rabis_Qtemps=False):
 
         # if plot_res_spec:
         #     self.load_plot_save_res_spec()
         # if plot_q_spec:
         #     self.load_plot_save_q_spec()
-        # if plot_rabis_Qtemps:
-        #     list_of_all_qubits = [i for i in range(self.number_of_qubits + 1)]
-        #     self.load_plot_save_rabis_Qtemps(list_of_all_qubits)
+        if plot_rabis_Qtemps:
+            list_of_all_qubits = [i for i in range(self.number_of_qubits + 1)]
+            self.load_plot_save_rabis_Qtemps(list_of_all_qubits)
         # if plot_rabi:
         #     if rabi_rolling_avg:
         #         self.load_plot_save_rabi(rabi_rolling_avg=True)
@@ -1723,14 +1723,15 @@ class PlotRR_noQick:
                         if results is None:
                             continue  # Skip this dataset
                         T_K, T_mK, P_e, qubit_freq = results
-                        print(f"Q{q_key} calculated Temperature:{T_mK}, with P_e = {P_e}, and Qfreq {qubit_freq_MHz} MHz")
+                        print(f"Q{q_key + 1} calculated Temperature:{T_mK}, with P_e = {P_e}, and Qfreq {qubit_freq_MHz} MHz")
                         file_result['qubits'][int(q_key)] = {
                             'A1': A_amplitude1,
                             'A2': A_amplitude2,
                             'T_mK': T_mK,
                             'P_e': P_e,
                             'qubit_freq_MHz': qubit_freq,
-                            'date': date.timestamp()}
+                            'date': date.timestamp(),
+                            'filepath': h5_file}
 
             all_files_Qtemp_results.append(file_result)
             del H5_class_instance
@@ -1755,7 +1756,7 @@ class PlotRR_noQick:
         T_mK = T_K * 1000  # Convert to millikelvin
         return T_K, T_mK, P_e, qubit_freq_MHz
 
-    def plot_qubit_temperatures_vs_time(self, all_files_Qtemp_results, num_qubits=6, restrict_time_xaxis = False, plot_extra_event_lines = False):
+    def plot_qubit_temperatures_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = True):
         """
         Plots qubit temperatures vs. time for each qubit in a separate subplot (max 3 columns).
 
@@ -1779,15 +1780,11 @@ class PlotRR_noQick:
 
         fig.suptitle("Qubit Temperatures vs. Time", fontsize=16)
 
-        # cdt = pytz.timezone('America/Chicago')
-
-        # def localize_cdt(dt):
-        #     return dt if dt.tzinfo else cdt.localize(dt)
-
         # radiation source timestamps
         co60_time = datetime.datetime(2025, 4, 21, 12, 35)
         cs137_time = datetime.datetime(2025, 4, 23, 12, 53)
         cs137_closer_time = datetime.datetime(2025, 4, 28, 9, 40)
+        cs137_removed_time = datetime.datetime(2025, 5, 4, 18, 20)
 
         events_0418 = [
             ("11:50", "Daniel Entry"),
@@ -1826,6 +1823,9 @@ class PlotRR_noQick:
                     times.append(datetime.datetime.fromtimestamp(timestamp))
                     temps.append(T_mK)
 
+                    # if T_mK > 800:
+                    #     print(f"High Temperature ({T_mK:.1f} mK) in file {qubit_data['filepath']} for Q{q + 1}. A1={qubit_data['A1']}, A2={qubit_data['A2']}, Qfreq={qubit_data['qubit_freq_MHz']}.")
+
             ax = axes[q]
 
             if not times:
@@ -1837,11 +1837,13 @@ class PlotRR_noQick:
                 end_time = datetime.datetime.combine(date_to_plot, time_end)
                 #Use finer ticks with hour detail
                 ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H'))
+                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d-%H'))
             else:
                 #Use coarse ticks with just date
-                ax.xaxis.set_major_locator(mdates.DayLocator())
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+                # ax.xaxis.set_major_locator(mdates.DayLocator())
+                # ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d\n%H:%M'))
+                ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d-%H'))
 
             # Use scatter instead of plot to avoid connecting lines
             ax.scatter(times, temps, marker='o', color=colors[q % len(colors)], label=f"Q{q + 1}")
@@ -1851,31 +1853,32 @@ class PlotRR_noQick:
             ax.grid(False)
 
             # Format the x-axis to show dates in a nice format
-            ax.set_ylim(50, 950)
-            ax.set_yticks(np.linspace(50, 950, 10))
+            ax.set_ylim(10, 625)
+            ax.set_yticks(np.linspace(10, 625, 10))
 
             # start_time = datetime.datetime(2025, 4, 11, 12, 30)
             # ax.set_xlim(left=start_time)
 
-            ax.tick_params(axis='x', labelrotation=90, labelsize=12)
-            ax.tick_params(axis='y', labelsize=12)
+            ax.tick_params(axis='x', labelrotation=45, labelsize=10)
+            ax.tick_params(axis='y', labelsize=10)
 
-            # --- Add vertical lines for known radiation events ---
-            for vtime, label in [(co60_time, "Co-60"), (cs137_time, "Cs-137"), (cs137_closer_time, "Cs-137 Closer")]:
-                if not restrict_time_xaxis or (restrict_time_xaxis and start_time <= vtime <= end_time):
-                    ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
-                    ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90,
-                            verticalalignment='top', horizontalalignment='right', fontsize=10)
+            if rad_events_plot_lines:
+                #--- Add vertical lines for known radiation events ---
+                for vtime, label in [(co60_time, "Co-60"), (cs137_time, "Cs-137"), (cs137_closer_time, "Cs-137 Closer"), (cs137_removed_time, "Cs-137 Removed")]:
+                    if not restrict_time_xaxis or (restrict_time_xaxis and start_time <= vtime <= end_time):
+                        ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
+                        ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90,
+                                verticalalignment='top', horizontalalignment='right', fontsize=10)
 
-            #----------------------Now for other events------------------------
+            #----------------------Optional: Now for other events------------------------
+            # Only relevant if plot_extra_event_lines is set to True
             event_date_0418 = datetime.date(2025, 4, 18)
             event_date_0423 = datetime.date(2025, 4, 23)
             extra_events = [
                 *((datetime.datetime.combine(event_date_0418, datetime.time.fromisoformat(t)), label)
                   for t, label in events_0418),
                 *((datetime.datetime.combine(event_date_0423, datetime.time.fromisoformat(t)), label)
-                  for t, label in events_0423)
-            ]
+                  for t, label in events_0423)]
 
             if restrict_time_xaxis:
                 ax.set_xlim(start_time, end_time)
@@ -1915,13 +1918,16 @@ class PlotRR_noQick:
             ax.set_xlabel("Time")
 
         # Save the figure
+        paramvstime_dir = os.path.join(self.outerFolder_save_plots, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+
         timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        save_path = os.path.join(self.outerFolder_save_plots, f"QubitTemps_vs_Time_{timestp}.png")
+        save_path = os.path.join(paramvstime_dir, f"QubitTemps_vs_Time_{timestp}.png")
         print("Plot saved to: ", save_path)
         plt.savefig(save_path, dpi=self.figure_quality)
         plt.close(fig)
 
-    def plot_qubit_temperature_histograms(self, all_files_Qtemp_results, num_qubits=6):
+    def plot_qubit_temperature_histograms_RPMs(self, all_files_Qtemp_results, num_qubits=6):
         """
         Plots histograms for the temperature (T_mK) data of each qubit.
 
@@ -1994,14 +2000,17 @@ class PlotRR_noQick:
             ax.tick_params(axis='both', which='major', labelsize=font)
 
         plt.tight_layout()
-        # Save the figure with a timestamp in the filename
+
+        hist_dir = os.path.join(self.outerFolder_save_plots, "qtemps_hists")
+        os.makedirs(hist_dir, exist_ok=True)
+
         timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        save_path = os.path.join(self.outerFolder_save_plots, f"QubitTemps_Histograms_{timestp}.png")
+        save_path = os.path.join(hist_dir, f"QubitTemps_Histograms_{timestp}.png")
         print("Histogram plot saved to:", save_path)
         plt.savefig(save_path, dpi=200)
         plt.close(fig)
 
-    def plot_qubit_pe_vs_time(self, all_files_Qtemp_results, num_qubits=6):
+    def plot_qubit_pe_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6):
         """
         Plots qubit excited state populations (P_e) vs. time in a separate figure.
 
@@ -2054,14 +2063,17 @@ class PlotRR_noQick:
         for ax in axes:
             ax.set_xlabel("Time", fontsize=font)
 
+        paramvstime_dir = os.path.join(self.outerFolder_save_plots, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+
         timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        save_path = os.path.join(self.outerFolder_save_plots, f"QubitPe_vs_Time_{timestp}.png")
+        save_path = os.path.join(paramvstime_dir, f"QubitPe_vs_Time_{timestp}.png")
         print("Plot saved to:", save_path)
         plt.savefig(save_path, dpi=self.figure_quality)
         plt.close(fig)
         # plt.show()
 
-    def plot_qubit_temp_and_pe_vs_time(self, all_files_Qtemp_results, num_qubits=6):
+    def plot_qubit_temp_and_pe_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6):
         """
         Plots qubit temperature (T_mK) and P_e vs. time using scatter points for each qubit (dual y-axes).
         """
@@ -2122,14 +2134,17 @@ class PlotRR_noQick:
             ax1.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))
             ax1.tick_params(axis='x', rotation=45, labelsize=10)
 
+        paramvstime_dir = os.path.join(self.outerFolder_save_plots, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+
         timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        save_path = os.path.join(self.outerFolder_save_plots, f"QubitTemps_and_Pe_vs_Time_{timestp}.png")
+        save_path = os.path.join(paramvstime_dir, f"QubitTemps_and_Pe_vs_Time_{timestp}.png")
         print("Combined plot saved to:", save_path)
         plt.savefig(save_path, dpi=self.figure_quality)
         plt.close(fig)
         # plt.show()
 
-    def plot_qubit_temp_pe_freq_vs_time(self, all_files_Qtemp_results, num_qubits=6):
+    def plot_qubit_temp_pe_freq_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6):
         """
         Plots qubit temperature (T_mK), P_e, and qubit frequency vs. time using triple y-axes.
         """
@@ -2228,9 +2243,12 @@ class PlotRR_noQick:
             ax1.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))
             ax1.tick_params(axis='x', rotation=45, labelsize=10)
 
+        paramvstime_dir = os.path.join(self.outerFolder_save_plots, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+
         timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-        save_path = os.path.join(self.outerFolder_save_plots, f"QubitTemps_Pe_Freq_vs_Time_{timestp}.png")
+        save_path = os.path.join(paramvstime_dir, f"QubitTemps_Pe_Freq_vs_Time_{timestp}.png")
         print("Combined plot saved to:", save_path)
         plt.savefig(save_path, dpi=self.figure_quality)
         plt.close(fig)
