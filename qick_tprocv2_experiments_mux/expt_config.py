@@ -126,8 +126,8 @@ if FRIDGE == "QUIET":
             "reps": 200,  # 500,
             "rounds": 1,  # 5
             "start": [0] * 6,  # [DAC units]
-            "stop": [2.0] * 6,  # [DAC units]
-            "steps": 200,  # 50,
+            "stop": [1.0] * 6,  # [DAC units]
+            "steps": 100,  # 50,
             "relax_delay": 600,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },

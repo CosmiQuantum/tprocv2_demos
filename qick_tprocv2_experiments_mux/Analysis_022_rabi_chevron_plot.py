@@ -369,8 +369,8 @@ for QubitIndex in Qs_to_look_at:
     ####################################################### 2D sweep (Rabi Chevron) ######################################################
     if run_flags["rabi_ge_chevron"]:
         # frequency grid ±2 MHz around optimized qubit freq center
-        freq_steps = 30
-        freqs_mhz = np.linspace(qubit_freq - 2, qubit_freq + 2, freq_steps)
+        freq_steps = 45
+        freqs_mhz = np.linspace(qubit_freq - 5, qubit_freq + 5, freq_steps)
 
         signal_map = []  # will have shape (len(freqs), len(gains))
         all_rabi_I = [] # to save I data in h5 files
