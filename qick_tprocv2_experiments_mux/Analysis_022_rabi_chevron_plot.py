@@ -438,5 +438,4 @@ for QubitIndex in Qs_to_look_at:
         fig.savefig(os.path.join(path_saveplots_chev, filename), dpi=fig_quality)
         plt.close(fig)
 
-        del experiment
         del experiment_template
