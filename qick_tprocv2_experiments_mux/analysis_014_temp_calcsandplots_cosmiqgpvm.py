@@ -1034,7 +1034,7 @@ class combined_Qtemp_studies:
             ]
 
         #-------------- Plotting
-        fig, axes = plt.subplots(2, 3, figsize=(18, 10), sharey=True, constrained_layout=True)
+        fig, axes = plt.subplots(2, 3, figsize=(18, 10), sharey=True, sharex=True, constrained_layout=True)
         col_titles = ["Method #1: Rabi Pop. Meas.", "Method #2: g-state double gaussian", "Method #3: g & e-state double gaussian"]
 
         for c, title in enumerate(col_titles):
@@ -1062,10 +1062,10 @@ class combined_Qtemp_studies:
                 # qubit label
                 ax.text(0.02, 0.95, f"Q{q + 1}", transform=ax.transAxes, fontsize=14, fontweight='bold', va='top')
 
-                # x-axis formatting
-                ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-                ax.xaxis.set_major_formatter(date_fmt)
-                plt.setp(ax.get_xticklabels(), rotation=45, fontsize=10)
+                # # individual x-axis formatting
+                # ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+                # ax.xaxis.set_major_formatter(date_fmt)
+                # plt.setp(ax.get_xticklabels(), rotation=45, fontsize=10)
 
                 # y-axis on leftmost col
                 if col == 0:
@@ -1085,6 +1085,10 @@ class combined_Qtemp_studies:
                 for t_evt, lbl in rad_events:
                     ax.axvline(t_evt, color='black', linestyle='--', linewidth=1)
                     ax.text(t_evt, ax.get_ylim()[1] * 0.9, lbl, rotation=90, va='top', ha='right', fontsize=9)
+
+        axes[1, 0].xaxis.set_major_locator(mdates.AutoDateLocator())
+        axes[1, 0].xaxis.set_major_formatter(DateFormatter('%m-%d\n%H:%M'))
+        fig.autofmt_xdate(rotation=45, ha='right')
 
         fig.suptitle("Qubit Temperatures vs Time", fontsize=18)
         paramvstime_dir = os.path.join(out_dir, "params_vs_time")
