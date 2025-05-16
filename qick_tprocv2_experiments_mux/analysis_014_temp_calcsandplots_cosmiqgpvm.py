@@ -1057,7 +1057,7 @@ class combined_Qtemp_studies:
 
                 # scatter
                 if ts and ys:
-                    ax.scatter(ts, ys, s=40, alpha=0.8, edgecolors='k')
+                    ax.scatter(ts, ys, s=40, alpha=0.8, edgecolors='k', color=colors[q])
 
                 # qubit label
                 ax.text(0.02, 0.95, f"Q{q + 1}", transform=ax.transAxes, fontsize=14, fontweight='bold', va='top')
