@@ -992,8 +992,7 @@ class RPMTempCalcAndPlots:
 
 
 class combined_Qtemp_studies:
-    def __init__(self, figure_quality, number_of_qubits, save_figs):
-        self.save_figs = save_figs
+    def __init__(self, figure_quality, number_of_qubits):
         self.figure_quality = figure_quality
         self.number_of_qubits = number_of_qubits
 

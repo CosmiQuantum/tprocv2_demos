@@ -49,7 +49,7 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
 ############################################################################## Set up ##############################################################################
 #-------------------------------------------- For qubit temperature calculations via rabi population measurements ---------------------------------------------------
 # Specify which dates you want to loop through. It will process all the files inside all the folders that contain these dates in their title.
-target_dates_qtemps_RPM = [
+# target_dates_qtemps_RPM = [
     # "2025-04-16",
     # "2025-04-17",
     # "2025-04-18",
@@ -68,18 +68,19 @@ target_dates_qtemps_RPM = [
     # "2025-05-01",
     # "2025-05-02",
     # "2025-05-03",
-    "2025-05-04", # Cs source removed. No sources in Cleanroom.
-    "2025-05-05",
-    "2025-05-06",
-    "2025-05-07",
-    "2025-05-08",
-    "2025-05-09",
-    "2025-05-10",
-    "2025-05-11",
-    "2025-05-12",
-    "2025-05-13",
-    "2025-05-14"
-    ]
+    # "2025-05-04", # Cs source removed. No sources in Cleanroom.
+    # "2025-05-05",
+    # "2025-05-06",
+    # "2025-05-07",
+    # "2025-05-08",
+    # "2025-05-09",
+    # "2025-05-10",
+    # "2025-05-11",
+    # "2025-05-12",
+    # "2025-05-13",
+    # "2025-05-14"
+    # ]
+target_dates_qtemps_RPM = ["2025-05-05"]
 base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study"
 
 # To re-make and save RPM RR plots
@@ -195,19 +196,20 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
 
 #################################################### Combined Qubit Temperature Analyses ##########################################################
 if qtemp_method_flags["combined_studies_qtemps"]:
-    outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots"
     # ----------- Get Qubit temperature results via RPMs
     RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs)
     all_files_Qtemp_results_RPMs = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal, run_name, list_of_all_qubits, tot_num_of_qubits,
                                 outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, figure_quality, save_figsRR)
+
     # ----------- Get Qubit temperature results via SSF g-e threshold method and SSF g-state double gaussian threshold method
     outerFolder = ""
     SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs, outerFolder)
     pairs_info = SSF_calcs_obj.process_ssf_and_qfreq_data_qtemps(Science_Qubits, paths_SSFmethods)
 
     all_qubit_temps_g, all_qubit_times_g, fit_results_g  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.8, use_gessf_thresh_only = False, fallback_to_threshold = False)
-    all_qubit_temps_ge, all_qubit_times_ge, fit_results_ge = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.8, use_gessf_thresh_only=False, fallback_to_threshold=False)
+    all_qubit_temps_ge, all_qubit_times_ge, fit_results_ge = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.8, use_gessf_thresh_only=True, fallback_to_threshold=False)
 
-    # Qubit temperatures vs Time using all three methods
-    combined_Qtemp_studies.Qtemps_vs_time_comb_methods(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_ge, all_qubit_times_ge, outerFolder_qtemps_plots,
-        all_files_Qtemp_results_RPMs, num_qubits=6, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = True)
+    #------------ Qubit temperatures vs Time using all three methods
+    combined_studies = combined_Qtemp_studies(figure_quality, tot_num_of_qubits)
+    combined_studies.Qtemps_vs_time_comb_methods(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_ge, all_qubit_times_ge, outerFolder_qtemps_plots,
+                                                 all_files_Qtemp_results_RPMs, num_qubits=6, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = True)
