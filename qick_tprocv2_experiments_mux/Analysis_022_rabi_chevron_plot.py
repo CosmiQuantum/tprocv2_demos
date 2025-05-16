@@ -20,18 +20,21 @@ from system_config import QICK_experiment
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 from f_to_res_swap_spec import FtoResQubitSpectroscopy
 from analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
+from section_005_single_shot_ge import SingleShot
 import copy
 ################################################ Run Configurations ####################################################
 n= 1
 save_r = 1            # how many rounds to save after
 signal = 'None'       #'I', or 'Q' depending on where the signal is (after optimization). Put'None' if no optimization
-save_figs = False    # save plots for RR experiments? Note; this is NOT asking whether to plot rabi chevron exp, that will always plot in this script
+save_figs = True    # save plots for RR experiments? Note; this is NOT asking whether to plot rabi chevron exp, that will always plot in this script
 fig_quality = 200
 live_plot = False      # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
 fit_data = True      # fit the data here and save or plot the fits?
 save_data_h5 = True   # save the data of the measurements you are taking to h5 files?
 number_of_qubits = 6 # 4 for nexus, 6 for quiet
-
+freq_offset_steps = 15
+ssf_avgs_per_opt_pt = 3
+ss_sample_number = 1
 verbose=False
 rr_logger=None
 qick_verbose=False
@@ -42,22 +45,128 @@ increase_qubit_reps = False #if you want to increase the reps for a qubit, set t
 qubit_to_increase_reps_for = 0 #only has impact if previous line is True
 multiply_qubit_reps_by = 2 #only has impact if the line two above is True
 
-path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/RabiChevronExp"
-path_saveplots_chev = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/RabiChevron/rabi_ge_chevron"
+#Folders
+study = 'gain_rabi_ge_qfreq_study'
+sub_study = 'initial_tests'
+
+if not os.path.exists("/data/QICK_data/run6/"):
+    os.makedirs("/data/QICK_data/run6/")
+if not os.path.exists("/data/QICK_data/run6/6transmon/"):
+    os.makedirs("/data/QICK_data/run6/6transmon/")
+studyFolder = os.path.join("/data/QICK_data/run6/6transmon/", study)
+if not os.path.exists(studyFolder):
+    os.makedirs(studyFolder)
+subStudyFolder = os.path.join(studyFolder, sub_study)
+if not os.path.exists(subStudyFolder):
+    os.makedirs(subStudyFolder)
+
+formatted_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+dataSetFolder = os.path.join(subStudyFolder, formatted_datetime)
+optimizationFolder = os.path.join(dataSetFolder, 'optimization')
+studyFolder = os.path.join(dataSetFolder, 'study_data')
+
+path_saveplots = os.path.join(dataSetFolder, 'plots') #general, make subfolders inside
+path_saveplots_chev = os.path.join(path_saveplots, 'rabi_chev_plots')
+path_saveplotsRR = os.path.join(path_saveplots, 'RR_plots')
+studyDocumentationFolder = os.path.join(dataSetFolder, 'documentation')
 
 if not os.path.exists(path_saveplots): os.makedirs(path_saveplots)
 if not os.path.exists(path_saveplots_chev): os.makedirs(path_saveplots_chev)
+if not os.path.exists(studyDocumentationFolder): os.makedirs(studyDocumentationFolder)
 
 # set which of the following measurements you would like to take
-run_flags = {"res_spec_ge": True, "q_spec_ge": True, "rabi_ge_chevron": True}
+run_flags = {"res_spec_ge": True, "q_spec_ge": True, "rabi_ge_chevron": True, "ge_rabi": True,
+             "repeated_ssf": True, "offset_opt": True}
+
+##################################################### Additional Functions #####################################################################
+def sweep_frequency_offset(experiment, QubitIndex, offset_values, n_loops=10, number_of_qubits=6,
+                           outerFolder="", studyDocumentationFolder="",optimizationFolder="", j=0):
+    baseline_freq = experiment.readout_cfg['res_freq_ge'][QubitIndex]
+
+    ssf_dict = {}
+    for offset in offset_values:
+        fids = []
+        # repeat n times for each offset
+        for i in range(n_loops):
+
+            exp_copy = copy.deepcopy(experiment)  # python is python, doesnt overwrite things properly
+
+            res_freqs = exp_copy.readout_cfg['res_freq_ge']
+            res_freqs[QubitIndex] = baseline_freq + offset
+            exp_copy.readout_cfg['res_freq_ge'] = res_freqs
+
+            ss = SingleShot(QubitIndex, number_of_qubits, outerFolder, 0, save_figs, exp_copy)
+            fid, angle, iq_list_g, iq_list_e, ss_config = ss.run()
+            fids.append(fid)
+            del exp_copy
+
+            try:
+                offset_data = create_data_dict(offset_keys, save_r, list_of_all_qubits)
+
+                I_g = iq_list_g[QubitIndex][0].T[0]
+                Q_g = iq_list_g[QubitIndex][0].T[1]
+                I_e = iq_list_e[QubitIndex][0].T[0]
+                Q_e = iq_list_e[QubitIndex][0].T[1]
+
+                offset_data[QubitIndex]['Res Frequency'][0] = offset
+                offset_data[QubitIndex]['Fidelity'][0] = fid
+                offset_data[QubitIndex]['Angle'][0] = angle
+                offset_data[QubitIndex]['Dates'][0] = (
+                    time.mktime(datetime.datetime.now().timetuple()))
+                offset_data[QubitIndex]['I_g'][0] = I_g
+                offset_data[QubitIndex]['Q_g'][0] = Q_g
+                offset_data[QubitIndex]['I_e'][0] = I_e
+                offset_data[QubitIndex]['Q_e'][0] = Q_e
+                offset_data[QubitIndex]['Round Num'][0] = i
+                offset_data[QubitIndex]['Batch Num'][0] = j
+                offset_data[QubitIndex]['Exp Config'][0] = expt_cfg
+                offset_data[QubitIndex]['Syst Config'][0] = ss_config
+
+                saver_offset = Data_H5(outerFolder, offset_data, 0, save_r)
+                saver_offset.save_to_h5('offset')
+                del saver_offset
+                del offset_data
+                offset_data = create_data_dict(offset_keys, save_r, list_of_all_qubits)
+
+            except Exception as e:
+                raise {e}
+
+        # find avg ssf
+        avg_fid = np.mean(fids)
+        ssf_dict[offset] = avg_fid
+
+        print(f"Offset: {offset} -> Average SSF: {avg_fid:.4f}")
+
+    # plt.figure()
+    # offsets_sorted = sorted(ssf_dict.keys())
+    # ssf_values = [ssf_dict[offset] for offset in offsets_sorted]
+    # plt.plot(offsets_sorted, ssf_values, marker='o')
+    # plt.xlabel('Frequency Offset')
+    # plt.ylabel('Average SSF')
+    # plt.title(f'SSF vs Frequency Offset for Qubit {QubitIndex + 1}')
+    # plt.grid(True)
+    # if outerFolder:
+    #     os.makedirs(outerFolder, exist_ok=True)
+    #     plot_path = os.path.join(studyDocumentationFolder, f"SSF_vs_offset_Q{QubitIndex + 1}.png")
+    #     plt.savefig(plot_path)
+    #     if verbose:
+    #         print(f"Plot saved to {plot_path}")
+    # plt.close()
+
+    # Determine the offset value that yielded the best (highest) average SSF.
+    optimal_offset = max(ssf_dict, key=ssf_dict.get)
+    print(f"Optimal frequency offset for Qubit {QubitIndex + 1}: {optimal_offset} (Avg SSF: {ssf_dict[optimal_offset]:.4f})")
+
+    return optimal_offset, ssf_dict
 
 ################################################ readout optimization vals ##################################################
 res_leng_vals = [5.5, 7.5, 6.0, 6.5, 5.0, 6.0]
 res_gain = [0.9, 0.95, 0.78, 0.58, 0.95, 0.57]
-freq_offsets = [-0.1, 0.2, 0.1, -0.4, -0.1, -0.1]
 
 default_qubit_freqs = [ 4189.8656, 3820.4723, 4161.3726, 4463.15226, 4471.446, 4997.86] # from 3/11, qfreqs to fall back on if qspec is set to False
 default_res_freqs = [6216.9331, 6275.9373, 6335, 6407.0338, 6476.1256, 6538] #04/07, res freqs to fall back on if res spec is set to False
+default_ge_rabis = [0.6748, 0.634499, 0.76542, 0.7754, 0.6446, 0.9] # from 3/11, pi amps to fall back on if g-e rabi is set to False
+
 ####################################################### RR #############################################################
 def create_data_dict(keys, save_r, qs):
     return {Q: {key: np.empty(save_r, dtype=object) for key in keys} for Q in range(len(qs))}
@@ -69,12 +178,10 @@ qspec_keys = ['Dates', 'I', 'Q', 'Frequencies', 'I Fit', 'Q Fit', 'Round Num', '
               'Exp Config', 'Syst Config']
 rabi_keys = ['Dates', 'I', 'Q', 'Gains', 'Fit', 'Round Num', 'Batch Num', 'Exp Config', 'Syst Config']
 chev_keys = ['I', 'Q', 'Gains', 'Freqs_MHz', 'q_center_freq_MHz', 'res_freq_ge_MHz']
-
-#initialize a dictionary to store those values
-res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
-qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
-rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
-# chev_data = create_data_dict(chev_keys, save_r, list_of_all_qubits) # Not necessary, it is included below in the code instead
+ss_keys = ['Fidelity', 'Angle', 'Dates', 'I_g', 'Q_g', 'I_e', 'Q_e', 'Round Num', 'Batch Num', 'Exp Config',
+           'Syst Config']
+offset_keys = ['Res Frequency', 'Fidelity', 'Angle', 'Dates', 'I_g', 'Q_g', 'I_e', 'Q_e', 'Round Num', 'Batch Num', 'Exp Config',
+           'Syst Config']
 
 batch_num=0
 j = 0
@@ -85,7 +192,7 @@ res_freq_ge = np.zeros(6)
 
 for QubitIndex in Qs_to_look_at:
     #Get the config for this qubit
-    experiment = QICK_experiment(path_saveplots, DAC_attenuator1 = 5, DAC_attenuator2 = 10, ADC_attenuator = 10, fridge=FRIDGE)
+    experiment = QICK_experiment(path_saveplotsRR, DAC_attenuator1 = 5, DAC_attenuator2 = 10, ADC_attenuator = 10, fridge=FRIDGE)
     #Mask out all other resonators except this one
     res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=res_gain[QubitIndex])
     experiment.readout_cfg['res_gain_ge'] = res_gains
@@ -93,21 +200,35 @@ for QubitIndex in Qs_to_look_at:
 
     ################################################# g-e Res spec ####################################################
     if run_flags["res_spec_ge"]: #If set to false, it will fall back on res freqs already in the system config
-        res_spec = ResonanceSpectroscopy(QubitIndex, number_of_qubits, path_saveplots, j, save_figs,
+        res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
+
+        res_spec = ResonanceSpectroscopy(QubitIndex, number_of_qubits, path_saveplotsRR, j, save_figs,
                                          experiment)
         res_freqs, freq_pts, freq_center, amps, sys_config_rspec = res_spec.run()
         experiment.readout_cfg['res_freq_ge'] = res_freqs
 
-        # incorporating offset (if you don't want to, then set all values inside freq_offsets to zero)
-        offset = freq_offsets[QubitIndex]
-        offset_res_freqs = [r + offset for r in res_freqs]
-        experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
-
-        this_res_freq = offset_res_freqs[QubitIndex]
+        this_res_freq = res_freqs[QubitIndex]
         res_freq_ge[QubitIndex] = float(this_res_freq)
 
         print('Qubit ', QubitIndex + 1, ' g-e res freq: ', this_res_freq)
         del res_spec
+
+        res_data[QubitIndex]['Dates'][0] = (
+            time.mktime(datetime.datetime.now().timetuple()))
+        res_data[QubitIndex]['freq_pts'][0] = freq_pts
+        res_data[QubitIndex]['freq_center'][0] = freq_center
+        res_data[QubitIndex]['Amps'][0] = amps
+        res_data[QubitIndex]['Found Freqs'][0] = res_freqs
+        res_data[QubitIndex]['Round Num'][0] = j
+        res_data[QubitIndex]['Batch Num'][0] = 0
+        res_data[QubitIndex]['Exp Config'][0] = expt_cfg
+        res_data[QubitIndex]['Syst Config'][0] = sys_config_rspec
+
+        saver_res = Data_H5(optimizationFolder, res_data, j, save_r)  # save
+        saver_res.save_to_h5('res_ge')
+        del saver_res
+        del res_data
+
     else:
         this_res_freq = default_res_freqs[QubitIndex]
         experiment.readout_cfg['res_freq_ge'][QubitIndex] = float(this_res_freq)
@@ -115,17 +236,135 @@ for QubitIndex in Qs_to_look_at:
 
     ################################################### g-e Qubit spec #############################################################
     if run_flags["q_spec_ge"]:
-        q_spec = QubitSpectroscopy(QubitIndex, number_of_qubits, path_saveplots, j, signal, save_figs, experiment, live_plot, verbose = False, logger = None, qick_verbose = True, increase_reps = False, increase_reps_to = 500)
+        qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
+        q_spec = QubitSpectroscopy(QubitIndex, number_of_qubits, path_saveplotsRR, j, signal, save_figs, experiment, live_plot, verbose = False, logger = None, qick_verbose = True, increase_reps = False, increase_reps_to = 500)
         qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq, sys_config_qspec = q_spec.run()
 
         qubit_freqs_ge[QubitIndex] = qubit_freq
         experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
         print('Qubit ', QubitIndex + 1, ' g-e freq: ', float(qubit_freq))
         del q_spec
+
+        qspec_data[QubitIndex]['Dates'][0] = (time.mktime(datetime.datetime.now().timetuple()))
+        qspec_data[QubitIndex]['I'][0] = qspec_I
+        qspec_data[QubitIndex]['Q'][0] = qspec_Q
+        qspec_data[QubitIndex]['Frequencies'][0] = qspec_freqs
+        qspec_data[QubitIndex]['I Fit'][0] = qspec_I_fit
+        qspec_data[QubitIndex]['Q Fit'][0] = qspec_Q_fit
+        qspec_data[QubitIndex]['Round Num'][0] = j
+        qspec_data[QubitIndex]['Batch Num'][0] = 0
+        qspec_data[QubitIndex]['Recycled QFreq'][0] = False  # no rr so no recycling here
+        qspec_data[QubitIndex]['Exp Config'][0] = expt_cfg
+        qspec_data[QubitIndex]['Syst Config'][0] = sys_config_qspec
+
+        saver_qspec = Data_H5(optimizationFolder, qspec_data, 0, save_r)
+        saver_qspec.save_to_h5('qspec_ge')
+        del saver_qspec
+        del qspec_data
+
     else:
         qubit_freq = default_qubit_freqs[QubitIndex]
         print(f"Q_spec disabled → using default g-e freq for Q{QubitIndex + 1}: {qubit_freq:.4f} MHz")
         experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
+
+    ################################################ g-e amp rabi #############################################################
+    if run_flags["ge_rabi"]:
+        rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
+        rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
+                                       signal, save_figs=save_figs, experiment=experiment,
+                                       live_plot=live_plot,
+                                       increase_qubit_reps=increase_qubit_reps,
+                                       qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                       multiply_qubit_reps_by=multiply_qubit_reps_by,
+                                       verbose=verbose, logger=rr_logger,
+                                       qick_verbose=qick_verbose)
+        (rabi_I, rabi_Q, rabi_gains, rabi_fit, stored_pi_amp, sys_config_rabi) = rabi.run()
+        experiment.qubit_cfg['pi_amp'][QubitIndex] = float(stored_pi_amp)
+        print(f"Pi amplitude for qubit {QubitIndex + 1}: {float(stored_pi_amp)}")
+
+        rabi_data[QubitIndex]['Dates'][0] = (
+            time.mktime(datetime.datetime.now().timetuple()))
+        rabi_data[QubitIndex]['I'][0] = rabi_I
+        rabi_data[QubitIndex]['Q'][0] = rabi_Q
+        rabi_data[QubitIndex]['Gains'][0] = rabi_gains
+        rabi_data[QubitIndex]['Fit'][0] = rabi_fit
+        rabi_data[QubitIndex]['Round Num'][0] = j
+        rabi_data[QubitIndex]['Batch Num'][0] = 0
+        rabi_data[QubitIndex]['Exp Config'][0] = expt_cfg
+        rabi_data[QubitIndex]['Syst Config'][0] = sys_config_rabi
+        saver_rabi = Data_H5(optimizationFolder, rabi_data, 0, save_r)
+        saver_rabi.save_to_h5('rabi_ge')
+        del rabi
+        del saver_rabi
+        del rabi_data
+    else:
+        ge_amp_rabi = default_ge_rabis[QubitIndex]
+        print(f"g-e Rabi disabled → using default pi amps for Q{QubitIndex + 1}: {ge_amp_rabi:.4f} MHz")
+        experiment.qubit_cfg['pi_amp'][QubitIndex] = float(ge_amp_rabi)
+
+    ################################################ optimize freq offset ################################################
+    if run_flags["offset_opt"]:
+        reference_frequency = float(res_freq_ge[QubitIndex])
+        freq_range = np.linspace(-1, 1, freq_offset_steps)
+
+        optimal_offset, ssf_dict = sweep_frequency_offset(experiment, QubitIndex, freq_range,
+                                                          n_loops=ssf_avgs_per_opt_pt, number_of_qubits=6,
+                                                          outerFolder=optimizationFolder,
+                                                          studyDocumentationFolder=studyDocumentationFolder, j=0)
+
+        offset_res_freqs = [r + optimal_offset for r in res_freq_ge]
+        experiment.readout_cfg['res_freq_ge'][QubitIndex] = offset_res_freqs[QubitIndex]  # update with offset added
+        print(experiment.readout_cfg)
+
+    ################################################ repeated ss ################################################
+    if run_flags["repeated_ssf"]:
+        ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
+        angles = []
+        thresholds = []
+        for ss_round in range(ss_sample_number):
+            try:
+                ss = SingleShot(QubitIndex, tot_num_of_qubits, optimizationFolder, 0, False, experiment=experiment,
+                                verbose=verbose, logger=rr_logger)
+                fid, angle, iq_list_g, iq_list_e, sys_config_ss = ss.run()
+                I_g = iq_list_g[QubitIndex][0].T[0]
+                Q_g = iq_list_g[QubitIndex][0].T[1]
+                I_e = iq_list_e[QubitIndex][0].T[0]
+                Q_e = iq_list_e[QubitIndex][0].T[1]
+
+                fid, threshold, angle, ig_new, ie_new = ss.hist_ssf(
+                    data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
+                angles.append(angle)
+                thresholds.append(threshold)
+
+                ss_data[QubitIndex]['Fidelity'][0] = fid
+                ss_data[QubitIndex]['Angle'][0] = angle
+                ss_data[QubitIndex]['Dates'][0] = (
+                    time.mktime(datetime.datetime.now().timetuple()))
+                ss_data[QubitIndex]['I_g'][0] = I_g
+                ss_data[QubitIndex]['Q_g'][0] = Q_g
+                ss_data[QubitIndex]['I_e'][0] = I_e
+                ss_data[QubitIndex]['Q_e'][0] = Q_e
+                ss_data[QubitIndex]['Round Num'][0] = ss_round
+                ss_data[QubitIndex]['Batch Num'][0] = 0
+                ss_data[QubitIndex]['Exp Config'][0] = expt_cfg
+                ss_data[QubitIndex]['Syst Config'][0] = sys_config_ss
+
+                saver_ss = Data_H5(optimizationFolder, ss_data, 0, save_r)
+                saver_ss.save_to_h5('ss_ge')
+                del saver_ss
+                del ss_data
+
+                ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
+            except Exception as e:
+                print(f'Got the following error, continuing: {e}')
+                continue  # skip the rest of this
+
+        # average angles and thresholds to use
+        avg_angle = np.mean(angles)
+        avg_thresh = np.mean(thresholds)
+        experiment.readout_cfg['res_phase'][
+            QubitIndex] = avg_angle * 180 / np.pi  # need it to be a list of 6, the other qubits dont matter so just amke them the same val
+        experiment.readout_cfg['threshold'][QubitIndex] = avg_thresh
 
     ############################################# Make a copy of og experiment: IMPORTANT #############################################
     experiment_template = copy.deepcopy(experiment)
@@ -146,7 +385,7 @@ for QubitIndex in Qs_to_look_at:
             experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(f)
 
             # run the gain‐sweep Rabi
-            rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, path_saveplots,0, signal, save_figs=save_figs, experiment=experiment,
+            rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, path_saveplotsRR,0, signal, save_figs=save_figs, experiment=experiment,
                     live_plot=live_plot, increase_qubit_reps=increase_qubit_reps, qubit_to_increase_reps_for=qubit_to_increase_reps_for,
                     multiply_qubit_reps_by=multiply_qubit_reps_by, verbose=verbose, logger=rr_logger, qick_verbose=qick_verbose)
             rabi_I, rabi_Q, rabi_gains, *_ = rabi.run()
