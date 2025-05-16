@@ -11,6 +11,7 @@ import math
 import os
 import datetime
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 from bisect import bisect_left
 from matplotlib.dates import DateFormatter
 
@@ -381,11 +382,7 @@ class SSFTempCalcAndPlots:
         return thresh_results
 
     def plot_gaussians_qtemps(self, q_key, qubit_folder, ig_new, ground_data, excited_data, ground_gaussian, excited_gaussian, pop_threshold, temperature_mk, dataset, weights, sigmas, means):
-        # Note: crossing point is the threshold that is used to determine Pg and Pe.
-        # Originally it was the crossing point between the two gaussians.
-        # You can provide something else to be used as the threshold tho (such as the midpoint between the two gaussian means)
-
-        # -----------------PLOTS TO CHECK FITS AND THRESHOLDS---------------
+        # -----------------PLOTS TO CHECK g-state double gaussian FITS AND THRESHOLDS---------------
         # Plotting double gaussian distributions and fitting
         xlims = [np.min(ig_new), np.max(ig_new)]
         plt.figure(figsize=(10, 6))
@@ -550,8 +547,8 @@ class SSFTempCalcAndPlots:
 
         return pairs_by_qubit, unmatched_qspec, unmatched_ssf
 
-    #  Scatter – temperatures vs. time  (all dates, each qubit its own subplot)
-    def plot_all_qubits_scatter(self, all_qubit_temperatures, all_qubit_timestamps, out_dir):
+    #  Scatter plot – qubit temperatures vs. time  (all dates, each qubit its own subplot)
+    def plot_qubit_temperatures_vs_time_ssf(self, all_qubit_temperatures, all_qubit_timestamps, out_dir):
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
 
         os.makedirs(out_dir, exist_ok=True)
@@ -588,7 +585,7 @@ class SSFTempCalcAndPlots:
         print("Saved all-dates scatter →", fname)
 
     # Histograms – temperature distributions  (all dates, each qubit subplot)
-    def plot_all_qubits_hist(self, all_qubit_temperatures, out_dir, bins=20):
+    def plot_all_qubits_hist_ssf(self, all_qubit_temperatures, out_dir, bins=20):
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
 
         os.makedirs(out_dir, exist_ok=True)
@@ -616,81 +613,79 @@ class SSFTempCalcAndPlots:
         plt.close()
         print("Saved all-dates histogram →", fname)
 
-    # Temperature histograms   --------------------------------------------------
-    def plot_temp_histograms(self, qubit_temperatures, out_dir, bins=20):
+    # def plot_temp_histograms(self, qubit_temperatures, out_dir, bins=20):
+    #     """
+    #     Parameters
+    #     ----------
+    #     qubit_temperatures : dict {qubit: [(temp_mK, unix_ts), …]}
+    #     out_dir            : str   folder that will receive the PNG
+    #     colors             : list  colour per qubit (defaults if None)
+    #     bins               : int   histogram bins
+    #     """
+    #     colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+    #
+    #     os.makedirs(out_dir, exist_ok=True)
+    #
+    #     plt.figure(figsize=(15, 10))
+    #     for q, data in qubit_temperatures.items():
+    #         temps = [t for t, _ in data]
+    #         plt.subplot(2, 3, q + 1)
+    #         plt.hist(temps, bins=bins, color=colors[q], alpha=0.7,
+    #                  edgecolor='black')
+    #         plt.title(f"Qubit {q + 1} Temperature Distribution")
+    #         plt.xlabel("Temperature (mK)")
+    #         plt.ylabel("Count")
+    #         plt.grid(alpha=0.3)
+    #
+    #     plt.tight_layout()
+    #     fname = os.path.join(
+    #         out_dir,
+    #         f"Temperature_Histograms_{datetime.datetime.now():%Y%m%d%H%M%S}.png")
+    #     plt.savefig(fname, dpi=300)
+    #     plt.close()
+    #     print("Saved histogram →", fname)
+
+    # def plot_temp_scatter(self, qubit_temperatures, out_dir):
+    #     """
+    #     Parameters
+    #     ----------
+    #     qubit_temperatures : dict {qubit: [(temp_mK, unix_ts), …]}
+    #     out_dir            : str   folder that will receive the PNG
+    #     colors             : list  color per qubit (defaults if None)
+    #     """
+    #     colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+    #
+    #     os.makedirs(out_dir, exist_ok=True)
+    #
+    #     plt.figure(figsize=(15, 10))
+    #     date_fmt = DateFormatter('%m-%d\n%H:%M')
+    #
+    #     for q, data in qubit_temperatures.items():
+    #         if not data:
+    #             continue
+    #         temps, ts = zip(*data)
+    #         times = [datetime.datetime.fromtimestamp(t) for t in ts]
+    #
+    #         ax = plt.subplot(2, 3, q + 1)
+    #         ax.scatter(times, temps, color=colors[q], alpha=0.7, edgecolor='black')
+    #         ax.set_title(f"Qubit {q + 1} Temperature vs Time")
+    #         ax.set_xlabel("Time")
+    #         ax.set_ylabel("Temperature (mK)")
+    #         ax.grid(alpha=0.3)
+    #         ax.xaxis.set_major_formatter(date_fmt)
+    #         plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
+    #
+    #     plt.tight_layout()
+    #     fname = os.path.join(
+    #         out_dir,
+    #         f"Temperature_Scatter_{datetime.datetime.now():%Y%m%d%H%M%S}.png")
+    #     plt.savefig(fname, dpi=300)
+    #     plt.close()
+    #     print("Saved scatter →", fname)
+
+    def plot_ssf_ge_thresh_split_gstate(self, q_key: int,rec: dict, out_folder: str):
         """
-        Parameters
-        ----------
-        qubit_temperatures : dict {qubit: [(temp_mK, unix_ts), …]}
-        out_dir            : str   folder that will receive the PNG
-        colors             : list  colour per qubit (defaults if None)
-        bins               : int   histogram bins
-        """
-        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
-
-        os.makedirs(out_dir, exist_ok=True)
-
-        plt.figure(figsize=(15, 10))
-        for q, data in qubit_temperatures.items():
-            temps = [t for t, _ in data]
-            plt.subplot(2, 3, q + 1)
-            plt.hist(temps, bins=bins, color=colors[q], alpha=0.7,
-                     edgecolor='black')
-            plt.title(f"Qubit {q + 1} Temperature Distribution")
-            plt.xlabel("Temperature (mK)")
-            plt.ylabel("Count")
-            plt.grid(alpha=0.3)
-
-        plt.tight_layout()
-        fname = os.path.join(
-            out_dir,
-            f"Temperature_Histograms_{datetime.datetime.now():%Y%m%d%H%M%S}.png")
-        plt.savefig(fname, dpi=300)
-        plt.close()
-        print("Saved histogram →", fname)
-
-    # Temperature-vs-time scatter --------------------------------------------
-    def plot_temp_scatter(self, qubit_temperatures, out_dir):
-        """
-        Parameters
-        ----------
-        qubit_temperatures : dict {qubit: [(temp_mK, unix_ts), …]}
-        out_dir            : str   folder that will receive the PNG
-        colors             : list  color per qubit (defaults if None)
-        """
-        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
-
-        os.makedirs(out_dir, exist_ok=True)
-
-        plt.figure(figsize=(15, 10))
-        date_fmt = DateFormatter('%m-%d\n%H:%M')
-
-        for q, data in qubit_temperatures.items():
-            if not data:
-                continue
-            temps, ts = zip(*data)
-            times = [datetime.datetime.fromtimestamp(t) for t in ts]
-
-            ax = plt.subplot(2, 3, q + 1)
-            ax.scatter(times, temps, color=colors[q], alpha=0.7, edgecolor='black')
-            ax.set_title(f"Qubit {q + 1} Temperature vs Time")
-            ax.set_xlabel("Time")
-            ax.set_ylabel("Temperature (mK)")
-            ax.grid(alpha=0.3)
-            ax.xaxis.set_major_formatter(date_fmt)
-            plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
-
-        plt.tight_layout()
-        fname = os.path.join(
-            out_dir,
-            f"Temperature_Scatter_{datetime.datetime.now():%Y%m%d%H%M%S}.png")
-        plt.savefig(fname, dpi=300)
-        plt.close()
-        print("Saved scatter →", fname)
-
-    def plot_threshold_split(self, q_key: int,rec: dict, out_folder: str):
-        """
-        Plot a simple histogram split at the g-e SSF threshold.
+        Plot a simple ig_new histogram split at the g-e SSF threshold.
 
         Parameters
         ----------
@@ -703,7 +698,7 @@ class SSFTempCalcAndPlots:
             Directory where the .png should be saved.
         """
         print('Processing plots...')
-        ig = rec["ig_new"]  # rotated SSF I values
+        ig = rec["ig_new"]  # rotated SSF I values for prepared ground state
         thresh = rec["pop_threshold"]  # data_threshold
         temp_mk = rec["temperature_mK"]
         dataset = rec["dataset"]
@@ -994,3 +989,115 @@ class RPMTempCalcAndPlots:
                             combined_qtemp_data.extend(qtemp_data)
 
         return combined_qtemp_data # Will be empty if get_qtemp_data is set to False
+
+
+class combined_Qtemp_studies:
+    def __init__(self, figure_quality, number_of_qubits, save_figs):
+        self.save_figs = save_figs
+        self.figure_quality = figure_quality
+        self.number_of_qubits = number_of_qubits
+
+    def Qtemps_vs_time_comb_methods(self, all_qubit_temperatures_ssf_g, all_qubit_timestamps_ssf_g, all_qubit_temperatures_ssf_ge, all_qubit_timestamps_ssf_ge, out_dir,
+        all_files_Qtemp_results_RPMs, num_qubits=6, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = True):
+
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        os.makedirs(out_dir, exist_ok=True)
+
+        # Processing RPMs Qubit Temperature Results and putting it into dicts:
+        times_RPM = {q: [] for q in range(num_qubits)}
+        temps_RPM = {q: [] for q in range(num_qubits)}
+        for rec in all_files_Qtemp_results_RPMs:
+            for q in range(num_qubits):
+                d = rec['qubits'].get(q)
+                if d:
+                    t = datetime.datetime.fromtimestamp(d['date'])
+                    times_RPM[q].append(t)
+                    temps_RPM[q].append(d['T_mK'])
+                else:
+                    continue
+
+        # SSF Qubit Temperature data for method that uses g-state double gauss threshold as population threshold
+        times_ssf_g = all_qubit_timestamps_ssf_g
+        temps_ssf_g = all_qubit_temperatures_ssf_g
+
+        # SSF Qubit Temperature data for method that uses g-e ssf threshold as population threshold
+        times_ssf_ge = all_qubit_timestamps_ssf_ge
+        temps_ssf_ge = all_qubit_temperatures_ssf_ge
+
+        #----------- Plot only a certain range of dates/time (only goes into effect if restrict_time_xaxis is set to true)
+        if restrict_time_xaxis:
+            window_start = datetime.datetime(2025, 4, 18, 0, 0)
+            window_end = datetime.datetime(2025, 5, 4, 23, 59)
+
+        # ---------- Radiation source events
+        rad_events = []
+        if rad_events_plot_lines:
+            rad_events = [
+                (datetime.datetime(2025, 4, 21, 12, 35), "Co-60"),
+                (datetime.datetime(2025, 4, 23, 12, 53), "Cs-137"),
+                (datetime.datetime(2025, 4, 28, 9, 40), "Cs-137 closer"),
+                (datetime.datetime(2025, 5, 4, 18, 20), "Cs-137 removed"),
+            ]
+
+        #-------------- Plotting
+        fig, axes = plt.subplots(2, 3, figsize=(18, 10), sharey=True, constrained_layout=True)
+        col_titles = ["Method #1: Rabi Pop. Meas.", "Method #2: g-state double gaussian", "Method #3: g & e-state double gaussian"]
+
+        for c, title in enumerate(col_titles):
+            axes[0, c].set_title(title, fontsize=16, pad=12)
+
+        # date formatter
+        date_fmt = DateFormatter('%m-%d-%H')
+
+        # Plot each qubit (rows) × method (cols)
+        for row, q in enumerate([0, 4]):  # Q1 and Q5
+            for col in range(3):
+                ax = axes[row, col]
+
+                if col == 0:
+                    ts, ys = times_RPM[q], temps_RPM[q]
+                elif col == 1:
+                    ts, ys = times_ssf_g.get(q, []), temps_ssf_g.get(q, [])
+                else:
+                    ts, ys = times_ssf_ge.get(q, []), temps_ssf_ge.get(q, [])
+
+                # scatter
+                if ts and ys:
+                    ax.scatter(ts, ys, s=40, alpha=0.8, edgecolors='k')
+
+                # qubit label
+                ax.text(0.02, 0.95, f"Q{q + 1}", transform=ax.transAxes, fontsize=14, fontweight='bold', va='top')
+
+                # x-axis formatting
+                ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+                ax.xaxis.set_major_formatter(date_fmt)
+                plt.setp(ax.get_xticklabels(), rotation=45, fontsize=10)
+
+                # y-axis on leftmost col
+                if col == 0:
+                    ax.set_ylabel("Temp (mK)", fontsize=12)
+                # x-axis on bottom row
+                if row == 1:
+                    ax.set_xlabel("Time", fontsize=12)
+
+                ax.set_ylim(50, 950)
+                ax.grid(False)
+
+                # apply time window
+                if restrict_time_xaxis:
+                    ax.set_xlim(window_start, window_end)
+
+                # add radiation lines
+                for t_evt, lbl in rad_events:
+                    ax.axvline(t_evt, color='black', linestyle='--', linewidth=1)
+                    ax.text(t_evt, ax.get_ylim()[1] * 0.9, lbl, rotation=90, va='top', ha='right', fontsize=9)
+
+        fig.suptitle("Qubit Temperatures vs Time", fontsize=18)
+        paramvstime_dir = os.path.join(out_dir, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_path = os.path.join(paramvstime_dir, f"Qtemps_vs_Time_methods_comparisons_{stamp}.png")
+        fig.savefig(out_path, dpi=300)
+        plt.close(fig)
+        print("Plot saved to →", out_path)

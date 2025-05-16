@@ -6,8 +6,7 @@ sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/
 from analysis_021_plot_allRR_noqick import QubitSpectroscopy
 from qicklab.analysis import qspec, ssf
 from section_008_save_data_to_h5 import Data_H5
-from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
-from analysis_014_temp_calcsandplots_cosmiqgpvm import RPMTempCalcAndPlots
+from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots, combined_Qtemp_studies, RPMTempCalcAndPlots
 import glob
 import re
 import datetime
@@ -40,10 +39,11 @@ figure_quality = 200
 Science_Qubits = [0, 4]
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False}
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+                      "combined_studies_qtemps": True}
 
 # What analysis plots do you want to make?
-analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
+analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False,  "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 ############################################################################## Set up ##############################################################################
@@ -115,23 +115,23 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
 
     if analysis_flags["Qtemps_vs_time_viaRPM"]:
         #------------------------------------------------------------------- Qubit temperatures vs time via RPMs ----------------------------------------------------
-        RPM_plotter.plot_qubit_temperatures_vs_time(combined_qtemp_data, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
+        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
 
     if analysis_flags["Qtemps_hists_viaRPM"]:
         #----------------------------------------------------------------- Histograms of Qubit temperatures (via RPMs) -----------------------------------------------
-        RPM_plotter.plot_qubit_temperature_histograms(combined_qtemp_data)
+        RPM_plotter.plot_qubit_temperature_histograms_RPMs(combined_qtemp_data)
 
     if analysis_flags["Pe_vs_time_viaRPM"]:
         #------------------------------------------------------------ Excited state populations (P_e) vs time (via RPMs) ----------------------------------------
-        RPM_plotter.plot_qubit_pe_vs_time(combined_qtemp_data)
+        RPM_plotter.plot_qubit_pe_vs_time_RPMs(combined_qtemp_data)
 
     if analysis_flags["qtemps_Pe_vs_time_viaRPM"]:
         #---------------------------------------------------------- Qubit temp and P_e vs time in the same plot (via RPMs) ------------------------------------
-        RPM_plotter.plot_qubit_temp_and_pe_vs_time(combined_qtemp_data)
+        RPM_plotter.plot_qubit_temp_and_pe_vs_time_RPMs(combined_qtemp_data)
 
     if analysis_flags["qtemps_Pe_gefreq_vs_time_viaRPM"]:
         #---------------------------------------------------- Qubit temp, P_e, and g-e qubit freq vs time in the same plot (via RPMs) --------------------------
-        RPM_plotter.plot_qubit_temp_pe_freq_vs_time(combined_qtemp_data)
+        RPM_plotter.plot_qubit_temp_pe_freq_vs_time_RPMs(combined_qtemp_data)
 
 
 ############################################################### Qubit temperature calculations via SSF measurements #################################################
@@ -161,7 +161,7 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
     #------------------------------------------------------------------ Temperatures vs Time Scatter Plot --------------------------------------------------------------------------
     if analysis_flags["Qtemps_vs_time_viaSSF"]:
         path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Qtemps_vs_Time"
-        SSF_calcs_obj.plot_all_qubits_scatter(all_qubit_temps, all_qubit_times, path_saveplots)
+        SSF_calcs_obj.plot_qubit_temperatures_vs_time_ssf(all_qubit_temps, all_qubit_times, path_saveplots)
 
     #------------------------------------------------------------ Check General SSF Double Gaussian Fits and g-e threshold ---------------------------------------------------------
     if analysis_flags["ge_thresh_check_ssf"]:
@@ -193,3 +193,21 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
                     # plots the g-e threshold and only the ground state data to show how the g-e threshold was used to determine Pg and Pe
                     SSF_calcs_obj.plot_threshold_split(q_key, rec, made_on_folder)
 
+#################################################### Combined Qubit Temperature Analyses ##########################################################
+if qtemp_method_flags["combined_studies_qtemps"]:
+    outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots"
+    # ----------- Get Qubit temperature results via RPMs
+    RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs)
+    all_files_Qtemp_results_RPMs = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal, run_name, list_of_all_qubits, tot_num_of_qubits,
+                                outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, figure_quality, save_figsRR)
+    # ----------- Get Qubit temperature results via SSF g-e threshold method and SSF g-state double gaussian threshold method
+    outerFolder = ""
+    SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs, outerFolder)
+    pairs_info = SSF_calcs_obj.process_ssf_and_qfreq_data_qtemps(Science_Qubits, paths_SSFmethods)
+
+    all_qubit_temps_g, all_qubit_times_g, fit_results_g  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.8, use_gessf_thresh_only = False, fallback_to_threshold = False)
+    all_qubit_temps_ge, all_qubit_times_ge, fit_results_ge = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.8, use_gessf_thresh_only=False, fallback_to_threshold=False)
+
+    # Qubit temperatures vs Time using all three methods
+    combined_Qtemp_studies.Qtemps_vs_time_comb_methods(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_ge, all_qubit_times_ge, outerFolder_qtemps_plots,
+        all_files_Qtemp_results_RPMs, num_qubits=6, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = True)

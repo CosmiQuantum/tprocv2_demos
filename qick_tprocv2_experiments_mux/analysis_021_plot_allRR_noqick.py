@@ -1756,7 +1756,7 @@ class PlotRR_noQick:
         T_mK = T_K * 1000  # Convert to millikelvin
         return T_K, T_mK, P_e, qubit_freq_MHz
 
-    def plot_qubit_temperatures_vs_time(self, all_files_Qtemp_results, num_qubits=6, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = True):
+    def plot_qubit_temperatures_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = True):
         """
         Plots qubit temperatures vs. time for each qubit in a separate subplot (max 3 columns).
 
@@ -1927,7 +1927,7 @@ class PlotRR_noQick:
         plt.savefig(save_path, dpi=self.figure_quality)
         plt.close(fig)
 
-    def plot_qubit_temperature_histograms(self, all_files_Qtemp_results, num_qubits=6):
+    def plot_qubit_temperature_histograms_RPMs(self, all_files_Qtemp_results, num_qubits=6):
         """
         Plots histograms for the temperature (T_mK) data of each qubit.
 
@@ -2010,7 +2010,7 @@ class PlotRR_noQick:
         plt.savefig(save_path, dpi=200)
         plt.close(fig)
 
-    def plot_qubit_pe_vs_time(self, all_files_Qtemp_results, num_qubits=6):
+    def plot_qubit_pe_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6):
         """
         Plots qubit excited state populations (P_e) vs. time in a separate figure.
 
@@ -2073,7 +2073,7 @@ class PlotRR_noQick:
         plt.close(fig)
         # plt.show()
 
-    def plot_qubit_temp_and_pe_vs_time(self, all_files_Qtemp_results, num_qubits=6):
+    def plot_qubit_temp_and_pe_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6):
         """
         Plots qubit temperature (T_mK) and P_e vs. time using scatter points for each qubit (dual y-axes).
         """
@@ -2144,7 +2144,7 @@ class PlotRR_noQick:
         plt.close(fig)
         # plt.show()
 
-    def plot_qubit_temp_pe_freq_vs_time(self, all_files_Qtemp_results, num_qubits=6):
+    def plot_qubit_temp_pe_freq_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6):
         """
         Plots qubit temperature (T_mK), P_e, and qubit frequency vs. time using triple y-axes.
         """

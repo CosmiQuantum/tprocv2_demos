@@ -131,7 +131,7 @@ all_qubit_temps, all_qubit_times, fit_results  = temps_class_obj.run_ssf_qtemps(
 ######################################### Temperatures vs Time Scatter Plot #############################################
 if analysis_flags["Qtemps_vs_time_viaSSF"]:
     path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Qtemps_vs_Time"
-    temps_class_obj.plot_all_qubits_scatter(all_qubit_temps, all_qubit_times, path_saveplots)
+    temps_class_obj.plot_qubit_temperatures_vs_time_ssf(all_qubit_temps, all_qubit_times, path_saveplots)
 
 ######################################## Check General SSF Double Gaussian Fits and g-e threshold #############################################
 if analysis_flags["ge_thresh_check_ssf"]:
@@ -172,7 +172,7 @@ if analysis_flags["Threshold_Check_Qtemps_viaSSF"]:
                     rec["means"])
             else:
                 # plots the g-e threshold and the ground state data to show how the g-e threshold was used to determine Pg and Pe
-                temps_class_obj.plot_threshold_split(q_key, rec, made_on_folder)
+                temps_class_obj.plot_ssf_ge_thresh_split_gstate(q_key, rec, made_on_folder)
 
 
 
