@@ -54,22 +54,20 @@ if not os.path.exists("/data/QICK_data/run6/"):
 if not os.path.exists("/data/QICK_data/run6/6transmon/"):
     os.makedirs("/data/QICK_data/run6/6transmon/")
 studyFolder = os.path.join("/data/QICK_data/run6/6transmon/", study)
-if not os.path.exists(studyFolder):
-    os.makedirs(studyFolder)
 subStudyFolder = os.path.join(studyFolder, sub_study)
-if not os.path.exists(subStudyFolder):
-    os.makedirs(subStudyFolder)
 
 formatted_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 dataSetFolder = os.path.join(subStudyFolder, formatted_datetime)
 optimizationFolder = os.path.join(dataSetFolder, 'optimization')
+studyDocumentationFolder = os.path.join(dataSetFolder, 'documentation')
 studyFolder = os.path.join(dataSetFolder, 'study_data')
 
 path_saveplots = os.path.join(dataSetFolder, 'plots') #general, make subfolders inside
 path_saveplots_chev = os.path.join(path_saveplots, 'rabi_chev_plots')
 path_saveplotsRR = os.path.join(path_saveplots, 'RR_plots')
-studyDocumentationFolder = os.path.join(dataSetFolder, 'documentation')
 
+if not os.path.exists(studyFolder): os.makedirs(studyFolder)
+if not os.path.exists(subStudyFolder): os.makedirs(subStudyFolder)
 if not os.path.exists(path_saveplots): os.makedirs(path_saveplots)
 if not os.path.exists(path_saveplots_chev): os.makedirs(path_saveplots_chev)
 if not os.path.exists(studyDocumentationFolder): os.makedirs(studyDocumentationFolder)
@@ -95,7 +93,7 @@ def sweep_frequency_offset(experiment, QubitIndex, offset_values, n_loops=10, nu
             res_freqs[QubitIndex] = baseline_freq + offset
             exp_copy.readout_cfg['res_freq_ge'] = res_freqs
 
-            ss = SingleShot(QubitIndex, number_of_qubits, outerFolder, 0, save_figs, exp_copy)
+            ss = SingleShot(QubitIndex, number_of_qubits, outerFolder, 0, False, exp_copy)
             fid, angle, iq_list_g, iq_list_e, ss_config = ss.run()
             fids.append(fid)
             del exp_copy
@@ -270,7 +268,7 @@ for QubitIndex in Qs_to_look_at:
     ################################################ g-e amp rabi #############################################################
     if run_flags["ge_rabi"]:
         rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
-        rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
+        rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, path_saveplotsRR, j,
                                        signal, save_figs=save_figs, experiment=experiment,
                                        live_plot=live_plot,
                                        increase_qubit_reps=increase_qubit_reps,
@@ -385,7 +383,7 @@ for QubitIndex in Qs_to_look_at:
             experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(f)
 
             # run the gain‐sweep Rabi
-            rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, path_saveplotsRR,0, signal, save_figs=save_figs, experiment=experiment,
+            rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, path_saveplotsRR,0, signal, save_figs=False, experiment=experiment,
                     live_plot=live_plot, increase_qubit_reps=increase_qubit_reps, qubit_to_increase_reps_for=qubit_to_increase_reps_for,
                     multiply_qubit_reps_by=multiply_qubit_reps_by, verbose=verbose, logger=rr_logger, qick_verbose=qick_verbose)
             rabi_I, rabi_Q, rabi_gains, *_ = rabi.run()
@@ -413,7 +411,7 @@ for QubitIndex in Qs_to_look_at:
             chev_data[QubitIndex]['q_center_freq_MHz'][0] = qubit_freq
             chev_data[QubitIndex]['res_freq_ge_MHz'][0] = this_res_freq
 
-            saver_chev = Data_H5(path_saveplots_chev, chev_data, 0, save_r)
+            saver_chev = Data_H5(studyFolder, chev_data, 0, save_r)
             saver_chev.save_to_h5('rabi_ge_chevron')
             del saver_chev
 
