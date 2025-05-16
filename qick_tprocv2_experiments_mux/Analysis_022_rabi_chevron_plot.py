@@ -386,7 +386,7 @@ for QubitIndex in Qs_to_look_at:
             # run the gain‐sweep Rabi
             rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, path_saveplotsRR,0, signal, save_figs=False, experiment=experiment,
                     live_plot=live_plot, increase_qubit_reps=increase_qubit_reps, qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                    multiply_qubit_reps_by=multiply_qubit_reps_by, verbose=verbose, logger=rr_logger, qick_verbose=qick_verbose, expt_name = "power_rabi_ge_chevron")
+                    multiply_qubit_reps_by=multiply_qubit_reps_by, verbose=verbose, logger=rr_logger, qick_verbose=qick_verbose)
             rabi_I, rabi_Q, rabi_gains, *_ = rabi.run()
             del rabi
 
