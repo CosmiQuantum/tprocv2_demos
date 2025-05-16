@@ -397,6 +397,8 @@ for QubitIndex in Qs_to_look_at:
             mag = np.sqrt(np.array(rabi_I) ** 2 + np.array(rabi_Q) ** 2)
             signal_map.append(mag)
 
+            del experiment
+
         signal_map = np.vstack(signal_map)  # shape (freq_steps, len(rabi_gains))
 
         if save_data_h5:
