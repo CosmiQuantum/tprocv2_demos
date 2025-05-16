@@ -146,8 +146,7 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
     if (method_one + method_two + method_three) != 1:  # True==1, False==0
         raise ValueError("You must set *only one* of these to True: Qtemps_viaSSF_gmeans_thresh, Qtemps_viaSSF_ge_thresh or Qtemps_viaSSF_with_fallback. Please pick one and try again.")
 
-    outerFolder = ""
-    SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs, outerFolder)
+    SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs)
     pairs_info = SSF_calcs_obj.process_ssf_and_qfreq_data_qtemps(Science_Qubits, paths_SSFmethods)
 
     # ------------------------------------------------------------------- Calculate Qubit Temperatures ----------------------------------------------------------------------------
@@ -202,8 +201,7 @@ if qtemp_method_flags["combined_studies_qtemps"]:
                                 outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, figure_quality, save_figsRR)
 
     # ----------- Get Qubit temperature results via SSF g-e threshold method and SSF g-state double gaussian threshold method
-    outerFolder = ""
-    SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs, outerFolder)
+    SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs)
     pairs_info = SSF_calcs_obj.process_ssf_and_qfreq_data_qtemps(Science_Qubits, paths_SSFmethods)
 
     all_qubit_temps_g, all_qubit_times_g, fit_results_g  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.8, use_gessf_thresh_only = False, fallback_to_threshold = False)

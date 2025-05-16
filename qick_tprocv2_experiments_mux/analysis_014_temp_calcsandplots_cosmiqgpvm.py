@@ -20,15 +20,10 @@ figure_quality = 100 #ramp this up to like 500 for presentation plots
 
 
 class SSFTempCalcAndPlots:
-    def __init__(self, figure_quality, number_of_qubits, save_figs, outerFolder):
+    def __init__(self, figure_quality, number_of_qubits, save_figs):
         self.save_figs = save_figs
         self.figure_quality = figure_quality
         self.number_of_qubits = number_of_qubits
-        self.outerFolder = outerFolder
-
-        # Create the folder if it doesn't exist
-        if not os.path.exists(self.outerFolder):
-            os.makedirs(self.outerFolder)
 
     def calculate_qubit_temperature(self, frequency_mhz, ground_state_population, excited_state_population):
         k_B = 1.380649e-23  # Boltzmann constant in J/K
