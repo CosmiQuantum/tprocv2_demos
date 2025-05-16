@@ -1086,10 +1086,11 @@ class combined_Qtemp_studies:
                     ax.axvline(t_evt, color='black', linestyle='--', linewidth=1)
                     ax.text(t_evt, ax.get_ylim()[1] * 0.9, lbl, rotation=90, va='top', ha='right', fontsize=9)
 
-        axes[1, 0].xaxis.set_major_locator(mdates.AutoDateLocator())
-        axes[1, 0].xaxis.set_major_formatter(date_fmt)
-        axes[1, 0].tick_params(axis='x',labelrotation=45,labelsize=10)
-        fig.autofmt_xdate()
+        locator = mdates.AutoDateLocator()
+        for ax in axes.flatten():
+            ax.xaxis.set_major_locator(locator)
+            ax.xaxis.set_major_formatter(date_fmt)
+            ax.tick_params(axis='x', labelrotation=45, labelsize=10)
 
         fig.suptitle("Qubit Temperatures vs Time", fontsize=18)
         paramvstime_dir = os.path.join(out_dir, "params_vs_time")
