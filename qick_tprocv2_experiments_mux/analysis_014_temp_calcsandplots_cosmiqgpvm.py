@@ -847,6 +847,104 @@ class SSFTempCalcAndPlots:
 
         return threshold, means, sigmas, weights, ground_idx, excited_idx
 
+    def process_ssf_and_qfreq_data_qtemps(self, Science_Qubits, paths):
+        """
+        This function processes the ssf and g-e quit spec data for each qubit found inside the files in cosmiqgpvm02 and returns the dictionary:
+
+        pairs_info[q].append({
+            "qspec_path": qspec_path,
+            "ssf_path"  : ssf_path,
+            "qfreq_MHz" : freq_cache[fq_key],     # MHz
+            "ig_new"   : ig_new_cache[ss_key],
+            "ie_new": ie_new_cache[ss_key],
+            "data_timestamp" : timestamp_ssf_cache[ss_key].timestamp(), # unix-timestamps
+        })
+
+        The dictionary contains matched up SSF and g-e qubit spec h5 files that are within a specified number of seconds (tolerance_seconds). That way the user can
+        use the returned dictionary to calculate qubit temperatures using SSF data and the qubit freq that was measured at around the same time that the SSF data was taken.
+        """
+        freq_cache = {}  # for qubit freqs
+        ig_new_cache = {}  # for ground state roated I data (SSF)
+        ie_new_cache = {}  # for first excited state roated I data (SSF)
+        timestamp_ssf_cache = {}  # for ssf data time stamps (qubit temperature time stamps)
+
+        for full_path in paths:
+            path = os.path.dirname(full_path)  # one level up from the dataset
+            dataset = os.path.basename(full_path)  # just the '2025-04-16_11-47-09' part
+
+            for QubitIndex in Science_Qubits:  # We are only taking science data for some qubits
+                try:
+                    # --- Load QSpec ---
+                    qspec_obj = qspec(path, dataset, QubitIndex)
+                    qspec_dates, qspec_n, qspec_probe_freqs, qspec_I, qspec_Q = qspec_obj.load_all()
+                    qspec_freqs, qspec_errs, qspec_fwhms = qspec_obj.get_all_qspec_freq(qspec_probe_freqs, qspec_I,
+                                                                                        qspec_Q, qspec_n)
+
+                    # recreate the list of file–paths in the SAME order the helper used
+                    qspec_dir = os.path.join(path, dataset, qspec_obj.folder, "Data_h5", qspec_obj.expt_name)
+                    h5_files = sorted(os.listdir(qspec_dir))
+                    h5_paths = [os.path.join(qspec_dir, f) for f in h5_files]
+
+                    for i in range(qspec_n):
+                        freq_cache[(h5_paths[i], QubitIndex)] = qspec_freqs[i]
+                except Exception as e:
+                    print(f"Skipped QSpec scan in {dataset} for Q{QubitIndex}: {e}")
+
+                try:
+                    # --- Load SSF ---
+                    ssf_ge = ssf(path, dataset, QubitIndex)
+                    ssf_dates, ssf_n, I_g, Q_g, I_e, Q_e = ssf_ge.load_all()
+
+                    # recreate the list of SSF-file paths in the SAME order the helper used
+                    ssf_dir = os.path.join(path, dataset, ssf_ge.folder, "Data_h5", ssf_ge.expt_name)
+                    ssf_paths = [os.path.join(ssf_dir, f) for f in sorted(os.listdir(ssf_dir))]  # length==ssf_n
+
+                    # iterate through every round (file)
+                    for i in range(ssf_n):
+                        try:
+                            _, _, _, ig_new, _, ie_new, _, _, _, _, _ = ssf_ge.get_ssf_in_round(I_g, Q_g, I_e, Q_e, i)
+                        except Exception as e:
+                            print(f"rotate-Ig failed ({ssf_paths[i]}): {e}")
+                            continue
+
+                        key = (ssf_paths[i], QubitIndex)
+                        ig_new_cache[key] = ig_new
+                        ie_new_cache[key] = ie_new
+                        timestamp_ssf_cache[key] = ssf_dates[i]
+
+                except Exception as e:
+                    print(f"Failed loading SSF for qubit {QubitIndex} from {full_path}: {e}")
+
+        # Organize files by type and qubit index after loading all the data
+        qspec_h5s = {q: [] for q in Science_Qubits}
+        for (path, qidx) in freq_cache.keys():
+            qspec_h5s[qidx].append(path)
+
+        ssf_h5s = {q: [] for q in Science_Qubits}
+        for (path, qidx) in ig_new_cache.keys():
+            ssf_h5s[qidx].append(path)
+
+        ########################################## Pair up Qspec_ge data and ssf_ge h5 files ###########################################
+        pairs_by_qubit, lonely_qspec, lonely_ssf = self.pair_qspec_and_ssf(qspec_h5s, ssf_h5s, tolerance_seconds=10)
+
+        # Store relevant info for these pairs in a dictionary
+        pairs_info = {q: [] for q in Science_Qubits}
+        for q in Science_Qubits:
+            for qspec_path, ssf_path in pairs_by_qubit.get(q, []):
+                fq_key = (qspec_path, q)
+                ss_key = (ssf_path, q)
+                if fq_key not in freq_cache or ss_key not in ig_new_cache:
+                    continue  # skip incomplete pair
+
+                pairs_info[q].append({
+                    "qspec_path": qspec_path,
+                    "ssf_path": ssf_path,
+                    "qfreq_MHz": freq_cache[fq_key],  # MHz
+                    "ig_new": ig_new_cache[ss_key],
+                    "ie_new": ie_new_cache[ss_key],
+                    "data_timestamp": timestamp_ssf_cache[ss_key].timestamp(),  # unix-timestamps
+                })
+        return pairs_info
 
 class RPMTempCalcAndPlots:
     def __init__(self, figure_quality, number_of_qubits, save_figs):
