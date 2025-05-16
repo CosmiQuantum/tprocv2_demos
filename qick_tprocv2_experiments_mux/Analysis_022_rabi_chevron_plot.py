@@ -129,7 +129,7 @@ def sweep_frequency_offset(experiment, QubitIndex, offset_values, n_loops=10, nu
                 offset_data = create_data_dict(offset_keys, save_r, list_of_all_qubits)
 
             except Exception as e:
-                raise {e}
+                raise e
 
         # find avg ssf
         avg_fid = np.mean(fids)
