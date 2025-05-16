@@ -376,6 +376,7 @@ for QubitIndex in Qs_to_look_at:
         all_rabi_I = [] # to save I data in h5 files
         all_rabi_Q = [] # to save Q data in h5 files
         for f in freqs_mhz:
+            print('Rabi 2D sweep ongoing...')
             # get the “optimized” experiment defined above
             experiment = copy.deepcopy(experiment_template)
 
@@ -426,7 +427,7 @@ for QubitIndex in Qs_to_look_at:
             ])
         ax.set_xlabel('Gain (amplitude)')
         ax.set_ylabel('Qubit Drive frequency (MHz)')
-        ax.set_title(f'Rabi Chevron: Qubit {QubitIndex + 1}')
+        ax.set_title(f'Rabi Chevron: Qubit {QubitIndex + 1}; g-e Qfreq = {qubit_freq}')
         plt.colorbar(im, ax=ax, label='IQ Signal Mag (a. u.)')
         plt.tight_layout()
 
