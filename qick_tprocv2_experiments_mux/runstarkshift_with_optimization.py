@@ -28,10 +28,10 @@ from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 # Run Configurations and Optimization Params
 ################################################
 ssf_avgs_per_opt_pt = 1
-freq_offset_steps = 2
-res_sample_number = 3 #10
+freq_offset_steps = 15
+res_sample_number = 1 #10
 ss_sample_number = 3
-n = 1  # number of rounds for fast repetitive runs
+n = 5  # number of rounds for fast repetitive runs
 save_r = 1  # how many rounds to save after
 signal = 'None'  # 'I', or 'Q' depending on where the signal is
 save_figs = True  # whether to save plots
@@ -44,7 +44,7 @@ debug_mode = False  # if True, errors will stop the run immediately
 increase_qubit_reps = False
 qubit_to_increase_reps_for = 0
 multiply_qubit_reps_by = 2
-Qs_to_look_at = [0]  # list of qubits to process
+Qs_to_look_at = [4]  # list of qubits to process
 
 # Set which experiments to run
 run_flags = {"optimization": False, "stark2D": True, "starkRamsey": False, "starkSpec": False}
@@ -59,7 +59,7 @@ res_gain = [0.96, 1, 0.76, 0.58, 0.75, 0.57]
 #Logging
 now = datetime.datetime.now()
 formatted_datetime = now.strftime("%Y-%m-%d")
-outerFolder = os.path.join("/data/QICK_data/run6/6transmon/StarkShift/calibration_test_Q1_23MHz/", f"{formatted_datetime}")
+outerFolder = os.path.join("/data/QICK_data/run6/6transmon/StarkShift/calibration_test_5x_pi_pulse/", f"{formatted_datetime}")
 if not os.path.exists(outerFolder):
     os.makedirs(outerFolder)
 log_file = os.path.join(outerFolder, "starkshift_script.log")
@@ -358,7 +358,7 @@ def run_stark2D(experiment, QubitIndex):
         try:
             #stark_shift_2D = ResStarkShift2D(QubitIndex, tot_num_of_qubits, qubitFolder, res_freq_stark, res_phase_stark, save_figs, experiment=experiment)
             stark_shift_2D = StarkShift2D(QubitIndex, tot_num_of_qubits, qubitFolder, save_figs, experiment = experiment)
-            I, Q, qu_freq_sweep, res_gain_sweep, sys_config = stark_shift_2D.run(set_pos_detuning = False)
+            I, Q, qu_freq_sweep, res_gain_sweep, sys_config = stark_shift_2D.run(set_pos_detuning = True)
             stark_shift_2D.plot(I, Q, qu_freq_sweep, res_gain_sweep)
 
             stark2D_data[QubitIndex]['Dates'][0] = time.mktime(datetime.datetime.now().timetuple())

@@ -39,7 +39,7 @@ verbose=False
 rr_logger=None
 qick_verbose=False
 
-Qs_to_look_at = [0] #only list the qubits you want to do the RR for
+Qs_to_look_at = [4] #only list the qubits you want to do the RR for
 
 increase_qubit_reps = False #if you want to increase the reps for a qubit, set to True
 qubit_to_increase_reps_for = 0 #only has impact if previous line is True
@@ -321,7 +321,7 @@ for QubitIndex in Qs_to_look_at:
         thresholds = []
         for ss_round in range(ss_sample_number):
             try:
-                ss = SingleShot(QubitIndex, tot_num_of_qubits, optimizationFolder, 0, False, experiment=experiment,
+                ss = SingleShot(QubitIndex, tot_num_of_qubits, path_saveplotsRR, 0, False, experiment=experiment,
                                 verbose=verbose, logger=rr_logger)
                 fid, angle, iq_list_g, iq_list_e, sys_config_ss = ss.run()
                 I_g = iq_list_g[QubitIndex][0].T[0]
@@ -368,7 +368,7 @@ for QubitIndex in Qs_to_look_at:
     experiment_template = copy.deepcopy(experiment)
     ####################################################### 2D sweep (Rabi Chevron) ######################################################
     if run_flags["rabi_ge_chevron"]:
-        # frequency grid ±2 MHz around optimized qubit freq center
+        # frequency grid around optimized qubit freq center
         freq_steps = 45
         freqs_mhz = np.linspace(qubit_freq - 5, qubit_freq + 5, freq_steps)
 

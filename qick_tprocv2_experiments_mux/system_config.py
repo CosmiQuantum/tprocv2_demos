@@ -75,7 +75,7 @@ class QICK_experiment:
                 #"res_freq_ge": [6217, 6276, 6335, 6407, 6476, 6538],  # MHz, run 5
                 #'res_freq_ge': [6217.011, 6275.7973, 6335.1068, 6407.052, 6476.1091, 6538], # Arianna 3/27/
                 #'res_freq_ge': [6216.811, 6275.9373, 6335, 6407.0338, 6475.8835, 6538], #Joyce 3/11
-                'res_freq_ge': [6216.9331, 6275.9373, 6335, 6407.0338, 6476.1256, 6538], #Joyce 04/07 DAC 0
+                'res_freq_ge': [6216.79738, 6275.9373, 6335, 6407.0338, 6475.98988, 6538], #Joyce 04/07 DAC 0
                 # "res_freq_ge": [6191.419, 6216.1, 6292.361, 6405.77, 6432.759, 6468.481],  # MHz, run 4a
                 # "res_gain_ge": [1] + [0]*5,
                 "res_gain_ge": [0.96, 1, 0.7200, 0.5333, 0.8000, 0.55], #[1, 1, 1, 1, 1, 1],
@@ -101,7 +101,7 @@ class QICK_experiment:
 
             # Qubit Configuration
             self.qubit_cfg = {
-                "qubit_freq_ge": [4189.8656, 3820.4723, 4161.3726, 4463.15226, 4471.446, 4997.86],  # Joyce 3/11
+                "qubit_freq_ge": [4189.7582, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86],  # Joyce 3/11
                 "qubit_freq_ge_starked": [4189.737678, 3820.4723, 4161.3726, 4463.15226, 4471.4469, 4997.86], # Olivia 4/04 for zeno/stark tone
                 "fwhm_w01_starked": None, #for err bars
                 "fwhm_w01": None, #for err bars
@@ -128,7 +128,7 @@ class QICK_experiment:
                 #"sigma": [0.05, 0.09, 0.07, 0.065, 0.09, 0.3],  # Goal: cut sigma in half [us] for Gaussian Pulse (5+4 DAC atten for qubit)
                 # "pi_amp": [0.92, 0.87, 0.75, 0.73, 0.77, 0.78], # old RR values
                 "sigma_ef": [0.09, 0.16, 0.16, 0.15, 0.15, 0.10],  # [us] for Gaussian Pulse, #Arianna 3/27
-                "pi_amp": [0.6748, 0.634499, 0.76542, 0.7754, 0.6446, 0.9], #Joyce 3/11
+                "pi_amp": [0.6748, 0.634499, 0.76542, 0.7754, 0.6546, 0.9], #Joyce 3/11
                 "pi_amp_ampl": [0.5942, 0.634499, 0.76542, 0.7754, 0.55393, 0.9], # Joyce 04/07 DAC 0
                 #"pi_amp": [1.0, 0.93, 0.77, 0.8, 0.81, 0.9], # Eyeballed by Sara today (5+10 DAC atten for qubit)
                 #"pi_amp": [0.7, 0.95, 0.75, 0.78, 0.77, 0.8],  # With shorter sigma (5+4 DAC instead of 5+5 DAC atten for qubit)
