@@ -1219,6 +1219,112 @@ class combined_Qtemp_studies:
         plt.close(fig)
         print("Saved combined methods plot →", out_path)
 
+    def Pe_vs_time_comb_methods(self, all_files_Qtemp_results_RPMs, fit_results_g, fit_results_ge, out_dir,
+                                restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False):
+        """
+        Plots thermal population (Pe) vs time for two qubits, using data obtained using these three methods:
+        1. Rabi population measurements
+        2. Fitting the ssf prepared ground state data to a double gaussian and using the means of the two gaussians to calculate
+            the midpoint and use that as the population threshold.
+        3. Fitting the ssf prepared ground state data AND the prepared excited state data to a double gaussian and using the means of
+            the two gaussians to calculate the midpoint and use that as the population threshold (this represents the ssf g-e threshold).
+
+        This function returns a plot that contains two rows (one for each qubit) showcasing the results for each method in a
+        separate subplot (column).
+        """
+        os.makedirs(out_dir, exist_ok=True)
+        date_fmt = DateFormatter('%m-%d-%H')
+
+        # Extract RPM Pe data into dicts
+        num_qubits = self.number_of_qubits
+        times_RPM = {q: [] for q in range(num_qubits)}
+        pops_RPM = {q: [] for q in range(num_qubits)}
+        for rec in all_files_Qtemp_results_RPMs:
+            for q, d in rec['qubits'].items():
+                # d contains 'date' and 'P_e'
+                t = datetime.datetime.fromtimestamp(d['date'])
+                times_RPM[q].append(t)
+                pops_RPM[q].append(d['P_e'])
+
+        # Gather SSF‐g and SSF‐g+e Pe data from fit_results
+        times_g = {q: [r['timestamp'] for r in lst] for q, lst in fit_results_g.items()}
+        pops_g = {q: [r['Pe'] for r in lst] for q, lst in fit_results_g.items()}
+        times_ge = {q: [r['timestamp'] for r in lst] for q, lst in fit_results_ge.items()}
+        pops_ge = {q: [r['Pe'] for r in lst] for q, lst in fit_results_ge.items()}
+
+        # Optional time window
+        if restrict_time_xaxis:
+            window_start = datetime.datetime(2025, 4, 18, 0, 0)
+            window_end = datetime.datetime(2025, 5, 4, 23, 59)
+
+        # Also optional, Radiation events
+        rad_events = []
+        if rad_events_plot_lines:
+            rad_events = [
+                (datetime.datetime(2025, 4, 21, 12, 35), "Co-60"),
+                (datetime.datetime(2025, 4, 23, 12, 53), "Cs-137"),
+                (datetime.datetime(2025, 4, 28, 9, 40), "Cs-137 closer"),
+                (datetime.datetime(2025, 5, 4, 18, 20), "Cs-137 removed"),
+            ]
+
+        # Create 2x3 subplot grid
+        fig, axes = plt.subplots(2, 3, figsize=(18, 10), sharey=True, sharex=True, constrained_layout=True)
+        col_titles = ["Method #1: Rabi Pop. Meas.",
+                      "Method #2: SSF g‐only",
+                      "Method #3: SSF g+e"]
+        for c, title in enumerate(col_titles):
+            axes[0, c].set_title(title, fontsize=16, pad=12)
+
+        # Plot each qubit (rows) × method (cols)
+        method_data = [
+            (times_RPM, pops_RPM, 'orange'),
+            (times_g, pops_g, 'blue'),
+            (times_ge, pops_ge, 'red')]
+
+        for row, q in enumerate([0, 4]):  # Q1 and Q5
+            for col, (t_dict, p_dict, color) in enumerate(method_data):
+                ax = axes[row, col]
+                ts = t_dict.get(q, [])
+                ps = p_dict.get(q, [])
+                if ts and ps:
+                    ax.scatter(ts, ps,
+                               s=40, alpha=0.8,
+                               edgecolors='k', color=color)
+
+                ax.text(0.02, 0.95, f"Q{q + 1}",
+                        transform=ax.transAxes,
+                        fontsize=14, fontweight='bold', va='top')
+                ax.set_ylabel("Pe" if col == 0 else "")
+                if row == 1:
+                    ax.set_xlabel("Time")
+                ax.set_ylim(0, 1)
+                ax.grid(False)
+
+                # apply shared x‐axis ticks & labels
+                ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+                ax.xaxis.set_major_formatter(date_fmt)
+                ax.tick_params(axis='x', rotation=45, labelsize=10)
+
+                if restrict_time_xaxis:
+                    ax.set_xlim(window_start, window_end)
+
+                if rad_events_plot_lines:
+                    for t_evt, lbl in rad_events:
+                        ax.axvline(t_evt, color='gray', linestyle='--', linewidth=1)
+                        ax.text(t_evt, ax.get_ylim()[1] * 0.9,
+                                lbl, rotation=90, va='top', ha='right', fontsize=9)
+
+        fig.suptitle("Thermal Population vs Time", fontsize=18)
+
+        # Save
+        paramvstime_dir = os.path.join(out_dir, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_path = os.path.join(paramvstime_dir, f"Pe_vs_Time_comb_methods_{stamp}.png")
+        fig.savefig(out_path, dpi=self.figure_quality)
+        plt.close(fig)
+        print("Plot saved to →", out_path)
+
     def Pe_vs_time_comb_2subplts(self, all_files_Qtemp_results_RPMs: list, fit_results_g: dict, fit_results_ge: dict, out_dir: str,
                                  restrict_time_xaxis: bool = False, plot_extra_event_lines: bool = False, rad_events_plot_lines: bool = False):
         """
@@ -1327,7 +1433,7 @@ class combined_Qtemp_studies:
             ax.legend(loc="upper left", fontsize=10)
 
         axes[-1].set_xlabel("Time", fontsize=12)
-        fig.suptitle("Excited‐State Population vs Time (Q1 & Q5)", fontsize=16)
+        fig.suptitle("Thermal Population vs Time (Q1 & Q5)", fontsize=16)
 
         # Save
         paramvstime_dir = os.path.join(out_dir, "params_vs_time")
