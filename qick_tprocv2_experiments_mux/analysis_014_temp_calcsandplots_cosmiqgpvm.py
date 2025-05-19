@@ -992,16 +992,27 @@ class combined_Qtemp_studies:
         self.number_of_qubits = number_of_qubits
 
     def Qtemps_vs_time_comb_methods(self, all_qubit_temperatures_ssf_g, all_qubit_timestamps_ssf_g, all_qubit_temperatures_ssf_ge, all_qubit_timestamps_ssf_ge, out_dir,
-        all_files_Qtemp_results_RPMs, num_qubits=6, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = True):
+        all_files_Qtemp_results_RPMs, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = True):
+        """
+        Plots qubit temperatures vs time for two qubits, using temperature data obtained using these three methods:
+        1. Rabi population measurements
+        2. Fitting the ssf prepared ground state data to a double gaussian and using the means of the two gaussians to calculate
+            the midpoint and use that as the population threshold.
+        3. Fitting the ssf prepared ground state data AND the prepared excited state data to a double gaussian and using the means of
+            the two gaussians to calculate the midpoint and use that as the population threshold (this represents the ssf g-e threshold).
+
+        This function returns a plot that contains two rows (one for each qubit) showcasing the results for each method in a
+        separate subplot (column).
+        """
 
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
         os.makedirs(out_dir, exist_ok=True)
 
         # Processing RPMs Qubit Temperature Results and putting it into dicts:
-        times_RPM = {q: [] for q in range(num_qubits)}
-        temps_RPM = {q: [] for q in range(num_qubits)}
+        times_RPM = {q: [] for q in range(self.number_of_qubits)}
+        temps_RPM = {q: [] for q in range(self.number_of_qubits)}
         for rec in all_files_Qtemp_results_RPMs:
-            for q in range(num_qubits):
+            for q in range(self.number_of_qubits):
                 d = rec['qubits'].get(q)
                 if d:
                     t = datetime.datetime.fromtimestamp(d['date'])
@@ -1101,3 +1112,107 @@ class combined_Qtemp_studies:
         fig.savefig(out_path, dpi=300)
         plt.close(fig)
         print("Plot saved to →", out_path)
+
+    def Qtemps_vs_time_comb_2subplts(self, all_qubit_temperatures_ssf_g, all_qubit_timestamps_ssf_g, all_qubit_temperatures_ssf_ge,
+                                    all_qubit_timestamps_ssf_ge, out_dir: str, all_files_Qtemp_results_RPMs, restrict_time_xaxis = False,
+                                    plot_extra_event_lines = False, rad_events_plot_lines = False):
+        """
+        Plots qubit temperatures vs time for two qubits, using temperature data obtained using these three methods:
+        1. Rabi population measurements
+        2. Fitting the ssf prepared ground state data to a double gaussian and using the means of the two gaussians to calculate
+            the midpoint and use that as the population threshold.
+        3. Fitting the ssf prepared ground state data AND the prepared excited state data to a double gaussian and using the means of
+            the two gaussians to calculate the midpoint and use that as the population threshold (this represents the ssf g-e threshold).
+
+        This function returns a plot that contains two rows (one for each qubit) showcasing the results for each method in a
+        SINGLE subplot for each qubit (so just 1 column).
+        """
+
+        os.makedirs(out_dir, exist_ok=True)
+
+        # Build rabi population measurement (RPM) data dicts
+        num_qubits = self.number_of_qubits
+        times_RPM = {q: [] for q in range(num_qubits)}
+        temps_RPM = {q: [] for q in range(num_qubits)}
+        for rec in all_files_Qtemp_results_RPMs:
+            for q, lst in times_RPM.items():
+                d = rec["qubits"].get(q)
+                if d:
+                    t = datetime.datetime.fromtimestamp(d["date"])
+                    times_RPM[q].append(t)
+                    temps_RPM[q].append(d["T_mK"])
+
+        # SSF data (methods #2 and #3)
+        times_g = all_qubit_timestamps_ssf_g
+        temps_g = all_qubit_temperatures_ssf_g
+        times_ge = all_qubit_timestamps_ssf_ge
+        temps_ge = all_qubit_temperatures_ssf_ge
+
+        # Optional time window (only goes into effect if restrict_time_xaxis = True)
+        if restrict_time_xaxis:
+            window_start = datetime.datetime(2025, 4, 18, 0, 0)
+            window_end = datetime.datetime(2025, 5, 4, 23, 59)
+
+        # Radiation‐event lines, optional too.
+        rad_events = []
+        if rad_events_plot_lines:
+            rad_events = [
+                (datetime.datetime(2025, 4, 21, 12, 35), "Co-60"),
+                (datetime.datetime(2025, 4, 23, 12, 53), "Cs-137"),
+                (datetime.datetime(2025, 4, 28, 9, 40), "Cs-137 closer"),
+                (datetime.datetime(2025, 5, 4, 18, 20), "Cs-137 removed"),
+            ]
+
+        # Two subplots
+        fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True, constrained_layout=True)
+        date_fmt = DateFormatter('%m-%d-%H')
+
+        methods = [
+            ("RPM Pop. Meas.", times_RPM, temps_RPM, "orange"),
+            ("SSF g-only", times_g, temps_g, "blue"),
+            ("SSF g+e", times_ge, temps_ge, "red")
+        ]
+
+        # Plot per qubit
+        for ax, q in zip(axes, [0, 4]):  # Q1 (0) and Q5 (4)
+            for label, tdict, ydict, color in methods:
+                ts = tdict.get(q, [])
+                ys = ydict.get(q, [])
+                if ts and ys:
+                    ax.scatter(ts, ys,
+                               label=label,
+                               s=30,
+                               alpha=0.8,
+                               edgecolors='k',
+                               color=color)
+
+            ax.set_title(f"Q{q + 1}", loc="left", fontsize=14, fontweight="bold")
+            ax.set_ylabel("Temp (mK)")
+            ax.grid(False)
+
+            # common x‐formatter
+            ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+            ax.xaxis.set_major_formatter(date_fmt)
+            ax.tick_params(axis='x', rotation=45, labelsize=10)
+
+            if restrict_time_xaxis:
+                ax.set_xlim(window_start, window_end)
+
+            # radiation events
+            for t_evt, lbl in rad_events:
+                ax.axvline(t_evt, color='gray', linestyle='--', linewidth=1)
+                ax.text(t_evt, ax.get_ylim()[1] * 0.9,
+                        lbl, rotation=90,
+                        va='top', ha='right', fontsize=9)
+
+            ax.legend(loc="upper left", fontsize=10)
+
+        axes[-1].set_xlabel("Time")
+        fig.suptitle("Qubit Temperatures vs Time", fontsize=16)
+
+        # Save
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_path = os.path.join(out_dir, f"Qtemps_TwoMethodsCompare_{stamp}.png")
+        fig.savefig(out_path, dpi=self.figure_quality)
+        plt.close(fig)
+        print("Saved combined‐methods plot →", out_path)

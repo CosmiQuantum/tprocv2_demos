@@ -209,5 +209,12 @@ if qtemp_method_flags["combined_studies_qtemps"]:
 
     #------------ Qubit temperatures vs Time using all three methods
     combined_studies = combined_Qtemp_studies(figure_quality, tot_num_of_qubits)
-    combined_studies.Qtemps_vs_time_comb_methods(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_ge, all_qubit_times_ge, outerFolder_qtemps_plots,
-                                                 all_files_Qtemp_results_RPMs, num_qubits=6, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
+
+    # Plots two rows (one for each qubit) and 3 columns (one for each method)
+    # combined_studies.Qtemps_vs_time_comb_methods(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_ge, all_qubit_times_ge, outerFolder_qtemps_plots,
+    #                                              all_files_Qtemp_results_RPMs, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
+
+    # Plots two rows (one for each qubit) and 1 column (all methods in a single plot)
+    combined_studies.Qtemps_vs_time_comb_2subplts(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_ge, all_qubit_times_ge, outerFolder_qtemps_plots,
+                                                 all_files_Qtemp_results_RPMs, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
+
