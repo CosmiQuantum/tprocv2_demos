@@ -451,8 +451,8 @@ for QubitIndex in Qs_to_look_at:
                 all_rabi_I = np.vstack(all_rabi_I)
                 all_rabi_Q = np.vstack(all_rabi_Q)
 
-                chev_data[QubitIndex]['I'][0] = all_rabi_I #[0] is the round number, always zero since we don't use that parameter in this script
-                chev_data[QubitIndex]['Q'][0] = all_rabi_Q
+                chev_data[QubitIndex]['I'][0] = all_rabi_I #shape (n_rounds, n_freqs, n_gains). [0] is the round number, always zero since we don't use that parameter in this script.
+                chev_data[QubitIndex]['Q'][0] = all_rabi_Q #shape (n_rounds, n_freqs, n_gains)
                 chev_data[QubitIndex]['Gains'][0] = rabi_gains
                 chev_data[QubitIndex]['Freqs_MHz'][0] = freqs_mhz
                 chev_data[QubitIndex]['q_center_freq_MHz'][0] = qubit_freq

@@ -479,7 +479,7 @@ class SSFTempCalcAndPlots:
         """
         Params
         ------
-        qspec_files: dict[int, list[str]] OR list[str]
+        qspec_files: dict[int, list[str]] (for multiple qubits. Note: int=qubit index) OR list[str] (for a single qubit).
             If dict, keys are qubit indices and values are lists of full‐path .h5 files.
         ssf_files:  same shape as qspec_files
         tolerance_seconds: maximum allowed pairing offset in seconds
