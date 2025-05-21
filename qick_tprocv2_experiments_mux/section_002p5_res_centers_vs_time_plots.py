@@ -6,7 +6,6 @@ from expt_config import *
 import datetime
 import logging
 
-
 class KappaProgram(AveragerProgramV2):
     def _initialize(self, cfg):
         ro_chs = cfg['ro_ch']

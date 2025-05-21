@@ -57,12 +57,12 @@ multiply_qubit_reps_by = 2
 # increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
 increase_steps_to_ef = 600
 study = 'TLS_Comprehensive_Study'
-sub_study = 'source_off_substudy7'
-substudy_txt_notes = 'Source removed, Qubit 5 qubit freq found as minimum of qspec ge. Post science run data-taking in between other R&D'
+sub_study = 'source_on_starkspec_python_loop_substudy1'
+substudy_txt_notes = 'Cs137 source 1.5 ft away from fridge. Added python loop for stark spec. Qubit 5 qubit freq found as minimum of qspec ge.'
 Qs_to_look_at = [0,4]  # list of qubits to process
 
 # Set which experiments to run
-run_flags = {"q_spec": True, "hi_gain_q_spec": True, "med_gain_q_spec": False, "ss": True, "t1": True, "starkSpec": True, "resStarkSpec": False}
+run_flags = {"q_spec": True, "hi_gain_q_spec": True, "med_gain_q_spec": False, "ss": True, "t1": True, "starkSpec": True, "starkSpecPyLoop": True, "resStarkSpec": False}
 
 # Optimization parameters for resonator spectroscopy
 # 04/13 parameters
@@ -884,6 +884,7 @@ def run_dataset(Qs_to_look_at, experiment, j, batch_num):
     high_gain_qspec_data = create_data_dict(qspec_keys, save_r, Qs_to_look_at)
     med_gain_qspec_data = create_data_dict(qspec_keys, save_r, Qs_to_look_at)
     starkspec_data = create_data_dict(starkspec_keys, save_r, Qs_to_look_at)
+    starkspecpyloop_data = create_data_dict(starkspec_keys, save_r, Qs_to_look_at)
     res_starkspec_data = create_data_dict(starkspec_keys, save_r, Qs_to_look_at)
 
     for QubitIndex in Qs_to_look_at:
@@ -1007,7 +1008,6 @@ def run_dataset(Qs_to_look_at, experiment, j, batch_num):
 
             experiment.qubit_cfg['qubit_gain_ge'] = qubit_gain_temp  # restore parameters for regular qspec
 
-
         # high gain qspec
         if run_flags["hi_gain_q_spec"]:
             qubit_gain_temp = experiment.qubit_cfg['qubit_gain_ge']  # save current config parameters
@@ -1066,6 +1066,11 @@ def run_dataset(Qs_to_look_at, experiment, j, batch_num):
                 stark_shift_spec = StarkShiftSpec(QubitIndex, tot_num_of_qubits, studyFolder, save_figs=False,
                                                       experiment=experiment)
                 starkspec_I, starkspec_Q, starkspec_P, starkspec_shots, starkspec_gain_sweep, sys_config_starkspec = stark_shift_spec.run_with_qick_sweep()
+
+                if run_flags["starkSpecPyLoop"]:
+                    timestamp_starkspecpyloop = time.mktime(datetime.datetime.now().timetuple())
+                    starkspecpyloop_I, starkspecpyloop_Q, starkspecpyloop_P, starkspecpyloop_shots, starkspecpyloop_gain_sweep, sys_config_starkspecpyloop = stark_shift_spec.run_with_python_loop()
+
                 del stark_shift_spec
 
              except Exception as e:
@@ -1074,6 +1079,9 @@ def run_dataset(Qs_to_look_at, experiment, j, batch_num):
                 else:
                     rr_logger.exception(f'Got the following error, continuing: {e}')
                     if verbose: print(f'Got the following error, continuing: {e}')
+
+
+
         t6 = time.perf_counter()
         print(f"Data taking: Stark Spec took {t6 - t5:.4f} seconds")
     ################################################ saving ################################################
@@ -1158,6 +1166,19 @@ def run_dataset(Qs_to_look_at, experiment, j, batch_num):
                 starkspec_data[QubitIndex]['Exp Config'][idx] = expt_cfg
                 starkspec_data[QubitIndex]['Syst Config'][idx] = sys_config_starkspec
 
+            if run_flags["starkSpecPyLoop"]:
+                starkspecpyloop_data[QubitIndex]['Dates'][idx] = timestamp_starkspecpyloop
+                starkspecpyloop_data[QubitIndex]['I'][idx] = starkspecpyloop_I
+                starkspecpyloop_data[QubitIndex]['Q'][idx] = starkspecpyloop_Q
+                starkspecpyloop_data[QubitIndex]['P'][idx] = starkspecpyloop_P
+                starkspecpyloop_data[QubitIndex]['shots'][idx] = starkspecpyloop_shots
+                starkspecpyloop_data[QubitIndex]['Gain Sweep'][idx] = starkspecpyloop_gain_sweep
+                starkspecpyloop_data[QubitIndex]['Round Num'][idx] = j
+                starkspecpyloop_data[QubitIndex]['Batch Num'][idx] = batch_num
+                starkspecpyloop_data[QubitIndex]['Exp Config'][idx] = expt_cfg
+                starkspecpyloop_data[QubitIndex]['Syst Config'][idx] = sys_config_starkspecpyloop
+
+
             if run_flags["resStarkSpec"]:
                 res_starkspec_data[QubitIndex]['Dates'][idx] = timestamp_res_starkspec
                 res_starkspec_data[QubitIndex]['I'][idx] = res_starkspec_I
@@ -1216,6 +1237,13 @@ def run_dataset(Qs_to_look_at, experiment, j, batch_num):
                 saver_starkspec.save_to_h5('starkspec_ge')
                 del saver_starkspec
                 del starkspec_data
+                gc.collect()
+
+            if run_flags["starkSpecPyLoop"]:
+                saver_starkspecpyloop = Data_H5(studyFolder, starkspecpyloop_data, batch_num, save_r)
+                saver_starkspecpyloop.save_to_h5('starkspec_pyloop_ge')
+                del saver_starkspecpyloop
+                del starkspecpyloop_data
                 gc.collect()
 
             if run_flags["resStarkSpec"]:

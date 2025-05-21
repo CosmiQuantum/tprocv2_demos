@@ -85,7 +85,7 @@ def plot_res_sweeps(outerFolder, fpts, fcenter, frequency_sweeps, power_sweep, n
     return
 
 def grab(lst, value, power_index, qubit_index):
-    lst[power_index][qubit_index] = value[0]
+    lst[power_index][qubit_index]=value[0]
 
 ################################################ run ####################################
 data_file_path = '/data/QICK_data/run6/6transmon/thomas_punch_out_kappa_data_for_simulation/kappa_punch_out/2025-05-21_14-47-02/study_data/Data_h5/Res/'
@@ -126,7 +126,7 @@ for h5_file in h5_files:
 
     ## get the res data for the qubits, loop through each qubit
     for q_name, q_group in data.get("Res_ge", {}).items():
-        qubit_index = int(q_name.split('Q')[-1])
+        qubit_index = int(q_name.split('Q')[-1]) -1
 
         grab(Dates, q_group.get("Dates"), power_index, qubit_index)
         grab(freq_pts, q_group.get("freq_pts"), power_index, qubit_index)

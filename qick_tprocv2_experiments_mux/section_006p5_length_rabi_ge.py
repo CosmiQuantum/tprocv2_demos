@@ -16,7 +16,8 @@ class LengthRabiExperiment:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_figs, experiment = None,
                  live_plot = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
                  multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, QZE=False,
-                 projective_readout_pulse_len_us=9,  time_between_projective_readout_pulses=None, zeno_pulse_gain=None):
+                 projective_readout_pulse_len_us=9,  time_between_projective_readout_pulses=None, zeno_pulse_gain=None,
+                 bare_pi_len_qze_experiment=False):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
@@ -50,7 +51,10 @@ class LengthRabiExperiment:
                 self.experiment.readout_cfg['res_phase_qze'].append(experiment.readout_cfg['res_phase_qze'][self.QubitIndex])
 
         else:
-            self.expt_name = "length_rabi_ge"
+            if bare_pi_len_qze_experiment:
+                self.expt_name="length_rabi_ge_pi_len"
+            else:
+                self.expt_name = "length_rabi_ge"
             self.Qubit = 'Q' + str(self.QubitIndex)
             self.exp_cfg = expt_cfg[self.expt_name]
             self.round_num = round_num
@@ -72,6 +76,9 @@ class LengthRabiExperiment:
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} Rabi configuration: ', self.config)
 
     def run(self, thresholding=False, constant_zeno_pulse=False):
+        gain_to_print=self.config['qubit_gain_ge']
+        len_to_print = self.config['qubit_length_ge']
+        print(f'unstarked rabi pi len using qubit pulse gain of {gain_to_print} and pulse length of {len_to_print}')
         amp_rabi = LengthRabiProgram(
             self.experiment.soccfg,
             reps=self.config['reps'],
@@ -168,7 +175,7 @@ class LengthRabiExperiment:
         return I, Q, Magnitude, lengths, q1_fit_cosine, pi_len, self.config
 
     def run_QZE_one_starked_qfreq(self,constant_zeno_pulse=False,adapt_qubit_freq=False, wait_for_res_ring_up=False,
-                                  exp=None,optimizationFolder=None, hold_ground=False,three_pulse_binary=False):
+                                  exp=None,optimizationFolder=None,subStudyFolder=None, hold_ground=False,three_pulse_binary=False):
         exp_spec = deepcopy(exp)
         exp_spec.qubit_cfg[
             'qubit_length_ge'] = 0.2   #1us because why not, it shouldnt matter that much what is chosen here
@@ -176,7 +183,7 @@ class LengthRabiExperiment:
             self.QubitIndex] = 0.13  # turn it down for this qspec finding to lower err bars and minimize broadening
 
         q_spec = QubitSpectroscopy(self.QubitIndex, tot_num_of_qubits,
-                                   "/data/QICK_data/run6/6transmon/QZE/QZE_measurement/Documentation/", 0,
+                                   subStudyFolder, 0,
                                    'None', save_figs=True, experiment=exp_spec,
                                    live_plot=False, verbose=False,
                                    qick_verbose=True, zeno_stark=True,

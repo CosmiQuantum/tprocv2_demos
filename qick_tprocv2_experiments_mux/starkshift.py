@@ -307,27 +307,33 @@ class StarkShiftSpec:
         return gain_sweep
 
     def run_with_python_loop(self):
+        #start with negative detuning
+        self.config['detuning'] = -1* np.abs(self.config['detuning'])
+
         I = []
         Q = []
         shots = []
         P = []
 
-        gain_sweep = self.get_gain_sweep()
+        #gain_sweep = self.get_gain_sweep()
+        back_sweep = np.linspace(1,0,num= self.config["gain_steps"])
+        fwd_sweep = np.linspace(0, 1,num=self.config["gain_steps"])
+        gain_sweep = np.concatenate((back_sweep, fwd_sweep))
 
         count = 0
         for g in gain_sweep:
-            if count == 150:
+            if count == self.config["gain_steps"]:
                 self.config['detuning'] = self.config['detuning']*-1 #switch to positive detuning
 
             self.config['stark_gain'] = np.round(g,3)
-            print(g)
-            prog = StarkShiftSpectroscopyProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
+            prog = StarkShiftSpectroscopyProgramPythonLoop(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
                                                  cfg=self.config)
 
             iq_list = prog.acquire(self.experiment.soc, soft_avgs=self.config["rounds"],
                                 threshold=self.experiment.readout_cfg["threshold"],
                                 angle=self.experiment.readout_cfg["ro_phase"],
                                 progress=True)
+
             raw_0 = prog.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
             shots_0 = prog.get_shots()  # state assignment from built in thresholding
             I.append(raw_0[self.QubitIndex][:,0,0])
@@ -335,6 +341,8 @@ class StarkShiftSpec:
             shots.append(shots_0[self.QubitIndex][:,0])
             P.append(iq_list[self.QubitIndex][:,0])
             count +=1
+
+        return I, Q, P,  shots, gain_sweep, self.config
 
     def run_with_qick_sweep(self):
         self.config['detuning'] = self.config['detuning'][self.QubitIndex]
@@ -387,6 +395,53 @@ class StarkShiftSpec:
         gain_sweep = np.concatenate((gain_sweep_neg, gain_sweep_pos))
 
         return I, Q, P,  shots, gain_sweep, self.config
+
+    def find_TLS(self, gain_sweep, P, show_plot=False, save_figs=False, TLS_threshold = 0.85):
+        baseline = np.median(P)
+        minP = np.min(P)
+        midpt_idx = int(len(P)/2)
+        if minP/baseline < TLS_threshold:
+            tls_idx = np.argmin(P)
+            tls_gain = gain_sweep[tls_idx]
+            if tls_idx < midpt_idx:
+                #negative detuning
+                tls_detuning = -1 * np.abs(self.config['detuning'])
+            else:
+                #positive detuning
+                tls_detuning = np.abs(self.config['detuning'])
+        else:
+            tls_gain = None
+            tls_detuning = None
+
+        if save_figs:
+            fig, ax = plt.subplots()
+            ax.plot(-1*gain_sweep[0:midpt_idx], P[0:midpt_idx], color='b',linewidth=2,label='neg detuning')
+            ax.plot(gain_sweep[midpt_idx:], P[midpt_idx:], color='g',linewidth=2,label='pos detuning')
+            ax.plot([-1, 1], [TLS_threshold * baseline, TLS_threshold * baseline],color='k',linestyle=':')
+            ax.set_xlabel("stark tone gain [a.u.]")
+            ax.set_ylabel("P(e) via built-in thresholding")
+            if tls_gain is not None:
+                ax.set_title(f'TLS found at gain={np.round(tls_gain,4)}, detuning={tls_detuning}')
+                if tls_detuning < 0:
+                    ax.scatter(-1*tls_gain, minP, s=20, color='r',label='TLS')
+                else:
+                    ax.scatter(tls_gain, minP, s=20, color='r', label='TLS')
+
+            else: ax.set_title('TLS not found')
+            ax.legend()
+
+            if show_plot:
+                plt.show()
+
+
+            now = datetime.datetime.now()
+            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            file_name = os.path.join(self.outerFolder,
+                                         f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex}.png")
+            fig.savefig(file_name, dpi=100, bbox_inches='tight')
+            plt.close(fig)
+
+        return tls_gain, tls_detuning
 
     def gain_to_freq(self, gain_sweep):
         anharmonicity = self.config['anharmonicity']
@@ -472,7 +527,58 @@ class StarkShiftSpectroscopyProgram(AveragerProgramV2):
                                )
 
 
-        self.add_loop("gain_loop", cfg["gain_steps"])
+        self.add_loop("gain_loop", cfg["gain_steps"]) #COMMENT THIS BACK IN
+        self.declare_gen(ch=stark_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+        self.add_gauss(ch=stark_ch, name="stark_ramp", sigma=cfg['stark_sigma'], length = cfg['stark_sigma'] *2)
+        self.add_pulse(ch=stark_ch, name="stark_tone",
+                       style="flat_top",
+                       envelope="stark_ramp",
+                       freq=cfg['qubit_freq_ge'] + cfg['detuning'],
+                       phase=cfg['qubit_phase'],
+                       gain = cfg['stark_gain'],
+                       length=cfg['stark_length'],
+                       )
+
+    def _body(self, cfg):
+        self.pulse(ch=cfg['qubit_ch'], name="qubit_pulse", t=0)  # play qubit pi pulse
+        self.delay_auto(t=0.01, tag='wait pi')  # wait for qubit pi pulse to finish
+        self.pulse(ch=self.cfg['qubit_ampl_ch'], name="stark_tone", t=0)  # play stark tone
+        self.delay_auto(t=0.01, tag='wait stark')  # wait for stark tone to finish
+        self.delay(t=cfg['readout_pulse_delay']) #wait for resonator to return to vacuum
+        self.pulse(ch=cfg['res_ch'], name="readout_pulse", t=0)  # play readout pulse
+        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])  # get readout
+
+class StarkShiftSpectroscopyProgramPythonLoop(AveragerProgramV2):
+    def _initialize(self, cfg):
+        ro_ch = cfg['ro_ch']
+        res_ch = cfg['res_ch']
+        qubit_ch = cfg['qubit_ch']
+        stark_ch = cfg['qubit_ampl_ch']
+
+        self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
+                         mux_freqs=cfg['res_freq_ge'],
+                         mux_gains=cfg['res_gain_ge'],
+                         mux_phases=cfg['res_phase'],
+                         mixer_freq=cfg['mixer_freq'])
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
+            self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
+
+        self.add_pulse(ch=res_ch, name="readout_pulse",
+                               style="const",
+                               length=cfg['res_length'],
+                               mask=cfg["list_of_all_qubits"],
+                               )
+
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+        self.add_pulse(ch=qubit_ch, name="qubit_pulse",
+                               style="arb",
+                               envelope="ramp",
+                               freq=cfg['qubit_freq_ge'],
+                               phase=cfg['qubit_phase'],
+                               gain=cfg['pi_amp'],
+                               )
+
         self.declare_gen(ch=stark_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
         self.add_gauss(ch=stark_ch, name="stark_ramp", sigma=cfg['stark_sigma'], length = cfg['stark_sigma'] *2)
         self.add_pulse(ch=stark_ch, name="stark_tone",

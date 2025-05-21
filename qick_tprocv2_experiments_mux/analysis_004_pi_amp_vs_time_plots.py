@@ -179,7 +179,7 @@ class PiAmpsVsTime:
 
     def runQZE(self, outerFolder, outerFolder_save_plots, fit=False, expt_name = "len_rabi_ge",
                old_format=False, filter_amp_above=None,mark_w01s=False, plot_detuned_amps=False,plot_detuning=False,
-               pi_line_label_left=None,pi_line_label_right=None):
+               pi_line_label_left=None, pi_line_label_right=None, qubit_index=0, z_limit=None,z_limit_lower=None, gain_max=1):
         # ------------------------------------------------Load/Plot/Save Rabi---------------------------------------
         outerFolder_expt = os.path.join(outerFolder, "Data_h5", "Rabi_QZE")
 
@@ -194,14 +194,15 @@ class PiAmpsVsTime:
         fwhm_w01 = []
         fwhm_w01_starked = []
         for h5_file in h5_files:
+            print(h5_file)
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
             H5_class_instance = Data_H5(h5_file)
-            load_data = H5_class_instance.load_from_h5(data_type='Rabi', save_r=int(save_round))
+            load_data = H5_class_instance.load_from_h5(data_type='Rabi_QZE', save_r=int(save_round))
 
             populated_keys = []
-            for q_key in load_data['Rabi']:
+            for q_key in load_data['Rabi_QZE']:
                 # Access 'Dates' for the current q_key
-                dates_list = load_data['Rabi'][q_key].get('Dates', [[]])
+                dates_list = load_data['Rabi_QZE'][q_key].get('Dates', [[]])
                 # Check if any entry in 'Dates' is not NaN
                 if any(not np.isnan(date) for date in dates_list[0]):
                     populated_keys.append(q_key)
@@ -211,33 +212,39 @@ class PiAmpsVsTime:
                 # Create lists to hold all datasets for this q_key
 
             # Loop over each dataset for the current q_key
-            num_datasets = len(load_data['Rabi'][0].get('Dates', [])[0])
+            num_datasets = len(load_data['Rabi_QZE'][qubit_index].get('Dates', [])[0])
             for dataset in range(num_datasets):
-                date = datetime.datetime.fromtimestamp(
-                    load_data['Rabi'][0].get('Dates', [])[0][dataset])
                 I_data = self.process_h5_data(
-                    load_data['Rabi'][0].get('I', [])[0][dataset].decode())
+                    load_data['Rabi_QZE'][qubit_index].get('I', [])[0][dataset].decode())
                 Q_data = self.process_h5_data(
-                    load_data['Rabi'][0].get('Q', [])[0][dataset].decode())
+                    load_data['Rabi_QZE'][qubit_index].get('Q', [])[0][dataset].decode())
                 # mag = self.process_h5_data(
                 #     load_data['Rabi'][0].get('Mag', [])[0][dataset].decode())
                 gains_data = self.process_h5_data(
-                    load_data['Rabi'][0].get('Gains', [])[0][dataset].decode())
-                round_num = load_data['Rabi'][0].get('Round Num', [])[0][dataset]
-                batch_num = load_data['Rabi'][0].get('Batch Num', [])[0][dataset]
-                syst_config = load_data['Rabi'][0].get('Syst Config', [])[0][dataset].decode()
-                exp_config = load_data['Rabi'][0].get('Exp Config', [])[0][dataset].decode()
+                    load_data['Rabi_QZE'][qubit_index].get('Gains', [])[0][dataset].decode())
+                round_num = load_data['Rabi_QZE'][qubit_index].get('Round Num', [])[0][dataset]
+                batch_num = load_data['Rabi_QZE'][qubit_index].get('Batch Num', [])[0][dataset]
+                syst_config = load_data['Rabi_QZE'][qubit_index].get('Syst Config', [])[0][dataset].decode()
+                exp_config = load_data['Rabi_QZE'][qubit_index].get('Exp Config', [])[0][dataset].decode()
                 safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
                 exp_config = eval(exp_config, safe_globals)
-                all_I.append(I_data)
-                all_Q.append(Q_data)
-                #all_mag.append(mag)
-                all_gains.append(gains_data)
-                proj_pulse_gains.append(round(float(syst_config.split('res_gain_qze\': [')[-1].split(']')[0].split('0,')[-1]),4))
-                starked_frequency.append(round(float(syst_config.split('qubit_freq_ge_starked\': [')[-1].split(']')[0].split(',')[0]),4))
-                fwhm_w01_starked.append(round(float(syst_config.split('fwhm_w01_starked\':')[-1].split(',')[0]), 4))
-                fwhm_w01.append(round(float(syst_config.split('fwhm_w01\':')[-1].split(',')[0]), 4))
-                baseline_frequency.append(round(float(syst_config.split('qubit_freq_ge\': ')[-1].split(',')[0]), 4))
+                pulse_gain = round(float(syst_config.split('res_gain_qze\': [')[-1].split(']')[0].split('0,')[-1]),4)
+
+                if pulse_gain <= gain_max:
+                    all_I.append(I_data)
+                    all_Q.append(Q_data)
+                    # all_mag.append(mag)
+                    all_gains.append(gains_data)
+                    proj_pulse_gains.append(pulse_gain)
+                    starked_frequency.append(
+                    round(float(syst_config.split('qubit_freq_ge_starked\': ')[-1].split(',')[0].split(',')[0]), 4))
+                    try:
+                        fwhm_w01_starked.append(round(float(syst_config.split('fwhm_w01_starked\':')[-1].split(',')[0]), 4))
+                    except:
+                        fwhm_w01_starked = None
+                    fwhm_w01.append(round(float(syst_config.split('fwhm_w01\':')[-1].split(',')[0]), 4))
+                    baseline_frequency.append(round(float(syst_config.split('qubit_freq_ge\': ')[-1].split(',')[0]), 4))
+                    pi_len = round(float(syst_config.split('qubit_pi_len\': ')[-1].split(',')[0].split(',')[0]), 4)
 
             del H5_class_instance
 
@@ -255,31 +262,120 @@ class PiAmpsVsTime:
                 if old_format:
                     rabi_class_instance.plot_QZE_old_format(all_I, all_Q, all_gains, proj_pulse_gains, self.figure_quality)
                 else:
+                    rabi_class_instance.plot_QZE_2d(all_I, all_Q, all_gains, proj_pulse_gains, self.figure_quality,
+                                                 filter_amp_above=filter_amp_above, mark_w01s=mark_w01s,
+                                                 pi_line_label_left=pi_line_label_left,
+                                                 pi_line_label_right=pi_line_label_right, pi_len=pi_len, z_limit=z_limit,z_lower_limit=z_limit_lower)
+
                     rabi_class_instance.plot_QZE(all_I, all_Q, all_gains, proj_pulse_gains, self.figure_quality,
-                                                 filter_amp_above=filter_amp_above, mark_w01s=mark_w01s,pi_line_label_left=pi_line_label_left,pi_line_label_right=pi_line_label_right)
+                                                 filter_amp_above=filter_amp_above, mark_w01s=mark_w01s,
+                                                 pi_line_label_left=pi_line_label_left,pi_line_label_right=pi_line_label_right, pi_len=pi_len)
                     rabi_class_instance.plot_QZE_basic(all_I, all_Q, all_gains, proj_pulse_gains, self.figure_quality,
                                                  filter_amp_above=filter_amp_above, mark_w01s=mark_w01s,
                                                  pi_line_label_left=pi_line_label_left,
                                                  pi_line_label_right=pi_line_label_right)
 
                     if plot_detuned_amps:
-                        try:
-                            rabi_class_instance.plot_QZE_detuned_amp(all_I, all_Q, all_gains, proj_pulse_gains, self.figure_quality,
-                                                        filter_amp_above=filter_amp_above, mark_w01s=mark_w01s,
-                                                                     frequency_difference=frequency_difference, fwhm_w01=fwhm_w01,
-                                                                     fwhm_w01_starked=fwhm_w01_starked, pi_line_label_left=pi_line_label_left,pi_line_label_right=pi_line_label_right)
-                        except:
-                            return
+
+                        rabi_class_instance.plot_QZE_detuned_amp(all_I, all_Q, all_gains, proj_pulse_gains, self.figure_quality,
+                                                    filter_amp_above=filter_amp_above, mark_w01s=mark_w01s,
+                                                                 frequency_difference=frequency_difference, fwhm_w01=fwhm_w01,
+                                                                 fwhm_w01_starked=fwhm_w01_starked,
+                                                                 pi_line_label_left=pi_line_label_left,
+                                                                 pi_line_label_right=pi_line_label_right, pi_len=pi_len, log_y=True, window=20)
+                        # except:
+                        #     return
                     if plot_detuning:
-                        try:
-                            rabi_class_instance.plot_QZE_detuning(all_I, all_Q, all_gains, proj_pulse_gains,
-                                                                     self.figure_quality,
-                                                                     filter_amp_above=filter_amp_above, mark_w01s=mark_w01s,
-                                                                     frequency_difference=frequency_difference,
-                                                                     fwhm_w01=fwhm_w01,
-                                                                     fwhm_w01_starked=fwhm_w01_starked)
-                        except:
-                            return
+                        #try:
+                        rabi_class_instance.plot_QZE_detuning(all_I, all_Q, all_gains, proj_pulse_gains,
+                                                                 self.figure_quality,
+                                                                 filter_amp_above=filter_amp_above, mark_w01s=mark_w01s,
+                                                                 frequency_difference=frequency_difference,
+                                                                 fwhm_w01=fwhm_w01,
+                                                                 fwhm_w01_starked=fwhm_w01_starked, pi_len=pi_len, window=20)
+                        # except:
+                        #     return
+            del rabi_class_instance
+
+    def plot_chevron_qze(self, outerFolder, outerFolder_save_plots, fit=False, expt_name = "len_rabi_ge",
+               old_format=False, filter_amp_above=None,mark_w01s=False, plot_detuned_amps=False,plot_detuning=False,
+               pi_line_label_left=None,pi_line_label_right=None, qubit_index=0,z_limit=None):
+        # ------------------------------------------------Load/Plot/Save Rabi---------------------------------------
+        outerFolder_expt = os.path.join(outerFolder, "Data_h5", "Rabi_QZE")
+
+        h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+        print(outerFolder_expt)
+        all_I = []
+        all_Q = []
+        all_mag = []
+        all_gains = []
+        offset_freq = []
+        starked_frequency = []
+        baseline_frequency = []
+        fwhm_w01 = []
+        fwhm_w01_starked = []
+        for h5_file in h5_files:
+            print(h5_file)
+            save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
+            H5_class_instance = Data_H5(h5_file)
+            load_data = H5_class_instance.load_from_h5(data_type='Rabi_QZE', save_r=int(save_round))
+
+            populated_keys = []
+            for q_key in load_data['Rabi_QZE']:
+                # Access 'Dates' for the current q_key
+                dates_list = load_data['Rabi_QZE'][q_key].get('Dates', [[]])
+                # Check if any entry in 'Dates' is not NaN
+                if any(not np.isnan(date) for date in dates_list[0]):
+                    populated_keys.append(q_key)
+
+            # Loop over each populated q_key
+            #for q_key in range(0): #only looking at first qubit for now
+                # Create lists to hold all datasets for this q_key
+
+            # Loop over each dataset for the current q_key
+            num_datasets = len(load_data['Rabi_QZE'][qubit_index].get('Dates', [])[0])
+            for dataset in range(num_datasets):
+                I_data = self.process_h5_data(
+                    load_data['Rabi_QZE'][qubit_index].get('I', [])[0][dataset].decode())
+                Q_data = self.process_h5_data(
+                    load_data['Rabi_QZE'][qubit_index].get('Q', [])[0][dataset].decode())
+                # mag = self.process_h5_data(
+                #     load_data['Rabi'][0].get('Mag', [])[0][dataset].decode())
+                gains_data = self.process_h5_data(
+                    load_data['Rabi_QZE'][qubit_index].get('Gains', [])[0][dataset].decode())
+                round_num = load_data['Rabi_QZE'][qubit_index].get('Round Num', [])[0][dataset]
+                batch_num = load_data['Rabi_QZE'][qubit_index].get('Batch Num', [])[0][dataset]
+                syst_config = load_data['Rabi_QZE'][qubit_index].get('Syst Config', [])[0][dataset].decode()
+                exp_config = load_data['Rabi_QZE'][qubit_index].get('Exp Config', [])[0][dataset].decode()
+                safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                exp_config = eval(exp_config, safe_globals)
+                all_I.append(I_data)
+                all_Q.append(Q_data)
+                #all_mag.append(mag)
+                all_gains.append(gains_data)
+                offset_freq.append(round(float(syst_config.split('qubit_freq_chevron_detuned_ge\': ')[-1].split(',')[0].split('0,')[-1]),4))
+                starked_frequency.append(round(float(syst_config.split('qubit_freq_ge_starked\': ')[-1].split(',')[0].split(',')[0]),4))
+                #fwhm_w01_starked.append(round(float(syst_config.split('fwhm_w01_starked\':')[-1].split(',')[0]), 4))
+                fwhm_w01.append(round(float(syst_config.split('fwhm_w01\':')[-1].split(',')[0]), 4))
+                baseline_frequency.append(round(float(syst_config.split('qubit_freq_ge\': ')[-1].split(',')[0]), 4))
+                pi_len = round(float(syst_config.split('qubit_pi_len\': ')[-1].split(',')[0].split(',')[0]),4)
+
+            del H5_class_instance
+
+        frequency_difference=[w01-w01st for w01, w01st in zip(baseline_frequency,starked_frequency)]
+        # If we have any valid data, plot all the measurements together
+        if all_I:
+            rabi_class_instance = AmplitudeRabiExperiment(
+                0, self.number_of_qubits,
+                outerFolder_save_plots, 0,
+                self.signal, self.save_figs, expt_name =expt_name )
+
+            rabi_class_instance.plot_chevron_2d(all_I, all_Q, all_gains, offset_freq, self.figure_quality,
+                                         filter_amp_above=filter_amp_above, mark_w01s=mark_w01s,
+                                         pi_line_label_left=pi_line_label_left,
+                                         pi_line_label_right=pi_line_label_right, pi_len=pi_len, reg_qfreq=baseline_frequency[0], z_limit=z_limit)
+
+
             del rabi_class_instance
 
     def process_and_fit_QZE(self, I, Q, gains, proj_pulse_gains, fig_quality=100):
