@@ -84,10 +84,12 @@ class QICK_experiment:
                 # "res_gain_ge": [1,1,0.7,0.7,0.7,1], #[0.4287450656184295, 0.4903077560386716, 0.4903077560386716, 0.3941941738241592, 0.3941941738241592, 0.4903077560386716],  # DAC units
                 # "res_freq_ef": [7149.44, 0, 0, 0, 0, 0], # [MHz]
                 # "res_gain_ef": [0.6, 0, 0, 0, 0, 0], # [DAC units]
-                "res_freq_ef": [6216.798, 6275.8973, 6335, 6407.132, 6476.0891, 6538],  # [MHz]
+                "res_freq_ef": [6216.8116, 6275.8973, 6335, 6407.132, 6476.0891, 6538],  # [MHz]
                 "res_gain_ef": [0.96, 1, 0.7200, 0.5333, 0.8000, 0.55],  # [DAC units]
+                "res_freq_fh": [6216.798, 6275.8973, 6335, 6407.132, 6476.0891, 6538],  # [MHz]
+                "res_gain_fh": [0.96, 1, 0.7200, 0.5333, 0.8000, 0.55],  # [DAC units]
                 "res_length": 9.0,  # [us] (1.0 for res spec)
-                "res_phase": [1.133* 180/np.pi + 35, -10, 85,
+                "res_phase": [ 1.281174 * 180/np.pi, -10, 85,
                               0, 150,
                             -90], #Joyce 3/11
                 #"res_phase": [(0.19-0.38) * 180/np.pi, (2.07-3.12-1.16) * 180/np.pi, (-0.35+2.28) * 180/np.pi,
@@ -95,13 +97,15 @@ class QICK_experiment:
                 # [-0.1006 *360/np.pi, -2.412527*360/np.pi, -1.821284*360/np.pi, -1.90962*360/np.pi, -0.566479*360/np.pi, -0.5941687*360/np.pi], # Rotation Angle From QICK Function, is the ang of 10 ss angles per qubit
                 # "res_phase": [0]*6,#[-0.1006 *360/np.pi, -2.412527*360/np.pi, -1.821284*360/np.pi, -1.90962*360/np.pi, -0.566479*360/np.pi, -0.5941687*360/np.pi], # Rotation Angle From QICK Function, is the ang of 10 ss angles per qubit
                 "ro_phase": [0, 0, 0, 0, 0, 0],  # Rotation Angle From QICK Function
-                "threshold": [-2.3577, 1, -5, -3, -1, 4], #Joyce 3/11
+                "threshold": [-5.84, 1, -5, -3, -1, 4], #Joyce 3/11
                 #"threshold": [7.3961, -12.5812, 4.8613, -7.5323, 7.0689, 4.6805], # Threshold for Distinguish g/e, from QICK Function
+                "res_ring_up_time": 4,  # Olivia May 17th
             }
 
             # Qubit Configuration
             self.qubit_cfg = {
-                "qubit_freq_ge": [4189.7582, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86],  # Joyce 3/11
+                "qubit_freq_ge": [4189.8773, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86],  # Joyce 3/11
+                "qubit_freq_chevron_detuned_ge": [4189.7582, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86], # Olivia May 17
                 "qubit_freq_ge_starked": [4189.737678, 3820.4723, 4161.3726, 4463.15226, 4471.4469, 4997.86], # Olivia 4/04 for zeno/stark tone
                 "fwhm_w01_starked": None, #for err bars
                 "fwhm_w01": None, #for err bars
@@ -111,6 +115,7 @@ class QICK_experiment:
                 #"qubit_freq_ge": [4184.15, 3821.156, 4156.88, 4459.12, 4471.18, 4998.04],  # Freqs of Qubit g/e Transition, old
                 "qubit_gain_ge": [0.1] * 6,#[0.04, 0.12, 0.06, 0.04, 0.13, 0.18],#[0.05] * 6, #[1] * 6,
                 "qubit_ampl_gain_ge": [0.025] *6,
+                "qubit_pi_len": 0.11, # Olivia May 17th
                 # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
                 "qubit_length_ge": 15,  # 15 [us] for spec Pulse
                 "qubit_freq_ef": [4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17], #Q4 not fixed, looks like it shifted quite a lot

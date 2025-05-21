@@ -95,13 +95,16 @@ class QubitSpectroscopy:
         else:
             return I, Q, freqs, None, None, None, self.config
 
-    def run_with_stark_tone(self, length, wait_for_res_ring_up=False):
-        #soc = self.experiment.soccfg
-        #cfg = self.config
-        self.config['qubit_length_ge'] = length
+    def run_with_stark_tone(self, wait_for_res_ring_up=False):
+
         if self.increase_reps:
             self.config['reps'] = self.increase_reps_to
         if wait_for_res_ring_up:
+            # gain_to_print = self.config['qubit_gain_ge']
+            # len_to_print = self.config['qubit_length_ge']
+            # zeno_ras_gain=self.config['res_gain_qze']
+            # print(f'qspec for starked freq using qubit pulse gain of {gain_to_print} and pulse length of {len_to_print}, zeno pulse gain {zeno_ras_gain}')
+            # print(self.config)
             qspec = PulseProbeSpectroscopyProgram_WithStark_WaitForRingUp(self.experiment.soccfg, reps=self.config['reps'] * 2,
                                                              final_delay=0.5, cfg=self.config)
         else:
@@ -440,7 +443,7 @@ class PulseProbeSpectroscopyProgram_WithStark_WaitForRingUp(AveragerProgramV2):
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
         self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_ch[0],
                        style="const",
-                       length=cfg['qubit_length_ge'] - 0.11,  #
+                       length=cfg['qubit_length_ge'] - cfg['qubit_pi_len'],  #
                        freq=cfg['qubit_freq_ge'],
                        phase=0,
                        gain=cfg['qubit_gain_ge'],
@@ -448,7 +451,7 @@ class PulseProbeSpectroscopyProgram_WithStark_WaitForRingUp(AveragerProgramV2):
 
         self.add_pulse(ch=res_ch, name="proj_pulse",
                        style="const",
-                       length=cfg['qubit_length_ge'] - 0.11 + 3,  #add ring up time, 1.1 for this resonators linewidth
+                       length=cfg['qubit_length_ge'] - cfg['qubit_pi_len'] + cfg['res_ring_up_time'],  #add ring up time, 2us
                        mask=cfg['qze_mask'],
                        )
 
@@ -456,10 +459,384 @@ class PulseProbeSpectroscopyProgram_WithStark_WaitForRingUp(AveragerProgramV2):
 
     def _body(self, cfg):
         self.pulse(ch=cfg['res_ch'], name="proj_pulse", t=0)
-        self.pulse(ch=cfg["qubit_ch"], name="qubit_pulse", t=3)  # play probe pulse after res ring up to get saturated resonator stark/zeno tone
-        self.delay_auto(t=0, tag='waiting')  # Wait til qubit pulse is done before proceeding
-        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        self.pulse(ch=cfg["qubit_ch"], name="qubit_pulse", t=cfg['res_ring_up_time'])  # play probe pulse after res ring up to get saturated resonator stark/zeno tone
+        self.delay_auto(t=0.0, tag='wait')  # wait for stark tone to finish
+        self.delay(t=cfg['res_ring_up_time']) #wait for ring down
+        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0) #ring down time, then res readout pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
+class QZEStyleResStarkShift2D:
+    def __init__(self, QubitIndex, number_of_qubits, outerFolder, res_freq_stark, res_phase_stark, save_figs,
+                 experiment=None, signal=None,zeno_stark_pulse_gain=None):
+
+        self.QubitIndex = QubitIndex
+        self.outerFolder = outerFolder
+        self.expt_name = "qubit_spec_ge_zeno_stark"
+        self.save_figs = save_figs
+        self.experiment = experiment
+        self.Qubit = 'Q' + str(self.QubitIndex)
+        self.exp_cfg = expt_cfg[self.expt_name]
+        self.number_of_qubits = number_of_qubits
+        self.signal = signal
+        self.zeno_stark_pulse_gain = zeno_stark_pulse_gain
+
+        if experiment is not None:
+            qze_mask = np.arange(0, self.number_of_qubits + 1)
+            qze_mask = np.delete(qze_mask, QubitIndex)
+            self.exp_cfg['qze_mask'] = qze_mask
+            self.experiment.readout_cfg['res_gain_qze'] = [0, 0, 0, 0, 0, 0, self.zeno_stark_pulse_gain]
+            self.experiment.readout_cfg['res_gain_qze'][QubitIndex] = self.experiment.readout_cfg['res_gain_ge'][
+                QubitIndex]
+
+            self.experiment.readout_cfg['res_freq_qze'] = self.experiment.readout_cfg['res_freq_ge']
+            self.experiment.readout_cfg['res_phase_qze'] = self.experiment.readout_cfg['res_phase']
+            if len(self.experiment.readout_cfg['res_freq_qze']) < 7:  # otherise it keeps appending
+                self.experiment.readout_cfg['res_freq_qze'].append(
+                    experiment.readout_cfg['res_freq_qze'][self.QubitIndex])
+                self.experiment.readout_cfg['res_phase_qze'].append(
+                    experiment.readout_cfg['res_phase_qze'][self.QubitIndex])
+
+            self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
+            self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
+            self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            print(f'Q {self.QubitIndex} Stark Shift 2D configuration: ', self.config)
+            self.config['res_freq_stark'] = res_freq_stark
+            self.config['res_phase_stark'] = res_phase_stark
+            stark_mask = np.arange(0, self.number_of_qubits + 1)
+            stark_mask = np.delete(stark_mask,QubitIndex)
+            self.config['stark_mask'] = stark_mask
+            res_gain_ge = copy.deepcopy(self.config['res_gain_ge'])
+            self.config['stark_gain'] = np.concatenate(
+                (res_gain_ge, [zeno_stark_pulse_gain]))  # readout pulse gain, stark tone gain
+
+    def run(self, length=None):
+        if length:
+            self.config['qubit_length_ge'] = length
+
+        self.config['reps'] = self.config['reps']
+        prog = QZEStyleStarkedFreq(self.experiment.soccfg, reps=self.config['reps'], final_delay = 0.5, cfg=self.config)
+
+        iq_list = prog.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=True)
+        I = iq_list[self.QubitIndex][0, :, 0]
+        Q = iq_list[self.QubitIndex][0, :, 1]
+
+        qu_freq_sweep = prog.get_pulse_param('qubit_pulse', "freq", as_array=True)
+        starked_freq, fit, fit_err, fwhm = self.plot_results(I, Q, qu_freq_sweep, config = self.config, sigma_guess = 1, return_fwhm=True)
+        return I, Q, qu_freq_sweep, starked_freq,fwhm, self.config
+
+    def plot(self, I, Q, qu_freq_sweep, res_gain_sweep):
+        fig, axes = plt.subplots(1, 3, figsize=(9, 3))
+
+        plot = axes[0]
+        plot.set_box_aspect(1)
+        plt.colorbar(plot.pcolormesh(qu_freq_sweep, res_gain_sweep ** 2, I, cmap="viridis"), ax=plot, shrink=0.7)
+        plot.set_title("I [a.u.]")
+        plot.set_ylabel("stark tone power [a.u.]")
+        plot.set_xlabel("qubit pulse frequency [MHz]")
+
+        plot = axes[1]
+        plot.set_box_aspect(1)
+        plt.colorbar(plot.pcolormesh(qu_freq_sweep, res_gain_sweep ** 2, Q, cmap='viridis'), ax=plot, shrink=0.7)
+        plot.set_title("Q [a.u.]")
+        plot.set_ylabel("stark tone power [a.u.]")
+        plot.set_xlabel("qubit pulse frequency [MHz]")
+
+        plot = axes[2]
+        plot.set_box_aspect(1)
+        plt.colorbar(plot.pcolormesh(qu_freq_sweep, res_gain_sweep ** 2, np.sqrt(np.square(I) + np.square(Q)), cmap='viridis'), ax=plot,
+                     shrink=0.7)
+        plot.set_title("magnitude")
+        plot.set_ylabel("stark tone power [a.u.]")
+        plot.set_xlabel("qubit pulse frequency [MHz]")
+
+        plt.show()
+
+        if self.save_figs:
+            now = datetime.datetime.now()
+            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            file_name = os.path.join(self.outerFolder, f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex}.png")
+            fig.savefig(file_name, dpi=100, bbox_inches='tight')
+            plt.close(fig)
+
+    def plot_results(self, I, Q, freqs, config=None, fig_quality=100, sigma_guess=1, return_fwhm=False):
+        freqs = np.array(freqs)
+        mag = np.sqrt(np.square(I) + np.square(Q))
+        freq_q = freqs[np.argmax(mag)]
+        # plt.figure()
+        # plt.plot(freqs,mag)
+        # plt.show()
 
 
+        mean, fit, fit_err, fwhm = self.fit_lorenzian(mag, freqs,freq_q,sigma_guess)
+
+
+        # Check if the returned values are all None
+        if (mean is None and fit is None ):
+            # If so, return None for the values in this definition as well
+            return None, None, None, None
+
+        # If we get here, the fit was successful and we can proceed with plotting
+        fig, ax1 = plt.subplots(1, 1, figsize=(10, 8), sharex=True)
+        plt.rcParams.update({'font.size': 18})
+
+        # I subplot
+        ax1.plot(freqs, I, label='Magnitude', linewidth=2)
+        ax1.set_ylabel("Magnitude Amplitude (a.u.)", fontsize=20)
+        ax1.tick_params(axis='both', which='major', labelsize=16)
+        ax1.legend()
+
+
+        ax1.plot(freqs, fit, 'r--', label='Lorentzian Fit')
+        ax1.axvline(mean, color='orange', linestyle='--', linewidth=2)
+
+        # Calculate the middle of the plot area
+        plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
+
+
+        # Add title, centered on the plot area
+        if config is not None:  # then its been passed to this definition, so use that
+            fig.text(plot_middle, 0.98,
+                     f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % mean +
+                     f", {config['reps']}*{config['rounds']} avgs",
+                     fontsize=24, ha='center', va='top')
+        else:
+            fig.text(plot_middle, 0.98,
+                     f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % mean  +
+                     f", {self.config['reps']}*{self.config['rounds']} avgs",
+                     fontsize=24, ha='center', va='top')
+        plt.tight_layout()
+
+        # Adjust the top margin to make room for the title
+        plt.subplots_adjust(top=0.93)
+
+        ### Save figure
+        if self.save_figs:
+
+            now = datetime.datetime.now()
+            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            file_name = os.path.join(self.outerFolder,  f"Q_{self.QubitIndex + 1}_" +
+                                     f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
+            fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
+        plt.close(fig)
+        return mean, fit, fit_err, fwhm
+
+    def lorentzian(self, f, f0, gamma, A, B):
+
+        return A * gamma ** 2 / ((f - f0) ** 2 + gamma ** 2) + B
+
+    def max_offset_difference_with_x(self, x_values, y_values, offset):
+        max_average_difference = -1
+        corresponding_x = None
+
+        # average all 3 to avoid noise spikes
+        for i in range(len(y_values) - 2):
+            # group 3 vals
+            y_triplet = y_values[i:i + 3]
+
+            # avg differences for these 3 vals
+            average_difference = sum(abs(y - offset) for y in y_triplet) / 3
+
+            # see if this is the highest difference yet
+            if average_difference > max_average_difference:
+                max_average_difference = average_difference
+                # x value for the middle y value in the 3 vals
+                corresponding_x = x_values[i + 1]
+
+        return corresponding_x, max_average_difference
+
+    def fit_lorenzian(self, mag, freqs, freq_q, sigma_guess = 1):
+        try:
+            # Initial guesses for I and Q
+            initial_guess = [freq_q, sigma_guess, np.max(mag), np.min(mag)]
+
+            # First round of fits (to get rough estimates)
+            params, cov = curve_fit(self.lorentzian, freqs, mag, p0=initial_guess) #p0=initial_guess
+
+
+            # Create the fitted curves
+            fit = self.lorentzian(freqs, *params)
+
+            # Calculate errors from the covariance matrices
+            fit_err = np.sqrt(np.diag(cov))
+
+            mean = params[0]
+            fwhm = 2 * params[1]
+
+            # Return all desired results including the error on the Q fit
+            return mean, fit, fit_err, fwhm
+
+        except Exception as e:
+            return None, None,None,None
+
+class QZEStyleStarkedFreq(AveragerProgramV2):
+    def _initialize(self, cfg):
+        ro_ch = cfg['ro_ch']
+        res_ch = cfg['res_ch']
+        qubit_ch = cfg['qubit_ch']
+
+        self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
+                         mux_freqs=cfg['res_freq_qze'],
+                         mux_gains=cfg['res_gain_qze'],  # has 7 values not just 6, extra one for the zeno
+                         mux_phases=cfg['res_phase_qze'],
+                         mixer_freq=cfg['mixer_freq'])
+        # readout on each channel with the sampling frequency and length of readout (basically open the window in qick readout)
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
+            self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph,
+                                 gen_ch=res_ch)  # length=readout length at end
+
+        self.add_pulse(ch=res_ch, name="proj_pulse",
+                       style="const",
+                       length=cfg['qubit_length_ge']  + cfg['res_ring_up_time']- cfg['qubit_pi_len'],
+                       mask=cfg["qze_mask"],
+                       )
+
+        self.add_pulse(ch=res_ch, name="readout_pulse",
+                       style="const",
+                       length=cfg['res_length'],
+                       mask=cfg['list_of_all_qubits'], #only play readout tone
+                       )
+
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+        self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_ch[0],  # for before we hit pi pulse len
+                       style="const",
+                       length=cfg['qubit_length_ge']  - cfg['qubit_pi_len'],
+                       freq=cfg['qubit_freq_ge'],  # [0] # only should be one value,
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['qubit_gain_ge'])
+
+        self.add_loop("freqloop", cfg["steps"])
+
+    def _body(self, cfg):
+        self.pulse(ch=self.cfg['res_ch'], name="proj_pulse", t=0)  # play stark/zeno tone
+        self.pulse(ch=cfg['qubit_ch'], name="qubit_pulse", t=cfg['res_ring_up_time']) #play qubit pulse with delay
+        self.delay_auto(t=0.5,tag='waiting') #cfg['res_ring_up_time']
+        self.pulse(ch=cfg['res_ch'], name="readout_pulse", t=0)
+        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+
+class ResStarkShift2DAdapted:
+    def __init__(self, QubitIndex, number_of_qubits, outerFolder, res_freq_stark, res_phase_stark, save_figs, experiment=None, signal=None):
+        self.QubitIndex = QubitIndex
+        self.outerFolder = outerFolder
+        self.expt_name = "res_stark_shift_2D"
+        self.save_figs = save_figs
+        self.experiment = experiment
+        self.Qubit = 'Q' + str(self.QubitIndex)
+        self.exp_cfg = expt_cfg[self.expt_name]
+        self.number_of_qubits = number_of_qubits
+        self.signal = signal
+
+        if experiment is not None:
+            self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
+            self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
+            self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            print(f'Q {self.QubitIndex} Stark Shift 2D configuration: ', self.config)
+            self.config['res_freq_stark'] = res_freq_stark
+            self.config['res_phase_stark'] = res_phase_stark
+            stark_mask = np.arange(0, self.number_of_qubits + 1)
+            stark_mask = np.delete(stark_mask,QubitIndex)
+            self.config['stark_mask'] = stark_mask
+
+    def run(self):
+        I = []
+        Q = []
+        res_gain_ge = copy.deepcopy(self.config['res_gain_ge'])
+        gain_sweep = np.linspace(0.3, 1, 3)
+        for g in gain_sweep:
+            gain = round(g, 3)
+            self.config['stark_gain'] = np.concatenate((res_gain_ge, [gain]))  #readout pulse gain, stark tone gain
+            prog = ResStarkShift2DProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay = 0.5, cfg=self.config)
+            iq_list = prog.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=True) #check soft_avgs
+            I.append(iq_list[self.QubitIndex][0,:,0])
+            Q.append(iq_list[self.QubitIndex][0,:,1])
+
+        qu_freq_sweep = prog.get_pulse_param('qubit_pulse', "freq", as_array=True)
+        self.plot( I, Q, qu_freq_sweep, gain_sweep)
+        return I, Q, qu_freq_sweep, gain_sweep, self.config
+
+    def plot(self, I, Q, qu_freq_sweep, res_gain_sweep):
+        fig, axes = plt.subplots(1, 3, figsize=(9, 3))
+
+        plot = axes[0]
+        plot.set_box_aspect(1)
+        plt.colorbar(plot.pcolormesh(qu_freq_sweep, res_gain_sweep , I, cmap="viridis"), ax=plot, shrink=0.7)
+        plot.set_title("I [a.u.]")
+        plot.set_ylabel("stark tone power [a.u.]")
+        plot.set_xlabel("qubit pulse frequency [MHz]")
+
+        plot = axes[1]
+        plot.set_box_aspect(1)
+        plt.colorbar(plot.pcolormesh(qu_freq_sweep, res_gain_sweep , Q, cmap='viridis'), ax=plot, shrink=0.7)
+        plot.set_title("Q [a.u.]")
+        plot.set_ylabel("stark tone power [a.u.]")
+        plot.set_xlabel("qubit pulse frequency [MHz]")
+
+        plot = axes[2]
+        plot.set_box_aspect(1)
+        plt.colorbar(plot.pcolormesh(qu_freq_sweep, res_gain_sweep , np.sqrt(np.square(I) + np.square(Q)), cmap='viridis'), ax=plot,
+                     shrink=0.7)
+        plot.set_title("magnitude")
+        plot.set_ylabel("stark tone power [a.u.]")
+        plot.set_xlabel("qubit pulse frequency [MHz]")
+
+        plt.show()
+
+        if self.save_figs:
+            now = datetime.datetime.now()
+            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            file_name = os.path.join(self.outerFolder, f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex}.png")
+            fig.savefig(file_name, dpi=100, bbox_inches='tight')
+            plt.close(fig)
+
+# 2D scan over resonator gain, qubit pulse frequency
+class ResStarkShift2DProgram(AveragerProgramV2):
+    def _initialize(self, cfg):
+        ro_ch = cfg['ro_ch']
+        res_ch = cfg['res_ch']
+        qubit_ch = cfg['qubit_ch']
+
+        self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
+                         mux_freqs=cfg['res_freq_stark'], # res of interest frequency at QubitIndex and 7
+                         mux_gains=cfg['stark_gain'], # readout gain, stark gain
+                         mux_phases=cfg['res_phase_stark'], # res of interest phase repeated at QubitIndex and 7
+                         mixer_freq=cfg['mixer_freq'])
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
+            self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
+
+        self.add_pulse(ch=res_ch, name="stark_tone",
+                       style="const",
+                       length=cfg['stark_length'],
+                       mask=cfg['stark_mask'], #only play stark tone
+                       )
+
+        self.add_pulse(ch=res_ch, name="readout_pulse",
+                       style="const",
+                       length=cfg['res_length'],
+                       mask=cfg['list_of_all_qubits'], #only play readout tone
+                       )
+
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+        # self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+        # self.add_pulse(ch=qubit_ch, name="qubit_pulse",
+        #                style="arb",
+        #                envelope="ramp",
+        #                freq=QickSweep1D("qubit_pulse_loop", cfg['qubit_freq_ge'] + cfg["start_freq"], cfg['qubit_freq_ge'] + cfg["end_freq"]),
+        #                phase=cfg['qubit_phase'],
+        #                gain=cfg['pi_amp'],
+        #                )
+
+        self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_ch[0],
+                       style="const",
+                       length=cfg['qubit_length_ge'],
+                       freq=QickSweep1D("qubit_pulse_loop", cfg['qubit_freq_ge'] + cfg["start_freq"], cfg['qubit_freq_ge'] + cfg["end_freq"]),
+                       phase=0,
+                       gain=cfg['qubit_gain_ge'],
+                       )
+
+        self.add_loop("qubit_pulse_loop", cfg["qubit_pulse_steps"]) #inner loop
+
+    def _body(self, cfg):
+        self.pulse(ch=self.cfg['res_ch'], name="stark_tone", t=0)  # play stark tone
+        self.pulse(ch=cfg['qubit_ch'], name="qubit_pulse", t=cfg['qubit_pulse_delay']) #play qubit pulse with delay
+        self.delay(t=cfg['stark_length'] + cfg['readout_pulse_delay']) #wait for stark tone to finish and for resonator to reach vacuum
+        self.pulse(ch=cfg['res_ch'], name="readout_pulse", t=0)
+        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])

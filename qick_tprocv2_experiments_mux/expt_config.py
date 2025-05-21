@@ -74,8 +74,8 @@ if FRIDGE == "QUIET":
         "qubit_spec_ge_zeno_stark": {
             "reps": 2500,  # 300
             "rounds": 1,  # 10
-            "start": list(VNA_qubit - 75),  # [MHz] #-300 #-15
-            "stop": list(VNA_qubit + 25),  # [MHz] #+15
+            "start": list(VNA_qubit - 25),  # [MHz] #-300 #-15
+            "stop": list(VNA_qubit + 5),  # [MHz] #+15
             # "start": list(VNA_qubit - 100),  # [MHz] #-300 #-15
             # "stop": list(VNA_qubit + 100),  # [MHz] #+15
             "steps": 200,  # 100
@@ -141,13 +141,21 @@ if FRIDGE == "QUIET":
             "relax_delay": 800,# [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
-
-        "length_rabi_ge_qze": {
+        "length_rabi_ge_pi_len": { #for the zeno tests, bare qubit frequency rabi
             "reps": 300,  # 500,
+            "rounds": 1,
+            "start": [0.01] * 6,  # [us]
+            "stop": [4] * 6,  # [0.7] * 6,  # [us]
+            "steps": 60,
+            "relax_delay": 1000,  # [us]
+            "list_of_all_qubits": list_of_all_qubits,
+        },
+        "length_rabi_ge_qze": {
+            "reps": 400,  # 500,
             "rounds": 1, #600
             "start": [0.01] * 6,  # [us]
-            "stop": [3] * 6,   #[3] * 6,   # [us]
-            "steps": 500,  # 140,
+            "stop": [10] * 6,   #[3] * 6,   # [us]
+            "steps": 150,  # 140,
             "relax_delay": 1000,# [us]
             "list_of_all_qubits": list_of_all_qubits,
             "qze_mask": [],
@@ -274,6 +282,18 @@ if FRIDGE == "QUIET":
             "stark_sigma": 0.01, # [us] 10 ns
             "list_of_all_qubits": list_of_all_qubits,
             "anharmonicity": [172.34, 176.38, 167.13, 172.57, 172.03, 161.14],
+        },
+
+        "FastRelEx":{
+            "reps": 500000,
+            "rounds": 1,
+            "list_of_all_qubits": list_of_all_qubits,
+            "relax_delay": 10, #[us], keep short to do post-processing
+            "meas_wait": 2, #[us], a fast delay after qubit pi pulse
+            "readout_pulse_delay": 0.1, #for resonator to ring down, may be ok to set to zero
+            "pre_stark_delay": 0.1, #could match to pi pulse length or set to zero
+            "stark_sigma": 0.01, #10 ns following Carrol paper
+            "stark_length": 2, #try 1-5 us
         },
 
         "Ramsey_ge": {

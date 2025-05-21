@@ -245,7 +245,8 @@ class AmplitudeRabiExperiment:
             # Return None if the fit didn't work
             return None, None
 
-    def plot_QZE(self, I, Q, gains, proj_pulse_gains, fig_quality=100, filter_amp_above=None, mark_w01s=True,pi_line_label_left=r"$\omega_{01}$",pi_line_label_right=r"$\omega_{01\text{ Stark Shifted}}$"):
+    def plot_QZE(self, I, Q, gains, proj_pulse_gains, fig_quality=100, filter_amp_above=None, mark_w01s=True,
+                 pi_line_label_left=r"$\omega_{01}$",pi_line_label_right=r"$\omega_{01\text{ Stark Shifted}}$", pi_len=0.11):
 
         #sort
         import numpy as np
@@ -290,14 +291,15 @@ class AmplitudeRabiExperiment:
 
         #add line if mark_w01s is True
         if mark_w01s:
-            #mark freq cutoff
-            ax3.axvline(x=0.11, linestyle=':', color='black', linewidth=2)
+            # mark freq cutoff
+            ax3.axvline(x=pi_len, ls=":", c="black", lw=2)
             y_min, y_max = ax3.get_ylim()
-            y_pos = y_min + 0.02 * (y_max - y_min)
-            ax3.text(0.11 - 0.015, y_pos, pi_line_label_left, fontsize=14,
-                     verticalalignment='center', horizontalalignment='right')
-            ax3.text(0.11 + 0.015, y_pos, pi_line_label_right, fontsize=14,
-                     verticalalignment='center', horizontalalignment='left')
+            y_pos = y_min + 0.01 * (y_max - y_min)
+            ax3.text(pi_len - 0.5, y_pos, pi_line_label_left,
+                     ha='right', va='bottom', color='black', fontsize=12)
+            ax3.text(pi_len + 0.5, y_pos, pi_line_label_right,
+                     ha='left', va='bottom', color='black', fontsize=12)
+
 
 
         norm_obj = Normalize(vmin=min_gain, vmax=max_gain)
@@ -319,10 +321,160 @@ class AmplitudeRabiExperiment:
         plt.close(fig)
         return
 
+    def plot_chevron_2d(self,I,Q,gains,offset_freq,fig_quality: int = 100,filter_amp_above=None,mark_w01s: bool = True,
+            pi_line_label_left: str = r"$\omega_{01}$",
+            pi_line_label_right: str = r"$\omega_{01\text{ Stark Shifted}}$", pi_len=0.11, reg_qfreq=None, z_limit=None
+    ):
+
+        offset_freq_array = np.array(offset_freq)
+        order = np.argsort(offset_freq_array)
+
+        I_sorted = [I[i] for i in order]
+        Q_sorted = [Q[i] for i in order]
+        x_sorted = [gains[i] for i in order]  # x ≡ drive-pulse width
+        y_sorted = offset_freq_array[order]  # y ≡ proj-pulse gain
+
+        if filter_amp_above is not None:
+            keep_mask = y_sorted > filter_amp_above
+            I_sorted = [I_sorted[i] for i in range(len(I_sorted)) if keep_mask[i]]
+            Q_sorted = [Q_sorted[i] for i in range(len(Q_sorted)) if keep_mask[i]]
+            x_sorted = [x_sorted[i] for i in range(len(x_sorted)) if keep_mask[i]]
+            y_sorted = y_sorted[keep_mask]
+
+        x_vals = np.asarray(x_sorted[0])
+        n_x, n_y = len(x_vals), len(y_sorted)
+        mag_matrix = np.empty((n_y, n_x))
+
+        for row, (I_trace, Q_trace) in enumerate(zip(I_sorted, Q_sorted)):
+            magnitudes = np.abs(np.array(I_trace) + 1j * np.array(Q_trace))
+            mag_matrix[row] = magnitudes
+
+        fig, ax = plt.subplots(figsize=(10, 8))
+        cmap = plt.get_cmap('viridis')
+        im = ax.imshow(
+            mag_matrix,
+            origin="lower",
+            aspect="auto",
+            extent=[x_vals[0], x_vals[-1], y_sorted[0], y_sorted[-1]],
+            cmap=cmap,
+            interpolation="nearest"
+        )
+        if z_limit is not None: im.set_clim(vmin=0, vmax=z_limit)  # same z limit for all plots for easy comparison
+        # Axes & labels
+        ax.set_xlabel("Qubit drive-pulse width (us)", fontsize=14)
+        ax.set_ylabel("Frequency used to drive qubit (MHz)", fontsize=14)
+        ax.set_title(
+            "Rabi Chevron in same format as QZE experiment but with no resonator pulse",
+            fontsize=16
+        )
+        ax.tick_params(axis='both', which='major', labelsize=12)
+
+        if mark_w01s:
+            ax.axhline(y=reg_qfreq, ls=":", c="white", lw=2)
+            ax.axvline(x=pi_len, ls=":", c="white", lw=2)
+            ax.text(pi_len - 0.5, y_sorted[0], pi_line_label_left,
+                    ha='right', va='bottom', color='white', fontsize=12)
+            ax.text(pi_len + 0.5, y_sorted[0], pi_line_label_right,
+                    ha='left', va='bottom', color='white', fontsize=12)
+
+        cbar = fig.colorbar(im, ax=ax, pad=0.02)
+        cbar.set_label("Signal Magnitude (Hotter corresponds to |1>)", fontsize=14)
+
+        plt.tight_layout()
+
+        outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
+        self.create_folder_if_not_exists(outerFolder_expt)
+        now = datetime.datetime.now()
+        timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+        fname_base = os.path.join(
+            outerFolder_expt,
+            f"R_{self.round_num}_Q_{self.QubitIndex + 1}_{timestamp}_{self.expt_name}_q{self.QubitIndex + 1}_heatmap"
+        )
+        fig.savefig(fname_base + ".png", dpi=fig_quality, bbox_inches="tight")
+        fig.savefig(fname_base + ".pdf", dpi=fig_quality, bbox_inches="tight")
+        plt.close(fig)
+
+        return
+
+    def plot_QZE_2d(self,I,Q,gains,proj_pulse_gains,fig_quality: int = 100,filter_amp_above=None,mark_w01s: bool = True,
+            pi_line_label_left: str = r"$\omega_{01}$",
+            pi_line_label_right: str = r"$\omega_{01\text{ Stark Shifted}}$", pi_len=0.11, z_limit=None,z_lower_limit=None
+    ):
+
+        proj_gains_array = np.array(proj_pulse_gains)
+        order = np.argsort(proj_gains_array)
+
+        I_sorted = [I[i] for i in order]
+        Q_sorted = [Q[i] for i in order]
+        x_sorted = [gains[i] for i in order]  # x ≡ drive-pulse width
+        y_sorted = proj_gains_array[order]  # y ≡ proj-pulse gain
+
+        if filter_amp_above is not None:
+            keep_mask = y_sorted > filter_amp_above
+            I_sorted = [I_sorted[i] for i in range(len(I_sorted)) if keep_mask[i]]
+            Q_sorted = [Q_sorted[i] for i in range(len(Q_sorted)) if keep_mask[i]]
+            x_sorted = [x_sorted[i] for i in range(len(x_sorted)) if keep_mask[i]]
+            y_sorted = y_sorted[keep_mask]
+
+        x_vals = np.asarray(x_sorted[0])
+        n_x, n_y = len(x_vals), len(y_sorted)
+        mag_matrix = np.empty((n_y, n_x))
+
+        for row, (I_trace, Q_trace) in enumerate(zip(I_sorted, Q_sorted)):
+            magnitudes = np.abs(np.array(I_trace) + 1j * np.array(Q_trace))
+            mag_matrix[row] = magnitudes
+
+        fig, ax = plt.subplots(figsize=(10, 8))
+        cmap = plt.get_cmap('viridis')
+        im = ax.imshow(
+            mag_matrix,
+            origin="lower",
+            aspect="auto",
+            extent=[x_vals[0], x_vals[-1], y_sorted[0], y_sorted[-1]],
+            cmap=cmap,
+            interpolation="nearest"
+        )
+        if z_limit is not None: im.set_clim(vmin=0, vmax=z_limit) #same z limit for all plots for easy comparison
+        if z_lower_limit is not None: im.set_clim(vmin=z_lower_limit, vmax=z_limit)  # same z limit for all plots for easy comparison
+        # Axes & labels
+        ax.set_xlabel("Qubit drive-pulse width (us)", fontsize=14)
+        ax.set_ylabel("Projection-pulse amplitude (a.u.)", fontsize=14)
+        ax.set_title(
+            "Inducing the Quantum Zeno Effect in a Transmon Qubit\n"
+            "Heat-map of  Rabi oscillations",
+            fontsize=16
+        )
+        ax.tick_params(axis='both', which='major', labelsize=12)
+
+        if mark_w01s:
+            ax.axvline(x=pi_len, ls=":", c="white", lw=2)
+            ax.text(pi_len - 0.5, y_sorted[0], pi_line_label_left,
+                    ha='right', va='bottom', color='white', fontsize=12)
+            ax.text(pi_len + 0.5, y_sorted[0], pi_line_label_right,
+                    ha='left', va='bottom', color='white', fontsize=12)
+
+        cbar = fig.colorbar(im, ax=ax, pad=0.02)
+        cbar.set_label("Signal Magnitude (Hotter corresponds to |1>)", fontsize=14)
+
+        plt.tight_layout()
+
+        outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
+        self.create_folder_if_not_exists(outerFolder_expt)
+        now = datetime.datetime.now()
+        timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+        fname_base = os.path.join(
+            outerFolder_expt,
+            f"R_{self.round_num}_Q_{self.QubitIndex + 1}_{timestamp}_{self.expt_name}_q{self.QubitIndex + 1}_heatmap"
+        )
+        fig.savefig(fname_base + ".png", dpi=fig_quality, bbox_inches="tight")
+        fig.savefig(fname_base + ".pdf", dpi=fig_quality, bbox_inches="tight")
+        plt.close(fig)
+
+        return
+
     def plot_QZE_basic(self, I, Q, gains, proj_pulse_gains, fig_quality=100, filter_amp_above=None, mark_w01s=True,
                        pi_line_label_left=r"$\omega_{01}$", pi_line_label_right=r"$\omega_{01\text{ Stark Shifted}}$"):
-        import numpy as np
-        import matplotlib.pyplot as plt
+
         proj_gains_array = np.array(proj_pulse_gains)
         sorted_indices = np.argsort(proj_gains_array)
         sorted_I = [I[i] for i in sorted_indices]
@@ -366,7 +518,8 @@ class AmplitudeRabiExperiment:
 
     def plot_QZE_detuned_amp(self, I, Q, gains, proj_pulse_gains, fig_quality=100, filter_amp_above=None,
                              mark_w01s=True, frequency_difference=None, fwhm_w01 = None, fwhm_w01_starked=None,
-                             pi_line_label_left=r"$\omega_{01}$",pi_line_label_right=r"$\omega_{01\text{ Stark Shifted}}$"):
+                             pi_line_label_left=r"$\omega_{01}$",pi_line_label_right=r"$\omega_{01\text{ Stark Shifted}}$",
+                             pi_len=None, log_y=True,window=9):
 
         #sort
         proj_gains_array = np.array(proj_pulse_gains)
@@ -429,7 +582,7 @@ class AmplitudeRabiExperiment:
 
             #confine to [0.11, 0.4]
             x_data = np.array(sorted_gains[idx])
-            mask_x = (x_data >= 0.11) & (x_data <= 0.4)
+            mask_x = (x_data >= pi_len) & (x_data <= 10)
             x_filtered = x_data[mask_x]
             y_filtered = magnitudes[mask_x]
 
@@ -443,11 +596,11 @@ class AmplitudeRabiExperiment:
 
             # rolling avg value, adjust as needed
             if sorted_proj_pulse_gains[idx]>0.9:
-                rolling_window=5
+                rolling_window=window
             elif sorted_proj_pulse_gains[idx]>0.4:
-                rolling_window=10
+                rolling_window=window
             else:
-                rolling_window = 15
+                rolling_window=window
             #rolling avg
             y_rolled = [
                 np.mean(y_filtered[i: i + rolling_window])
@@ -533,12 +686,12 @@ class AmplitudeRabiExperiment:
         ax1.set_title("First Rabi fringes with Curve Fit", fontsize=16)
 
         if mark_w01s:
-            ax1.axvline(x=0.11, linestyle=':', color='black', linewidth=2)
+            ax1.axvline(x=pi_len, linestyle=':', color='black', linewidth=2)
             y_min, y_max = ax1.get_ylim()
             y_pos = y_min + 0.02 * (y_max - y_min)
-            ax1.text(0.11 - 0.015, y_pos, pi_line_label_left, fontsize=14,
+            ax1.text(pi_len - 0.015, y_pos, pi_line_label_left, fontsize=14,
                      verticalalignment='center', horizontalalignment='right')
-            ax1.text(0.11 + 0.015, y_pos, pi_line_label_right, fontsize=14,
+            ax1.text(pi_len + 0.015, y_pos, pi_line_label_right, fontsize=14,
                      verticalalignment='center', horizontalalignment='left')
 
         norm_obj = Normalize(vmin=min_gain, vmax=max_gain)
@@ -564,47 +717,54 @@ class AmplitudeRabiExperiment:
                 yerr=pi_time_err_array,
                 fmt='o', color='black',
                 ecolor='black', elinewidth=1.5, capsize=3,
-                label='Fitted Pi Pulse Time'
+                label=r"Fitted $\pi$ Pulse Time"
             )
 
             #do the theory part and find expected vals from naghiloo thesis
             # calculate theory and propagate errors if frequency_difference and fwhm lists are provided
-            if frequency_difference is not None and fwhm_w01 is not None and fwhm_w01_starked is not None:
-                # constant from theory
-                A_const = np.pi / 1.1e-7  # in rad/s
 
-                # convert frequency difference from MHz to rad/s
-                factor = 1e6 * 2 * np.pi
-                delta_d = sorted_frequency_difference * factor
+            # constant found from experiment
+            A_const = np.pi / pi_len*(1e-6)
 
-                # compute uncertainty in frequency difference
-                freq_diff_err = np.sqrt(sorted_fwhm_w01 ** 2 + sorted_fwhm_w01_starked ** 2)
-                error_delta_d = freq_diff_err * factor
+            # convert frequency difference from MHz to rad/s
+            factor = 1e6 * 2 * np.pi
+            delta_d_theory = sorted_frequency_difference * factor
 
-                # compute omega_r and the expected pi times (in microseconds)
-                omega_r = np.sqrt(A_const ** 2 + delta_d ** 2)
-                expected_pi_times = (np.pi / omega_r) * 1e6  # convert to us
 
-                # propagate error: dT/d(delta_d) = (pi*1e6*|delta_d|)/(omega_r^3)
-                expected_pi_time_err = (np.pi * 1e6 * np.abs(delta_d) / (omega_r ** 3)) * error_delta_d
+            # compute omega_r and the expected pi times (in microseconds)
+            omega_r = np.sqrt(A_const ** 2 + delta_d_theory ** 2) #frequency diference gets larger so omega r gets larger too with proj pulse gain
+            expected_pi_times = (np.pi / omega_r) * 1e6  # convert to us
 
-                # plot theory and error band
-                ax2.plot(sorted_proj_pulse_gains, expected_pi_times, ':',
-                         color='darkgreen', linewidth=2, label='Expected Pi pulse time from frequency detuning')
+
+            # plot theory and error band
+            ax2.plot(sorted_proj_pulse_gains, expected_pi_times, ':',
+                     color='darkgreen', linewidth=2, label=r"Expected $\pi$ pulse time from frequency detuning")
+
+            if fwhm_w01 is not None and fwhm_w01_starked is not None:
+                # # compute uncertainty in frequency difference
+                print(sorted_fwhm_w01)
+                print(sorted_fwhm_w01_starked)
+                #convert fwhm to sigma using https://brainder.org/2011/08/20/gaussian-kernels-convert-fwhm-to-sigma/
+                freq_diff_err = np.sqrt(((sorted_fwhm_w01/2.3548)* 1e6) ** 2 + ((sorted_fwhm_w01_starked/2.3548)* 1e6) ** 2)
+                sigma_delta = 2*np.pi * freq_diff_err
+                sigma_omega = (abs(delta_d_theory) / omega_r) * sigma_delta
+                sigma_tpi = (np.pi * 1e6 / omega_r ** 2) * sigma_omega  # us
+
                 ax2.fill_between(sorted_proj_pulse_gains,
-                                 expected_pi_times - expected_pi_time_err,
-                                 expected_pi_times + expected_pi_time_err,
+                                 expected_pi_times - sigma_tpi,
+                                 expected_pi_times + sigma_tpi,
                                  color='lightgreen', alpha=0.3)
 
             ax2.set_xlabel("Projection pulse amplitude (a.u.)", fontsize=14)
-            ax2.set_ylabel("Pi pulse time (us)", fontsize=14)
-            ax2.set_title("Pi Pulse Time vs Projection Pulse Amplitude", fontsize=16)
+            ax2.set_ylabel(r"$\Pi$ pulse time ($\mu$ s)", fontsize=14)
+            ax2.set_title(r"$\pi$ Pulse Time vs Projection Pulse Amplitude", fontsize=16)
             ax2.tick_params(axis='both', which='major', labelsize=16)
             ax2.legend()
         else:
-            ax2.text(0.5, 0.5, "No valid pi pulse time data extracted", transform=ax2.transAxes,
+            ax2.text(0.5, 0.5, r"No valid $\pi$ pulse time data extracted", transform=ax2.transAxes,
                      fontsize=16, ha='center')
-
+        if log_y:
+            ax2.set_yscale('symlog', linthresh=5, linscale=1)
         plt.tight_layout()
         outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
         self.create_folder_if_not_exists(outerFolder_expt)
@@ -621,7 +781,7 @@ class AmplitudeRabiExperiment:
 
     def plot_QZE_detuning(self, I, Q, gains, proj_pulse_gains, fig_quality=100, filter_amp_above=None,
                              mark_w01s=True, frequency_difference=None, fwhm_w01 = None, fwhm_w01_starked=None,
-                          pi_line_label_left=r"$\omega_{01}$",pi_line_label_right=r"$\omega_{01\text{ Stark Shifted}}$"):
+                          pi_line_label_left=r"$\omega_{01}$",pi_line_label_right=r"$\omega_{01\text{ Stark Shifted}}$",pi_len=None,window=9):
 
         #sort
         proj_gains_array = np.array(proj_pulse_gains)
@@ -684,7 +844,7 @@ class AmplitudeRabiExperiment:
 
             #confine to [0.11, 0.4]
             x_data = np.array(sorted_gains[idx])
-            mask_x = (x_data >= 0.11) & (x_data <= 0.4)
+            mask_x = (x_data >= pi_len) & (x_data <= 10)
             x_filtered = x_data[mask_x]
             y_filtered = magnitudes[mask_x]
 
@@ -698,11 +858,11 @@ class AmplitudeRabiExperiment:
 
             # rolling avg value, adjust as needed
             if sorted_proj_pulse_gains[idx]>0.9:
-                rolling_window=5
+                rolling_window=window
             elif sorted_proj_pulse_gains[idx]>0.4:
-                rolling_window=10
+                rolling_window=window
             else:
-                rolling_window = 15
+                rolling_window=window
             #rolling avg
             y_rolled = [
                 np.mean(y_filtered[i: i + rolling_window])
@@ -788,12 +948,12 @@ class AmplitudeRabiExperiment:
         ax1.set_title("First Rabi fringes with Curve Fit", fontsize=16)
 
         if mark_w01s:
-            ax1.axvline(x=0.11, linestyle=':', color='black', linewidth=2)
+            ax1.axvline(x=pi_len, linestyle=':', color='black', linewidth=2)
             y_min, y_max = ax1.get_ylim()
             y_pos = y_min + 0.02 * (y_max - y_min)
-            ax1.text(0.11 - 0.015, y_pos, pi_line_label_left, fontsize=14,
+            ax1.text(pi_len - 0.015, y_pos, pi_line_label_left, fontsize=14,
                      verticalalignment='center', horizontalalignment='right')
-            ax1.text(0.11 + 0.015, y_pos, pi_line_label_left, fontsize=14,
+            ax1.text(pi_len + 0.015, y_pos, pi_line_label_left, fontsize=14,
                      verticalalignment='center', horizontalalignment='left')
 
         norm_obj = Normalize(vmin=min_gain, vmax=max_gain)
@@ -814,16 +974,13 @@ class AmplitudeRabiExperiment:
             pi_time_err_array = pi_time_err_array[sort_idx]
 
             # Constant from theory: given in rad/s.
-            A_const = np.pi / 1.1e-7
+            A_const = np.pi / pi_len*(1e-6)
 
             # Convert frequency difference from MHz to rad/s.
             # Here 'sorted_frequency_difference' is assumed to be sorted correspondingly to your proj_amp or pulse gains.
             factor = 1e6 * 2 * np.pi
             delta_d_theory = sorted_frequency_difference * factor
 
-            # Compute uncertainty in frequency difference by combining the two FWHM uncertainties.
-            freq_diff_err = np.sqrt(sorted_fwhm_w01 ** 2 + sorted_fwhm_w01_starked ** 2)
-            delta_d_theory_err = freq_diff_err * factor
 
             # --- Inferred delta_d from measured pi_time ---
 
@@ -835,10 +992,6 @@ class AmplitudeRabiExperiment:
             # Calculate inferred delta_d from the measured pi times.
             delta_d_measured = np.sqrt((C / pi_time_array) ** 2 - A_const ** 2)
 
-            # Error propagation:
-            # Derivative: d/dT [sqrt((C/T)^2 - A_const^2)] = - (C^2)/(T^3 * sqrt((C/T)^2 - A_const^2))
-            delta_d_measured_err = ((C ** 2) / (
-                        pi_time_array ** 3 * np.sqrt((C / pi_time_array) ** 2 - A_const ** 2))) * pi_time_err_array
 
             # --- Plotting the results: compare theoretical and measured δ_d ---
 
@@ -847,22 +1000,36 @@ class AmplitudeRabiExperiment:
             # Plot theory delta_d (from frequency_difference).
             # Replace 'sorted_proj_pulse_gains' with the correct sorted x-axis values if they differ from proj_amp_array.
             ax2.plot(sorted_proj_pulse_gains, delta_d_theory, linestyle=':', color='darkgreen', linewidth=2,
-                    label='δ$_d$ Prediction from fitted π time found')
-            ax2.fill_between(sorted_proj_pulse_gains,
-                            delta_d_theory - delta_d_theory_err,
-                            delta_d_theory + delta_d_theory_err,
-                            color='lightgreen', alpha=0.3, label='Uncertainty from QSpec FWHM')
+                    label=r"$\Delta_d$ Prediction from fitted $\pi$ time found")
 
-            # --- Plot inferred (measured) δ₍d₎ from the π-pulse time inversion ---
-            ax2.errorbar(proj_amp_array, delta_d_measured, yerr=delta_d_measured_err,
-                         fmt='s', color='blue', ecolor='blue', elinewidth=1.5, capsize=3,
-                         label='Measured δ$_d$ (from π time)')
+            if fwhm_w01 is not None and fwhm_w01_starked is not None:
+                # Compute uncertainty in frequency difference by combining the two FWHM uncertainties.
+                # convert fwhm to sigma using https://brainder.org/2011/08/20/gaussian-kernels-convert-fwhm-to-sigma/
+                freq_diff_err = np.sqrt(
+                    ((sorted_fwhm_w01 / 2.3548) ) ** 2 + ((sorted_fwhm_w01_starked / 2.3548) ) ** 2)
+
+                delta_d_theory_err = freq_diff_err * factor
+
+                ax2.fill_between(sorted_proj_pulse_gains,
+                                delta_d_theory - delta_d_theory_err,
+                                delta_d_theory + delta_d_theory_err,
+                                color='lightgreen', alpha=0.3, label='Uncertainty from QSpec FWHM')
+
+                # Error propagation:
+                # Derivative: d/dT [sqrt((C/T)^2 - A_const^2)] = - (C^2)/(T^3 * sqrt((C/T)^2 - A_const^2))
+                delta_d_measured_err = ((C ** 2) / (
+                        pi_time_array ** 3 * np.sqrt((C / pi_time_array) ** 2 - A_const ** 2))) * pi_time_err_array
+
+                # --- Plot inferred (measured) δ₍d₎ from the π-pulse time inversion ---
+                ax2.errorbar(proj_amp_array, delta_d_measured, yerr=delta_d_measured_err,
+                             fmt='s', color='blue', ecolor='blue', elinewidth=1.5, capsize=3,
+                             label=r"Measured $\Delta_d$ (from pi time)")
             ax2.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, pos: f'{x / (2 * np.pi * 1e6):.2f}'))
 
             ax2.set_xlabel('Projection Pulse Amplitude')
-            ax2.set_ylabel('δ$_d$ (MHz)')
+            ax2.set_ylabel(r"$\Delta_d$ (MHz)")
             ax2.legend()
-            ax2.set_title('Actual δ$_d$ from QSpec vs δ$_d$ found from fit to Rabi ')
+            ax2.set_title(r"Actual $\Delta_d$ from QSpec vs $\Delta_d$ found from fit to Rabi")
             ax2.legend()
         else:
             ax2.text(0.5, 0.5, "No valid pi pulse time data extracted", transform=ax2.transAxes,
