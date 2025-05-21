@@ -22,7 +22,7 @@ from matplotlib.colors import Normalize
 
 
 class AmplitudeRabiExperiment:
-    def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_figs, experiment = None,
+    def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_shots=False, save_figs = True, experiment = None,
                  live_plot = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
                  multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, QZE=False,
                  projective_readout_pulse_len_us=9,  time_between_projective_readout_pulses=None, expt_name = "power_rabi_ge"):
@@ -37,6 +37,7 @@ class AmplitudeRabiExperiment:
         self.live_plot = live_plot
         self.signal = signal
         self.save_figs = save_figs
+        self.save_shots = save_shots
         self.experiment = experiment
         self.verbose = verbose
         self.QZE = QZE
@@ -96,7 +97,15 @@ class AmplitudeRabiExperiment:
             gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
 
         q1_fit_cosine, pi_amp = self.plot_results( I, Q, gains, config = self.config)
-        return I, Q, gains, q1_fit_cosine, pi_amp, self.config
+
+        if self.save_shots:
+            raw_0 = amp_rabi.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
+            Ishots = raw_0[self.QubitIndex][:, :, 0, 0]
+            Qshots = raw_0[self.QubitIndex][:, :, 0, 1]
+            return I, Q, Ishots, Qshots, gains, q1_fit_cosine, pi_amp, self.config
+
+        else:
+            return I, Q, gains, q1_fit_cosine, pi_amp, self.config
 
     def live_plotting(self, amp_rabi, thresholding):
         I = Q = expt_mags = expt_phases = expt_pop = None

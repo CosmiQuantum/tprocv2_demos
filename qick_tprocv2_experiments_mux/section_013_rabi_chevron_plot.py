@@ -62,14 +62,17 @@ optimizationFolder = os.path.join(dataSetFolder, 'optimization')
 studyDocumentationFolder = os.path.join(dataSetFolder, 'documentation')
 studyFolder = os.path.join(dataSetFolder, 'study_data')
 
-path_saveplots = os.path.join(dataSetFolder, 'plots') #general, make subfolders inside
-path_saveplots_chev = os.path.join(path_saveplots, 'rabi_chev_plots')
-path_saveplotsRR = os.path.join(path_saveplots, 'RR_plots')
+path_saveplots = "/home/acolonce/run6/6transmon/plots/"
+path_saveplots_chev = os.path.join(path_saveplots, f'rabi_chev_plots/{formatted_datetime}')
+path_saveplotsRR = os.path.join(path_saveplots, f'RR_plots/{formatted_datetime}')
 
 if not os.path.exists(studyFolder): os.makedirs(studyFolder)
 if not os.path.exists(subStudyFolder): os.makedirs(subStudyFolder)
+
 if not os.path.exists(path_saveplots): os.makedirs(path_saveplots)
 if not os.path.exists(path_saveplots_chev): os.makedirs(path_saveplots_chev)
+if not os.path.exists(path_saveplotsRR): os.makedirs(path_saveplotsRR)
+
 if not os.path.exists(studyDocumentationFolder): os.makedirs(studyDocumentationFolder)
 
 # set which of the following measurements you would like to take
@@ -165,7 +168,7 @@ default_qubit_freqs = [ 4189.8656, 3820.4723, 4161.3726, 4463.15226, 4471.446, 4
 default_res_freqs = [6216.9331, 6275.9373, 6335, 6407.0338, 6476.1256, 6538] #04/07, res freqs to fall back on if res spec is set to False
 default_ge_rabis = [0.6748, 0.634499, 0.76542, 0.7754, 0.6446, 0.9] # from 3/11, pi amps to fall back on if g-e rabi is set to False
 
-####################################################### RR #############################################################
+####################################################### RR ##################################################################
 def create_data_dict(keys, save_r, qs):
     return {Q: {key: np.empty(save_r, dtype=object) for key in keys} for Q in range(len(qs))}
 
@@ -175,7 +178,10 @@ res_keys = ['Dates', 'freq_pts', 'freq_center', 'Amps', 'Found Freqs', 'Round Nu
 qspec_keys = ['Dates', 'I', 'Q', 'Frequencies', 'I Fit', 'Q Fit', 'Round Num', 'Batch Num','Recycled QFreq',
               'Exp Config', 'Syst Config']
 rabi_keys = ['Dates', 'I', 'Q', 'Gains', 'Fit', 'Round Num', 'Batch Num', 'Exp Config', 'Syst Config']
-chev_keys = ['I', 'Q', 'Gains', 'Freqs_MHz', 'q_center_freq_MHz', 'res_freq_ge_MHz']
+
+chev_keys_noshots = ['I', 'Q','Gains', 'Freqs_MHz', 'q_center_freq_MHz', 'res_freq_ge_MHz']
+chev_keys_wshots = ['I', 'Q', 'Ishots', 'Qshots','Gains', 'Freqs_MHz', 'q_center_freq_MHz', 'res_freq_ge_MHz']
+
 ss_keys = ['Fidelity', 'Angle', 'Dates', 'I_g', 'Q_g', 'I_e', 'Q_e', 'Round Num', 'Batch Num', 'Exp Config',
            'Syst Config']
 offset_keys = ['Res Frequency', 'Fidelity', 'Angle', 'Dates', 'I_g', 'Q_g', 'I_e', 'Q_e', 'Round Num', 'Batch Num', 'Exp Config',
@@ -364,8 +370,17 @@ for QubitIndex in Qs_to_look_at:
             QubitIndex] = avg_angle * 180 / np.pi  # need it to be a list of 6, the other qubits dont matter so just amke them the same val
         experiment.readout_cfg['threshold'][QubitIndex] = avg_thresh
 
-    ############################################# Make a copy of og experiment: IMPORTANT #############################################
-    experiment_template = copy.deepcopy(experiment)
+    ############################################# Make a copies of og experiment: IMPORTANT #############################################
+    experiment_template = copy.deepcopy(experiment) #optimized master copy
+    chevron_template = copy.deepcopy(experiment_template) #separate chevron‐specific template
+
+    # Double sigmas only in the chevron copy
+    double_sigmas = True
+    if double_sigmas:
+        for q in Qs_to_look_at:
+            chevron_template.qubit_cfg['sigma'][q] *= 2
+
+    del experiment
     ####################################################### 2D sweep (Rabi Chevron) ######################################################
     if run_flags["rabi_ge_chevron"]:
         # frequency grid around optimized qubit freq center
@@ -375,20 +390,28 @@ for QubitIndex in Qs_to_look_at:
         signal_map = []  # will have shape (len(freqs), len(gains))
         all_rabi_I = [] # to save I data in h5 files
         all_rabi_Q = [] # to save Q data in h5 files
+        all_rabi_Ishots = [] # to save Ishots data in h5 files (only used if save_shots = True)
+        all_rabi_Qshots = [] # to save Qshots data in h5 files (only used if save_shots = True)
+
         for f in freqs_mhz:
             print('Rabi 2D sweep ongoing...')
             # get the “optimized” experiment defined above
-            experiment = copy.deepcopy(experiment_template)
+            experiment = copy.deepcopy(chevron_template)
 
             # only change the qubit drive freq
             experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(f)
 
             # run the gain‐sweep Rabi
-            rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, path_saveplotsRR,0, signal, save_figs=False, experiment=experiment,
+            save_shots_chev = True
+            rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, path_saveplotsRR,0, signal, save_shots = save_shots_chev, save_figs=False, experiment=experiment,
                     live_plot=live_plot, increase_qubit_reps=increase_qubit_reps, qubit_to_increase_reps_for=qubit_to_increase_reps_for,
                     multiply_qubit_reps_by=multiply_qubit_reps_by, verbose=verbose, logger=rr_logger, qick_verbose=qick_verbose)
-            rabi_I, rabi_Q, rabi_gains, *_ = rabi.run()
-            del rabi
+            if save_shots_chev:
+                rabi_I, rabi_Q, rabi_Ishots, rabi_Qshots, rabi_gains, *_ = rabi.run()
+                all_rabi_Ishots.append(rabi_Ishots)
+                all_rabi_Qshots.append(rabi_Qshots)
+            else:
+                rabi_I, rabi_Q, rabi_gains, *_ = rabi.run()
 
             all_rabi_I.append(rabi_I)
             all_rabi_Q.append(rabi_Q)
@@ -397,25 +420,46 @@ for QubitIndex in Qs_to_look_at:
             mag = np.sqrt(np.array(rabi_I) ** 2 + np.array(rabi_Q) ** 2)
             signal_map.append(mag)
 
+            del rabi
             del experiment
 
         signal_map = np.vstack(signal_map)  # shape (freq_steps, len(rabi_gains))
 
         if save_data_h5:
-            chev_data = create_data_dict(chev_keys, save_r, list_of_all_qubits)
-            # also stack I and Q data into arrays of shape (freq_steps, n_gain_points)
-            all_rabi_I = np.vstack(all_rabi_I)
-            all_rabi_Q = np.vstack(all_rabi_Q)
+            if save_shots_chev:
+                chev_data = create_data_dict(chev_keys_wshots, save_r, list_of_all_qubits)
+                # also stack I and Q data into arrays of shape (freq_steps, n_gain_points)
+                all_rabi_I = np.vstack(all_rabi_I)
+                all_rabi_Q = np.vstack(all_rabi_Q)
 
-            chev_data[QubitIndex]['I'][0] = all_rabi_I #[0] is the round number, always zero since we don't use that parameter in this script
-            chev_data[QubitIndex]['Q'][0] = all_rabi_Q
-            chev_data[QubitIndex]['Gains'][0] = rabi_gains
-            chev_data[QubitIndex]['Freqs_MHz'][0] = freqs_mhz
-            chev_data[QubitIndex]['q_center_freq_MHz'][0] = qubit_freq
-            chev_data[QubitIndex]['res_freq_ge_MHz'][0] = this_res_freq
+                chev_data[QubitIndex]['I'][0] = all_rabi_I  # [0] is the round number, always zero since we don't use that parameter in this script
+                chev_data[QubitIndex]['Q'][0] = all_rabi_Q
 
-            saver_chev = Data_H5(studyFolder, chev_data, 0, save_r)
-            saver_chev.save_to_h5('rabi_ge_chevron')
+                chev_data[QubitIndex]['Ishots'][0] = all_rabi_Ishots
+                chev_data[QubitIndex]['Qshots'][0] = all_rabi_Qshots
+
+                chev_data[QubitIndex]['Gains'][0] = rabi_gains
+                chev_data[QubitIndex]['Freqs_MHz'][0] = freqs_mhz
+                chev_data[QubitIndex]['q_center_freq_MHz'][0] = qubit_freq
+                chev_data[QubitIndex]['res_freq_ge_MHz'][0] = this_res_freq
+
+                saver_chev = Data_H5(studyFolder, chev_data, 0, save_r)
+                saver_chev.save_to_h5('rabi_ge_chevron_wshots')
+            else: # not saving shots
+                chev_data = create_data_dict(chev_keys_noshots, save_r, list_of_all_qubits)
+                # also stack I and Q data into arrays of shape (freq_steps, n_gain_points)
+                all_rabi_I = np.vstack(all_rabi_I)
+                all_rabi_Q = np.vstack(all_rabi_Q)
+
+                chev_data[QubitIndex]['I'][0] = all_rabi_I #[0] is the round number, always zero since we don't use that parameter in this script
+                chev_data[QubitIndex]['Q'][0] = all_rabi_Q
+                chev_data[QubitIndex]['Gains'][0] = rabi_gains
+                chev_data[QubitIndex]['Freqs_MHz'][0] = freqs_mhz
+                chev_data[QubitIndex]['q_center_freq_MHz'][0] = qubit_freq
+                chev_data[QubitIndex]['res_freq_ge_MHz'][0] = this_res_freq
+
+                saver_chev = Data_H5(studyFolder, chev_data, 0, save_r)
+                saver_chev.save_to_h5('rabi_ge_chevron')
             del saver_chev
 
         # Plot chevron
