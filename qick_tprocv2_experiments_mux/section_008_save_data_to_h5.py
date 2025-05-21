@@ -3,6 +3,9 @@ import numpy as np
 import h5py
 import os
 np.set_printoptions(threshold=1000000000000000)
+import numbers
+import json
+import datetime as date
 
 class Data_H5:
     def __init__(self, outerFolder, data = None, batch_num = 0, save_r = 0):
@@ -41,11 +44,81 @@ class Data_H5:
         else:
             group.create_dataset(name, data=np.array([]))
 
-    def save_to_h5(self, data_type):
+    def create_dataset_clean(self, name, value, group):
+        ## if the value is None just save it like that
+        if value is None:
+            group.create_dataset(name, data=np.array([]))
+            return
+
+        ## if its an array save it like an array, otherwise its a ragged array
+        if isinstance(value, np.ndarray):
+            ##safe to store
+            if value.dtype != object:
+                group.create_dataset(name, data=value)
+                return
+
+            ## ragged list
+            self.create_dataset_clean(name, value.tolist(), group)
+            return
+
+        ## if its a boolean save it like an attribute
+        if isinstance(value, (numbers.Number, bool, np.bool_)):
+            group.attrs[name] = value
+            return
+
+        ## if its a datetime or date save with utf-8 encoding for string
+        if isinstance(value, (date.datetime, date.date, np.datetime64)):
+            dt = h5py.string_dtype(encoding="utf-8")
+            group.create_dataset(name, data=np.array(value.isoformat(), dtype=dt))
+            return
+
+        ## if a string save it like one
+        if isinstance(value, str):
+            dt = h5py.string_dtype(encoding="utf-8")
+            group.create_dataset(name, data=np.array(value, dtype=dt))
+            return
+
+        ## now if its a list lets try a few things in case it's a ragged list
+        if isinstance(value, (list, tuple)):
+            ## see if it's all numbers inside of the list
+            try:
+                arr = np.asarray(value, dtype=float)  ## check if you cna convert it to an array with al floats
+                if arr.dtype != object:  ## if it fails it wont be a real array and this wont work
+                    group.create_dataset(name, data=arr) ## if it succeeds it will be a real object and will get here and save
+                    return
+            except Exception:
+                pass ## keep going to the other methods if this fails
+
+            ## if it's a list of strings or has a None in there. if theres a None make it a string
+            if all(isinstance(x, str) or x is None for x in value):
+                dt = h5py.string_dtype(encoding="utf-8")
+                group.create_dataset(name,
+                                     data=[x if x is not None else '' for x in value],
+                                     dtype=dt)
+                return
+            else:
+                ## if everything else failed then you have a very ragged list. Give up and just store as a json string
+                dt = h5py.string_dtype(encoding="utf-8")
+                group.create_dataset(name, data=[json.dumps(elem, default=str) for elem in value], dtype=dt)
+                return
+
+        ## if its a dictionary, it could have ragged lists, so call this definition again on the values for proper handling
+        if isinstance(value, dict):
+            subgrp = group.create_group(name)
+            for sub_name, sub_val in value.items():
+                self.create_dataset(sub_name, sub_val, subgrp)
+            return
+
+        ## if none of those worked, do a json string again
+        json_str = json.dumps(value, default=str)
+        dt = h5py.string_dtype(encoding="utf-8")
+        group.create_dataset(name, data=np.array(json_str, dtype=dt))
+
+    def save_to_h5(self, data_type, save_dataset_clean=False, additional_title = ''):
         self.outerFolder_expt = os.path.join(self.outerFolder_expt, "Data_h5", f"{data_type}")
         self.create_folder_if_not_exists(self.outerFolder_expt)
         formatted_datetime =  datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        h5_filename = os.path.join(self.outerFolder_expt, f"{formatted_datetime}_" + f"{data_type}_results_batch_{self.batch_num}_" + f"Num_per_batch{self.save_r}.h5")
+        h5_filename = os.path.join(self.outerFolder_expt, f"{formatted_datetime}_" + f"{data_type}_results_batch_{self.batch_num}_" + f"Num_per_batch{self.save_r}{additional_title}.h5")
         with h5py.File(h5_filename, 'w') as f:
             f.attrs['datestr']=formatted_datetime
             f.attrs[f'{data_type}_results_batch']=self.batch_num
@@ -57,7 +130,11 @@ class Data_H5:
                 #grab keys and get data
                 for key, value in data.items():
                     if value is not None:  # check for None values before creating dataset
-                        self.create_dataset(key, value, group)
+                        if save_dataset_clean:
+                            self.create_dataset_clean(key, value, group)
+                        else:
+                            self.create_dataset(key, value, group)
+
 
         #self.print_h5_contents(h5_filename)
         #print(h5_filename)

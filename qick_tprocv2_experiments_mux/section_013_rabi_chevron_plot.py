@@ -47,7 +47,7 @@ multiply_qubit_reps_by = 2 #only has impact if the line two above is True
 
 #Folders
 study = 'gain_rabi_ge_qfreq_study'
-sub_study = 'initial_tests'
+sub_study = 'saving_rabi_shots'
 
 if not os.path.exists("/data/QICK_data/run6/"):
     os.makedirs("/data/QICK_data/run6/")
@@ -62,7 +62,7 @@ optimizationFolder = os.path.join(dataSetFolder, 'optimization')
 studyDocumentationFolder = os.path.join(dataSetFolder, 'documentation')
 studyFolder = os.path.join(dataSetFolder, 'study_data')
 
-path_saveplots = "/home/acolonce/run6/6transmon/plots/"
+path_saveplots = "/home/quietuser/acolonce/run6/6transmon/plots/"
 path_saveplots_chev = os.path.join(path_saveplots, f'rabi_chev_plots/{formatted_datetime}')
 path_saveplotsRR = os.path.join(path_saveplots, f'RR_plots/{formatted_datetime}')
 
@@ -465,12 +465,11 @@ for QubitIndex in Qs_to_look_at:
         # Plot chevron
         fig, ax = plt.subplots(figsize=(6, 5))
         im = ax.imshow(signal_map, aspect='auto', origin='lower',
-            extent=[
-                rabi_gains[0],  # gain min
-                rabi_gains[-1],  # gain max
-                freqs_mhz[0],  # freq min (MHz)
-                freqs_mhz[-1]  # freq max (MHz)
-            ])
+            extent=[rabi_gains[0],  # gain min
+                    rabi_gains[-1],  # gain max
+                    freqs_mhz[0],  # freq min (MHz)
+                    freqs_mhz[-1]  # freq max (MHz)
+                    ])
         ax.set_xlabel('Gain (amplitude)')
         ax.set_ylabel('Qubit Drive frequency (MHz)')
         ax.set_title(f'Rabi Chevron: Qubit {QubitIndex + 1}; g-e Qfreq = {qubit_freq}')
@@ -483,3 +482,4 @@ for QubitIndex in Qs_to_look_at:
         plt.close(fig)
 
         del experiment_template
+        del chevron_template
