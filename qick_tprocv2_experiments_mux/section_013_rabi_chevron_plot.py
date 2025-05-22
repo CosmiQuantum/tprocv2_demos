@@ -45,9 +45,15 @@ increase_qubit_reps = False #if you want to increase the reps for a qubit, set t
 qubit_to_increase_reps_for = 0 #only has impact if previous line is True
 multiply_qubit_reps_by = 2 #only has impact if the line two above is True
 
+#----For Rabi Chevron---
+sigma_multiplier = 5
+multiply_sigmas = True
+save_shots_chev = True
+#----------------------
+
 #Folders
 study = 'gain_rabi_ge_qfreq_study'
-sub_study = 'saving_rabi_shots'
+sub_study = 'rabi_Qfreq_2Dsweeps_wshots_quintupled_sigmas'
 
 if not os.path.exists("/data/QICK_data/run6/"):
     os.makedirs("/data/QICK_data/run6/")
@@ -374,15 +380,25 @@ for QubitIndex in Qs_to_look_at:
     experiment_template = copy.deepcopy(experiment) #optimized master copy
     chevron_template = copy.deepcopy(experiment_template) #separate chevron‐specific template
 
-    # Double sigmas only in the chevron copy
-    double_sigmas = True
-    if double_sigmas:
+    # multiply (increase) sigmas only in the chevron copy
+    if multiply_sigmas:
         for q in Qs_to_look_at:
-            chevron_template.qubit_cfg['sigma'][q] *= 2
+            chevron_template.qubit_cfg['sigma'][q] *= sigma_multiplier
 
     del experiment
     ####################################################### 2D sweep (Rabi Chevron) ######################################################
     if run_flags["rabi_ge_chevron"]:
+        """
+        rabi_I and rabi_Q are each a Python list, of length = number of rabi gain points, containing the averaged I- and Q-values at each gain.
+        rabi_Ishots and rabi_Qshots (when save_shots=True) are lists of length = number of rabi gain points, where each element is itself a list or array of the individual shot values for that gain.
+        rabi_gains is usually a NumPy array (or at least a list) of the rabi gain amplitudes you swept over.
+        
+        all_rabi_I is a 2-D numpy array of shape ( # freq steps, # gain points ), where each element is a single float (the averaged I value for that qubit frequency and rabi gain).
+        all_rabi_Q is a 2-D numpy array of shape ( # freq steps, # gain points ), where each element is a single float (the averaged Q value for that qubit frequency and rabi gain).
+        example of all_rabi_I and all_rabi_Q structure:
+            array([[0.10, 0.20, 0.15],
+            [0.12, 0.22, 0.18]])
+        """
         # frequency grid around optimized qubit freq center
         freq_steps = 45
         freqs_mhz = np.linspace(qubit_freq - 5, qubit_freq + 5, freq_steps)
@@ -395,17 +411,17 @@ for QubitIndex in Qs_to_look_at:
 
         for f in freqs_mhz:
             print('Rabi 2D sweep ongoing...')
-            # get the “optimized” experiment defined above
+            # get the “optimized” experiment defined above. If you set multiply_sigmas = True, this template includes the updated sigmas.
             experiment = copy.deepcopy(chevron_template)
 
-            # only change the qubit drive freq
+            # change the qubit drive freq
             experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(f)
 
             # run the gain‐sweep Rabi
-            save_shots_chev = True
-            rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, path_saveplotsRR,0, signal, save_shots = save_shots_chev, save_figs=False, experiment=experiment,
-                    live_plot=live_plot, increase_qubit_reps=increase_qubit_reps, qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                    multiply_qubit_reps_by=multiply_qubit_reps_by, verbose=verbose, logger=rr_logger, qick_verbose=qick_verbose)
+            rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, path_saveplotsRR,0, signal, save_shots = save_shots_chev,
+                    save_figs=False, experiment=experiment, live_plot=live_plot, increase_qubit_reps=increase_qubit_reps,
+                    qubit_to_increase_reps_for=qubit_to_increase_reps_for, multiply_qubit_reps_by=multiply_qubit_reps_by, verbose=verbose,
+                    logger=rr_logger, qick_verbose=qick_verbose)
             if save_shots_chev:
                 rabi_I, rabi_Q, rabi_Ishots, rabi_Qshots, rabi_gains, *_ = rabi.run()
                 all_rabi_Ishots.append(rabi_Ishots)
@@ -413,8 +429,8 @@ for QubitIndex in Qs_to_look_at:
             else:
                 rabi_I, rabi_Q, rabi_gains, *_ = rabi.run()
 
-            all_rabi_I.append(rabi_I)
-            all_rabi_Q.append(rabi_Q)
+            all_rabi_I.append(rabi_I) # all_rabi_I is a 2-D numpy array of shape ( # freq steps, # gain points )
+            all_rabi_Q.append(rabi_Q) # all_rabi_Q is a 2-D numpy array of shape ( # freq steps, # gain points )
 
             # compute signal magnitude √(I²+Q²)
             mag = np.sqrt(np.array(rabi_I) ** 2 + np.array(rabi_Q) ** 2)
@@ -459,7 +475,7 @@ for QubitIndex in Qs_to_look_at:
                 chev_data[QubitIndex]['res_freq_ge_MHz'][0] = this_res_freq
 
                 saver_chev = Data_H5(studyFolder, chev_data, 0, save_r)
-                saver_chev.save_to_h5('rabi_ge_chevron')
+                saver_chev.save_to_h5('rabi_ge_chevron_noshots')
             del saver_chev
 
         # Plot chevron
@@ -472,7 +488,7 @@ for QubitIndex in Qs_to_look_at:
                     ])
         ax.set_xlabel('Gain (amplitude)')
         ax.set_ylabel('Qubit Drive frequency (MHz)')
-        ax.set_title(f'Rabi Chevron: Qubit {QubitIndex + 1}; g-e Qfreq = {qubit_freq}')
+        ax.set_title(f'Rabi Chevron: Qubit {QubitIndex + 1}; g-e Qfreq = {qubit_freq:.4f}')
         plt.colorbar(im, ax=ax, label='IQ Signal Mag (a. u.)')
         plt.tight_layout()
 
