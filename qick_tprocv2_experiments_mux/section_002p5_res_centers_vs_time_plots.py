@@ -52,18 +52,23 @@ class KappaPunchOutMeasurement:
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} Res Spec configuration: {self.config}')
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} Res Spec configuration: ', self.config)
 
-    def run(self):
+    def run(self, gain):
         fpts = self.exp_cfg["start"] + self.exp_cfg["step_size"] * np.arange(self.exp_cfg["steps"])
         fcenter = self.config['res_freq_ge']
         amps = np.zeros((len(fcenter), len(fpts)))
 
+        self.exp_cfg["list_of_all_qubits"]=[self.QubitIndex] #mask only one value
+        self.config["res_gain_ge"][self.QubitIndex] = gain  #give it all the gain
+
         for index, f in enumerate(tqdm(fpts)):
             self.config["res_freq_ge"] = fcenter + f
+
             prog = KappaProgram(self.experiment.soccfg, reps=self.exp_cfg["reps"], final_delay=0.5, cfg=self.config)
             iq_list = prog.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=self.qick_verbose)
             for i in range(len(self.config['res_freq_ge'])):
                 amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])
         amps = np.array(amps)
+
         res_freqs = self.plot_results(fpts, fcenter, amps) #return freqs from plotting loop so we can use to update experiment
 
         return res_freqs, fpts, fcenter, amps, self.config

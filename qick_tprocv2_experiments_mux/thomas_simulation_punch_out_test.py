@@ -146,16 +146,17 @@ for QubitIndex in Qs_to_look_at:
     experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
 
     ################################ Do Res spec punch out test ####################################
-    gains = np.linspace(0.1,1,1)
+    gains = np.linspace(0,0.3,20)
     for gain in gains:
+        exp_copy=deepcopy(experiment)
         res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
         res_spec = KappaPunchOutMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, 0,
-                                         save_figs=True, experiment=experiment, verbose=verbose,
+                                         save_figs=True, experiment=exp_copy, verbose=verbose,
                                          logger=rr_logger, qick_verbose=True)
 
-        res_freqs, freq_pts, freq_center, amps, sys_config_rspec = res_spec.run()
+        res_freqs, freq_pts, freq_center, amps, sys_config_rspec = res_spec.run(gain)
 
-        experiment.readout_cfg['res_freq_ge'] = res_freqs
+        exp_copy.readout_cfg['res_freq_ge'] = res_freqs
         rr_logger.info(f"ResSpec for qubit {QubitIndex}: {res_freqs}")
 
         res_data[QubitIndex]['Dates'][0] = (
@@ -175,3 +176,4 @@ for QubitIndex in Qs_to_look_at:
         del res_data
         res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)  # initialize again to a blank for saftey
         del res_spec
+        del exp_copy

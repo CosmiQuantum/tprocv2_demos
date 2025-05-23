@@ -47,7 +47,7 @@ final_figure_quality = 100
 FRIDGE = "QUIET"
 run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB attenuator ') #please make it brief for the plot
 
-date='no_qubit_rabi_drive2025-05-20_06-55-16'
+date='no_qubit_rabi_drive2025-05-22_09-16-59'
 
 outerFolder = '/data/QICK_data/run6/6transmon/QZE/rabi/study_data'
 outerFolder_systematics = f'/data/QICK_data/run6/6transmon/QZE/rabi/{date}/study_data'
@@ -64,7 +64,7 @@ pi_amps_vs_time = PiAmpsVsTime(figure_quality, final_figure_quality, tot_num_of_
 pi_amps_vs_time.runQZE(outerFolder_systematics, outerFolder_save_plots, fit=False, expt_name = "length_rabi_ge_qze",
                        old_format=False, filter_amp_above=0, mark_w01s=True, plot_detuned_amps=True,plot_detuning=True,
                        pi_line_label_left='No\nZeno\nPulse',pi_line_label_right='Zeno Pulse', qubit_index=1,
-                       z_limit=None,z_limit_lower=None, gain_max=0.075)#5.5
+                       z_limit=None,z_limit_lower=None, gain_max=1)#5.5
 # pi_amps_vs_time.runQZE_systematics_subtraction(outerFolder, outerFolder_systematics, outerFolder_save_plots,
 #                                                fit=False, expt_name = "length_rabi_ge_qze")
 #

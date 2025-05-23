@@ -154,13 +154,14 @@ if FRIDGE == "QUIET":
             "reps": 400,  # 500,
             "rounds": 1, #600
             "start": [0.01] * 6,  # [us]
-            "stop": [10] * 6,   #[3] * 6,   # [us]
-            "steps": 150,  # 140,
+            "stop": [100] * 6,   #[3] * 6,   # [us]
+            "steps": 700,  # 140,
             "relax_delay": 1000,# [us]
             "list_of_all_qubits": list_of_all_qubits,
             "qze_mask": [],
             "zeno_pulse_width": 0.007,
             "zeno_pulse_period": 0.10,
+            "time_with_no_pulse": 100 #us
         },
 
         "power_rabi_ef": {

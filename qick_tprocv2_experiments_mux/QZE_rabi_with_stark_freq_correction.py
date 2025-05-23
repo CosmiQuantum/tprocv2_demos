@@ -300,9 +300,9 @@ for QubitIndex in Qs_to_look_at:
     qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
 
     ###################################### amp rabi for single shot optimization #########################################
-    rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, optimizationFolder, j, signal,
-                                   True, experiment, live_plot,
-                                   increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
+    rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, optimizationFolder, j, signal, experiment=experiment, live_plot=live_plot,
+                                   increase_qubit_reps=increase_qubit_reps, qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                   multiply_qubit_reps_by=qubit_to_increase_reps_for)
     rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save = rabi.run()
 
     experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
@@ -330,19 +330,19 @@ for QubitIndex in Qs_to_look_at:
     len_to_print = get_pi_len_experiment.qubit_cfg['qubit_length_ge']
     print(f'unstarked rabi pi len using qubit pulse gain of {gain_to_print} and pulse length of {len_to_print} is {stored_pi_len_no_qze}')
 
-    #################################################### Optimization ##################################################
-    freq_offset_steps = 5
-    ssf_avgs_per_opt_pt = 5
-    freq_range = np.linspace(-0.5, 0.5, freq_offset_steps)
-
-    optimal_offset, ssf_dict = sweep_frequency_offset(experiment, QubitIndex, freq_range, n_loops=ssf_avgs_per_opt_pt,
-                                                      number_of_qubits=6,
-                                                      outerFolder=optimizationFolder,
-                                                      studyDocumentationFolder_opt=studyDocumentationFolder,
-                                                      optimizationFolder_opt=optimizationFolder, j=0)
-
-    offset_res_freqs = [r + optimal_offset for r in experiment.readout_cfg['res_freq_ge']]
-    experiment.readout_cfg['res_freq_ge'] = offset_res_freqs  # update with ofset added
+    # #################################################### Optimization ##################################################
+    # freq_offset_steps = 5
+    # ssf_avgs_per_opt_pt = 5
+    # freq_range = np.linspace(-0.5, 0.5, freq_offset_steps)
+    #
+    # optimal_offset, ssf_dict = sweep_frequency_offset(experiment, QubitIndex, freq_range, n_loops=ssf_avgs_per_opt_pt,
+    #                                                   number_of_qubits=6,
+    #                                                   outerFolder=optimizationFolder,
+    #                                                   studyDocumentationFolder_opt=studyDocumentationFolder,
+    #                                                   optimizationFolder_opt=optimizationFolder, j=0)
+    #
+    # offset_res_freqs = [r + optimal_offset for r in experiment.readout_cfg['res_freq_ge']]
+    # experiment.readout_cfg['res_freq_ge'] = offset_res_freqs  # update with ofset added
 
     # ############################################### rabi chevron after pi pulse ########################################
     # qubit_freq_offset_mhz = np.linspace(0, 3, 150)
@@ -384,7 +384,7 @@ for QubitIndex in Qs_to_look_at:
     #     rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
 
     #################################################### Rabi QZE ######################################################
-    qze_pulse_gains=np.linspace(0.001, 0.1, 20)
+    qze_pulse_gains=np.linspace(0.001, 1, 10)
     #qze_pulse_gains = [0.01,0.1, 0.3, 0.6, 0.8, 1]
 
     I=[]
@@ -468,7 +468,7 @@ for QubitIndex in Qs_to_look_at:
         (rabi_I_QZE, rabi_Q_QZE, rabi_magnitude_QZE, rabi_gains_QZE, rabi_fit_QZE, pi_amp_QZE,
          sys_config_rabi_QZE) = rabi.run_QZE_one_starked_qfreq(wait_for_res_ring_up=wait_for_res_ring_up,
                                                                exp=exp, optimizationFolder=optimizationFolder, subStudyFolder=subStudyDataFolder,
-                                                                three_pulse_binary=False)
+                                                                three_pulse_binary=False, turn_pulse_off_after_T1=True)
 
         # (rabi_I_QZE, rabi_Q_QZE, rabi_magnitude_QZE, rabi_gains_QZE, rabi_fit_QZE, pi_amp_QZE,
         #  sys_config_rabi_QZE) = rabi.run_QZE_starked_qfreq_test(wait_for_res_ring_up=wait_for_res_ring_up,
