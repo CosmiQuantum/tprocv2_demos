@@ -41,6 +41,16 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
         },
 
+        "res_spec_fh": {
+            "reps": 200,
+            "rounds": 1,
+            "start": -2,  # [MHz]
+            "step_size": 0.05,  # [MHz]
+            "steps": 100,
+            "relax_delay": 600,  # [us]
+            "list_of_all_qubits": list_of_all_qubits,
+        },
+
         "qubit_spec_ge": {
             "reps": 500, #300
             "rounds": 1, #10
@@ -318,6 +328,33 @@ if FRIDGE == "QUIET":
             "ramsey_freq": 0.12,  # [MHz]
             "relax_delay": 1000, # [us]
             "wait_time": 0.0, # [us]
+            "list_of_all_qubits": list_of_all_qubits,
+        },
+
+        "Dephasing_ge": {
+            "reps": 500,
+            "rounds": 1,
+            "start": [0.0] * 6,  # [us]
+            "stop": [80] * 6,  # [us]
+            "steps": 100,
+            "ramsey_freq": 0.12,  # [MHz]
+            "relax_delay": 1000,  # [us]
+            "wait_time": 0.0,  # [us]
+            "dephasing_rounds_plus_1": 10,
+            "list_of_all_qubits": list_of_all_qubits,
+        },
+
+        "Dephasing_ge_with_ef_noise": {
+            "reps": 500,
+            "rounds": 1,
+            "start": [0.0] * 6,  # [us]
+            "stop": [80] * 6,  # [us]
+            "steps": 100,
+            "ramsey_freq": 0.12,  # [MHz]
+            "relax_delay": 1000,  # [us]
+            "wait_time": 0.0,  # [us]
+            "dephasing_rounds_plus_1": 10,
+            "noise_offset_freq_from_ef":2, #MHz
             "list_of_all_qubits": list_of_all_qubits,
         },
     #
