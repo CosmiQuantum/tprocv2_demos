@@ -18,7 +18,7 @@ from section_005_single_shot_ge import SingleShot
 from section_008_save_data_to_h5 import Data_H5
 from system_config import QICK_experiment
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
-
+from section_004_qubit_spec_ge import QZEStyleResStarkShift2D
 ################################################ Run Configurations ####################################################
 zero_qubit_drive_gain = False
 constant_zeno_pulse = True
@@ -40,8 +40,7 @@ multiply_qubit_reps_by = 2           # only has impact if the line two above is 
 Qs_to_look_at = [1]        # only list the qubits you want to do the RR for
 study = 'QZE'
 sub_study = 'rabi'
-substudy_txt_notes = ('try without a rabi drive to see if brightness thing stays')
-# substudy_txt_notes = ('making a qubit frequency vs qubit pulse length sweep for a given zeno pulse gain. This will tell me '
+#substudy_txt_notes = ('making a qubit frequency vs qubit pulse length sweep for a given zeno pulse gain. This will tell me '
 #                       'if i can use a singe value for the starked qubit frequency for every rabi value, or if i need to '
 #                       'update it for every point. My prediction is that as long as I wait for the resonator ring up before '
 #                       'doing the qubit pulse this should be constant on average across the x axis. ill try for a few different zeno gains.')
@@ -62,8 +61,9 @@ subStudyFolder = os.path.join(studyFolder, sub_study)
 if not os.path.exists(subStudyFolder):
     os.makedirs(subStudyFolder)
 
+substudy_txt_notes = ('try without a rabi drive or res pulse amd measure T1 to see if brightness thing stays')
 formatted_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-formatted_datetime = 'no_qubit_rabi_drive'+formatted_datetime
+formatted_datetime = 't1_test_version1'+formatted_datetime
 dataSetFolder = os.path.join(subStudyFolder, formatted_datetime)
 optimizationFolder = os.path.join(dataSetFolder, 'optimization')
 studyFolder = os.path.join(dataSetFolder, 'study_data')
@@ -393,7 +393,6 @@ for QubitIndex in Qs_to_look_at:
     starked_freqs=[]
     for gain in qze_pulse_gains:
         #################################### try starking qubit freqency but qze style ####################################
-        from section_004_qubit_spec_ge import QZEStyleResStarkShift2D
         import copy
 
         stark2D_keys = ['Dates', 'I', 'Q', 'Qu Frequency Sweep', 'Res Gain Sweep', 'Round Num', 'Batch Num',
@@ -458,24 +457,11 @@ for QubitIndex in Qs_to_look_at:
                                     multiply_qubit_reps_by=multiply_qubit_reps_by,
                                     verbose=True, QZE=True, zeno_pulse_gain=gain)
 
-
-        # # (rabi_I_QZE, rabi_Q_QZE, rabi_magnitude_QZE, rabi_gains_QZE, rabi_fit_QZE, pi_amp_QZE,
-        # #  sys_config_rabi_QZE) = (
-        # rabi.run_QZE_one_starked_qfreq(wait_for_res_ring_up=wait_for_res_ring_up,
-        #                                                        exp=exp, optimizationFolder=optimizationFolder, subStudyFolder=subStudyDataFolder,
-        #                                                         three_pulse_binary=False)
-
         (rabi_I_QZE, rabi_Q_QZE, rabi_magnitude_QZE, rabi_gains_QZE, rabi_fit_QZE, pi_amp_QZE,
          sys_config_rabi_QZE) = rabi.run_QZE_one_starked_qfreq(wait_for_res_ring_up=wait_for_res_ring_up,
                                                                exp=exp, optimizationFolder=optimizationFolder, subStudyFolder=subStudyDataFolder,
                                                                 three_pulse_binary=False, turn_pulse_off_after_T1=True,
                                                                check_t1_with_qubit_pulse_on=False,check_t1_with_res_pulse_on=False)
-
-        # (rabi_I_QZE, rabi_Q_QZE, rabi_magnitude_QZE, rabi_gains_QZE, rabi_fit_QZE, pi_amp_QZE,
-        #  sys_config_rabi_QZE) = rabi.run_QZE_starked_qfreq_test(wait_for_res_ring_up=wait_for_res_ring_up,
-        #                                                        exp=exp, optimizationFolder=optimizationFolder,
-        #                                                        subStudyFolder=subStudyDataFolder,
-        #                                                        three_pulse_binary=False)
 
         print('Moving to next zeno gain loop')
         # rabi.run_QZE(thresholding=thresholding)
@@ -507,53 +493,256 @@ for QubitIndex in Qs_to_look_at:
         # reset all dictionaries to none for safety
         rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
 
-    del experiment
+    substudy_txt_notes = ('try without a res pulse but keep qubit drive on and measure T1 to see if brightness thing stays')
+    formatted_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    formatted_datetime = 't1_test_version2' + formatted_datetime
+    dataSetFolder = os.path.join(subStudyFolder, formatted_datetime)
+    optimizationFolder = os.path.join(dataSetFolder, 'optimization')
+    studyFolder = os.path.join(dataSetFolder, 'study_data')
+    studyDocumentationFolder = os.path.join(dataSetFolder, 'documentation')
+    subStudyDataFolder = os.path.join(dataSetFolder, 'study_data')
+    if not os.path.exists(studyDocumentationFolder):
+        os.makedirs(studyDocumentationFolder)
+    if not os.path.exists(optimizationFolder):
+        os.makedirs(optimizationFolder)
+    if not os.path.exists(subStudyDataFolder):
+        os.makedirs(subStudyDataFolder)
+
+    file_path = os.path.join(studyDocumentationFolder, 'sub_study_notes.txt')
+    with open(file_path, "w", encoding="utf-8") as file:
+        file.write(substudy_txt_notes)
+    I=[]
+    Q=[]
+    stark_res_qu_freq_sweep=None
+    starked_freqs=[]
+    for gain in qze_pulse_gains:
+        #################################### try starking qubit freqency but qze style ####################################
+        import copy
+
+        stark2D_keys = ['Dates', 'I', 'Q', 'Qu Frequency Sweep', 'Res Gain Sweep', 'Round Num', 'Batch Num',
+                        'Exp Config',
+                        'Syst Config']
+        res_stark_data = create_data_dict(stark2D_keys, save_r, list_of_all_qubits)
+        res_freq_stark = copy.deepcopy(experiment.readout_cfg['res_freq_ge'])
+        res_freq_stark.append(res_freq_stark[QubitIndex])
+
+        res_phase_stark = copy.deepcopy(experiment.readout_cfg['res_phase'])
+        res_phase_stark.append(res_phase_stark[QubitIndex])
+        res_stark_shift_2D = QZEStyleResStarkShift2D(QubitIndex, tot_num_of_qubits, optimizationFolder, res_freq_stark,
+                                                     res_phase_stark, save_figs, experiment=experiment, zeno_stark_pulse_gain=gain)
+        stark_res_I, stark_res_Q, stark_res_qu_freq_sweep, starked_freq, fwhm_starked, sys_config_stark_res = res_stark_shift_2D.run()
+
+        # from section_004_qubit_spec_ge import ResStarkShift2DAdapted
+        # res_stark_shift_2D = ResStarkShift2DAdapted(QubitIndex, tot_num_of_qubits, optimizationFolder, res_freq_stark,
+        #                                              res_phase_stark, save_figs, experiment=experiment,
+        #                                              )
+        # stark_res_I, stark_res_Q, stark_res_qu_freq_sweep, sys_config_stark_res = res_stark_shift_2D.run()
 
 
-    # import matplotlib.pyplot as plt
-    #
-    # ###check that im finding starked freq
-    # plt.figure()
-    # plt.plot(qze_pulse_gains,starked_freqs)
-    # plt.xlabel('qze_pulse_gains')
-    # plt.ylabel('starked_freq MHz')
-    # #plt.show()
-    # #### plot starked qubit spectroscopy if experiment was done above
-    # fig, axes = plt.subplots(1, 3, figsize=(9, 3))
-    #
-    # if type(qze_pulse_gains) is list:
-    #     qze_pulse_gains=np.array(qze_pulse_gains)
-    #
-    # plot = axes[0]
-    # plot.set_box_aspect(1)
-    # plt.colorbar(plot.pcolormesh(stark_res_qu_freq_sweep, qze_pulse_gains, I, cmap="viridis"), ax=plot, shrink=0.7)
-    # plot.set_title("I [a.u.]")
-    # plot.set_ylabel("stark tone power [a.u.]")
-    # plot.set_xlabel("qubit pulse frequency [MHz]")
-    #
-    # plot = axes[1]
-    # plot.set_box_aspect(1)
-    # plt.colorbar(plot.pcolormesh(stark_res_qu_freq_sweep, qze_pulse_gains, Q, cmap='viridis'), ax=plot, shrink=0.7)
-    # plot.set_title("Q [a.u.]")
-    # plot.set_ylabel("stark tone power [a.u.]")
-    # plot.set_xlabel("qubit pulse frequency [MHz]")
-    #
-    # plot = axes[2]
-    # plot.set_box_aspect(1)
-    # plt.colorbar(plot.pcolormesh(stark_res_qu_freq_sweep, qze_pulse_gains, np.sqrt(np.square(I) + np.square(Q)), cmap='viridis'), ax=plot,
-    #              shrink=0.7)
-    # plot.set_title("magnitude")
-    # plot.set_ylabel("stark tone power [a.u.]")
-    # plot.set_xlabel("qubit pulse frequency [MHz]")
-    #
-    # plt.show()
-    #
-    #
-    # now = datetime.datetime.now()
-    # formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-    # file_name = os.path.join(optimizationFolder, f"{formatted_datetime}_"  + f"_q{QubitIndex}.png")
-    # fig.savefig(file_name, dpi=100, bbox_inches='tight')
-    # plt.close(fig)
+        I.append(stark_res_I)
+        Q.append(stark_res_Q)
+        starked_freqs.append(starked_freq)
+        print(fwhm_starked)
+        res_stark_data[QubitIndex]['Dates'][0] = time.mktime(datetime.datetime.now().timetuple())
+        res_stark_data[QubitIndex]['I'][0] = stark_res_I
+        res_stark_data[QubitIndex]['Q'][0] = stark_res_Q
+        res_stark_data[QubitIndex]['Qu Frequency Sweep'][0] = stark_res_qu_freq_sweep
+        res_stark_data[QubitIndex]['Res Gain Sweep'][0] = None
+        res_stark_data[QubitIndex]['Round Num'][0] = 0
+        res_stark_data[QubitIndex]['Batch Num'][0] = 0
+        res_stark_data[QubitIndex]['Exp Config'][0] = expt_cfg
+        res_stark_data[QubitIndex]['Syst Config'][0] = sys_config_stark_res
+
+        saver_stark_res = Data_H5(optimizationFolder, res_stark_data, 0, save_r)
+        saver_stark_res.save_to_h5('stark_res_calibration')
+
+        del saver_stark_res
+        del res_stark_shift_2D
+        del res_stark_data
+
+        experiment.qubit_cfg['fwhm_w01_starked'] = fwhm_starked
+        experiment.qubit_cfg['qubit_freq_ge_starked'][QubitIndex] = starked_freq #save the found starked freq
+
+        ##################### start rabi experiment
+        j += 1
+        experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
+
+        # tof = TOFExperiment(QubitIndex, outerFolder, experiment, j, save_figs)
+        # tof.run()
+
+        ################################### Do Rabi and store the value #####################################
+        exp = deepcopy(experiment) #before updating for qze on ch 7, use for qspec
+        # exp.qubit_cfg['qubit_gain_ge'][
+        #     QubitIndex] = 0
+        rabi = LengthRabiExperimentQZE(QubitIndex, tot_num_of_qubits, subStudyDataFolder, j, signal, save_figs,
+                                    experiment=exp, live_plot=live_plot,
+                                    increase_qubit_reps=increase_qubit_reps,
+                                    qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                    multiply_qubit_reps_by=multiply_qubit_reps_by,
+                                    verbose=True, QZE=True, zeno_pulse_gain=gain)
+
+        (rabi_I_QZE, rabi_Q_QZE, rabi_magnitude_QZE, rabi_gains_QZE, rabi_fit_QZE, pi_amp_QZE,
+         sys_config_rabi_QZE) = rabi.run_QZE_one_starked_qfreq(wait_for_res_ring_up=wait_for_res_ring_up,
+                                                               exp=exp, optimizationFolder=optimizationFolder, subStudyFolder=subStudyDataFolder,
+                                                                three_pulse_binary=False, turn_pulse_off_after_T1=False,
+                                                               check_t1_with_qubit_pulse_on=True,check_t1_with_res_pulse_on=False)
+
+        print('Moving to next zeno gain loop')
+        # rabi.run_QZE(thresholding=thresholding)
+        # rabi.run_oscilliscope_zeno(thresholding=thresholding)
+
+        del rabi
+
+        ############################################### Collect Results ################################################
+
+        # ---------------------Collect Rabi Results----------------
+        rabi_data[QubitIndex]['Dates'][0] = (
+            time.mktime(datetime.datetime.now().timetuple()))
+        rabi_data[QubitIndex]['I'][0] = rabi_I_QZE
+        rabi_data[QubitIndex]['Q'][0] = rabi_Q_QZE
+        rabi_data[QubitIndex]['Mag'][0] = rabi_magnitude_QZE
+        rabi_data[QubitIndex]['Gains'][0] = rabi_gains_QZE
+        rabi_data[QubitIndex]['Fit'][0] = rabi_fit_QZE
+        rabi_data[QubitIndex]['Round Num'][0] = j
+        rabi_data[QubitIndex]['Batch Num'][0] = batch_num
+        rabi_data[QubitIndex]['Exp Config'][0] = expt_cfg
+        rabi_data[QubitIndex]['Syst Config'][0] = sys_config_rabi_QZE
+
+        # --------------------------save Rabi-----------------------
+        saver_rabi = Data_H5(subStudyDataFolder, rabi_data, 0, save_r)
+        saver_rabi.save_to_h5('Rabi_QZE')
+        del saver_rabi
+        del rabi_data
+
+        # reset all dictionaries to none for safety
+        rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
+
+    substudy_txt_notes = (
+        'try without a qubit pulse but keep increasing height res drive on and measure T1 to see if brightness thing stays')
+    formatted_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    formatted_datetime = 't1_test_version3' + formatted_datetime
+    dataSetFolder = os.path.join(subStudyFolder, formatted_datetime)
+    optimizationFolder = os.path.join(dataSetFolder, 'optimization')
+    studyFolder = os.path.join(dataSetFolder, 'study_data')
+    studyDocumentationFolder = os.path.join(dataSetFolder, 'documentation')
+    subStudyDataFolder = os.path.join(dataSetFolder, 'study_data')
+    if not os.path.exists(studyDocumentationFolder):
+        os.makedirs(studyDocumentationFolder)
+    if not os.path.exists(optimizationFolder):
+        os.makedirs(optimizationFolder)
+    if not os.path.exists(subStudyDataFolder):
+        os.makedirs(subStudyDataFolder)
+
+    I = []
+    Q = []
+    stark_res_qu_freq_sweep = None
+    starked_freqs = []
+    for gain in qze_pulse_gains:
+        #################################### try starking qubit freqency but qze style ####################################
+        import copy
+
+        stark2D_keys = ['Dates', 'I', 'Q', 'Qu Frequency Sweep', 'Res Gain Sweep', 'Round Num', 'Batch Num',
+                        'Exp Config',
+                        'Syst Config']
+        res_stark_data = create_data_dict(stark2D_keys, save_r, list_of_all_qubits)
+        res_freq_stark = copy.deepcopy(experiment.readout_cfg['res_freq_ge'])
+        res_freq_stark.append(res_freq_stark[QubitIndex])
+
+        res_phase_stark = copy.deepcopy(experiment.readout_cfg['res_phase'])
+        res_phase_stark.append(res_phase_stark[QubitIndex])
+        res_stark_shift_2D = QZEStyleResStarkShift2D(QubitIndex, tot_num_of_qubits, optimizationFolder, res_freq_stark,
+                                                     res_phase_stark, save_figs, experiment=experiment,
+                                                     zeno_stark_pulse_gain=gain)
+        stark_res_I, stark_res_Q, stark_res_qu_freq_sweep, starked_freq, fwhm_starked, sys_config_stark_res = res_stark_shift_2D.run()
+
+        # from section_004_qubit_spec_ge import ResStarkShift2DAdapted
+        # res_stark_shift_2D = ResStarkShift2DAdapted(QubitIndex, tot_num_of_qubits, optimizationFolder, res_freq_stark,
+        #                                              res_phase_stark, save_figs, experiment=experiment,
+        #                                              )
+        # stark_res_I, stark_res_Q, stark_res_qu_freq_sweep, sys_config_stark_res = res_stark_shift_2D.run()
+
+        I.append(stark_res_I)
+        Q.append(stark_res_Q)
+        starked_freqs.append(starked_freq)
+        print(fwhm_starked)
+        res_stark_data[QubitIndex]['Dates'][0] = time.mktime(datetime.datetime.now().timetuple())
+        res_stark_data[QubitIndex]['I'][0] = stark_res_I
+        res_stark_data[QubitIndex]['Q'][0] = stark_res_Q
+        res_stark_data[QubitIndex]['Qu Frequency Sweep'][0] = stark_res_qu_freq_sweep
+        res_stark_data[QubitIndex]['Res Gain Sweep'][0] = None
+        res_stark_data[QubitIndex]['Round Num'][0] = 0
+        res_stark_data[QubitIndex]['Batch Num'][0] = 0
+        res_stark_data[QubitIndex]['Exp Config'][0] = expt_cfg
+        res_stark_data[QubitIndex]['Syst Config'][0] = sys_config_stark_res
+
+        saver_stark_res = Data_H5(optimizationFolder, res_stark_data, 0, save_r)
+        saver_stark_res.save_to_h5('stark_res_calibration')
+
+        del saver_stark_res
+        del res_stark_shift_2D
+        del res_stark_data
+
+        experiment.qubit_cfg['fwhm_w01_starked'] = fwhm_starked
+        experiment.qubit_cfg['qubit_freq_ge_starked'][QubitIndex] = starked_freq  # save the found starked freq
+
+        ##################### start rabi experiment
+        j += 1
+        experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
+
+        # tof = TOFExperiment(QubitIndex, outerFolder, experiment, j, save_figs)
+        # tof.run()
+
+        ################################### Do Rabi and store the value #####################################
+        exp = deepcopy(experiment)  # before updating for qze on ch 7, use for qspec
+        # exp.qubit_cfg['qubit_gain_ge'][
+        #     QubitIndex] = 0
+        rabi = LengthRabiExperimentQZE(QubitIndex, tot_num_of_qubits, subStudyDataFolder, j, signal, save_figs,
+                                       experiment=exp, live_plot=live_plot,
+                                       increase_qubit_reps=increase_qubit_reps,
+                                       qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                       multiply_qubit_reps_by=multiply_qubit_reps_by,
+                                       verbose=True, QZE=True, zeno_pulse_gain=gain)
+
+        (rabi_I_QZE, rabi_Q_QZE, rabi_magnitude_QZE, rabi_gains_QZE, rabi_fit_QZE, pi_amp_QZE,
+         sys_config_rabi_QZE) = rabi.run_QZE_one_starked_qfreq(wait_for_res_ring_up=wait_for_res_ring_up,
+                                                               exp=exp, optimizationFolder=optimizationFolder,
+                                                               subStudyFolder=subStudyDataFolder,
+                                                               three_pulse_binary=False, turn_pulse_off_after_T1=False,
+                                                               check_t1_with_qubit_pulse_on=False,
+                                                               check_t1_with_res_pulse_on=True)
+
+        print('Moving to next zeno gain loop')
+        # rabi.run_QZE(thresholding=thresholding)
+        # rabi.run_oscilliscope_zeno(thresholding=thresholding)
+
+        del rabi
+
+        ############################################### Collect Results ################################################
+
+        # ---------------------Collect Rabi Results----------------
+        rabi_data[QubitIndex]['Dates'][0] = (
+            time.mktime(datetime.datetime.now().timetuple()))
+        rabi_data[QubitIndex]['I'][0] = rabi_I_QZE
+        rabi_data[QubitIndex]['Q'][0] = rabi_Q_QZE
+        rabi_data[QubitIndex]['Mag'][0] = rabi_magnitude_QZE
+        rabi_data[QubitIndex]['Gains'][0] = rabi_gains_QZE
+        rabi_data[QubitIndex]['Fit'][0] = rabi_fit_QZE
+        rabi_data[QubitIndex]['Round Num'][0] = j
+        rabi_data[QubitIndex]['Batch Num'][0] = batch_num
+        rabi_data[QubitIndex]['Exp Config'][0] = expt_cfg
+        rabi_data[QubitIndex]['Syst Config'][0] = sys_config_rabi_QZE
+
+        # --------------------------save Rabi-----------------------
+        saver_rabi = Data_H5(subStudyDataFolder, rabi_data, 0, save_r)
+        saver_rabi.save_to_h5('Rabi_QZE')
+        del saver_rabi
+        del rabi_data
+
+        # reset all dictionaries to none for safety
+        rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
+
+
+
 
 
 
