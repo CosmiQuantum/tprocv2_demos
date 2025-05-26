@@ -1540,7 +1540,7 @@ class PlotRR_noQick:
 
     def load_plot_save_q_spec(self):
         # ----------------------------------------------Load/Plot/Save QSpec------------------------------------
-        outerFolder_expt = self.outerFolder + "/Data_h5/QSpec_ge/"
+        outerFolder_expt = self.outerFolder + "/Data_h5/qspec_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
         extracted_freqs = []
         for h5_file in h5_files:
@@ -1604,7 +1604,7 @@ class PlotRR_noQick:
     def load_plot_save_rabis_Qtemps(self, list_of_all_qubits):
         # ------------------------------------------------Load/Plot/Save Rabi---------------------------------------
         outerFolder_expt_qtemps = self.unique_folder_path+ "/Data_h5/q_temperatures/"
-        h5_files = glob.glob(os.path.join(outerFolder_expt_qtemps, "*.h5"))
+        h5_files_qtemps = glob.glob(os.path.join(outerFolder_expt_qtemps, "*.h5"))
         all_files_Qtemp_results = [] #to store qubit temperature results
         cutoff_timestamp = datetime.datetime(2025, 4, 11, 19, 0).timestamp()  # when I started saving qubit freqs in the same files
 
@@ -1617,7 +1617,7 @@ class PlotRR_noQick:
         for qkey in qspec_grouped_by_qkey:
             qspec_grouped_by_qkey[qkey].sort(key=lambda x: x['timestamp'])
 
-        for h5_file in h5_files:
+        for h5_file in h5_files_qtemps:
 
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
             H5_class_instance = Data_H5(h5_file)
