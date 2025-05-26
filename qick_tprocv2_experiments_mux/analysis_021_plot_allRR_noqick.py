@@ -1652,78 +1652,57 @@ class PlotRR_noQick:
                         # Files after this date contain the matching g-e qubit frequency already BUT the files do not contain the corresponding qspec fit errors.
 
                         # The line below extracts the qfreq saved in each rabi pop. meas. file, but it does not extract the error of the qspec fit because that was not saved in the h5 files.
-                        qubit_freq_MHz_rpmfile = load_data['q_temperatures'][q_key].get('Qfreq_ge', [])[0][dataset] #extract anyways to compare with the 'matching' method
+                        qubit_freq_MHz_rpmfile = load_data['q_temperatures'][q_key].get('Qfreq_ge', [])[0][dataset] #extract to compare with the 'matching' method
                         print(f"QSpec from RPM file, Q{q_key}: {qubit_freq_MHz_rpmfile:.3f} MHz") # print to compare
 
-                        # To find the qspec fit error, we have to match the qspec files to the RPM files via time stamps
+                        # To find the correct qspec fit error from the ge qspec files, we have to match the qspec files to the RPM files via time stamps.
 
-                        # look through matching qspec file
-                        qtemp_timestamp = date.timestamp()  # Timestamp of this q_temperatures entry
+                        # Build the QTemp timestamp:
+                        qtemp_timestamp = date.timestamp()
 
-                        # Get all QSpec entries for this qubit
+                        # Grab all QSpec entries for this qubit:
                         qspec_entries = qspec_grouped_by_qkey.get(int(q_key), [])
-
                         if not qspec_entries:
                             print(f"No QSpec entries found for Q{q_key}")
                             continue
 
-                        # Extract sorted timestamps to use with bisect
-                        qspec_timestamps = [entry['timestamp'] for entry in qspec_entries]
+                        # Find the QSpec dict whose timestamp is closest to qtemp_timestamp:
+                        # Computes the absolute time difference between that entry’s timestamp and your current qubit‐temperature timestamp
+                        closest_match = min(
+                            qspec_entries,
+                            key=lambda entry: abs(entry['timestamp'] - qtemp_timestamp) ) # tells Python to pick the element for which the key function returns the smallest value
 
-                        # Use bisect to find the insertion index
-                        idx = bisect_left(qspec_timestamps, qtemp_timestamp)
+                        # Extract frequency and its fit error from that match:
+                        qubit_freq_MHz = closest_match['freq_MHz']
+                        qfreq_err = closest_match['Qfreq_fit_err']
 
-                        # Search nearby indices (at most 3 comparisons)
-                        closest_match = None
-                        min_time_diff = float("inf")
-                        for i in [idx - 1, idx, idx + 1]:
-                            if 0 <= i < len(qspec_entries):
-                                time_diff = abs(qspec_entries[i]['timestamp'] - qtemp_timestamp)
-                                if time_diff < 60 and time_diff < min_time_diff:
-                                    closest_match = qspec_entries[i]
-                                    min_time_diff = time_diff
-
-                        if closest_match is not None:
-                            qubit_freq_MHz = closest_match['freq_MHz']
-                            print(f"QSpec from matched Qspec file, Q{q_key}: {qubit_freq_MHz:.3f} MHz")
-                            qfreq_err = closest_match['Qfreq_fit_err'] # now you have the corresponding fit err
-                        else:
-                            print(f"No timestamp match in QSpec for Q{q_key} near {qtemp_timestamp}")
-                            continue
+                        print(
+                            f"Matched QSpec for Q{q_key}: {qubit_freq_MHz:.3f} MHz  "
+                            f"(QSpec t={datetime.datetime.fromtimestamp(closest_match['timestamp'])})" )
 
                     else: #-----this look through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
-                        qtemp_timestamp = date.timestamp()  # Timestamp of this q_temperatures entry
+                        # Build the QTemp timestamp:
+                        qtemp_timestamp = date.timestamp()
 
-                        # Get all QSpec entries for this qubit
+                        # Grab all QSpec entries for this qubit:
                         qspec_entries = qspec_grouped_by_qkey.get(int(q_key), [])
-
                         if not qspec_entries:
                             print(f"No QSpec entries found for Q{q_key}")
                             continue
 
-                        # Extract sorted timestamps to use with bisect
-                        qspec_timestamps = [entry['timestamp'] for entry in qspec_entries]
+                        # Find the QSpec dict whose timestamp is closest to qtemp_timestamp:
+                        # Computes the absolute time difference between that entry’s timestamp and your current qubit‐temperature timestamp
+                        closest_match = min(
+                            qspec_entries,
+                            key=lambda entry: abs(entry['timestamp'] - qtemp_timestamp) ) # tells Python to pick the element for which the key function returns the smallest value
 
-                        # Use bisect to find the insertion index
-                        idx = bisect_left(qspec_timestamps, qtemp_timestamp)
+                        # Extract frequency and its fit error from that match:
+                        qubit_freq_MHz = closest_match['freq_MHz']
+                        qfreq_err = closest_match['Qfreq_fit_err']
 
-                        # Search nearby indices (at most 3 comparisons)
-                        closest_match = None
-                        min_time_diff = float("inf")
-                        for i in [idx - 1, idx, idx + 1]:
-                            if 0 <= i < len(qspec_entries):
-                                time_diff = abs(qspec_entries[i]['timestamp'] - qtemp_timestamp)
-                                if time_diff < 60 and time_diff < min_time_diff:
-                                    closest_match = qspec_entries[i]
-                                    min_time_diff = time_diff
-
-                        if closest_match is not None:
-                            qubit_freq_MHz = closest_match['freq_MHz']
-                            # print(f"Matched QSpec Q{q_key}: {qubit_freq_MHz:.3f} MHz")
-                            qfreq_err = closest_match['Qfreq_fit_err'] #qspec fit error
-                        else:
-                            print(f"No timestamp match in QSpec for Q{q_key} near {qtemp_timestamp}")
-                            continue
+                        print(
+                            f"Matched QSpec for Q{q_key}: {qubit_freq_MHz:.3f} MHz  "
+                            f"(QSpec t={datetime.datetime.fromtimestamp(closest_match['timestamp'])})")
                     #---------------------------------------------------------------------------------------------
 
                     I1 = self.process_h5_data(load_data['q_temperatures'][q_key].get('I1', [])[0][dataset].decode())
@@ -1772,30 +1751,37 @@ class PlotRR_noQick:
                         T_K, T_mK, P_e, qubit_freq = results
                         print(f"Q{q_key + 1} calculated Temperature:{T_mK}, with P_e = {P_e}, and Qfreq {qubit_freq_MHz} MHz")
 
-                        # Compute propagated 1-sigma error on T_mK
-                        T_err = self.compute_temperature_error(
-                            A1=A_amplitude1,
-                            A2=A_amplitude2,
-                            Pe=P_e,
-                            T_mK=T_mK,
-                            qubit_freq_MHz=qubit_freq,
-                            sigma_A1=A_amplitude_err1,
-                            sigma_A2=A_amplitude_err2,
-                            sigma_qfreq_MHz=qfreq_err
-                        )
+                        # Compute propagated 1-sigma error (std) on T_mK
+                        try:
+                            T_err = self.compute_temperature_error(
+                                A1=A_amplitude1,
+                                A2=A_amplitude2,
+                                Pe=P_e,
+                                T_mK=T_mK,
+                                qubit_freq_MHz=qubit_freq,
+                                sigma_A1=A_amplitude_err1,
+                                sigma_A2=A_amplitude_err2,
+                                sigma_qfreq_MHz=qfreq_err
+                            )
+                        except Exception as e:
+                            print(f"Error computing T_err for Q{q_key}: {e}")
+                            continue
 
-                        file_result['qubits'][int(q_key)] = {
-                            'A1': A_amplitude1,
-                            'A1_err': A_amplitude_err1,
-                            'A2_err': A_amplitude_err2,
-                            'A2': A_amplitude2,
-                            'T_mK': T_mK,
-                            'T_mK_err': T_err,
-                            'P_e': P_e,
-                            'qubit_freq_MHz': qubit_freq,
-                            "Qfreq_fit_err" : qfreq_err,
-                            'date': date.timestamp(),
-                            'filepath': h5_file}
+                        if T_err is not None:
+                            file_result['qubits'][int(q_key)] = {
+                                'A1': A_amplitude1,
+                                'A1_err': A_amplitude_err1,
+                                'A2_err': A_amplitude_err2,
+                                'A2': A_amplitude2,
+                                'T_mK': T_mK,
+                                'T_mK_err': T_err,
+                                'P_e': P_e,
+                                'qubit_freq_MHz': qubit_freq,
+                                "Qfreq_fit_err" : qfreq_err,
+                                'date': date.timestamp(),
+                                'filepath': h5_file}
+                        else:
+                            print(f"Skipping Q{q_key} entry because T_err was not calculated successfully.")
 
             all_files_Qtemp_results.append(file_result)
             del H5_class_instance
