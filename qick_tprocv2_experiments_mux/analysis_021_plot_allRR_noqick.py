@@ -688,7 +688,12 @@ class QubitSpectroscopy:
         if (mean_I is None and mean_Q is None and I_fit is None and Q_fit is None
                 and largest_amp_curve_mean is None and largest_amp_curve_fwhm is None):
             # If so, return None for the values in this definition as well
-            return None, None, None
+            empties = [None, None, None]
+            if return_fwhm:
+                empties.append(None)
+            if return_fit_err:
+                empties.append(None)
+            return tuple(empties)
 
         # If we get here, the fit was successful and we can proceed with plotting
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
