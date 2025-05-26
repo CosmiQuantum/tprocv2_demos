@@ -1546,12 +1546,12 @@ class PlotRR_noQick:
         for h5_file in h5_files:
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
             H5_class_instance = Data_H5(h5_file)
-            load_data = H5_class_instance.load_from_h5(data_type='QSpec', save_r=int(save_round))
+            load_data = H5_class_instance.load_from_h5(data_type='qspec_ge', save_r=int(save_round))
 
             populated_keys = []
-            for q_key in load_data['QSpec']:
+            for q_key in load_data['qspec_ge']:
                 # Access 'Dates' for the current q_key
-                dates_list = load_data['QSpec'][q_key].get('Dates', [[]])
+                dates_list = load_data['qspec_ge'][q_key].get('Dates', [[]])
 
                 # Check if any entry in 'Dates' is not NaN
                 if any(
@@ -1561,17 +1561,17 @@ class PlotRR_noQick:
                     populated_keys.append(q_key)
 
             for q_key in populated_keys:
-                for dataset in range(len(load_data['QSpec'][q_key].get('Dates', [])[0])):
-                    date = datetime.datetime.fromtimestamp(load_data['QSpec'][q_key].get('Dates', [])[0][dataset])
-                    I = self.process_h5_data(load_data['QSpec'][q_key].get('I', [])[0][dataset].decode())
-                    Q = self.process_h5_data(load_data['QSpec'][q_key].get('Q', [])[0][dataset].decode())
+                for dataset in range(len(load_data['qspec_ge'][q_key].get('Dates', [])[0])):
+                    date = datetime.datetime.fromtimestamp(load_data['qspec_ge'][q_key].get('Dates', [])[0][dataset])
+                    I = self.process_h5_data(load_data['qspec_ge'][q_key].get('I', [])[0][dataset].decode())
+                    Q = self.process_h5_data(load_data['qspec_ge'][q_key].get('Q', [])[0][dataset].decode())
                     # I_fit = load_data['QSpec'][q_key].get('I Fit', [])[0][dataset]
                     # Q_fit = load_data['QSpec'][q_key].get('Q Fit', [])[0][dataset]
-                    freqs = self.process_h5_data(load_data['QSpec'][q_key].get('Frequencies', [])[0][dataset].decode())
-                    round_num = load_data['QSpec'][q_key].get('Round Num', [])[0][dataset]
-                    batch_num = load_data['QSpec'][q_key].get('Batch Num', [])[0][dataset]
+                    freqs = self.process_h5_data(load_data['qspec_ge'][q_key].get('Frequencies', [])[0][dataset].decode())
+                    round_num = load_data['qspec_ge'][q_key].get('Round Num', [])[0][dataset]
+                    batch_num = load_data['qspec_ge'][q_key].get('Batch Num', [])[0][dataset]
 
-                    exp_config = load_data['QSpec'][q_key].get('Exp Config', [])[0][dataset].decode()
+                    exp_config = load_data['qspec_ge'][q_key].get('Exp Config', [])[0][dataset].decode()
                     safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
 
                     exp_config = eval(exp_config, safe_globals)
