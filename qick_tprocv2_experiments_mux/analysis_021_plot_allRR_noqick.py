@@ -677,7 +677,7 @@ class QubitSpectroscopy:
             # self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} Qubit Spec configuration: {self.config}')
 
 
-    def plot_results(self, I, Q, freqs, config=None, fig_quality=100, sigma_guess=1, return_fwhm=False):
+    def plot_results(self, I, Q, freqs, config=None, fig_quality=100, sigma_guess=1, return_fwhm=False, return_fit_err=False):
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
 
@@ -744,7 +744,7 @@ class QubitSpectroscopy:
                          fontsize=24, ha='center', va='top')
 
 
-                # Adjust spacing
+        # Adjust spacing
         plt.tight_layout()
 
         # Adjust the top margin to make room for the title
@@ -760,8 +760,12 @@ class QubitSpectroscopy:
                                      f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
             fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
         plt.close(fig)
-        if return_fwhm:
+        if return_fwhm and return_fit_err: #both set to True
+            return largest_amp_curve_mean, I_fit, Q_fit, largest_amp_curve_fwhm, fit_err
+        elif return_fwhm:
             return largest_amp_curve_mean, I_fit, Q_fit, largest_amp_curve_fwhm
+        elif return_fit_err:
+            return largest_amp_curve_mean, I_fit, Q_fit, fit_err
         else:
             return largest_amp_curve_mean, I_fit, Q_fit
 
@@ -1578,8 +1582,8 @@ class PlotRR_noQick:
                                                                  self.save_figs)
                         q_spec_cfg = exp_config['qubit_spec_ge']
                         # print('q_spec_cfg: ', q_spec_cfg)
-                        qubit_freq, _, _ = qspec_class_instance.plot_results(I, Q, freqs, q_spec_cfg,
-                                                                             self.figure_quality)
+                        qubit_freq, _, _, qspec_fit_err = qspec_class_instance.plot_results(I, Q, freqs, q_spec_cfg,
+                                                        self.figure_quality, return_fit_err = True) # You don’t need to mention every parameter in the call
                         del qspec_class_instance
 
                         extracted_freqs.append({
@@ -1589,6 +1593,7 @@ class PlotRR_noQick:
                             "round_num": round_num,
                             "batch_num": batch_num,
                             "freq_MHz": qubit_freq,
+                            "Qfreq_fit_err": qspec_fit_err,
                             "timestamp": date.timestamp()
                         })
 
@@ -1641,11 +1646,52 @@ class PlotRR_noQick:
                     date = datetime.datetime.fromtimestamp(load_data['q_temperatures'][q_key].get('Dates', [])[0][dataset])
                     round_num = load_data['q_temperatures'][q_key].get('Round Num', [])[0][dataset]
                     # batch_num = load_data['q_temperatures'][q_key].get('Batch Num', [])[0][dataset]
+
                     #-------------------------------------Grabbing matching qubit frequency for this qubit-------------------------------------
-                    if date.timestamp() > cutoff_timestamp: #files after this date contain the matching g-e qubit frequency already
-                        qubit_freq_MHz = load_data['q_temperatures'][q_key].get('Qfreq_ge', [])[0][dataset]
-                        # print(f"QSpec Q{q_key}: {qubit_freq_MHz:.3f} MHz")
-                    else: #look through matching qspec file
+                    if date.timestamp() > cutoff_timestamp:
+                        # Files after this date contain the matching g-e qubit frequency already BUT the files do not contain the corresponding qspec fit errors.
+
+                        # The line below extracts the qfreq saved in each rabi pop. meas. file, but it does not extract the error of the qspec fit because that was not saved in the h5 files.
+                        qubit_freq_MHz_rpmfile = load_data['q_temperatures'][q_key].get('Qfreq_ge', [])[0][dataset] #extract anyways to compare with the 'matching' method
+                        print(f"QSpec from RPM file, Q{q_key}: {qubit_freq_MHz_rpmfile:.3f} MHz") # print to compare
+
+                        # To find the qspec fit error, we have to match the qspec files to the RPM files via time stamps
+
+                        # look through matching qspec file
+                        qtemp_timestamp = date.timestamp()  # Timestamp of this q_temperatures entry
+
+                        # Get all QSpec entries for this qubit
+                        qspec_entries = qspec_grouped_by_qkey.get(int(q_key), [])
+
+                        if not qspec_entries:
+                            print(f"No QSpec entries found for Q{q_key}")
+                            continue
+
+                        # Extract sorted timestamps to use with bisect
+                        qspec_timestamps = [entry['timestamp'] for entry in qspec_entries]
+
+                        # Use bisect to find the insertion index
+                        idx = bisect_left(qspec_timestamps, qtemp_timestamp)
+
+                        # Search nearby indices (at most 3 comparisons)
+                        closest_match = None
+                        min_time_diff = float("inf")
+                        for i in [idx - 1, idx, idx + 1]:
+                            if 0 <= i < len(qspec_entries):
+                                time_diff = abs(qspec_entries[i]['timestamp'] - qtemp_timestamp)
+                                if time_diff < 60 and time_diff < min_time_diff:
+                                    closest_match = qspec_entries[i]
+                                    min_time_diff = time_diff
+
+                        if closest_match is not None:
+                            qubit_freq_MHz = closest_match['freq_MHz']
+                            print(f"QSpec from matched Qspec file, Q{q_key}: {qubit_freq_MHz:.3f} MHz")
+                            qfreq_err = closest_match['Qfreq_fit_err'] # now you have the corresponding fit err
+                        else:
+                            print(f"No timestamp match in QSpec for Q{q_key} near {qtemp_timestamp}")
+                            continue
+
+                    else: #-----this look through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
                         qtemp_timestamp = date.timestamp()  # Timestamp of this q_temperatures entry
 
                         # Get all QSpec entries for this qubit
@@ -1674,6 +1720,7 @@ class PlotRR_noQick:
                         if closest_match is not None:
                             qubit_freq_MHz = closest_match['freq_MHz']
                             # print(f"Matched QSpec Q{q_key}: {qubit_freq_MHz:.3f} MHz")
+                            qfreq_err = closest_match['Qfreq_fit_err'] #qspec fit error
                         else:
                             print(f"No timestamp match in QSpec for Q{q_key} near {qtemp_timestamp}")
                             continue
@@ -1700,7 +1747,7 @@ class PlotRR_noQick:
                         I1 = np.asarray(I1)
                         Q1 = np.asarray(Q1)
                         gains1 = np.asarray(gains1)
-                        best_signal_fit1, pi_amp1, A_amplitude1, amp_fit1 = rabi_class_instance.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality)
+                        best_signal_fit1, pi_amp1, A_amplitude1, A_amplitude_err1, amp_fit1 = rabi_class_instance.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality)
                         del rabi_class_instance
 
                     if len(I2) > 0:
@@ -1712,7 +1759,7 @@ class PlotRR_noQick:
                         I2 = np.asarray(I2)
                         Q2 = np.asarray(Q2)
                         gains2 = np.asarray(gains2)
-                        best_signal_fit2, pi_amp2, A_amplitude2, amp_fit2 = rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality)
+                        best_signal_fit2, pi_amp2, A_amplitude2, A_amplitude_err2, amp_fit2 = rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality)
                         del rabi_class_instance
 
                     if A_amplitude1 is not None and A_amplitude2 is not None:
@@ -1724,12 +1771,29 @@ class PlotRR_noQick:
                             continue  # Skip this dataset
                         T_K, T_mK, P_e, qubit_freq = results
                         print(f"Q{q_key + 1} calculated Temperature:{T_mK}, with P_e = {P_e}, and Qfreq {qubit_freq_MHz} MHz")
+
+                        # Compute propagated 1-sigma error on T_mK
+                        T_err = self.compute_temperature_error(
+                            A1=A_amplitude1,
+                            A2=A_amplitude2,
+                            Pe=P_e,
+                            T_mK=T_mK,
+                            qubit_freq_MHz=qubit_freq,
+                            sigma_A1=A_amplitude_err1,
+                            sigma_A2=A_amplitude_err2,
+                            sigma_qfreq_MHz=qfreq_err
+                        )
+
                         file_result['qubits'][int(q_key)] = {
                             'A1': A_amplitude1,
+                            'A1_err': A_amplitude_err1,
+                            'A2_err': A_amplitude_err2,
                             'A2': A_amplitude2,
                             'T_mK': T_mK,
+                            'T_mK_err': T_err,
                             'P_e': P_e,
                             'qubit_freq_MHz': qubit_freq,
+                            "Qfreq_fit_err" : qfreq_err,
                             'date': date.timestamp(),
                             'filepath': h5_file}
 
@@ -1756,7 +1820,59 @@ class PlotRR_noQick:
         T_mK = T_K * 1000  # Convert to millikelvin
         return T_K, T_mK, P_e, qubit_freq_MHz
 
-    def plot_qubit_temperatures_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = True):
+    def compute_temperature_error(self, A1, A2, Pe, T_mK, qubit_freq_MHz, sigma_A1, sigma_A2, sigma_qfreq_MHz):
+        """
+        Propagate the 1-sigma uncertainties in A1, A2 and f_ge
+        into a 1-sigma uncertainty on T_mK, given you already know
+        Pe and T_mK.
+
+        Inputs:
+          A1, A2               – fitted amplitudes
+          Pe                   – thermal population associated with T_mK
+          T_mK                 – temperature via rabi pop. meas. in mK
+          qubit_freq_MHz       – fitted g-e qubit frequency (MHz)
+          sigma_A1, sigma_A2   – 1-sigma errors on A1 and A2 (standard deviations)
+          sigma_qfreq_MHz      – 1-sigma error on qubit_freq_MHz (standard deviation)
+
+        Returns:
+          sigma_T_mK           – propagated 1-sigma error on T_mK
+        """
+        # get sigma_Pe from A1,A2 errors
+        sum_A = A1 + A2
+        # ∂Pe/∂A1 =  A2 / (A1+A2)^2
+        # ∂Pe/∂A2 = -A1 / (A1+A2)^2
+        dPe_dA1 = A2 / sum_A ** 2
+        dPe_dA2 = -A1 / sum_A ** 2
+
+        sigma_Pe = np.sqrt(
+            (dPe_dA1 * sigma_A1) ** 2 +
+            (dPe_dA2 * sigma_A2) ** 2
+        )
+
+        # convert MHz → Hz for the qubit frequency and its error
+        f0_Hz = qubit_freq_MHz * 1e6
+        sigma_f0_Hz = sigma_qfreq_MHz * 1e6
+
+        # build the log term (we already know Pe)
+        ln_arg = np.log((1 - Pe) / Pe)
+
+        # partial derivatives of T_mK
+        # ∂T/∂f0  = T_mK / f0_Hz
+        dT_df0 = T_mK / f0_Hz
+
+        # ∂T/∂Pe  = T_mK / [ ln_arg * Pe * (1-Pe) ]
+        dT_dPe = T_mK / (ln_arg * Pe * (1 - Pe))
+
+        # combine in quadrature
+        sigma_T_mK = np.sqrt(
+            (dT_df0 * sigma_f0_Hz) ** 2 +
+            (dT_dPe * sigma_Pe) ** 2
+        )
+
+        return sigma_T_mK # Temperature calculation error via rabi population measurements
+
+    def plot_qubit_temperatures_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6, yaxis_min = 10, yaxis_max = 950, restrict_time_xaxis = False,
+                                             plot_extra_event_lines = False, rad_events_plot_lines = True, plot_error_bars=False):
         """
         Plots qubit temperatures vs. time for each qubit in a separate subplot (max 3 columns).
 
@@ -1764,7 +1880,8 @@ class PlotRR_noQick:
         - all_files_Qtemp_results: list of dicts returned by `load_plot_save_rabis_Qtemps`
         - num_qubits: total number of qubits to plot (default is 6)
         - restrict_time_xaxis : do you want to plot only a certain region of time?
-        - plot_extra_event_lines: do you want to plot vertical dashed lines to mark extra events that happened (besides source instalattion)?
+        - plot_extra_event_lines: do you want to plot vertical dashed lines to mark extra events that happened (besides source instalation)?
+        - plot_error_bars: do you want to plot error bars?
         """
 
         # Define the colors you want for each qubit
@@ -1814,14 +1931,17 @@ class PlotRR_noQick:
         for q in range(num_qubits):
             times = []
             temps = []
+            errs = []
 
             for file_result in all_files_Qtemp_results:
                 qubit_data = file_result['qubits'].get(q)
                 if qubit_data:
                     timestamp = qubit_data['date']
-                    T_mK = qubit_data['T_mK']
                     times.append(datetime.datetime.fromtimestamp(timestamp))
+                    T_mK = qubit_data['T_mK']
                     temps.append(T_mK)
+                    T_err = qubit_data['T_mK_err']
+                    errs.append(T_err)
 
                     # if T_mK > 800:
                     #     print(f"High Temperature ({T_mK:.1f} mK) in file {qubit_data['filepath']} for Q{q + 1}. A1={qubit_data['A1']}, A2={qubit_data['A2']}, Qfreq={qubit_data['qubit_freq_MHz']}.")
@@ -1845,16 +1965,34 @@ class PlotRR_noQick:
                 ax.xaxis.set_major_locator(mdates.AutoDateLocator())
                 ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d-%H'))
 
-            # Use scatter instead of plot to avoid connecting lines
-            ax.scatter(times, temps, marker='o', color=colors[q % len(colors)], label=f"Q{q + 1}")
+            # plot with or without error bars
+            if plot_error_bars:
+                ax.errorbar(
+                    times,
+                    temps,
+                    yerr=errs,
+                    fmt='o',
+                    capsize=4,
+                    markersize=6,
+                    color=colors[q % len(colors)],
+                    label=f"Q{q + 1}"
+                )
+            else:
+                ax.scatter(
+                    times,
+                    temps,
+                    marker='o',
+                    color=colors[q % len(colors)],
+                    label=f"Q{q + 1}"
+                )
 
             ax.set_title(f"Q{q + 1}", fontsize=14)
             ax.set_ylabel("Temp (mK)", fontsize=12)
             ax.grid(False)
 
             # Format the x-axis to show dates in a nice format
-            ax.set_ylim(10, 625)
-            ax.set_yticks(np.linspace(10, 625, 10))
+            ax.set_ylim(yaxis_min, yaxis_max)
+            ax.set_yticks(np.linspace(yaxis_min, yaxis_max, 10))
 
             # start_time = datetime.datetime(2025, 4, 11, 12, 30)
             # ax.set_xlim(left=start_time)

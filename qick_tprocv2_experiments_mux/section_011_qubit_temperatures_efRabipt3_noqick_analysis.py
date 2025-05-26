@@ -141,10 +141,11 @@ class Temps_EFAmpRabiExperiment:
             amp_fit = self.cosine(gains, *amp_popt)
 
             # --- Extract the amplitude parameter A directly ---
-            # A_amplitude = abs(amp_popt[0])
             A_amplitude = amp_popt[0]
             # print("Amplitude parameter A from cosine fit:", A_amplitude)
-
+            amp_perr = np.sqrt(np.diag(amp_pcov))
+            A_amplitude_err = amp_perr[0]
+            #print('Amplitude error (std): ', A_amplitude_err)
 
             # --- Plot amplitude data and its cosine fit on the third subplot ---
             ax3.plot(gains, amplitude_data, '-', label="Amplitude Data", linewidth=2)
@@ -175,7 +176,7 @@ class Temps_EFAmpRabiExperiment:
                 file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"Qtemps_q{self.QubitIndex + 1}.png")
                 fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
             plt.close(fig)
-            return best_signal_fit, pi_amp, A_amplitude, amp_fit
+            return best_signal_fit, pi_amp, A_amplitude, A_amplitude_err, amp_fit
 
         except Exception as e:
             print("Error fitting cosine:", e)
