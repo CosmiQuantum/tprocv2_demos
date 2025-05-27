@@ -106,7 +106,6 @@ class AmplitudeRabiExperiment:
 
         else:
             return I, Q, gains, q1_fit_cosine, pi_amp, self.config
-
     def live_plotting(self, amp_rabi, thresholding):
         I = Q = expt_mags = expt_phases = expt_pop = None
         viz = visdom.Visdom()

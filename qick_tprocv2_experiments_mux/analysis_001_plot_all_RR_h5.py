@@ -29,7 +29,7 @@ sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/
 
 class PlotAllRR:
     def __init__(self,  date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
-                 outerFolder_save_plots, unique_folder_path):
+                 outerFolder_save_plots, unique_folder_path=""):
         self.date = date
         self.figure_quality = figure_quality
         self.save_figs = save_figs
