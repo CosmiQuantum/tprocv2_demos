@@ -1894,26 +1894,6 @@ class PlotRR_noQick:
         cs137_closer_time = datetime.datetime(2025, 4, 28, 9, 40)
         cs137_removed_time = datetime.datetime(2025, 5, 4, 18, 20)
 
-        events_0418 = [
-            ("11:50", "Daniel Entry"),
-            ("13:30", "Daniel Exit"),
-            ("14:53", "Daniel Entry"),
-            ("15:00", "Door Intermission"),
-            ("15:06", "Exit/Re-entry Daniel"),
-            ("15:12", "Ryan Entry"),
-            ("15:40", "Door Intermission"),
-            ("16:11", "Daniel Exit"),
-            ("16:12", "Daniel Entry"),
-            ("16:16", "Daniel Exit")]
-
-        events_0423 = [
-            ("12:50", "Dan-Joyce Entry"),
-            ("12:54", "Dan-Joyce Exit"),
-            ("13:40", "Grace Entry"),
-            ("13:47", "Grace Exit"),
-            ("16:40", "Kester-Grace Entry"),
-            ("16:48", "Kester-Grace Exit")]
-
         # Optional: Restrict plot to specific date and time window. Will only go into effect if restrict_time_xaxis = True
         date_to_plot = datetime.date(2025, 4, 18)
         time_start = datetime.time(0, 0)  # Start of the window
@@ -2001,13 +1981,49 @@ class PlotRR_noQick:
 
             #----------------------Optional: Now for other events------------------------
             # Only relevant if plot_extra_event_lines is set to True
-            event_date_0418 = datetime.date(2025, 4, 18)
-            event_date_0423 = datetime.date(2025, 4, 23)
-            extra_events = [
-                *((datetime.datetime.combine(event_date_0418, datetime.time.fromisoformat(t)), label)
-                  for t, label in events_0418),
-                *((datetime.datetime.combine(event_date_0423, datetime.time.fromisoformat(t)), label)
-                  for t, label in events_0423)]
+            events_0418 = [
+                (datetime.datetime(2025, 4, 18, 11, 50), "Daniel Entry"),
+                (datetime.datetime(2025, 4, 18, 13, 30), "Daniel Exit"),
+                (datetime.datetime(2025, 4, 18, 14, 53), "Daniel Entry"),
+                (datetime.datetime(2025, 4, 18, 15, 0), "Door Intermission"),
+                (datetime.datetime(2025, 4, 18, 15, 6), "Exit/Re-entry Daniel"),
+                (datetime.datetime(2025, 4, 18, 15, 12), "Ryan Entry"),
+                (datetime.datetime(2025, 4, 18, 15, 40), "Door Intermission"),
+                (datetime.datetime(2025, 4, 18, 16, 11), "Daniel Exit"),
+                (datetime.datetime(2025, 4, 18, 16, 12), "Daniel Entry"),
+                (datetime.datetime(2025, 4, 18, 16, 16), "Daniel Exit")]
+
+            events_0423 = [
+                (datetime.datetime(2025, 4, 23, 12, 50), "Dan-Joyce Entry"),
+                (datetime.datetime(2025, 4, 23, 12, 54), "Dan-Joyce Exit"),
+                (datetime.datetime(2025, 4, 23, 13, 40), "Grace Entry"),
+                (datetime.datetime(2025, 4, 23, 13, 47), "Grace Exit"),
+                (datetime.datetime(2025, 4, 23, 16, 40), "Kester-Grace Entry"),
+                (datetime.datetime(2025, 4, 23, 16, 48), "Kester-Grace Exit")]
+
+            heater_events = [
+                (datetime.datetime(2025, 5, 5, 8, 18), "20mK Up"),
+                (datetime.datetime(2025, 5, 9, 10, 24), "40mK Up"),
+                (datetime.datetime(2025, 5, 10, 1, 39), "60mK Up"),
+                (datetime.datetime(2025, 5, 10, 18, 31), "80mK Up"),
+                (datetime.datetime(2025, 5, 11, 14, 46), "100mK Up"),
+                (datetime.datetime(2025, 5, 12, 15, 11), "120mK Up"),
+                (datetime.datetime(2025, 5, 13, 12, 2), "140mK Up"),
+                (datetime.datetime(2025, 5, 14, 12, 31), "160mK Up"),
+                (datetime.datetime(2025, 5, 14, 22, 50), "Heater Off")]
+
+            # Combine conditionally
+            plot_0418_events = False
+            plot_0423_events = False
+            plot_heater_events = True
+
+            extra_events = []
+            if plot_0418_events:
+                extra_events += events_0418
+            if plot_0423_events:
+                extra_events += events_0423
+            if plot_heater_events:
+                extra_events += heater_events
 
             if restrict_time_xaxis:
                 ax.set_xlim(start_time, end_time)

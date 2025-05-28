@@ -80,7 +80,7 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True
     # "2025-05-13",
     # "2025-05-14"
     # ]
-target_dates_qtemps_RPM = ["2025-05-05"]
+target_dates_qtemps_RPM = ["2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15"]
 base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study"
 
 # To re-make and save RPM RR plots
@@ -116,8 +116,8 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
 
     if analysis_flags["Qtemps_vs_time_viaRPM"]:
         #------------------------------------------------------------------- Qubit temperatures vs time via RPMs ----------------------------------------------------
-        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 10, yaxis_max = 625, restrict_time_xaxis = False,
-                                                         plot_extra_event_lines = False, rad_events_plot_lines = False, plot_error_bars = True)
+        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 10, yaxis_max = 950, restrict_time_xaxis = False,
+                                                         plot_extra_event_lines = True, rad_events_plot_lines = False, plot_error_bars = True)
 
     if analysis_flags["Qtemps_hists_viaRPM"]:
         #----------------------------------------------------------------- Histograms of Qubit temperatures (via RPMs) -----------------------------------------------
