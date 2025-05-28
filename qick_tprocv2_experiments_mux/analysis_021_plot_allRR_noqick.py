@@ -1908,7 +1908,7 @@ class PlotRR_noQick:
                 qubit_data = file_result['qubits'].get(q)
                 if qubit_data:
                     T_err = qubit_data['T_mK_err']
-                    if T_err > 400:  # skip if error is too large (for example, larger than 400mK)
+                    if T_err > 300:  # skip if error is too large (for example, larger than 300mK)
                         continue
                     errs.append(T_err)
 
