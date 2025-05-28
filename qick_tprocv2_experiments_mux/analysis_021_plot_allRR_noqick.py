@@ -1907,12 +1907,15 @@ class PlotRR_noQick:
             for file_result in all_files_Qtemp_results:
                 qubit_data = file_result['qubits'].get(q)
                 if qubit_data:
+                    T_err = qubit_data['T_mK_err']
+                    if T_err > 400:  # skip if error is too large (for example, larger than 400mK)
+                        continue
+                    errs.append(T_err)
+
                     timestamp = qubit_data['date']
                     times.append(datetime.datetime.fromtimestamp(timestamp))
                     T_mK = qubit_data['T_mK']
                     temps.append(T_mK)
-                    T_err = qubit_data['T_mK_err']
-                    errs.append(T_err)
 
                     # if T_mK > 800:
                     #     print(f"High Temperature ({T_mK:.1f} mK) in file {qubit_data['filepath']} for Q{q + 1}. A1={qubit_data['A1']}, A2={qubit_data['A2']}, Qfreq={qubit_data['qubit_freq_MHz']}.")
@@ -2002,14 +2005,14 @@ class PlotRR_noQick:
                 (datetime.datetime(2025, 4, 23, 16, 48), "Kester-Grace Exit")]
 
             heater_events = [
-                (datetime.datetime(2025, 5, 5, 8, 18), "20mK Up"),
-                (datetime.datetime(2025, 5, 9, 10, 24), "40mK Up"),
-                (datetime.datetime(2025, 5, 10, 1, 39), "60mK Up"),
-                (datetime.datetime(2025, 5, 10, 18, 31), "80mK Up"),
-                (datetime.datetime(2025, 5, 11, 14, 46), "100mK Up"),
-                (datetime.datetime(2025, 5, 12, 15, 11), "120mK Up"),
-                (datetime.datetime(2025, 5, 13, 12, 2), "140mK Up"),
-                (datetime.datetime(2025, 5, 14, 12, 31), "160mK Up"),
+                (datetime.datetime(2025, 5, 8, 18, 50), "20mK step"),
+                (datetime.datetime(2025, 5, 9, 10, 24), "40mK step"),
+                (datetime.datetime(2025, 5, 10, 1, 39), "60mK step"),
+                (datetime.datetime(2025, 5, 10, 18, 31), "80mK step"),
+                (datetime.datetime(2025, 5, 11, 14, 46), "100mK step"),
+                (datetime.datetime(2025, 5, 12, 15, 11), "120mK step"),
+                (datetime.datetime(2025, 5, 13, 12, 2), "140mK step"),
+                (datetime.datetime(2025, 5, 14, 12, 31), "160mK step"),
                 (datetime.datetime(2025, 5, 14, 22, 50), "Heater Off")]
 
             # Combine conditionally
