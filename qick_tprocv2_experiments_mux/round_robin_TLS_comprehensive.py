@@ -57,8 +57,8 @@ multiply_qubit_reps_by = 2
 # increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
 increase_steps_to_ef = 600
 study = 'TLS_Comprehensive_Study'
-sub_study = 'source_off_substudy7'
-substudy_txt_notes = 'Source removed, Qubit 5 qubit freq found as minimum of qspec ge. Post science run data-taking in between other R&D'
+sub_study = 'source_off_run6b_readout_optimization_substudy1'
+substudy_txt_notes = 'running optimization block only. Using run 6b readout optimization in run 6b.'
 Qs_to_look_at = [0,4]  # list of qubits to process
 
 # Set which experiments to run
@@ -66,9 +66,14 @@ run_flags = {"q_spec": True, "hi_gain_q_spec": True, "med_gain_q_spec": False, "
 
 # Optimization parameters for resonator spectroscopy
 # 04/13 parameters
-res_leng_vals = [5.5, 7.5, 6.0, 6.5, 5.0, 6.0]
-res_gain = [0.9, 0.95, 0.78, 0.58, 0.95, 0.57]
-freq_offsets = [-0.1, 0.2, 0.1, -0.4, -0.1, -0.1]
+# res_leng_vals = [5.5, 7.5, 6.0, 6.5, 5.0, 6.0]
+# res_gain = [0.9, 0.95, 0.78, 0.58, 0.95, 0.57]
+# freq_offsets = [-0.1, 0.2, 0.1, -0.4, -0.1, -0.1]
+
+# 05/28 parameters
+res_leng_vals = [4, 14, 6, 10, 5, 7]
+res_gain = [1,1,1,0.7,0.8,0.6]
+freq_offsets = [0.1, -0.25, -0.2, 0.2, -0.1, -0.1]
 qubit_freqs_ef = [None]*6
 
 # Dictionaries
@@ -198,11 +203,11 @@ def sweep_frequency_offset(experiment, QubitIndex, offset_values, n_loops=10, nu
     return optimal_offset, ssf_dict
 
 #Folders
-if not os.path.exists("/data/QICK_data/run6/"):
-    os.makedirs("/data/QICK_data/run6/")
-if not os.path.exists("/data/QICK_data/run6/6transmon/"):
-    os.makedirs("/data/QICK_data/run6/6transmon/")
-studyFolder = os.path.join("/data/QICK_data/run6/6transmon/", study)
+if not os.path.exists("/data/QICK_data/run6b/"):
+    os.makedirs("/data/QICK_data/run6b/")
+if not os.path.exists("/data/QICK_data/run6b/6transmon/"):
+    os.makedirs("/data/QICK_data/run6b/6transmon/")
+studyFolder = os.path.join("/data/QICK_data/run6b/6transmon/", study)
 if not os.path.exists(studyFolder):
     os.makedirs(studyFolder)
 subStudyFolder = os.path.join(studyFolder, sub_study)
@@ -1278,20 +1283,20 @@ for QubitIndex in Qs_to_look_at:
             raise
         continue
 
-    gc.collect()
-
-rr_logger.info("----------------- Starting repeated measurements (TLS) Step -----------------")
-if verbose:
-    print("----------------- Starting repeated measurements (TLS) Step -----------------")
-
-j = 0
-batch_num = 0
-recycled_qfreq = False
-while j < n:
-    inner_start = time.time()
-    run_dataset(Qs_to_look_at, experiment, j, batch_num)
-    j+=1
-    gc.collect()
+#     gc.collect()
+#
+# rr_logger.info("----------------- Starting repeated measurements (TLS) Step -----------------")
+# if verbose:
+#     print("----------------- Starting repeated measurements (TLS) Step -----------------")
+#
+# j = 0
+# batch_num = 0
+# recycled_qfreq = False
+# while j < n:
+#     inner_start = time.time()
+#     run_dataset(Qs_to_look_at, experiment, j, batch_num)
+#     j+=1
+#     gc.collect()
 
 del experiment
 gc.collect()
