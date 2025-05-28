@@ -57,8 +57,8 @@ multiply_qubit_reps_by = 2
 # increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
 increase_steps_to_ef = 600
 study = 'TLS_Comprehensive_Study'
-sub_study = 'source_on_starkspec_python_loop_substudy1'
-substudy_txt_notes = 'Cs137 source 1.5 ft away from fridge. Added python loop for stark spec. Qubit 5 qubit freq found as minimum of qspec ge.'
+sub_study = 'source_off_run6a_readout_optimization_substudy1'
+substudy_txt_notes = 'Running optimization block only. Start of run 6b, using run6a optimized parameters'
 Qs_to_look_at = [0,4]  # list of qubits to process
 
 # Set which experiments to run
@@ -1306,20 +1306,20 @@ for QubitIndex in Qs_to_look_at:
             raise
         continue
 
-    gc.collect()
-
-rr_logger.info("----------------- Starting repeated measurements (TLS) Step -----------------")
-if verbose:
-    print("----------------- Starting repeated measurements (TLS) Step -----------------")
-
-j = 0
-batch_num = 0
-recycled_qfreq = False
-while j < n:
-    inner_start = time.time()
-    run_dataset(Qs_to_look_at, experiment, j, batch_num)
-    j+=1
-    gc.collect()
+#     gc.collect()
+#
+# rr_logger.info("----------------- Starting repeated measurements (TLS) Step -----------------")
+# if verbose:
+#     print("----------------- Starting repeated measurements (TLS) Step -----------------")
+#
+# j = 0
+# batch_num = 0
+# recycled_qfreq = False
+# while j < n:
+#     inner_start = time.time()
+#     run_dataset(Qs_to_look_at, experiment, j, batch_num)
+#     j+=1
+#     gc.collect()
 
 del experiment
 gc.collect()

@@ -27,7 +27,7 @@ if FRIDGE == "QUIET":
             "rounds": 1,
             "start": -4,  # [MHz]
             "step_size": 0.05,  # [MHz]
-            "steps": 300,
+            "steps": 70,
             "relax_delay": 10,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },

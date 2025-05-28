@@ -43,7 +43,6 @@ Qs_to_look_at = [0, 1, 2, 3, 4, 5]       # only list the qubits you want to do t
 #Data saving info
 run_name = 'run6b'
 device_name = '6transmon'
-data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") #should have a new onoe for every optimization batch
 substudy_txt_notes = ('Normal Round Robin during cooldown, now everything works properly, set debug to false to run '
                       'overnight and running in terminal with repeater script')
 
@@ -58,6 +57,7 @@ freq_offsets = [-0.1, 0.2, -0.1, -0.4, -0.1, -0.1]
 #Folders
 study = 'round_robin_benchmark'
 sub_study = 'cool_down'
+data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") #should have a new onoe for every optimization batch
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
     os.makedirs(f"/data/QICK_data/{run_name}/")

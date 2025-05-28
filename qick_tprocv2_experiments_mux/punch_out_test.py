@@ -12,7 +12,8 @@ number_of_qubits = 6  #currently 4 for NEXUS, 6 for QUIET
 sweep_DAC_attenuator1 =[5] #np.linspace(5,20, 4)
 sweep_DAC_attenuator2 =[10]#[15,20,25,30] #np.linspace(5,20,4)
 
-outerFolder = "/data/QICK_data/6transmon_run6/" + str(datetime.date.today()) + "/" # for QUIET
+
+outerFolder = os.path.join(f"/data/QICK_data/run6b/6transmon/optimization/{datetime.date.today().strftime('%Y-%m-%d')}")
 #outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/", str(datetime.date.today())) # for NEXUS
 # for att_1 in sweep_DAC_attenuator1:
 #     for att_2 in sweep_DAC_attenuator2:
