@@ -117,8 +117,8 @@ class PiAmpsVsTime:
         date_times = {i: [] for i in range(self.number_of_qubits)}
         mean_values = {}
         for folder_date in self.top_folder_dates:
-            outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
-            outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
+            outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
+            outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "/documentation/"
 
             # ------------------------------------------------Load/Plot/Save Rabi---------------------------------------
             if '_' in exp_extension:
