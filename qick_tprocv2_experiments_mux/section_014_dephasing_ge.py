@@ -196,7 +196,7 @@ class DephasingProgram(AveragerProgramV2):
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse1", t=0)  # play probe pulse
         for dephasing_round in range(self.cfg["dephasing_rounds_plus_1"]-1):
-            self.delay_auto((cfg['wait_time'] / self.cfg["dephasing_rounds_plus_1"]) + 0.01, tag='wait1')  # wait_time after last pulse (wait / 2)
+            self.delay_auto((cfg['wait_time'] / self.cfg["dephasing_rounds_plus_1"]) + 0.01, tag='wait1'+str(dephasing_round))  # wait_time after last pulse (wait / 2)
             self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse_pi", t=0)  # play pulse
 
         self.delay_auto((cfg['wait_time'] / self.cfg["dephasing_rounds_plus_1"]) + 0.01, tag='wait2')  # wait_time after last pulse (wait / 2)
@@ -401,9 +401,13 @@ class DephasingMeasurement:
 
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
-            delay_times1 = echo.get_time_param('wait1', "t", as_array=True)
+
+            delay_times = 0
+            for dephasing_round in range(self.config["dephasing_rounds_plus_1"] - 1):
+                delay_times_n = echo.get_time_param('wait1' +str(dephasing_round), "t", as_array=True)
+                delay_times = delay_times + delay_times_n
             delay_times2 = echo.get_time_param('wait2', "t", as_array=True)
-            delay_times = delay_times1+delay_times2
+            delay_times = delay_times+delay_times2
 
         if self.fit_data:
             fit, t2e_est, t2e_err, plot_sig = self.t2_fit(delay_times, I, Q)
@@ -411,7 +415,7 @@ class DephasingMeasurement:
             fit, t2e_est, t2e_err, plot_sig = None, None, None, None
 
         if self.save_figs:
-            self.plot_results(I, Q, delay_times, now, fit, t2e_est, t2e_err, plot_sig)
+            self.plot_results(I, Q, delay_times, now, fit, t2e_est, t2e_err, plot_sig, config=self.config)
 
         return  t2e_est, t2e_err, I, Q, delay_times, fit, self.config
 
@@ -476,12 +480,12 @@ class DephasingMeasurement:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"Q{self.QubitIndex + 1}" + f" T2E={t2e_est:.2f} us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         f"Q{self.QubitIndex + 1}" + f" T2E={t2e_est:.2f} us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs",
                          fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
                 fig.text(plot_middle, 0.98,
                          f"T2 Q{self.QubitIndex + 1}, T2E %.2f us" % float(
-                             t2e_est) + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
+                             t2e_est) + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs",
                          fontsize=24, ha='center', va='top')
 
         else:

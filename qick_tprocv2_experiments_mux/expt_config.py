@@ -361,7 +361,7 @@ if FRIDGE == "QUIET":
             "ramsey_freq": 0.12,  # [MHz]
             "relax_delay": 1000,  # [us]
             "wait_time": 0.0,  # [us]
-            "dephasing_rounds_plus_1": 10,
+            "dephasing_rounds_plus_1": 13,
             "list_of_all_qubits": list_of_all_qubits,
         },
 

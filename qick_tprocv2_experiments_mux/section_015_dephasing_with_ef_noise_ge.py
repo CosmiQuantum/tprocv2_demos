@@ -204,7 +204,7 @@ class DephasingWithEFNoiseProgram(AveragerProgramV2):
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse1", t=0)  # play probe pulse
         for dephasing_round in range(self.cfg["dephasing_rounds_plus_1"]-1):
-            self.delay_auto((cfg['wait_time'] / self.cfg["dephasing_rounds_plus_1"]) + 0.01, tag='wait1')  # wait_time after last pulse (wait / 2)
+            self.delay_auto((cfg['wait_time'] / self.cfg["dephasing_rounds_plus_1"]) + 0.01, tag='wait1'+str(dephasing_round))  # wait_time after last pulse (wait / 2)
             self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse_pi", t=0)  # play pulse
 
         self.delay_auto((cfg['wait_time'] / self.cfg["dephasing_rounds_plus_1"]) + 0.01, tag='wait2')  # wait_time after last pulse (wait / 2)
@@ -409,9 +409,12 @@ class DephasingMeasurementWithEFNoise:
 
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
-            delay_times1 = echo.get_time_param('wait1', "t", as_array=True)
+            delay_times = 0
+            for dephasing_round in range(self.config["dephasing_rounds_plus_1"] - 1):
+                delay_times_n = echo.get_time_param('wait1' + str(dephasing_round), "t", as_array=True)
+                delay_times = delay_times + delay_times_n
             delay_times2 = echo.get_time_param('wait2', "t", as_array=True)
-            delay_times = delay_times1+delay_times2
+            delay_times = delay_times + delay_times2
 
         if self.fit_data:
             fit, t2e_est, t2e_err, plot_sig = self.t2_fit(delay_times, I, Q)

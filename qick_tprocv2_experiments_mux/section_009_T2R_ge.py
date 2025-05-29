@@ -400,7 +400,7 @@ class T2RMeasurement:
             fit, t2r_est, t2r_err, plot_sig = None, None, None, None
 
         if self.save_figs:
-            self.plot_results(I, Q, delay_times, now, fit, t2r_est, t2r_err, plot_sig)
+            self.plot_results(I, Q, delay_times, now, fit, t2r_est, t2r_err, plot_sig, config = self.config)
 
         return  t2r_est, t2r_err, I, Q, delay_times, fit, self.config
 
@@ -463,24 +463,24 @@ class T2RMeasurement:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"T2 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         f"T2 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs",
                          fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
                 fig.text(plot_middle, 0.98,
                          f"T2 Q{self.QubitIndex + 1}, T2R %.2f us" % float(
-                             t2r_est) + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
+                             t2r_est) + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs",
                          fontsize=24, ha='center', va='top')
 
         else:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"T2 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs," ,
+                         f"T2 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs" ,
                          fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
                 fig.text(plot_middle, 0.98,
                          f"T2 Q{self.QubitIndex + 1}, pi gain %.2f" % float(self.config[
-                                                                                'pi_amp']) + f", {float(self.config['sigma']) * 1000} ns sigma" + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
+                                                                                'pi_amp']) + f", {float(self.config['sigma']) * 1000} ns sigma" + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs",
                          fontsize=24, ha='center', va='top')
 
         # I subplot
