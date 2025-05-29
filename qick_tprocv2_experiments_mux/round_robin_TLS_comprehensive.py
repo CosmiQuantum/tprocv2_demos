@@ -57,8 +57,8 @@ multiply_qubit_reps_by = 2
 # increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
 increase_steps_to_ef = 600
 study = 'TLS_Comprehensive_Study'
-sub_study = 'source_off_run6b_readout_optimization_substudy1'
-substudy_txt_notes = 'running optimization block only. Using run 6b readout optimization in run 6b.'
+sub_study = 'source_off_substudy8'
+substudy_txt_notes = 'source off. run 6b to check for TLSs after cooldown.'
 Qs_to_look_at = [0,4]  # list of qubits to process
 
 # Set which experiments to run
@@ -1283,20 +1283,20 @@ for QubitIndex in Qs_to_look_at:
             raise
         continue
 
-#     gc.collect()
-#
-# rr_logger.info("----------------- Starting repeated measurements (TLS) Step -----------------")
-# if verbose:
-#     print("----------------- Starting repeated measurements (TLS) Step -----------------")
-#
-# j = 0
-# batch_num = 0
-# recycled_qfreq = False
-# while j < n:
-#     inner_start = time.time()
-#     run_dataset(Qs_to_look_at, experiment, j, batch_num)
-#     j+=1
-#     gc.collect()
+    gc.collect()
+
+rr_logger.info("----------------- Starting repeated measurements (TLS) Step -----------------")
+if verbose:
+    print("----------------- Starting repeated measurements (TLS) Step -----------------")
+
+j = 0
+batch_num = 0
+recycled_qfreq = False
+while j < n:
+    inner_start = time.time()
+    run_dataset(Qs_to_look_at, experiment, j, batch_num)
+    j+=1
+    gc.collect()
 
 del experiment
 gc.collect()
