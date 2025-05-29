@@ -36,8 +36,8 @@ if FRIDGE == "QUIET":
             "rounds": 1,
             "start": -2,  # [MHz]
             "step_size": 0.05,  # [MHz]
-            "steps": 100,
-            "relax_delay": 600,  # [us]
+            "steps": 70,
+            "relax_delay": 10,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
@@ -47,16 +47,16 @@ if FRIDGE == "QUIET":
             "start": -2,  # [MHz]
             "step_size": 0.05,  # [MHz]
             "steps": 100,
-            "relax_delay": 600,  # [us]
+            "relax_delay": 10,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
         "qubit_spec_ge": {
-            "reps": 500, #300
+            "reps": 1000, #300
             "rounds": 1, #10
             "start": list(VNA_qubit-10), # [MHz] #-300 #-15
             "stop": list(VNA_qubit+10), # [MHz] #+15
-            "steps": 250, #100
+            "steps": 450, #100
             "relax_delay": 10, #1000, # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -103,6 +103,17 @@ if FRIDGE == "QUIET":
             "relax_delay": 600, #1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
+
+        "qubit_spec_fh": {
+            "reps": 4000,  # 300
+            "rounds": 1,  # 10
+            "start": list(ef_freqs - 135),  # [MHz] #-300
+            "stop": list(ef_freqs - 65),  # [MHz]
+            "steps": 1000,  # 1000
+            "relax_delay": 600,  # 1000,  # [us]
+            "list_of_all_qubits": list_of_all_qubits,
+        },
+
         "qubit_spec_ftores": {
             "reps": 10000,  # 300
             "rounds": 1,  # 10
@@ -177,6 +188,16 @@ if FRIDGE == "QUIET":
         "power_rabi_ef": {
             "reps": 200,
             "reps2": 700, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
+            "rounds": 1,
+            "start": [0.0] * 6,  # [DAC units]
+            "stop": [1.0] * 6,  # [DAC units]
+            "steps": 150,
+            "relax_delay": 600,  # [us]
+        },
+
+        "power_rabi_fh": {
+            "reps": 200,
+            "reps2": 700,  # this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
             "stop": [1.0] * 6,  # [DAC units]
@@ -331,32 +352,32 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
         },
 
-        # "Dephasing_ge": {
-        #     "reps": 500,
-        #     "rounds": 1,
-        #     "start": [0.0] * 6,  # [us]
-        #     "stop": [80] * 6,  # [us]
-        #     "steps": 100,
-        #     "ramsey_freq": 0.12,  # [MHz]
-        #     "relax_delay": 1000,  # [us]
-        #     "wait_time": 0.0,  # [us]
-        #     "dephasing_rounds_plus_1": 10,
-        #     "list_of_all_qubits": list_of_all_qubits,
-        # },
-        #
-        # "Dephasing_ge_with_ef_noise": {
-        #     "reps": 500,
-        #     "rounds": 1,
-        #     "start": [0.0] * 6,  # [us]
-        #     "stop": [80] * 6,  # [us]
-        #     "steps": 100,
-        #     "ramsey_freq": 0.12,  # [MHz]
-        #     "relax_delay": 1000,  # [us]
-        #     "wait_time": 0.0,  # [us]
-        #     "dephasing_rounds_plus_1": 10,
-        #     "noise_offset_freq_from_ef":2, #MHz
-        #     "list_of_all_qubits": list_of_all_qubits,
-        # },
+        "Dephasing_ge": {
+            "reps": 500,
+            "rounds": 1,
+            "start": [0.0] * 6,  # [us]
+            "stop": [80] * 6,  # [us]
+            "steps": 100,
+            "ramsey_freq": 0.12,  # [MHz]
+            "relax_delay": 1000,  # [us]
+            "wait_time": 0.0,  # [us]
+            "dephasing_rounds_plus_1": 10,
+            "list_of_all_qubits": list_of_all_qubits,
+        },
+
+        "Dephasing_ge_with_ef_noise": {
+            "reps": 500,
+            "rounds": 1,
+            "start": [0.0] * 6,  # [us]
+            "stop": [80] * 6,  # [us]
+            "steps": 100,
+            "ramsey_freq": 0.12,  # [MHz]
+            "relax_delay": 1000,  # [us]
+            "wait_time": 0.0,  # [us]
+            "dephasing_rounds_plus_1": 10,
+            "noise_offset_freq_from_ef":2, #MHz
+            "list_of_all_qubits": list_of_all_qubits,
+        },
     #
 
     #

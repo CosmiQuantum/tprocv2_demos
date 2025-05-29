@@ -13,7 +13,7 @@ class FHQubitSpectroscopy:
     def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder,  round_num, signal, save_figs, experiment = None, live_plot = None, increase_steps = False, increase_steps_to = 500):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
-        self.expt_name = "qubit_spec_ef"
+        self.expt_name = "qubit_spec_fh"
         self.signal = signal
         self.save_figs = save_figs
         self.experiment = experiment
@@ -31,7 +31,7 @@ class FHQubitSpectroscopy:
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
 
-            print(f'Q {self.QubitIndex + 1} Round {self.round_num} EF Qubit Spec configuration: ', self.config)
+            print(f'Q {self.QubitIndex + 1} Round {self.round_num} FH Qubit Spec configuration: ', self.config)
 
     def run(self, soccfg, soc):
         if self.increase_steps:
@@ -123,7 +123,7 @@ class FHQubitSpectroscopy:
                      fontsize=24, ha='center', va='top')
         else:
             fig.text(plot_middle, 0.98,
-                     f"EF Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean +
+                     f"FH Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean +
                      f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
                      f", {self.config['reps']}*{self.config['rounds']} avgs",
                      fontsize=24, ha='center', va='top')
@@ -281,7 +281,7 @@ class FHPulseProbeSpectroscopyProgram(AveragerProgramV2):
                        envelope="ramp",
                        freq=cfg['qubit_freq_ef'],
                        phase=cfg['qubit_phase'],
-                       gain=cfg['pi_amp'],
+                       gain=cfg['pi_ef_amp'],
                        )
 
         #self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
@@ -297,7 +297,7 @@ class FHPulseProbeSpectroscopyProgram(AveragerProgramV2):
                        length=cfg['qubit_length_ge'],
                        freq=cfg['qubit_freq_fh'],
                        phase=0,
-                       gain=cfg['qubit_gain_fh'],
+                       gain=1,
                        )
 
 
@@ -305,9 +305,9 @@ class FHPulseProbeSpectroscopyProgram(AveragerProgramV2):
 
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play ge pi pulse
-        self.delay_auto(t=0.0, tag='waiting after pi')  # Wait til qubit pulse is done before proceeding
+        self.delay_auto(t=0.0, tag='waiting after pi ge')  # Wait til qubit pulse is done before proceeding
         self.pulse(ch=self.cfg["qubit_ch"], name="pi_ef", t=0)  # play ge pi pulse
-        self.delay_auto(t=0.0, tag='waiting after pi')
+        self.delay_auto(t=0.0, tag='waiting after pi ef')
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play f-h pulse
         self.delay_auto(t=0.01, tag='waiting')  # Wait til qubit e-f pulse is done before proceeding
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0) #readout

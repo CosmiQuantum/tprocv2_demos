@@ -63,17 +63,17 @@ study = 'QZE'
 sub_study = 'dephasing_from_higher_energy_levels'
 substudy_txt_notes = ('Lets give this an initial test and make sure all of these experiments work well, on qubit 2')
 # set which of the following you'd like to run to 'True'
-run_flags = {"res_spec_ge": True, "q_spec_ge": True, "rabi_ge": True, "res_spec_ef": True, "res_spec_fh": True,
-             "q_spec_ef": True,"q_spec_fh": True,
-             "ss_gef": True, "ss_gef_fstate": True, "rabi_ef": True,"rabi_fh": True,
-             "t1_ge": True, "t1_fg": True, "t1_fe": True,
-             "t2r": True,"t2e": True, "dephased": True,"dephased_with_ef_noise": True}
+run_flags = {"res_spec_ge": True, "q_spec_ge": True, "rabi_ge": True, "res_spec_ef": True, "res_spec_fh": False,
+             "q_spec_ef": True,"q_spec_fh": False,
+             "ss_gef": True, "ss_gef_fstate": True, "rabi_ef": True,"rabi_fh": False,
+             "t1_ge": False, "t1_fg": False, "t1_fe": False,
+             "t2r": False,"t2e": True, "dephased": True,"dephased_with_ef_noise": False}
 #Folders
-if not os.path.exists("/data/QICK_data/run6/"):
-    os.makedirs("/data/QICK_data/run6/")
-if not os.path.exists("/data/QICK_data/run6/6transmon/"):
-    os.makedirs("/data/QICK_data/run6/6transmon/")
-studyFolder = os.path.join("/data/QICK_data/run6/6transmon/", study)
+if not os.path.exists("/data/QICK_data/run6b/"):
+    os.makedirs("/data/QICK_data/run6b/")
+if not os.path.exists("/data/QICK_data/run6b/6transmon/"):
+    os.makedirs("/data/QICK_data/run6b/6transmon/")
+studyFolder = os.path.join("/data/QICK_data/run6b/6transmon/", study)
 if not os.path.exists(studyFolder):
     os.makedirs(studyFolder)
 subStudyFolder = os.path.join(studyFolder, sub_study)
@@ -81,7 +81,6 @@ if not os.path.exists(subStudyFolder):
     os.makedirs(subStudyFolder)
 
 formatted_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-formatted_datetime = 'qze_experiment_with_starked_qfreq_old_readout_values'+formatted_datetime
 dataSetFolder = os.path.join(subStudyFolder, formatted_datetime)
 optimizationFolder = os.path.join(dataSetFolder, 'optimization')
 studyFolder = os.path.join(dataSetFolder, 'study_data')
@@ -99,7 +98,7 @@ with open(file_path, "w", encoding="utf-8") as file:
     file.write(substudy_txt_notes)
 
 #Logging
-log_file = os.path.join(studyDocumentationFolder, "QZE_rabi_script.log")
+log_file = os.path.join(studyDocumentationFolder, "QZE_script.log")
 rr_logger = logging.getLogger("custom_logger_for_rr_only")
 rr_logger.setLevel(logging.DEBUG)
 file_handler = logging.FileHandler(log_file, mode='a')
@@ -110,9 +109,9 @@ rr_logger.propagate = False
 
 ################################################ optimization outputs ##################################################
 # Optimization parameters for resonator spectroscopy
-res_leng_vals = [5.5, 7.5, 6.0, 6.5, 5.0, 6.0]
-res_gain = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5] #I dont need speed for this experiment, I can do many averages. So, I will do a very low gain to make sure im never punching out
-freq_offsets = [0, 0, 0, 0, 0, 0]
+res_leng_vals = [4, 14, 6, 10, 6, 7]
+res_gain = [1,1,1,0.7,0.8,0.6]
+freq_offsets = [0.1, -0.25, -0.2, 0.2, -0.1, -0.1]
 
 ####################################################### live plot ######################################################
 if live_plot:
@@ -189,11 +188,19 @@ for QubitIndex in Qs_to_look_at:
     # Mask out all other resonators except this one
     res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=res_gain[QubitIndex], num_qubits=tot_num_of_qubits)
     experiment.readout_cfg['res_gain_ge'] = res_gains
+
+    res_gains_ef = experiment.mask_gain_res(QubitIndex, IndexGain=experiment.readout_cfg['res_gain_ef'][QubitIndex], num_qubits=tot_num_of_qubits)
+    experiment.readout_cfg['res_gain_ef'] = res_gains_ef
+
+    res_gains_fh = experiment.mask_gain_res(QubitIndex, IndexGain=experiment.readout_cfg['res_gain_fh'][QubitIndex],
+                                            num_qubits=tot_num_of_qubits)
+    experiment.readout_cfg['res_gain_fh'] = res_gains_fh
+
     experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
 
     ################################################# g-e Res spec ####################################################
     if run_flags["res_spec_ge"]:
-        res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, subStudyDataFolder, j, save_figs,
+        res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
                                          experiment)
         res_freqs, freq_pts, freq_center, amps, sys_config_rspec = res_spec.run()
         experiment.readout_cfg['res_freq_ge'] = res_freqs
@@ -212,7 +219,8 @@ for QubitIndex in Qs_to_look_at:
 
     ################################################### g-e Qubit spec ##################################################
     if run_flags["q_spec_ge"]:
-        q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, subStudyDataFolder, j, signal, save_figs, experiment,
+        #experiment.qubit_cfg['qubit_gain_ge'][QubitIndex]=1
+        q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs, experiment,
                                    live_plot, verbose=False, logger=None, qick_verbose=True, increase_reps=False,
                                    increase_reps_to=500)
         qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq, sys_config_qspec = q_spec.run()
@@ -224,9 +232,10 @@ for QubitIndex in Qs_to_look_at:
 
     ###################################################### g-e Rabi ####################################################
     if run_flags["rabi_ge"]:
-        rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, subStudyDataFolder, j, signal, save_figs,
-                                       experiment, live_plot,
-                                       increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
+        rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs=save_figs,
+                                       experiment=experiment, live_plot= live_plot,
+                                       increase_qubit_reps=increase_qubit_reps, qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                       multiply_qubit_reps_by=multiply_qubit_reps_by)
 
         rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_rabi = rabi.run()
 
@@ -237,7 +246,7 @@ for QubitIndex in Qs_to_look_at:
 
     ################################################# e-f Res spec ####################################################
     if run_flags["res_spec_ef"]:
-        res_specEF = ResonanceSpectroscopyEF(QubitIndex, tot_num_of_qubits, subStudyDataFolder, j, save_figs,
+        res_specEF = ResonanceSpectroscopyEF(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
                                              experiment)
         res_freqs_ef, freq_pts_ef, freq_center_ef, amps_ef, sys_config_rspec_ef = res_specEF.run()
         experiment.readout_cfg['res_freq_ef'] = res_freqs_ef
@@ -251,7 +260,7 @@ for QubitIndex in Qs_to_look_at:
         if QubitIndex == 3:
             increase_qubit_steps_ef = True  # if you want to increase the steps for a qubit, set to True
 
-        ef_q_spec = EFQubitSpectroscopy(QubitIndex, tot_num_of_qubits, list_of_all_qubits, subStudyDataFolder, j, signal,
+        ef_q_spec = EFQubitSpectroscopy(QubitIndex, tot_num_of_qubits, list_of_all_qubits, studyDocumentationFolder, j, signal,
                                         save_figs, experiment, live_plot, increase_qubit_steps_ef,
                                         increase_steps_to_ef)
         efqspec_I, efqspec_Q, efqspec_freqs, efqspec_I_fit, efqspec_Q_fit, efqubit_freq, sys_config_qspec_ef = ef_q_spec.run(
@@ -265,10 +274,12 @@ for QubitIndex in Qs_to_look_at:
 
     ###################################################### e-f Rabi ####################################################
     if run_flags["rabi_ef"]:
-        efrabi = EF_AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, list_of_all_qubits, subStudyDataFolder, j, signal,
-                                            save_figs,
-                                            experiment, live_plot,
-                                            increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
+        efrabi = EF_AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, list_of_all_qubits, studyDocumentationFolder, j, signal,
+                                            save_figs=save_figs,
+                                            experiment=experiment, live_plot=live_plot,
+                                            increase_qubit_reps=increase_qubit_reps,
+                                            qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                            multiply_qubit_reps_by=multiply_qubit_reps_by)
         efrabi_I, efrabi_Q, efrabi_gains, efrabi_fit, efpi_amp, sys_config_rabi_ef = efrabi.run(experiment.soccfg,
                                                                                                 experiment.soc)
 
@@ -279,7 +290,7 @@ for QubitIndex in Qs_to_look_at:
 
     ############################################# f-h Res spec ############################################
     if run_flags["res_spec_fh"]:
-        res_specFH = ResonanceSpectroscopyFH(QubitIndex, tot_num_of_qubits, subStudyDataFolder, j, save_figs,
+        res_specFH = ResonanceSpectroscopyFH(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
                                              experiment)
         res_freqs_fh, freq_pts_fh, freq_center_fh, amps_fh, sys_config_rspec_fh = res_specFH.run()
         experiment.readout_cfg['res_freq_fh'] = res_freqs
@@ -293,7 +304,7 @@ for QubitIndex in Qs_to_look_at:
         if QubitIndex == 3:
             increase_qubit_steps_ef = True  # if you want to increase the steps for a qubit, set to True
 
-        fh_q_spec = FHQubitSpectroscopy(QubitIndex, tot_num_of_qubits, list_of_all_qubits, subStudyDataFolder, j,
+        fh_q_spec = FHQubitSpectroscopy(QubitIndex, tot_num_of_qubits, list_of_all_qubits, studyDocumentationFolder, j,
                                         signal,
                                         save_figs, experiment, live_plot, increase_qubit_steps_ef,
                                         increase_steps_to_ef)
@@ -303,15 +314,17 @@ for QubitIndex in Qs_to_look_at:
         experiment.qubit_cfg['qubit_freq_fh'][QubitIndex] = float(fhqubit_freq)
         print('Qubit ', QubitIndex + 1, ' f-h Freq: ', float(fhqubit_freq))
 
-        del ef_q_spec
+        del fh_q_spec
 
     ###################################################### f-h Rabi ####################################################
-    if run_flags["rabi_hf"]:
-        fhrabi = FH_AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, list_of_all_qubits, subStudyDataFolder,
+    if run_flags["rabi_fh"]:
+        fhrabi = FH_AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, list_of_all_qubits, studyDocumentationFolder,
                                             j, signal,
-                                            save_figs,
-                                            experiment, live_plot,
-                                            increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
+                                            save_figs=save_figs,
+                                            experiment=experiment, live_plot=live_plot,
+                                            increase_qubit_reps=increase_qubit_reps,
+                                            qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                            multiply_qubit_reps_by=multiply_qubit_reps_by)
         fhrabi_I, fhrabi_Q, fhrabi_gains, fhrabi_fit, fhpi_amp, sys_config_rabi_fh = fhrabi.run(experiment.soccfg,
                                                                                                 experiment.soc)
 
@@ -321,7 +334,7 @@ for QubitIndex in Qs_to_look_at:
         del fhrabi
     ###################################################### g-e T1 ####################################################
     if run_flags["t1_ge"]:
-        t1_ge = T1Measurement(QubitIndex, tot_num_of_qubits, subStudyDataFolder, j, signal, save_figs,
+        t1_ge = T1Measurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                               experiment=experiment,
                               live_plot=live_plot, fit_data=fit_data,
                               increase_qubit_reps=increase_qubit_reps,
@@ -336,7 +349,7 @@ for QubitIndex in Qs_to_look_at:
 
     ###################################################### f-g T1 ####################################################
     if run_flags["t1_fg"]:
-        t1_fg = EF_T1Measurement(QubitIndex, tot_num_of_qubits, subStudyDataFolder, j, signal, save_figs,
+        t1_fg = EF_T1Measurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                  experiment=experiment,
                                  live_plot=live_plot, fit_data=fit_data,
                                  increase_qubit_reps=increase_qubit_reps,
@@ -351,7 +364,7 @@ for QubitIndex in Qs_to_look_at:
 
     ###################################################### f-e T1 ####################################################
     if run_flags["t1_fe"]:
-        t1_fe = EF_T1Measurement(QubitIndex, tot_num_of_qubits, subStudyDataFolder, j, signal, save_figs,
+        t1_fe = EF_T1Measurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                  experiment=experiment,
                                  live_plot=live_plot, fit_data=fit_data,
                                  increase_qubit_reps=increase_qubit_reps,
@@ -366,7 +379,7 @@ for QubitIndex in Qs_to_look_at:
     ###################################################### T2R #####################################################
     if run_flags["t2r"]:
         try:
-            t2r = T2RMeasurement(QubitIndex, tot_num_of_qubits, subStudyDataFolder, j, signal, save_figs,
+            t2r = T2RMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                  experiment=experiment, live_plot=live_plot, fit_data=fit_data,
                                  increase_qubit_reps=increase_qubit_reps,
                                  qubit_to_increase_reps_for=qubit_to_increase_reps_for,
@@ -387,7 +400,7 @@ for QubitIndex in Qs_to_look_at:
     ##################################################### T2E ######################################################
     if run_flags["t2e"]:
         try:
-            t2e = T2EMeasurement(QubitIndex, tot_num_of_qubits, subStudyDataFolder, j, signal, save_figs,
+            t2e = T2EMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                  experiment=experiment, live_plot=live_plot, fit_data=fit_data,
                                  increase_qubit_reps=increase_qubit_reps,
                                  qubit_to_increase_reps_for=qubit_to_increase_reps_for,
@@ -408,7 +421,7 @@ for QubitIndex in Qs_to_look_at:
     ################################################## Dephasing ###################################################
     if run_flags["dephased"]:
         try:
-            dephase = DephasingMeasurement(QubitIndex, tot_num_of_qubits, subStudyDataFolder, j, signal, save_figs,
+            dephase = DephasingMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                  experiment=experiment, live_plot=live_plot, fit_data=fit_data,
                                  increase_qubit_reps=increase_qubit_reps,
                                  qubit_to_increase_reps_for=qubit_to_increase_reps_for,
@@ -429,14 +442,14 @@ for QubitIndex in Qs_to_look_at:
     ############################################## Dephasing with ef noise ###############################################
     if run_flags["dephased_with_ef_noise"]:
         try:
-            dephase_ef_noise = DephasingMeasurementWithEFNoise(QubitIndex, tot_num_of_qubits, subStudyDataFolder, j, signal, save_figs,
+            dephase_ef_noise = DephasingMeasurementWithEFNoise(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                            experiment=experiment, live_plot=live_plot, fit_data=fit_data,
                                            increase_qubit_reps=increase_qubit_reps,
                                            qubit_to_increase_reps_for=qubit_to_increase_reps_for,
                                            multiply_qubit_reps_by=multiply_qubit_reps_by,
                                            verbose=verbose, logger=rr_logger)
             (t2dephased_ef_noise_est, t2dephased_ef_noise_err, t2dephased_ef_noise_I, t2dephased_ef_noise_Q, t2dephased_ef_noise_delay_times,
-             fit_t2dephased_ef_noise, sys_config_t2dephased_ef_noise) = dephase.run(thresholding=thresholding)
+             fit_t2dephased_ef_noise, sys_config_t2dephased_ef_noise) = dephase_ef_noise.run(thresholding=thresholding)
             del dephase_ef_noise
 
         except Exception as e:

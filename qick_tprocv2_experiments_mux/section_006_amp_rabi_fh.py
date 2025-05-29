@@ -15,7 +15,7 @@ class FH_AmplitudeRabiExperiment:
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
         self.outerFolder = outerFolder
-        self.expt_name = "power_rabi_ef"
+        self.expt_name = "power_rabi_fh"
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.exp_cfg = expt_cfg[self.expt_name]
         self.round_num = round_num
@@ -295,16 +295,16 @@ class AmplitudeRabiProgram(AveragerProgramV2):
                        envelope="ramp",
                        freq=cfg['qubit_freq_fh'],
                        phase=cfg['qubit_phase'],
-                       gain=cfg['qubit_gain_ef'],
+                       gain=cfg['qubit_gain_fh'],
                        )
 
         self.add_loop("gainloop", cfg["steps"])
 
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play ge pi pulse
-        self.delay_auto(t=0.0, tag='waiting after pi')  # Wait til ge pi pulse is done before proceeding
+        self.delay_auto(t=0.0, tag='waiting after pi ge')  # Wait til ge pi pulse is done before proceeding
         self.pulse(ch=self.cfg["qubit_ch"], name="pi_ef", t=0)  # play ef pi pulse
-        self.delay_auto(t=0.0, tag='waiting after pi')  # Wait til ge pi pulse is done before proceeding
+        self.delay_auto(t=0.0, tag='waiting after pi ef')  # Wait til ge pi pulse is done before proceeding
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0) #h-e pulse
         self.delay_auto(t=0.0, tag='waiting') #wait
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0) #probe pulse

@@ -47,7 +47,7 @@ class EFQubitSpectroscopy:
             efI = efiq_list[self.QubitIndex][0, :, 0]
             efQ = efiq_list[self.QubitIndex][0, :, 1]
             effreqs = efqspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
-            #print(effreqs)
+
 
         largest_amp_curve_mean, efI_fit, efQ_fit = self.plot_results(efI, efQ, effreqs, config = self.config)
         return efI, efQ, effreqs, efI_fit, efQ_fit, largest_amp_curve_mean, self.config
@@ -76,7 +76,7 @@ class EFQubitSpectroscopy:
 
     def plot_results(self, I, Q, freqs, config=None, fig_quality=100):
         freqs = np.array(freqs)
-        freq_q = freqs[np.argmax(I)]
+        freq_q = freqs[np.argmax(abs(I))]
 
         mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, fit_err = self.fit_lorenzian(I, Q, freqs,
                                                                                                           freq_q)

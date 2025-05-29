@@ -34,13 +34,23 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.add_pulse(ch=qubit_ch, name="qubit_pulse",
                        style="arb",
                        envelope="ramp",
-                       freq=cfg['qubit_freq_ef'],
+                       freq=cfg['qubit_freq_ge'],
                        phase=cfg['qubit_phase'],
                        gain=cfg['pi_amp'],
                        )
 
+        self.add_pulse(ch=qubit_ch, name="qubit_pulse_ef",
+                       style="arb",
+                       envelope="ramp",
+                       freq=cfg['qubit_freq_ef'],
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['pi_ef_amp'],
+                       )
+
     def _body(self, cfg):
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play pi pulse
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0) # play pi pulse ge
+        self.delay_auto(0.01)
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse_ef", t=0)  # play pi pulse ef
         self.delay_auto(0.01)  # wait_time after last pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'], ddr4=True)
         self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
@@ -71,15 +81,15 @@ class ResonanceSpectroscopyFH:
 
     def run(self):
         fpts = self.exp_cfg["start"] + self.exp_cfg["step_size"] * np.arange(self.exp_cfg["steps"])
-        fcenter = self.config['res_freq_ge']
+        fcenter = self.config['res_freq_ef']
         amps = np.zeros((len(fcenter), len(fpts)))
 
         for index, f in enumerate(tqdm(fpts)):
-            self.config["res_freq_ge"] = fcenter + f
+            self.config["res_freq_ef"] = fcenter + f
             prog = SingleToneSpectroscopyProgram(self.experiment.soccfg, reps=self.exp_cfg["reps"], final_delay=0.5,
                                                  cfg=self.config)
             iq_list = prog.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=self.qick_verbose)
-            for i in range(len(self.config['res_freq_ge'])):
+            for i in range(len(self.config['res_freq_ef'])):
                 amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])
         amps = np.array(amps)
         res_freqs = self.plot_results(fpts, fcenter,

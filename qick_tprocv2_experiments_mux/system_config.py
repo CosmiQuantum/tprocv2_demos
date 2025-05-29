@@ -59,6 +59,7 @@ class QICK_experiment:
                 "qubit_ampl_ch": [self.FSGEN_AMPL_CH] * 6,
                 "res_ch": [self.MIXMUXGEN_CH] * 6,  # Single Tone Readout Port, MUX DAC
                 "qubit_ch_ef": [self.FSGEN_CH]*6, # Qubit ef Channel, Full-speed DAC
+                "qubit_ch_fh": [self.FSGEN_CH] * 6,  # Qubit ef Channel, Full-speed DAC
                 "nqz_qubit": 1,
                 "nqz_res": 2,
                 # ADC
@@ -125,6 +126,7 @@ class QICK_experiment:
                 # [MHz] Freqs of Qubit e/f Transition
                 "qubit_freq_ftores": [4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17],
                 "qubit_gain_ef": [0.03, 0.14, 0.04, 0.17, 0.11, 0.08], #Arianna 3/27. 0.03
+                "qubit_gain_fh": [0.03, 0.14, 0.04, 0.17, 0.11, 0.08],  # Olivia May 28
                 'qubit_gain_ftores': [1]*6,#[0.2, 0.14, 0.04, 0.17, 0.13, 0.08],
                 # [0.01, 0.05, 0.05, 0.05, 0.01, 0.5], # [DAC units] Pulse Gain
                 "qubit_length_ef": 22, #22.0,

@@ -195,7 +195,7 @@ class DephasingProgram(AveragerProgramV2):
 
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse1", t=0)  # play probe pulse
-        for dephasing_round in len(self.cfg["dephasing_rounds_plus_1"]-1):
+        for dephasing_round in range(self.cfg["dephasing_rounds_plus_1"]-1):
             self.delay_auto((cfg['wait_time'] / self.cfg["dephasing_rounds_plus_1"]) + 0.01, tag='wait1')  # wait_time after last pulse (wait / 2)
             self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse_pi", t=0)  # play pulse
 
