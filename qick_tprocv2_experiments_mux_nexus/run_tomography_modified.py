@@ -5,8 +5,8 @@ import numpy as np
 np.set_printoptions(threshold=int(1e15)) #need this so it saves absolutely everything returned from the classes
 sys.path.append(os.path.abspath("/home/nexusadmin/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux_nexus"))
 from system_config import QICK_experiment
-from tomography import TomographyMeasurement
-from tomography import AllQubitTomographyMeasurement
+from tomography_modified  import TomographyMeasurement
+from tomography_modified import AllQubitTomographyMeasurement
 from expt_config import *
 #sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_001_time_of_flight import TOFExperiment
@@ -60,20 +60,19 @@ t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
 
 
 
-now = datetime.datetime.now()
-formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+
 
 #
-synth = SynthHD('/dev/ttyACM1')
-
-synth[0].power =     -12.85
-synth[0].frequency = 7.826e9
-synth[0].enable = True
-time.sleep(5)
+# synth = SynthHD('/dev/ttyACM1')
+#
+# synth[0].power =     -12.85
+# synth[0].frequency = 7.826e9
+# synth[0].enable = False #True
+# time.sleep(5)
 ################################################ optimization outputs ##################################################
 # For NEXUS
 res_leng_vals = [5.8, 3.8, 4, 4.6] #[6.15, 5.85, 6.45, 5.7] # from 2/19/2025 optimization, after punchout test
-res_gain = [0.38, 0.26, 0.28, 0.31]#[0.3143, 0.1857, 0.1429, 0.1857] # from 2/19/2025 optimization, after punchout test
+res_gain = [0, 0, 0, 0] #[0.38, 0.26, 0.28, 0.31]#[0.3143, 0.1857, 0.1429, 0.1857] # from 2/19/2025 optimization, after punchout test
 freq_offsets = [0, 0, 0, 0] #[0.0, -0.0667, -0.2667, -0.400] # from 2/19/2025 optimization, after punchout test
 ####################################################### RR #############################################################
 
@@ -95,14 +94,19 @@ qfreqs=np.zeros(4)
 rabiGs=np.zeros(4)
 resPhases=np.zeros(4)
 fids=np.zeros(4)
-synth = SynthHD('/dev/ttyACM1')
+# synth = SynthHD('/dev/ttyACM1')
 
-
+substudy = 'Ba_sub_study' # 'Cs_3plates_sub_study' 'Cs_6plates_sub_study' 'Cs_9plates_sub_study'
 
 while j < n:
     j += 1
     batch=j
-    outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run31/Charge_Tomography", str(datetime.date.today()), f'batch_{batch}')
+
+
+    now = datetime.datetime.now()
+    formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+
+    outerFolder = os.path.join(f"/home/nexusadmin/qick/NEXUS_sandbox/Data/Run31/Charge_Tomography/{substudy}", str(datetime.date.today()), f'batch_{batch}')
     saveFolder = outerFolder + '//repeated_tomoography' + formatted_datetime
     ssf_I_g = []
     ssf_I_e = []
@@ -126,6 +130,7 @@ while j < n:
         try:
             #experiment.readout_cfg['res_phases'] = res_phases
             # nowq = time.time()
+
             q_spec = QubitSpectroscopy(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot)
             qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg,
                                                                                              experiment.soc)
@@ -222,6 +227,7 @@ while j < n:
             continue #skip the rest of this qubit
 
         if save_data_h5:
+            print('collecting data')
             ##############----Collect QSpec Results----------------
             qspec_data[QubitIndex]['Dates'][j - batch_num * save_r - 1]=time.mktime(datetime.datetime.now().timetuple())
             qspec_data[QubitIndex]['I'][j - batch_num * save_r - 1] = qspec_I
@@ -253,11 +259,15 @@ while j < n:
             t1_data[QubitIndex]['Fit'][j - batch_num*save_r - 1] = q1_fit_exponential
             t1_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
             t1_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-
+            print('collection complete')
     ################################################## Potentially Save ################################################
+    save_data_h5=True
     if save_data_h5:
         # Check if you are at the right round number
         # If so, then save all of the data and change the round num so you replace data starting next round
+        print('saving data')
+
+
         if j % save_r == 0:
             batch_num += 1
 
@@ -287,7 +297,7 @@ while j < n:
             ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
             t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
 
-
+            print('data saving complete')
 
 
             
@@ -300,12 +310,12 @@ while j < n:
 
 
     start_voltage = 0  # V
-    stop_voltage = 0.1  # 0.1 #V
+    stop_voltage = 0  # 0.1 #V
     voltage_pts = 30
 
     ## Get num of rounds to use by total time you want, or just set manually below:
-    run_time = 3  # hrs, 11pm to 730am, ~8.5 hrs
-    round_time = 2.2# min, actually more like 1.5 min but want to leave extra time
+    run_time = 0.1  # hrs, 11pm to 730am, ~8.5 hrs
+    round_time = 2# min, actually more like 1.5 min but want to leave extra time
     round_num = int(run_time * 60 / round_time)
 
 

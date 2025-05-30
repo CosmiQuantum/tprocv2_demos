@@ -10,7 +10,7 @@ from windfreak import SynthHD
 
 from NetDrivers import E36300
 
-synth = SynthHD('/dev/ttyACM1')
+# synth = SynthHD('/dev/ttyACM1')
 
 class AllQubitTomographyMeasurement:
     def __init__(self, saveFolder, outerFolder,number_of_qubits, experiment, fids, ssf_I_g, ssf_I_e, ssf_Q_g, ssf_Q_e ):
@@ -61,14 +61,14 @@ class AllQubitTomographyMeasurement:
         # Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44', '192.168.0.41']  # IP address of bias PS (qubits 1-3 are the same PS)
         # Bias_ch = [1, 2, 3, 1]  # Channel number of qubit 1-4 on associated PS
 
-        self.Q13_BiasPS.setVoltage(0, 1)
-        self.Q13_BiasPS.enable(1)
-        self.Q13_BiasPS.setVoltage(0, 2)
-        self.Q13_BiasPS.enable(2)
-        self.Q13_BiasPS.setVoltage(0, 3)
-        self.Q13_BiasPS.enable(3)
-        self.Q4_BiasPS.setVoltage(0, 1)
-        self.Q4_BiasPS.enable(1)
+        # self.Q13_BiasPS.setVoltage(0, 1)
+        # self.Q13_BiasPS.enable(1)
+        # self.Q13_BiasPS.setVoltage(0, 2)
+        # self.Q13_BiasPS.enable(2)
+        # self.Q13_BiasPS.setVoltage(0, 3)
+        # self.Q13_BiasPS.enable(3)
+        # self.Q4_BiasPS.setVoltage(0, 1)
+        # self.Q4_BiasPS.enable(1)
         return
 
     def bias_sweep(self, soccfg, soc, vsweep, total_rounds, start_time, plot_data=False, save_data=True):
@@ -91,10 +91,10 @@ class AllQubitTomographyMeasurement:
             ## sweep voltage and take data on all 4 qubits
             start_scan_time = time.time()
             for index, v in enumerate(vsweep):
-                self.Q13_BiasPS.setVoltage(v, 1)
-                self.Q13_BiasPS.setVoltage(v, 2)
-                self.Q13_BiasPS.setVoltage(v, 3)
-                self.Q4_BiasPS.setVoltage(v, 1)
+                # self.Q13_BiasPS.setVoltage(v, 1)
+                # self.Q13_BiasPS.setVoltage(v, 2)
+                # self.Q13_BiasPS.setVoltage(v, 3)
+                # self.Q4_BiasPS.setVoltage(v, 1)
                 print('Tomography round', r, 'Q1')
                 ## Q1
 
@@ -156,10 +156,10 @@ class AllQubitTomographyMeasurement:
             end_time = time.time()
             elapsed_time = end_time - start_scan_time
             print('elapsed_time',elapsed_time)
-            self.Q13_BiasPS.setVoltage(0, 1)
-            self.Q13_BiasPS.setVoltage(0, 2)
-            self.Q13_BiasPS.setVoltage(0,3)
-            self.Q4_BiasPS.setVoltage(0,1)
+            # self.Q13_BiasPS.setVoltage(0, 1)
+            # self.Q13_BiasPS.setVoltage(0, 2)
+            # self.Q13_BiasPS.setVoltage(0,3)
+            # self.Q4_BiasPS.setVoltage(0,1)
 
             ## put all the data together
             all_data = np.array([Q1_Iarr, Q1_Qarr, Q2_Iarr, Q2_Qarr, Q3_Iarr, Q3_Qarr, Q4_Iarr, Q4_Qarr])
@@ -262,13 +262,13 @@ class TomographyMeasurement:
     def bias_sweep(self, soccfg, soc, vsweep):
         Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44',
                       '192.168.0.41']  # IP address of bias PS (qubits 1-3 are the same PS)
-        Bias_ch = [1, 2, 3, 1]  # Channel number of qubit 1-4 on associated PS
+        # Bias_ch = [1, 2, 3, 1]  # Channel number of qubit 1-4 on associated PS
         qubit_index = int(self.QubitIndex)
 
-        BiasPS = E36300(Bias_PS_ip[qubit_index], server_port=5025)
+        # BiasPS = E36300(Bias_PS_ip[qubit_index], server_port=5025)
 
-        BiasPS.setVoltage(0, Bias_ch[qubit_index])
-        BiasPS.enable(Bias_ch[qubit_index])
+        # BiasPS.setVoltage(0, Bias_ch[qubit_index])
+        # BiasPS.enable(Bias_ch[qubit_index])
 
         #prepare signal arrays
         I_arr = []
@@ -276,7 +276,7 @@ class TomographyMeasurement:
         amps_arr = []
 
         for index, v in enumerate(vsweep):
-            BiasPS.setVoltage(v, Bias_ch[qubit_index])
+            # BiasPS.setVoltage(v, Bias_ch[qubit_index])
             #time.sleep(2)
 
             tomography = TomographyProgram(soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
@@ -290,7 +290,9 @@ class TomographyMeasurement:
             Q_arr.append(Q)
             amps_arr.append(amps)
         #BiasPS.disable(Bias_ch[qubit_index])
-        BiasPS.setVoltage(0, Bias_ch[qubit_index])
+
+        # BiasPS.setVoltage(0, Bias_ch[qubit_index])
+
         #print(I_arr)
 
         return I_arr, Q_arr, amps_arr
