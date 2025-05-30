@@ -405,6 +405,7 @@ class DephasingMeasurement:
             delay_times = 0
             for dephasing_round in range(self.config["dephasing_rounds_plus_1"] - 1):
                 delay_times_n = echo.get_time_param('wait1' +str(dephasing_round), "t", as_array=True)
+                #print(delay_times_n )
                 delay_times = delay_times + delay_times_n
             delay_times2 = echo.get_time_param('wait2', "t", as_array=True)
             delay_times = delay_times+delay_times2
