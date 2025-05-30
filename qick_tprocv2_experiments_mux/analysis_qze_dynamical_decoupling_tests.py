@@ -47,25 +47,37 @@ run_name = 'run6b/6transmon/QZE/dephasing_from_higher_energy_levels'
 #run_name = 'run6/6transmon/QZE/QZE_measurement/Optimization/'
 FRIDGE = "QUIET"
 run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB attenuator ') #please make it brief for the plot
-top_folder_dates = ['2025-05-29_07-22-46', '2025-05-29_09-00-02']
-
+#top_folder_dates = ['2025-05-30_08-00-00']
+top_folder_dates = ['2025-05-30_10-09-37']
 #
-#top_folder_dates = ['2025-04-02']
 
+
+
+#date = '2025-03-28'
+#outerFolder = f"/data/QICK_data/{run_name}/" + date + "/study_data/"
+############################################### 01: Get all data ######################################################
 #
-# date = '2025-03-28'
-# outerFolder = f"/data/QICK_data/{run_name}/" + date + "/study_data/"
-################################################ 01: Get all data ######################################################
-
 # t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, FRIDGE)
 # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
-#
+
 dephasing_vs_time = DephasingVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
                  signal, run_name, FRIDGE)
-date_times_dephasing, dephasing_vals, dephasing_fit_err, noise_gains = dephasing_vs_time.run(return_errs=True,return_noise_gain=True)
+date_times, t2e_vals, noise_gains, Is, Qs,Delay_Times = dephasing_vs_time.run(return_noise_gain=True,name='T2E_ge')
 
 
 ################################################# 08: T2E vs Time Plots ################################################
-dephasing_vs_time.plot_2d_vs_magnitude(date_times_dephasing,
-                                         dephasing_vals, dephasing_fit_err, show_legends=True)
+dephasing_vs_time.plot_noise_vs_gain_v2(date_times=date_times,Is=Is, Qs=Qs,delay_times=Delay_Times,noise_gains=noise_gains)
+
+#top_folder_dates = ['2025-05-29_21-15-09','2025-05-29_22-38-13','2025-05-29_22-56-40']
+#top_folder_dates = ['2025-05-30_08-34-32']
+#top_folder_dates = ['2025-05-30_09-15-42']
+#top_folder_dates = ['2025-05-30_11-38-01']
+top_folder_dates = ['2025-05-30_12-27-10']
+dephasing_vs_time = DephasingVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
+                 signal, run_name, FRIDGE)
+date_times, t2e_vals, noise_gains, Is, Qs,Delay_Times, freq_offset = dephasing_vs_time.run(return_freq_offset=True,name='T2E_ge')
+
+
+################################################# 08: T2E vs Time Plots ################################################
+dephasing_vs_time.plot_noise_vs_offset(date_times=date_times,Is=Is, Qs=Qs,delay_times=Delay_Times,noise_gains=noise_gains, freq_offsets=freq_offset)

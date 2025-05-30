@@ -62,7 +62,6 @@ class ResonanceSpectroscopy:
         for index, f in enumerate(tqdm(fpts)):
             self.config["res_freq_ge"] = fcenter + f
             prog = SingleToneSpectroscopyProgram(self.experiment.soccfg, reps=self.exp_cfg["reps"], final_delay=0.5, cfg=self.config)
-            #self.experiment.soccfg.config_all(reset=True)
             iq_list = prog.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=self.qick_verbose)
             for i in range(len(self.config['res_freq_ge'])):
                 amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])

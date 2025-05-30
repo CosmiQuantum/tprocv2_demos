@@ -145,11 +145,12 @@ class Fit:
 
         return out
 
-class T2EProgram(AveragerProgramV2):
+class DephasingWithFHNoiseProgram(AveragerProgramV2):
     def _initialize(self, cfg):
         ro_ch = cfg['ro_ch']
         res_ch = cfg['res_ch']
         qubit_ch = cfg['qubit_ch']
+        noise_ch = cfg['qubit_ampl_ch']
 
         self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
                          mux_freqs=cfg['res_freq_ge'],
@@ -167,10 +168,28 @@ class T2EProgram(AveragerProgramV2):
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
         self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+
+        self.declare_gen(ch=noise_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq']) #mix_freq? , mixer_freq=cfg['qubit_mixer_freq']
+        self.add_pulse(ch=noise_ch, name="noise_pulse",
+                       style="const",
+                       length=cfg["noise_pulse_len"],
+                       freq=cfg['qubit_freq_fh'] + cfg['noise_offset_freq_from_fh'],
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['noise_pulse_gain'],
+                       mode='periodic'
+                       )
+        self.add_pulse(ch=noise_ch, name="stop_periodic_pulse",
+                       style="const",
+                       length=0.01,
+                       freq=cfg['qubit_freq_fh'] ,
+                       phase=cfg['qubit_phase'],
+                       gain=0
+                       )
+
         self.add_pulse(ch=qubit_ch, name="qubit_pulse1",
                        style="arb",
                        envelope="ramp",
-                       freq=cfg['qubit_freq_ge'] ,
+                       freq=cfg['qubit_freq_ge'],
                        phase=cfg['qubit_phase'],
                        gain=cfg['pi_amp'] / 2,
                        )
@@ -187,23 +206,31 @@ class T2EProgram(AveragerProgramV2):
                        style="arb",
                        envelope="ramp",
                        freq=cfg['qubit_freq_ge'],
-                       phase=cfg['qubit_phase'] + cfg['wait_time']*360*cfg['ramsey_freq'], # current phase + time * 2pi * ramsey freq
+                       phase=cfg['qubit_phase'] + cfg['wait_time'] * 360 * cfg['ramsey_freq'],
+                       # current phase + time * 2pi * ramsey freq
                        gain=cfg['pi_amp'] / 2,
-                      )
+                       )
 
         self.add_loop("waitloop", cfg["steps"])
 
     def _body(self, cfg):
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse1", t=0)  # play probe pulse
-        self.delay_auto((cfg['wait_time'] / 2) + 0.01, tag='wait1')  # wait_time after last pulse (wait / 2)
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse_pi", t=0)  # play pulse
-        self.delay_auto((cfg['wait_time'] / 2) + 0.01, tag='wait2')  # wait_time after last pulse (wait / 2)
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse2", t=0)  # play pulse
-        self.delay_auto(0.01)  # wait_time after last pulse
+        self.pulse(ch=self.cfg["qubit_ampl_ch"], name="noise_pulse", t=0)                              # play noise pulse
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse1", t=0)  # play probe pulse after some ramp up time for noise pulse
+
+        for dephasing_round in range(self.cfg["dephasing_rounds_plus_1"] - 1):                         # cant use delay auto because that will wait for the noise pulse to be done which it shouldnt
+
+            self.delay_auto((cfg['wait_time'] / self.cfg["dephasing_rounds_plus_1"]) + 0.01, tag='wait1' + str(dephasing_round))
+            self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse_pi", t=0)                            # play pulse
+
+        self.delay_auto((cfg['wait_time'] / self.cfg["dephasing_rounds_plus_1"]) + 0.01, tag='wait2')                                                               # wait_time after last pulse (wait / 2)
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse2", t=0)
+        self.delay_auto()
+        self.pulse(ch=self.cfg["qubit_ampl_ch"], name="stop_periodic_pulse", t=0)
+        self.delay_auto(0.01)                                                                          # wait_time after last pulse
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
-class T2EMeasurement:
+class DephasingMeasurementWithFHNoise:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_figs, experiment = None,
                  live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
                  multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True):
@@ -211,7 +238,7 @@ class T2EMeasurement:
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.fit_data = fit_data
-        self.expt_name = "SpinEcho_ge"
+        self.expt_name = "Dephasing_ge_with_fh_noise"
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
@@ -236,18 +263,12 @@ class T2EMeasurement:
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2E configuration: ', self.config)
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} T2E configuration: {self.config}')
 
-    def t2_fit(self, x_data, I, Q, verbose = False, guess=None, plot=False, mag=True):
+    def t2_fit(self, x_data, I,Q, verbose = False, guess=None, plot=False):
         #fitting code adapted from https://github.com/qua-platform/py-qua-tools/blob/37c741ade5a8f91888419c6fd23fd34e14372b06/qualang_tools/plot/fitting.py
 
-        if abs(I[-1] - I[0]) > abs(Q[-1] - Q[0]):
-            y_data = I
-            plot_sig = 'I'
-        else:
-            y_data = Q
-            plot_sig = 'Q'
-        if mag:
-            y_data = np.hypot(I, Q)
-            plot_sig = 'Q'
+        mag = np.sqrt(I ** 2 + Q ** 2)
+        y_data = mag
+        plot_sig = 'mag'
 
         # Normalizing the vectors
         xn = preprocessing.normalize([x_data], return_norm=True)
@@ -385,9 +406,20 @@ class T2EMeasurement:
         t2e_err = out['T2'][1] #in ns
         return fit_type(x, popt) * y_normal, t2e_est, t2e_err, plot_sig
 
-    def run(self, thresholding=False):
+    def run(self, thresholding=False, gain=None, freq_offset=None):
         now = datetime.datetime.now()
-        echo = T2EProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
+        if gain is None:
+            gain = self.experiment.qubit_cfg['noise_pulse_gain']
+        if freq_offset is None:
+            freq_offset=self.config['noise_offset_freq_from_ef']
+        self.config['noise_offset_freq_from_ef'] = round(freq_offset,3)
+        self.config['noise_pulse_gain'] = round(gain,3)
+        self.config['noise_pulse_len'] = (self.experiment.qubit_cfg[
+                                                      'sigma'][self.QubitIndex] * (self.config['dephasing_rounds_plus_1']+1) # total length of the dynamical decoupling pulse
+                                                        +  0.01* (self.config['dephasing_rounds_plus_1']+1) # extra bufferes
+                                                        +self.experiment.qubit_cfg[ #two extra to be really safe that the noise is always on
+                                                      'sigma'][self.QubitIndex] *2)
+        echo = DephasingWithFHNoiseProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
                          cfg=self.config)
         # for live plotting open http://localhost:8097/ on firefox
         if self.live_plot:
@@ -402,9 +434,12 @@ class T2EMeasurement:
 
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
-            delay_times1 = echo.get_time_param('wait1', "t", as_array=True)
+            delay_times = 0
+            for dephasing_round in range(self.config["dephasing_rounds_plus_1"] - 1):
+                delay_times_n = echo.get_time_param('wait1' + str(dephasing_round), "t", as_array=True)
+                delay_times = delay_times + delay_times_n
             delay_times2 = echo.get_time_param('wait2', "t", as_array=True)
-            delay_times = delay_times1+delay_times2
+            delay_times = delay_times + delay_times2
 
         if self.fit_data:
             fit, t2e_est, t2e_err, plot_sig = self.t2_fit(delay_times, I, Q)
@@ -412,7 +447,7 @@ class T2EMeasurement:
             fit, t2e_est, t2e_err, plot_sig = None, None, None, None
 
         if self.save_figs:
-            self.plot_results(I, Q, delay_times, now, fit, t2e_est, t2e_err, plot_sig)
+            self.plot_results(I, Q, delay_times, now, fit, t2e_est, t2e_err)
 
         return  t2e_est, t2e_err, I, Q, delay_times, fit, self.config
 
@@ -461,68 +496,42 @@ class T2EMeasurement:
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-    def plot_results(self, I, Q, delay_times, now, fit, t2e_est, t2e_err, plot_sig, config = None, fig_quality = 100):
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+    def plot_results(self, I, Q, delay_times, now, fit, t2e_est,
+                     t2e_err, config=None, fig_quality=100):
+
+        mag = np.sqrt(I ** 2 + Q ** 2)
+
+        fig, ax = plt.subplots(1, 1, figsize=(10, 5))
         plt.rcParams.update({'font.size': 18})
 
-        # Calculate the middle of the plot area
-        plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
+        plot_middle = (ax.get_position().x0 + ax.get_position().x1) / 2
+        title_str = (f"Q{self.QubitIndex + 1}  "
+                     f"T2 = {t2e_est:0.2f} µs  "
+                     f"({int(config['reps'])} × {int(config['rounds'])} avgs)"
+                     if config is not None else
+                     f"T2 Q{self.QubitIndex + 1} = {t2e_est:0.2f} µs")
+        fig.text(plot_middle, 0.98, title_str, fontsize=24, ha='center', va='top')
 
+        ax.plot(delay_times, mag, "-", label="Magnitude", linewidth=2)
         if self.fit_data:
-            if 'I' in plot_sig:
-                ax1.plot(delay_times, fit, '-', color='red', linewidth=3, label="Fit")
-            if 'Q' in plot_sig:
-                ax2.plot(delay_times, fit, '-', color='red', linewidth=3, label="Fit")
+            ax.plot(delay_times, fit, "-", color='red', linewidth=3, label="Fit")
 
-            # Add title, centered on the plot area
-            if config is not None:
-                fig.text(plot_middle, 0.98,
-                         f"Q{self.QubitIndex + 1}" + f" T2E={t2e_est:.2f} us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
-                         fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
-            else:
-                fig.text(plot_middle, 0.98,
-                         f"T2 Q{self.QubitIndex + 1}, T2E %.2f us" % float(
-                             t2e_est) + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
-                         fontsize=24, ha='center', va='top')
+        ax.set_xlabel("Delay time (µs)", fontsize=20)
+        ax.set_ylabel("Magnitude (a.u.)", fontsize=20)
+        ax.tick_params(axis='both', which='major', labelsize=16)
+        ax.legend()
 
-        else:
-            # Add title, centered on the plot area
-            if config is not None:
-                fig.text(plot_middle, 0.98,
-                         f"T2 Q{self.QubitIndex + 1}, pi gain %.2f" % float(config[
-                             'pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma" + f", {float(config['reps'])}*{float(config['rounds'])} avgs," ,
-                         fontsize=24, ha='center', va='top')
-            else:
-                fig.text(plot_middle, 0.98,
-                         f"T2 Q{self.QubitIndex + 1}, pi gain %.2f" % float(self.config[
-                                                                                'pi_amp']) + f", {float(self.config['sigma']) * 1000} ns sigma" + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
-                         fontsize=24, ha='center', va='top')
-
-        # I subplot
-        ax1.plot(delay_times, I, label="Gain (a.u.)", linewidth=2)
-        ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
-        ax1.tick_params(axis='both', which='major', labelsize=16)
-        # ax1.axvline(freq_q, color='orange', linestyle='--', linewidth=2)
-
-        # Q subplot
-        ax2.plot(delay_times, Q, label="Q", linewidth=2)
-        ax2.set_xlabel("Delay time (us)", fontsize=20)
-        ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
-        ax2.tick_params(axis='both', which='major', labelsize=16)
-        # ax2.axvline(freq_q, color='orange', linestyle='--', linewidth=2)
-
-        # Adjust spacing
         plt.tight_layout()
-
-        # Adjust the top margin to make room for the title
-        plt.subplots_adjust(top=0.93)
+        plt.subplots_adjust(top=0.92)
         if self.save_figs:
             outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
             self.create_folder_if_not_exists(outerFolder_expt)
             now = datetime.datetime.now()
-            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-            file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
-            fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')  # , facecolor='white'
+            fmt_time = now.strftime("%Y-%m-%d_%H-%M-%S")
+            fname = f"R_{self.round_num}_Q_{self.QubitIndex + 1}_{fmt_time}_{self.expt_name}.png"
+            fig.savefig(os.path.join(outerFolder_expt, fname),
+                        dpi=fig_quality, bbox_inches='tight')
+
         plt.close(fig)
 
 

@@ -107,8 +107,8 @@ if FRIDGE == "QUIET":
         "qubit_spec_fh": {
             "reps": 2000,  # 300
             "rounds": 1,  # 10
-            "start": list(ef_freqs - 220),  # [MHz] #-300
-            "stop": list(ef_freqs - 170),  # [MHz]
+            "start": list(ef_freqs - 240),  # [MHz] #-300
+            "stop": list(ef_freqs - 100),  # [MHz]
             "steps": 1000,  # 1000
             "relax_delay": 600,  # 1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
@@ -138,7 +138,7 @@ if FRIDGE == "QUIET":
             "reps": 200,#500,
             "rounds": 1,  # 5
             "start": [0] * 6,  # [DAC units]
-            "stop": [1.0] * 6,  # [DAC units]
+            "stop": [0.16] * 6,#[1.0] * 6,  # [DAC units]
             "steps": 100, #50,
             "relax_delay": 600,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
@@ -190,7 +190,7 @@ if FRIDGE == "QUIET":
             "reps2": 700, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
-            "stop": [1.0] * 6,  # [DAC units]
+            "stop": [0.125] * 6,#[1.0] * 6,  # [DAC units]
             "steps": 150,
             "relax_delay": 600,  # [us]
         },
@@ -376,6 +376,19 @@ if FRIDGE == "QUIET":
             "wait_time": 0.0,  # [us]
             "dephasing_rounds_plus_1": 13,
             "noise_offset_freq_from_ef":0, #MHz
+            "list_of_all_qubits": list_of_all_qubits,
+        },
+        "Dephasing_ge_with_fh_noise": {
+            "reps": 600,
+            "rounds": 1,
+            "start": [0.0] * 6,  # [us]
+            "stop": [100] * 6,  # [us]
+            "steps": 200,
+            "ramsey_freq": 0.12,  # [MHz]
+            "relax_delay": 1000,  # [us]
+            "wait_time": 0.0,  # [us]
+            "dephasing_rounds_plus_1": 13,
+            "noise_offset_freq_from_fh": 0,  # MHz
             "list_of_all_qubits": list_of_all_qubits,
         },
     #

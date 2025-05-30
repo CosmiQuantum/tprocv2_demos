@@ -63,9 +63,9 @@ study = 'QZE'
 sub_study = 'dephasing_from_higher_energy_levels'
 substudy_txt_notes = ('Lets give this an initial test and make sure all of these experiments work well, on qubit 2')
 # set which of the following you'd like to run to 'True'
-run_flags = {"res_spec_ge": True, "q_spec_ge": True, "rabi_ge": True, "res_spec_ef": True, "res_spec_fh": False,
+run_flags = {"res_spec_ge": True, "q_spec_ge": True, "rabi_ge": True, "res_spec_ef": True, "res_spec_fh": True,
              "q_spec_ef": True,"q_spec_fh": False,
-             "rabi_ef": False,"rabi_fh": False,
+             "rabi_ef": True,"rabi_fh": False,
              "t1_ge": False, "t1_fg": False, "t1_fe": False,
              "t2r": False,"t2e": False, "dephased": True,"dephased_with_ef_noise": True}
 #Folders
@@ -186,7 +186,12 @@ while j < n:
     for QubitIndex in Qs_to_look_at:
         experiment = QICK_experiment(optimizationFolder, DAC_attenuator1=5, DAC_attenuator2=10, ADC_attenuator=10,
                                      fridge=FRIDGE)
-        updated_qubit_gain = 0.05 # lets do a low gain to start so I dont have a broad linewidth for the qubit
+        # self.FSGEN_CH = 2  # normal vals
+        # self.FSGEN_AMPL_CH = 0
+        # experiment.FSGEN_CH=0
+        # experiment.FSGEN_AMPL_CH = 2
+
+        updated_qubit_gain = 0.01 # lets do a low gain to start so I dont have a broad linewidth for the qubit
         experiment.qubit_cfg['qubit_gain_ge'][
             QubitIndex] = updated_qubit_gain
 
@@ -448,13 +453,13 @@ while j < n:
 
         ############################################## Dephasing with ef noise ###############################################
         if run_flags["dephased_with_ef_noise"]:
-            #gains = np.linspace(0.001,0.2, 20)
-            gains=[0.001,0.001]
+            gains = np.linspace(0.001,1, 20)
+            gains = [0.02]
             for gain in gains:
                 try:
                     exp_cpy=deepcopy(experiment)
                     dephase_ef_noise = DephasingMeasurementWithEFNoise(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
-                                                   experiment=exp_cpy, live_plot=live_plot, fit_data=fit_data,
+                                                   experiment=exp_cpy, live_plot=live_plot, fit_data=False,
                                                    increase_qubit_reps=increase_qubit_reps,
                                                    qubit_to_increase_reps_for=qubit_to_increase_reps_for,
                                                    multiply_qubit_reps_by=multiply_qubit_reps_by,

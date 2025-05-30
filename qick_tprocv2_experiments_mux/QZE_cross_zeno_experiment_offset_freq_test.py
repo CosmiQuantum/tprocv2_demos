@@ -18,7 +18,6 @@ from section_005_single_shot_ge import SingleShot
 from section_008_save_data_to_h5 import Data_H5
 from system_config import QICK_experiment
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
-
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_002_res_spec_ef import ResonanceSpectroscopyEF
 from section_002_res_spec_fh import ResonanceSpectroscopyFH
@@ -39,13 +38,12 @@ from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
 from section_014_dynamical_decoupling_ge import DephasingMeasurement
 from section_015_dynamical_decoupling_with_ef_noise_ge import DephasingMeasurementWithEFNoise
-from section_016_dynamical_decoupling_with_fh_noise_ge import DephasingMeasurementWithFHNoise
 ################################################ Run Configurations ####################################################
 zero_qubit_drive_gain = False
 constant_zeno_pulse = True
 adapt_starked_qubit_freq = False
 wait_for_res_ring_up = True
-n= 3000
+n= 30
 save_r = 1                           # how many rounds to save after
 signal = 'None'                      # 'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization
 save_figs = True                     # save plots for everything as you go along the RR script?
@@ -60,15 +58,16 @@ qubit_to_increase_reps_for = 0       # only has impact if previous line is True
 multiply_qubit_reps_by = 2           # only has impact if the line two above is True
 increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
 increase_steps_to_ef = 600
-Qs_to_look_at = [2]#0,1,2,3,4,5        # only list the qubits you want to do the RR for
+Qs_to_look_at = [2]        # only list the qubits you want to do the RR for
 study = 'QZE'
 sub_study = 'dephasing_from_higher_energy_levels'
 substudy_txt_notes = ('Lets give this an initial test and make sure all of these experiments work well, on qubit 2')
 # set which of the following you'd like to run to 'True'
 run_flags = {"res_spec_ge": True, "q_spec_ge": True, "rabi_ge": True, "res_spec_ef": True, "res_spec_fh": True,
-             "q_spec_ef": True,"q_spec_fh": True, "rabi_ef": True,
-             "rabi_fh": False, "t1_ge": False, "t1_fg": False, "t1_fe": False,
-             "t2r": True,"t2e": True, "dephased": True,"dephased_with_ef_noise": True,"dephased_with_fh_noise": True}
+             "q_spec_ef": True,"q_spec_fh": False,
+             "rabi_ef": True,"rabi_fh": False,
+             "t1_ge": False, "t1_fg": False, "t1_fe": False,
+             "t2r": False,"t2e": False, "dephased": True,"dephased_with_ef_noise": True}
 #Folders
 if not os.path.exists("/data/QICK_data/run6b/"):
     os.makedirs("/data/QICK_data/run6b/")
@@ -157,7 +156,6 @@ t2r_data = create_data_dict(t2r_keys, save_r, list_of_all_qubits)
 t2e_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
 t2dephased_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
 t2dephased_data_ef_noise = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
-t2dephased_data_fh_noise = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
 
 
 res_data_ef = create_data_dict(res_keys_ef, save_r, list_of_all_qubits)
@@ -188,7 +186,12 @@ while j < n:
     for QubitIndex in Qs_to_look_at:
         experiment = QICK_experiment(optimizationFolder, DAC_attenuator1=5, DAC_attenuator2=10, ADC_attenuator=10,
                                      fridge=FRIDGE)
-        updated_qubit_gain = 0.05 # lets do a low gain to start so I dont have a broad linewidth for the qubit
+        # self.FSGEN_CH = 2  # normal vals
+        # self.FSGEN_AMPL_CH = 0
+        # experiment.FSGEN_CH=0
+        # experiment.FSGEN_AMPL_CH = 2
+
+        updated_qubit_gain = 0.01 # lets do a low gain to start so I dont have a broad linewidth for the qubit
         experiment.qubit_cfg['qubit_gain_ge'][
             QubitIndex] = updated_qubit_gain
 
@@ -307,7 +310,6 @@ while j < n:
 
         ######################################## f-h Qubit spec ###############################################
         if run_flags["q_spec_fh"]:
-
             # Qubit 4 needs more steps for e-f spec
             experiment.qubit_cfg['pi_fh_amp'] = experiment.qubit_cfg['pi_fh_amp'][QubitIndex]
             if QubitIndex == 3:
@@ -438,6 +440,7 @@ while j < n:
                                      verbose=verbose, logger=rr_logger)
                 (t2dephased_est, t2dephased_err, t2dephased_I, t2dephased_Q, t2dephased_delay_times,
                  fit_t2dephased, sys_config_t2dephased) = dephase.run(thresholding=thresholding)
+                print(t2dephased_delay_times)
                 del dephase
 
             except Exception as e:
@@ -450,50 +453,55 @@ while j < n:
 
         ############################################## Dephasing with ef noise ###############################################
         if run_flags["dephased_with_ef_noise"]:
-            try:
-                dephase_ef_noise = DephasingMeasurementWithEFNoise(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
-                                               experiment=experiment, live_plot=live_plot, fit_data=fit_data,
-                                               increase_qubit_reps=increase_qubit_reps,
-                                               qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                                               multiply_qubit_reps_by=multiply_qubit_reps_by,
-                                               verbose=verbose, logger=rr_logger)
-                (t2dephased_ef_noise_est, t2dephased_ef_noise_err, t2dephased_ef_noise_I, t2dephased_ef_noise_Q, t2dephased_ef_noise_delay_times,
-                 fit_t2dephased_ef_noise, sys_config_t2dephased_ef_noise) = dephase_ef_noise.run(thresholding=thresholding, gain=0.02, freq_offset=0)
-                del dephase_ef_noise
+            freqs = np.linspace(-0.3,0.3, 10)
 
-            except Exception as e:
-                if debug_mode:
-                    raise e  # In debug mode, re-raise the exception immediately
-                else:
-                    rr_logger.exception(f'Got the following error, continuing: {e}')
-                    if verbose: print(f'Got the following error, continuing: {e}')
-                    continue  # skip the rest of this qubit
+            for freq_offset in freqs:
+                try:
+                    exp_cpy=deepcopy(experiment)
+                    dephase_ef_noise = DephasingMeasurementWithEFNoise(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
+                                                   experiment=exp_cpy, live_plot=live_plot, fit_data=False,
+                                                   increase_qubit_reps=increase_qubit_reps,
+                                                   qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                                   multiply_qubit_reps_by=multiply_qubit_reps_by,
+                                                   verbose=verbose, logger=rr_logger)
+                    (t2dephased_ef_noise_est, t2dephased_ef_noise_err, t2dephased_ef_noise_I, t2dephased_ef_noise_Q, t2dephased_ef_noise_delay_times,
+                     fit_t2dephased_ef_noise, sys_config_t2dephased_ef_noise) = dephase_ef_noise.run(thresholding=thresholding, gain=0.02, freq_offset=freq_offset)
+                    del dephase_ef_noise
+                    del exp_cpy
 
-        ############################################## Dephasing with fh noise ###############################################
-        if run_flags["dephased_with_fh_noise"]:
-            try:
-                dephase_fh_noise = DephasingMeasurementWithFHNoise(QubitIndex, tot_num_of_qubits,
-                                                                   studyDocumentationFolder, j, signal,
-                                                                   save_figs,
-                                                                   experiment=experiment, live_plot=live_plot,
-                                                                   fit_data=fit_data,
-                                                                   increase_qubit_reps=increase_qubit_reps,
-                                                                   qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                                                                   multiply_qubit_reps_by=multiply_qubit_reps_by,
-                                                                   verbose=verbose, logger=rr_logger)
-                (t2dephased_fh_noise_est, t2dephased_fh_noise_err, t2dephased_fh_noise_I, t2dephased_fh_noise_Q,
-                 t2dephased_fh_noise_delay_times,
-                 fit_t2dephased_fh_noise, sys_config_t2dephased_fh_noise) = dephase_fh_noise.run(
-                    thresholding=thresholding, gain=0.02, freq_offset=0)
-                del dephase_fh_noise
+                    # ---------------------Collect Dephased with ef noise Results----------------
+                    t2dephased_data_ef_noise[QubitIndex]['T2E'][
+                        j - batch_num * save_r - 1] = t2dephased_ef_noise_est
+                    t2dephased_data_ef_noise[QubitIndex]['Errors'][
+                        j - batch_num * save_r - 1] = t2dephased_ef_noise_err
+                    t2dephased_data_ef_noise[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
+                        time.mktime(datetime.datetime.now().timetuple()))
+                    t2dephased_data_ef_noise[QubitIndex]['I'][j - batch_num * save_r - 1] = t2dephased_ef_noise_I
+                    t2dephased_data_ef_noise[QubitIndex]['Q'][j - batch_num * save_r - 1] = t2dephased_ef_noise_Q
+                    t2dephased_data_ef_noise[QubitIndex]['Delay Times'][
+                        j - batch_num * save_r - 1] = t2dephased_ef_noise_delay_times
+                    t2dephased_data_ef_noise[QubitIndex]['Fit'][
+                        j - batch_num * save_r - 1] = fit_t2dephased_ef_noise
+                    t2dephased_data_ef_noise[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                    t2dephased_data_ef_noise[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                    t2dephased_data_ef_noise[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                    t2dephased_data_ef_noise[QubitIndex]['Syst Config'][
+                        j - batch_num * save_r - 1] = sys_config_t2dephased_ef_noise
 
-            except Exception as e:
-                if debug_mode:
-                    raise e  # In debug mode, re-raise the exception immediately
-                else:
-                    rr_logger.exception(f'Got the following error, continuing: {e}')
-                    if verbose: print(f'Got the following error, continuing: {e}')
-                    continue  # skip the rest of this qubit
+                    saver_t2dephased_ef_noise = Data_H5(subStudyDataFolder, t2dephased_data_ef_noise, batch_num, save_r)
+                    saver_t2dephased_ef_noise.save_to_h5('T2E_ge')
+                    del saver_t2dephased_ef_noise
+                    del t2dephased_data_ef_noise
+
+                    t2dephased_data_ef_noise = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
+
+                except Exception as e:
+                    if debug_mode:
+                        raise e  # In debug mode, re-raise the exception immediately
+                    else:
+                        rr_logger.exception(f'Got the following error, continuing: {e}')
+                        if verbose: print(f'Got the following error, continuing: {e}')
+                        continue  # skip the rest of this qubit
 
         ############################################### Collect Results ################################################
         if save_data_h5:
@@ -710,37 +718,20 @@ while j < n:
                 t2dephased_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
                 t2dephased_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t2dephased
 
-            # ---------------------Collect Dephased with ef noise Results----------------
-            if run_flags["dephased_with_ef_noise"]:
-                t2dephased_data_ef_noise[QubitIndex]['T2E'][j - batch_num * save_r - 1] = t2dephased_ef_noise_est
-                t2dephased_data_ef_noise[QubitIndex]['Errors'][j - batch_num * save_r - 1] = t2dephased_ef_noise_err
-                t2dephased_data_ef_noise[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
-                    time.mktime(datetime.datetime.now().timetuple()))
-                t2dephased_data_ef_noise[QubitIndex]['I'][j - batch_num * save_r - 1] = t2dephased_ef_noise_I
-                t2dephased_data_ef_noise[QubitIndex]['Q'][j - batch_num * save_r - 1] = t2dephased_ef_noise_Q
-                t2dephased_data_ef_noise[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = t2dephased_ef_noise_delay_times
-                t2dephased_data_ef_noise[QubitIndex]['Fit'][j - batch_num * save_r - 1] = fit_t2dephased_ef_noise
-                t2dephased_data_ef_noise[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-                t2dephased_data_ef_noise[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-                t2dephased_data_ef_noise[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                t2dephased_data_ef_noise[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t2dephased_ef_noise
-
-            # ---------------------Collect Dephased with fh noise Results----------------
-            if run_flags["dephased_with_fh_noise"]:
-                t2dephased_data_fh_noise[QubitIndex]['T2E'][j - batch_num * save_r - 1] = t2dephased_fh_noise_est
-                t2dephased_data_fh_noise[QubitIndex]['Errors'][j - batch_num * save_r - 1] = t2dephased_fh_noise_err
-                t2dephased_data_fh_noise[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
-                    time.mktime(datetime.datetime.now().timetuple()))
-                t2dephased_data_fh_noise[QubitIndex]['I'][j - batch_num * save_r - 1] = t2dephased_fh_noise_I
-                t2dephased_data_fh_noise[QubitIndex]['Q'][j - batch_num * save_r - 1] = t2dephased_fh_noise_Q
-                t2dephased_data_fh_noise[QubitIndex]['Delay Times'][
-                    j - batch_num * save_r - 1] = t2dephased_fh_noise_delay_times
-                t2dephased_data_fh_noise[QubitIndex]['Fit'][j - batch_num * save_r - 1] = fit_t2dephased_fh_noise
-                t2dephased_data_fh_noise[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-                t2dephased_data_fh_noise[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-                t2dephased_data_fh_noise[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                t2dephased_data_fh_noise[QubitIndex]['Syst Config'][
-                    j - batch_num * save_r - 1] = sys_config_t2dephased_fh_noise
+            # # ---------------------Collect Dephased with ef noise Results----------------
+            # if run_flags["dephased_with_ef_noise"]:
+            #     t2dephased_data_ef_noise[QubitIndex]['T2E'][j - batch_num * save_r - 1] = t2dephased_ef_noise_est
+            #     t2dephased_data_ef_noise[QubitIndex]['Errors'][j - batch_num * save_r - 1] = t2dephased_ef_noise_err
+            #     t2dephased_data_ef_noise[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
+            #         time.mktime(datetime.datetime.now().timetuple()))
+            #     t2dephased_data_ef_noise[QubitIndex]['I'][j - batch_num * save_r - 1] = t2dephased_ef_noise_I
+            #     t2dephased_data_ef_noise[QubitIndex]['Q'][j - batch_num * save_r - 1] = t2dephased_ef_noise_Q
+            #     t2dephased_data_ef_noise[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = t2dephased_ef_noise_delay_times
+            #     t2dephased_data_ef_noise[QubitIndex]['Fit'][j - batch_num * save_r - 1] = fit_t2dephased_ef_noise
+            #     t2dephased_data_ef_noise[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+            #     t2dephased_data_ef_noise[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+            #     t2dephased_data_ef_noise[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+            #     t2dephased_data_ef_noise[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t2dephased_ef_noise
 
         del experiment
 
@@ -845,24 +836,17 @@ while j < n:
             # --------------------------save t2dephased-----------------------
             if run_flags["dephased"]:
                 saver_t2dephased = Data_H5(subStudyDataFolder, t2dephased_data, batch_num, save_r)
-                saver_t2dephased.save_to_h5('DD_ge')
+                saver_t2dephased.save_to_h5('Dephased_ge')
                 del saver_t2dephased
                 del t2dephased_data
 
             # --------------------------save t2dephased with noise-----------------------
-            if run_flags["dephased_with_ef_noise"]:
-                saver_t2dephased_ef_noise = Data_H5(subStudyDataFolder, t2dephased_data_ef_noise, batch_num, save_r)
-                saver_t2dephased_ef_noise.save_to_h5('DD_ge_ef_noise')
-                del saver_t2dephased_ef_noise
-                del t2dephased_data_ef_noise
-
-            # --------------------------save t2dephased with fh noise-----------------------
-            if run_flags["dephased_with_ef_noise"]:
-                saver_t2dephased_fh_noise = Data_H5(subStudyDataFolder, t2dephased_data_fh_noise, batch_num, save_r)
-                saver_t2dephased_fh_noise.save_to_h5('DD_ge_fh_noise')
-                del saver_t2dephased_fh_noise
-                del t2dephased_data_fh_noise
-
+            # if run_flags["dephased_with_ef_noise"]:
+            #     saver_t2dephased_ef_noise = Data_H5(subStudyDataFolder, t2dephased_data_ef_noise, batch_num, save_r)
+            #     saver_t2dephased_ef_noise.save_to_h5('T2E_ge')
+            #     del saver_t2dephased_ef_noise
+            #     del t2dephased_data_ef_noise
+            # #
             # reset all dictionaries to none for safety
             res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
             res_data_ef = create_data_dict(res_keys_ef, save_r, list_of_all_qubits)
@@ -883,7 +867,6 @@ while j < n:
             t2r_data = create_data_dict(t2r_keys, save_r, list_of_all_qubits)
             t2e_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
             t2dephased_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
-            t2dephased_data_ef_noise = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
-            t2dephased_data_fh_noise = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
+            #t2dephased_data_ef_noise = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
 
     j+=1

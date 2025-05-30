@@ -406,10 +406,13 @@ class DephasingMeasurementWithEFNoise:
         t2e_err = out['T2'][1] #in ns
         return fit_type(x, popt) * y_normal, t2e_est, t2e_err, plot_sig
 
-    def run(self, thresholding=False, gain=None):
+    def run(self, thresholding=False, gain=None, freq_offset=None):
         now = datetime.datetime.now()
         if gain is None:
             gain = self.experiment.qubit_cfg['noise_pulse_gain']
+        if freq_offset is None:
+            freq_offset=self.config['noise_offset_freq_from_ef']
+        self.config['noise_offset_freq_from_ef'] = round(freq_offset,3)
         self.config['noise_pulse_gain'] = round(gain,3)
         self.config['noise_pulse_len'] = (self.experiment.qubit_cfg[
                                                       'sigma'][self.QubitIndex] * (self.config['dephasing_rounds_plus_1']+1) # total length of the dynamical decoupling pulse
@@ -440,11 +443,14 @@ class DephasingMeasurementWithEFNoise:
 
         if self.fit_data:
             fit, t2e_est, t2e_err, plot_sig = self.t2_fit(delay_times, I, Q)
+            if self.save_figs:
+                self.plot_results(I, Q, delay_times, now, fit, t2e_est, t2e_err)
         else:
             fit, t2e_est, t2e_err, plot_sig = None, None, None, None
+            if self.save_figs:
+                self.plot_results_no_fit(I, Q, delay_times, now )
 
-        if self.save_figs:
-            self.plot_results(I, Q, delay_times, now, fit, t2e_est, t2e_err)
+
 
         return  t2e_est, t2e_err, I, Q, delay_times, fit, self.config
 
@@ -512,6 +518,39 @@ class DephasingMeasurementWithEFNoise:
         ax.plot(delay_times, mag, "-", label="Magnitude", linewidth=2)
         if self.fit_data:
             ax.plot(delay_times, fit, "-", color='red', linewidth=3, label="Fit")
+
+        ax.set_xlabel("Delay time (µs)", fontsize=20)
+        ax.set_ylabel("Magnitude (a.u.)", fontsize=20)
+        ax.tick_params(axis='both', which='major', labelsize=16)
+        ax.legend()
+
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.92)
+        if self.save_figs:
+            outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
+            self.create_folder_if_not_exists(outerFolder_expt)
+            now = datetime.datetime.now()
+            fmt_time = now.strftime("%Y-%m-%d_%H-%M-%S")
+            fname = f"R_{self.round_num}_Q_{self.QubitIndex + 1}_{fmt_time}_{self.expt_name}.png"
+            fig.savefig(os.path.join(outerFolder_expt, fname),
+                        dpi=fig_quality, bbox_inches='tight')
+
+        plt.close(fig)
+
+
+    def plot_results_no_fit(self, I, Q, delay_times, now,  config=None, fig_quality=100):
+
+        mag = np.sqrt(I ** 2 + Q ** 2)
+
+        fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+        plt.rcParams.update({'font.size': 18})
+
+        plot_middle = (ax.get_position().x0 + ax.get_position().x1) / 2
+        title_str = (f"Q{self.QubitIndex + 1}"
+                     )
+        fig.text(plot_middle, 0.98, title_str, fontsize=24, ha='center', va='top')
+
+        ax.plot(delay_times, mag, "-", label="Magnitude", linewidth=2)
 
         ax.set_xlabel("Delay time (µs)", fontsize=20)
         ax.set_ylabel("Magnitude (a.u.)", fontsize=20)

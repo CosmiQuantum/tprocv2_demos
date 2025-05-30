@@ -25,8 +25,8 @@ class QICK_experiment:
             self.soc, self.soccfg = makeProxy()
             #print(self.soccfg)
 
-            self.FSGEN_CH =  2 # 0 for "old QICK", 6 for RF board
-            self.FSGEN_AMPL_CH = 0
+            self.FSGEN_CH = 0 #2 # 0 for "old QICK", 6 for RF board
+            self.FSGEN_AMPL_CH = 2#0
             self.MIXMUXGEN_CH = 4 # Readout resonator DAC channel
             self.MUXRO_CH = [2, 3, 4, 5, 6, 7]
             self.MUXRO_CH_RF = 5  # New variable that we need for QICK box
@@ -143,7 +143,7 @@ class QICK_experiment:
                 #"pi_amp": [1.0, 0.93, 0.77, 0.8, 0.81, 0.9], # Eyeballed by Sara today (5+10 DAC atten for qubit)
                 #"pi_amp": [0.7, 0.95, 0.75, 0.78, 0.77, 0.8],  # With shorter sigma (5+4 DAC instead of 5+5 DAC atten for qubit)
                 "pi_ef_amp": [0.7085, 0.6817, 0.6617, 0.7018, 0.6751, 0.6951], # Arianna 3/27
-                "pi_fh_amp": [0.8, 0.8, 0.8, 0.8, 0.8, 0.8],  # Olivia 5/25
+                "pi_fh_amp": [0.2, 0.2, 0.2, 0.2, 0.2, 0.2],  # Olivia 5/25
                 "noise_pulse_gain": 0.8, #olivia 5/27
                 "noise_pulse_len": 20,  # olivia 5/27
                 "noise_pulse_ramp_time":3, #us

@@ -56,16 +56,38 @@ top_folder_dates = ['2025-05-29_07-22-46', '2025-05-29_09-00-02']
 # date = '2025-03-28'
 # outerFolder = f"/data/QICK_data/{run_name}/" + date + "/study_data/"
 ################################################ 01: Get all data ######################################################
+#
+# t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
+#                  signal, run_name, FRIDGE)
+# date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
+#
+# dephasing_vs_time = DephasingVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
+#                  signal, run_name, FRIDGE)
+# date_times_dephasing, dephasing_vals, dephasing_fit_err = dephasing_vs_time.run(return_errs=True)
+#
+#
+# ################################################# 08: T2E vs Time Plots ################################################
+# dephasing_vs_time.plot_with_errs_vs_echo(date_times_dephasing,
+#                                          dephasing_vals, dephasing_fit_err,date_times_t2e, t2e_vals, t2e_fit_err, show_legends=True)
 
-t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, FRIDGE)
-date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
+#top_folder_dates = ['2025-05-29_23-07-00']
+#top_folder_dates = ['2025-05-29_23-50-15']
+top_folder_dates = ['2025-05-30_12-59-18']
+# t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
+#                  signal, run_name, FRIDGE)
+# date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
 
 dephasing_vs_time = DephasingVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
                  signal, run_name, FRIDGE)
-date_times_dephasing, dephasing_vals, dephasing_fit_err = dephasing_vs_time.run(return_errs=True)
+date_times_t2e, t2e_vals, t2e_fit_err = dephasing_vs_time.run(return_errs=True,name='T2E_ge',savefigs=True)
+date_times_dephasing, dephasing_vals, dephasing_fit_err = dephasing_vs_time.run(return_errs=True,name='DD_ge',savefigs=True)
+date_times_dephasing_ef, dephasing_vals_ef, dephasing_fit_err_ef = dephasing_vs_time.run(return_errs=True,name='DD_ge_ef_noise',savefigs=True)
+date_times_dephasing_fh, dephasing_vals_fh, dephasing_fit_err_fh = dephasing_vs_time.run(return_errs=True,name='DD_ge_fh_noise', savefigs=True)
 
 
 ################################################# 08: T2E vs Time Plots ################################################
-dephasing_vs_time.plot_with_errs_vs_echo(date_times_dephasing,
-                                         dephasing_vals, dephasing_fit_err,date_times_t2e, t2e_vals, t2e_fit_err, show_legends=True)
+dephasing_vs_time.plot_with_errs_vs_everything(date_times_dephasing,
+                                         dephasing_vals, dephasing_fit_err,date_times_t2e, t2e_vals, t2e_fit_err,
+                                         date_times_dephasing_ef, dephasing_vals_ef, dephasing_fit_err_ef,
+                                         date_times_dephasing_fh, dephasing_vals_fh, dephasing_fit_err_fh,
+                                         show_legends=True)
