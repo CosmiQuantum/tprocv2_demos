@@ -471,6 +471,19 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
         },
 
+        "Parity": {
+            "steps": 3000,  # shots
+            "py_avg": 1,
+            "gain_start": [0, 0, 0, 0],
+            "gain_stop": [1, 0, 0, 0],
+            "gain_step": 0.1,
+            "freq_start": [6176.0, 0, 0, 0],
+            "freq_stop": [6178.0, 0, 0, 0],
+            "freq_step": 0.1,
+            "relax_delay": 500,  # [us]
+            "list_of_all_qubits": list_of_all_qubits,
+        },
+
     }
 
 elif FRIDGE == "NEXUS":
@@ -560,6 +573,8 @@ elif FRIDGE == "NEXUS":
             "relax_delay": 500,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
+
+         
 
         "T1_ge": {
             "reps": 1000,  # 300
