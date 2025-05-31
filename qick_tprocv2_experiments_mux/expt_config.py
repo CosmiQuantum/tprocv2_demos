@@ -172,7 +172,7 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
         },
         "length_rabi_ge_qze": {
-            "reps": 400,  # 500,
+            "reps": 1000,  # 500,
             "rounds": 1, #600
             "start": [0.01] * 6,  # [us]
             "stop": [100] * 6,   #[3] * 6,   # [us]
@@ -182,7 +182,7 @@ if FRIDGE == "QUIET":
             "qze_mask": [],
             "zeno_pulse_width": 0.007,
             "zeno_pulse_period": 0.10,
-            "time_with_no_pulse": 100 #us
+            "time_with_no_pulse": 500 #us
         },
 
         "power_rabi_ef": {

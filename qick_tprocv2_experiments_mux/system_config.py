@@ -25,8 +25,8 @@ class QICK_experiment:
             self.soc, self.soccfg = makeProxy()
             #print(self.soccfg)
 
-            self.FSGEN_CH = 0 #2 # 0 for "old QICK", 6 for RF board
-            self.FSGEN_AMPL_CH = 2#0
+            self.FSGEN_CH = 2#0 #2 # 0 for "old QICK", 6 for RF board
+            self.FSGEN_AMPL_CH = 2#0 is the noisy amp channel
             self.MIXMUXGEN_CH = 4 # Readout resonator DAC channel
             self.MUXRO_CH = [2, 3, 4, 5, 6, 7]
             self.MUXRO_CH_RF = 5  # New variable that we need for QICK box
