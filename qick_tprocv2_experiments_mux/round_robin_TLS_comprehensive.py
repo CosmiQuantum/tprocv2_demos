@@ -57,8 +57,8 @@ multiply_qubit_reps_by = 2
 # increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
 increase_steps_to_ef = 600
 study = 'TLS_Comprehensive_Study'
-sub_study = 'source_off_substudy8'
-substudy_txt_notes = 'source off. run 6b to check for TLSs after cooldown.'
+sub_study = 'source_on_substudy9'
+substudy_txt_notes = 'source on, in a new position nestled into the diagonal t-slot bracket. run 6b to check for TLSs after cooldown.'
 Qs_to_look_at = [0,4]  # list of qubits to process
 
 # Set which experiments to run
