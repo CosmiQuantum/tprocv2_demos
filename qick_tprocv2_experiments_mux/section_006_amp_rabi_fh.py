@@ -305,7 +305,7 @@ class AmplitudeRabiProgram(AveragerProgramV2):
         self.delay_auto(t=0.0, tag='waiting after pi ge')  # Wait til ge pi pulse is done before proceeding
         self.pulse(ch=self.cfg["qubit_ch"], name="pi_ef", t=0)  # play ef pi pulse
         self.delay_auto(t=0.0, tag='waiting after pi ef')  # Wait til ge pi pulse is done before proceeding
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0) #h-e pulse
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0) #h-f pulse
         self.delay_auto(t=0.0, tag='waiting') #wait
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0) #probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
