@@ -198,8 +198,6 @@ class LengthRabiExperimentQZE:
             updated_config = deepcopy(self.config)
             if turn_pulse_off_after_T1 or check_t1_with_qubit_pulse_on or check_t1_with_res_pulse_on:
                 stop_q_drive = self.config['stop']
-                print(stop_q_drive)
-
                 updated_config['finish_qze_pulse_length'] = float(stop_q_drive)  # instructions where to stop the qubit and zeno pulse
 
             updated_config['qubit_length_ge'] = length
@@ -222,7 +220,7 @@ class LengthRabiExperimentQZE:
             #     qubit_length_plot.append(length)
             #     del res_stark_shift_2D, res_phase_stark
             #     updated_config['qubit_freq_ge_starked'] = starked_freq
-            print(updated_config['finish_qze_pulse_length'] )
+
             if three_pulse_binary:
                 amp_rabi = QZE_constant_pulse_3pulse_RabiProgram(
                     self.experiment.soccfg,
@@ -1220,7 +1218,7 @@ class QZERabiT1AfterPulseTurnedOff(AveragerProgramV2):
         # drive pulse is continuous over the full duration:
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
         print(cfg['qubit_length_ge'])
-        if cfg['qubit_length_ge'] <= cfg['qubit_pi_len']:
+        if cfg['qubit_length_ge'] < cfg['qubit_pi_len']:
             self.add_pulse(ch=qubit_ch, name="qubit_pulse", #for before we hit pi pulse len
                            style="const",
                            length=cfg['qubit_length_ge'],  # total_drive_length,
@@ -1237,25 +1235,11 @@ class QZERabiT1AfterPulseTurnedOff(AveragerProgramV2):
 
         print('starked: ',cfg['qubit_freq_ge_starked'], ' qfreq: ', cfg['qubit_freq_ge'])
 
-        if 100 > cfg['qubit_length_ge'] > cfg['qubit_pi_len']+0.01: #100 mis max pulse time
+        if cfg['finish_qze_pulse_length'] >= cfg['qubit_length_ge'] > cfg['qubit_pi_len']+0.01:
             self.add_pulse(ch=qubit_ch, name="starked_qubit_pulse",
                            style="const",
                            length=cfg['qubit_length_ge']-cfg['qubit_pi_len'],  # total_drive_length,
                            freq=cfg['qubit_freq_ge_starked'],  #_starked
-                           phase=cfg['qubit_phase'],
-                           gain=cfg['qubit_gain_ge'])  # ramp it up here
-
-        if 100 < cfg['qubit_length_ge']:  # 100 mis max pulse time
-            self.add_pulse(ch=qubit_ch, name="starked_qubit_pulse_100",
-                           style="const",
-                           length=100,  # total_drive_length,
-                           freq=cfg['qubit_freq_ge_starked'],  # _starked
-                           phase=cfg['qubit_phase'],
-                           gain=cfg['qubit_gain_ge'])  # ramp it up here
-            self.add_pulse(ch=qubit_ch, name="starked_qubit_pulse_remainder",
-                           style="const",
-                           length=(cfg['qubit_length_ge'] - cfg['qubit_pi_len'])%100,  # total_drive_length,
-                           freq=cfg['qubit_freq_ge_starked'],  # _starked
                            phase=cfg['qubit_phase'],
                            gain=cfg['qubit_gain_ge'])  # ramp it up here
 
@@ -1265,7 +1249,7 @@ class QZERabiT1AfterPulseTurnedOff(AveragerProgramV2):
                            length=cfg['finish_qze_pulse_length'] - cfg['qubit_pi_len'],  # total_drive_length,
                            freq=cfg['qubit_freq_ge_starked'],  # _starked
                            phase=cfg['qubit_phase'],
-                           gain=cfg['qubit_gain_ge'])  # ramp it up here
+                           gain=cfg['qubit_gain_ge'])
 
         # print('qubit_length_ge(should vary on the inner loop from 0.001-0.7): ', round(cfg['qubit_length_ge'], 4),
         #       'qubit_gain_ge(should be constant) : ', round(cfg['qubit_gain_ge'], 4),
@@ -1273,7 +1257,7 @@ class QZERabiT1AfterPulseTurnedOff(AveragerProgramV2):
 
     def _body(self, cfg):
         #drive the qubit on the qubit channel (list with length 6)
-        print("cfg['qubit_pi_len']: ", cfg['qubit_pi_len'], "cfg['qubit_length_ge']: ", cfg['qubit_length_ge'], "cfg['finish_qze_pulse_length']: ", cfg['finish_qze_pulse_length'])
+        print("cfg['qubit_pi_len']: ", cfg['qubit_pi_len'], "cfg['qubit_length_ge']: ", cfg['qubit_length_ge'])
         if cfg['qubit_length_ge'] <= cfg['qubit_pi_len']:
             print('in pi pulse regime')
             self.pulse(ch=cfg["qubit_ch"], name="qubit_pulse", t=0)  #just drive without zeno/stark
@@ -1284,12 +1268,7 @@ class QZERabiT1AfterPulseTurnedOff(AveragerProgramV2):
             self.pulse(ch=cfg["qubit_ch"], name="qubit_pulse_pi_len", t=0) #regular w01 pi pulse first, will last 0.11us
             self.delay_auto(t=0, tag='waiting_pi') #wait to finish
             self.pulse(ch=cfg['res_ch'], name="proj_pulse", t=0)  # play zeno/stark tone in resonator
-            if cfg['qubit_length_ge'] > 100:
-                for num in range(math.floor(cfg['qubit_length_ge'] / 100)):
-                    self.pulse(ch=cfg["qubit_ch"], name="starked_qubit_pulse_100", t=cfg['res_ring_up_time']+num*cfg['qubit_length_ge']) #play pulse
-                    self.pulse(ch=cfg["qubit_ch"], name="starked_qubit_pulse_remainder", t=cfg['res_ring_up_time'] + num * cfg['qubit_length_ge'])  # play remainder ofpulse
-            else:
-                self.pulse(ch=cfg["qubit_ch"], name="starked_qubit_pulse", t=cfg['res_ring_up_time'])
+            self.pulse(ch=cfg["qubit_ch"], name="starked_qubit_pulse", t=cfg['res_ring_up_time']) #play starked freq qubit drive for rest of qubit pulse len,, start 3 us after ring up
             self.delay_auto(t=0, tag='waiting')  # auto wait for those pulses to be done
             self.delay(t=cfg['res_ring_up_time'])
 
@@ -1306,7 +1285,7 @@ class QZERabiT1AfterPulseTurnedOff(AveragerProgramV2):
             #wait for ring up time and extra time after the pulses finish
             self.delay(t=cfg['res_ring_up_time']+ cfg['qubit_length_ge'] - cfg['finish_qze_pulse_length'])  # wait for ring down that will happen in qze, but of course the resonator doesnt actually have photons here
 
-        #immediately after the qubit pulse ends, trigger the readout resonator pulse (9us long).
+        #trigger the readout resonator pulse (9us long).
         self.pulse(ch=cfg['res_ch'], name="res_pulse")
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 

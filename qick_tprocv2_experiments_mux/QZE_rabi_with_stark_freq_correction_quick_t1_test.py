@@ -334,7 +334,7 @@ for QubitIndex in Qs_to_look_at:
     #################################################### Rabi QZE ######################################################
     #qze_pulse_gains=np.linspace(0.001, 1, 10)
     #qze_pulse_gains = [0.01,0.1, 0.3, 0.6, 0.8, 1]
-    qze_pulse_gains =[0.01,1]
+    qze_pulse_gains =[0.001,0.05,1]
     I=[]
     Q=[]
     stark_res_qu_freq_sweep=None
