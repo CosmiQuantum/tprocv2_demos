@@ -24,21 +24,15 @@ from section_005_single_shot_ge import SingleShot
 from section_008_save_data_to_h5 import Data_H5
 from system_config import QICK_experiment
 from starkshift import StarkShiftSpec
-from starkshift import ResStarkShiftSpec
-from starkshift import StarkShift2D
-from starkshift import ResStarkShift2D
-from section_002_res_spec_ef import ResonanceSpectroscopyEF
-from section_004_qubit_spec_ef import EFQubitSpectroscopy
+from section_012_fast_time_series_McEwen import FastRelEx
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
-from section_011_qubit_temperatures_efRabipt3 import Temps_EFAmpRabiExperiment
 from analysis_optimization_report import optimization_report_ge
-from analysis_optimization_report import optimization_report_ef
 
 #---------------------------------------------------------------
 # Run Configurations and Optimization Params
 
 #---- General/overarching parameters
-max_datataking_round_index = 10
+max_datataking_round_index = 50
 n_rounds_to_save_after = 1  # how many rounds to save after
 signal = 'None'  # 'I', or 'Q' depending on where the signal is
 save_figs = False  # whether to save plots
@@ -47,17 +41,24 @@ save_data_h5 = True  # save data to h5 files?
 verbose = True  # verbose output
 qick_verbose = False
 debug_mode = True  # if True, errors will stop the run immediately
-study = 'TLS_Comprehensive_Study'
-sub_study = 'source_on_substudy7'
-substudy_txt_notes = '137Cs run with highest rate configuration, added declare_gen statement for starkshiftspec.'
-Qs_to_look_at = [0,4]  # list of qubits to process
+live_plot = False
+study = 'FastRelEx'
+sub_study = 'source_on_fast_relaxation_substudy2'
+substudy_txt_notes = '137Cs source is in ~1.5 ft away from fridge, wedged next to bar. 500k reps and 50 rounds of fast relaxation data only. Added Qspec and SSF to measurement block. Relax Delay 3 us.'
+Qs_to_look_at = [1]  # list of qubits to process
 
 #---- Res spec parameters
 # Optimization parameters for resonator spectroscopy
 # 04/13 parameters
-res_leng_vals = [5.5, 7.5, 6.0, 6.5, 5.0, 6.0]
-res_gain = [0.9, 0.95, 0.78, 0.58, 0.95, 0.57]
-freq_offsets = [-0.1, 0.2, 0.1, -0.4, -0.1, -0.1]
+#res_leng_vals = [5.5, 7.5, 6.0, 6.5, 5.0, 6.0]
+#res_gain = [0.9, 0.95, 0.78, 0.58, 0.95, 0.57]
+#freq_offsets = [-0.1, 0.2, 0.1, -0.4, -0.1, -0.1]
+
+# 05/28 parameters
+res_leng_vals = [4, 14, 6, 10, 5, 7]
+res_gain = [1,1,1,0.7,0.8,0.6]
+freq_offsets = [0.1, -0.25, -0.2, 0.2, -0.1, -0.1]
+
 qubit_freqs_ef = [None]*6
 res_keys = ['Dates', 'freq_pts', 'freq_center', 'Amps', 'Found Freqs', 'Round Num', 'Batch Num', 'Exp Config',
             'Syst Config']
@@ -86,11 +87,8 @@ starkspec_keys = ['Dates', 'I', 'Q', 'P', 'shots','Gain Sweep','Round Num', 'Bat
 stark2D_keys = ['Dates', 'I', 'Q', 'Qu Frequency Sweep', 'Res Gain Sweep','Round Num', 'Batch Num', 'Exp Config', 'Syst Config']
 
 #---- Fast Relaxation/Excitation Measurement
-forego_excitation_measurement = False
-fastrelex_keys = ['Dates', 'I', 'Q', 'Round Num', 'Batch Num', 'Exp Config', 'Syst Config']
-
-
-
+forego_excitation_measurement = True
+fastrelex_keys = ['Dates', 'I', 'Q', 'state', 'time', 'TLS Gain', 'TLS Detuning', 'Round Num', 'Batch Num', 'Exp Config', 'Syst Config']
 
 
 #---------------------------------------------------------------
@@ -179,18 +177,20 @@ def sweep_frequency_offset(experiment, QubitIndex, offset_values, n_loops=10, nu
 
 # Make the directory tree for this study (with study, substudy, and other folders
 def run_directory_tree_creation():
-    
+    print("running directory tree creation")
     #Folders
-    if not os.path.exists("/data/QICK_data/run6/"):
-        os.makedirs("/data/QICK_data/run6/")
-    if not os.path.exists("/data/QICK_data/run6/6transmon/"):
-        os.makedirs("/data/QICK_data/run6/6transmon/")
+    if not os.path.exists("/data/QICK_data/run6b/"):
+        os.makedirs("/data/QICK_data/run6b/")
+    if not os.path.exists("/data/QICK_data/run6b/6transmon/"):
+        os.makedirs("/data/QICK_data/run6b/6transmon/")
 
-    studyFolder = os.path.join("/data/QICK_data/run6/6transmon/", study)
+    studyFolder = os.path.join("/data/QICK_data/run6b/6transmon/", study)
+    print(studyFolder)
     if not os.path.exists(studyFolder):
         os.makedirs(studyFolder)
 
     subStudyFolder = os.path.join(studyFolder, sub_study)
+    print(subStudyFolder)
     if not os.path.exists(subStudyFolder):
         os.makedirs(subStudyFolder)
 
@@ -201,7 +201,7 @@ def run_directory_tree_creation():
     #Now set up the logger (which requires this directory tree info)
     #Now that substudies are defined, Set up the logger
     #Logging
-    log_file = os.path.join(subStudyFolder, "RR_Comprehensive_TLS_script.log")
+    log_file = os.path.join(subStudyFolder, "FastRelEx_script.log")
     rr_logger = logging.getLogger("custom_logger_for_rr_only")
     rr_logger.setLevel(logging.DEBUG)
     file_handler = logging.FileHandler(log_file, mode='a')
@@ -209,7 +209,6 @@ def run_directory_tree_creation():
     file_handler.setFormatter(formatter)
     rr_logger.addHandler(file_handler)
     rr_logger.propagate = False
-
 
 #---------------------------------------------------------------
 # optimization: run the block that finds basic stuff (resspec,
@@ -251,7 +250,7 @@ def run_optimization(QubitIndex, experiment):
                                          logger=rr_logger, qick_verbose=qick_verbose)
         res_freqs, freq_pts, freq_center, amps, sys_config_rspec = res_spec.run()
         res_freqs_samples.append(res_freqs)
-        rr_logger.info(f"ResSpec sample {sample} for qubit {QubitIndex + 1}: {res_freqs}")
+        rr_logger.info(f"ResSpec for qubit {QubitIndex + 1}: {res_freqs}")
 
         res_data[QubitIndex]['Dates'][0] = (time.mktime(datetime.datetime.now().timetuple()))
         res_data[QubitIndex]['freq_pts'][0] = freq_pts
@@ -263,7 +262,7 @@ def run_optimization(QubitIndex, experiment):
         res_data[QubitIndex]['Exp Config'][0] = expt_cfg
         res_data[QubitIndex]['Syst Config'][0] = sys_config_rspec
 
-        saver_res = Data_H5(optimizationFolder, res_data, sample, n_rounds_to_save_after)  # save
+        saver_res = Data_H5(optimizationFolder, res_data, 0, n_rounds_to_save_after)  # save
         saver_res.save_to_h5('res_ge')
         del saver_res
         del res_data
@@ -276,8 +275,8 @@ def run_optimization(QubitIndex, experiment):
     except Exception as e:
         if debug_mode:
             raise  # In debug mode, re-raise the exception immediately
-        rr_logger.exception(f"ResSpec error on qubit {QubitIndex +1} sample {sample}: {e}")
-        continue
+        rr_logger.exception(f"ResSpec error on qubit {QubitIndex +1} : {e}")
+        #continue
 
     #Average the resonator frequencies and use the result as the resulting "central" resonator spec for the rest of the dataset
     if res_freqs_samples:
@@ -321,16 +320,16 @@ def run_optimization(QubitIndex, experiment):
         
         #If our qubit frequency measurement fails, then break
         if qubit_freq is None:
-            rr_logger.info(f"Optimization block Qubit {QubitIndex + 1} qspec_ge failed on round {i} using stored qspec")
+            rr_logger.info(f"Optimization block Qubit {QubitIndex + 1} qspec_ge failed on round {0} using stored qspec")
             if verbose:
-                print(f"Optimization block Qubit {QubitIndex + 1} qspec_ge failed on round {i} using stored qspec")
+                print(f"Optimization block Qubit {QubitIndex + 1} qspec_ge failed on round {0} using stored qspec")
                 return
             
         #Set the qubit spec result to be the qubit frequency for the experiment (and print)
         experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)            
-        rr_logger.info(f"Tune-up: Qubit {QubitIndex +1} frequency: {stored_qspec}")
+        rr_logger.info(f"Tune-up: Qubit {QubitIndex +1} frequency: {float(qubit_freq)}")
         if verbose:
-            print(f"Tune-up: Qubit {QubitIndex +1} frequency: {stored_qspec}")
+            print(f"Tune-up: Qubit {QubitIndex +1} frequency: {float(qubit_freq)}")
                 
         del q_spec
         qspec_data[QubitIndex]['Dates'][0] = (time.mktime(datetime.datetime.now().timetuple()))
@@ -581,14 +580,6 @@ def run_optimization(QubitIndex, experiment):
     print(f"g-e T1 with long relax delay took {t6 - t5:.4f} seconds")
 
 
-
-
-
-
-
-
-
-
 #---------------------------------------------------------------
 # dataset block: run the block that takes the data "of interest"
 # (here the relaxation and excitation measurements)
@@ -601,6 +592,8 @@ def run_dataset(Qs_to_look_at, experiment, this_datataking_round_index):
     #Different qubit.
     
     # create dictionaries
+    qspec_data = create_data_dict(qspec_keys, n_rounds_to_save_after, Qs_to_look_at)
+    ss_data = create_data_dict(ss_keys, n_rounds_to_save_after, Qs_to_look_at)
     starkspec_data = create_data_dict(starkspec_keys, n_rounds_to_save_after, Qs_to_look_at)
     fastrelex_data = create_data_dict(fastrelex_keys, n_rounds_to_save_after, Qs_to_look_at)
     
@@ -613,73 +606,128 @@ def run_dataset(Qs_to_look_at, experiment, this_datataking_round_index):
         experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
         
         #Double check that other relevant input parameters (i.e. qubit frequency and amplitude rabi) are set properly here
-        
-        
-        
-        #------------------------------------------------------------
-        # First, try the stark spec measurement. Start a timer
-        t0 = time.perf_counter()        
-        try:
-            timestamp_starkspec = time.mktime(datetime.datetime.now().timetuple())
-            stark_shift_spec = StarkShiftSpec(QubitIndex, tot_num_of_qubits, studyFolder, save_figs=False,
-                                              experiment=experiment)
-            starkspec_I, starkspec_Q, starkspec_P, starkspec_shots, starkspec_gain_sweep, sys_config_starkspec = stark_shift_spec.run_with_qick_sweep()
-            del stark_shift_spec
 
-        # If the stark spec measurement fails, then we need to flag that we should *only* run the relaxation-style measurements
+        # ------------------------------------------------------------
+        # qspec_ge
+        try:
+            timestamp_qspec = time.mktime(datetime.datetime.now().timetuple())
+            q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyFolder, this_datataking_round_index,
+                                       signal, save_figs, experiment=experiment,
+                                       live_plot=live_plot, verbose=verbose, logger=rr_logger,
+                                       qick_verbose=qick_verbose, high_gain_q_spec=False)
+            (qspec_I, qspec_Q, qspec_freqs, qspec_I_fit,
+             qspec_Q_fit, qubit_freq, sys_config_qspec) = q_spec.run()
+
+            if qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None:
+                # Use the previously stored qubit frequency in the expt config if the fit fails
+                # experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = stored_qspec
+                recycled_qfreq = True
+                # qubit_freq = stored_qspec
+                rr_logger.info(
+                    f"RR: Qubit {QubitIndex}: Using previous stored value: {experiment.qubit_cfg['qubit_freq_ge'][QubitIndex]}")
+                if verbose:
+                    print(f"Using previous stored value: {experiment.qubit_cfg['qubit_freq_ge'][QubitIndex]}")
+            else:
+                recycled_qfreq = False
+                experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
+                # stored_qspec = float(qubit_freq)
+                rr_logger.info(f"RR: Qubit {QubitIndex + 1} frequency: {float(qubit_freq)}")
+
+            del q_spec
+            gc.collect()
+
         except Exception as e:
             if debug_mode:
-                raise e  # In debug mode, re-raise the exception immediately
-            else:
-                rr_logger.exception(f'Got the following error, continuing: {e}')
-                if verbose: print(f'Got the following error, continuing: {e}')
+                raise  # In debug mode, re-raise the exception immediately
+            rr_logger.exception(f"RR QSpec error on qubit {QubitIndex + 1}: {e}")
+            continue
 
-        # If the stark spec measurement does not give a reasonable output, then 
+        # ------------------------------------------------------------
+        # ssf_ge
+        try:
+            timestamp_ss = time.mktime(datetime.datetime.now().timetuple())
+            ss = SingleShot(QubitIndex, tot_num_of_qubits, studyFolder, this_datataking_round_index, save_figs,
+                            experiment=experiment, verbose=verbose, logger=rr_logger, qick_verbose=qick_verbose)
+            fid, angle, iq_list_g, iq_list_e, sys_config_ss = ss.run()
+            I_g = iq_list_g[QubitIndex][0].T[0]
+            Q_g = iq_list_g[QubitIndex][0].T[1]
+            I_e = iq_list_e[QubitIndex][0].T[0]
+            Q_e = iq_list_g[QubitIndex][0].T[1]  # or iq_list_e depending on your config
+            fid, threshold, angle, ig_new, ie_new = ss.hist_ssf(
+                data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
+        except Exception as e:
+            if debug_mode:
+                raise  # In debug mode, re-raise the exception immediately
+            rr_logger.exception(f'Single Shot error on qubit {QubitIndex + 1} at round {this_datataking_round_index}: {e}')
+            continue
+
+        #------------------------------------------------------------
+        # First, try the stark spec measurement. Start a timer
+        t0 = time.perf_counter()
+
+        target_tls_gain = None
+        target_tls_detuning = None
+
+        if forego_excitation_measurement is False:
+            try:
+                timestamp_starkspec = time.mktime(datetime.datetime.now().timetuple())
+                stark_shift_spec = StarkShiftSpec(QubitIndex, tot_num_of_qubits, studyFolder, save_figs=False,
+                                              experiment=experiment)
+                starkspec_I, starkspec_Q, starkspec_P, starkspec_shots, starkspec_gain_sweep, sys_config_starkspec = stark_shift_spec.run_with_qick_sweep()
+
+                # Online analysis to determine a TLS onto which we tune. Output should be a frequency in MHz. Otherwise we return -1.
+                #stark_shift_spec.plot_shots(starkspec_I, starkspec_Q, starkspec_shots, starkspec_gain_sweep)
+                target_tls_gain, target_tls_detuning = stark_shift_spec.find_TLS(starkspec_gain_sweep, starkspec_P, save_figs=True)
+                del stark_shift_spec
+
+            # If the stark spec measurement fails, then we need to flag that we should *only* run the relaxation-style measurements
+            except Exception as e:
+                    if debug_mode:
+                        raise e  # In debug mode, re-raise the exception immediately
+                    else:
+                        rr_logger.exception(f'Got the following error, continuing: {e}')
+                        if verbose: print(f'Got the following error, continuing: {e}')
+
+            # If the stark spec measurement does not give a reasonable output, then
 
         #Print timing
         t1 = time.perf_counter()        
-        print(f"Data taking: Stark Spec took {t1 - t0:.4f} seconds")        
+        print(f"Data taking: Stark Spec took {t1 - t0:.4f} seconds")
 
 
-        #Online analysis to determine a TLS onto which we tune. Output should be a frequency in MHz. Otherwise we return -1.
-        
-        target_tls_frequency = -1;
-        
-        
         #------------------------------------------------------------        
         # Next, run the FastRelEx measurement. We'll have 
         try:
             timestamp_fastrelex = time.mktime(datetime.datetime.now().timetuple())            
 
             #Raw I and Q returned from the fast rel/ex measurements
-            fastrelex_I = []
-            fastrelex_Q = []
-            meas_is_rel = True
+            #fastrelex_I = []
+            #fastrelex_Q = []
+            #meas_is_rel = True
             
-            #If the target tls frequency is negative, it means we didn't find an appropriate TLS onto which we could tune. In this case, pass a flag
+            #If the target tls gain is none, it means we didn't find an appropriate TLS onto which we could tune. In this case, pass a flag
             #to just do a relaxation measurement, sans excitation.
-            if target_tls_frequency < 0 or forego_excitation_measurement == True:
-                meas_is_rel = True
-                fast_rel_ex = FastRelaxationExcitation(QubitIndex,tot_num_of_qubits,studyFolder,this_datataking_round_index,save_figs=False,
+            if target_tls_gain is None or forego_excitation_measurement == True:
+                #meas_is_rel = True
+                fast_rel_ex = FastRelEx(QubitIndex,tot_num_of_qubits,studyFolder,this_datataking_round_index,save_figs=False,
                                                        experiment=experiment,target_tls=False,tls_gain=target_tls_gain,tls_detuning=target_tls_detuning)
                 
                 #Returns the I/Q raw values from the run, and the config
-                fastrelex_I, fastrelex_Q, sys_config_fastrelex = fast_rel_ex.run()
+                fastrelex_I, fastrelex_Q, fastrelex_state, fastrelex_time, sys_config_fastrelex = fast_rel_ex.run()
+                #fast_rel_ex.plot(fastrelex_I, fastrelex_Q, fastrelex_state, fastrelex_time, save_figs=True)
                 
 
             else:
                 #Otherwise, we try to tune our relaxation/excitation measurement onto the TLS.
-                meas_is_rel = False
-                fast_rel_ex = FastRelaxationExcitation(QubitIndex,tot_num_of_qubits,studyFolder,this_datataking_round_index,save_figs=False,
+                #meas_is_rel = False
+                fast_rel_ex = FastRelEx(QubitIndex,tot_num_of_qubits,studyFolder,this_datataking_round_index,save_figs=False,
                                                        experiment=experiment,target_tls=True,tls_gain=target_tls_gain,tls_detuning=target_tls_detuning)
                 
                 #Returns the I/Q raw values from the run, and the config
-                fastrelex_I, fastrelex_Q, sys_config_fastrelex = fast_rel_ex.run()
+                fastrelex_I, fastrelex_Q, fastrelex_state, fastrelex_time, sys_config_fastrelex = fast_rel_ex.run()
+                #fast_rel_ex.plot(fastrelex_I, fastrelex_Q, fastrelex_state, fastrelex_time, save_figs=True)
 
-                
-            
-            
-            
+
         # If this fails, break. This is the whole reason we're writing this script
         except Exception as e:
             if debug_mode:
@@ -691,36 +739,62 @@ def run_dataset(Qs_to_look_at, experiment, this_datataking_round_index):
         t2 = time.perf_counter()
         print(f"Data taking: FastRelEx took {t2 - t1:.4f} seconds")
 
-
-
         #------------------------------------------------------------
         # Save data for this round
         if save_data_h5:
             idx = 0
 
+            #save qspec data
+            qspec_data[QubitIndex]['Dates'][idx] = timestamp_qspec
+            qspec_data[QubitIndex]['I'][idx] = qspec_I
+            qspec_data[QubitIndex]['Q'][idx] = qspec_Q
+            qspec_data[QubitIndex]['Frequencies'][idx] = qspec_freqs
+            qspec_data[QubitIndex]['I Fit'][idx] = qspec_I_fit
+            qspec_data[QubitIndex]['Q Fit'][idx] = qspec_Q_fit
+            qspec_data[QubitIndex]['Round Num'][idx] = this_datataking_round_index
+            qspec_data[QubitIndex]['Batch Num'][idx] = 0
+            qspec_data[QubitIndex]['Recycled QFreq'][idx] = recycled_qfreq
+            qspec_data[QubitIndex]['Exp Config'][idx] = expt_cfg
+            qspec_data[QubitIndex]['Syst Config'][idx] = sys_config_qspec
+
+            #save ssf data
+            ss_data[QubitIndex]['Fidelity'][idx] = fid
+            ss_data[QubitIndex]['Angle'][idx] = angle
+            ss_data[QubitIndex]['Dates'][idx] = timestamp_ss
+            ss_data[QubitIndex]['I_g'][idx] = I_g
+            ss_data[QubitIndex]['Q_g'][idx] = Q_g
+            ss_data[QubitIndex]['I_e'][idx] = I_e
+            ss_data[QubitIndex]['Q_e'][idx] = Q_e
+            ss_data[QubitIndex]['Round Num'][idx] = this_datataking_round_index
+            ss_data[QubitIndex]['Batch Num'][idx] = 0
+            ss_data[QubitIndex]['Exp Config'][idx] = expt_cfg
+            ss_data[QubitIndex]['Syst Config'][idx] = sys_config_ss
+
             #Save stark spec data
-            starkspec_data[QubitIndex]['Dates'][idx] = timestamp_starkspec
-            starkspec_data[QubitIndex]['I'][idx] = starkspec_I
-            starkspec_data[QubitIndex]['Q'][idx] = starkspec_Q
-            starkspec_data[QubitIndex]['P'][idx] = starkspec_P
-            starkspec_data[QubitIndex]['shots'][idx] = starkspec_shots
-            starkspec_data[QubitIndex]['Gain Sweep'][idx] = starkspec_gain_sweep
-            starkspec_data[QubitIndex]['Round Num'][idx] = this_datataking_round_index
-            starkspec_data[QubitIndex]['Batch Num'][idx] = batch_num
-            starkspec_data[QubitIndex]['Exp Config'][idx] = expt_cfg
-            starkspec_data[QubitIndex]['Syst Config'][idx] = sys_config_starkspec
+            if forego_excitation_measurement is False:
+                starkspec_data[QubitIndex]['Dates'][idx] = timestamp_starkspec
+                starkspec_data[QubitIndex]['I'][idx] = starkspec_I
+                starkspec_data[QubitIndex]['Q'][idx] = starkspec_Q
+                starkspec_data[QubitIndex]['P'][idx] = starkspec_P
+                starkspec_data[QubitIndex]['shots'][idx] = starkspec_shots
+                starkspec_data[QubitIndex]['Gain Sweep'][idx] = starkspec_gain_sweep
+                starkspec_data[QubitIndex]['Round Num'][idx] = this_datataking_round_index
+                starkspec_data[QubitIndex]['Batch Num'][idx] = 0
+                starkspec_data[QubitIndex]['Exp Config'][idx] = expt_cfg
+                starkspec_data[QubitIndex]['Syst Config'][idx] = sys_config_starkspec
 
             #Save FastRelEx data
             fastrelex_data[QubitIndex]['Dates'][idx] = timestamp_fastrelex
             fastrelex_data[QubitIndex]['I'][idx] = fastrelex_I
             fastrelex_data[QubitIndex]['Q'][idx] = fastrelex_Q
-            #fastrelex_data[QubitIndex]['P'][idx] = starkspec_P
-            #fastrelex_data[QubitIndex]['shots'][idx] = starkspec_shots
-            #fastrelex_data[QubitIndex]['Gain Sweep'][idx] = starkspec_gain_sweep
-            starkspec_data[QubitIndex]['Round Num'][idx] = this_datataking_round_index
-            starkspec_data[QubitIndex]['Batch Num'][idx] = batch_num
-            starkspec_data[QubitIndex]['Exp Config'][idx] = expt_cfg
-            starkspec_data[QubitIndex]['Syst Config'][idx] = sys_config_fastrelex
+            fastrelex_data[QubitIndex]['state'][idx] = fastrelex_state
+            fastrelex_data[QubitIndex]['time'][idx] = fastrelex_time
+            fastrelex_data[QubitIndex]['TLS Gain'][idx] = target_tls_gain
+            fastrelex_data[QubitIndex]['TLS Detuning'][idx] = target_tls_detuning
+            fastrelex_data[QubitIndex]['Round Num'][idx] = this_datataking_round_index
+            fastrelex_data[QubitIndex]['Batch Num'][idx] = 0
+            fastrelex_data[QubitIndex]['Exp Config'][idx] = expt_cfg
+            fastrelex_data[QubitIndex]['Syst Config'][idx] = sys_config_fastrelex
 
 
 
@@ -731,23 +805,38 @@ def run_dataset(Qs_to_look_at, experiment, this_datataking_round_index):
     if save_data_h5:
         if this_datataking_round_index % n_rounds_to_save_after == 0:
 
-            #Save stark spec data
-            saver_starkspec = Data_H5(studyFolder, starkspec_data, batch_num, n_rounds_to_save_after)
-            saver_starkspec.save_to_h5('starkspec_ge')
-            del saver_starkspec
-            del starkspec_data
+            #save qspec data
+            saver_qspec = Data_H5(studyFolder, qspec_data, 0, n_rounds_to_save_after)
+            saver_qspec.save_to_h5('qspec_ge')
+            del saver_qspec
+            del qspec_data
             gc.collect()
 
+            #save ssf data
+            saver_ss = Data_H5(studyFolder, ss_data, 0, n_rounds_to_save_after)
+            saver_ss.save_to_h5('ss_ge')
+            del saver_ss
+            del ss_data
+            gc.collect()
+
+            #Save stark spec data
+            if forego_excitation_measurement is False:
+                saver_starkspec = Data_H5(studyFolder, starkspec_data, 0, n_rounds_to_save_after)
+                saver_starkspec.save_to_h5('starkspec_ge')
+                del saver_starkspec
+                del starkspec_data
+                gc.collect()
+
             #Save FastRelEx data
-            saver_fastrelex = Data_H5(studyFolder, fastrelex_data, batch_num, n_rounds_to_save_after)
+            saver_fastrelex = Data_H5(studyFolder, fastrelex_data, 0, n_rounds_to_save_after)
             saver_fastrelex.save_to_h5('fastrelex_ge')
             del saver_fastrelex
             del fastrelex_data
             gc.collect()
 
-
-            
     # create dictionaries for reinitialization
+    qspec_data = create_data_dict(qspec_keys, n_rounds_to_save_after, Qs_to_look_at)
+    ss_data = create_data_dict(ss_keys, n_rounds_to_save_after, Qs_to_look_at)
     starkspec_data = create_data_dict(starkspec_keys, n_rounds_to_save_after, Qs_to_look_at)
     fastrelex_data = create_data_dict(fastrelex_keys, n_rounds_to_save_after, Qs_to_look_at)
 
@@ -756,14 +845,43 @@ def run_dataset(Qs_to_look_at, experiment, this_datataking_round_index):
     t3 = time.perf_counter()
     print(f"Data saving took {t3 - t2:.4f} seconds")
 
-
-
 #---------------------------------------------------------------
 # main function: run the whole thing
 #---------------------------------------------------------------
 
 #Set up directory tree to make sure study and substudy folders are present
-run_directory_tree_creation():
+#run_directory_tree_creation() #Joyce - this function is not working and I don't know why
+
+print("running directory tree creation")
+    #Folders
+if not os.path.exists("/data/QICK_data/run6b/"):
+    os.makedirs("/data/QICK_data/run6b/")
+if not os.path.exists("/data/QICK_data/run6b/6transmon/"):
+    os.makedirs("/data/QICK_data/run6b/6transmon/")
+
+studyFolder = os.path.join("/data/QICK_data/run6b/6transmon/", study)
+if not os.path.exists(studyFolder):
+    os.makedirs(studyFolder)
+
+subStudyFolder = os.path.join(studyFolder, sub_study)
+if not os.path.exists(subStudyFolder):
+    os.makedirs(subStudyFolder)
+
+file_path = os.path.join(subStudyFolder, 'sub_study_notes.txt')
+with open(file_path, "w", encoding="utf-8") as file:
+    file.write(substudy_txt_notes)
+
+    #Now set up the logger (which requires this directory tree info)
+    #Now that substudies are defined, Set up the logger
+    #Logging
+log_file = os.path.join(subStudyFolder, "FastRelEx_script.log")
+rr_logger = logging.getLogger("custom_logger_for_rr_only")
+rr_logger.setLevel(logging.DEBUG)
+file_handler = logging.FileHandler(log_file, mode='a')
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+rr_logger.addHandler(file_handler)
+rr_logger.propagate = False
 
 # Set up the dataset organization
 formatted_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

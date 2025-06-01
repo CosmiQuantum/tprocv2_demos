@@ -288,7 +288,7 @@ if FRIDGE == "QUIET":
             "reps": 500000,
             "rounds": 1,
             "list_of_all_qubits": list_of_all_qubits,
-            "relax_delay": 10, #[us], keep short to do post-processing
+            "relax_delay": 3, #[us], keep short to do post-processing
             "meas_wait": 2, #[us], a fast delay after qubit pi pulse
             "readout_pulse_delay": 0.1, #for resonator to ring down, may be ok to set to zero
             "pre_stark_delay": 0.1, #could match to pi pulse length or set to zero
