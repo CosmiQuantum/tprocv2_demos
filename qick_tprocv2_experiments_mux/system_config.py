@@ -117,7 +117,7 @@ class QICK_experiment:
                 #"qubit_freq_ge": [4184.15, 3821.156, 4156.88, 4459.12, 4471.18, 4998.04],  # Freqs of Qubit g/e Transition, old
                 "qubit_gain_ge": [0.1] * 6,#[0.04, 0.12, 0.06, 0.04, 0.13, 0.18],#[0.05] * 6, #[1] * 6,
                 "qubit_ampl_gain_ge": [0.025] *6,
-                "qubit_pi_len": 0.11, # Olivia May 17th
+                "qubit_pi_len": 0.5,#0.11, # Olivia May 17th
                 # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
                 "qubit_length_ge": 15,  # 15 [us] for spec Pulse
                 "qubit_freq_ef": [4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17], #Q4 not fixed, looks like it shifted quite a lot
@@ -126,7 +126,7 @@ class QICK_experiment:
                 # [MHz] Freqs of Qubit e/f Transition
                 "qubit_freq_ftores": [4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17],
                 "qubit_gain_ef": [0.03, 0.14, 0.04, 0.17, 0.11, 0.08], #Arianna 3/27. 0.03
-                "qubit_gain_fh": [0.03, 0.14, 0.01, 0.17, 0.11, 0.08],  # Olivia May 28
+                "qubit_gain_fh": [0]*6,#[0.03, 0.000, 0.01, 0.17, 0.11, 0.08],  # Olivia May 28
                 'qubit_gain_ftores': [1]*6,#[0.2, 0.14, 0.04, 0.17, 0.13, 0.08],
                 # [0.01, 0.05, 0.05, 0.05, 0.01, 0.5], # [DAC units] Pulse Gain
                 "qubit_length_ef": 22, #22.0,
@@ -143,7 +143,7 @@ class QICK_experiment:
                 #"pi_amp": [1.0, 0.93, 0.77, 0.8, 0.81, 0.9], # Eyeballed by Sara today (5+10 DAC atten for qubit)
                 #"pi_amp": [0.7, 0.95, 0.75, 0.78, 0.77, 0.8],  # With shorter sigma (5+4 DAC instead of 5+5 DAC atten for qubit)
                 "pi_ef_amp": [0.7085, 0.6817, 0.6617, 0.7018, 0.6751, 0.6951], # Arianna 3/27
-                "pi_fh_amp": [0.2, 0.2, 0.2, 0.2, 0.2, 0.2],  # Olivia 5/25
+                "pi_fh_amp": [0.2, 0.001, 0.2, 0.2, 0.2, 0.2],  # Olivia 5/25
                 "noise_pulse_gain": 0.8, #olivia 5/27
                 "noise_pulse_len": 20,  # olivia 5/27
                 "noise_pulse_ramp_time":3, #us

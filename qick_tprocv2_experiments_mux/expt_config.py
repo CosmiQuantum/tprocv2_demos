@@ -97,8 +97,8 @@ if FRIDGE == "QUIET":
         "qubit_spec_ef": {
             "reps": 3000,  # 300
             "rounds": 1,  # 10
-            "start": list(ef_freqs - 3),  # [MHz] #-300
-            "stop": list(ef_freqs + 3),  # [MHz]
+            "start": list(ef_freqs - 5),  # [MHz] #-300
+            "stop": list(ef_freqs + 0),  # [MHz]
             "steps": 400,  # 1000
             "relax_delay": 600, #1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
@@ -107,8 +107,8 @@ if FRIDGE == "QUIET":
         "qubit_spec_fh": {
             "reps": 2000,  # 300
             "rounds": 1,  # 10
-            "start": list(ef_freqs - 220),  # [MHz] #-300
-            "stop": list(ef_freqs - 160),  # [MHz]
+            "start": list(ef_freqs - 210),  # [MHz] #-300
+            "stop": list(ef_freqs - 175),  # [MHz]
             "steps": 1000,  # 1000
             "relax_delay": 600,  # 1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
