@@ -172,7 +172,7 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
         },
         "length_rabi_ge_qze": {
-            "reps": 500,  # 500,
+            "reps": 100,  # 500,
             "rounds": 1, #600
             "start": [0.01] * 6,  # [us]
             "stop": [100] * 6,   #[3] * 6,   # [us]
