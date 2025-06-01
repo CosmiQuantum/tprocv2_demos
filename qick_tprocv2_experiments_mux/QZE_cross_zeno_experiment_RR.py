@@ -45,7 +45,7 @@ zero_qubit_drive_gain = False
 constant_zeno_pulse = True
 adapt_starked_qubit_freq = False
 wait_for_res_ring_up = True
-n= 1 #3000
+n= 14 #3000
 save_r = 1                           # how many rounds to save after
 signal = 'None'                      # 'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization
 save_figs = True                     # save plots for everything as you go along the RR script?
@@ -68,8 +68,8 @@ study = 'Parity_studies'
 sub_study = 'ftoh_study'
 substudy_txt_notes = ('Checking for parity states')
 # set which of the following you'd like to run to 'True'
-run_flags = {"res_spec_ge": True, "q_spec_ge": True, "rabi_ge": True, "res_spec_ef": True, "res_spec_fh": True,
-             "q_spec_ef": True,"q_spec_fh": True, "rabi_ef": True,
+run_flags = {"res_spec_ge": False, "q_spec_ge": False, "rabi_ge": False, "res_spec_ef": False, "res_spec_fh": False,
+             "q_spec_ef": False,"q_spec_fh": True, "rabi_ef": False,
              "rabi_fh": False, "t1_ge": False, "t1_fg": False, "t1_fe": False,
              "t2r": False,"t2e": False, "dephased": False,"dephased_with_ef_noise": False,"dephased_with_fh_noise": False}
 #Folders
@@ -320,11 +320,15 @@ while j < n:
                                             signal,
                                             save_figs, experiment, live_plot, increase_qubit_steps_ef,
                                             increase_steps_to_ef)
-            fhqspec_I, fhqspec_Q, fhqspec_freqs, fhqspec_I_fit, fhqspec_Q_fit, fhqubit_freq, sys_config_qspec_fh = fh_q_spec.run(
+            # fhqspec_I, fhqspec_Q, fhqspec_freqs, fhqspec_I_fit, fhqspec_Q_fit, fhqubit_freq, sys_config_qspec_fh = fh_q_spec.run(
+            #     experiment.soccfg,
+            #     experiment.soc)
+
+            fhqspec_I, fhqspec_Q, fhqspec_freqs,  sys_config_qspec_fh = fh_q_spec.run(
                 experiment.soccfg,
                 experiment.soc)
-            experiment.qubit_cfg['qubit_freq_fh'][QubitIndex] = float(fhqubit_freq)
-            print('Qubit ', QubitIndex + 1, ' f-h Freq: ', float(fhqubit_freq))
+            # experiment.qubit_cfg['qubit_freq_fh'][QubitIndex] = float(fhqubit_freq)
+            # print('Qubit ', QubitIndex + 1, ' f-h Freq: ', float(fhqubit_freq))
 
             del fh_q_spec
 
@@ -576,8 +580,8 @@ while j < n:
                 qspec_data_fh[QubitIndex]['I'][j - batch_num * save_r - 1] = fhqspec_I
                 qspec_data_fh[QubitIndex]['Q'][j - batch_num * save_r - 1] = fhqspec_Q
                 qspec_data_fh[QubitIndex]['Frequencies'][j - batch_num * save_r - 1] = fhqspec_freqs
-                qspec_data_fh[QubitIndex]['I Fit'][j - batch_num * save_r - 1] = fhqspec_I_fit
-                qspec_data_fh[QubitIndex]['Q Fit'][j - batch_num * save_r - 1] = fhqspec_Q_fit
+                # qspec_data_fh[QubitIndex]['I Fit'][j - batch_num * save_r - 1] = fhqspec_I_fit
+                # qspec_data_fh[QubitIndex]['Q Fit'][j - batch_num * save_r - 1] = fhqspec_Q_fit
                 qspec_data_fh[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
                 qspec_data_fh[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 # qspec_data[QubitIndex]['Recycled QFreq'][j - batch_num * save_r - 1] = recycled_qfreq
