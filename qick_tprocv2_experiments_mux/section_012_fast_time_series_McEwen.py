@@ -47,7 +47,8 @@ class FastRelaxationProgram(AveragerProgramV2):
                        envelope="ramp",
                        freq=cfg['qubit_freq_ge'],
                        phase=cfg['qubit_phase'],
-                       gain=cfg['pi_amp'],
+                       #gain=cfg['pi_amp'],
+                       gain=0, #0 gain on pi pulse
                        )
 
         #         self.add_loop("shotloop", cfg["steps"]) # number of total shots

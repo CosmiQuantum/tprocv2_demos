@@ -32,7 +32,7 @@ from analysis_optimization_report import optimization_report_ge
 # Run Configurations and Optimization Params
 
 #---- General/overarching parameters
-max_datataking_round_index = 50
+max_datataking_round_index = 100
 n_rounds_to_save_after = 1  # how many rounds to save after
 signal = 'None'  # 'I', or 'Q' depending on where the signal is
 save_figs = False  # whether to save plots
@@ -43,9 +43,9 @@ qick_verbose = False
 debug_mode = True  # if True, errors will stop the run immediately
 live_plot = False
 study = 'FastRelEx'
-sub_study = 'source_on_fast_relaxation_substudy2'
-substudy_txt_notes = '137Cs source is in ~1.5 ft away from fridge, wedged next to bar. 500k reps and 50 rounds of fast relaxation data only. Added Qspec and SSF to measurement block. Relax Delay 3 us.'
-Qs_to_look_at = [1]  # list of qubits to process
+sub_study = 'source_on_fast_relaxation_substudy5'
+substudy_txt_notes = '137Cs source is in ~1.5 ft away from fridge, wedged next to bar. 500k reps and 100 rounds of fast relaxation data only. Pi pulse gain is zero. Delay 2 us. Relax Delay 3 us.'
+Qs_to_look_at = [4]  # list of qubits to process
 
 #---- Res spec parameters
 # Optimization parameters for resonator spectroscopy
