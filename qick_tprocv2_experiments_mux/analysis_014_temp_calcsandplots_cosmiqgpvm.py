@@ -311,17 +311,18 @@ class SSFTempCalcAndPlots:
 
                 #Calculate qubit temps using Pg and Pe
                 temp_k = self.calculate_qubit_temperature(freq_mhz, Pg, Pe)
-                T_mK = temp_k * 1e3
+
 
                 # -------- screening -----------------------------------------
                 if temp_k is None:
                     # un-physical, skip
                     continue
                 if temp_k > limit_temp_k:
-                    print(f"[run]  Q{qid + 1}: {T_mK:.1f} mK  > {limit_temp_k * 1e3:.0f} mK  → dropped")
+                    print(f"[run]  Q{qid + 1}: {temp_k * 1e3:.1f} mK  > {limit_temp_k * 1e3:.0f} mK  → dropped")
                     continue
 
                 # Now call on the function compute_temperature_error_SSF to calculate the errs of the qubit temps
+                T_mK = temp_k * 1e3
                 sigma_TmK = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
 
                 # -------- save qubit temps and timestamps ----------------------------------------------
