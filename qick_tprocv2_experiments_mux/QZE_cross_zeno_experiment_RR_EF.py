@@ -215,170 +215,260 @@ while j < n:
 
         ################################################# g-e Res spec ####################################################
         if run_flags["res_spec_ge"]:
-            res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
-                                             experiment)
-            res_freqs, freq_pts, freq_center, amps, sys_config_rspec = res_spec.run()
-            experiment.readout_cfg['res_freq_ge'] = res_freqs
+            try:
+                res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
+                                                 experiment)
+                res_freqs, freq_pts, freq_center, amps, sys_config_rspec = res_spec.run()
+                experiment.readout_cfg['res_freq_ge'] = res_freqs
 
-            # incorporating offset (if you don't want to, then set all values inside freq_offsets to zero)
-            offset = freq_offsets[QubitIndex]
-            offset_res_freqs = [r + offset for r in res_freqs]
-            experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
+                # incorporating offset (if you don't want to, then set all values inside freq_offsets to zero)
+                offset = freq_offsets[QubitIndex]
+                offset_res_freqs = [r + offset for r in res_freqs]
+                experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
 
-            this_res_freq = offset_res_freqs[QubitIndex]
-            res_freq_ge[QubitIndex] = float(this_res_freq)
+                this_res_freq = offset_res_freqs[QubitIndex]
+                res_freq_ge[QubitIndex] = float(this_res_freq)
 
-            print('Qubit ', QubitIndex + 1, ' g-e res freq: ', this_res_freq)
+                print('Qubit ', QubitIndex + 1, ' g-e res freq: ', this_res_freq)
 
-            del res_spec
+                del res_spec
+            except Exception as e:
+                if debug_mode:
+                    raise e
+                rr_logger.exception(f"GE Res Spec error on qubit {QubitIndex}: {e}")
+                if verbose:
+                    print(f"GE Res Spec error on qubit {QubitIndex}: {e}")
+                continue
 
         ################################################### g-e Qubit spec ##################################################
         if run_flags["q_spec_ge"]:
-            #experiment.qubit_cfg['qubit_gain_ge'][QubitIndex]=1
-            q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs, experiment,
-                                       live_plot, verbose=False, logger=None, qick_verbose=True, increase_reps=False,
-                                       increase_reps_to=500)
-            qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq, sys_config_qspec = q_spec.run()
+            try:
+                #experiment.qubit_cfg['qubit_gain_ge'][QubitIndex]=1
+                q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs, experiment,
+                                           live_plot, verbose=False, logger=None, qick_verbose=True, increase_reps=False,
+                                           increase_reps_to=500)
+                qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq, sys_config_qspec = q_spec.run()
 
-            qubit_freqs_ge[QubitIndex] = qubit_freq
-            experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
-            print('Qubit ', QubitIndex + 1, ' g-e freq: ', float(qubit_freq))
-            del q_spec
+                qubit_freqs_ge[QubitIndex] = qubit_freq
+                experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
+                print('Qubit ', QubitIndex + 1, ' g-e freq: ', float(qubit_freq))
+                del q_spec
+
+            except Exception as e:
+                if debug_mode:
+                    raise e
+                rr_logger.exception(f"GE Q Spec error on qubit {QubitIndex}: {e}")
+                if verbose:
+                    print(f"GE Res Q error on qubit {QubitIndex}: {e}")
+                continue
 
         ###################################################### g-e Rabi ####################################################
         if run_flags["rabi_ge"]:
-            rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs=save_figs,
-                                           experiment=experiment, live_plot= live_plot,
-                                           increase_qubit_reps=increase_qubit_reps, qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                                           multiply_qubit_reps_by=multiply_qubit_reps_by)
+            try:
+                rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs=save_figs,
+                                               experiment=experiment, live_plot= live_plot,
+                                               increase_qubit_reps=increase_qubit_reps, qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                               multiply_qubit_reps_by=multiply_qubit_reps_by)
 
-            rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_rabi = rabi.run()
+                rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_rabi = rabi.run()
 
-            experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
-            print('Qubit ', QubitIndex + 1, ' g-e Pi Amp: ', float(pi_amp))
+                experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
+                print('Qubit ', QubitIndex + 1, ' g-e Pi Amp: ', float(pi_amp))
 
-            del rabi
+                del rabi
+
+            except Exception as e:
+                if debug_mode:
+                    raise e
+                rr_logger.exception(f"Pi amp ge rabi error on qubit {QubitIndex}: {e}")
+                if verbose:
+                    print(f"Pi amp ge rabi error on qubit {QubitIndex}: {e}")
+                continue
 
         ################################################# e-f Res spec ####################################################
         if run_flags["res_spec_ef"]:
-            res_specEF = ResonanceSpectroscopyEF(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
-                                                 experiment)
-            res_freqs_ef, freq_pts_ef, freq_center_ef, amps_ef, sys_config_rspec_ef = res_specEF.run()
-            experiment.readout_cfg['res_freq_ef'] = res_freqs_ef
-            print('Qubit ', QubitIndex + 1, ' e-f res freq: ', res_freqs[QubitIndex])
+            try:
+                res_specEF = ResonanceSpectroscopyEF(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
+                                                     experiment)
+                res_freqs_ef, freq_pts_ef, freq_center_ef, amps_ef, sys_config_rspec_ef = res_specEF.run()
+                experiment.readout_cfg['res_freq_ef'] = res_freqs_ef
+                print('Qubit ', QubitIndex + 1, ' e-f res freq: ', res_freqs[QubitIndex])
 
-            del res_specEF
+                del res_specEF
+            except Exception as e:
+                if debug_mode:
+                    raise e
+                rr_logger.exception(f"ef res spec error on qubit {QubitIndex}: {e}")
+                if verbose:
+                    print(f"ef res spec error on qubit {QubitIndex}: {e}")
+                continue
 
         ################################################## e-f Qubit spec ##################################################
         if run_flags["q_spec_ef"]:
-            # Qubit 4 needs more steps for e-f spec
-            if QubitIndex == 3:
-                increase_qubit_steps_ef = True  # if you want to increase the steps for a qubit, set to True
+            try:
+                # Qubit 4 needs more steps for e-f spec
+                if QubitIndex == 3:
+                    increase_qubit_steps_ef = True  # if you want to increase the steps for a qubit, set to True
 
-            ef_q_spec = EFQubitSpectroscopy(QubitIndex, tot_num_of_qubits, list_of_all_qubits, studyDocumentationFolder, j, signal,
-                                            save_figs, experiment, live_plot, increase_qubit_steps_ef,
-                                            increase_steps_to_ef)
-            efqspec_I, efqspec_Q, efqspec_freqs, efqspec_I_fit, efqspec_Q_fit, efqubit_freq, sys_config_qspec_ef = ef_q_spec.run(
-                experiment.soccfg,
-                experiment.soc)
-            qubit_freqs_ef[QubitIndex] = efqubit_freq
-            experiment.qubit_cfg['qubit_freq_ef'][QubitIndex] = float(efqubit_freq)
-            print('Qubit ', QubitIndex + 1, ' e-f Freq: ', float(efqubit_freq))
+                ef_q_spec = EFQubitSpectroscopy(QubitIndex, tot_num_of_qubits, list_of_all_qubits, studyDocumentationFolder, j, signal,
+                                                save_figs, experiment, live_plot, increase_qubit_steps_ef,
+                                                increase_steps_to_ef)
+                efqspec_I, efqspec_Q, efqspec_freqs, efqspec_I_fit, efqspec_Q_fit, efqubit_freq, sys_config_qspec_ef = ef_q_spec.run(
+                    experiment.soccfg,
+                    experiment.soc)
+                qubit_freqs_ef[QubitIndex] = efqubit_freq
+                experiment.qubit_cfg['qubit_freq_ef'][QubitIndex] = float(efqubit_freq)
+                print('Qubit ', QubitIndex + 1, ' e-f Freq: ', float(efqubit_freq))
 
-            del ef_q_spec
+                del ef_q_spec
+            except Exception as e:
+                if debug_mode:
+                    raise e
+                rr_logger.exception(f"ef qspec error on qubit {QubitIndex}: {e}")
+                if verbose:
+                    print(f"ef qspec error on qubit {QubitIndex}: {e}")
+                continue
 
         ###################################################### e-f Rabi ####################################################
         if run_flags["rabi_ef"]:
-            efrabi = EF_AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, list_of_all_qubits, studyDocumentationFolder, j, signal,
-                                                save_figs=save_figs,
-                                                experiment=experiment, live_plot=live_plot,
-                                                increase_qubit_reps=increase_qubit_reps,
-                                                qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                                                multiply_qubit_reps_by=multiply_qubit_reps_by)
-            efrabi_I, efrabi_Q, efrabi_gains, efrabi_fit, efpi_amp, sys_config_rabi_ef = efrabi.run(experiment.soccfg,
-                                                                                                    experiment.soc)
+            try:
+                efrabi = EF_AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, list_of_all_qubits, studyDocumentationFolder, j, signal,
+                                                    save_figs=save_figs,
+                                                    experiment=experiment, live_plot=live_plot,
+                                                    increase_qubit_reps=increase_qubit_reps,
+                                                    qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                                    multiply_qubit_reps_by=multiply_qubit_reps_by)
+                efrabi_I, efrabi_Q, efrabi_gains, efrabi_fit, efpi_amp, sys_config_rabi_ef = efrabi.run(experiment.soccfg,
+                                                                                                        experiment.soc)
 
-            experiment.qubit_cfg['pi_ef_amp'][QubitIndex] = float(efpi_amp)
-            print('Qubit ', QubitIndex + 1, ' e-f pulse amp: ', float(efpi_amp))
+                experiment.qubit_cfg['pi_ef_amp'][QubitIndex] = float(efpi_amp)
+                print('Qubit ', QubitIndex + 1, ' e-f pulse amp: ', float(efpi_amp))
 
-            del efrabi
+                del efrabi
+
+            except Exception as e:
+                if debug_mode:
+                    raise e
+                rr_logger.exception(f"Pi amp ef rabi error on qubit {QubitIndex}: {e}")
+                if verbose:
+                    print(f"Pi amp ef rabi error on qubit {QubitIndex}: {e}")
+                continue
 
         ############################################# f-h Res spec ############################################
         if run_flags["res_spec_fh"]:
-            res_specFH = ResonanceSpectroscopyFH(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
-                                                 experiment)
-            res_freqs_fh, freq_pts_fh, freq_center_fh, amps_fh, sys_config_rspec_fh = res_specFH.run()
-            experiment.readout_cfg['res_freq_fh'] = res_freqs
-            print('Qubit ', QubitIndex + 1, ' f-h res freq: ', res_freqs[QubitIndex])
+            try:
+                res_specFH = ResonanceSpectroscopyFH(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
+                                                     experiment)
+                res_freqs_fh, freq_pts_fh, freq_center_fh, amps_fh, sys_config_rspec_fh = res_specFH.run()
+                experiment.readout_cfg['res_freq_fh'] = res_freqs
+                print('Qubit ', QubitIndex + 1, ' f-h res freq: ', res_freqs[QubitIndex])
 
-            del res_specFH
+                del res_specFH
+
+            except Exception as e:
+                if debug_mode:
+                    raise e
+                rr_logger.exception(f"fh res spec error on qubit {QubitIndex}: {e}")
+                if verbose:
+                    print(f"fh res spec error on qubit {QubitIndex}: {e}")
+                continue
 
         ######################################## f-h Qubit spec ###############################################
         if run_flags["q_spec_fh"]:
+            try:
+                # Qubit 4 needs more steps for e-f spec
+                experiment.qubit_cfg['pi_fh_amp'] = experiment.qubit_cfg['pi_fh_amp'][QubitIndex]
+                if QubitIndex == 3:
+                    increase_qubit_steps_ef = True  # if you want to increase the steps for a qubit, set to True
 
-            # Qubit 4 needs more steps for e-f spec
-            experiment.qubit_cfg['pi_fh_amp'] = experiment.qubit_cfg['pi_fh_amp'][QubitIndex]
-            if QubitIndex == 3:
-                increase_qubit_steps_ef = True  # if you want to increase the steps for a qubit, set to True
+                fh_q_spec = FHQubitSpectroscopy(QubitIndex, tot_num_of_qubits, list_of_all_qubits, studyDocumentationFolder, j,
+                                                signal,
+                                                save_figs, experiment, live_plot, increase_qubit_steps_ef,
+                                                increase_steps_to_ef)
+                fhqspec_I, fhqspec_Q, fhqspec_freqs, fhqspec_I_fit, fhqspec_Q_fit, fhqubit_freq, sys_config_qspec_fh = fh_q_spec.run(
+                    experiment.soccfg,
+                    experiment.soc)
+                experiment.qubit_cfg['qubit_freq_fh'][QubitIndex] = float(fhqubit_freq)
+                print('Qubit ', QubitIndex + 1, ' f-h Freq: ', float(fhqubit_freq))
 
-            fh_q_spec = FHQubitSpectroscopy(QubitIndex, tot_num_of_qubits, list_of_all_qubits, studyDocumentationFolder, j,
-                                            signal,
-                                            save_figs, experiment, live_plot, increase_qubit_steps_ef,
-                                            increase_steps_to_ef)
-            fhqspec_I, fhqspec_Q, fhqspec_freqs, fhqspec_I_fit, fhqspec_Q_fit, fhqubit_freq, sys_config_qspec_fh = fh_q_spec.run(
-                experiment.soccfg,
-                experiment.soc)
-            experiment.qubit_cfg['qubit_freq_fh'][QubitIndex] = float(fhqubit_freq)
-            print('Qubit ', QubitIndex + 1, ' f-h Freq: ', float(fhqubit_freq))
-
-            del fh_q_spec
+                del fh_q_spec
+            except Exception as e:
+                if debug_mode:
+                    raise e
+                rr_logger.exception(f"fh qspec error on qubit {QubitIndex}: {e}")
+                if verbose:
+                    print(f"fh qspec error on qubit {QubitIndex}: {e}")
+                continue
 
         ###################################################### f-h Rabi ####################################################
         if run_flags["rabi_fh"]:
-            fhrabi = FH_AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, list_of_all_qubits, studyDocumentationFolder,
-                                                j, signal,
-                                                save_figs=save_figs,
-                                                experiment=experiment, live_plot=live_plot,
-                                                increase_qubit_reps=increase_qubit_reps,
-                                                qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                                                multiply_qubit_reps_by=multiply_qubit_reps_by)
-            fhrabi_I, fhrabi_Q, fhrabi_gains, fhrabi_fit, fhpi_amp, sys_config_rabi_fh = fhrabi.run(experiment.soccfg,
-                                                                                                    experiment.soc)
+            try:
+                fhrabi = FH_AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, list_of_all_qubits, studyDocumentationFolder,
+                                                    j, signal,
+                                                    save_figs=save_figs,
+                                                    experiment=experiment, live_plot=live_plot,
+                                                    increase_qubit_reps=increase_qubit_reps,
+                                                    qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                                    multiply_qubit_reps_by=multiply_qubit_reps_by)
+                fhrabi_I, fhrabi_Q, fhrabi_gains, fhrabi_fit, fhpi_amp, sys_config_rabi_fh = fhrabi.run(experiment.soccfg,
+                                                                                                        experiment.soc)
 
-            experiment.qubit_cfg['pi_fh_amp'][QubitIndex] = float(fhpi_amp)
-            print('Qubit ', QubitIndex + 1, ' f-h pulse amp: ', float(fhpi_amp))
+                experiment.qubit_cfg['pi_fh_amp'][QubitIndex] = float(fhpi_amp)
+                print('Qubit ', QubitIndex + 1, ' f-h pulse amp: ', float(fhpi_amp))
 
-            del fhrabi
+                del fhrabi
+            except Exception as e:
+                if debug_mode:
+                    raise e
+                rr_logger.exception(f"Pi amp fh rabi error on qubit {QubitIndex}: {e}")
+                if verbose:
+                    print(f"Pi amp fh rabi error on qubit {QubitIndex}: {e}")
+                continue
         ###################################################### g-e T1 ####################################################
         if run_flags["t1_ge"]:
-            t1_ge = T1Measurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
-                                  experiment=experiment,
-                                  live_plot=live_plot, fit_data=fit_data,
-                                  increase_qubit_reps=increase_qubit_reps,
-                                  qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                                  multiply_qubit_reps_by=multiply_qubit_reps_by)
-            t1_est_ge, t1_err_ge, t1_I_ge, t1_Q_ge, t1_delay_times_ge, q1_fit_exponential_ge, sys_config_t1_ge = t1_ge.run(
-                thresholding=False)
+            try:
+                t1_ge = T1Measurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
+                                      experiment=experiment,
+                                      live_plot=live_plot, fit_data=fit_data,
+                                      increase_qubit_reps=increase_qubit_reps,
+                                      qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                      multiply_qubit_reps_by=multiply_qubit_reps_by)
+                t1_est_ge, t1_err_ge, t1_I_ge, t1_Q_ge, t1_delay_times_ge, q1_fit_exponential_ge, sys_config_t1_ge = t1_ge.run(
+                    thresholding=False)
+                print('Qubit ', QubitIndex + 1, ' g-e T1: ', str(t1_est_ge))
 
-            print('Qubit ', QubitIndex + 1, ' g-e T1: ', str(t1_est_ge))
-
-            del t1_ge
+                del t1_ge
+            except Exception as e:
+                if debug_mode:
+                    raise e
+                rr_logger.exception(f"T1 ge error on qubit {QubitIndex}: {e}")
+                if verbose:
+                    print(f"T1 ge error on qubit {QubitIndex}: {e}")
+                continue
 
 
         ###################################################### f-e T1 ####################################################
         if run_flags["t1_fe"]:
-            t1_fe = EF_T1Measurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
-                                     experiment=experiment,
-                                     live_plot=live_plot, fit_data=fit_data,
-                                     increase_qubit_reps=increase_qubit_reps,
-                                     qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                                     multiply_qubit_reps_by=multiply_qubit_reps_by, expt_name='T1_fe')
-            t1_est_fe, t1_err_fe, t1_I_fe, t1_Q_fe, t1_delay_times_fe, q1_fit_exponential_fe, sys_config_t1_fe = t1_fe.run(
-                thresholding=False)
+            try:
+                t1_fe = EF_T1Measurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
+                                         experiment=experiment,
+                                         live_plot=live_plot, fit_data=fit_data,
+                                         increase_qubit_reps=increase_qubit_reps,
+                                         qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                         multiply_qubit_reps_by=multiply_qubit_reps_by, expt_name='T1_fe')
+                t1_est_fe, t1_err_fe, t1_I_fe, t1_Q_fe, t1_delay_times_fe, q1_fit_exponential_fe, sys_config_t1_fe = t1_fe.run(
+                    thresholding=False)
 
-            print('Qubit ', QubitIndex + 1, ' f-e T1: ', str(t1_est_fe))
+                print('Qubit ', QubitIndex + 1, ' f-e T1: ', str(t1_est_fe))
 
-            del t1_fe
+                del t1_fe
+            except Exception as e:
+                if debug_mode:
+                    raise e
+                rr_logger.exception(f"T1 fe error on qubit {QubitIndex}: {e}")
+                if verbose:
+                    print(f"T1 fe error on qubit {QubitIndex}: {e}")
+                continue
         ###################################################### T2R #####################################################
         if run_flags["t2r"]:
             try:
@@ -392,14 +482,14 @@ while j < n:
                     thresholding=thresholding)
                 del t2r
 
+
             except Exception as e:
                 if debug_mode:
-                    raise e  # In debug mode, re-raise the exception immediately
-                else:
-                    rr_logger.exception(f'Got the following error, continuing: {e}')
-                    if verbose: print(f'Got the following error, continuing: {e}')
-                    continue  # skip the rest of this qubit
-
+                    raise e
+                rr_logger.exception(f"T2R ge error on qubit {QubitIndex}: {e}")
+                if verbose:
+                    print(f"T2R ge error on qubit {QubitIndex}: {e}")
+                continue
         ##################################################### T2E ######################################################
         if run_flags["t2e"]:
             try:
@@ -413,13 +503,14 @@ while j < n:
                  fit_t2e, sys_config_t2e) = t2e.run(thresholding=thresholding)
                 del t2e
 
+
             except Exception as e:
                 if debug_mode:
-                    raise e  # In debug mode, re-raise the exception immediately
-                else:
-                    rr_logger.exception(f'Got the following error, continuing: {e}')
-                    if verbose: print(f'Got the following error, continuing: {e}')
-                    continue  # skip the rest of this qubit
+                    raise e
+                rr_logger.exception(f"T2E ge error on qubit {QubitIndex}: {e}")
+                if verbose:
+                    print(f"T2E ge error on qubit {QubitIndex}: {e}")
+                continue
 
         ################################################## Dephasing ###################################################
         if run_flags["dephased"]:
@@ -438,41 +529,57 @@ while j < n:
                 if debug_mode:
                     raise e  # In debug mode, re-raise the exception immediately
                 else:
-                    rr_logger.exception(f'Got the following error, continuing: {e}')
-                    if verbose: print(f'Got the following error, continuing: {e}')
+                    rr_logger.exception(f'DD error on qubit {QubitIndex}: {e}')
+                    if verbose: print(f'DD error on qubit {QubitIndex}: {e}')
                     continue  # skip the rest of this qubit
 
         ###################################################### g-e T1 with ef noise ##########################################
         if run_flags["t1_ge_w_noise"]:
-            t1_ge_w_noise = T1MeasurementWithNoise(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
-                                  experiment=experiment,
-                                  live_plot=live_plot, fit_data=fit_data,
-                                  increase_qubit_reps=increase_qubit_reps,
-                                  qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                                  multiply_qubit_reps_by=multiply_qubit_reps_by)
-            t1_est_ge_w_noise, t1_err_ge_w_noise, t1_I_ge_w_noise, t1_Q_ge_w_noise, t1_delay_times_ge_w_noise, q1_fit_exponential_ge_w_noise, sys_config_t1_ge_w_noise = t1_ge_w_noise.run(
-                thresholding=False)
+            try:
+                t1_ge_w_noise = T1MeasurementWithNoise(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
+                                      experiment=experiment,
+                                      live_plot=live_plot, fit_data=fit_data,
+                                      increase_qubit_reps=increase_qubit_reps,
+                                      qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                      multiply_qubit_reps_by=multiply_qubit_reps_by)
+                t1_est_ge_w_noise, t1_err_ge_w_noise, t1_I_ge_w_noise, t1_Q_ge_w_noise, t1_delay_times_ge_w_noise, q1_fit_exponential_ge_w_noise, sys_config_t1_ge_w_noise = t1_ge_w_noise.run(
+                    thresholding=False)
 
-            print('Qubit ', QubitIndex + 1, ' g-e T1: ', str(t1_est_ge_w_noise))
+                print('Qubit ', QubitIndex + 1, ' g-e T1: ', str(t1_est_ge_w_noise))
 
-            del t1_ge_w_noise
+                del t1_ge_w_noise
+            except Exception as e:
+                if debug_mode:
+                    raise e  # In debug mode, re-raise the exception immediately
+                else:
+                    rr_logger.exception(f'T1 ge w ef noise error on qubit {QubitIndex}: {e}')
+                    if verbose: print(f'T1 ge w ef noise error on qubit {QubitIndex}: {e}')
+                    continue  # skip the rest of this qubit
 
         ###################################################### f-e T1 with ef noise #################################
         if run_flags["t1_fe_w_noise"]:
-            t1_fe_w_noise = EF_T1MeasurementWithNoise(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
-                                     save_figs,
-                                     experiment=experiment,
-                                     live_plot=live_plot, fit_data=fit_data,
-                                     increase_qubit_reps=increase_qubit_reps,
-                                     qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                                     multiply_qubit_reps_by=multiply_qubit_reps_by, expt_name='T1_fe')
-            (t1_est_fe_w_noise, t1_err_fe_w_noise, t1_I_fe_w_noise, t1_Q_fe_w_noise,
-             t1_delay_times_fe_w_noise, q1_fit_exponential_fe_w_noise, sys_config_t1_fe_w_noise) = t1_fe_w_noise.run(
-                thresholding=False)
+            try:
+                t1_fe_w_noise = EF_T1MeasurementWithNoise(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
+                                         save_figs,
+                                         experiment=experiment,
+                                         live_plot=live_plot, fit_data=fit_data,
+                                         increase_qubit_reps=increase_qubit_reps,
+                                         qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                         multiply_qubit_reps_by=multiply_qubit_reps_by, expt_name='T1_fe')
+                (t1_est_fe_w_noise, t1_err_fe_w_noise, t1_I_fe_w_noise, t1_Q_fe_w_noise,
+                 t1_delay_times_fe_w_noise, q1_fit_exponential_fe_w_noise, sys_config_t1_fe_w_noise) = t1_fe_w_noise.run(
+                    thresholding=False)
 
-            print('Qubit ', QubitIndex + 1, ' f-e T1: ', str(t1_est_fe_w_noise))
+                print('Qubit ', QubitIndex + 1, ' f-e T1: ', str(t1_est_fe_w_noise))
 
-            del t1_fe_w_noise
+                del t1_fe_w_noise
+            except Exception as e:
+                if debug_mode:
+                    raise e  # In debug mode, re-raise the exception immediately
+                else:
+                    rr_logger.exception(f'T1 fe w ef noise error on qubit {QubitIndex}: {e}')
+                    if verbose: print(f'T1 fe w ef noise error on qubit {QubitIndex}: {e}')
+                    continue  # skip the rest of this qubit
 
         ###################################################### T2R with ef noise ####################################
         if run_flags["t2r_w_noise"]:
@@ -492,8 +599,8 @@ while j < n:
                 if debug_mode:
                     raise e  # In debug mode, re-raise the exception immediately
                 else:
-                    rr_logger.exception(f'Got the following error, continuing: {e}')
-                    if verbose: print(f'Got the following error, continuing: {e}')
+                    rr_logger.exception(f'T2R w ef noise error on qubit {QubitIndex}: {e}')
+                    if verbose: print(f'T2R w ef noise error on qubit {QubitIndex}: {e}')
                     continue  # skip the rest of this qubit
 
         ##################################################### T2E with ef noise #########################################
@@ -513,8 +620,8 @@ while j < n:
                 if debug_mode:
                     raise e  # In debug mode, re-raise the exception immediately
                 else:
-                    rr_logger.exception(f'Got the following error, continuing: {e}')
-                    if verbose: print(f'Got the following error, continuing: {e}')
+                    rr_logger.exception(f'T2E w ef noise error on qubit {QubitIndex}: {e}')
+                    if verbose: print(f'T2E w ef noise error on qubit {QubitIndex}: {e}')
                     continue  # skip the rest of this qubit
 
 
@@ -536,8 +643,8 @@ while j < n:
                 if debug_mode:
                     raise e  # In debug mode, re-raise the exception immediately
                 else:
-                    rr_logger.exception(f'Got the following error, continuing: {e}')
-                    if verbose: print(f'Got the following error, continuing: {e}')
+                    rr_logger.exception(f'DD w ef noise error on qubit {QubitIndex}: {e}')
+                    if verbose: print(f'DD w ef noise error on qubit {QubitIndex}: {e}')
                     continue  # skip the rest of this qubit
 
 
