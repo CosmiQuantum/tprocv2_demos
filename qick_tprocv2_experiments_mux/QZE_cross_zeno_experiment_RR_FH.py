@@ -367,12 +367,12 @@ while j < n:
 
                 del res_specFH
             except Exception as e:
-            if debug_mode:
-                raise e
-            rr_logger.exception(f"fh Res Spec error on qubit {QubitIndex}: {e}")
-            if verbose:
-                print(f"fh Res Spec error on qubit {QubitIndex}: {e}")
-            continue
+                if debug_mode:
+                    raise e
+                rr_logger.exception(f"fh Res Spec error on qubit {QubitIndex}: {e}")
+                if verbose:
+                    print(f"fh Res Spec error on qubit {QubitIndex}: {e}")
+                continue
 
         ######################################## f-h Qubit spec ###############################################
         if run_flags["q_spec_fh"]:
