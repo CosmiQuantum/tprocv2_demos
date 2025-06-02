@@ -39,11 +39,11 @@ figure_quality = 200
 Science_Qubits = [0, 4]
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": True, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_qtemps": False}
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+                      "combined_studies_qtemps": True}
 
 # What analysis plots do you want to make?
-analysis_flags = {"Qtemps_vs_time_viaSSF": True,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
+analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False,  "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 ############################################################################## Set up ##############################################################################
@@ -80,7 +80,11 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": True,  "Qtemps_vs_time_viaRPM": False
     # "2025-05-13",
     # "2025-05-14"
     # ]
-target_dates_qtemps_RPM = ["2025-05-07", "2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16"]
+# Heater temperature steps
+# target_dates_qtemps_RPM = ["2025-05-07", "2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16"]
+
+target_dates_qtemps_RPM = ["2025-05-05"]
+
 base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study"
 
 # To re-make and save RPM RR plots
@@ -205,15 +209,16 @@ if qtemp_method_flags["combined_studies_qtemps"]:
     SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs)
     pairs_info = SSF_calcs_obj.process_ssf_and_qfreq_data_qtemps(Science_Qubits, paths_SSFmethods)
 
-    all_qubit_temps_g, all_qubit_times_g, fit_results_g  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.95, use_gessf_thresh_only = False, fallback_to_threshold = False)
-    all_qubit_temps_ge, all_qubit_times_ge, fit_results_ge = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.95, use_gessf_thresh_only=True, fallback_to_threshold=False)
+    all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.95, use_gessf_thresh_only = False, fallback_to_threshold = False)
+    all_qubit_temps_ge, all_qubit_times_ge, all_qubit_temps_errs_ge, fit_results_ge = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.95, use_gessf_thresh_only=True, fallback_to_threshold=False)
 
     #------------ Qubit temperatures vs Time using all three methods
     combined_studies = combined_Qtemp_studies(figure_quality, tot_num_of_qubits)
 
     # Plots two rows (one for each qubit) and 3 columns (one for each method)
-    # combined_studies.Qtemps_vs_time_comb_methods(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_ge, all_qubit_times_ge, outerFolder_qtemps_plots,
-    #                                              all_files_Qtemp_results_RPMs, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
+    combined_studies.Qtemps_vs_time_comb_methods(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, all_qubit_temps_ge, all_qubit_times_ge, all_qubit_temps_errs_ge,
+                                                 outerFolder_qtemps_plots, all_files_Qtemp_results_RPMs, restrict_time_xaxis = False, plot_extra_event_lines = False,
+                                                 rad_events_plot_lines = False, plot_error_bars = True)
 
     # Plots two rows (one for each qubit) and 1 column (all methods in a single plot)
     # combined_studies.Qtemps_vs_time_comb_2subplts(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_ge, all_qubit_times_ge, outerFolder_qtemps_plots,
@@ -221,8 +226,8 @@ if qtemp_method_flags["combined_studies_qtemps"]:
 
     #----------- Thermal Populations vs Time using all three methods
     # Plots two rows (one for each qubit) and 3 columns (one for each method)
-    combined_studies.Pe_vs_time_comb_methods(all_files_Qtemp_results_RPMs, fit_results_g, fit_results_ge, outerFolder_qtemps_plots,
-                                             restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
+    # combined_studies.Pe_vs_time_comb_methods(all_files_Qtemp_results_RPMs, fit_results_g, fit_results_ge, outerFolder_qtemps_plots,
+    #                                          restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
 
     # Plots two rows (one for each qubit) and 1 column (all methods in a single plot)
     # combined_studies.Pe_vs_time_comb_2subplts(all_files_Qtemp_results_RPMs, fit_results_g, fit_results_ge, outerFolder_qtemps_plots,

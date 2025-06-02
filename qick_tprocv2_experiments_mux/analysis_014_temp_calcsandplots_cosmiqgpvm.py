@@ -1192,8 +1192,9 @@ class combined_Qtemp_studies:
         self.figure_quality = figure_quality
         self.number_of_qubits = number_of_qubits
 
-    def Qtemps_vs_time_comb_methods(self, all_qubit_temperatures_ssf_g, all_qubit_timestamps_ssf_g, all_qubit_temperatures_ssf_ge, all_qubit_timestamps_ssf_ge, out_dir,
-        all_files_Qtemp_results_RPMs, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = True):
+    def Qtemps_vs_time_comb_methods(self, all_qubit_temperatures_ssf_g, all_qubit_timestamps_ssf_g, all_qubit_temps_ssf_errs_g, all_qubit_temperatures_ssf_ge, all_qubit_timestamps_ssf_ge,
+                                    all_qubit_temps_ssf_errs_ge, out_dir, all_files_Qtemp_results_RPMs, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = True,
+                                    plot_error_bars = False):
         """
         Plots qubit temperatures vs time for two qubits, using temperature data obtained using these three methods:
         1. Rabi population measurements
@@ -1208,27 +1209,54 @@ class combined_Qtemp_studies:
 
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
         os.makedirs(out_dir, exist_ok=True)
+        err_filter = 300 # used to filter out datapoints with an error above this value
 
         # Processing RPMs Qubit Temperature Results and putting it into dicts:
         times_RPM = {q: [] for q in range(self.number_of_qubits)}
         temps_RPM = {q: [] for q in range(self.number_of_qubits)}
+        errs_RPM = {q: [] for q in range(self.number_of_qubits)}
+
         for rec in all_files_Qtemp_results_RPMs:
             for q in range(self.number_of_qubits):
                 d = rec['qubits'].get(q)
-                if d:
+                if not d: # no data
+                    continue
+
+                if d['T_mK_err'] <= err_filter: # Only keep if T_mK_err ≤ 300 mK
+                    err_rpm = d['T_mK_err']
+                    errs_RPM[q].append(err_rpm)
                     t = datetime.datetime.fromtimestamp(d['date'])
                     times_RPM[q].append(t)
                     temps_RPM[q].append(d['T_mK'])
-                else:
-                    continue
 
         # SSF Qubit Temperature data for method that uses g-state double gauss threshold as population threshold
-        times_ssf_g = all_qubit_timestamps_ssf_g
-        temps_ssf_g = all_qubit_temperatures_ssf_g
+        times_ssf_g = {
+            q: [t for t, e in zip(all_qubit_timestamps_ssf_g[q], all_qubit_temps_ssf_errs_g[q]) if e <= err_filter]
+            for q in all_qubit_temperatures_ssf_g
+        }
+        temps_ssf_g = {
+            q: [y for y, e in zip(all_qubit_temperatures_ssf_g[q], all_qubit_temps_ssf_errs_g[q]) if e <= err_filter]
+            for q in all_qubit_temperatures_ssf_g
+        }
+        errs_ssf_g = {
+            q: [e for e in all_qubit_temps_ssf_errs_g[q] if e <= err_filter]
+            for q in all_qubit_temperatures_ssf_g
+        }
 
         # SSF Qubit Temperature data for method that uses g-e ssf threshold as population threshold
-        times_ssf_ge = all_qubit_timestamps_ssf_ge
-        temps_ssf_ge = all_qubit_temperatures_ssf_ge
+        # This data is filtered (has temperature errors below err_filter)
+        times_ssf_ge = {
+            q: [t for t, e in zip(all_qubit_timestamps_ssf_ge[q], all_qubit_temps_ssf_errs_ge[q]) if e <= err_filter]
+            for q in all_qubit_temperatures_ssf_ge
+        }
+        temps_ssf_ge = {
+            q: [y for y, e in zip(all_qubit_temperatures_ssf_ge[q], all_qubit_temps_ssf_errs_ge[q]) if e <= err_filter]
+            for q in all_qubit_temperatures_ssf_ge
+        }
+        errs_ssf_ge = {
+            q: [e for e in all_qubit_temps_ssf_errs_ge[q] if e <= err_filter]
+            for q in all_qubit_temperatures_ssf_ge
+        }
 
         #----------- Plot only a certain range of dates/time (only goes into effect if restrict_time_xaxis is set to true)
         if restrict_time_xaxis:
@@ -1261,15 +1289,39 @@ class combined_Qtemp_studies:
                 ax = axes[row, col]
 
                 if col == 0:
-                    ts, ys = times_RPM[q], temps_RPM[q]
+                    ts, ys, es = times_RPM[q], temps_RPM[q], errs_RPM[q]
                 elif col == 1:
-                    ts, ys = times_ssf_g.get(q, []), temps_ssf_g.get(q, [])
+                    ts, ys, es = times_ssf_g.get(q, []), temps_ssf_g.get(q, []), errs_ssf_g.get(q, [])
                 else:
-                    ts, ys = times_ssf_ge.get(q, []), temps_ssf_ge.get(q, [])
+                    ts, ys, es = times_ssf_ge.get(q, []), temps_ssf_ge.get(q, []), errs_ssf_ge.get(q, [])
+
+                if not ts or not ys:
+                    ax.set_visible(False)
+                    continue
 
                 # scatter
-                if ts and ys:
-                    ax.scatter(ts, ys, s=40, alpha=0.8, edgecolors='k', color=colors[q])
+                color = colors[q % len(colors)]
+                if plot_error_bars:
+                    ax.errorbar(
+                        ts,
+                        ys,
+                        yerr=es,
+                        fmt='o',
+                        capsize=4,
+                        markersize=5,
+                        color=color,
+                        ecolor=color,
+                        label=f"Q{q + 1}"
+                    )
+                else:
+                    ax.scatter(
+                        ts,
+                        ys,
+                        s=40,
+                        alpha=0.7,
+                        color=color,
+                        label=f"Q{q + 1}"
+                    )
 
                 # qubit label
                 ax.text(0.02, 0.95, f"Q{q + 1}", transform=ax.transAxes, fontsize=14, fontweight='bold', va='top')
