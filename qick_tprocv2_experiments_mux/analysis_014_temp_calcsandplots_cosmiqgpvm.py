@@ -683,26 +683,34 @@ class SSFTempCalcAndPlots:
             if not temps:
                 continue
 
+            # Filter out temperature data with error > 300 mK
+            filtered = [(t, T, e)
+                for t, T, e in zip(times, temps, errs)
+                if e <= 300]
+            if not filtered:
+                continue
+
+            times_filtered, temps_filtered, errs_filtered = zip(*filtered)
+
             ax = plt.subplot(2, 3, q + 1)
             if plot_error_bars:
                 ax.errorbar(
-                    times,
-                    temps,
-                    yerr=errs,
+                    times_filtered,
+                    temps_filtered,
+                    yerr=errs_filtered,
                     fmt='o',
                     capsize=4,
                     markersize=5,
                     color=colors[q % len(colors)],
-                    ecolor='black',
+                    ecolor=colors[q % len(colors)],
                     label=f"Q{q + 1}"
                 )
             else:
                 ax.scatter(
-                    times,
-                    temps,
+                    times_filtered,
+                    temps_filtered,
                     color=colors[q % len(colors)],
                     alpha=0.7,
-                    edgecolor='black',
                     label=f"Q{q + 1}"
                 )
 
