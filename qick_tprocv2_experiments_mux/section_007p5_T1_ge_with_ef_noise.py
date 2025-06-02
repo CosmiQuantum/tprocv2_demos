@@ -67,6 +67,65 @@ class T1Program(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
+class T1ProgramFH(AveragerProgramV2):
+    def _initialize(self, cfg):
+
+        ro_ch = cfg['ro_ch']
+        res_ch = cfg['res_ch']
+        qubit_ch = cfg['qubit_ch']
+        noise_ch = cfg['qubit_ampl_ch']
+
+        self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
+                         mux_freqs=cfg['res_freq_ge'],
+                         mux_gains=cfg['res_gain_ge'],
+                         mux_phases=cfg['res_phase'],
+                         mixer_freq=cfg['mixer_freq'])
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
+            self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
+
+        self.add_pulse(ch=res_ch, name="res_pulse",
+                       style="const",
+                       length=cfg["res_length"],
+                       mask=cfg["list_of_all_qubits"],
+                       )
+
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+        self.add_pulse(ch=qubit_ch, name="qubit_pulse",
+                       style="arb",
+                       envelope="ramp",
+                       freq=cfg['qubit_freq_ge'],
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['pi_amp'],
+                       )
+        self.declare_gen(ch=noise_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+        self.add_pulse(ch=noise_ch, name="noise_pulse",
+                       style="const",
+                       length=cfg["noise_pulse_len"],
+                       freq=cfg['qubit_freq_fh'] + cfg['noise_offset_freq_from_fh'],
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['noise_pulse_gain'],
+                       mode='periodic'
+                       )
+        self.add_pulse(ch=noise_ch, name="stop_periodic_pulse",
+                       style="const",
+                       length=0.01,
+                       freq=cfg['qubit_freq_fh'],
+                       phase=cfg['qubit_phase'],
+                       gain=0
+                       )
+
+        self.add_loop("waitloop", cfg["steps"])
+
+    def _body(self, cfg):
+        self.pulse(ch=self.cfg["qubit_ampl_ch"], name="noise_pulse", t=0)
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play probe pulse
+        self.delay_auto(cfg['wait_time'] + 0.01, tag='wait')  # wait_time after last pulse
+        self.pulse(ch=self.cfg["qubit_ampl_ch"], name="stop_periodic_pulse", t=0)
+        self.delay_auto(0.01)
+        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+
 
 class T1MeasurementWithNoise:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, signal, save_figs, experiment = None,
@@ -107,9 +166,12 @@ class T1MeasurementWithNoise:
                 self.config['relax_delay'] = relax_delay
                 print(f'set t1 relax delay to {relax_delay} us')
 
-    def run(self, thresholding=False):
+    def run(self, thresholding=False, noise_type='ef'):
         now = datetime.datetime.now()
-        t1 = T1Program(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
+        if 'ef' in noise_type:
+            t1 = T1Program(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
+        if 'fh' in noise_type:
+            t1 = T1ProgramFH(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
 
         if self.live_plot:
             I, Q, delay_times = self.live_plotting(t1, thresholding)

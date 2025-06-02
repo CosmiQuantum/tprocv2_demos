@@ -145,6 +145,85 @@ class Fit:
 
         return out
 
+class T2EProgramFHNoise(AveragerProgramV2):
+    def _initialize(self, cfg):
+        ro_ch = cfg['ro_ch']
+        res_ch = cfg['res_ch']
+        qubit_ch = cfg['qubit_ch']
+        noise_ch = cfg['qubit_ampl_ch']
+
+        self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
+                         mux_freqs=cfg['res_freq_ge'],
+                         mux_gains=cfg['res_gain_ge'],
+                         mux_phases=cfg['res_phase'],
+                         mixer_freq=cfg['mixer_freq'])
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
+            self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
+
+        self.add_pulse(ch=res_ch, name="res_pulse",
+                       style="const",
+                       length=cfg["res_length"],
+                       mask=cfg["list_of_all_qubits"],
+                       )
+
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+        self.add_pulse(ch=qubit_ch, name="qubit_pulse1",
+                       style="arb",
+                       envelope="ramp",
+                       freq=cfg['qubit_freq_ge'] ,
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['pi_amp'] / 2,
+                       )
+
+        self.add_pulse(ch=qubit_ch, name="qubit_pulse_pi",
+                       style="arb",
+                       envelope="ramp",
+                       freq=cfg['qubit_freq_ge'],
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['pi_amp'],
+                       )
+
+        self.add_pulse(ch=qubit_ch, name="qubit_pulse2",
+                       style="arb",
+                       envelope="ramp",
+                       freq=cfg['qubit_freq_ge'],
+                       phase=cfg['qubit_phase'] + cfg['wait_time']*360*cfg['ramsey_freq'], # current phase + time * 2pi * ramsey freq
+                       gain=cfg['pi_amp'] / 2,
+                      )
+        self.declare_gen(ch=noise_ch, nqz=cfg['nqz_qubit'],
+                         mixer_freq=cfg['qubit_mixer_freq'])  # mix_freq? , mixer_freq=cfg['qubit_mixer_freq']
+        self.add_pulse(ch=noise_ch, name="noise_pulse",
+                       style="const",
+                       length=cfg["noise_pulse_len"],
+                       freq=cfg['qubit_freq_fh'] + cfg['noise_offset_freq_from_fh'],
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['noise_pulse_gain'],
+                       mode='periodic'
+                       )
+        self.add_pulse(ch=noise_ch, name="stop_periodic_pulse",
+                       style="const",
+                       length=0.01,
+                       freq=cfg['qubit_freq_fh'],
+                       phase=cfg['qubit_phase'],
+                       gain=0
+                       )
+
+        self.add_loop("waitloop", cfg["steps"])
+
+    def _body(self, cfg):
+        self.pulse(ch=self.cfg["qubit_ampl_ch"], name="noise_pulse", t=0)
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse1", t=0)  # play probe pulse
+        self.delay_auto((cfg['wait_time'] / 2) + 0.01, tag='wait1')  # wait_time after last pulse (wait / 2)
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse_pi", t=0)  # play pulse
+        self.delay_auto((cfg['wait_time'] / 2) + 0.01, tag='wait2')  # wait_time after last pulse (wait / 2)
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse2", t=0)  # play pulse
+        self.delay_auto(0.01)  # wait_time after last pulse
+        self.pulse(ch=self.cfg["qubit_ampl_ch"], name="stop_periodic_pulse", t=0)
+        self.delay_auto(0.01)
+        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+
 class T2EProgram(AveragerProgramV2):
     def _initialize(self, cfg):
         ro_ch = cfg['ro_ch']
@@ -406,10 +485,14 @@ class T2EMeasurementWithNoise:
         t2e_err = out['T2'][1] #in ns
         return fit_type(x, popt) * y_normal, t2e_est, t2e_err, plot_sig
 
-    def run(self, thresholding=False):
+    def run(self, thresholding=False, noise_type='ef'):
         now = datetime.datetime.now()
-        echo = T2EProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
-                         cfg=self.config)
+        if 'fh' in noise_type:
+            echo = T2EProgramFHNoise(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
+                              cfg=self.config)
+        else:
+            echo = T2EProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
+                             cfg=self.config)
         # for live plotting open http://localhost:8097/ on firefox
         if self.live_plot:
             I, Q, delay_times = self.live_plotting(echo, thresholding)
