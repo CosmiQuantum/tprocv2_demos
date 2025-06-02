@@ -149,6 +149,7 @@ class SSFTempCalcAndPlots:
         -------
         all_qubit_temperatures : dict {qubit: [temp_mK, …]}
         all_qubit_timestamps   : dict {qubit: [datetime, …]}
+        all_qubit_temperatures_errs : dict {qubit: [temp_mK_error, …]}
 
         fit_results : dict
         { qubit_index: [
@@ -163,14 +164,18 @@ class SSFTempCalcAndPlots:
             "excited_gaussian": <int>,
             "crossing_point": <float>,
             "weights": np.ndarray(shape=(2,)),
-            "sigmas": np.ndarray(shape=(2,)),
+            "sigmas": np.ndarray(shape=(2,)), #sigma of each gaussian in the double gaussian fit
+            "total_sigma_Pe": sigma_Pe, # total 1‐σ uncertainty on Pe
             "means": np.ndarray(shape=(2,)),
             "Pg": Pg,
             "Pe": Pe,
+            "qfreq_mhz": freq_mhz, # qubit frequency
+            "qfreq_mhz_err": freq_mhz_err,
           }]}
         """
         # initialise output arrays
         all_qubit_temperatures = {i: [] for i in range(self.number_of_qubits)}
+        all_qubit_temperatures_errs = {i: [] for i in range(self.number_of_qubits)}
         all_qubit_timestamps = {i: [] for i in range(self.number_of_qubits)}
         fit_results = {qid: [] for qid in range(self.number_of_qubits)}
 
@@ -180,6 +185,7 @@ class SSFTempCalcAndPlots:
                 used_fallback = False
 
                 freq_mhz = rec["qfreq_MHz"]
+                freq_mhz_err = rec["qfreq_MHz_err"]
                 ig_new = rec["ig_new"]
                 ie_new = rec["ie_new"]
                 ts_unix = rec["data_timestamp"]
@@ -187,7 +193,7 @@ class SSFTempCalcAndPlots:
                 # Decide which threshold approach to use
                 if use_gessf_thresh_only:
                     # ----------Calculate g-e threshold for each ssf file ---------------------
-                    ge_thresh, means, sigmas, weights, ground_idx, excited_idx = self.ssf_fit_two_gaussians_midpoint(ig_new, ie_new)
+                    ge_thresh, ge_thresh_err, means, sigmas, weights, ground_idx, excited_idx = self.ssf_fit_two_gaussians_midpoint(ig_new, ie_new) #fits two states' data to a double gaussian
 
                     #--------------- use g-e SSF threshold to calculate Pg and Pe ---------------
                     mask = (ig_new <= ge_thresh)
@@ -195,6 +201,23 @@ class SSFTempCalcAndPlots:
                     Pe = 1.0 - Pg
                     pop_threshold = ge_thresh
 
+                    # -- 1-σ contribution to Pe from the threshold uncertainty --
+                    mask_plus = (ig_new <= ge_thresh + ge_thresh_err)
+                    Pe_plus = 1.0 - mask_plus.mean()
+
+                    mask_minus = (ig_new <= ge_thresh - ge_thresh_err)
+                    Pe_minus = 1.0 - mask_minus.mean()
+
+                    sigma_Pe_from_thresh = 0.5 * abs(Pe_plus - Pe_minus)
+
+                    # statistical err of Pe
+                    Nshots = ig_new.size
+                    sigma_Pe_stat = np.sqrt(Pe * (1 - Pe) / Nshots)
+
+                    # -- total 1‐σ uncertainty on Pe--
+                    sigma_Pe = np.sqrt(sigma_Pe_from_thresh ** 2 + sigma_Pe_stat ** 2)
+
+                    # We don't care about these for this method, the user can check plots using function plot_ssf_ge_thresh if needed
                     ground_gaussian = ground_idx
                     excited_gaussian = excited_idx
                     ground_data = excited_data = None
@@ -202,10 +225,26 @@ class SSFTempCalcAndPlots:
                 elif fallback_to_threshold:
                     # -------- double-Gaussian fit on ground state data, with fallback method --------------------------
                     try:
-                        (Pg, Pe, gmm, means, sigmas, weights, threshold_mid, ground_gaussian, excited_gaussian,
-                         ground_data, excited_data, _) = self.fit_double_gaussian_midpoint(ig_new)
+                        (Pg, Pe, gmm, means, sigmas, weights, threshold_mid, threshold_mid_err, ground_gaussian, excited_gaussian,
+                         ground_data, excited_data, _) = self.fit_double_gaussian_midpoint(ig_new) #fits only 1 state's data to a double gaussian
 
                         pop_threshold = threshold_mid
+
+                        # -- 1-σ contribution to Pe from the threshold uncertainty --
+                        mask_plus = (ig_new <= threshold_mid + threshold_mid_err)
+                        Pe_plus = 1.0 - mask_plus.mean()
+
+                        mask_minus = (ig_new <= threshold_mid - threshold_mid_err)
+                        Pe_minus = 1.0 - mask_minus.mean()
+
+                        sigma_Pe_from_thresh = 0.5 * abs(Pe_plus - Pe_minus)
+
+                        # statistical err of Pe
+                        Nshots = ig_new.size
+                        sigma_Pe_stat = np.sqrt(Pe * (1 - Pe) / Nshots)
+
+                        # -- total 1‐σ uncertainty on Pe--
+                        sigma_Pe = np.sqrt(sigma_Pe_from_thresh ** 2 + sigma_Pe_stat ** 2)
 
                         # Ensure crossing point (where threshold is set) isn’t too close to the ground histogram mean
                         mu_g = means[ground_gaussian]
@@ -216,12 +255,28 @@ class SSFTempCalcAndPlots:
 
                     except Exception: # Use fallback method: using g-e SSF threshold to calculate Pg and Pe
                         # ----------Calculate g-e threshold for each ssf file ---------------------
-                        ge_thresh, means, sigmas, weights, ground_idx, excited_idx = self.ssf_fit_two_gaussians_midpoint(ig_new, ie_new)
+                        ge_thresh, ge_thresh_err, means, sigmas, weights, ground_idx, excited_idx = self.ssf_fit_two_gaussians_midpoint(ig_new, ie_new)
                         print(f"[run] Q{qid + 1} dataset {idx}: GMM fit failed or too close crossing. Falling back to g-e SSF threshold")
                         pop_threshold = ge_thresh
                         mask = (ig_new <= ge_thresh)
                         Pg = mask.mean()
                         Pe = 1.0 - Pg
+
+                        # -- 1-σ contribution to Pe from the threshold uncertainty --
+                        mask_plus = (ig_new <= ge_thresh + ge_thresh_err)
+                        Pe_plus = 1.0 - mask_plus.mean()
+
+                        mask_minus = (ig_new <= ge_thresh - ge_thresh_err)
+                        Pe_minus = 1.0 - mask_minus.mean()
+
+                        sigma_Pe_from_thresh = 0.5 * abs(Pe_plus - Pe_minus)
+
+                        # statistical err of Pe
+                        Nshots = ig_new.size
+                        sigma_Pe_stat = np.sqrt(Pe * (1 - Pe) / Nshots)
+
+                        # -- total 1‐σ uncertainty on Pe--
+                        sigma_Pe = np.sqrt(sigma_Pe_from_thresh ** 2 + sigma_Pe_stat ** 2)
 
                         # We don't care about these for this method, the user can check plots using function plot_ssf_ge_thresh if needed
                         ground_gaussian = ground_idx
@@ -231,31 +286,53 @@ class SSFTempCalcAndPlots:
 
                 else:
                     # -------- Only using double-Gaussian fit on ground state data, without fallback method --------------------------
-                    (Pg, Pe, gmm, means, sigmas, weights, threshold_mid, ground_gaussian, excited_gaussian,
+                    (Pg, Pe, gmm, means, sigmas, weights, threshold_mid, threshold_mid_err, ground_gaussian, excited_gaussian,
                      ground_data, excited_data, _) = self.fit_double_gaussian_midpoint(ig_new)
 
                     pop_threshold = threshold_mid
 
+                    # -- 1-σ contribution to Pe from the threshold uncertainty --
+                    mask_plus = (ig_new <= threshold_mid + threshold_mid_err)
+                    Pe_plus = 1.0 - mask_plus.mean()
+
+                    mask_minus = (ig_new <= threshold_mid - threshold_mid_err)
+                    Pe_minus = 1.0 - mask_minus.mean()
+
+                    sigma_Pe_from_thresh = 0.5 * abs(Pe_plus - Pe_minus)
+
+                    # statistical err of Pe
+                    Nshots = ig_new.size
+                    sigma_Pe_stat = np.sqrt(Pe * (1 - Pe) / Nshots)
+
+                    # -- total 1‐σ uncertainty on Pe--
+                    sigma_Pe = np.sqrt(sigma_Pe_from_thresh ** 2 + sigma_Pe_stat ** 2)
+
                 pop_threshold = float(pop_threshold)
+
                 #Calculate qubit temps using Pg and Pe
                 temp_k = self.calculate_qubit_temperature(freq_mhz, Pg, Pe)
+                T_mK = temp_k * 1e3
 
                 # -------- screening -----------------------------------------
                 if temp_k is None:
                     # un-physical, skip
                     continue
                 if temp_k > limit_temp_k:
-                    print(f"[run]  Q{qid + 1}: {temp_k * 1e3:.1f} mK  > {limit_temp_k * 1e3:.0f} mK  → dropped")
+                    print(f"[run]  Q{qid + 1}: {T_mK:.1f} mK  > {limit_temp_k * 1e3:.0f} mK  → dropped")
                     continue
 
+                # Now call on the function compute_temperature_error_SSF to calculate the errs of the qubit temps
+                sigma_TmK = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
+
                 # -------- save qubit temps and timestamps ----------------------------------------------
-                all_qubit_temperatures[qid].append(temp_k * 1e3)  # mK
-                all_qubit_timestamps[qid].append(
-                    datetime.datetime.fromtimestamp(ts_unix))
+                all_qubit_temperatures[qid].append(T_mK)  # temperatures in mK
+                all_qubit_temperatures_errs[qid].append(sigma_TmK) #temperature errors
+                all_qubit_timestamps[qid].append(datetime.datetime.fromtimestamp(ts_unix)) # time stamps
+
                 fit_results[qid].append({
                     "dataset": idx,
                     "timestamp": datetime.datetime.fromtimestamp(ts_unix),
-                    "temperature_mK": temp_k * 1e3,
+                    "temperature_mK": T_mK,
                     "ig_new": ig_new,
                     "ground_data": ground_data,
                     "excited_data": excited_data,
@@ -263,17 +340,60 @@ class SSFTempCalcAndPlots:
                     "excited_gaussian": excited_gaussian,
                     "pop_threshold": pop_threshold,
                     "weights": weights,
-                    "sigmas": sigmas,
+                    "sigmas": sigmas, # of each gaussian in the double gaussian fit
+                    "total_sigma_Pe": sigma_Pe, # total 1‐σ uncertainty on Pe
                     "means": means,
                     "Pg": Pg,
                     "Pe": Pe,
+                    "qfreq_mhz": freq_mhz,
+                    "qfreq_mhz_err": freq_mhz_err,
                     "used_gessf_thresh_only": use_gessf_thresh_only, #True when the user decides to use this method
                     "used_fallback_method": used_fallback, #only True if it goes into effect, regardless of user decision
                 })
 
-        return all_qubit_temperatures, all_qubit_timestamps, fit_results
+        return all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs, fit_results
 
-    # -------------------- NEW “g-e threshold only” runner -----------------
+
+    def compute_temperature_error_SSF(self, Pe, sigma_Pe, T_mK, qubit_freq_MHz, sigma_qfreq_MHz):
+        """
+        Propagate the 1-σ uncertainties in Pe and f_ge
+        into a 1-σ uncertainty on T_mK, given you already know
+        Pe, σ_Pe, and T_mK.
+
+        Inputs:
+          Pe                    – excited‐state population (from SSF)
+          sigma_Pe              – 1-σ uncertainty on Pe
+          T_mK                  – computed temperature (mK)
+          qubit_freq_MHz        – fitted g–e qubit frequency (MHz)
+          sigma_qfreq_MHz       – 1-σ error on qubit_freq_MHz (standard deviation)
+
+        Returns:
+          sigma_T_mK            – propagated 1-σ error on T_mK (mK)
+        """
+        # Convert qubit frequency and its error from MHz → Hz
+        f0_Hz = qubit_freq_MHz * 1e6
+        sigma_f0_Hz = sigma_qfreq_MHz * 1e6
+
+        # Build the logarithmic term (given Pe)
+        ln_arg = np.log((1.0 - Pe) / Pe)
+
+        # Partial derivatives of T_mK
+        #    T_mK = (h * f0_Hz) / (kB * ln_arg) * 1e3
+        #    ∂T/∂f0  = T_mK / f0_Hz
+        dT_df0 = T_mK / f0_Hz
+
+        # ∂T/∂Pe = T_mK / [ ln_arg * Pe * (1 - Pe) ]
+        dT_dPe = T_mK / (ln_arg * Pe * (1.0 - Pe))
+
+        # Combine in quadrature to get total σ_T_mK
+        sigma_T_mK = np.sqrt(
+            (dT_df0 * sigma_f0_Hz) ** 2 +
+            (dT_dPe * sigma_Pe) ** 2
+        )
+
+        return sigma_T_mK
+
+    # -------------------- “g-e threshold only” runner -----------------
     def plot_ssf_ge_thresh(self, pairs_info: dict, plotting_path: str, numbins: int = 64):
         """
         For every (qubit,dataset) in `pairs_info`:
@@ -543,7 +663,10 @@ class SSFTempCalcAndPlots:
         return pairs_by_qubit, unmatched_qspec, unmatched_ssf
 
     #  Scatter plot – qubit temperatures vs. time  (all dates, each qubit its own subplot)
-    def plot_qubit_temperatures_vs_time_ssf(self, all_qubit_temperatures, all_qubit_timestamps, out_dir):
+    def plot_qubit_temperatures_vs_time_ssf(self, all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs,
+                                            out_dir, plot_error_bars = False):
+        """Scatter plot of qubit temperatures vs. time for each qubit, optionally with error bars."""
+
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
 
         os.makedirs(out_dir, exist_ok=True)
@@ -554,13 +677,34 @@ class SSFTempCalcAndPlots:
         for q in all_qubit_temperatures.keys():
             temps = all_qubit_temperatures[q]
             times = all_qubit_timestamps[q]
+            errs = all_qubit_temperatures_errs[q]
+
             if not temps:
                 continue
 
             ax = plt.subplot(2, 3, q + 1)
-            ax.scatter(times, temps,
-                       color=colors[q], alpha=0.7, edgecolor='black',
-                       label=f"Q{q + 1}")
+            if plot_error_bars:
+                ax.errorbar(
+                    times,
+                    temps,
+                    yerr=errs,
+                    fmt='o',
+                    capsize=4,
+                    markersize=5,
+                    color=colors[q % len(colors)],
+                    ecolor='black',
+                    label=f"Q{q + 1}"
+                )
+            else:
+                ax.scatter(
+                    times,
+                    temps,
+                    color=colors[q % len(colors)],
+                    alpha=0.7,
+                    edgecolor='black',
+                    label=f"Q{q + 1}"
+                )
+
             ax.set_title(f"Qubit {q + 1} Temperature vs Time")
             ax.set_xlabel("Time")
             ax.set_ylabel("Temperature (mK)")
@@ -777,8 +921,11 @@ class SSFTempCalcAndPlots:
 
         Returns:
           Pg, Pe, gmm, means, sigmas, weights,
-          threshold_mid, ground_gaussian, excited_gaussian,
+          threshold_mid, threshold_mid_err, ground_gaussian, excited_gaussian,
           ground_data, excited_data, iq_data
+
+          Note: threshold_mid_err is the 1-σ uncertainty on `threshold_mid`, estimated via GMM responsibilities.
+          On the other hand, 'sigmas' contains the sigma value of each gaussian in the double gaussian fit.
         """
         # fit GMM
         gmm = GaussianMixture(n_components=2)
@@ -795,6 +942,26 @@ class SSFTempCalcAndPlots:
         #compute midpoint threshold
         threshold_mid = 0.5 * (means[ground_gaussian] + means[excited_gaussian])
 
+        # ----------------------------- Estimate each gaussian mean’s uncertainty using responsibilities ------------------------
+        all_i = iq_data.reshape(-1, 1)
+        resp = gmm.predict_proba(all_i)  # shape = (Nshots, 2)
+        rg = resp[:, ground_gaussian]  # “ground” responsibility per shot
+        re = resp[:, excited_gaussian]  # “excited” responsibility per shot
+
+        N_g = rg.sum()  # effective number of points in ground cluster
+        N_e = re.sum()  # effective number of points in excited cluster
+
+        sigma_g = sigmas[ground_gaussian]
+        sigma_e = sigmas[excited_gaussian]
+
+        # σ_{μ_g} ≈ σ_g / sqrt(N_g), σ_{μ_e} ≈ σ_e / sqrt(N_e)
+        sigma_mu_g = sigma_g / np.sqrt(N_g) if N_g > 0 else 0.0
+        sigma_mu_e = sigma_e / np.sqrt(N_e) if N_e > 0 else 0.0
+
+        # Propagate into σ_threshold = ½ * sqrt(σ_{μ_g}² + σ_{μ_e}²)
+        threshold_mid_err = 0.5 * np.sqrt(sigma_mu_g ** 2 + sigma_mu_e ** 2)
+        #------------------------------------------------------------------------
+
         # Split using threshold
         ground_data = iq_data[iq_data <= threshold_mid]
         excited_data = iq_data[iq_data > threshold_mid]
@@ -803,16 +970,19 @@ class SSFTempCalcAndPlots:
         Pg = len(ground_data) / len(iq_data)
         Pe = len(excited_data) / len(iq_data)
 
-        return Pg, Pe, gmm, means, sigmas, weights, threshold_mid, ground_gaussian, excited_gaussian, ground_data, excited_data, iq_data
+        return Pg, Pe, gmm, means, sigmas, weights, threshold_mid, threshold_mid_err, ground_gaussian, excited_gaussian, ground_data, excited_data, iq_data
 
     def ssf_fit_two_gaussians_midpoint(self, ig_new: np.ndarray, ie_new: np.ndarray):
         """
         Fits a two component GMM (double gaussian) to all shots (ig_new + ie_new) and chooses the
         threshold as the midpoint between the two component means.
+        Also returns a 1-σ error on that midpoint.
 
         Returns
         -------
         thresh           : (μ_g + μ_e) / 2
+        thresh_err       : The 1-sigma uncertainty on that midpoint threshold, estimated by
+                           propagating the GMM-responsibility-based errors of each Gaussian mean.
         means, sigmas    : np.ndarray shape (2,)
         weights          : np.ndarray shape (2,)
         ground_idx       : component index for ground cluster
@@ -831,11 +1001,29 @@ class SSFTempCalcAndPlots:
 
         ground_idx, excited_idx = np.argsort(means)  # smaller mean = ground
         mu_g, mu_e = means[ground_idx], means[excited_idx]
+        sigma_g = sigmas[ground_idx]
+        sigma_e = sigmas[excited_idx]
 
         # Mid‑point threshold
         threshold = 0.5 * (mu_g + mu_e)
 
-        return threshold, means, sigmas, weights, ground_idx, excited_idx
+        #-----------Estimate σ_mean for each Gaussian via responsibilities (the uncertaintiy of each mean)----
+        resp = gmm.predict_proba(all_i)  # shape = (Nshots, 2)
+        rg = resp[:, ground_idx]  # “ground” responsibility per shot
+        re = resp[:, excited_idx]  # “excited” responsibility per shot
+
+        N_g = rg.sum()  # effective number of points in ground cluster
+        N_e = re.sum()  # effective number of points in excited cluster
+
+        # σ_{μ_g} ≈ σ_g / sqrt(N_g), σ_{μ_e} ≈ σ_e / sqrt(N_e)
+        sigma_mu_g = sigma_g / np.sqrt(N_g) if N_g > 0 else 0.0
+        sigma_mu_e = sigma_e / np.sqrt(N_e) if N_e > 0 else 0.0
+
+        # Propagate into σ_threshold = ½ * sqrt(σ_{μ_g}² + σ_{μ_e}²)
+        thresh_err = 0.5 * np.sqrt(sigma_mu_g ** 2 + sigma_mu_e ** 2)
+        # ---------------------------------------------------------------------------------------------------
+
+        return threshold, thresh_err, means, sigmas, weights, ground_idx, excited_idx
 
     def process_ssf_and_qfreq_data_qtemps(self, Science_Qubits, paths):
         """
@@ -845,6 +1033,7 @@ class SSFTempCalcAndPlots:
             "qspec_path": qspec_path,
             "ssf_path"  : ssf_path,
             "qfreq_MHz" : freq_cache[fq_key],     # MHz
+            "qfreq_MHz_err": (1-sigma error on that freq),
             "ig_new"   : ig_new_cache[ss_key],
             "ie_new": ie_new_cache[ss_key],
             "data_timestamp" : timestamp_ssf_cache[ss_key].timestamp(), # unix-timestamps
@@ -853,7 +1042,8 @@ class SSFTempCalcAndPlots:
         The dictionary contains matched up SSF and g-e qubit spec h5 files that are within a specified number of seconds (tolerance_seconds). That way the user can
         use the returned dictionary to calculate qubit temperatures using SSF data and the qubit freq that was measured at around the same time that the SSF data was taken.
         """
-        freq_cache = {}  # for qubit freqs
+        freq_cache = {}  # for qubit freqs (MHz)
+        freq_err_cache = {}  # 1-σ error (std) on that freq
         ig_new_cache = {}  # for ground state roated I data (SSF)
         ie_new_cache = {}  # for first excited state roated I data (SSF)
         timestamp_ssf_cache = {}  # for ssf data time stamps (qubit temperature time stamps)
@@ -877,6 +1067,7 @@ class SSFTempCalcAndPlots:
 
                     for i in range(qspec_n):
                         freq_cache[(h5_paths[i], QubitIndex)] = qspec_freqs[i]
+                        freq_err_cache[(h5_paths[i], QubitIndex)] = qspec_errs[i]
                 except Exception as e:
                     print(f"Skipped QSpec scan in {dataset} for Q{QubitIndex}: {e}")
 
@@ -930,6 +1121,7 @@ class SSFTempCalcAndPlots:
                     "qspec_path": qspec_path,
                     "ssf_path": ssf_path,
                     "qfreq_MHz": freq_cache[fq_key],  # MHz
+                    "qfreq_MHz_err": freq_err_cache[fq_key],  # 1-σ (standard deviation) fit error on "qfreq_MHz_err"
                     "ig_new": ig_new_cache[ss_key],
                     "ie_new": ie_new_cache[ss_key],
                     "data_timestamp": timestamp_ssf_cache[ss_key].timestamp(),  # unix-timestamps

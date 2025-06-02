@@ -152,17 +152,17 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
 
     # ------------------------------------------------------------------- Calculate Qubit Temperatures ----------------------------------------------------------------------------
     if qtemp_method_flags["Qtemps_viaSSF_gmeans_thresh"]: # Default method of the function - fits only PREPARED GROUND STATE SSF data to a double gaussian ; threshold = midpoint of the two gaussian means
-        all_qubit_temps, all_qubit_times, fit_results  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.8, use_gessf_thresh_only = False, fallback_to_threshold = False)
+        all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.8, use_gessf_thresh_only = False, fallback_to_threshold = False)
     elif qtemp_method_flags["Qtemps_viaSSF_ge_thresh"]: # Fits both GROUND STATE and PREPARED EXCITED STATE SSF data to a double gaussian ; threshold = midpoint of the two gaussian means
-        all_qubit_temps, all_qubit_times, fit_results  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.8, use_gessf_thresh_only = True, fallback_to_threshold = False)
+        all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.8, use_gessf_thresh_only = True, fallback_to_threshold = False)
     elif qtemp_method_flags["Qtemps_viaSSF_with_fallback"]: # Uses Default method and if the fit fails it falls back to the method that fits both GROUND STATE and PREPARED EXCITED STATE SSF data to a double gaussian
-        all_qubit_temps, all_qubit_times, fit_results  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.8, use_gessf_thresh_only = False, fallback_to_threshold = True)
+        all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.8, use_gessf_thresh_only = False, fallback_to_threshold = True)
 
     #---------------------------------------------------------------------------- SSF Qubit Temps Analysis -------------------------------------------------------------------------
     #------------------------------------------------------------------ Temperatures vs Time Scatter Plot --------------------------------------------------------------------------
     if analysis_flags["Qtemps_vs_time_viaSSF"]:
         path_saveplots = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/Qtemps_vs_Time"
-        SSF_calcs_obj.plot_qubit_temperatures_vs_time_ssf(all_qubit_temps, all_qubit_times, path_saveplots)
+        SSF_calcs_obj.plot_qubit_temperatures_vs_time_ssf(all_qubit_temps, all_qubit_times, all_qubit_temps_errs, path_saveplots, plot_error_bars = True)
 
     #------------------------------------------------------------ Check General SSF Double Gaussian Fits and g-e threshold ---------------------------------------------------------
     if analysis_flags["ge_thresh_check_ssf"]:

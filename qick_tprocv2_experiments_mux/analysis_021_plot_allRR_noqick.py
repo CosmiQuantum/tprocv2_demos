@@ -1758,7 +1758,7 @@ class PlotRR_noQick:
 
                         # Compute propagated 1-sigma error (std) on T_mK
                         try:
-                            T_err = self.compute_temperature_error(
+                            T_err = self.compute_temperature_error_RPM(
                                 A1=A_amplitude1,
                                 A2=A_amplitude2,
                                 Pe=P_e,
@@ -1811,7 +1811,7 @@ class PlotRR_noQick:
         T_mK = T_K * 1000  # Convert to millikelvin
         return T_K, T_mK, P_e, qubit_freq_MHz
 
-    def compute_temperature_error(self, A1, A2, Pe, T_mK, qubit_freq_MHz, sigma_A1, sigma_A2, sigma_qfreq_MHz):
+    def compute_temperature_error_RPM(self, A1, A2, Pe, T_mK, qubit_freq_MHz, sigma_A1, sigma_A2, sigma_qfreq_MHz):
         """
         Propagate the 1-sigma uncertainties in A1, A2 and f_ge
         into a 1-sigma uncertainty on T_mK, given you already know
