@@ -45,7 +45,7 @@ zero_qubit_drive_gain = False
 constant_zeno_pulse = True
 adapt_starked_qubit_freq = False
 wait_for_res_ring_up = True
-n= 14 #3000
+n= 1000 #3000
 save_r = 1                           # how many rounds to save after
 signal = 'None'                      # 'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization
 save_figs = True                     # save plots for everything as you go along the RR script?
@@ -60,7 +60,7 @@ qubit_to_increase_reps_for = 0       # only has impact if previous line is True
 multiply_qubit_reps_by = 2           # only has impact if the line two above is True
 increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
 increase_steps_to_ef = 600
-Qs_to_look_at = [1]#0,1,2,3,4,5        # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,3,4,5 ]#0,1,2,3,4,5        # only list the qubits you want to do the RR for
 # study = 'QZE'
 # sub_study = 'dephasing_from_higher_energy_levels'
 # substudy_txt_notes = ('Lets give this an initial test and make sure all of these experiments work well, on qubit 2')
@@ -69,7 +69,7 @@ sub_study = 'ftoh_study'
 substudy_txt_notes = ('Checking for parity states')
 # set which of the following you'd like to run to 'True'
 run_flags = {"res_spec_ge": False, "q_spec_ge": False, "rabi_ge": False, "res_spec_ef": False, "res_spec_fh": False,
-             "q_spec_ef": False,"q_spec_fh": True, "rabi_ef": False,
+             "q_spec_ef": True,"q_spec_fh": True, "rabi_ef": False,
              "rabi_fh": False, "t1_ge": False, "t1_fg": False, "t1_fe": False,
              "t2r": False,"t2e": False, "dephased": False,"dephased_with_ef_noise": False,"dephased_with_fh_noise": False}
 #Folders
@@ -320,15 +320,15 @@ while j < n:
                                             signal,
                                             save_figs, experiment, live_plot, increase_qubit_steps_ef,
                                             increase_steps_to_ef)
-            # fhqspec_I, fhqspec_Q, fhqspec_freqs, fhqspec_I_fit, fhqspec_Q_fit, fhqubit_freq, sys_config_qspec_fh = fh_q_spec.run(
-            #     experiment.soccfg,
-            #     experiment.soc)
-
-            fhqspec_I, fhqspec_Q, fhqspec_freqs,  sys_config_qspec_fh = fh_q_spec.run(
+            fhqspec_I, fhqspec_Q, fhqspec_freqs, fhqspec_I_fit, fhqspec_Q_fit, fhqubit_freq, sys_config_qspec_fh = fh_q_spec.run(
                 experiment.soccfg,
                 experiment.soc)
-            # experiment.qubit_cfg['qubit_freq_fh'][QubitIndex] = float(fhqubit_freq)
-            # print('Qubit ', QubitIndex + 1, ' f-h Freq: ', float(fhqubit_freq))
+
+            # fhqspec_I, fhqspec_Q, fhqspec_freqs,  sys_config_qspec_fh = fh_q_spec.run(
+            #     experiment.soccfg,
+            #     experiment.soc)
+            experiment.qubit_cfg['qubit_freq_fh'][QubitIndex] = float(fhqubit_freq)
+            print('Qubit ', QubitIndex + 1, ' f-h Freq: ', float(fhqubit_freq))
 
             del fh_q_spec
 
