@@ -1209,7 +1209,7 @@ class combined_Qtemp_studies:
 
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
         os.makedirs(out_dir, exist_ok=True)
-        err_filter = 300 # used to filter out datapoints with an error above this value
+        err_filter = 200 # used to filter out datapoints with an error above this value
 
         # Processing RPMs Qubit Temperature Results and putting it into dicts:
         times_RPM = {q: [] for q in range(self.number_of_qubits)}
