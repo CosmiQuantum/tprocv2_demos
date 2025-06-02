@@ -1863,7 +1863,7 @@ class PlotRR_noQick:
         return sigma_T_mK # Temperature calculation error via rabi population measurements
 
     def plot_qubit_temperatures_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6, yaxis_min = 10, yaxis_max = 950, restrict_time_xaxis = False,
-                                             plot_extra_event_lines = False, rad_events_plot_lines = True, plot_error_bars=False):
+                                             plot_extra_event_lines = False, rad_events_plot_lines = True, plot_error_bars=False, fit_to_line=False):
         """
         Plots qubit temperatures vs. time for each qubit in a separate subplot (max 3 columns).
 
@@ -1873,6 +1873,7 @@ class PlotRR_noQick:
         - restrict_time_xaxis : do you want to plot only a certain region of time?
         - plot_extra_event_lines: do you want to plot vertical dashed lines to mark extra events that happened (besides source instalation)?
         - plot_error_bars: do you want to plot error bars?
+        - fit_to_line : do you want to perform linar fits? Right now it is set up to fit two linear fits: (1)full heater ramp up 2)and up to 120 mK)
         """
 
         # Define the colors you want for each qubit
