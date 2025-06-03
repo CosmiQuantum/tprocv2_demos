@@ -83,7 +83,7 @@ comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_tim
     # "2025-05-13",
     # "2025-05-14"
     # ]
-# Heater temperature steps
+# dates during Heater temperature steps
 target_dates_qtemps_RPM = ["2025-05-07", "2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16"]
 
 # target_dates_qtemps_RPM = ["2025-05-05"]
