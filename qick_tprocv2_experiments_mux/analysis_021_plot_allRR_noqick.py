@@ -1905,7 +1905,7 @@ class PlotRR_noQick:
         # Convert those x back to datetime
         dt_fit = [datetime.datetime.fromtimestamp(upto_this_time + (h * 3600)) for h in x_fit_line]
 
-        ax.plot(dt_fit,y_fit_line, linestyle='-', linewidth=2, color=color, label=f"{label_prefix}: slope={m:.1f} mK/h, R²={r2:.2f}")
+        ax.plot(dt_fit,y_fit_line, linestyle='-', linewidth=2, color=color, label=f"{label_prefix}: slope={m:.1f} mK/h, R²={r2:.2f}", zorder=10)
 
     def plot_qubit_temperatures_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6, yaxis_min = 10, yaxis_max = 950, restrict_time_xaxis = False,
                                              plot_extra_event_lines = False, rad_events_plot_lines = True, plot_error_bars=False, fit_to_line=False):
@@ -2101,44 +2101,71 @@ class PlotRR_noQick:
                         legend_handles.append(Line2D([0], [0], color=color, linestyle='--', label=label, alpha=1.0))
                         used_labels.add(label)
 
-            if fit_to_line:
+            if fit_to_line: # fit data to a line, choosing where to start and stop based on event time stamps
                 for dt, label in heater_events:
                     if label == "20mK step":
                         t20_ts = dt.timestamp()
                     elif label == "120mK step":
                         t120_ts = dt.timestamp()
+                    elif label == "60mK step":
+                        t60_ts = dt.timestamp()
 
                 # build two masks, then call the fitting helper twice
                 times_arr = np.array([t.timestamp() for t in times])
                 temps_arr = np.array(temps)
 
-                mask_full = (times_arr >= t20_ts)
-                mask_to120 = (times_arr >= t20_ts) & (times_arr <= t120_ts)
+                if q == 4:
+                    mask_full = (times_arr >= t20_ts)
+                    mask_to120 = (times_arr >= t20_ts) & (times_arr <= t120_ts)
 
-                # Black line = full ramp
-                self.do_linear_fit_and_plot_qtemps_RPM(
-                    ax=ax,
-                    times_arr=times_arr,
-                    temps_arr=temps_arr,
-                    upto_this_time=t20_ts,
-                    mask=mask_full,
-                    color='black',
-                    label_prefix="Full ramp")
-                # Red line = up to 120 mK
-                self.do_linear_fit_and_plot_qtemps_RPM(
-                    ax=ax,
-                    times_arr=times_arr,
-                    temps_arr=temps_arr,
-                    upto_this_time=t20_ts,
-                    mask=mask_to120,
-                    color='green',
-                    label_prefix="Up to 120 mK")
-                ax.legend(fontsize=9, loc='upper left')
+                    # Black line = full ramp
+                    self.do_linear_fit_and_plot_qtemps_RPM(
+                        ax=ax,
+                        times_arr=times_arr,
+                        temps_arr=temps_arr,
+                        upto_this_time=t20_ts,
+                        mask=mask_full,
+                        color='black',
+                        label_prefix="Full ramp")
+                    # Red line = up to 120 mK
+                    self.do_linear_fit_and_plot_qtemps_RPM(
+                        ax=ax,
+                        times_arr=times_arr,
+                        temps_arr=temps_arr,
+                        upto_this_time=t20_ts,
+                        mask=mask_to120,
+                        color='green',
+                        label_prefix="Up to 120 mK")
+                    ax.legend(fontsize=9, loc='upper left')
+
+                if q == 0:
+                    mask_full = (times_arr >= t60_ts)
+                    mask_to120 = (times_arr >= t60_ts) & (times_arr <= t120_ts)
+
+                    # Black line = full ramp
+                    self.do_linear_fit_and_plot_qtemps_RPM(
+                        ax=ax,
+                        times_arr=times_arr,
+                        temps_arr=temps_arr,
+                        upto_this_time=t60_ts,
+                        mask=mask_full,
+                        color='black',
+                        label_prefix="Full ramp")
+                    # Red line = up to 120 mK
+                    self.do_linear_fit_and_plot_qtemps_RPM(
+                        ax=ax,
+                        times_arr=times_arr,
+                        temps_arr=temps_arr,
+                        upto_this_time=t60_ts,
+                        mask=mask_to120,
+                        color='green',
+                        label_prefix="Up to 120 mK")
+                    ax.legend(fontsize=9, loc='upper left')
 
 
                 # Add a combined legend (only once)
                 if q == 0:
-                    fig.legend(handles= legend_handles,)
+                    fig.legend(handles= legend_handles)
 
         # Add a shared X label
         for ax in axes:
