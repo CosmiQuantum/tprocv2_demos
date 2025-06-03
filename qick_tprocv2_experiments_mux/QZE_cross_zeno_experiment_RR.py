@@ -45,7 +45,7 @@ zero_qubit_drive_gain = False
 constant_zeno_pulse = True
 adapt_starked_qubit_freq = False
 wait_for_res_ring_up = True
-n= 1000 #3000
+n= 100 #3000
 save_r = 1                           # how many rounds to save after
 signal = 'None'                      # 'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization
 save_figs = True                     # save plots for everything as you go along the RR script?
@@ -68,8 +68,12 @@ study = 'Parity_studies'
 sub_study = 'ftoh_study'
 substudy_txt_notes = ('Checking for parity states')
 # set which of the following you'd like to run to 'True'
-run_flags = {"res_spec_ge": False, "q_spec_ge": False, "rabi_ge": False, "res_spec_ef": False, "res_spec_fh": False,
-             "q_spec_ef": True,"q_spec_fh": True, "rabi_ef": False,
+# run_flags = {"res_spec_ge": False, "q_spec_ge": False, "rabi_ge": False, "res_spec_ef": False, "res_spec_fh": False,
+#              "q_spec_ef": True,"q_spec_fh": True, "rabi_ef": False,
+#              "rabi_fh": False, "t1_ge": False, "t1_fg": False, "t1_fe": False,
+#              "t2r": False,"t2e": False, "dephased": False,"dephased_with_ef_noise": False,"dephased_with_fh_noise": False}
+run_flags = {"res_spec_ge": True, "q_spec_ge": True, "rabi_ge": True, "res_spec_ef": True, "res_spec_fh": False,
+             "q_spec_ef": True,"q_spec_fh": True, "rabi_ef": True,
              "rabi_fh": False, "t1_ge": False, "t1_fg": False, "t1_fe": False,
              "t2r": False,"t2e": False, "dephased": False,"dephased_with_ef_noise": False,"dephased_with_fh_noise": False}
 #Folders
@@ -299,14 +303,14 @@ while j < n:
             del efrabi
 
         ############################################# f-h Res spec ############################################
-        if run_flags["res_spec_fh"]:
-            res_specFH = ResonanceSpectroscopyFH(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
-                                                 experiment)
-            res_freqs_fh, freq_pts_fh, freq_center_fh, amps_fh, sys_config_rspec_fh = res_specFH.run()
-            experiment.readout_cfg['res_freq_fh'] = res_freqs
-            print('Qubit ', QubitIndex + 1, ' f-h res freq: ', res_freqs[QubitIndex])
-
-            del res_specFH
+        # if run_flags["res_spec_fh"]:
+        #     res_specFH = ResonanceSpectroscopyFH(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
+        #                                          experiment)
+        #     res_freqs_fh, freq_pts_fh, freq_center_fh, amps_fh, sys_config_rspec_fh = res_specFH.run()
+        #     experiment.readout_cfg['res_freq_fh'] = res_freqs
+        #     print('Qubit ', QubitIndex + 1, ' f-h res freq: ', res_freqs[QubitIndex])
+        #
+        #     del res_specFH
 
         ######################################## f-h Qubit spec ###############################################
         if run_flags["q_spec_fh"]:
@@ -531,17 +535,17 @@ while j < n:
                 res_data_ef[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_rspec_ef
 
             # ---------------------Collect f-h Res Spec Results----------------
-            if run_flags["res_spec_fh"]:
-                res_data_fh[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
-                    time.mktime(datetime.datetime.now().timetuple()))
-                res_data_fh[QubitIndex]['freq_pts'][j - batch_num * save_r - 1] = freq_pts_fh
-                res_data_fh[QubitIndex]['freq_center'][j - batch_num * save_r - 1] = freq_center_fh
-                res_data_fh[QubitIndex]['Amps'][j - batch_num * save_r - 1] = amps_fh
-                res_data_fh[QubitIndex]['Found Freqs'][j - batch_num * save_r - 1] = res_freqs_fh
-                res_data_fh[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-                res_data_fh[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-                res_data_fh[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                res_data_fh[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_rspec_fh
+            # if run_flags["res_spec_fh"]:
+            #     res_data_fh[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
+            #         time.mktime(datetime.datetime.now().timetuple()))
+            #     res_data_fh[QubitIndex]['freq_pts'][j - batch_num * save_r - 1] = freq_pts_fh
+            #     res_data_fh[QubitIndex]['freq_center'][j - batch_num * save_r - 1] = freq_center_fh
+            #     res_data_fh[QubitIndex]['Amps'][j - batch_num * save_r - 1] = amps_fh
+            #     res_data_fh[QubitIndex]['Found Freqs'][j - batch_num * save_r - 1] = res_freqs_fh
+            #     res_data_fh[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+            #     res_data_fh[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+            #     res_data_fh[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+            #     res_data_fh[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_rspec_fh
 
             # ---------------------Collect g-e QSpec Results----------------
             if run_flags["q_spec_ge"]:
