@@ -32,7 +32,7 @@ from analysis_optimization_report import optimization_report_ge
 # Run Configurations and Optimization Params
 
 #---- General/overarching parameters
-max_datataking_round_index = 100
+max_datataking_round_index = 10
 n_rounds_to_save_after = 1  # how many rounds to save after
 signal = 'None'  # 'I', or 'Q' depending on where the signal is
 save_figs = False  # whether to save plots
@@ -43,8 +43,8 @@ qick_verbose = False
 debug_mode = True  # if True, errors will stop the run immediately
 live_plot = False
 study = 'FastRelEx'
-sub_study = 'source_on_fast_relaxation_substudy5'
-substudy_txt_notes = '137Cs source is in ~1.5 ft away from fridge, wedged next to bar. 500k reps and 100 rounds of fast relaxation data only. Pi pulse gain is zero. Delay 2 us. Relax Delay 3 us.'
+sub_study = 'source_off_fast_relaxation_parameter_testing_substudy_corrected14'
+substudy_txt_notes = 'No source. Delay 2 us and relax delay set to 5 us. 70% of nominal gain on res pulse. 500k reps and 10 rounds of fast relaxation data only.'
 Qs_to_look_at = [4]  # list of qubits to process
 
 #---- Res spec parameters
@@ -57,6 +57,7 @@ Qs_to_look_at = [4]  # list of qubits to process
 # 05/28 parameters
 res_leng_vals = [4, 14, 6, 10, 5, 7]
 res_gain = [1,1,1,0.7,0.8,0.6]
+#res_gain = [1,1,1,0.7,0.56,0.6]
 freq_offsets = [0.1, -0.25, -0.2, 0.2, -0.1, -0.1]
 
 qubit_freqs_ef = [None]*6
