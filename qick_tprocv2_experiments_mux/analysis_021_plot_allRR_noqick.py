@@ -2135,7 +2135,7 @@ class PlotRR_noQick:
                         used_labels.add(label)
 
             if fit_to_line:  # fit data to a line, choosing where to start and stop based on event time stamps
-                # 1) pull out all three relevant heater events
+                # pull out all three relevant heater events
                 for dt, label in heater_events:
                     if label == "20mK step":
                         t20_ts = dt.timestamp()
@@ -2152,13 +2152,24 @@ class PlotRR_noQick:
 
                 # for Q5, start at 20 mK and go all the way to 160 mK for the “full” fit,
                 # but only to 120 mK for the “up to 120 mK” fit
+                drop_some_pts = True
                 if q == 4:
                     start_ts = t20_ts
                     final_full_ts = t160_ts
                     final_120_ts = t120_ts
 
-                    mask_full = (times_arr >= start_ts) & (times_arr <= final_full_ts)
-                    mask_to120 = (times_arr >= start_ts) & (times_arr <= final_120_ts)
+                    if drop_some_pts:
+                        drop_region = ((times_arr >= t20_ts) & (times_arr <= t60_ts) & (temps_arr > 130.0))
+                        # basic time masks
+                        base_mask_full = (times_arr >= start_ts) & (times_arr <= final_full_ts)
+                        base_mask_to120 = (times_arr >= start_ts) & (times_arr <= final_120_ts)
+                        # now remove any points in drop_region
+                        mask_full = base_mask_full & (~drop_region)
+                        mask_to120 = base_mask_to120 & (~drop_region)
+                    else:
+                        mask_full = (times_arr >= start_ts) & (times_arr <= final_full_ts)
+                        mask_to120 = (times_arr >= start_ts) & (times_arr <= final_120_ts)
+
                     color_full = "black"
                     color_to120 = "green"
                     prefix_full = "Full ramp"
@@ -2171,8 +2182,17 @@ class PlotRR_noQick:
                     final_full_ts = t160_ts
                     final_120_ts = t120_ts
 
-                    mask_full = (times_arr >= start_ts) & (times_arr <= final_full_ts)
-                    mask_to120 = (times_arr >= start_ts) & (times_arr <= final_120_ts)
+                    if drop_some_pts:
+                        drop_region = ((times_arr >= t20_ts) & (times_arr <= t60_ts) & (temps_arr > 130.0))
+                        # basic time masks
+                        base_mask_full = (times_arr >= start_ts) & (times_arr <= final_full_ts)
+                        base_mask_to120 = (times_arr >= start_ts) & (times_arr <= final_120_ts)
+                        # remove any points in drop_region
+                        mask_full = base_mask_full & (~drop_region)
+                        mask_to120 = base_mask_to120 & (~drop_region)
+                    else:
+                        mask_full = (times_arr >= start_ts) & (times_arr <= final_full_ts)
+                        mask_to120 = (times_arr >= start_ts) & (times_arr <= final_120_ts)
                     color_full = "black"
                     color_to120 = "green"
                     prefix_full = "Full ramp"
