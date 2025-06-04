@@ -2154,12 +2154,12 @@ class PlotRR_noQick:
                 # but only to 120 mK for the “up to 120 mK” fit
                 drop_some_pts = True
                 if q == 4:
-                    start_ts = t20_ts
+                    start_ts = times_arr.min()#t20_ts
                     final_full_ts = t160_ts
                     final_120_ts = t120_ts
 
                     if drop_some_pts:
-                        drop_region = ((times_arr >= t20_ts) & (times_arr <= t60_ts) & (temps_arr > 130.0))
+                        drop_region = ((times_arr >= start_ts) & (times_arr <= t60_ts) & (temps_arr > 122.0))
                         # basic time masks
                         base_mask_full = (times_arr >= start_ts) & (times_arr <= final_full_ts)
                         base_mask_to120 = (times_arr >= start_ts) & (times_arr <= final_120_ts)
@@ -2178,12 +2178,12 @@ class PlotRR_noQick:
                 # for Q1, start at 60 mK and again go to 160 mK for the “full” fit,
                 # but only to 120 mK for the “up to 120 mK” fit
                 elif q == 0:
-                    start_ts = t20_ts
+                    start_ts = times_arr.min() #t20_ts
                     final_full_ts = t160_ts
                     final_120_ts = t120_ts
 
                     if drop_some_pts:
-                        drop_region = ((times_arr >= t20_ts) & (times_arr <= t60_ts) & (temps_arr > 115.0))
+                        drop_region = ((times_arr >= start_ts) & (times_arr <= t60_ts) & (temps_arr > 122.0))
                         # basic time masks
                         base_mask_full = (times_arr >= start_ts) & (times_arr <= final_full_ts)
                         base_mask_to120 = (times_arr >= start_ts) & (times_arr <= final_120_ts)
