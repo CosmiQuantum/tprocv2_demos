@@ -2178,7 +2178,7 @@ class PlotRR_noQick:
                 # for Q1, start at 60 mK and again go to 160 mK for the “full” fit,
                 # but only to 120 mK for the “up to 120 mK” fit
                 elif q == 0:
-                    start_ts = t60_ts
+                    start_ts = t20_ts
                     final_full_ts = t160_ts
                     final_120_ts = t120_ts
 
