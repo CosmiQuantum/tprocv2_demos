@@ -2145,6 +2145,8 @@ class PlotRR_noQick:
                         t120_ts = dt.timestamp()
                     elif label == "160mK step":
                         t160_ts = dt.timestamp()
+                    elif label == "100mK step":
+                        t100_ts = dt.timestamp()
 
                 # turn existing lists of datetimes/temps into arrays of POSIX seconds
                 times_arr = np.array([t.timestamp() for t in times])
@@ -2160,6 +2162,7 @@ class PlotRR_noQick:
 
                     if drop_some_pts:
                         drop_region = ((times_arr >= start_ts) & (times_arr <= t60_ts) & (temps_arr > 122.0))
+
                         # basic time masks
                         base_mask_full = (times_arr >= start_ts) & (times_arr <= final_full_ts)
                         base_mask_to120 = (times_arr >= start_ts) & (times_arr <= final_120_ts)
@@ -2183,7 +2186,11 @@ class PlotRR_noQick:
                     final_120_ts = t120_ts
 
                     if drop_some_pts:
-                        drop_region = ((times_arr >= start_ts) & (times_arr <= t60_ts) & (temps_arr > 122.0))
+                        drop_region1 = ((times_arr >= start_ts) & (times_arr <= t60_ts) & (temps_arr > 122.0))
+                        drop_region2 = (times_arr >= t60_ts) & (times_arr <= t100_ts) & (temps_arr > 176.0)
+
+                        drop_region = drop_region1 | drop_region2
+
                         # basic time masks
                         base_mask_full = (times_arr >= start_ts) & (times_arr <= final_full_ts)
                         base_mask_to120 = (times_arr >= start_ts) & (times_arr <= final_120_ts)
