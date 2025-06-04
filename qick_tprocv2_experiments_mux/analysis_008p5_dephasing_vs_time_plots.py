@@ -307,11 +307,7 @@ class DephasingVsTime:
 
                         if len(I) > 0:
 
-                            noise_gains[q_key].extend([
-                                round(float(syst_config.split('noise_pulse_gain\': ')[-1].split(',')[0]), 4)])
-                            if return_freq_offset:
-                                freq_offsets[q_key].extend([
-                                    round(float(syst_config.split('noise_offset_freq_from_ef\': ')[-1].split('}')[0]), 4)])
+
                             T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                                fit_data=True)
                             #try:
@@ -322,17 +318,17 @@ class DephasingVsTime:
                             # except Exception as e:
                             #     print(f"good fit not found, error: {e}")
                             #     continue
-                            #T2E_cfg = exp_config['SpinEcho_ge']
-                            # if t2e_est < 0:
-                            #     print("The value is negative, continuing...")
-                            #     continue
-                            # if t2e_est > 300:
-                            #     print("The value is above 300 us, this is a bad fit, continuing...")
-                            #     continue
-                            # if t2e_err >= 0.8 * t2e_est:
-                            #     print(
-                            #         f"Skipping T2R = {t2e_est:.3f} µs because its error {t2e_err:.3f} µs is >= 80% of its value.")
-                            #     continue
+                            T2E_cfg = exp_config['SpinEcho_ge']
+                            if t2e_est < 0:
+                                print("The value is negative, continuing...")
+                                continue
+                            if t2e_est > 300:
+                                print("The value is above 300 us, this is a bad fit, continuing...")
+                                continue
+                            if t2e_err >= 0.2 * t2e_est:
+                                print(
+                                    f"Skipping T2R = {t2e_est:.3f} µs because its error {t2e_err:.3f} µs is >= 80% of its value.")
+                                continue
                             t2e_vals[q_key].extend([t2e_est])
                             t2e_errs[q_key].extend([t2e_err])
 
@@ -340,7 +336,12 @@ class DephasingVsTime:
                             Qs[q_key].extend([Q])
                             Delay_Times[q_key].extend([delay_times])
                             date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
-
+                            noise_gains[q_key].extend([
+                                round(float(syst_config.split('noise_pulse_gain\': ')[-1].split(',')[0]), 4)])
+                            if return_freq_offset:
+                                freq_offsets[q_key].extend([
+                                    round(float(syst_config.split('noise_offset_freq_from_ef\': ')[-1].split('}')[0]),
+                                          4)])
                             del T2E_class_instance
                 del H5_class_instance
         if return_errs:

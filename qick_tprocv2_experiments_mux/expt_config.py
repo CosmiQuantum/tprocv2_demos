@@ -362,6 +362,28 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
             "noise_offset_freq_from_ef": 0,
         },
+        "T1_fe_with_ef_noise": {
+            "reps": 100,  # 300
+            "rounds": 1,  # 1
+            "start": [0.0] * 6,  # [us]
+            "stop": [200] * 6,  # [250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
+            "steps": 60,
+            "relax_delay": 600,  # [us] ### Should be >10x T1!
+            "wait_time": 0.0,  # [us]
+            "list_of_all_qubits": list_of_all_qubits,
+            "noise_offset_freq_from_ef": 0,
+        },
+        "T1_fe_with_fh_noise": {
+            "reps": 100,  # 300
+            "rounds": 1,  # 1
+            "start": [0.0] * 6,  # [us]
+            "stop": [200] * 6,  # [250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
+            "steps": 60,
+            "relax_delay": 600,  # [us] ### Should be >10x T1!
+            "wait_time": 0.0,  # [us]
+            "list_of_all_qubits": list_of_all_qubits,
+            "noise_offset_freq_from_ef": 0,
+        },
         "T1_ge_with_fh_noise": {
             "reps": 100, #300
             "rounds": 1, #1

@@ -57,7 +57,7 @@ live_plot = False                    # for live plotting do "visdom" in comand l
 fit_data = True                     # fit the data here and save or plot the fits?
 save_data_h5 = True                  # save all of the data to h5 files?
 verbose = True                       # print everything to the console in real time, good for debugging, bad for memory
-debug_mode = False                    # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
+debug_mode = True                    # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 thresholding = False                 # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 increase_qubit_reps = False          # if you want to increase the reps for a qubit, set to True
 qubit_to_increase_reps_for = 0       # only has impact if previous line is True
@@ -71,7 +71,7 @@ substudy_txt_notes = ('Lets give this an initial test and make sure all of these
 # set which of the following you'd like to run to 'True'
 run_flags = {"res_spec_ge": True, "q_spec_ge": True, "rabi_ge": True, "res_spec_ef": True, "res_spec_fh": False,
              "q_spec_ef": True,"q_spec_fh": False, "rabi_ef": True,
-             "rabi_fh": False, "t1_ge": True,  "t1_fe": True,"t1_ge_w_noise": True,  "t1_fe_w_noise": False,
+             "rabi_fh": False, "t1_ge": True,  "t1_fe": True,"t1_ge_w_noise": True,  "t1_fe_w_noise": True,
              "t2r": True,"t2e": True,"t2r_w_noise": True,"t2e_w_noise": True,
              "dephased": True,"dephased_with_ef_noise": True,"dephased_with_fh_noise": True}
 #Folders
@@ -565,7 +565,7 @@ while j < n:
                                          live_plot=live_plot, fit_data=fit_data,
                                          increase_qubit_reps=increase_qubit_reps,
                                          qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                                         multiply_qubit_reps_by=multiply_qubit_reps_by, expt_name='T1_fe')
+                                         multiply_qubit_reps_by=multiply_qubit_reps_by, expt_name='T1_fe_with_ef_noise')
                 (t1_est_fe_w_noise, t1_err_fe_w_noise, t1_I_fe_w_noise, t1_Q_fe_w_noise,
                  t1_delay_times_fe_w_noise, q1_fit_exponential_fe_w_noise, sys_config_t1_fe_w_noise) = t1_fe_w_noise.run(
                     thresholding=False)

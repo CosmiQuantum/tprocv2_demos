@@ -72,7 +72,7 @@ top_folder_dates = ['2025-05-29_07-22-46', '2025-05-29_09-00-02']
 
 #top_folder_dates = ['2025-05-29_23-07-00']
 #top_folder_dates = ['2025-05-29_23-50-15']
-top_folder_dates = ['2025-05-30_12-59-18']
+top_folder_dates = ['Statistics_ef_noise_gain_0p02_100nsNoisePulse_2025-06-03_21-49-19']
 # t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, FRIDGE)
 # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
