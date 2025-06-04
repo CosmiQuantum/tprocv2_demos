@@ -2183,7 +2183,7 @@ class PlotRR_noQick:
                     final_120_ts = t120_ts
 
                     if drop_some_pts:
-                        drop_region = ((times_arr >= t20_ts) & (times_arr <= t60_ts) & (temps_arr > 122.0))
+                        drop_region = ((times_arr >= t20_ts) & (times_arr <= t60_ts) & (temps_arr > 115.0))
                         # basic time masks
                         base_mask_full = (times_arr >= start_ts) & (times_arr <= final_full_ts)
                         base_mask_to120 = (times_arr >= start_ts) & (times_arr <= final_120_ts)
