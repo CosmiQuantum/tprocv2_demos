@@ -288,12 +288,12 @@ class T2RProgramFHNoise(AveragerProgramV2):
 class T2RMeasurementWithNoise:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_figs, experiment = None,
                  live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
-                 multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True):
+                 multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, noise_type='ef'):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.fit_data = fit_data
-        self.expt_name = "Ramsey_ge"
+        self.expt_name = f"Ramsey_ge_with_{noise_type}_noise"
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]

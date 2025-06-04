@@ -115,7 +115,7 @@ class QICK_experiment:
                 #"qubit_freq_ge": [4184.14, 3821.144, 4156.57, 4459.19, 4471.12, 4997.86], #old
                 #"qubit_freq_ge": [4184.13, 3821.142, 4156.58, 4459.19, 4471.10, 4997.87], #old
                 #"qubit_freq_ge": [4184.15, 3821.156, 4156.88, 4459.12, 4471.18, 4998.04],  # Freqs of Qubit g/e Transition, old
-                "qubit_gain_ge": [0.1] * 6,#[0.04, 0.12, 0.06, 0.04, 0.13, 0.18],#[0.05] * 6, #[1] * 6,
+                "qubit_gain_ge": [0.01] * 6,#[0.04, 0.12, 0.06, 0.04, 0.13, 0.18],#[0.05] * 6, #[1] * 6,
                 "qubit_ampl_gain_ge": [0.025] *6,
                 "qubit_pi_len": 0.11, # Olivia May 17th
                 # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
@@ -125,7 +125,7 @@ class QICK_experiment:
                 # Q4 not fixed, looks like it shifted quite a lot
                 # [MHz] Freqs of Qubit e/f Transition
                 "qubit_freq_ftores": [4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17],
-                "qubit_gain_ef": [0.03, 0.14, 0.04, 0.17, 0.11, 0.08], #Arianna 3/27. 0.03
+                "qubit_gain_ef": [0.01, 0.01, 0.01, 0.01, 0.01, 0.02], #Arianna 3/27. 0.03
                 "qubit_gain_fh": [0.03, 0.14, 0.04, 0.17, 0.11, 0.08],  # Olivia May 28
                 'qubit_gain_ftores': [1]*6,#[0.2, 0.14, 0.04, 0.17, 0.13, 0.08],
                 # [0.01, 0.05, 0.05, 0.05, 0.01, 0.5], # [DAC units] Pulse Gain
@@ -134,18 +134,18 @@ class QICK_experiment:
                 "qubit_phase": 0,  # [deg]
                 #"sigma": [0.15]*6,  # [us] for Gaussian Pulse (5+10 DAC atten for qubit)
                 "sigma_ampl": [0.03, 0.03, 0.05, 0.04, 0.05, 0.05], #DAC 0 04/07
-                "sigma": [0.13, 0.15, 0.22, 0.14, 0.19, 0.14],  # DAC 2 04/07 [us] for Gaussian Pulse (5+10 DAC atten for qubit)
+                "sigma": [0.03, 0.03, 0.03, 0.03, 0.03, 0.03],  # olivia adjusted June 3
                 #"sigma": [0.05, 0.09, 0.07, 0.065, 0.09, 0.3],  # Goal: cut sigma in half [us] for Gaussian Pulse (5+4 DAC atten for qubit)
                 # "pi_amp": [0.92, 0.87, 0.75, 0.73, 0.77, 0.78], # old RR values
-                "sigma_ef": [0.09, 0.16, 0.16, 0.15, 0.15, 0.10],  # [us] for Gaussian Pulse, #Arianna 3/27
+                "sigma_ef": [0.09, 0.02, 0.02, 0.15, 0.15, 0.10],  # [us] for Gaussian Pulse, #Arianna 3/27
                 "pi_amp": [0.6748, 0.634499, 0.76542, 0.7754, 0.6546, 0.9], #Joyce 3/11
                 "pi_amp_ampl": [0.5942, 0.634499, 0.76542, 0.7754, 0.55393, 0.9], # Joyce 04/07 DAC 0
                 #"pi_amp": [1.0, 0.93, 0.77, 0.8, 0.81, 0.9], # Eyeballed by Sara today (5+10 DAC atten for qubit)
                 #"pi_amp": [0.7, 0.95, 0.75, 0.78, 0.77, 0.8],  # With shorter sigma (5+4 DAC instead of 5+5 DAC atten for qubit)
                 "pi_ef_amp": [0.7085, 0.6817, 0.6617, 0.7018, 0.6751, 0.6951], # Arianna 3/27
                 "pi_fh_amp": [0.2, 0.2, 0.2, 0.2, 0.2, 0.2],  # Olivia 5/25
-                "noise_pulse_gain": 0.8, #olivia 5/27
-                "noise_pulse_len": 20,  # olivia 5/27
+                "noise_pulse_gain": 0.02, #olivia 5/27
+                "noise_pulse_len": 0.1,  # olivia 5/27, cant go above 100us on the qubit channel or i get pulse lineght out of range err
                 "noise_pulse_ramp_time":3, #us
                 "qubit_mixer_freq": 4300,  # [MHz]
 

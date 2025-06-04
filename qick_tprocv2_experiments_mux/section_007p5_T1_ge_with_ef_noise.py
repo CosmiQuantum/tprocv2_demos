@@ -131,13 +131,13 @@ class T1MeasurementWithNoise:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, signal, save_figs, experiment = None,
                  live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
                  multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, save_shots=False,
-                 set_relax_delay=False, relax_delay=1000):
+                 set_relax_delay=False, relax_delay=1000, noise_type='ef'):
 
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
         self.outerFolder = outerFolder
-        self.expt_name = "T1_ge"
+        self.expt_name = f"T1_ge_with_{noise_type}_noise"
         self.fit_data = fit_data
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.experiment = experiment

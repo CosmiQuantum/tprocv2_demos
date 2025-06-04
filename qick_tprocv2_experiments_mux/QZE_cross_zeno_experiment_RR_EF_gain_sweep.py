@@ -86,7 +86,7 @@ subStudyFolder = os.path.join(studyFolder, sub_study)
 if not os.path.exists(subStudyFolder):
     os.makedirs(subStudyFolder)
 
-formatted_datetime = 'Statistics_ef_noise_gain_0p02_100nsNoisePulse_'+ datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+formatted_datetime = 'ef_gain_sweep_100nsNoisePulse_'+ datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 dataSetFolder = os.path.join(subStudyFolder, formatted_datetime)
 optimizationFolder = os.path.join(dataSetFolder, 'optimization')
 studyFolder = os.path.join(dataSetFolder, 'study_data')
@@ -192,7 +192,8 @@ j = 0
 qubit_freqs_ge = np.zeros(6)
 qubit_freqs_ef = np.zeros(6)
 res_freq_ge = np.zeros(6)
-while j < n:
+gains = np.linspace(-0.05,0.05, 10)
+for gain in gains:
     for QubitIndex in Qs_to_look_at:
         experiment = QICK_experiment(optimizationFolder, DAC_attenuator1=5, DAC_attenuator2=10, ADC_attenuator=10,
                                      fridge=FRIDGE)
@@ -209,7 +210,7 @@ while j < n:
         experiment.readout_cfg['res_gain_fh'] = res_gains_fh
 
         experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
-
+        experiment.qubit_cfg['noise_pulse_gain']=gain
         ################################################# g-e Res spec ####################################################
         if run_flags["res_spec_ge"]:
             try:
@@ -240,7 +241,6 @@ while j < n:
         ################################################### g-e Qubit spec ##################################################
         if run_flags["q_spec_ge"]:
             try:
-                #experiment.qubit_cfg['qubit_gain_ge'][QubitIndex]=1
                 q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs, experiment,
                                            live_plot, verbose=False, logger=None, qick_verbose=True, increase_reps=False,
                                            increase_reps_to=500)
@@ -636,7 +636,7 @@ while j < n:
                                                multiply_qubit_reps_by=multiply_qubit_reps_by,
                                                verbose=verbose, logger=rr_logger)
                 (t2dephased_ef_noise_est, t2dephased_ef_noise_err, t2dephased_ef_noise_I, t2dephased_ef_noise_Q, t2dephased_ef_noise_delay_times,
-                 fit_t2dephased_ef_noise, sys_config_t2dephased_ef_noise) = dephase_ef_noise.run(thresholding=thresholding, gain=0.02, freq_offset=0)
+                 fit_t2dephased_ef_noise, sys_config_t2dephased_ef_noise) = dephase_ef_noise.run(thresholding=thresholding, gain=gain, freq_offset=0)
                 del dephase_ef_noise
 
             except Exception as e:

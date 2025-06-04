@@ -235,8 +235,8 @@ class DephasingMeasurement:
                         self.logger.info(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
                         self.config["reps"] *=multiply_qubit_reps_by
                         # self.config['ramsey_freq'] = 2 * self.config['ramsey_freq']
-            if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2E configuration: ', self.config)
-            self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} T2E configuration: {self.config}')
+            if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} DD configuration: ', self.config)
+            self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} DD configuration: {self.config}')
 
     def t2_fit(self, x_data, I, Q, verbose = False, guess=None, plot=False):
         #fitting code adapted from https://github.com/qua-platform/py-qua-tools/blob/37c741ade5a8f91888419c6fd23fd34e14372b06/qualang_tools/plot/fitting.py
