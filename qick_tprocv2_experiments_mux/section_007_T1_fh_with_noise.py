@@ -52,6 +52,7 @@ class FH_T1Program(AveragerProgramV2):
                        phase=cfg['qubit_phase'],
                        gain=cfg['pi_ef_amp'],
                        )
+        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma_fh'], length=cfg['sigma_fh'] * 4, even_length=False)
         self.add_pulse(ch=qubit_ch, name="fh_qubit_pulse",
                        style="arb",
                        envelope="ramp",
@@ -85,7 +86,7 @@ class FH_T1Program(AveragerProgramV2):
         self.pulse(ch=self.cfg["qubit_ch"], name="ge_qubit_pulse", t=0)  # play ge drive pulse
         self.delay_auto(t=0.01, tag='waiting after ge drive')  # Wait a small time after ge drive pulse is complete
         self.pulse(ch=self.cfg["qubit_ch"], name="ef_qubit_pulse", t=0)  # f-e drive pulse
-        self.delay_auto(t=0.01, tag='waiting after ge drive')  # Wait a small time after ge drive pulse is complete
+        self.delay_auto(t=0.01, tag='waiting after ef drive')  # Wait a small time after ge drive pulse is complete
         self.pulse(ch=self.cfg["qubit_ampl_ch"], name="noise_pulse", t=0)
         self.pulse(ch=self.cfg["qubit_ch"], name="fh_qubit_pulse", t=0)  # fh drive pulse
         self.delay_auto(t=cfg['wait_time'] + 0.01, tag='wait')  # wait some amount of delay_time after driving to f

@@ -36,7 +36,7 @@ class FH_AmplitudeRabiExperiment:
 
 
     def run(self, soccfg, soc):
-        print(self.config)
+
         amp_rabi = AmplitudeRabiProgram(soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
 
         if self.live_plot:
@@ -281,15 +281,16 @@ class AmplitudeRabiProgram(AveragerProgramV2):
                        phase=cfg['qubit_phase'],
                        gain=cfg['pi_amp'],
                        )
+        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma_ef'], length=cfg['sigma_ef'] * 4, even_length=False)
         self.add_pulse(ch=qubit_ch, name="pi_ef",
                        style="arb",
                        envelope="ge_ramp",
                        freq=cfg['qubit_freq_ef'],
                        phase=cfg['qubit_phase'],
-                       gain=cfg['pi_amp'],
+                       gain=cfg['pi_ef_amp'],
                        )
 
-        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma_ef'], length=cfg['sigma_ef'] * 4, even_length=False)
+        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma_fh'], length=cfg['sigma_fh'] * 4, even_length=False)
         self.add_pulse(ch=qubit_ch, name="qubit_pulse",
                        style="arb",
                        envelope="ramp",

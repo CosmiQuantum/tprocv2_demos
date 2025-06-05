@@ -138,7 +138,7 @@ class QICK_experiment:
                 #"sigma": [0.05, 0.09, 0.07, 0.065, 0.09, 0.3],  # Goal: cut sigma in half [us] for Gaussian Pulse (5+4 DAC atten for qubit)
                 # "pi_amp": [0.92, 0.87, 0.75, 0.73, 0.77, 0.78], # old RR values
                 "sigma_ef": [0.09, 0.02, 0.02, 0.15, 0.15, 0.10],  # [us] for Gaussian Pulse, #Arianna 3/27
-                "sigma_fh": [0.09, 0.02, 0.02, 0.15, 0.15, 0.10],
+                "sigma_fh": [0.09, 0.02, 0.014, 0.15, 0.15, 0.10],
                 "pi_amp": [0.6748, 0.634499, 0.76542, 0.7754, 0.6546, 0.9], #Joyce 3/11
                 "pi_amp_ampl": [0.5942, 0.634499, 0.76542, 0.7754, 0.55393, 0.9], # Joyce 04/07 DAC 0
                 #"pi_amp": [1.0, 0.93, 0.77, 0.8, 0.81, 0.9], # Eyeballed by Sara today (5+10 DAC atten for qubit)

@@ -46,7 +46,7 @@ if FRIDGE == "QUIET":
             "rounds": 1,
             "start": -2,  # [MHz]
             "step_size": 0.05,  # [MHz]
-            "steps": 100,
+            "steps": 70,
             "relax_delay": 10,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -60,7 +60,15 @@ if FRIDGE == "QUIET":
             "relax_delay": 10, #1000, # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
-
+        # "qubit_spec_ge": { #test the high gain thing
+        #     "reps": 2000,  # 300
+        #     "rounds": 1,  # 10
+        #     "start": [3700]*6,  # [MHz] #-300 #-15
+        #     "stop": [4250]*6,  # [MHz] #+15
+        #     "steps": 2000,  # 100
+        #     "relax_delay": 10,  # 1000, # [us]
+        #     "list_of_all_qubits": list_of_all_qubits,
+        # },
         "qubit_spec_ge_extended": {
             "reps": 500,  # 300
             "rounds": 1,  # 10
@@ -105,15 +113,23 @@ if FRIDGE == "QUIET":
         },
 
         "qubit_spec_fh": {
-            "reps": 2000,  # 300
-            "rounds": 1,  # 10
-            "start": list(ef_freqs - 240),  # [MHz] #-300
-            "stop": list(ef_freqs - 100),  # [MHz]
-            "steps": 1000,  # 1000
+            "reps": 2000,
+            "rounds": 1,
+            "start": list(ef_freqs - 210), #270
+            "stop": list(ef_freqs - 170), # 80
+            "steps": 400,
             "relax_delay": 1000,  # 1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
-
+        # "qubit_spec_fh": { #test the high gain thing
+        #     "reps": 2000,  # 300
+        #     "rounds": 1,  # 10
+        #     "start": [3700]*6,  # [MHz] #-300 #-15
+        #     "stop": [4250]*6,  # [MHz] #+15
+        #     "steps": 2000,  # 100
+        #     "relax_delay": 1000,  # 1000, # [us]
+        #     "list_of_all_qubits": list_of_all_qubits,
+        # },
         "qubit_spec_ftores": {
             "reps": 10000,  # 300
             "rounds": 1,  # 10
@@ -139,7 +155,7 @@ if FRIDGE == "QUIET":
             "rounds": 1,  # 5
             "start": [0] * 6,  # [DAC units]
             "stop": [1] * 6,#[1.0] * 6,  # [DAC units]
-            "steps": 100, #50,
+            "steps": 80, #50,
             "relax_delay": 1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -186,22 +202,22 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ef": {
-            "reps": 120,
+            "reps": 200,
             "reps2": 700, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
             "stop": [1] * 6,#[1.0] * 6,  # [DAC units]
-            "steps": 150,
+            "steps": 100,
             "relax_delay": 1000,  # [us]
         },
 
         "power_rabi_fh": {
-            "reps": 200,
-            "reps2": 700,  # this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
+            "reps": 1000,
+            "reps2": 700, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
-            "stop": [1.0] * 6,  # [DAC units]
-            "steps": 150,
+            "stop": [1] * 6,#[1.0] * 6,  # [DAC units]
+            "steps": 100,
             "relax_delay": 1000,  # [us]
         },
         "T1_ge": {
@@ -226,10 +242,10 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
         },
         "T1_fh": {
-            "reps": 100,  # 300
+            "reps": 300,  # 300
             "rounds": 1,  # 1
             "start": [0.0] * 6,  # [us]
-            "stop": [200] * 6,  # [250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
+            "stop": [50] * 6,  # [250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
             "steps": 150,
             "relax_delay": 1000,  # [us] ### Should be >10x T1!
             "wait_time": 0.0,  # [us]
@@ -374,26 +390,37 @@ if FRIDGE == "QUIET":
             "noise_offset_freq": 0,
         },
         "T1_fe_with_fh_noise": {
-            "reps": 100,  # 300
+            "reps": 300,  # 300
             "rounds": 1,  # 1
             "start": [0.0] * 6,  # [us]
-            "stop": [200] * 6,  # [250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
-            "steps": 60,
+            "stop": [100] * 6,  # [250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
+            "steps": 120,
             "relax_delay": 1000,  # [us] ### Should be >10x T1!
             "wait_time": 0.0,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
             "noise_offset_freq": 0,
         },
         "T1_ge_with_fh_noise": {
-            "reps": 100, #300
+            "reps": 200, #300
             "rounds": 1, #1
             "start": [0.0] * 6,  # [us]
-            "stop": [200]*6, #[250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
+            "stop": [350]*6, #[250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
             "steps": 60,
             "relax_delay": 1000,  # [us] ### Should be >10x T1!
             "wait_time": 0.0,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
-            "noise_offset_freq_from_fh": 0,
+            "noise_offset_freq": 0,
+        },
+        "T1_fh_with_fh_noise": {
+            "reps": 300,  # 300
+            "rounds": 1,  # 1
+            "start": [0.0] * 6,  # [us]
+            "stop": [50] * 6,  # [250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
+            "steps": 120,
+            "relax_delay": 1000,  # [us] ### Should be >10x T1!
+            "wait_time": 0.0,  # [us]
+            "list_of_all_qubits": list_of_all_qubits,
+            "noise_offset_freq": 0,
         },
         "Ramsey_ge_with_ef_noise": {
             "reps": 500, #300
@@ -408,14 +435,15 @@ if FRIDGE == "QUIET":
             "noise_offset_freq": 0,
         },
         "Ramsey_ge_with_fh_noise": {
-            "reps": 200, #300
-            "rounds": 1,#10
-            "start": [0.0] * 6, # [us]
-            "stop":  [60] * 6, # [us]
-            "steps": 100,
+            "reps": 500,  # 300
+            "rounds": 1,  # 10
+            "start": [0.0] * 6,  # [us]
+            "stop": [60] * 6,  # [us]
+            "steps": 200,
             "ramsey_freq": 0.12,  # [MHz]
-            "relax_delay": 1000, # [us] the time to wait to let the qubit to relax to gnd again after exciting it (make it way above T1)
-            "wait_time": 0.0, # [us]
+            "relax_delay": 1000,
+            # [us] the time to wait to let the qubit to relax to gnd again after exciting it (make it way above T1)
+            "wait_time": 0.0,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
             "noise_offset_freq": 0,
         },
@@ -432,7 +460,7 @@ if FRIDGE == "QUIET":
             "noise_offset_freq": 0
         },
         "SpinEcho_ge_with_fh_noise": {
-            "reps": 200,
+            "reps": 400,
             "rounds": 1,
             "start": [0.0] * 6, # [us]
             "stop":  [80] * 6, # [us]
@@ -482,7 +510,7 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
         },
         "Dephasing_ge_with_fh_noise": {
-            "reps": 200,
+            "reps": 400,
             "rounds": 1,
             "start": [0.0] * 6,  # [us]
             "stop": [100] * 6,  # [us]

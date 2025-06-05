@@ -73,11 +73,11 @@ substudy_txt_notes = ('Lets give this an initial test and make sure all of these
 # set which of the following you'd like to run to 'True'
 run_flags = {"res_spec_ge": True, "q_spec_ge": True, "rabi_ge": True,
              "res_spec_ef": True, "q_spec_ef": True, "rabi_ef": True,
-             "res_spec_fh": True, "q_spec_fh": True, "rabi_fh": True,
-             "t1_ge": True,  "t1_fe":  True, "t1_fh": True,
-             "t1_ge_w_noise": True, "t1_fe_w_noise": True, "t1_fh_w_noise": True,
-             "t2r": True,"t2e": True, "dephased": True,
-             "t2r_w_noise": True,"t2e_w_noise": True, "dephased_with_fh_noise": True}
+             "res_spec_fh": True, "q_spec_fh": True, "rabi_fh": False,
+             "t1_ge": False,  "t1_fe":  False, "t1_fh": False,
+             "t1_ge_w_noise": False, "t1_fe_w_noise": False, "t1_fh_w_noise": False,
+             "t2r": False,"t2e": False, "dephased": False,
+             "t2r_w_noise": False,"t2e_w_noise": False, "dephased_with_fh_noise": False}
 #Folders
 if not os.path.exists("/data/QICK_data/run6b/"):
     os.makedirs("/data/QICK_data/run6b/")
@@ -90,7 +90,7 @@ subStudyFolder = os.path.join(studyFolder, sub_study)
 if not os.path.exists(subStudyFolder):
     os.makedirs(subStudyFolder)
 
-formatted_datetime = 'fh_noise_transition_tests' + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+formatted_datetime = 'test_ge_qspec_sequence_' + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 dataSetFolder = os.path.join(subStudyFolder, formatted_datetime)
 optimizationFolder = os.path.join(dataSetFolder, 'optimization')
 studyFolder = os.path.join(dataSetFolder, 'study_data')
@@ -199,7 +199,8 @@ j = 0
 qubit_freqs_ge = np.zeros(6)
 qubit_freqs_ef = np.zeros(6)
 res_freq_ge = np.zeros(6)
-while j < n:
+gains=[0.1, 0.2, 0.3]
+for gain in gains:
     for QubitIndex in Qs_to_look_at:
         experiment = QICK_experiment(optimizationFolder, DAC_attenuator1=5, DAC_attenuator2=10, ADC_attenuator=10,
                                      fridge=FRIDGE)
@@ -215,6 +216,8 @@ while j < n:
         experiment.readout_cfg['res_gain_fh'] = res_gains_fh
 
         experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
+
+        experiment.qubit_cfg['qubit_gain_ge'][QubitIndex]=gain
 
         ################################################# g-e Res spec ####################################################
         if run_flags["res_spec_ge"]:
@@ -495,7 +498,7 @@ while j < n:
                 t1_fh = FH_T1Measurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
                                          save_figs,
                                          experiment=experiment,
-                                         live_plot=live_plot, fit_data=fit_data,
+                                         live_plot=live_plot, fit_data=False,
                                          increase_qubit_reps=increase_qubit_reps,
                                          qubit_to_increase_reps_for=qubit_to_increase_reps_for,
                                          multiply_qubit_reps_by=multiply_qubit_reps_by, expt_name='T1_fh')
@@ -1062,12 +1065,7 @@ while j < n:
                 saver_res.save_to_h5('Res_ef')
                 del saver_res
                 del res_data_ef
-            # --------------------------save f-h Res Spec-----------------------
-            if run_flags["res_spec_fh"]:
-                saver_res = Data_H5(subStudyDataFolder, res_data_fh, batch_num, save_r)
-                saver_res.save_to_h5('Res_fh')
-                del saver_res
-                del res_data_ef
+
             # --------------------------save g-e QSpec-----------------------
             if run_flags["q_spec_ge"]:
                 saver_qspec = Data_H5(subStudyDataFolder, qspec_data, batch_num, save_r)
@@ -1085,7 +1083,7 @@ while j < n:
             # --------------------------save f-h QSpec-----------------------
             if run_flags["q_spec_fh"]:
                 saver_qspec = Data_H5(subStudyDataFolder, qspec_data_fh, batch_num, save_r)
-                saver_qspec.save_to_h5('QSpec_fh')
+                saver_qspec.save_to_h5('QSpec_ge')
                 del saver_qspec
                 del qspec_data_fh
 

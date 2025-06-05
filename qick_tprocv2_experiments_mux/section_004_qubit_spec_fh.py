@@ -297,7 +297,7 @@ class FHPulseProbeSpectroscopyProgram(AveragerProgramV2):
                        length=cfg['qubit_length_ge'],
                        freq=cfg['qubit_freq_fh'],
                        phase=0,
-                       gain=cfg['pi_fh_amp'],
+                       gain=cfg['qubit_gain_fh'],
                        )
 
         self.add_loop("freqloop", cfg["steps"])
