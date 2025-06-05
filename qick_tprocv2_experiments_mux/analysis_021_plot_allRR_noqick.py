@@ -1982,9 +1982,12 @@ class PlotRR_noQick:
         ]
 
         # Optional: Restrict plot to specific date and time window. Will only go into effect if restrict_time_xaxis = True
-        date_to_plot = datetime.date(2025, 4, 18)
-        time_start = datetime.time(0, 0)  # Start of the window
-        time_end = datetime.time(23, 59)  # End of the window
+        # date_to_plot = datetime.date(2025, 4, 17)
+        # start_datetime = datetime.time(0, 0)  # Start of the window
+        # end_datetime = datetime.time(23, 59)
+
+        start_datetime = datetime.datetime(2025, 4, 19, 0, 0)
+        end_datetime = datetime.datetime(2025, 5, 10, 23, 59)
 
         for q in range(num_qubits):
             times = []
@@ -2014,9 +2017,15 @@ class PlotRR_noQick:
                 continue
 
             if restrict_time_xaxis:
-                start_time = datetime.datetime.combine(date_to_plot, time_start)
-                end_time = datetime.datetime.combine(date_to_plot, time_end)
-                #Use finer ticks with hour detail
+
+                #for a single day
+                # start_time = datetime.datetime.combine(date_to_plot, start_datetime)
+                # end_time = datetime.datetime.combine(date_to_plot, end_datetime)
+                # #Use finer ticks with hour detail
+                # ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+                # ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d-%H'))
+
+                # For multiple Days
                 ax.xaxis.set_major_locator(mdates.AutoDateLocator())
                 ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d-%H'))
             else:
@@ -2063,7 +2072,7 @@ class PlotRR_noQick:
 
             if rad_events_plot_lines:
                 for vtime, label in events_radiation:
-                    if not restrict_time_xaxis or (restrict_time_xaxis and start_time <= vtime <= end_time):
+                    if not restrict_time_xaxis or (restrict_time_xaxis and start_datetime <= vtime <= end_datetime):
                         ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
                         ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90, verticalalignment='top',
                                 horizontalalignment='right', fontsize=10)
@@ -2115,13 +2124,13 @@ class PlotRR_noQick:
                 extra_events += heater_events
 
             if restrict_time_xaxis:
-                ax.set_xlim(start_time, end_time)
+                ax.set_xlim(start_datetime, end_datetime)
                 ax.set_autoscale_on(False)
 
             if plot_extra_event_lines:
                 # Only keep events within the plot window if restrict_time_xaxis is True
                 if restrict_time_xaxis:
-                    extra_events = [(vtime, label) for vtime, label in extra_events if start_time <= vtime <= end_time]
+                    extra_events = [(vtime, label) for vtime, label in extra_events if start_datetime <= vtime <= end_datetime]
 
                 # Map each unique label to a unique color
                 unique_labels = list(dict.fromkeys(label for _, label in extra_events))

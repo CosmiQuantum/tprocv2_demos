@@ -52,10 +52,46 @@ comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_tim
 ############################################################################## Set up ##############################################################################
 #-------------------------------------------- For qubit temperature calculations via rabi population measurements ---------------------------------------------------
 # Specify which dates you want to loop through. It will process all the files inside all the folders that contain these dates in their title.
+# target_dates_qtemps_RPM = [
+#     "2025-04-16",
+#     "2025-04-17",
+#     "2025-04-18",
+#     "2025-04-19",
+#     "2025-04-20",
+#     "2025-04-21", #starts source on (Co)
+#     "2025-04-22",
+#     "2025-04-23", #switched source (to Cs)
+#     "2025-04-24",
+#     "2025-04-25",
+#     "2025-04-26",
+#     "2025-04-27",
+#     "2025-04-28", #Cs source moved closer
+#     "2025-04-29",
+#     "2025-04-30",
+#     "2025-05-01",
+#     "2025-05-02",
+#     "2025-05-03",
+#     "2025-05-04", # Cs source removed. No sources in Cleanroom.
+#     "2025-05-05",
+#     "2025-05-06",
+#     "2025-05-07",
+#     "2025-05-08",
+#     "2025-05-09",
+#     "2025-05-10",
+#     "2025-05-11",
+#     "2025-05-12",
+#     "2025-05-13",
+#     "2025-05-14",
+#     "2025-05-15",
+#     "2025-05-16"
+#     ]
+# dates during Heater temperature steps
+#target_dates_qtemps_RPM = ["2025-05-07", "2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16"]
+
+# if you want to look at just one specific date
+# target_dates_qtemps_RPM = ["2025-05-05"]
+
 target_dates_qtemps_RPM = [
-    "2025-04-16",
-    "2025-04-17",
-    "2025-04-18",
     "2025-04-19",
     "2025-04-20",
     "2025-04-21", #starts source on (Co)
@@ -77,19 +113,8 @@ target_dates_qtemps_RPM = [
     "2025-05-07",
     "2025-05-08",
     "2025-05-09",
-    "2025-05-10",
-    "2025-05-11",
-    "2025-05-12",
-    "2025-05-13",
-    "2025-05-14",
-    "2025-05-15",
-    "2025-05-16"
+    "2025-05-10"
     ]
-# dates during Heater temperature steps
-#target_dates_qtemps_RPM = ["2025-05-07", "2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16"]
-
-# if you want to look at just one specific date
-# target_dates_qtemps_RPM = ["2025-05-05"]
 
 base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study"
 
@@ -126,7 +151,7 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
 
     if analysis_flags["Qtemps_vs_time_viaRPM"]:
         #------------------------------------------------------------------- Qubit temperatures vs time via RPMs ----------------------------------------------------
-        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 15, yaxis_max = 950, restrict_time_xaxis = False,
+        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 15, yaxis_max = 950, restrict_time_xaxis = True,
                                                          plot_extra_event_lines = True, rad_events_plot_lines = True, plot_error_bars = True, fit_to_line=False)
 
     if analysis_flags["Qtemps_hists_viaRPM"]:
