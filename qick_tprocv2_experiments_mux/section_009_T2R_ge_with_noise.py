@@ -189,7 +189,7 @@ class T2RProgram(AveragerProgramV2):
         self.add_pulse(ch=noise_ch, name="noise_pulse",
                        style="const",
                        length=cfg["noise_pulse_len"],
-                       freq=cfg['qubit_freq_ef'] + cfg['noise_offset_freq_from_ef'],
+                       freq=cfg['qubit_freq_ef'] + cfg['noise_offset_freq'],
                        phase=cfg['qubit_phase'],
                        gain=cfg['noise_pulse_gain'],
                        mode='periodic'
@@ -258,7 +258,7 @@ class T2RProgramFHNoise(AveragerProgramV2):
         self.add_pulse(ch=noise_ch, name="noise_pulse",
                        style="const",
                        length=cfg["noise_pulse_len"],
-                       freq=cfg['qubit_freq_fh'] + cfg['noise_offset_freq_from_fh'],
+                       freq=cfg['qubit_freq_fh'] + cfg['noise_offset_freq'],
                        phase=cfg['qubit_phase'],
                        gain=cfg['noise_pulse_gain'],
                        mode='periodic'
@@ -464,8 +464,10 @@ class T2RMeasurementWithNoise:
         t2r_err = out['T2'][1] #in ns
         return fit_type(x, popt) * y_normal, t2r_est, t2r_err, plot_sig
 
-    def run(self, thresholding=False, noise_type='ef'):
+    def run(self, thresholding=False, noise_type='ef', offset=None):
         now = datetime.datetime.now()
+        if offset is not None:
+            self.config['noise_offset_freq'] = round(offset,4)
         if 'fh' in noise_type:
             ramsey = T2RProgramFHNoise(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
                          cfg=self.config)

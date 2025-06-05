@@ -8,63 +8,7 @@ import copy
 import visdom
 import logging
 
-class FG_T1Program(AveragerProgramV2):
-    def _initialize(self, cfg):
-
-        ro_ch = cfg['ro_ch']
-        res_ch = cfg['res_ch']
-        qubit_ch = cfg['qubit_ch']
-        self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
-                         mux_freqs=cfg['res_freq_ef'],
-                         mux_gains=cfg['res_gain_ef'],
-                         mux_phases=cfg['res_phase'],
-                         mixer_freq=cfg['mixer_freq'])
-
-        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ef'], cfg['ro_phase']):
-            self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
-
-        self.add_pulse(ch=res_ch, name="res_pulse",
-                       style="const",
-                       length=cfg["res_length"],
-                       mask=cfg["list_of_all_qubits"],
-                       )
-
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
-
-        #normal w01 pulse
-        self.add_gauss(ch=qubit_ch, name="ge_ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
-        self.add_pulse(ch=qubit_ch, name="ge_qubit_pulse",
-                       style="arb",
-                       envelope="ge_ramp",
-                       freq=cfg['qubit_freq_ge'],
-                       phase=cfg['qubit_phase'],
-                       gain=cfg['pi_amp'],
-                       )
-        #w12 pulse now
-        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma_ef'], length=cfg['sigma_ef'] * 4, even_length=False)
-        self.add_pulse(ch=qubit_ch, name="ef_qubit_pulse",
-                       style="arb",
-                       envelope="ramp",
-                       freq=cfg['qubit_freq_ef'],
-                       phase=cfg['qubit_phase'],
-                       gain=cfg['pi_ef_amp'],
-                       )
-
-        ef_freq=cfg['qubit_freq_ef']
-        ge_freq = cfg['qubit_freq_ge']
-        print(f'Used in f-g T1 drive: ge qubit freq={str(ge_freq)}  ef qubit freq={str(ef_freq)}')
-
-        self.add_loop("waitloop", cfg["steps"])
-
-    def _body(self, cfg):
-        self.pulse(ch=self.cfg["qubit_ch"], name="ge_qubit_pulse", t=0)  # play ge drive pulse
-        self.delay_auto(t=0.01, tag='waiting after ge drive')  # Wait a small time after ge drive pulse is complete
-        self.pulse(ch=self.cfg["qubit_ch"], name="ef_qubit_pulse", t=0)  # f-e drive pulse
-        self.delay_auto(t=cfg['wait_time'] + 0.01, tag='wait')  # wait some amount of delay_time after driving to f, then readout
-        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  #resonator probe pulse
-        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
-
-class FE_T1Program(AveragerProgramV2):
+class T1Program(AveragerProgramV2):
     def _initialize(self, cfg):
 
         ro_ch = cfg['ro_ch']
@@ -73,12 +17,11 @@ class FE_T1Program(AveragerProgramV2):
         noise_ch = cfg['qubit_ampl_ch']
 
         self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
-                         mux_freqs=cfg['res_freq_ef'],
-                         mux_gains=cfg['res_gain_ef'],
+                         mux_freqs=cfg['res_freq_ge'],
+                         mux_gains=cfg['res_gain_ge'],
                          mux_phases=cfg['res_phase'],
                          mixer_freq=cfg['mixer_freq'])
-
-        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ef'], cfg['ro_phase']):
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
 
         self.add_pulse(ch=res_ch, name="res_pulse",
@@ -88,30 +31,19 @@ class FE_T1Program(AveragerProgramV2):
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
-
-        #normal w01 pulse
-        self.add_gauss(ch=qubit_ch, name="ge_ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
-        self.add_pulse(ch=qubit_ch, name="ge_qubit_pulse",
+        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+        self.add_pulse(ch=qubit_ch, name="qubit_pulse",
                        style="arb",
-                       envelope="ge_ramp",
+                       envelope="ramp",
                        freq=cfg['qubit_freq_ge'],
                        phase=cfg['qubit_phase'],
                        gain=cfg['pi_amp'],
-                       )
-        #w12 pulse now
-        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma_ef'], length=cfg['sigma_ef'] * 4, even_length=False)
-        self.add_pulse(ch=qubit_ch, name="ef_qubit_pulse",
-                       style="arb",
-                       envelope="ramp",
-                       freq=cfg['qubit_freq_ef'],
-                       phase=cfg['qubit_phase'],
-                       gain=cfg['pi_ef_amp'],
                        )
         self.declare_gen(ch=noise_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
         self.add_pulse(ch=noise_ch, name="noise_pulse",
                        style="const",
                        length=cfg["noise_pulse_len"],
-                       freq=cfg['qubit_freq_ef'] + cfg['noise_offset_freq_from_ef'],
+                       freq=cfg['qubit_freq_ef'] + cfg['noise_offset_freq'],
                        phase=cfg['qubit_phase'],
                        gain=cfg['noise_pulse_gain'],
                        mode='periodic'
@@ -124,23 +56,18 @@ class FE_T1Program(AveragerProgramV2):
                        gain=0
                        )
 
-
         self.add_loop("waitloop", cfg["steps"])
 
     def _body(self, cfg):
-        self.pulse(ch=self.cfg["qubit_ch"], name="ge_qubit_pulse", t=0)  # play ge drive pulse
-        self.delay_auto(t=0.01, tag='waiting after ge drive')  # Wait a small time after ge drive pulse is complete
         self.pulse(ch=self.cfg["qubit_ampl_ch"], name="noise_pulse", t=0)
-        self.pulse(ch=self.cfg["qubit_ch"], name="ef_qubit_pulse", t=0)  # f-e drive pulse
-        self.delay_auto(t=cfg['wait_time'] + 0.01, tag='wait')  # wait some amount of delay_time after driving to f
-        self.pulse(ch=self.cfg["qubit_ch"], name="ge_qubit_pulse", t=0)  # play ge drive pulse to flip e to g
-        self.delay_auto(t=0.01, tag='waiting after eg drive')  # Wait a small time after ge drive pulse is complete then readout
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play probe pulse
+        self.delay_auto(cfg['wait_time'] + 0.01, tag='wait')  # wait_time after last pulse
         self.pulse(ch=self.cfg["qubit_ampl_ch"], name="stop_periodic_pulse", t=0)
         self.delay_auto(0.01)
-        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  #resonator probe pulse
+        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
-class EF_T1ProgramFHNoise(AveragerProgramV2):
+class T1ProgramFH(AveragerProgramV2):
     def _initialize(self, cfg):
 
         ro_ch = cfg['ro_ch']
@@ -149,12 +76,11 @@ class EF_T1ProgramFHNoise(AveragerProgramV2):
         noise_ch = cfg['qubit_ampl_ch']
 
         self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
-                         mux_freqs=cfg['res_freq_ef'],
-                         mux_gains=cfg['res_gain_ef'],
+                         mux_freqs=cfg['res_freq_ge'],
+                         mux_gains=cfg['res_gain_ge'],
                          mux_phases=cfg['res_phase'],
                          mixer_freq=cfg['mixer_freq'])
-
-        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ef'], cfg['ro_phase']):
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
 
         self.add_pulse(ch=res_ch, name="res_pulse",
@@ -164,30 +90,19 @@ class EF_T1ProgramFHNoise(AveragerProgramV2):
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
-
-        #normal w01 pulse
-        self.add_gauss(ch=qubit_ch, name="ge_ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
-        self.add_pulse(ch=qubit_ch, name="ge_qubit_pulse",
+        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+        self.add_pulse(ch=qubit_ch, name="qubit_pulse",
                        style="arb",
-                       envelope="ge_ramp",
+                       envelope="ramp",
                        freq=cfg['qubit_freq_ge'],
                        phase=cfg['qubit_phase'],
                        gain=cfg['pi_amp'],
-                       )
-        #w12 pulse now
-        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma_ef'], length=cfg['sigma_ef'] * 4, even_length=False)
-        self.add_pulse(ch=qubit_ch, name="ef_qubit_pulse",
-                       style="arb",
-                       envelope="ramp",
-                       freq=cfg['qubit_freq_ef'],
-                       phase=cfg['qubit_phase'],
-                       gain=cfg['pi_ef_amp'],
                        )
         self.declare_gen(ch=noise_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
         self.add_pulse(ch=noise_ch, name="noise_pulse",
                        style="const",
                        length=cfg["noise_pulse_len"],
-                       freq=cfg['qubit_freq_fh'] + cfg['noise_offset_freq_from_fh'],
+                       freq=cfg['qubit_freq_fh'] + cfg['noise_offset_freq'],
                        phase=cfg['qubit_phase'],
                        gain=cfg['noise_pulse_gain'],
                        mode='periodic'
@@ -200,32 +115,29 @@ class EF_T1ProgramFHNoise(AveragerProgramV2):
                        gain=0
                        )
 
-
         self.add_loop("waitloop", cfg["steps"])
 
     def _body(self, cfg):
-        self.pulse(ch=self.cfg["qubit_ch"], name="ge_qubit_pulse", t=0)  # play ge drive pulse
-        self.delay_auto(t=0.01, tag='waiting after ge drive')  # Wait a small time after ge drive pulse is complete
         self.pulse(ch=self.cfg["qubit_ampl_ch"], name="noise_pulse", t=0)
-        self.pulse(ch=self.cfg["qubit_ch"], name="ef_qubit_pulse", t=0)  # f-e drive pulse
-        self.delay_auto(t=cfg['wait_time'] + 0.01, tag='wait')  # wait some amount of delay_time after driving to f
-        self.pulse(ch=self.cfg["qubit_ch"], name="ge_qubit_pulse", t=0)  # play ge drive pulse to flip e to g
-        self.delay_auto(t=0.01, tag='waiting after eg drive')  # Wait a small time after ge drive pulse is complete then readout
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play probe pulse
+        self.delay_auto(cfg['wait_time'] + 0.01, tag='wait')  # wait_time after last pulse
         self.pulse(ch=self.cfg["qubit_ampl_ch"], name="stop_periodic_pulse", t=0)
         self.delay_auto(0.01)
-        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  #resonator probe pulse
+        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 
-class EF_T1MeasurementWithNoise:
+class T1MeasurementWithNoise:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, signal, save_figs, experiment = None,
                  live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
-                 multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, expt_name='ef_T1'):
+                 multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, save_shots=False,
+                 set_relax_delay=False, relax_delay=1000, noise_type='ef'):
+
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
         self.outerFolder = outerFolder
-        self.expt_name = expt_name
+        self.expt_name = f"T1_ge_with_{noise_type}_noise"
         self.fit_data = fit_data
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.experiment = experiment
@@ -235,6 +147,8 @@ class EF_T1MeasurementWithNoise:
         self.signal = signal
         self.save_figs = save_figs
         self.verbose = verbose
+        self.save_shots = save_shots
+        self.set_relax_delay = set_relax_delay
         self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
 
         if experiment is not None:
@@ -246,22 +160,20 @@ class EF_T1MeasurementWithNoise:
                         self.logger.info(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
                         if self.verbose: print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
                         self.config["reps"] *= multiply_qubit_reps_by
-            if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} {expt_name} configuration: {self.config}')
+            if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} T1 configuration: {self.config}')
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} T1 configuration: {self.config}')
+            if self.set_relax_delay:
+                self.config['relax_delay'] = relax_delay
+                print(f'set t1 relax delay to {relax_delay} us')
 
-    def run(self, thresholding=False, noise_type='ef'):
+    def run(self, thresholding=False, noise_type='ef', offset=None):
         now = datetime.datetime.now()
-        t1=''
-        if 'fg' in self.expt_name:
-            t1 = FG_T1Program(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
-        elif 'fe' in self.expt_name:
-            if 'fh' in noise_type:
-                t1 = EF_T1ProgramFHNoise(self.experiment.soccfg, reps=self.config['reps'],
-                                  final_delay=self.config['relax_delay'], cfg=self.config)
-            if 'ef' in noise_type:
-                t1 = FE_T1Program(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
-        else:
-            print('Please pass fg or fe in expt_name, or reconfigure')
+        if offset is not None:
+            self.config['noise_offset_freq'] = round(offset,4)
+        if 'ef' in noise_type:
+            t1 = T1Program(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
+        if 'fh' in noise_type:
+            t1 = T1ProgramFH(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
 
         if self.live_plot:
             I, Q, delay_times = self.live_plotting(t1, thresholding)
@@ -272,9 +184,12 @@ class EF_T1MeasurementWithNoise:
                                            angle=self.experiment.readout_cfg["ro_phase"], progress=True)
             else:
                 iq_list = t1.acquire(self.experiment.soc, soft_avgs=self.config['rounds'], progress=True)
+
+
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
             delay_times = t1.get_time_param('wait', "t", as_array=True)
+
 
         if self.fit_data:
             q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit(I, Q, delay_times)
@@ -284,7 +199,14 @@ class EF_T1MeasurementWithNoise:
         if self.plot_results:
             self.plot_results( I, Q, delay_times, now)
 
-        return  T1_est, T1_err, I, Q, delay_times, q1_fit_exponential, self.config
+        if self.save_shots:
+            raw_0 = t1.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
+            Ishots = raw_0[self.QubitIndex][:, :, 0, 0]
+            Qshots = raw_0[self.QubitIndex][:, :, 0, 1]
+            return T1_est, T1_err, Ishots, Qshots, delay_times, q1_fit_exponential, self.config
+
+        else:
+            return  T1_est, T1_err, I, Q, delay_times, q1_fit_exponential, self.config
 
     def live_plotting(self, t1, thresholding):
         I = Q = expt_mags = expt_phases = expt_pop = None

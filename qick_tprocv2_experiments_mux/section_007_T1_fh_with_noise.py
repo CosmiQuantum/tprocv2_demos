@@ -63,7 +63,7 @@ class FH_T1Program(AveragerProgramV2):
         self.add_pulse(ch=noise_ch, name="noise_pulse",
                        style="const",
                        length=cfg["noise_pulse_len"],
-                       freq=cfg['qubit_freq_fh'] + cfg['noise_offset_freq_from_fh'],
+                       freq=cfg['qubit_freq_fh'] + cfg['noise_offset_freq'],
                        phase=cfg['qubit_phase'],
                        gain=cfg['noise_pulse_gain'],
                        mode='periodic'

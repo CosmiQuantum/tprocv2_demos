@@ -173,7 +173,7 @@ class DephasingWithFHNoiseProgram(AveragerProgramV2):
         self.add_pulse(ch=noise_ch, name="noise_pulse",
                        style="const",
                        length=cfg["noise_pulse_len"],
-                       freq=cfg['qubit_freq_fh'] + cfg['noise_offset_freq_from_fh'],
+                       freq=cfg['qubit_freq_fh'] + cfg['noise_offset_freq'],
                        phase=cfg['qubit_phase'],
                        gain=cfg['noise_pulse_gain'],
                        mode='periodic'
@@ -411,14 +411,9 @@ class DephasingMeasurementWithFHNoise:
         if gain is None:
             gain = self.experiment.qubit_cfg['noise_pulse_gain']
         if freq_offset is None:
-            freq_offset=self.config['noise_offset_freq_from_ef']
-        self.config['noise_offset_freq_from_ef'] = round(freq_offset,3)
-        self.config['noise_pulse_gain'] = round(gain,3)
-        self.config['noise_pulse_len'] = (self.experiment.qubit_cfg[
-                                                      'sigma'][self.QubitIndex] * (self.config['dephasing_rounds_plus_1']+1) # total length of the dynamical decoupling pulse
-                                                        +  0.01* (self.config['dephasing_rounds_plus_1']+1) # extra bufferes
-                                                        +self.experiment.qubit_cfg[ #two extra to be really safe that the noise is always on
-                                                      'sigma'][self.QubitIndex] *2)
+            freq_offset=self.config['noise_offset_freq']
+        self.config['noise_offset_freq'] = round(freq_offset,4)
+        self.config['noise_pulse_gain'] = round(gain,4)
         echo = DephasingWithFHNoiseProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
                          cfg=self.config)
         # for live plotting open http://localhost:8097/ on firefox

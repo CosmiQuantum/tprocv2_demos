@@ -69,25 +69,40 @@ top_folder_dates = ['2025-05-29_07-22-46', '2025-05-29_09-00-02']
 # ################################################# 08: T2E vs Time Plots ################################################
 # dephasing_vs_time.plot_with_errs_vs_echo(date_times_dephasing,
 #                                          dephasing_vals, dephasing_fit_err,date_times_t2e, t2e_vals, t2e_fit_err, show_legends=True)
-
-#top_folder_dates = ['2025-05-29_23-07-00']
-#top_folder_dates = ['2025-05-29_23-50-15']
-top_folder_dates = ['Statistics_ef_noise_gain_0p02_100nsNoisePulse_2025-06-03_21-49-19']
-# t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-#                  signal, run_name, FRIDGE)
-# date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
-
+#
+# #top_folder_dates = ['2025-05-29_23-07-00']
+# #top_folder_dates = ['2025-05-29_23-50-15']
+top_folder_dates = ['Statistics_ef_noise_gain_0p02_100nsNoisePulse_2025-06-04_21-37-45', 'Statistics_ef_noise_gain_0p02_100nsNoisePulse_2025-06-05_09-28-35']
+#
+#
 dephasing_vs_time = DephasingVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
                  signal, run_name, FRIDGE)
-date_times_t2e, t2e_vals, t2e_fit_err = dephasing_vs_time.run(return_errs=True,name='T2E_ge',savefigs=True)
-date_times_dephasing, dephasing_vals, dephasing_fit_err = dephasing_vs_time.run(return_errs=True,name='DD_ge',savefigs=True)
-date_times_dephasing_ef, dephasing_vals_ef, dephasing_fit_err_ef = dephasing_vs_time.run(return_errs=True,name='DD_ge_ef_noise',savefigs=True)
-date_times_dephasing_fh, dephasing_vals_fh, dephasing_fit_err_fh = dephasing_vs_time.run(return_errs=True,name='DD_ge_fh_noise', savefigs=True)
+date_times_t2r, t2r_vals, t2r_fit_err = dephasing_vs_time.run(return_errs=True,name='T2_ge',savefigs=True, filters=True)
+date_times_t2e, t2e_vals, t2e_fit_err = dephasing_vs_time.run(return_errs=True,name='T2E_ge',savefigs=True, filters=True)
+date_times_dephasing, dephasing_vals, dephasing_fit_err = dephasing_vs_time.run(return_errs=True,name='DD_ge',savefigs=True, filters=True)
+
+date_times_t2r_w_noise, t2r_vals_w_noise, t2r_fit_err_w_noise = dephasing_vs_time.run(return_errs=True,name='T2_ge_w_noise',savefigs=True, filters=True)
+date_times_t2e_w_noise, t2e_vals_w_noise, t2e_fit_err_w_noise = dephasing_vs_time.run(return_errs=True,name='T2E_ge_w_noise',savefigs=True, filters=True)
+date_times_dephasing_ef, dephasing_vals_ef, dephasing_fit_err_ef = dephasing_vs_time.run(return_errs=True,name='DD_ge_ef_noise',savefigs=True, filters=True)
+
+dephasing_vs_time.plot_with_errs_vs_everything(date_times_t2r=date_times_t2r, t2r_vals=t2r_vals, t2r_fit_err=t2r_fit_err,
+    date_times_dephasing=date_times_dephasing, dephasing_vals=dephasing_vals, dephasing_fit_err=dephasing_fit_err,
+    date_times_t2e=date_times_t2e, t2e_vals=t2e_vals, t2e_fit_err=t2e_fit_err,
+    date_times_t2r_w_noise=date_times_t2r_w_noise, t2r_vals_w_noise=t2r_vals_w_noise, t2r_fit_err_w_noise=t2r_fit_err_w_noise,
+    date_times_t2e_w_noise=date_times_t2e_w_noise, t2e_vals_w_noise=t2e_vals_w_noise, t2e_fit_err_w_noise=t2e_fit_err_w_noise,
+    date_times_dephasing_ef=date_times_dephasing_ef, dephasing_vals_ef=dephasing_vals_ef, dephasing_fit_err_ef=dephasing_fit_err_ef,
+    show_legends=True)
+
+#################### T1
+date_times_t1_ge, t1_ge_vals, t1_ge_fit_err = dephasing_vs_time.run_T1(return_errs=True,name='T1_ge',savefigs=True, fit=True)
+date_times_t1_fe, t1_fe_vals, t1_fe_fit_err = dephasing_vs_time.run_T1(return_errs=True,name='T1_fe',savefigs=True, fit=True)
+
+date_times_t1_ge_w_noise, t1_ge_vals_w_noise, t1_ge_fit_err_w_noise = dephasing_vs_time.run_T1(return_errs=True,name='T1_ge_w_noise',savefigs=True, fit=True)
+date_times_t1_fe_w_ef, t1_fe_vals_ef, t1_fe_fit_err_ef = dephasing_vs_time.run_T1(return_errs=True,name='T1_fe_w_noise',savefigs=True, fit=True)
 
 
-################################################# 08: T2E vs Time Plots ################################################
-dephasing_vs_time.plot_with_errs_vs_everything(date_times_dephasing,
-                                         dephasing_vals, dephasing_fit_err,date_times_t2e, t2e_vals, t2e_fit_err,
-                                         date_times_dephasing_ef, dephasing_vals_ef, dephasing_fit_err_ef,
-                                         date_times_dephasing_fh, dephasing_vals_fh, dephasing_fit_err_fh,
-                                         show_legends=True)
+dephasing_vs_time.plot_with_errs_vs_everything_t1(date_times_t1_ge=date_times_t1_ge, t1_ge_vals=t1_ge_vals, t1_ge_fit_err=t1_ge_fit_err,
+    date_times_t1_fe=date_times_t1_fe, t1_fe_vals=t1_fe_vals, t1_fe_fit_err=t1_fe_fit_err,
+    date_times_t1_ge_w_noise=date_times_t1_ge_w_noise, t1_ge_vals_w_noise=t1_ge_vals_w_noise, t1_ge_fit_err_w_noise=t1_ge_fit_err_w_noise,
+    date_times_t1_fe_w_ef=date_times_t1_fe_w_ef, t1_fe_vals_ef=t1_fe_vals_ef, t1_fe_fit_err_ef=t1_fe_fit_err_ef,
+    show_legends=True)

@@ -114,7 +114,7 @@ class DephasingVsTime:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run_T1(self,return_errs=False,return_noise_gain=False,return_freq_offset=False,name='Dephased_ge', savefigs=False):
+    def run_T1(self,return_errs=False,return_noise_gain=False,return_freq_offset=False,name='Dephased_ge', savefigs=False, fit=False):
         import datetime
         self.name=name
         # ----------Load/get data------------------------
@@ -188,44 +188,44 @@ class DephasingVsTime:
 
                         if len(I) > 0:
 
-                            noise_gains[q_key].extend([
-                                round(float(syst_config.split('noise_pulse_gain\': ')[-1].split(',')[0]), 4)])
-                            if return_freq_offset:
-                                freq_offsets[q_key].extend([
-                                    round(float(syst_config.split('noise_offset_freq_from_ef\': ')[-1].split('}')[0]), 4)])
-                            T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
-                                                               fit_data=True)
-                            #try:
-                            fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q, mag=True)
-                            if savefigs:
-                                self.plot_results(I, Q, delay_times,  fitted, t2e_est,
-                                                 t2e_err, config=None, fig_quality=100,outerFolder=outerFolder, expt_name=name)
-                            # except Exception as e:
-                            #     print(f"good fit not found, error: {e}")
-                            #     continue
-                            #T2E_cfg = exp_config['SpinEcho_ge']
-                            # if t2e_est < 0:
-                            #     print("The value is negative, continuing...")
-                            #     continue
-                            # if t2e_est > 300:
-                            #     print("The value is above 300 us, this is a bad fit, continuing...")
-                            #     continue
-                            # if t2e_err >= 0.8 * t2e_est:
-                            #     print(
-                            #         f"Skipping T2R = {t2e_est:.3f} µs because its error {t2e_err:.3f} µs is >= 80% of its value.")
-                            #     continue
-                            t1_vals[q_key].extend([t2e_est])
-                            t1_errs[q_key].extend([t2e_err])
+                            gain = round(float(syst_config.split('noise_pulse_gain\': ')[-1].split(',')[0]), 4)
+                            if gain >= 0:
+                                noise_gains[q_key].extend([
+                                    gain])
+                                if return_freq_offset:
+                                    freq_offsets[q_key].extend([
+                                        round(float(syst_config.split('noise_offset_freq\': ')[-1].split('}')[0]), 4)])
+                                if fit:
+                                    T1_class_instance = T1Measurement(q_key, self.number_of_qubits, outerFolder_save_plots,
+                                                                      round_num, self.signal, self.save_figs,
+                                                                      fit_data=True)
+                                    # T1_spec_cfg = exp_config['T1_ge']
+                                    q1_fit_exponential, T1_err, T1_est, plot_sig = T1_class_instance.t1_fit(I, Q,
+                                                                                                            delay_times)
+                                    if T1_est < 0:
+                                        print("The value is negative, continuing...")
+                                        continue
+                                    if T1_est > 1000:
+                                        print("The value is above 1000 us, this is a bad fit, continuing...")
+                                        continue
+                                    if T1_err >= 0.8 * T1_est:
+                                        print(
+                                            f"Skipping T1 = {T1_est:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
+                                        continue
 
-                            Is[q_key].extend([I])
-                            Qs[q_key].extend([Q])
-                            Delay_Times[q_key].extend([delay_times])
-                            date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
+                                    t1_vals[q_key].extend([T1_est])
+                                    t1_errs[q_key].extend([T1_err])
+                                    del T1_class_instance
 
-                            del T2E_class_instance
+                                Is[q_key].extend([I])
+                                Qs[q_key].extend([Q])
+                                Delay_Times[q_key].extend([delay_times])
+                                date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
+
                 del H5_class_instance
         if return_errs:
             return date_times, t1_vals, t1_errs
+
         elif return_noise_gain:
             return date_times, t1_vals, noise_gains, Is, Qs, Delay_Times
         elif return_freq_offset:
@@ -233,7 +233,7 @@ class DephasingVsTime:
         else:
             return date_times, t1_vals
 
-    def run(self,return_errs=False,return_noise_gain=False,return_freq_offset=False,name='Dephased_ge', savefigs=False):
+    def run(self,return_errs=False,return_noise_gain=False,return_freq_offset=False,name='Dephased_ge', savefigs=False, filters=False):
         import datetime
         self.name=name
         # ----------Load/get data------------------------
@@ -265,8 +265,10 @@ class DephasingVsTime:
             outerFolder_expt = outerFolder + f"/Data_h5/{name}/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
             for h5_file in h5_files:
+
                 save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
                 H5_class_instance = Data_H5(h5_file)
+
                 load_data = H5_class_instance.load_from_h5(data_type='T2E', save_r=int(save_round))
 
                 #H5_class_instance.print_h5_contents(h5_file)
@@ -310,40 +312,44 @@ class DephasingVsTime:
 
                             T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                                fit_data=True)
-                            #try:
-                            fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q, mag=True)
-                            if savefigs:
-                                self.plot_results(I, Q, delay_times,  fitted, t2e_est,
-                                                 t2e_err, config=None, fig_quality=100,outerFolder=outerFolder, expt_name=name)
-                            # except Exception as e:
-                            #     print(f"good fit not found, error: {e}")
-                            #     continue
-                            T2E_cfg = exp_config['SpinEcho_ge']
-                            if t2e_est < 0:
-                                print("The value is negative, continuing...")
+                            try:
+                                fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q, mag=True)
+                                if savefigs:
+                                    self.plot_results(I, Q, delay_times,  fitted, t2e_est,
+                                                     t2e_err, config=None, fig_quality=100,outerFolder=outerFolder, expt_name=name)
+                            except Exception as e:
+                                print(f"good fit not found, error: {e}")
                                 continue
-                            if t2e_est > 300:
-                                print("The value is above 300 us, this is a bad fit, continuing...")
-                                continue
-                            if t2e_err >= 0.2 * t2e_est:
-                                print(
-                                    f"Skipping T2R = {t2e_est:.3f} µs because its error {t2e_err:.3f} µs is >= 80% of its value.")
-                                continue
-                            t2e_vals[q_key].extend([t2e_est])
-                            t2e_errs[q_key].extend([t2e_err])
+                            if filters:
+                                T2E_cfg = exp_config['SpinEcho_ge']
+                                if t2e_est < 0:
+                                    print("The value is negative, continuing...")
+                                    continue
+                                if t2e_est > 300:
+                                    print("The value is above 300 us, this is a bad fit, continuing...")
+                                    continue
+                                if t2e_err >= 0.2 * t2e_est:
+                                    print(
+                                        f"Skipping T2R = {t2e_est:.3f} µs because its error {t2e_err:.3f} µs is >= 80% of its value.")
+                                    continue
+                            gain=round(float(syst_config.split('noise_pulse_gain\': ')[-1].split(',')[0]), 4)
+                            if gain >=0:
+                                noise_gains[q_key].extend([
+                                    gain])
+                                t2e_vals[q_key].extend([t2e_est])
+                                t2e_errs[q_key].extend([t2e_err])
 
-                            Is[q_key].extend([I])
-                            Qs[q_key].extend([Q])
-                            Delay_Times[q_key].extend([delay_times])
-                            date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
-                            noise_gains[q_key].extend([
-                                round(float(syst_config.split('noise_pulse_gain\': ')[-1].split(',')[0]), 4)])
-                            if return_freq_offset:
-                                freq_offsets[q_key].extend([
-                                    round(float(syst_config.split('noise_offset_freq_from_ef\': ')[-1].split('}')[0]),
-                                          4)])
+                                Is[q_key].extend([I])
+                                Qs[q_key].extend([Q])
+                                Delay_Times[q_key].extend([delay_times])
+                                date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
+                                if return_freq_offset:
+                                    freq_offsets[q_key].extend([
+                                        round(float(syst_config.split('noise_offset_freq\': ')[-1].split('}')[0]),
+                                              4)])
                             del T2E_class_instance
                 del H5_class_instance
+
         if return_errs:
             return date_times, t2e_vals, t2e_errs
         elif return_noise_gain:
@@ -396,7 +402,7 @@ class DephasingVsTime:
             noise_gains: dict[int, list[float]],
             freq_offsets: dict[int, list[float]],
             cmap: str = "viridis",
-            show_colorbar: bool = True,
+            show_colorbar: bool = True,zlim=None
     ):
         """
         Heat-map of |I + iQ| versus delay and noise gain for every qubit that
@@ -418,7 +424,7 @@ class DephasingVsTime:
         else:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
         self.create_folder_if_not_exists(analysis_folder)
-        print(freq_offsets)
+
         # ---------- which qubits have data ----------
         valid_qubits = [
             q for q in range(self.number_of_qubits)
@@ -445,6 +451,9 @@ class DephasingVsTime:
         # ---------- draw each qubit ----------
         import matplotlib as mpl
         norm = mpl.colors.Normalize(vmin=2.75, vmax=5.1)
+        if zlim is not None:
+            vmin, vmax = zlim
+            z_norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
         for ax, q in zip(axes, valid_qubits):
             # -- to NumPy ------------------------------------------------------
             I_mat = np.asarray(Is[q], dtype=float)
@@ -516,8 +525,16 @@ class DephasingVsTime:
             X = delay_grid
             Y = np.repeat(full_y[:, None], X.shape[1], axis=1)
 
-            pcm = ax.pcolormesh(X, Y, mag_masked,
-                                shading="nearest", cmap=cmap_use, vmin=2.7, vmax=5.1  )
+            if zlim is None:
+                pcm = ax.pcolormesh(X, Y, mag_masked,
+                                    shading="nearest", cmap=cmap_use)
+            else:
+                pcm = ax.pcolormesh(
+                    X, Y, mag_masked,
+                    shading="nearest",
+                    cmap=cmap_use,
+                    norm=z_norm,  # ← use the shared norm (or None)
+                )
 
             # -- cosmetics -----------------------------------------------------
             ax.set_title(f"Qubit {q + 1}")
@@ -535,7 +552,7 @@ class DephasingVsTime:
             ax.set_visible(False)
 
         plt.tight_layout(rect=[0, 0, 1, 0.95])
-        outfile = os.path.join(analysis_folder, "noise_vs_freq_offset.png")
+        outfile = os.path.join(analysis_folder, f"noise_vs_freq_offset_{self.name}.png")
         plt.savefig(outfile, dpi=self.final_figure_quality)
         print("Plot saved at:", outfile)
         plt.close()
@@ -627,8 +644,9 @@ class DephasingVsTime:
             delays_sorted = delays_mat[sort_idx]
 
             # -- build *regular* offset grid, inserting NaN rows --------------
+
             diffs = np.diff(offsets_sorted)
-            step = np.min(diffs[diffs > 0])  # smallest positive gap ⇒ Δf
+            step = np.min(diffs[diffs > 0])
             full_y = np.arange(offsets_sorted[0],
                                offsets_sorted[-1] + 0.5 * step,
                                step)
@@ -1100,113 +1118,196 @@ class DephasingVsTime:
 
     def plot_with_errs_vs_everything(
             self,
-            date_times, t2e_vals, t2e_fit_err,
-            date_times_echo, t2e_vals_echo, t2e_fit_err_echo,
-            date_times_dephasing_ef, dephasing_vals_ef, dephasing_fit_err_ef,
-            date_times_dephasing_fh, dephasing_vals_fh, dephasing_fit_err_fh,
-            show_legends=True):
-        # ─────────────────────────────────────────────────────────────── paths ──
-        if self.fridge.upper() == 'QUIET':
+            date_times_t2r=None, t2r_vals=None, t2r_fit_err=None,
+            date_times_dephasing=None, dephasing_vals=None, dephasing_fit_err=None,
+            date_times_t2e=None, t2e_vals=None, t2e_fit_err=None,
+            date_times_t2r_w_noise=None, t2r_vals_w_noise=None, t2r_fit_err_w_noise=None,
+            date_times_t2e_w_noise=None, t2e_vals_w_noise=None, t2e_fit_err_w_noise=None,
+            date_times_dephasing_ef=None, dephasing_vals_ef=None, dephasing_fit_err_ef=None,
+            show_legends=True,
+    ):
+        # ────────────────────────────── output path setup ─────────────────────────
+        if self.fridge.upper() == "QUIET":
             analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
-            self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder += "features_vs_time/"
-            self.create_folder_if_not_exists(analysis_folder)
-        elif self.fridge.upper() == 'NEXUS':
-            analysis_folder = (f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}"
-                               "/benchmark_analysis_plots/")
-            self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder += "features_vs_time/"
-            self.create_folder_if_not_exists(analysis_folder)
+        elif self.fridge.upper() == "NEXUS":
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
         else:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+        analysis_folder += "features_vs_time/"
+        self.create_folder_if_not_exists(analysis_folder)
+        # print(t2e_vals)
+        # print(t2r_vals)
+        # print(dephasing_vals)
+        # print(t2e_vals_w_noise)
+        # print(t2r_vals_w_noise)
+        # print(dephasing_vals_ef)
+        # ─────────────────────────────── style registry ───────────────────────────
+        DATASETS = {
+            "t2e": dict(dt=date_times_t2e, y=t2e_vals, err=t2e_fit_err,
+                        label="Spin Echo", color="green", marker="o"),
+            "t2r": dict(dt=date_times_t2r, y=t2r_vals, err=t2r_fit_err,
+                        label="Ramsey", color="black", marker="s"),
+            "dephasing": dict(dt=date_times_dephasing, y=dephasing_vals, err=dephasing_fit_err,
+                              label="Dynamical Decoupling", color="red", marker="v"),
+            "t2e_w_noise": dict(dt=date_times_t2e_w_noise, y=t2e_vals_w_noise, err=t2e_fit_err_w_noise,
+                                label="Spin Echo + EF noise", color="blue", marker="x"),
+            "t2r_w_noise": dict(dt=date_times_t2r_w_noise, y=t2r_vals_w_noise, err=t2r_fit_err_w_noise,
+                                label="Ramsey + EF noise", color="gray", marker="d"),
+            "dephasing_ef": dict(dt=date_times_dephasing_ef, y=dephasing_vals_ef, err=dephasing_fit_err_ef,
+                                 label="Dynamical Decoupling + EF Noise", color="orange", marker="^"),
+        }
 
-        # ──────────────────────────────────────────────────────── figure setup ──
+        # ───────────────────────────── figure scaffold ────────────────────────────
         font = 14
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
-
-        fig, axes = plt.subplots(2, 3, figsize=(12, 8))
-        plt.subplots_adjust(right=0.83)
-        plt.suptitle('T₂ Values vs Time', fontsize=font)
+        rows = (self.number_of_qubits + 2) // 3  # up to 3 columns
+        fig, axes = plt.subplots(rows, 3, figsize=(12, 4 * rows))
         axes = axes.flatten()
+        plt.suptitle(r"$T_2$ values vs time", fontsize=font)
 
-        for i, ax in enumerate(axes):
-            if i >= self.number_of_qubits:
+        for q, ax in enumerate(axes):
+            if q >= self.number_of_qubits:
+                ax.set_visible(False)
+                continue
+            ax.set_title(titles[q], fontsize=font)
+
+            # ───────── loop over every dataset that actually exists ──────────
+            plotted_something = False
+            for meta in DATASETS.values():
+                if meta["dt"] is None:  # dataset absent → skip
+                    continue
+                if q >= len(meta["dt"]):  # protects against ragged dicts
+                    continue
+
+                raw_dt = meta["dt"][q]
+                if not raw_dt:  # empty list → skip
+                    continue
+
+                # sort points chronologically
+                dt = [datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S") for s in raw_dt]
+                combo = sorted(zip(dt, meta["y"][q], meta["err"][q]), key=lambda t: t[0])
+                x_pts, y_pts, y_err = zip(*combo)
+
+                y_err = np.nan_to_num(np.abs(y_err), nan=0.0, posinf=0.0, neginf=0.0)
+                ax.errorbar(x_pts, y_pts, yerr=y_err, fmt='none',
+                            ecolor=meta["color"], elinewidth=1, capsize=0, alpha=0.6)
+                ax.scatter(x_pts, y_pts, s=30, marker=meta["marker"],
+                           color=meta["color"], label=meta["label"] if show_legends else None)
+                plotted_something = True
+
+            if not plotted_something:
                 ax.set_visible(False)
                 continue
 
-            ax.set_title(titles[i], fontsize=font)
-
-            # DD
-            dt_main = [datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S") for s in date_times[i]]
-            combo = sorted(zip(dt_main, t2e_vals[i], t2e_fit_err[i]), key=lambda t: t[0])
-            if not combo:
-                ax.set_visible(False)
-                continue
-
-            x_main, y_main, err_main = zip(*combo)
-            err_main = np.nan_to_num(np.abs(err_main), nan=0.0, posinf=0.0, neginf=0.0)
-            ax.errorbar(x_main, y_main, yerr=err_main,
-                        fmt='none', ecolor='green', elinewidth=1, capsize=0)
-            ax.scatter(x_main, y_main, s=10, color='green', alpha=0.7,
-                       label="Dynamically decoupled" if show_legends else None)
-
-            # echo
-            dt_echo = [datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S") for s in date_times_echo[i]]
-            combo_e = sorted(zip(dt_echo, t2e_vals_echo[i], t2e_fit_err_echo[i]), key=lambda t: t[0])
-            if combo_e:
-                x_e, y_e, err_e = zip(*combo_e)
-                err_e = np.nan_to_num(np.abs(err_e), nan=0.0, posinf=0.0, neginf=0.0)
-                ax.errorbar(x_e, y_e, yerr=err_e,
-                            fmt='none', ecolor='blue', linestyle='--', alpha=0.6,
-                            elinewidth=1, capsize=0)
-                ax.scatter(x_e, y_e, s=12, marker='x', color='blue', alpha=0.9,
-                           label="Echo" if show_legends else None)
-
-            #  dephasing EF data
-            dt_ef = [datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S") for s
-                     in date_times_dephasing_ef[i]]
-            combo_ef = sorted(zip(dt_ef, dephasing_vals_ef[i], dephasing_fit_err_ef[i]),
-                              key=lambda t: t[0])
-            if combo_ef:
-                x_ef, y_ef, err_ef = zip(*combo_ef)
-                err_ef = np.nan_to_num(np.abs(err_ef), nan=0.0, posinf=0.0, neginf=0.0)
-                ax.errorbar(x_ef, y_ef, yerr=err_ef,
-                            fmt='none', ecolor='orange', linestyle='--', alpha=0.6,
-                            elinewidth=1, capsize=0)
-                ax.scatter(x_ef, y_ef, s=14, marker='^', color='orange', alpha=0.85,
-                           label="Dephasing EF" if show_legends else None)
-
-            # dephasing FH data
-            dt_fh = [datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S") for s
-                     in date_times_dephasing_fh[i]]
-            combo_fh = sorted(zip(dt_fh, dephasing_vals_fh[i], dephasing_fit_err_fh[i]),
-                              key=lambda t: t[0])
-            if combo_fh:
-                x_fh, y_fh, err_fh = zip(*combo_fh)
-                err_fh = np.nan_to_num(np.abs(err_fh), nan=0.0, posinf=0.0, neginf=0.0)
-                ax.errorbar(x_fh, y_fh, yerr=err_fh,
-                            fmt='none', ecolor='purple', linestyle='--', alpha=0.6,
-                            elinewidth=1, capsize=0)
-                ax.scatter(x_fh, y_fh, s=14, marker='D', color='purple', alpha=0.85,
-                           label="Dephasing FH" if show_legends else None)
-
-            # ─────────────────────────── axes formatting ──────────────────────
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
-            ax.tick_params(axis='x', rotation=45)
-            ax.set_xlabel('Time', fontsize=font - 2)
-            ax.set_ylabel(r'$T_2$ ($\mu$s)', fontsize=font - 2)
-            ax.tick_params(axis='both', which='major', labelsize=8)
+            # ──────────────── axis cosmetics ────────────────
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d\n%H:%M"))
+            ax.tick_params(axis='x', rotation=80)
+            ax.set_xlabel("Time", fontsize=font - 4)
+            ax.set_ylabel(r"$T_2\;(\mu\mathrm{s})$", fontsize=font - 2)
+            ax.tick_params(axis='both', labelsize=8)
             if show_legends:
-                ax.legend(loc="center left",  # middle-right of the axes
-                          bbox_to_anchor=(1.02, 0.5),  # 1.00 = axes edge; 1.02 gives a small gap
-                          borderaxespad=0.0,
-                          frameon=False, fontsize=8)
+                ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5),
+                          borderaxespad=0, frameon=False, fontsize=8)
 
         plt.tight_layout()
-        out_file = analysis_folder + "t2_vs_time_all_modes.pdf"
-        plt.savefig(out_file, dpi=self.final_figure_quality)
-        print(f"Plot saved at: {out_file}")
+        outfile = analysis_folder + "t2_vs_time_all_modes.pdf"
+        plt.savefig(outfile, dpi=self.final_figure_quality)
         plt.close()
+        print(f"Plot saved at: {outfile}")
+
+    def plot_with_errs_vs_everything_t1(
+            self,
+            date_times_t1_ge=None, t1_ge_vals=None, t1_ge_fit_err=None,
+            date_times_t1_fe=None, t1_fe_vals=None, t1_fe_fit_err=None,
+            date_times_t1_ge_w_noise=None, t1_ge_vals_w_noise=None, t1_ge_fit_err_w_noise=None,
+            date_times_t1_fe_w_ef=None, t1_fe_vals_ef=None, t1_fe_fit_err_ef=None,
+            show_legends=True,
+    ):
+        # ────────────────────────────── output path setup ─────────────────────────
+        if self.fridge.upper() == "QUIET":
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+        elif self.fridge.upper() == "NEXUS":
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+        else:
+            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+        analysis_folder += "features_vs_time/"
+        self.create_folder_if_not_exists(analysis_folder)
+        # print(t2e_vals)
+        # print(t2r_vals)
+        # print(dephasing_vals)
+        # print(t2e_vals_w_noise)
+        # print(t2r_vals_w_noise)
+        # print(dephasing_vals_ef)
+        # ─────────────────────────────── style registry ───────────────────────────
+        DATASETS = {
+            "t1_ge": dict(dt=date_times_t1_ge, y=t1_ge_vals, err=t1_ge_fit_err,
+                        label="T1 ge", color="green", marker="o"),
+            "t1_fe": dict(dt=date_times_t1_fe, y=t1_fe_vals, err=t1_fe_fit_err,
+                        label="T1 fe", color="black", marker="s"),
+            "t1_ge_w_noise": dict(dt=date_times_t1_ge_w_noise, y=t1_ge_vals_w_noise, err=t1_ge_fit_err_w_noise,
+                                label="T1 ge + EF noise", color="blue", marker="x"),
+            "t1_fe_w_noise": dict(dt=date_times_t1_fe_w_ef, y=t1_fe_vals_ef, err=t1_fe_fit_err_ef,
+                                label="T1 fe + EF noise", color="gray", marker="d"),
+
+        }
+
+        # ───────────────────────────── figure scaffold ────────────────────────────
+        font = 14
+        titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
+        rows = (self.number_of_qubits + 2) // 3  # up to 3 columns
+        fig, axes = plt.subplots(rows, 3, figsize=(12, 4 * rows))
+        axes = axes.flatten()
+        plt.suptitle(r"$T_1$ values vs time", fontsize=font)
+
+        for q, ax in enumerate(axes):
+            if q >= self.number_of_qubits:
+                ax.set_visible(False)
+                continue
+            ax.set_title(titles[q], fontsize=font)
+
+            # ───────── loop over every dataset that actually exists ──────────
+            plotted_something = False
+            for meta in DATASETS.values():
+                if meta["dt"] is None:  # dataset absent → skip
+                    continue
+                if q >= len(meta["dt"]):  # protects against ragged dicts
+                    continue
+
+                raw_dt = meta["dt"][q]
+                if not raw_dt:  # empty list → skip
+                    continue
+
+                # sort points chronologically
+                dt = [datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S") for s in raw_dt]
+                combo = sorted(zip(dt, meta["y"][q], meta["err"][q]), key=lambda t: t[0])
+                x_pts, y_pts, y_err = zip(*combo)
+
+                y_err = np.nan_to_num(np.abs(y_err), nan=0.0, posinf=0.0, neginf=0.0)
+                ax.errorbar(x_pts, y_pts, yerr=y_err, fmt='none',
+                            ecolor=meta["color"], elinewidth=1, capsize=0, alpha=0.6)
+                ax.scatter(x_pts, y_pts, s=30, marker=meta["marker"],
+                           color=meta["color"], label=meta["label"] if show_legends else None)
+                plotted_something = True
+
+            if not plotted_something:
+                ax.set_visible(False)
+                continue
+
+            # ──────────────── axis cosmetics ────────────────
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d\n%H:%M"))
+            ax.tick_params(axis='x', rotation=80)
+            ax.set_xlabel("Time", fontsize=font - 4)
+            ax.set_ylabel(r"$T_1\;(\mu\mathrm{s})$", fontsize=font - 2)
+            ax.tick_params(axis='both', labelsize=8)
+            if show_legends:
+                ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5),
+                          borderaxespad=0, frameon=False, fontsize=8)
+
+        plt.tight_layout()
+        outfile = analysis_folder + "t1_vs_time_all_modes.pdf"
+        plt.savefig(outfile, dpi=self.final_figure_quality)
+        plt.close()
+        print(f"Plot saved at: {outfile}")
 
     def plot_with_errs_single_plot(self, date_times, t2e_vals, t2e_fit_err, show_legends):
         if self.fridge.upper() == 'QUIET':

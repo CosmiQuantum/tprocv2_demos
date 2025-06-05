@@ -32,8 +32,8 @@ from section_006_amp_rabi_ef import EF_AmplitudeRabiExperiment
 from section_006_amp_rabi_fh import FH_AmplitudeRabiExperiment
 from section_007_T1_ef import EF_T1Measurement
 from section_007_T1_ge import T1Measurement
-from section_007p5_T1_ef_with_ef_noise import EF_T1MeasurementWithNoise
-from section_007p5_T1_ge_with_ef_noise import T1MeasurementWithNoise
+from section_007p5_T1_ef_with_noise import EF_T1MeasurementWithNoise
+from section_007p5_T1_ge_with_noise import T1MeasurementWithNoise
 from system_config import QICK_experiment
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 from section_006p5_length_rabi_ge import LengthRabiExperiment
@@ -54,10 +54,10 @@ save_r = 1                           # how many rounds to save after
 signal = 'None'                      # 'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization
 save_figs = True                     # save plots for everything as you go along the RR script?
 live_plot = False                    # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
-fit_data = True                     # fit the data here and save or plot the fits?
+fit_data = False                     # fit the data here and save or plot the fits?
 save_data_h5 = True                  # save all of the data to h5 files?
 verbose = True                       # print everything to the console in real time, good for debugging, bad for memory
-debug_mode = True                    # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
+debug_mode = False                    # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 thresholding = False                 # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 increase_qubit_reps = False          # if you want to increase the reps for a qubit, set to True
 qubit_to_increase_reps_for = 0       # only has impact if previous line is True

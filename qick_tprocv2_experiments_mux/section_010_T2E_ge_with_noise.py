@@ -196,7 +196,7 @@ class T2EProgramFHNoise(AveragerProgramV2):
         self.add_pulse(ch=noise_ch, name="noise_pulse",
                        style="const",
                        length=cfg["noise_pulse_len"],
-                       freq=cfg['qubit_freq_fh'] + cfg['noise_offset_freq_from_fh'],
+                       freq=cfg['qubit_freq_fh'] + cfg['noise_offset_freq'],
                        phase=cfg['qubit_phase'],
                        gain=cfg['noise_pulse_gain'],
                        mode='periodic'
@@ -272,10 +272,11 @@ class T2EProgram(AveragerProgramV2):
                       )
         self.declare_gen(ch=noise_ch, nqz=cfg['nqz_qubit'],
                          mixer_freq=cfg['qubit_mixer_freq'])  # mix_freq? , mixer_freq=cfg['qubit_mixer_freq']
+
         self.add_pulse(ch=noise_ch, name="noise_pulse",
                        style="const",
                        length=cfg["noise_pulse_len"],
-                       freq=cfg['qubit_freq_ef'] + cfg['noise_offset_freq_from_ef'],
+                       freq=cfg['qubit_freq_ef'] + cfg['noise_offset_freq'],
                        phase=cfg['qubit_phase'],
                        gain=cfg['noise_pulse_gain'],
                        mode='periodic'
@@ -485,8 +486,10 @@ class T2EMeasurementWithNoise:
         t2e_err = out['T2'][1] #in ns
         return fit_type(x, popt) * y_normal, t2e_est, t2e_err, plot_sig
 
-    def run(self, thresholding=False, noise_type='ef'):
+    def run(self, thresholding=False, noise_type='ef', offset=None, fit=True):
         now = datetime.datetime.now()
+        if offset is not None:
+            self.config['noise_offset_freq'] = round(offset,4)
         if 'fh' in noise_type:
             echo = T2EProgramFHNoise(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
                               cfg=self.config)

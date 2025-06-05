@@ -32,8 +32,8 @@ from section_006_amp_rabi_ef import EF_AmplitudeRabiExperiment
 from section_006_amp_rabi_fh import FH_AmplitudeRabiExperiment
 from section_007_T1_ef import EF_T1Measurement
 from section_007_T1_ge import T1Measurement
-from section_007p5_T1_ef_with_ef_noise import EF_T1MeasurementWithNoise
-from section_007p5_T1_ge_with_ef_noise import T1MeasurementWithNoise
+from section_007p5_T1_ef_with_noise import EF_T1MeasurementWithNoise
+from section_007p5_T1_ge_with_noise import T1MeasurementWithNoise
 from system_config import QICK_experiment
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 from section_006p5_length_rabi_ge import LengthRabiExperiment
@@ -54,10 +54,10 @@ save_r = 1                           # how many rounds to save after
 signal = 'None'                      # 'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization
 save_figs = True                     # save plots for everything as you go along the RR script?
 live_plot = False                    # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
-fit_data = True                     # fit the data here and save or plot the fits?
+fit_data = False                     # fit the data here and save or plot the fits?
 save_data_h5 = True                  # save all of the data to h5 files?
 verbose = True                       # print everything to the console in real time, good for debugging, bad for memory
-debug_mode = False                    # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
+debug_mode = True                    # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 thresholding = False                 # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 increase_qubit_reps = False          # if you want to increase the reps for a qubit, set to True
 qubit_to_increase_reps_for = 0       # only has impact if previous line is True
@@ -86,7 +86,7 @@ subStudyFolder = os.path.join(studyFolder, sub_study)
 if not os.path.exists(subStudyFolder):
     os.makedirs(subStudyFolder)
 
-formatted_datetime = 'ef_gain_sweep_100nsNoisePulse_'+ datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+formatted_datetime = 'ef_freq_sweep_100nsNoisePulse_'+ datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 dataSetFolder = os.path.join(subStudyFolder, formatted_datetime)
 optimizationFolder = os.path.join(dataSetFolder, 'optimization')
 studyFolder = os.path.join(dataSetFolder, 'study_data')
@@ -192,8 +192,9 @@ j = 0
 qubit_freqs_ge = np.zeros(6)
 qubit_freqs_ef = np.zeros(6)
 res_freq_ge = np.zeros(6)
-gains = np.linspace(-0.05,0.05, 20)
-for gain in gains:
+offset_freqs = np.linspace(-0.3,0.3, 15)
+gain=0.02
+for freq in offset_freqs:
     for QubitIndex in Qs_to_look_at:
         experiment = QICK_experiment(optimizationFolder, DAC_attenuator1=5, DAC_attenuator2=10, ADC_attenuator=10,
                                      fridge=FRIDGE)
@@ -543,7 +544,7 @@ for gain in gains:
                                       qubit_to_increase_reps_for=qubit_to_increase_reps_for,
                                       multiply_qubit_reps_by=multiply_qubit_reps_by)
                 t1_est_ge_w_noise, t1_err_ge_w_noise, t1_I_ge_w_noise, t1_Q_ge_w_noise, t1_delay_times_ge_w_noise, q1_fit_exponential_ge_w_noise, sys_config_t1_ge_w_noise = t1_ge_w_noise.run(
-                    thresholding=False)
+                    thresholding=False, offset=freq)
 
                 print('Qubit ', QubitIndex + 1, ' g-e T1: ', str(t1_est_ge_w_noise))
                 #print(stop)
@@ -571,7 +572,7 @@ for gain in gains:
                 (t1_est_fe_w_noise, t1_err_fe_w_noise, t1_I_fe_w_noise, t1_Q_fe_w_noise,
                  t1_delay_times_fe_w_noise, q1_fit_exponential_fe_w_noise,
                  sys_config_t1_fe_w_noise) = t1_fe_w_noise.run(
-                    thresholding=False)
+                    thresholding=False, offset=freq)
 
                 print('Qubit ', QubitIndex + 1, ' f-e T1: ', str(t1_est_fe_w_noise))
 
@@ -595,7 +596,7 @@ for gain in gains:
                                      verbose=verbose, logger=rr_logger)
                 (t2r_est_w_noise, t2r_err_w_noise, t2r_I_w_noise, t2r_Q_w_noise, t2r_delay_times_w_noise,
                  fit_ramsey_w_noise, sys_config_t2r_w_noise) = t2r_w_noise.run(
-                    thresholding=thresholding)
+                    thresholding=thresholding, offset=freq)
                 del t2r_w_noise
 
             except Exception as e:
@@ -616,7 +617,7 @@ for gain in gains:
                                      multiply_qubit_reps_by=multiply_qubit_reps_by,
                                      verbose=verbose, logger=rr_logger)
                 (t2e_est_w_noise, t2e_err_w_noise, t2e_I_w_noise, t2e_Q_w_noise, t2e_delay_times_w_noise,
-                 fit_t2e_w_noise, sys_config_t2e_w_noise) = t2e_w_noise.run(thresholding=thresholding)
+                 fit_t2e_w_noise, sys_config_t2e_w_noise) = t2e_w_noise.run(thresholding=thresholding, offset=freq)
                 del t2e_w_noise
 
             except Exception as e:
@@ -639,7 +640,7 @@ for gain in gains:
                                                multiply_qubit_reps_by=multiply_qubit_reps_by,
                                                verbose=verbose, logger=rr_logger)
                 (t2dephased_ef_noise_est, t2dephased_ef_noise_err, t2dephased_ef_noise_I, t2dephased_ef_noise_Q, t2dephased_ef_noise_delay_times,
-                 fit_t2dephased_ef_noise, sys_config_t2dephased_ef_noise) = dephase_ef_noise.run(thresholding=thresholding, gain=gain, freq_offset=0)
+                 fit_t2dephased_ef_noise, sys_config_t2dephased_ef_noise) = dephase_ef_noise.run(thresholding=thresholding, gain=gain, freq_offset=freq)
                 del dephase_ef_noise
 
             except Exception as e:

@@ -32,8 +32,8 @@ from section_006_amp_rabi_ef import EF_AmplitudeRabiExperiment
 from section_006_amp_rabi_fh import FH_AmplitudeRabiExperiment
 from section_007_T1_ef import EF_T1Measurement
 from section_007_T1_ge import T1Measurement
-from section_007p5_T1_ef_with_ef_noise import EF_T1MeasurementWithNoise
-from section_007p5_T1_ge_with_ef_noise import T1MeasurementWithNoise
+from section_007p5_T1_ef_with_noise import EF_T1MeasurementWithNoise
+from section_007p5_T1_ge_with_noise import T1MeasurementWithNoise
 from system_config import QICK_experiment
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 from section_006p5_length_rabi_ge import LengthRabiExperiment
@@ -71,7 +71,7 @@ substudy_txt_notes = ('Lets give this an initial test and make sure all of these
 # set which of the following you'd like to run to 'True'
 run_flags = {"res_spec_ge": True, "q_spec_ge": True, "rabi_ge": True, "res_spec_ef": True, "res_spec_fh": False,
              "q_spec_ef": True,"q_spec_fh": False, "rabi_ef": True,
-             "rabi_fh": False, "t1_ge": True,  "t1_fe": True,"t1_ge_w_noise": True,  "t1_fe_w_noise": False,
+             "rabi_fh": False, "t1_ge": True,  "t1_fe": True,"t1_ge_w_noise": True,  "t1_fe_w_noise": True,
              "t2r": True,"t2e": True,"t2r_w_noise": True,"t2e_w_noise": True,
              "dephased": True,"dephased_with_ef_noise": True,"dephased_with_fh_noise": True}
 #Folders
@@ -86,7 +86,7 @@ subStudyFolder = os.path.join(studyFolder, sub_study)
 if not os.path.exists(subStudyFolder):
     os.makedirs(subStudyFolder)
 
-formatted_datetime = 'ef_gain_sweep_100nsNoisePulse_'+ datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+formatted_datetime = 'ef_rough_gain_sweep_100nsNoisePulse_'+ datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 dataSetFolder = os.path.join(subStudyFolder, formatted_datetime)
 optimizationFolder = os.path.join(dataSetFolder, 'optimization')
 studyFolder = os.path.join(dataSetFolder, 'study_data')
@@ -192,7 +192,7 @@ j = 0
 qubit_freqs_ge = np.zeros(6)
 qubit_freqs_ef = np.zeros(6)
 res_freq_ge = np.zeros(6)
-gains = np.linspace(-0.05,0.05, 10)
+gains = np.linspace(0,1, 10)
 for gain in gains:
     for QubitIndex in Qs_to_look_at:
         experiment = QICK_experiment(optimizationFolder, DAC_attenuator1=5, DAC_attenuator2=10, ADC_attenuator=10,
@@ -559,15 +559,18 @@ for gain in gains:
         ###################################################### f-e T1 with ef noise #################################
         if run_flags["t1_fe_w_noise"]:
             try:
-                t1_fe_w_noise = EF_T1MeasurementWithNoise(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
-                                         save_figs,
-                                         experiment=experiment,
-                                         live_plot=live_plot, fit_data=fit_data,
-                                         increase_qubit_reps=increase_qubit_reps,
-                                         qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                                         multiply_qubit_reps_by=multiply_qubit_reps_by, expt_name='T1_fe')
+                t1_fe_w_noise = EF_T1MeasurementWithNoise(QubitIndex, tot_num_of_qubits,
+                                                          studyDocumentationFolder, j, signal,
+                                                          save_figs,
+                                                          experiment=experiment,
+                                                          live_plot=live_plot, fit_data=fit_data,
+                                                          increase_qubit_reps=increase_qubit_reps,
+                                                          qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                                          multiply_qubit_reps_by=multiply_qubit_reps_by,
+                                                          expt_name='T1_fe_with_ef_noise')
                 (t1_est_fe_w_noise, t1_err_fe_w_noise, t1_I_fe_w_noise, t1_Q_fe_w_noise,
-                 t1_delay_times_fe_w_noise, q1_fit_exponential_fe_w_noise, sys_config_t1_fe_w_noise) = t1_fe_w_noise.run(
+                 t1_delay_times_fe_w_noise, q1_fit_exponential_fe_w_noise,
+                 sys_config_t1_fe_w_noise) = t1_fe_w_noise.run(
                     thresholding=False)
 
                 print('Qubit ', QubitIndex + 1, ' f-e T1: ', str(t1_est_fe_w_noise))
