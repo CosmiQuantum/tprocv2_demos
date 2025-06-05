@@ -92,6 +92,7 @@ comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_tim
 # target_dates_qtemps_RPM = ["2025-05-05"]
 
 target_dates_qtemps_RPM = [
+    "2025-04-19",
     "2025-04-20",
     "2025-04-21", #starts source on (Co)
     "2025-04-22",
@@ -103,14 +104,7 @@ target_dates_qtemps_RPM = [
     "2025-04-28", #Cs source moved closer
     "2025-04-29",
     "2025-04-30",
-    "2025-05-01",
-    "2025-05-02",
-    "2025-05-03",
-    "2025-05-04", # Cs source removed. No sources in Cleanroom.
-    "2025-05-05",
-    "2025-05-06",
-    "2025-05-07"
-    ]
+    "2025-05-01"]
 
 base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study"
 
