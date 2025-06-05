@@ -1967,11 +1967,19 @@ class PlotRR_noQick:
 
         fig.suptitle("Qubit Temperatures vs. Time", fontsize=16)
 
-        # radiation source timestamps
-        co60_time = datetime.datetime(2025, 4, 21, 12, 35)
-        cs137_time = datetime.datetime(2025, 4, 23, 12, 53)
-        cs137_closer_time = datetime.datetime(2025, 4, 28, 9, 40)
-        cs137_removed_time = datetime.datetime(2025, 5, 4, 18, 20)
+        # Optional: to plot radiation source events
+        events_radiation = [
+            (datetime.datetime(2025, 4, 21, 12, 35), "Co-60"),
+            (datetime.datetime(2025, 4, 23, 12, 53), "Cs-137"),
+            (datetime.datetime(2025, 4, 28, 9, 40), "Cs-137 Closer"),
+            (datetime.datetime(2025, 5, 4, 18, 20), "Cs-137 Removed"),
+            (datetime.datetime(2025, 5, 5, 11, 51), "Cs-137 Hot"),
+            (datetime.datetime(2025, 5, 5, 14, 40), "Cs-137 removed"),
+            (datetime.datetime(2025, 5, 6, 15, 28), "Cs-137 Hot"),
+            (datetime.datetime(2025, 5, 6, 16, 0), "Cs-137 removed"),
+            (datetime.datetime(2025, 5, 7, 10, 36), "Cs-137 Hot"),
+            (datetime.datetime(2025, 5, 7, 16, 20), "Cs-137 removed")
+        ]
 
         # Optional: Restrict plot to specific date and time window. Will only go into effect if restrict_time_xaxis = True
         date_to_plot = datetime.date(2025, 4, 18)
@@ -2054,12 +2062,11 @@ class PlotRR_noQick:
             ax.tick_params(axis='y', labelsize=10)
 
             if rad_events_plot_lines:
-                #--- Add vertical lines for known radiation events ---
-                for vtime, label in [(co60_time, "Co-60"), (cs137_time, "Cs-137"), (cs137_closer_time, "Cs-137 Closer"), (cs137_removed_time, "Cs-137 Removed")]:
+                for vtime, label in events_radiation:
                     if not restrict_time_xaxis or (restrict_time_xaxis and start_time <= vtime <= end_time):
                         ax.axvline(vtime, color='black', linestyle='--', linewidth=1)
-                        ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90,
-                                verticalalignment='top', horizontalalignment='right', fontsize=10)
+                        ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90, verticalalignment='top',
+                                horizontalalignment='right', fontsize=10)
 
             #----------------------Optional: Now for other events------------------------
             # Only relevant if plot_extra_event_lines is set to True
@@ -2094,7 +2101,7 @@ class PlotRR_noQick:
                 (datetime.datetime(2025, 5, 14, 12, 31), "160mK step"),
                 (datetime.datetime(2025, 5, 14, 22, 50), "Heater Off")]
 
-            # Combine (conditionally) the events you want to plot
+            # Combine (conditionally) the extra events you want to plot
             plot_0418_events = False
             plot_0423_events = False
             plot_heater_events = True
