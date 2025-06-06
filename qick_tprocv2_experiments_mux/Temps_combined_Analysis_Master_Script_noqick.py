@@ -28,7 +28,7 @@ save_figsRR = False # Do you want to save (or not save) the re-plotted rabi popu
 save_figs = False # To be used in general for any function or class to saver (or not save) plots.
 fit_saved = False # Not used here, set to false.
 
-get_qtemp_data = True # Do you want to calculate qubit temperatures?
+get_qtemp_data = False # Do you want to calculate qubit temperatures?
 
 figure_quality = 200
 theta = 0

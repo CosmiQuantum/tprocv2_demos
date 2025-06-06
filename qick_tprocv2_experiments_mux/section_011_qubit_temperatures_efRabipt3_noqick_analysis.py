@@ -138,7 +138,7 @@ class Temps_EFAmpRabiExperiment:
 
             amp_guess = [a_guess_amp, b_guess_amp, c_guess_amp, d_guess_amp]
             amp_popt, amp_pcov = curve_fit(self.cosine, gains, amplitude_data, maxfev=100000, p0=amp_guess)
-            amp_fit = self.cosine(gains, *amp_popt)
+            amplitude_fit = self.cosine(gains, *amp_popt)
 
             # --- Extract the amplitude parameter A directly ---
             A_amplitude = amp_popt[0]
@@ -149,7 +149,7 @@ class Temps_EFAmpRabiExperiment:
 
             # --- Plot amplitude data and its cosine fit on the third subplot ---
             ax3.plot(gains, amplitude_data, '-', label="Amplitude Data", linewidth=2)
-            ax3.plot(gains, amp_fit, '-', color='green', linewidth=3, label="Amplitude Fit")
+            ax3.plot(gains, amplitude_fit, '-', color='green', linewidth=3, label="Amplitude Fit")
             ax3.set_xlabel("Gain (a.u.)", fontsize=20)
             ax3.set_ylabel("Amplitude (a.u.)", fontsize=20)
             ax3.tick_params(axis='both', which='major', labelsize=16)
@@ -177,14 +177,14 @@ class Temps_EFAmpRabiExperiment:
                 formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
                 file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"Qtemps_RPM_q{self.QubitIndex + 1}.png")
                 fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
-            print('Plots saved to:',outerFolder_expt)
+                print('Plots saved to this folder:',outerFolder_expt)
             plt.close(fig)
-            return best_signal_fit, pi_amp, A_amplitude, A_amplitude_err, amp_fit
+            return best_signal_fit, pi_amp, A_amplitude, A_amplitude_err, amplitude_fit
 
         except Exception as e:
             print("Error fitting cosine:", e)
             # Return None if the fit didn't work
-            return None, None
+            return None, None, None, None, None
 
 
     def get_results(self, I, Q, gains, grab_depths = False):

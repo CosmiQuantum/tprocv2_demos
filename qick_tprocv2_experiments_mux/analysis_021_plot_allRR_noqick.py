@@ -1644,6 +1644,8 @@ class PlotRR_noQick:
 
             A_amplitude1 = None
             A_amplitude2 = None
+            A_amplitude_err1 = None
+            A_amplitude_err2 = None
 
             for q_key in populated_keys:
                 # print(f"Extracting data for QubitIndex: {q_key}")
@@ -1744,7 +1746,8 @@ class PlotRR_noQick:
                         best_signal_fit2, pi_amp2, A_amplitude2, A_amplitude_err2, amp_fit2 = rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality)
                         del rabi_class_instance
 
-                    if A_amplitude1 is not None and A_amplitude2 is not None:
+                    if (A_amplitude1 is not None and A_amplitude2 is not None and
+                        A_amplitude_err1 is not None and A_amplitude_err2 is not None):
                         A_e = A_amplitude1
                         A_g = A_amplitude2
 
