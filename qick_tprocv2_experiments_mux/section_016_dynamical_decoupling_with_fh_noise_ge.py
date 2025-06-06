@@ -501,10 +501,9 @@ class DephasingMeasurementWithFHNoise:
 
         plot_middle = (ax.get_position().x0 + ax.get_position().x1) / 2
         title_str = (f"Q{self.QubitIndex + 1}  "
-                     f"T2 = {t2e_est:0.2f} µs  "
                      f"({int(config['reps'])} × {int(config['rounds'])} avgs)"
                      if config is not None else
-                     f"T2 Q{self.QubitIndex + 1} = {t2e_est:0.2f} µs")
+                     f"T2")
         fig.text(plot_middle, 0.98, title_str, fontsize=24, ha='center', va='top')
 
         ax.plot(delay_times, mag, "-", label="Magnitude", linewidth=2)

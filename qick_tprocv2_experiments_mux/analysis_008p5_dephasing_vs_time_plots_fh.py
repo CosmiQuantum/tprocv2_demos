@@ -462,6 +462,8 @@ class DephasingVsTimeFH:
             z_norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
         for ax, q in zip(axes, valid_qubits):
             # -- to NumPy ------------------------------------------------------
+            print(len(Is[q][0]),len(Is[q][1]),len(Is[q][2]),len(Is[q][3]))
+
             I_mat = np.asarray(Is[q], dtype=float)
             Q_mat = np.asarray(Qs[q], dtype=float)
             delays_mat = np.asarray(delay_times[q], dtype=float)
@@ -1145,12 +1147,6 @@ class DephasingVsTimeFH:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
         analysis_folder += "features_vs_time/"
         self.create_folder_if_not_exists(analysis_folder)
-        # print(t2e_vals)
-        # print(t2r_vals)
-        # print(dephasing_vals)
-        # print(t2e_vals_w_noise)
-        # print(t2r_vals_w_noise)
-        # print(dephasing_vals_ef)
         # ─────────────────────────────── style registry ───────────────────────────
         DATASETS = {
             "t2e": dict(dt=date_times_t2e, y=t2e_vals, err=t2e_fit_err,
@@ -1160,11 +1156,11 @@ class DephasingVsTimeFH:
             "dephasing": dict(dt=date_times_dephasing, y=dephasing_vals, err=dephasing_fit_err,
                               label="Dynamical Decoupling", color="red", marker="v"),
             "t2e_w_noise": dict(dt=date_times_t2e_w_noise, y=t2e_vals_w_noise, err=t2e_fit_err_w_noise,
-                                label="Spin Echo + EF noise", color="blue", marker="x"),
+                                label="Spin Echo + FH noise", color="blue", marker="x"),
             "t2r_w_noise": dict(dt=date_times_t2r_w_noise, y=t2r_vals_w_noise, err=t2r_fit_err_w_noise,
-                                label="Ramsey + EF noise", color="gray", marker="d"),
+                                label="Ramsey + FH noise", color="gray", marker="d"),
             "dephasing_ef": dict(dt=date_times_dephasing_ef, y=dephasing_vals_ef, err=dephasing_fit_err_ef,
-                                 label="Dynamical Decoupling + EF Noise", color="orange", marker="^"),
+                                 label="Dynamical Decoupling + FH Noise", color="orange", marker="^"),
         }
 
         # ───────────────────────────── figure scaffold ────────────────────────────
@@ -1231,6 +1227,8 @@ class DephasingVsTimeFH:
             date_times_t1_fe=None, t1_fe_vals=None, t1_fe_fit_err=None,
             date_times_t1_ge_w_noise=None, t1_ge_vals_w_noise=None, t1_ge_fit_err_w_noise=None,
             date_times_t1_fe_w_ef=None, t1_fe_vals_ef=None, t1_fe_fit_err_ef=None,
+            date_times_t1_fh=None, t1_fh_vals=None, t1_fh_fit_err=None,
+            date_times_t1_fh_w_fh=None, t1_fh_vals_fh=None, t1_fh_fit_err_fh=None,
             show_legends=True,
     ):
         # ────────────────────────────── output path setup ─────────────────────────
@@ -1242,22 +1240,20 @@ class DephasingVsTimeFH:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
         analysis_folder += "features_vs_time/"
         self.create_folder_if_not_exists(analysis_folder)
-        # print(t2e_vals)
-        # print(t2r_vals)
-        # print(dephasing_vals)
-        # print(t2e_vals_w_noise)
-        # print(t2r_vals_w_noise)
-        # print(dephasing_vals_ef)
         # ─────────────────────────────── style registry ───────────────────────────
         DATASETS = {
             "t1_ge": dict(dt=date_times_t1_ge, y=t1_ge_vals, err=t1_ge_fit_err,
                         label="T1 ge", color="green", marker="o"),
             "t1_fe": dict(dt=date_times_t1_fe, y=t1_fe_vals, err=t1_fe_fit_err,
                         label="T1 fe", color="black", marker="s"),
+            "t1_fh": dict(dt=date_times_t1_fh, y=t1_fh_vals, err=t1_fh_fit_err,
+                          label="T1 fh", color="orange", marker="x"),
             "t1_ge_w_noise": dict(dt=date_times_t1_ge_w_noise, y=t1_ge_vals_w_noise, err=t1_ge_fit_err_w_noise,
-                                label="T1 ge + EF noise", color="blue", marker="x"),
+                                label="T1 ge + FH noise", color="blue", marker="x"),
             "t1_fe_w_noise": dict(dt=date_times_t1_fe_w_ef, y=t1_fe_vals_ef, err=t1_fe_fit_err_ef,
-                                label="T1 fe + EF noise", color="gray", marker="d"),
+                                label="T1 fe + FH noise", color="gray", marker="d"),
+            "t1_fh_w_noise": dict(dt=date_times_t1_fh_w_fh, y=t1_fh_vals_fh, err=t1_fh_fit_err_fh,
+                                  label="T1 fh + FH noise", color="purple", marker="o"),
 
         }
 

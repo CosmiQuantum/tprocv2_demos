@@ -113,7 +113,7 @@ if FRIDGE == "QUIET":
         },
 
         "qubit_spec_fh": {
-            "reps": 2000,
+            "reps": 2300,
             "rounds": 1,
             "start": list(ef_freqs - 210), #270
             "stop": list(ef_freqs - 170), # 80
@@ -416,7 +416,7 @@ if FRIDGE == "QUIET":
             "rounds": 1,  # 1
             "start": [0.0] * 6,  # [us]
             "stop": [50] * 6,  # [250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
-            "steps": 120,
+            "steps": 170,
             "relax_delay": 1000,  # [us] ### Should be >10x T1!
             "wait_time": 0.0,  # [us]
             "list_of_all_qubits": list_of_all_qubits,

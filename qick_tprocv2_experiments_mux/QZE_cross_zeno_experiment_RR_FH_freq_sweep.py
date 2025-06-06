@@ -200,6 +200,7 @@ qubit_freqs_ef = np.zeros(6)
 res_freq_ge = np.zeros(6)
 gain=0.6
 freqs = np.linspace(-10,10, 10)
+freqs=[-7.77777778]
 for freq in freqs:
     for QubitIndex in Qs_to_look_at:
         experiment = QICK_experiment(optimizationFolder, DAC_attenuator1=5, DAC_attenuator2=10, ADC_attenuator=10,
