@@ -1476,7 +1476,7 @@ class PlotRR_noQick:
         #     self.load_plot_save_q_spec()
         if plot_rabis_Qtemps:
             list_of_all_qubits = [i for i in range(self.number_of_qubits + 1)]
-            self.load_plot_save_rabis_Qtemps(list_of_all_qubits)
+            self.load_plot_save_rabis_Qtemps(list_of_all_qubits, save_figs = True)
         # if plot_rabi:
         #     if rabi_rolling_avg:
         #         self.load_plot_save_rabi(rabi_rolling_avg=True)
@@ -1606,7 +1606,7 @@ class PlotRR_noQick:
 
         return extracted_freqs
 
-    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits):
+    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, save_figs = False):
         # ------------------------------------------------Load/Plot/Save Rabi---------------------------------------
         outerFolder_expt_qtemps = self.unique_folder_path+ "/Data_h5/q_temperatures/"
         h5_files_qtemps = glob.glob(os.path.join(outerFolder_expt_qtemps, "*.h5"))
@@ -1658,7 +1658,7 @@ class PlotRR_noQick:
 
                         # The line below extracts the qfreq saved in each rabi pop. meas. file, but it does not extract the error of the qspec fit because that was not saved in the h5 files.
                         qubit_freq_MHz_rpmfile = load_data['q_temperatures'][q_key].get('Qfreq_ge', [])[0][dataset] #extract to compare with the 'matching' method
-                        print(f"QSpec from RPM file, Q{q_key}: {qubit_freq_MHz_rpmfile:.3f} MHz") # print to compare
+                        print(f"QSpec from RPM file, Q{q_key}: {qubit_freq_MHz_rpmfile} MHz") # print to compare
 
                         # To find the correct qspec fit error from the ge qspec files, we have to match the qspec files to the RPM files via time stamps.
 
@@ -1724,7 +1724,6 @@ class PlotRR_noQick:
                     exp_config = eval(exp_config, safe_globals)
                     rabi_cfg = exp_config['power_rabi_ef']
                     if len(I1) > 0:
-                        save_figs = False
                         rabi_class_instance = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits, list_of_all_qubits,
                                                                       self.outerFolder_save_plots, round_num,
                                                                       self.signal, save_figs)
@@ -1735,7 +1734,6 @@ class PlotRR_noQick:
                         del rabi_class_instance
 
                     if len(I2) > 0:
-                        save_figs = False
                         rabi_class_instance = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits,
                                                                         list_of_all_qubits,
                                                                         self.outerFolder_save_plots, round_num,

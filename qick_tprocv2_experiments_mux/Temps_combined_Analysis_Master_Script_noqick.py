@@ -23,7 +23,7 @@ run_name = 'run6/6transmon'
 signal = 'None' # Do not change
 
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
-replot_RPMs = False # Do you want to re-plot rabi population measurements from RR data?
+replot_RPMs = True # Do you want to re-plot rabi population measurements from RR data?
 save_figsRR = False # Do you want to save (or not save) the re-plotted rabi population measurements plots?
 save_figs = False # To be used in general for any function or class to saver (or not save) plots.
 fit_saved = False # Not used here, set to false.
@@ -43,7 +43,7 @@ qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "
                       "combined_studies_qtemps": False}
 
 # What analysis plots do you want to make?
-analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
+analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False,  "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis
@@ -86,21 +86,21 @@ comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_tim
 #     "2025-05-16"
 #     ]
 # dates during Heater temperature steps
-#target_dates_qtemps_RPM = ["2025-05-07", "2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16"]
+target_dates_qtemps_RPM = ["2025-05-07", "2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16"]
 
 # if you want to look at just one specific date
 # target_dates_qtemps_RPM = ["2025-05-05"]
 
-target_dates_qtemps_RPM = [
-    "2025-05-04",
-    "2025-05-05",
-    "2025-05-06",
-    "2025-05-07"]
+# target_dates_qtemps_RPM = [
+#     "2025-05-04",
+#     "2025-05-05",
+#     "2025-05-06",
+#     "2025-05-07"]
 
 base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study"
 
 # To re-make and save RPM RR plots
-outerFolder_qtemps_plots_RR = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/PlotRR"
+outerFolder_qtemps_plots_RR = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/Plots_RR"
 
 # For RPM Analysis
 outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots" # Inside each analysis function, a subfolder will be defined

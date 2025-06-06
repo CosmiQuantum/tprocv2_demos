@@ -169,11 +169,11 @@ class Temps_EFAmpRabiExperiment:
             plt.subplots_adjust(top=0.93)
 
             if self.save_figs:
-                outerFolder_expt = os.path.join(self.outerFolder, "Qtemps")
+                outerFolder_expt = os.path.join(self.outerFolder, "q_temperatures")
                 self.create_folder_if_not_exists(outerFolder_expt)
                 now = datetime.datetime.now()
                 formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-                file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"Qtemps_q{self.QubitIndex + 1}.png")
+                file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"Qtemps_RPM_q{self.QubitIndex + 1}.png")
                 fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
             plt.close(fig)
             return best_signal_fit, pi_amp, A_amplitude, A_amplitude_err, amp_fit
