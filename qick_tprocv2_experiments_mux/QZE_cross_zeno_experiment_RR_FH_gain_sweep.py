@@ -18,7 +18,6 @@ from section_005_single_shot_ge import SingleShot
 from section_008_save_data_to_h5 import Data_H5
 from system_config import QICK_experiment
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
-
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_002_res_spec_ef import ResonanceSpectroscopyEF
 from section_002_res_spec_fh import ResonanceSpectroscopyFH
@@ -56,7 +55,7 @@ save_r = 1                           # how many rounds to save after
 signal = 'None'                      # 'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization
 save_figs = True                     # save plots for everything as you go along the RR script?
 live_plot = False                    # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
-fit_data = False                     # fit the data here and save or plot the fits?
+fit_data = True                     # fit the data here and save or plot the fits?
 save_data_h5 = True                  # save all of the data to h5 files?
 verbose = True                       # print everything to the console in real time, good for debugging, bad for memory
 debug_mode = False                    # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
@@ -90,7 +89,7 @@ subStudyFolder = os.path.join(studyFolder, sub_study)
 if not os.path.exists(subStudyFolder):
     os.makedirs(subStudyFolder)
 
-formatted_datetime = 'fh_noise_transition_tests' + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+formatted_datetime = 'fh_rough_gain_sweep_100nsNoisePulse_'+ datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 dataSetFolder = os.path.join(subStudyFolder, formatted_datetime)
 optimizationFolder = os.path.join(dataSetFolder, 'optimization')
 studyFolder = os.path.join(dataSetFolder, 'study_data')
@@ -157,6 +156,7 @@ t2r_keys = ['T2', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num'
 t2e_keys = ['T2E', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num', 'Batch Num', 'Exp Config',
             'Syst Config']
 
+
 #initialize a dictionary to store those values
 res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
 qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
@@ -191,7 +191,6 @@ t1_data_fh_w_noise = create_data_dict(t1_keys, save_r, list_of_all_qubits)
 
 ss_data_gef = create_data_dict(ss_keys_gef, save_r, list_of_all_qubits)
 
-
 #initialize a simple list to store the qspec values in incase a fit fails
 stored_qspec_list = [None] * tot_num_of_qubits
 batch_num=0
@@ -199,11 +198,12 @@ j = 0
 qubit_freqs_ge = np.zeros(6)
 qubit_freqs_ef = np.zeros(6)
 res_freq_ge = np.zeros(6)
-freq=-2
-while j < n:
+gains = np.linspace(0.001,1, 10)
+for gain in gains:
     for QubitIndex in Qs_to_look_at:
         experiment = QICK_experiment(optimizationFolder, DAC_attenuator1=5, DAC_attenuator2=10, ADC_attenuator=10,
                                      fridge=FRIDGE)
+
         # Mask out all other resonators except this one
         res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=res_gain[QubitIndex], num_qubits=tot_num_of_qubits)
         experiment.readout_cfg['res_gain_ge'] = res_gains
@@ -216,10 +216,11 @@ while j < n:
         experiment.readout_cfg['res_gain_fh'] = res_gains_fh
 
         experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
-
+        experiment.qubit_cfg['noise_pulse_gain']=gain
         ################################################# g-e Res spec ####################################################
         if run_flags["res_spec_ge"]:
             try:
+
                 res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
                                                  experiment)
                 res_freqs, freq_pts, freq_center, amps, sys_config_rspec = res_spec.run()
@@ -592,7 +593,7 @@ while j < n:
                                                        qubit_to_increase_reps_for=qubit_to_increase_reps_for,
                                                        multiply_qubit_reps_by=multiply_qubit_reps_by, noise_type='fh')
                 t1_est_ge_w_noise, t1_err_ge_w_noise, t1_I_ge_w_noise, t1_Q_ge_w_noise, t1_delay_times_ge_w_noise, q1_fit_exponential_ge_w_noise, sys_config_t1_ge_w_noise = t1_ge_w_noise.run(
-                    thresholding=False, noise_type='fh', offset=freq)
+                    thresholding=False, noise_type='fh')
 
                 print('Qubit ', QubitIndex + 1, ' g-e T1: ', str(t1_est_ge_w_noise))
 
@@ -620,7 +621,7 @@ while j < n:
                 (t1_est_fe_w_noise, t1_err_fe_w_noise, t1_I_fe_w_noise, t1_Q_fe_w_noise,
                  t1_delay_times_fe_w_noise, q1_fit_exponential_fe_w_noise,
                  sys_config_t1_fe_w_noise) = t1_fe_w_noise.run(
-                    thresholding=False,noise_type='fh')
+                    thresholding=False, noise_type='fh')
 
                 print('Qubit ', QubitIndex + 1, ' f-e T1: ', str(t1_est_fe_w_noise))
 
@@ -648,7 +649,7 @@ while j < n:
                 (t1_est_fh_w_noise, t1_err_fh_w_noise, t1_I_fh_w_noise, t1_Q_fh_w_noise,
                  t1_delay_times_fh_w_noise, q1_fit_exponential_fh_w_noise,
                  sys_config_t1_fh_w_noise) = t1_fh_w_noise.run(
-                    thresholding=False, offset=freq)
+                    thresholding=False)
 
                 print('Qubit ', QubitIndex + 1, ' f-h T1: ', str(t1_est_fh_w_noise))
 
@@ -697,7 +698,7 @@ while j < n:
                                                       multiply_qubit_reps_by=multiply_qubit_reps_by,
                                                       verbose=verbose, logger=rr_logger, noise_type='fh')
                 (t2e_est_w_noise, t2e_err_w_noise, t2e_I_w_noise, t2e_Q_w_noise, t2e_delay_times_w_noise,
-                 fit_t2e_w_noise, sys_config_t2e_w_noise) = t2e_w_noise.run(thresholding=thresholding, noise_type='fh', offset=freq)
+                 fit_t2e_w_noise, sys_config_t2e_w_noise) = t2e_w_noise.run(thresholding=thresholding, noise_type='fh')
                 del t2e_w_noise
 
             except Exception as e:
@@ -723,7 +724,7 @@ while j < n:
                 (t2dephased_fh_noise_est, t2dephased_fh_noise_err, t2dephased_fh_noise_I, t2dephased_fh_noise_Q,
                  t2dephased_fh_noise_delay_times,
                  fit_t2dephased_fh_noise, sys_config_t2dephased_fh_noise) = dephase_fh_noise.run(
-                    thresholding=thresholding, freq_offset=freq)
+                    thresholding=thresholding, freq_offset=0)
                 del dephase_fh_noise
 
             except Exception as e:
@@ -733,7 +734,6 @@ while j < n:
                     rr_logger.exception(f'DD w fh noise error on qubit {QubitIndex}: {e}')
                     if verbose: print(f'DD w fh noise error on qubit {QubitIndex}: {e}')
                     continue  # skip the rest of this qubit
-
 
         ############################################### Collect Results ################################################
         if save_data_h5:
@@ -1034,15 +1034,18 @@ while j < n:
                     time.mktime(datetime.datetime.now().timetuple()))
                 t2dephased_data_fh_noise[QubitIndex]['I'][j - batch_num * save_r - 1] = t2dephased_fh_noise_I
                 t2dephased_data_fh_noise[QubitIndex]['Q'][j - batch_num * save_r - 1] = t2dephased_fh_noise_Q
-                t2dephased_data_fh_noise[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = t2dephased_fh_noise_delay_times
+                t2dephased_data_fh_noise[QubitIndex]['Delay Times'][
+                    j - batch_num * save_r - 1] = t2dephased_fh_noise_delay_times
                 t2dephased_data_fh_noise[QubitIndex]['Fit'][j - batch_num * save_r - 1] = fit_t2dephased_fh_noise
                 t2dephased_data_fh_noise[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
                 t2dephased_data_fh_noise[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 t2dephased_data_fh_noise[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                t2dephased_data_fh_noise[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t2dephased_fh_noise
+                t2dephased_data_fh_noise[QubitIndex]['Syst Config'][
+                    j - batch_num * save_r - 1] = sys_config_t2dephased_fh_noise
 
         del experiment
 
+        ################################################## Potentially Save ################################################
         ################################################## Potentially Save ################################################
     if save_data_h5:
         # Check if you are at the right round number
@@ -1194,7 +1197,6 @@ while j < n:
                 saver_t2dephased_fh_noise.save_to_h5('DD_ge_fh_noise')
                 del saver_t2dephased_fh_noise
                 del t2dephased_data_fh_noise
-
 
             # reset all dictionaries to none for safety
             res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)

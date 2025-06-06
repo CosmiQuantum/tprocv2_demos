@@ -145,7 +145,7 @@ class QICK_experiment:
                 #"pi_amp": [0.7, 0.95, 0.75, 0.78, 0.77, 0.8],  # With shorter sigma (5+4 DAC instead of 5+5 DAC atten for qubit)
                 "pi_ef_amp": [0.7085, 0.6817, 0.6617, 0.7018, 0.6751, 0.6951], # Arianna 3/27
                 "pi_fh_amp": [0.7085, 0.6817, 0.6617, 0.7018, 0.6751, 0.6951],  # Olivia 5/25
-                "noise_pulse_gain": 0.02,#0.02 for ef noise, #olivia 5/27
+                "noise_pulse_gain": 0.6,#0.02 for ef noise, #olivia 5/27
                 "noise_pulse_len": 0.1,  # olivia 5/27, cant go above 100us on the qubit channel or i get pulse lineght out of range err
                 "noise_pulse_ramp_time":3, #us
                 "qubit_mixer_freq": 4300,  # [MHz]

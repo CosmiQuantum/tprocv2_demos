@@ -253,6 +253,7 @@ class T2RProgramFHNoise(AveragerProgramV2):
                        phase=cfg['qubit_phase'] + cfg['wait_time']*360*cfg['ramsey_freq'], # current phase + time * 2pi * ramsey freq
                        gain=cfg['pi_amp'] / 2,
                       )
+        print('noise_pulse_gain:',cfg['noise_pulse_gain'])
         self.declare_gen(ch=noise_ch, nqz=cfg['nqz_qubit'],
                          mixer_freq=cfg['qubit_mixer_freq'])  # mix_freq? , mixer_freq=cfg['qubit_mixer_freq']
         self.add_pulse(ch=noise_ch, name="noise_pulse",

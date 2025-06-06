@@ -132,9 +132,11 @@ class FH_T1MeasurementWithNoise:
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} {expt_name} configuration: {self.config}')
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} T1 configuration: {self.config}')
 
-    def run(self, thresholding=False):
+    def run(self, thresholding=False, offset=None):
         now = datetime.datetime.now()
         t1=''
+        if offset is not None:
+            self.config['noise_offset_freq'] = round(offset,4)
         t1 = FH_T1Program(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
 
         if self.live_plot:

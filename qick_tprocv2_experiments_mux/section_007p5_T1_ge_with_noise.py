@@ -107,6 +107,7 @@ class T1ProgramFH(AveragerProgramV2):
                        gain=cfg['noise_pulse_gain'],
                        mode='periodic'
                        )
+        print('noise_pulse_gain:', cfg['noise_pulse_gain'])
         self.add_pulse(ch=noise_ch, name="stop_periodic_pulse",
                        style="const",
                        length=0.01,
