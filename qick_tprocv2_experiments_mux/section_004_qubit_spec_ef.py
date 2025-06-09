@@ -50,7 +50,9 @@ class EFQubitSpectroscopy:
 
 
         largest_amp_curve_mean, efI_fit, efQ_fit = self.plot_results(efI, efQ, effreqs, config = self.config)
+        # self.plot_results(efI, efQ, effreqs, config=self.config)
         return efI, efQ, effreqs, efI_fit, efQ_fit, largest_amp_curve_mean, self.config
+        # return efI, efQ, effreqs,  self.config
 
     def live_plotting(self, qspec, soc):
         I = Q = expt_mags = expt_phases = expt_pop = None
@@ -117,13 +119,13 @@ class EFQubitSpectroscopy:
         # Add title, centered on the plot area
         if config is not None:  # then its been passed to this definition, so use that
             fig.text(plot_middle, 0.98,
-                     f"EF Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean +
+                     f"EF Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz% largest_amp_curve_mean +"
                      f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
                      f", {config['reps']}*{config['rounds']} avgs",
                      fontsize=24, ha='center', va='top')
         else:
             fig.text(plot_middle, 0.98,
-                     f"EF Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean +
+                     f"EF Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz % largest_amp_curve_mean +"
                      f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
                      f", {self.config['reps']}*{self.config['rounds']} avgs",
                      fontsize=24, ha='center', va='top')
@@ -300,6 +302,7 @@ class EFPulseProbeSpectroscopyProgram(AveragerProgramV2):
         self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play ge pi pulse
         self.delay_auto(t=0.0, tag='waiting after pi')  # Wait til qubit pulse is done before proceeding
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play e-f pulse
+        # self.delay_auto(t=0.01, tag='waiting')  # Wait til qubit e-f pulse is done before proceeding
         self.delay_auto(t=0.01, tag='waiting')  # Wait til qubit e-f pulse is done before proceeding
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0) #readout
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])

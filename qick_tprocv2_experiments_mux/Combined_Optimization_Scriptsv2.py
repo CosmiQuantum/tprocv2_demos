@@ -28,7 +28,7 @@ live_plot = False    # for live plotting open http://localhost:8097/ on firefox
 fit_data = False # always set to False
 FRIDGE = "QUIET"
 number_of_qubits = 6 #for QUIET 6, for NEXUS 4
-list_of_all_qubits = [0, 1, 2, 3, 4, 5] #for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0, 1, 2, 3]
+list_of_all_qubits = [1]#[0, 1, 2, 3, 4, 5] #for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0, 1, 2, 3]
 
 # For Nexus
 # outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30", str(datetime.date.today())) #change run number in each new run

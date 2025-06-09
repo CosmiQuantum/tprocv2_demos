@@ -301,16 +301,25 @@ class SingleShot_ef:
         """Compute the rotation angle"""
         #Will use the same angle to rotate all datasets (g, e, and f), to ensure that all states are rotated into a common frame for direct comparison.
         theta_ge = -np.arctan2((ye - yg), (xe - xg))
-        # theta_gf = -np.arctan2((yf - yg), (xf - xg))
+        theta_gf = -np.arctan2((yf - yg), (xf - xg))
+        theta_ef = -np.arctan2((yf - yg), (xf - xg))
+
 
         """Rotate the IQ data"""
-        ig_new = ig * np.cos(theta_ge) - qg * np.sin(theta_ge)
-        qg_new = ig * np.sin(theta_ge) + qg * np.cos(theta_ge)
-        ie_new = ie * np.cos(theta_ge) - qe * np.sin(theta_ge)
-        qe_new = ie * np.sin(theta_ge) + qe * np.cos(theta_ge)
+        # ig_new = ig * np.cos(theta_ge) - qg * np.sin(theta_ge)
+        # qg_new = ig * np.sin(theta_ge) + qg * np.cos(theta_ge)
+        # ie_new = ie * np.cos(theta_ge) - qe * np.sin(theta_ge)
+        # qe_new = ie * np.sin(theta_ge) + qe * np.cos(theta_ge)
+        #
+        # if_new = i_f * np.cos(theta_ge) - qf * np.sin(theta_ge)
+        # qf_new = i_f * np.sin(theta_ge) + qf * np.cos(theta_ge)
+        ig_new = ig * np.cos(theta_gf) - qg * np.sin(theta_gf)
+        qg_new = ig * np.sin(theta_gf) + qg * np.cos(theta_gf)
+        ie_new = ie * np.cos(theta_gf) - qe * np.sin(theta_gf)
+        qe_new = ie * np.sin(theta_gf) + qe * np.cos(theta_gf)
 
-        if_new = i_f * np.cos(theta_ge) - qf * np.sin(theta_ge)
-        qf_new = i_f * np.sin(theta_ge) + qf * np.cos(theta_ge)
+        if_new = i_f * np.cos(theta_gf) - qf * np.sin(theta_gf)
+        qf_new = i_f * np.sin(theta_gf) + qf * np.cos(theta_gf)
 
         """New means of each blob"""
         xg, yg = np.median(ig_new), np.median(qg_new)
@@ -330,7 +339,7 @@ class SingleShot_ef:
             axs[1].scatter(xf, yf, color='k', marker='o')
             axs[1].set_xlabel('I (a.u.)')
             axs[1].legend(loc='lower right')
-            axs[1].set_title(f'Rotated Theta:{round(theta_ge, 5)}')
+            axs[1].set_title(f'Rotated Theta:{round(theta_gf, 5)}')
             axs[1].axis('equal')
 
             # --- Draw a circle around the f-state centroid ---

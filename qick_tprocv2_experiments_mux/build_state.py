@@ -28,7 +28,7 @@ def add_readout_cfg(system_config, QubitIndex):
 def add_qubit_cfg(system_config, QubitIndex):
     qubit_config = copy.deepcopy(system_config.qubit_cfg)
     var = ["qubit_freq_ge", "qubit_gain_ge", "sigma", "sigma_ef", "pi_amp", "pi_ef_amp" , "qubit_freq_ef","qubit_freq_fh",
-           "qubit_gain_ef", 'qubit_freq_ftores', 'qubit_gain_ftores',  "qubit_length_ftores"]
+           "qubit_gain_ef", 'qubit_freq_ftores', 'qubit_gain_ftores',  "qubit_length_ftores", "pi_f2res_amp"]
     for Index in var:
         value = qubit_config[Index][QubitIndex]
         qubit_config.update([(Index,value)])

@@ -45,7 +45,7 @@ zero_qubit_drive_gain = False
 constant_zeno_pulse = True
 adapt_starked_qubit_freq = False
 wait_for_res_ring_up = True
-n= 100 #3000
+n= 10 #3000
 save_r = 1                           # how many rounds to save after
 signal = 'None'                      # 'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization
 save_figs = True                     # save plots for everything as you go along the RR script?
@@ -60,7 +60,7 @@ qubit_to_increase_reps_for = 0       # only has impact if previous line is True
 multiply_qubit_reps_by = 2           # only has impact if the line two above is True
 increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
 increase_steps_to_ef = 600
-Qs_to_look_at = [0,1,2,3,4,5 ]#0,1,2,3,4,5        # only list the qubits you want to do the RR for
+Qs_to_look_at = [1,2,3,4,5 ]#0,1,2,3,4,5        # only list the qubits you want to do the RR for
 # study = 'QZE'
 # sub_study = 'dephasing_from_higher_energy_levels'
 # substudy_txt_notes = ('Lets give this an initial test and make sure all of these experiments work well, on qubit 2')
@@ -72,7 +72,7 @@ substudy_txt_notes = ('Checking for parity states')
 #              "q_spec_ef": True,"q_spec_fh": True, "rabi_ef": False,
 #              "rabi_fh": False, "t1_ge": False, "t1_fg": False, "t1_fe": False,
 #              "t2r": False,"t2e": False, "dephased": False,"dephased_with_ef_noise": False,"dephased_with_fh_noise": False}
-run_flags = {"res_spec_ge": True, "q_spec_ge": True, "rabi_ge": True, "res_spec_ef": True, "res_spec_fh": False,
+run_flags = {"res_spec_ge": True, "q_spec_ge": True, "rabi_ge": True, "res_spec_ef": True, "res_spec_fh": True,
              "q_spec_ef": True,"q_spec_fh": True, "rabi_ef": True,
              "rabi_fh": False, "t1_ge": False, "t1_fg": False, "t1_fe": False,
              "t2r": False,"t2e": False, "dephased": False,"dephased_with_ef_noise": False,"dephased_with_fh_noise": False}
@@ -348,8 +348,9 @@ while j < n:
             fhrabi_I, fhrabi_Q, fhrabi_gains, fhrabi_fit, fhpi_amp, sys_config_rabi_fh = fhrabi.run(experiment.soccfg,
                                                                                                     experiment.soc)
 
-            experiment.qubit_cfg['pi_fh_amp'][QubitIndex] = float(fhpi_amp)
-            print('Qubit ', QubitIndex + 1, ' f-h pulse amp: ', float(fhpi_amp))
+            print('Qubit ', QubitIndex + 1, ' f-h pulse amp: ', fhpi_amp)
+            experiment.qubit_cfg['pi_fh_amp'][QubitIndex] = fhpi_amp
+
 
             del fhrabi
         ###################################################### g-e T1 ####################################################
