@@ -1,3 +1,4 @@
+
 from build_task import *
 from build_state import *
 from expt_config import *
@@ -229,13 +230,16 @@ class QubitSpectroscopy:
         else:
             return largest_amp_curve_mean, I_fit, Q_fit
 
-    def get_results(self, I, Q, freqs):
+    def get_results(self, I, Q, freqs, return_fwhm=False):
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
 
         mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, qspec_fit_err = self.fit_lorenzian(I, Q, freqs, freq_q)
 
-        return largest_amp_curve_mean, I_fit, Q_fit, qspec_fit_err
+        if return_fwhm:
+            return largest_amp_curve_mean, I_fit, Q_fit, qspec_fit_err, largest_amp_curve_fwhm
+        else:
+            return largest_amp_curve_mean, I_fit, Q_fit, qspec_fit_err
 
 
     def lorentzian(self, f, f0, gamma, A, B):

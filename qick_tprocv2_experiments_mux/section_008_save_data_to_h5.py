@@ -192,7 +192,7 @@ class Data_H5:
                                        'Amps': 'Amps', 'Found Freqs': 'Found Freqs', 'Round Num': 'Round Num',
                                        'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
                                        'Syst Config': 'Syst Config'}
-                    elif data_type == 'QSpec' or data_type == 'QSpec_ge' or  data_type == 'QSpec_ef' or data_type == 'qspec_ge':
+                    elif data_type == 'QSpec' or data_type == 'QSpec_ge' or  data_type == 'QSpec_ef' or  data_type == 'QSpec_fh' or data_type == 'qspec_ge':
                         target_keys = {'Dates': 'Dates', 'I': 'I', 'Q': 'Q', 'Frequencies': 'Frequencies',
                                        'I Fit': 'I Fit', 'Q Fit': 'Q Fit', 'Round Num': 'Round Num',
                                        'Batch Num': 'Batch Num', 'Recycled QFreq': 'Recycled QFreq',
