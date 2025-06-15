@@ -72,7 +72,7 @@ top_folder_dates = ['2025-05-29_07-22-46', '2025-05-29_09-00-02']
 #
 # #top_folder_dates = ['2025-05-29_23-07-00']
 # #top_folder_dates = ['2025-05-29_23-50-15']
-top_folder_dates = ['fh_noise_transition_tests2025-06-06_00-27-37']
+top_folder_dates = ['Statistics_ef_noise_gain_0p02_100nsNoisePulse_2025-06-04_21-37-45','Statistics_ef_noise_gain_0p02_100nsNoisePulse_2025-06-05_09-28-35']
 #
 #
 dephasing_vs_time = DephasingVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
@@ -83,7 +83,7 @@ date_times_dephasing, dephasing_vals, dephasing_fit_err = dephasing_vs_time.run(
 
 date_times_t2r_w_noise, t2r_vals_w_noise, t2r_fit_err_w_noise = dephasing_vs_time.run(return_errs=True,name='T2_ge_w_noise',savefigs=True, filters=True)
 date_times_t2e_w_noise, t2e_vals_w_noise, t2e_fit_err_w_noise = dephasing_vs_time.run(return_errs=True,name='T2E_ge_w_noise',savefigs=True, filters=True)
-date_times_dephasing_ef, dephasing_vals_ef, dephasing_fit_err_ef = dephasing_vs_time.run(return_errs=True,name='DD_ge_fh_noise',savefigs=True, filters=True)
+date_times_dephasing_ef, dephasing_vals_ef, dephasing_fit_err_ef = dephasing_vs_time.run(return_errs=True,name='DD_ge_ef_noise',savefigs=True, filters=True)
 
 dephasing_vs_time.plot_with_errs_vs_everything(date_times_t2r=date_times_t2r, t2r_vals=t2r_vals, t2r_fit_err=t2r_fit_err,
     date_times_dephasing=date_times_dephasing, dephasing_vals=dephasing_vals, dephasing_fit_err=dephasing_fit_err,

@@ -1,3 +1,4 @@
+import numpy as np
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 from build_task import *
@@ -169,6 +170,9 @@ class T1Measurement:
             plot_sig = 'I'
         elif 'Q' in self.signal:
             signal = Q
+            plot_sig = 'Q'
+        elif 'Mag' in self.signal:
+            signal = np.hypot(I, Q)
             plot_sig = 'Q'
         else:
             if abs(I[-1] - I[0]) > abs(Q[-1] - Q[0]):

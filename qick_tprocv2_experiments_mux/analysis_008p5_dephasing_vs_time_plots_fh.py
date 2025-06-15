@@ -114,9 +114,10 @@ class DephasingVsTimeFH:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run_T1(self,return_errs=False,return_noise_gain=False,return_freq_offset=False,name='Dephased_ge', savefigs=False, fit=False):
+    def run_T1(self, return_errs=False, return_noise_gain=False, return_freq_offset=False, name='Dephased_ge',
+               savefigs=False, fit=False, batch_nums=False):
         import datetime
-        self.name=name
+        self.name = name
         # ----------Load/get data------------------------
         t1_vals = {i: [] for i in range(self.number_of_qubits)}
         t1_errs = {i: [] for i in range(self.number_of_qubits)}
@@ -125,6 +126,7 @@ class DephasingVsTimeFH:
         noise_gains = {i: [] for i in range(self.number_of_qubits)}
         Delay_Times = {i: [] for i in range(self.number_of_qubits)}
         freq_offsets = {i: [] for i in range(self.number_of_qubits)}
+        batch_numb = {i: [] for i in range(self.number_of_qubits)}
         rounds = []
         reps = []
         file_names = []
@@ -150,7 +152,7 @@ class DephasingVsTimeFH:
                 H5_class_instance = Data_H5(h5_file)
                 load_data = H5_class_instance.load_from_h5(data_type='T1', save_r=int(save_round))
 
-                #H5_class_instance.print_h5_contents(h5_file)
+                # H5_class_instance.print_h5_contents(h5_file)
                 # Define specific days to exclude
                 exclude_dates = {
                     datetime.date(2025, 1, 26),  # power outage
@@ -174,7 +176,8 @@ class DephasingVsTimeFH:
 
                         I = self.process_h5_data(load_data['T1'][q_key].get('I', [])[0][dataset].decode())
                         Q = self.process_h5_data(load_data['T1'][q_key].get('Q', [])[0][dataset].decode())
-                        delay_times = self.process_h5_data(load_data['T1'][q_key].get('Delay Times', [])[0][dataset].decode())
+                        delay_times = self.process_h5_data(
+                            load_data['T1'][q_key].get('Delay Times', [])[0][dataset].decode())
                         # fit = load_data['T2E'][q_key].get('Fit', [])[0][dataset]
                         round_num = load_data['T1'][q_key].get('Round Num', [])[0][dataset]
                         batch_num = load_data['T1'][q_key].get('Batch Num', [])[0][dataset]
@@ -183,8 +186,6 @@ class DephasingVsTimeFH:
                         exp_config = load_data['T1'][q_key].get('Exp Config', [])[0][dataset].decode()
                         safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
                         exp_config = eval(exp_config, safe_globals)
-
-
 
                         if len(I) > 0:
 
@@ -196,21 +197,28 @@ class DephasingVsTimeFH:
                                     freq_offsets[q_key].extend([
                                         round(float(syst_config.split('noise_offset_freq\': ')[-1].split('}')[0]), 4)])
                                 if fit:
-                                    T1_class_instance = T1Measurement(q_key, self.number_of_qubits, outerFolder_save_plots,
-                                                                      round_num, self.signal, self.save_figs,
+
+                                    T1_class_instance = T1Measurement(q_key, self.number_of_qubits,
+                                                                      outerFolder_save_plots,
+                                                                      round_num, 'Mag', self.save_figs,
                                                                       fit_data=True)
                                     # T1_spec_cfg = exp_config['T1_ge']
                                     q1_fit_exponential, T1_err, T1_est, plot_sig = T1_class_instance.t1_fit(I, Q,
                                                                                                             delay_times)
+                                    if savefigs:
+                                        self.plot_results(I, Q, delay_times, q1_fit_exponential, T1_est,
+                                                          T1_err, config=None, fig_quality=100,
+                                                          outerFolder=outerFolder_save_plots, expt_name=name,
+                                                          coherence_type='T1')
                                     if T1_est < 0:
                                         print("The value is negative, continuing...")
                                         continue
                                     if T1_est > 1000:
                                         print("The value is above 1000 us, this is a bad fit, continuing...")
                                         continue
-                                    if T1_err >= 0.8 * T1_est:
+                                    if T1_err >=  T1_est:
                                         print(
-                                            f"Skipping T1 = {T1_est:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
+                                            f"Skipping T1 = {T1_est:.3f} µs because its error {T1_err:.3f} µs is >= 100% of its value.")
                                         continue
 
                                     t1_vals[q_key].extend([T1_est])
@@ -219,13 +227,18 @@ class DephasingVsTimeFH:
 
                                 Is[q_key].extend([I])
                                 Qs[q_key].extend([Q])
+                                if batch_nums:
+                                    batch = h5_file.split('_batch_')[-1].split('_Num_')[0]
+                                    batch_numb[q_key].extend([batch])
                                 Delay_Times[q_key].extend([delay_times])
                                 date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
 
                 del H5_class_instance
-
         if return_errs:
-            return date_times, t1_vals, t1_errs
+            if batch_nums:
+                return date_times, t1_vals, t1_errs, batch_numb
+            else:
+                return date_times, t1_vals, t1_errs
 
         elif return_noise_gain:
             return date_times, t1_vals, noise_gains, Is, Qs, Delay_Times
@@ -234,9 +247,10 @@ class DephasingVsTimeFH:
         else:
             return date_times, t1_vals
 
-    def run(self,return_errs=False,return_noise_gain=False,return_freq_offset=False,name='Dephased_ge', savefigs=False, filters=False):
+    def run(self, return_errs=False, return_noise_gain=False, return_freq_offset=False, name='Dephased_ge',
+            savefigs=False, filters=False, batch_nums=False, save_plot_folder=''):
         import datetime
-        self.name=name
+        self.name = name
         # ----------Load/get data------------------------
         t2e_vals = {i: [] for i in range(self.number_of_qubits)}
         t2e_errs = {i: [] for i in range(self.number_of_qubits)}
@@ -245,6 +259,7 @@ class DephasingVsTimeFH:
         noise_gains = {i: [] for i in range(self.number_of_qubits)}
         Delay_Times = {i: [] for i in range(self.number_of_qubits)}
         freq_offsets = {i: [] for i in range(self.number_of_qubits)}
+        batch_numb = {i: [] for i in range(self.number_of_qubits)}
         rounds = []
         reps = []
         file_names = []
@@ -261,7 +276,7 @@ class DephasingVsTimeFH:
                 outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
             else:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
-
+            save_plot_folder = outerFolder_save_plots
             # -------------------------------------------------------Load/Plot/Save T2E------------------------------------------
             outerFolder_expt = outerFolder + f"/Data_h5/{name}/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -272,7 +287,7 @@ class DephasingVsTimeFH:
 
                 load_data = H5_class_instance.load_from_h5(data_type='T2E', save_r=int(save_round))
 
-                #H5_class_instance.print_h5_contents(h5_file)
+                # H5_class_instance.print_h5_contents(h5_file)
                 # Define specific days to exclude
                 exclude_dates = {
                     datetime.date(2025, 1, 26),  # power outage
@@ -296,7 +311,8 @@ class DephasingVsTimeFH:
 
                         I = self.process_h5_data(load_data['T2E'][q_key].get('I', [])[0][dataset].decode())
                         Q = self.process_h5_data(load_data['T2E'][q_key].get('Q', [])[0][dataset].decode())
-                        delay_times = self.process_h5_data(load_data['T2E'][q_key].get('Delay Times', [])[0][dataset].decode())
+                        delay_times = self.process_h5_data(
+                            load_data['T2E'][q_key].get('Delay Times', [])[0][dataset].decode())
                         # fit = load_data['T2E'][q_key].get('Fit', [])[0][dataset]
                         round_num = load_data['T2E'][q_key].get('Round Num', [])[0][dataset]
                         batch_num = load_data['T2E'][q_key].get('Batch Num', [])[0][dataset]
@@ -306,18 +322,18 @@ class DephasingVsTimeFH:
                         safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
                         exp_config = eval(exp_config, safe_globals)
 
-
-
                         if len(I) > 0:
 
-
-                            T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
-                                                               fit_data=True)
+                            T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits, outerFolder_save_plots,
+                                                                round_num, self.signal, self.save_figs,
+                                                                fit_data=True)
                             try:
-                                fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q, mag=True)
+                                fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q,
+                                                                                               mag=True)
                                 if savefigs:
-                                    self.plot_results(I, Q, delay_times,  fitted, t2e_est,
-                                                     t2e_err, config=None, fig_quality=100,outerFolder=outerFolder, expt_name=name)
+                                    self.plot_results(I, Q, delay_times, fitted, t2e_est,
+                                                      t2e_err, config=None, fig_quality=100,
+                                                      outerFolder=save_plot_folder, expt_name=name)
                             except Exception as e:
                                 print(f"good fit not found, error: {e}")
                                 continue
@@ -333,9 +349,8 @@ class DephasingVsTimeFH:
                                     print(
                                         f"Skipping T2R = {t2e_est:.3f} µs because its error {t2e_err:.3f} µs is >= 80% of its value.")
                                     continue
-                            gain=round(float(syst_config.split('noise_pulse_gain\': ')[-1].split(',')[0]), 4)
-                            print(syst_config)
-                            if gain >=0:
+                            gain = round(float(syst_config.split('noise_pulse_gain\': ')[-1].split(',')[0]), 4)
+                            if gain >= 0:
                                 noise_gains[q_key].extend([
                                     gain])
                                 t2e_vals[q_key].extend([t2e_est])
@@ -344,6 +359,9 @@ class DephasingVsTimeFH:
                                 Is[q_key].extend([I])
                                 Qs[q_key].extend([Q])
                                 Delay_Times[q_key].extend([delay_times])
+                                if batch_nums:
+                                    batch = h5_file.split('_batch_')[-1].split('_Num_')[0]
+                                    batch_numb[q_key].extend([batch])
                                 date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
                                 if return_freq_offset:
                                     freq_offsets[q_key].extend([
@@ -353,15 +371,20 @@ class DephasingVsTimeFH:
                 del H5_class_instance
 
         if return_errs:
-            return date_times, t2e_vals, t2e_errs
+            if batch_nums:
+                return date_times, t2e_vals, t2e_errs, batch_numb
+            else:
+                return date_times, t2e_vals, t2e_errs
+
         elif return_noise_gain:
             return date_times, t2e_vals, noise_gains, Is, Qs, Delay_Times
         elif return_freq_offset:
             return date_times, t2e_vals, noise_gains, Is, Qs, Delay_Times, freq_offsets
         else:
             return date_times, t2e_vals
-    def plot_results(self, I, Q, delay_times,  fit, t2e_est,
-                     t2e_err, config=None, fig_quality=100, outerFolder='', expt_name=None):
+
+    def plot_results(self, I, Q, delay_times, fit, t2e_est,
+                     t2e_err, config=None, fig_quality=100, outerFolder='', expt_name=None, coherence_type='T2'):
         mag = np.hypot(I, Q)
 
         fig, ax = plt.subplots(1, 1, figsize=(10, 5))
@@ -369,10 +392,10 @@ class DephasingVsTimeFH:
 
         plot_middle = (ax.get_position().x0 + ax.get_position().x1) / 2
         title_str = (f"  "
-                     f"T2 = {t2e_est:0.2f} µs  "
+                     f"{coherence_type} = {t2e_est:0.2f} µs  "
                      f"({int(config['reps'])} × {int(config['rounds'])} avgs)"
                      if config is not None else
-                     f"T2 = {t2e_est:0.2f} µs")
+                     f"{coherence_type} = {t2e_est:0.2f} µs")
         fig.text(plot_middle, 0.98, title_str, fontsize=24, ha='center', va='top')
 
         ax.plot(delay_times, mag, "-", label="Magnitude", linewidth=2)
@@ -395,6 +418,7 @@ class DephasingVsTimeFH:
                         dpi=fig_quality, bbox_inches='tight')
 
         plt.close(fig)
+
     def plot_noise_vs_offset(
             self,
             date_times: dict[int, list[str]],
@@ -1372,3 +1396,163 @@ class DephasingVsTimeFH:
         print('Plot saved at: ', analysis_folder)
         plt.close()
 
+    def plot_with_errs_subtract_T1(
+            self,
+            date_times_t1=None, t1_vals=None, t1_fit_err=None, t1_batch_num=None,
+            date_times_t1_w_noise=None, t1_vals_w_noise=None, t1_fit_err_w_noise=None,t1_batch_num_w_noise=None,
+            date_times_t2r=None, t2r_vals=None, t2r_fit_err=None,t2r_batch_num=None,
+            date_times_dephasing=None, dephasing_vals=None, dephasing_fit_err=None,dephasing_batch_num=None,
+            date_times_t2e=None, t2e_vals=None, t2e_fit_err=None,t2e_batch_num=None,
+            date_times_t2r_w_noise=None, t2r_vals_w_noise=None, t2r_fit_err_w_noise=None,t2r_batch_num_w_noise=None,
+            date_times_t2e_w_noise=None, t2e_vals_w_noise=None, t2e_fit_err_w_noise=None,t2e_batch_num_w_noise=None,
+            date_times_dephasing_ef=None, dephasing_vals_ef=None, dephasing_fit_err_ef=None,dephasing_batch_num_w_noise=None,
+            show_legends=True, extra_label='', save_name=''
+    ):
+        # ────────────────────────────── output path setup ─────────────────────────
+        if self.fridge.upper() == "QUIET":
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+        elif self.fridge.upper() == "NEXUS":
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+        else:
+            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+        analysis_folder += "features_vs_time/"
+        self.create_folder_if_not_exists(analysis_folder)
+        # print(t2e_vals)
+        # print(t2r_vals)
+        # print(dephasing_vals)
+        # print(t2e_vals_w_noise)
+        # print(t2r_vals_w_noise)
+        # print(dephasing_vals_ef)
+        # ─────────────────────────────── style registry ───────────────────────────
+        DATASETS = {
+            "t1": dict(dt=date_times_t1, y=t1_vals, err=t1_fit_err,
+                               batch=t1_batch_num,
+                               label="T1", color="green", marker="o"),
+            "t1_w_noise": dict(dt=date_times_t1_w_noise, y=t1_vals_w_noise, err=t1_fit_err_w_noise, batch=t1_batch_num_w_noise,
+                        label="T1_w_noise", color="green", marker="o"),
+            "t2e": dict(dt=date_times_t2e, y=t2e_vals, err=t2e_fit_err, batch=t2e_batch_num,
+                        label="Spin Echo"+extra_label, color="green", marker="o"),
+            "t2r": dict(dt=date_times_t2r, y=t2r_vals, err=t2r_fit_err, batch=t2r_batch_num,
+                        label="Ramsey"+extra_label, color="black", marker="s"),
+            "dephasing": dict(dt=date_times_dephasing, y=dephasing_vals, err=dephasing_fit_err, batch=dephasing_batch_num,
+                              label="Dynamical Decoupling"+extra_label, color="red", marker="v"),
+            "t2e_w_noise": dict(dt=date_times_t2e_w_noise, y=t2e_vals_w_noise, err=t2e_fit_err_w_noise, batch=t2e_batch_num_w_noise,
+                                label="Spin Echo (with FH noise)\n"+extra_label+ ' (with FH noise)', color="blue", marker="x"),
+            "t2r_w_noise": dict(dt=date_times_t2r_w_noise, y=t2r_vals_w_noise, err=t2r_fit_err_w_noise, batch=t2r_batch_num_w_noise,
+                                label="Ramsey (with FH noise)\n"+extra_label+ ' (with FH noise)', color="gray", marker="d"),
+            "dephasing_w_noise": dict(dt=date_times_dephasing_ef, y=dephasing_vals_ef, err=dephasing_fit_err_ef, batch=dephasing_batch_num_w_noise,
+                                 label="Dynamical Decoupling (with FH noise)\n"+extra_label + ' (with FH noise)', color="orange", marker="^"),
+        }
+        inner_key = 2
+        fields = ("dt", "y", "err", "batch")
+
+        # ── 1. collect only the datasets that really have batches for this key ──
+        valid_dsets = []
+        for d in DATASETS.values():
+            batches = d.get("batch")  # could be None
+            if not batches:  # None or empty dict → skip
+                continue
+            if inner_key in batches and batches[inner_key]:
+                valid_dsets.append(d)
+
+        if not valid_dsets:
+            raise ValueError(f"No dataset has any data for key {inner_key!r}")
+
+        common = set.intersection(*(set(d["batch"][inner_key]) for d in valid_dsets))
+
+        # ── 2. trim every dataset that *does* have data for this key ──
+        for dname, d in DATASETS.items():
+            batches = d.get("batch")
+            if not batches or inner_key not in batches:
+                continue  # nothing to align → skip
+
+            keep = [b in common for b in batches[inner_key]]
+
+            for fld in fields:
+                fld_dict = d.get(fld)
+                if not fld_dict or inner_key not in fld_dict:
+                    continue
+                for k, sublist in fld_dict.items():  # k = 0 … 5
+                    fld_dict[k] = [v for v, ok in zip(sublist, keep) if ok]
+
+            # sanity check (only for fields that exist)
+            lens = {
+                len(d[fld][inner_key]) for fld in fields
+                if fld in d and inner_key in d[fld]
+            }
+            if len(lens) not in (0, 1):
+                raise ValueError(
+                    f"Length mismatch in dataset {dname!r} after trimming"
+                )
+        # print('batches',DATASETS["dephasing_ef"]['batch'][2][:3], DATASETS["t1"]['batch'][2][:3])
+        # ───────────────────────────── figure scaffold ────────────────────────────
+        font = 14
+        titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
+        rows = (self.number_of_qubits + 2) // 3  # up to 3 columns
+        fig, axes = plt.subplots(rows, 3, figsize=(12, 4 * rows))
+        axes = axes.flatten()
+        plt.suptitle(r"$T_2$ values vs time", fontsize=font)
+
+        for q, ax in enumerate(axes):
+            if q >= self.number_of_qubits:
+                ax.set_visible(False)
+                continue
+            ax.set_title(titles[q], fontsize=font)
+
+            # ───────── loop over every dataset that actually exists ──────────
+            plotted_something = False
+            for name, meta in DATASETS.items():
+                if "t1" in name:  # skip the T1 dataset
+                    continue
+                if meta["dt"] is None:  # dataset absent → skip
+                    continue
+                if q >= len(meta["dt"]):  # protects against ragged dicts
+                    continue
+
+                raw_dt = meta["dt"][q]
+                if not raw_dt:  # empty list → skip
+                    continue
+
+                raw_dt = meta["dt"][q]
+                raw_y = meta["y"][q]
+                raw_err = meta["err"][q]
+                if 'w_noise' in name:
+                    raw_t1 = DATASETS['t1_w_noise']['y'][q]
+                else:
+                    raw_t1 = DATASETS['t1']['y'][q]
+
+                to_datetime = lambda s: datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+                dt_objects = list(map(to_datetime, raw_dt))
+                order = np.argsort(dt_objects)
+
+                x_pts = np.array(dt_objects)[order]
+                y_pts = 1/((1/np.array(raw_y)[order]) - (1/(2*np.array(raw_t1)[order])))  #  subtraction
+                #print(np.array(raw_y)[order][:3], np.array(raw_t1)[order][:3],y_pts[:3])
+                y_err = np.array(raw_err)[order]
+                y_err = np.nan_to_num(np.abs(y_err), nan=0.0, posinf=0.0, neginf=0.0)
+
+                ax.errorbar(x_pts, y_pts, yerr=y_err, fmt='none',
+                            ecolor=meta["color"], elinewidth=1, capsize=0, alpha=0.6)
+                ax.scatter(x_pts, y_pts, s=30, marker=meta["marker"],
+                           color=meta["color"], label=meta["label"] if show_legends else None)
+                plotted_something = True
+
+            if not plotted_something:
+                ax.set_visible(False)
+                continue
+
+            # ──────────────── axis cosmetics ────────────────
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d\n%H:%M"))
+            ax.tick_params(axis='x', rotation=80)
+            ax.set_xlabel("Time", fontsize=font - 4)
+            ax.set_ylabel(r"$T_{\phi}\;(\mu\mathrm{s})$", fontsize=font - 2)
+            ax.tick_params(axis='both', labelsize=8)
+            if show_legends:
+                ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5),
+                          borderaxespad=0, frameon=False, fontsize=8)
+
+        plt.tight_layout()
+        outfile = analysis_folder + save_name+"tphi_vs_time_all_modes.pdf"
+        plt.savefig(outfile, dpi=self.final_figure_quality)
+        plt.close()
+        print(f"Plot saved at: {outfile}")
