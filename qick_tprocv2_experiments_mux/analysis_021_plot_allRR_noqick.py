@@ -1476,7 +1476,7 @@ class PlotRR_noQick:
         #     self.load_plot_save_q_spec()
         if plot_rabis_Qtemps:
             list_of_all_qubits = [i for i in range(self.number_of_qubits + 1)]
-            self.load_plot_save_rabis_Qtemps(list_of_all_qubits, save_figs = True)
+            self.load_plot_save_rabis_Qtemps(list_of_all_qubits, save_figs = True, get_qtemp_data = False)
         # if plot_rabi:
         #     if rabi_rolling_avg:
         #         self.load_plot_save_rabi(rabi_rolling_avg=True)
@@ -1606,7 +1606,7 @@ class PlotRR_noQick:
 
         return extracted_freqs
 
-    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, save_figs = False):
+    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, save_figs = False, get_qtemp_data = False):
         # ------------------------------------------------Load/Plot/Save Rabi---------------------------------------
         outerFolder_expt_qtemps = self.unique_folder_path+ "/Data_h5/q_temperatures/"
         h5_files_qtemps = glob.glob(os.path.join(outerFolder_expt_qtemps, "*.h5"))
@@ -1655,7 +1655,7 @@ class PlotRR_noQick:
                     # batch_num = load_data['q_temperatures'][q_key].get('Batch Num', [])[0][dataset]
 
                     #-------------------------------------Grabbing matching qubit frequency for this qubit-------------------------------------
-                    if date.timestamp() > cutoff_timestamp:
+                    if date.timestamp() > cutoff_timestamp and get_qtemp_data:
                         # Files after this date contain the matching g-e qubit frequency already BUT the files do not contain the corresponding qspec fit errors.
 
                         # The line below extracts the qfreq saved in each rabi pop. meas. file, but it does not extract the error of the qspec fit because that was not saved in the h5 files.
@@ -1687,7 +1687,7 @@ class PlotRR_noQick:
                             f"Matched QSpec for Q{q_key}: {qubit_freq_MHz:.3f} MHz  "
                             f"(QSpec t={datetime.datetime.fromtimestamp(closest_match['timestamp'])})" )
 
-                    else: #-----this look through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
+                    elif date.timestamp() <= cutoff_timestamp and get_qtemp_data: #-----this look through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
                         # Build the QTemp timestamp:
                         qtemp_timestamp = date.timestamp()
 
@@ -1746,6 +1746,9 @@ class PlotRR_noQick:
                         best_signal_fit2, pi_amp2, A_amplitude2, A_amplitude_err2, amp_fit2 = rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality)
                         del rabi_class_instance
 
+                    if not get_qtemp_data:
+                        continue  # Skip the rest of this block if not returning data
+
                     if (A_amplitude1 is not None and A_amplitude2 is not None and
                         A_amplitude_err1 is not None and A_amplitude_err2 is not None):
                         A_e = A_amplitude1
@@ -1789,8 +1792,11 @@ class PlotRR_noQick:
                         else:
                             print(f"Skipping Q{q_key} entry because T_err was not calculated successfully.")
 
-            all_files_Qtemp_results.append(file_result)
+            if get_qtemp_data:
+                all_files_Qtemp_results.append(file_result)
+
             del H5_class_instance
+
         return all_files_Qtemp_results
 
     def Qubit_Temperature_Convert(self, A_e, A_g, qubit_freq_MHz):
@@ -1986,9 +1992,8 @@ class PlotRR_noQick:
         # date_to_plot = datetime.date(2025, 4, 17)
         # start_datetime = datetime.time(0, 0)  # Start of the window
         # end_datetime = datetime.time(23, 59)
-
-        start_datetime = datetime.datetime(2025, 5, 4, 0, 0)
-        end_datetime = datetime.datetime(2025, 5, 7, 23, 59)
+        start_datetime = datetime.datetime(2025, 5, 7, 16, 20)
+        end_datetime = datetime.datetime(2025, 5, 16, 23, 59)
 
         for q in range(num_qubits):
             times = []
@@ -1999,14 +2004,19 @@ class PlotRR_noQick:
                 qubit_data = file_result['qubits'].get(q)
                 if qubit_data:
                     T_err = qubit_data['T_mK_err']
-                    if T_err > 150:  # skip if error is too large (for example, larger than 300mK)
+                    T_mK = qubit_data['T_mK']
+
+                    # Skip if relative error is ≥ 80%
+                    if T_err / T_mK >= 0.8:
                         continue
+
+                    # if T_err > 150:  # skip if error is too large (for example, larger than 300mK)
+                    #     continue
                     errs.append(T_err)
+                    temps.append(T_mK)
 
                     timestamp = qubit_data['date']
                     times.append(datetime.datetime.fromtimestamp(timestamp))
-                    T_mK = qubit_data['T_mK']
-                    temps.append(T_mK)
 
                     # if T_mK > 800:
                     #     print(f"High Temperature ({T_mK:.1f} mK) in file {qubit_data['filepath']} for Q{q + 1}. A1={qubit_data['A1']}, A2={qubit_data['A2']}, Qfreq={qubit_data['qubit_freq_MHz']}.")
@@ -2171,7 +2181,8 @@ class PlotRR_noQick:
 
                 # for Q5, start at 20 mK and go all the way to 160 mK for the “full” fit,
                 # but only to 120 mK for the “up to 120 mK” fit
-                drop_some_pts = True
+
+                drop_some_pts = False # set this to true if you want to disregard points above/under a certain temperature
                 if q == 4:
                     start_ts = times_arr.min()#t20_ts
                     final_full_ts = t160_ts
@@ -2217,6 +2228,7 @@ class PlotRR_noQick:
                     else:
                         mask_full = (times_arr >= start_ts) & (times_arr <= final_full_ts)
                         mask_to120 = (times_arr >= start_ts) & (times_arr <= final_120_ts)
+
                     color_full = "black"
                     color_to120 = "green"
                     prefix_full = "Full ramp"

@@ -1181,7 +1181,7 @@ class RPMTempCalcAndPlots:
 
                         if get_qtemp_data:
                             # ---------------------------------------- Load data and append to list spanning multiple dates --------------------------------------------------
-                            qtemp_data = plotter.load_plot_save_rabis_Qtemps(list_of_all_qubits,save_figs = False)
+                            qtemp_data = plotter.load_plot_save_rabis_Qtemps(list_of_all_qubits, save_figs = False, get_qtemp_data = get_qtemp_data)
                             combined_qtemp_data.extend(qtemp_data)
 
         return combined_qtemp_data # Will be empty if get_qtemp_data is set to False
