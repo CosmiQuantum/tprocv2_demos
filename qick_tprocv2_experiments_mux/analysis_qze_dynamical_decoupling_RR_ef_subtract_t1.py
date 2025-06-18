@@ -91,6 +91,29 @@ dephasing_vs_time.plot_with_errs_subtract_T1(
     date_times_dephasing_ef=date_times_dephasing_ef, dephasing_vals_ef=dephasing_vals_ef, dephasing_fit_err_ef=dephasing_fit_err_ef,dephasing_batch_num_w_noise=dephasing_batch_nums_w_noise,
     show_legends=True, extra_label=' - T1_ge_w_noise',save_name='t1_ge_w_noise_subtracted_')
 
+####### do individual comparisons
+dephasing_vs_time.plot_with_errs_subtract_T1_individual(
+    date_times_t1=date_times_t1_ge, t1_vals=t1_ge_vals, t1_fit_err=t1_ge_fit_err,t1_batch_num=t1_ge_batch_nums,
+    date_times_t1_w_noise=date_times_t1_ge_w_noise, t1_vals_w_noise=t1_ge_vals_w_noise, t1_fit_err_w_noise=t1_ge_fit_err_w_noise,t1_batch_num_w_noise=t1_ge_batch_nums_w_noise,
+    date_times_dephasing=date_times_dephasing, dephasing_vals=dephasing_vals, dephasing_fit_err=dephasing_fit_err,dephasing_batch_num=dephasing_batch_nums,
+    date_times_dephasing_ef=date_times_dephasing_ef, dephasing_vals_ef=dephasing_vals_ef, dephasing_fit_err_ef=dephasing_fit_err_ef,dephasing_batch_num_w_noise=dephasing_batch_nums_w_noise,
+    show_legends=True, extra_label=' - $T1_{ge}$',save_name='t1_ge_subtracted_just_dd_')
+
+dephasing_vs_time.plot_with_errs_subtract_T1_individual(
+    date_times_t1=date_times_t1_ge, t1_vals=t1_ge_vals, t1_fit_err=t1_ge_fit_err, t1_batch_num=t1_ge_batch_nums,
+    date_times_t1_w_noise=date_times_t1_ge_w_noise, t1_vals_w_noise=t1_ge_vals_w_noise,
+    t1_fit_err_w_noise=t1_ge_fit_err_w_noise, t1_batch_num_w_noise=t1_ge_batch_nums_w_noise,
+    date_times_t2e=date_times_t2e, t2e_vals=t2e_vals, t2e_fit_err=t2e_fit_err,t2e_batch_num=t2e_batch_nums,
+    date_times_t2e_w_noise=date_times_t2e_w_noise, t2e_vals_w_noise=t2e_vals_w_noise, t2e_fit_err_w_noise=t2e_fit_err_w_noise,t2e_batch_num_w_noise=t2e_batch_nums_w_noise,
+    show_legends=True, extra_label=' - $T1_{ge}$',save_name='t1_ge_subtracted_just_t2e_')
+
+dephasing_vs_time.plot_with_errs_subtract_T1_individual(
+    date_times_t1=date_times_t1_ge, t1_vals=t1_ge_vals, t1_fit_err=t1_ge_fit_err, t1_batch_num=t1_ge_batch_nums,
+    date_times_t1_w_noise=date_times_t1_ge_w_noise, t1_vals_w_noise=t1_ge_vals_w_noise,
+    t1_fit_err_w_noise=t1_ge_fit_err_w_noise, t1_batch_num_w_noise=t1_ge_batch_nums_w_noise,
+    date_times_t2r=date_times_t2r, t2r_vals=t2r_vals, t2r_fit_err=t2r_fit_err,t2r_batch_num=t2r_batch_nums,
+    date_times_t2r_w_noise=date_times_t2r_w_noise, t2r_vals_w_noise=t2r_vals_w_noise, t2r_fit_err_w_noise=t2r_fit_err_w_noise,t2r_batch_num_w_noise=t2r_batch_nums_w_noise,
+    show_legends=True, extra_label=' - $T1_{ge}$',save_name='t1_ge_subtracted_just_t2r_')
 
 
 dephasing_vs_time.plot_with_errs_vs_everything(date_times_t2r=date_times_t2r, t2r_vals=t2r_vals, t2r_fit_err=t2r_fit_err,
@@ -100,6 +123,7 @@ dephasing_vs_time.plot_with_errs_vs_everything(date_times_t2r=date_times_t2r, t2
     date_times_t2e_w_noise=date_times_t2e_w_noise, t2e_vals_w_noise=t2e_vals_w_noise, t2e_fit_err_w_noise=t2e_fit_err_w_noise,
     date_times_dephasing_ef=date_times_dephasing_ef, dephasing_vals_ef=dephasing_vals_ef, dephasing_fit_err_ef=dephasing_fit_err_ef,
     show_legends=True)
+
 dephasing_vs_time.plot_with_errs_vs_everything_t1(date_times_t1_ge=date_times_t1_ge, t1_ge_vals=t1_ge_vals, t1_ge_fit_err=t1_ge_fit_err,
     date_times_t1_fe=date_times_t1_fe, t1_fe_vals=t1_fe_vals, t1_fe_fit_err=t1_fe_fit_err,
     date_times_t1_ge_w_noise=date_times_t1_ge_w_noise, t1_ge_vals_w_noise=t1_ge_vals_w_noise, t1_ge_fit_err_w_noise=t1_ge_fit_err_w_noise,

@@ -1368,6 +1368,167 @@ class DephasingVsTime:
         plt.close()
         print(f"Plot saved at: {outfile}")
 
+    def plot_with_errs_subtract_T1_individual(
+            self,
+            date_times_t1=None, t1_vals=None, t1_fit_err=None, t1_batch_num=None,
+            date_times_t1_w_noise=None, t1_vals_w_noise=None, t1_fit_err_w_noise=None,t1_batch_num_w_noise=None,
+            date_times_t2r=None, t2r_vals=None, t2r_fit_err=None,t2r_batch_num=None,
+            date_times_dephasing=None, dephasing_vals=None, dephasing_fit_err=None,dephasing_batch_num=None,
+            date_times_t2e=None, t2e_vals=None, t2e_fit_err=None,t2e_batch_num=None,
+            date_times_t2r_w_noise=None, t2r_vals_w_noise=None, t2r_fit_err_w_noise=None,t2r_batch_num_w_noise=None,
+            date_times_t2e_w_noise=None, t2e_vals_w_noise=None, t2e_fit_err_w_noise=None,t2e_batch_num_w_noise=None,
+            date_times_dephasing_ef=None, dephasing_vals_ef=None, dephasing_fit_err_ef=None,dephasing_batch_num_w_noise=None,
+            show_legends=True, extra_label='', save_name=''
+    ):
+        # ────────────────────────────── output path setup ─────────────────────────
+        if self.fridge.upper() == "QUIET":
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+        elif self.fridge.upper() == "NEXUS":
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+        else:
+            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+        analysis_folder += "features_vs_time/"
+        self.create_folder_if_not_exists(analysis_folder)
+        # print(t2e_vals)
+        # print(t2r_vals)
+        # print(dephasing_vals)
+        # print(t2e_vals_w_noise)
+        # print(t2r_vals_w_noise)
+        # print(dephasing_vals_ef)
+        # ─────────────────────────────── style registry ───────────────────────────
+        DATASETS = {
+            "t1": dict(dt=date_times_t1, y=t1_vals, err=t1_fit_err,
+                               batch=t1_batch_num,
+                               label="T1", color="green", marker="o"),
+            "t1_w_noise": dict(dt=date_times_t1_w_noise, y=t1_vals_w_noise, err=t1_fit_err_w_noise, batch=t1_batch_num_w_noise,
+                        label="T1_w_noise", color="green", marker="o"),
+            "t2e": dict(dt=date_times_t2e, y=t2e_vals, err=t2e_fit_err, batch=t2e_batch_num,
+                        label="Spin Echo"+extra_label, color="green", marker="o"),
+            "t2r": dict(dt=date_times_t2r, y=t2r_vals, err=t2r_fit_err, batch=t2r_batch_num,
+                        label="Ramsey"+extra_label, color="black", marker="s"),
+            "dephasing": dict(dt=date_times_dephasing, y=dephasing_vals, err=dephasing_fit_err, batch=dephasing_batch_num,
+                              label="Dynamical Decoupling"+extra_label, color="red", marker="v"),
+            "t2e_w_noise": dict(dt=date_times_t2e_w_noise, y=t2e_vals_w_noise, err=t2e_fit_err_w_noise, batch=t2e_batch_num_w_noise,
+                                label="Spin Echo (with EF noise)\n"+extra_label+ ' (with EF noise)', color="blue", marker="x"),
+            "t2r_w_noise": dict(dt=date_times_t2r_w_noise, y=t2r_vals_w_noise, err=t2r_fit_err_w_noise, batch=t2r_batch_num_w_noise,
+                                label="Ramsey (with EF noise)\n"+extra_label+ ' (with EF noise)', color="gray", marker="d"),
+            "dephasing_w_noise": dict(dt=date_times_dephasing_ef, y=dephasing_vals_ef, err=dephasing_fit_err_ef, batch=dephasing_batch_num_w_noise,
+                                 label="Dynamical Decoupling (with EF noise)\n"+extra_label + ' (with EF noise)', color="orange", marker="^"),
+        }
+        inner_key = 2
+        fields = ("dt", "y", "err", "batch")
+
+        # ── 1. collect only the datasets that really have batches for this key ──
+        valid_dsets = []
+        for d in DATASETS.values():
+            batches = d.get("batch")  # could be None
+            if not batches:  # None or empty dict → skip
+                continue
+            if inner_key in batches and batches[inner_key]:
+                valid_dsets.append(d)
+
+        if not valid_dsets:
+            raise ValueError(f"No dataset has any data for key {inner_key!r}")
+
+        common = set.intersection(*(set(d["batch"][inner_key]) for d in valid_dsets))
+
+        # ── 2. trim every dataset that *does* have data for this key ──
+        for dname, d in DATASETS.items():
+            batches = d.get("batch")
+            if not batches or inner_key not in batches:
+                continue  # nothing to align → skip
+
+            keep = [b in common for b in batches[inner_key]]
+
+            for fld in fields:
+                fld_dict = d.get(fld)
+                if not fld_dict or inner_key not in fld_dict:
+                    continue
+                for k, sublist in fld_dict.items():  # k = 0 … 5
+                    fld_dict[k] = [v for v, ok in zip(sublist, keep) if ok]
+
+            # sanity check (only for fields that exist)
+            lens = {
+                len(d[fld][inner_key]) for fld in fields
+                if fld in d and inner_key in d[fld]
+            }
+            if len(lens) not in (0, 1):
+                raise ValueError(
+                    f"Length mismatch in dataset {dname!r} after trimming"
+                )
+        # print('batches',DATASETS["dephasing_ef"]['batch'][2][:3], DATASETS["t1"]['batch'][2][:3])
+        # ───────────────────────────── figure scaffold ────────────────────────────
+        font = 14
+        titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
+        rows = (self.number_of_qubits + 2) // 3  # up to 3 columns
+        fig, axes = plt.subplots(rows, 3, figsize=(12, 4 * rows))
+        axes = axes.flatten()
+        plt.suptitle(r"$T_2$ values vs time", fontsize=font)
+
+        for q, ax in enumerate(axes):
+            if q >= self.number_of_qubits:
+                ax.set_visible(False)
+                continue
+            ax.set_title(titles[q], fontsize=font)
+
+            # ───────── loop over every dataset that actually exists ──────────
+            plotted_something = False
+            for name, meta in DATASETS.items():
+                if "t1" in name:  # skip the T1 dataset
+                    continue
+                if meta["dt"] is None:  # dataset absent → skip
+                    continue
+                if q >= len(meta["dt"]):  # protects against ragged dicts
+                    continue
+
+                raw_dt = meta["dt"][q]
+                if not raw_dt:  # empty list → skip
+                    continue
+
+                raw_dt = meta["dt"][q]
+                raw_y = meta["y"][q]
+                raw_err = meta["err"][q]
+                if 'w_noise' in name:
+                    raw_t1 = DATASETS['t1_w_noise']['y'][q]
+                else:
+                    raw_t1 = DATASETS['t1']['y'][q]
+
+                to_datetime = lambda s: datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+                dt_objects = list(map(to_datetime, raw_dt))
+                order = np.argsort(dt_objects)
+
+                x_pts = np.array(dt_objects)[order]
+                y_pts = 1/((1/np.array(raw_y)[order]) - (1/(2*np.array(raw_t1)[order])))  #  subtraction
+                #print(np.array(raw_y)[order][:3], np.array(raw_t1)[order][:3],y_pts[:3])
+                y_err = np.array(raw_err)[order]
+                y_err = np.nan_to_num(np.abs(y_err), nan=0.0, posinf=0.0, neginf=0.0)
+
+                ax.errorbar(x_pts, y_pts, yerr=y_err, fmt='none',
+                            ecolor=meta["color"], elinewidth=1, capsize=0, alpha=0.6)
+                ax.scatter(x_pts, y_pts, s=30, marker=meta["marker"],
+                           color=meta["color"], label=meta["label"] if show_legends else None)
+                plotted_something = True
+
+            if not plotted_something:
+                ax.set_visible(False)
+                continue
+
+            # ──────────────── axis cosmetics ────────────────
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d\n%H:%M"))
+            ax.tick_params(axis='x', rotation=80)
+            ax.set_xlabel("Time", fontsize=font - 4)
+            ax.set_ylabel(r"$T_{\phi}\;(\mu\mathrm{s})$", fontsize=font - 2)
+            ax.tick_params(axis='both', labelsize=8)
+            if show_legends:
+                ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5),
+                          borderaxespad=0, frameon=False, fontsize=8)
+
+        plt.tight_layout()
+        outfile = analysis_folder + save_name+"tphi_vs_time_all_modes.pdf"
+        plt.savefig(outfile, dpi=self.final_figure_quality)
+        plt.close()
+        print(f"Plot saved at: {outfile}")
+
     def plot_with_errs_vs_everything_t1(
             self,
             date_times_t1_ge=None, t1_ge_vals=None, t1_ge_fit_err=None,
