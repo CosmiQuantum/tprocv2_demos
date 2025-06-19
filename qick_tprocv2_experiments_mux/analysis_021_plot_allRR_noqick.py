@@ -2008,7 +2008,7 @@ class PlotRR_noQick:
                     T_mK = qubit_data['T_mK']
 
                     # Skip if relative error is ≥ 40%
-                    if T_err / T_mK >= 0.4:
+                    if T_err / T_mK >= 0.3:
                         continue
 
                     # if T_err > 150:  # skip if error is too large (for example, larger than 300mK)
