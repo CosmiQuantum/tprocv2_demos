@@ -1993,7 +1993,6 @@ class PlotRR_noQick:
         # start_datetime = datetime.time(0, 0)  # Start of the window
         # end_datetime = datetime.time(23, 59)
 
-        # Heater temps sweep start and end time
         start_datetime = datetime.datetime(2025, 5, 7, 16, 20)
         end_datetime = datetime.datetime(2025, 5, 16, 23, 59)
 
