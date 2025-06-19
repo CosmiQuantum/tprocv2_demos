@@ -23,12 +23,12 @@ run_name = 'run6/6transmon'
 signal = 'None' # Do not change
 
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
-replot_RPMs = True # Do you want to re-plot rabi population measurements from RR data?
+replot_RPMs = False # Do you want to re-plot rabi population measurements from RR data?
 save_figsRR = False # Do you want to save (or not save) re-plotted RR measurements plots?
 save_figs = False # To be used in general for any function or class to saver (or not save) plots.
 fit_saved = False # Not used here, set to false.
 
-get_qtemp_data = False # Do you want to calculate qubit temperatures?
+get_qtemp_data = True # Do you want to calculate qubit temperatures?
 
 figure_quality = 200
 theta = 0
@@ -43,7 +43,7 @@ qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "
                       "combined_studies_qtemps": False}
 
 # What analysis plots do you want to make?
-analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
+analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False,  "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis
@@ -133,7 +133,7 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
     if analysis_flags["Qtemps_vs_time_viaRPM"]:
         #------------------------------------------------------------------- Qubit temperatures vs time via RPMs ----------------------------------------------------
         RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 15, yaxis_max = 400, restrict_time_xaxis = True,
-                                                         plot_extra_event_lines = True, rad_events_plot_lines = False, plot_error_bars = True, fit_to_line=False)
+                                                         plot_extra_event_lines = True, rad_events_plot_lines = False, plot_error_bars = True, fit_to_line=True)
 
     if analysis_flags["Qtemps_hists_viaRPM"]:
         #----------------------------------------------------------------- Histograms of Qubit temperatures (via RPMs) -----------------------------------------------

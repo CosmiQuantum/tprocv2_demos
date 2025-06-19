@@ -1992,6 +1992,8 @@ class PlotRR_noQick:
         # date_to_plot = datetime.date(2025, 4, 17)
         # start_datetime = datetime.time(0, 0)  # Start of the window
         # end_datetime = datetime.time(23, 59)
+
+        # Heater temps sweep start and end time
         start_datetime = datetime.datetime(2025, 5, 7, 16, 20)
         end_datetime = datetime.datetime(2025, 5, 16, 23, 59)
 
@@ -2179,12 +2181,12 @@ class PlotRR_noQick:
                 times_arr = np.array([t.timestamp() for t in times])
                 temps_arr = np.array(temps)
 
-                # for Q5, start at 20 mK and go all the way to 160 mK for the “full” fit,
+                # for Q5, start at the first time stamp plotted and go all the way to 160 mK for the “full” fit,
                 # but only to 120 mK for the “up to 120 mK” fit
 
                 drop_some_pts = False # set this to true if you want to disregard points above/under a certain temperature
                 if q == 4:
-                    start_ts = times_arr.min()#t20_ts
+                    start_ts = times_arr.min() # alternatively, you could start at t20_ts
                     final_full_ts = t160_ts
                     final_120_ts = t120_ts
 
@@ -2206,10 +2208,10 @@ class PlotRR_noQick:
                     prefix_full = "Full ramp"
                     prefix_120 = "Up to 120 mK"
 
-                # for Q1, start at 60 mK and again go to 160 mK for the “full” fit,
+                # for Q1, start at the first time stamp plotted and again go to 160 mK for the “full” fit,
                 # but only to 120 mK for the “up to 120 mK” fit
                 elif q == 0:
-                    start_ts = times_arr.min() #t20_ts
+                    start_ts = times_arr.min() # alternatively, you could start at t20_ts
                     final_full_ts = t160_ts
                     final_120_ts = t120_ts
 
