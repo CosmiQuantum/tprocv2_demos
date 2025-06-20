@@ -2326,7 +2326,7 @@ class PlotRR_noQick:
                 # skip if either is missing or relative error is larger than threshold
                 if T_mK is None or T_err is None:
                     continue
-                if T_err / T_mK >= 0.80: #80%
+                if T_err / T_mK >= 0.15: #15%
                     continue
 
                 temp_vals.append(T_mK)
