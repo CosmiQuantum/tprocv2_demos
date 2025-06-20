@@ -1153,6 +1153,7 @@ class RPMTempCalcAndPlots:
         #------------------------------------------ Looping through data folders and files -------------------------------------------------------
         # Note: this is tailored for how things are organized in cosmiqgpvm02
         for root, dirs, files in os.walk(base_dir):
+            dirs.sort()  # alphabetical → chronological for YYYY-MM-DD_HH-MM-SS
             for d in dirs:
                 full_path = os.path.join(root, d)
                 # Match folders like '2025-04-16_11-47-09' based on prefix date
