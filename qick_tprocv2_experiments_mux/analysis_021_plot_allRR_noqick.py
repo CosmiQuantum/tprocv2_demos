@@ -2317,8 +2317,19 @@ class PlotRR_noQick:
             temp_vals = []
             for file_result in all_files_Qtemp_results:
                 qubit_data = file_result['qubits'].get(i)
-                if qubit_data and 'T_mK' in qubit_data:
-                    temp_vals.append(qubit_data['T_mK'])
+                if not qubit_data:
+                    continue
+
+                T_mK = qubit_data.get('T_mK')
+                T_err = qubit_data.get('T_mK_err')
+
+                # skip if either is missing or relative error is larger than threshold
+                if T_mK is None or T_err is None:
+                    continue
+                if T_err / T_mK >= 0.80: #80%
+                    continue
+
+                temp_vals.append(T_mK)
 
             # If no data is present, hide the subplot.
             if len(temp_vals) == 0:
