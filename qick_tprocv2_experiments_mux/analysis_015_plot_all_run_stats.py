@@ -77,9 +77,111 @@ class CompareRuns:
             't2e_mean_values': t2e_mean_values,
         }
 
-    import math
-    import matplotlib.pyplot as plt
-    from matplotlib.ticker import MaxNLocator
+
+    def plot_freqs_vs_run(self):
+        import math
+        freq_data = {}
+        freq_err = {}
+
+        run_notes_all = []
+
+        qubit_list = None
+
+        # load data for each run
+        for r in self.run_number_list:
+            run_stats_folder = f"run_stats/QUIET/run{r}/"
+            filename = run_stats_folder + 'experiment_data.h5'
+            loaded_data = self.load_from_h5(filename)
+
+            freqs = loaded_data['res_freqs']
+            freq_means = {k: sum(v)/len(v) for k, v in freqs.items()}
+            freq_stds = {k: (sum((x - sum(v)/len(v))**2 for x in v) / len(v))**0.5 for k, v in freqs.items()}
+
+            run_notes = loaded_data['run_notes']
+
+            # on the first run, initialize lists for each qubit
+            if qubit_list is None:
+                qubit_list = list(freq_means.keys())
+                for qb in qubit_list:
+                    freq_data[qb] = []
+                    freq_err[qb] = []
+
+
+            # get the data for this run and append to list for saving and plotting
+            for qb in qubit_list:
+                freq_data[qb].append(freq_means[qb])
+                freq_err[qb].append(freq_stds[qb])
+            run_notes_all.append(run_notes)
+
+        # Create a grid of subplots: 2 rows and ceil(qubit_count/2) columns
+        n_qubits = len(qubit_list)
+        if n_qubits == 1:
+            fig, axes = plt.subplots(1, 1, sharex=True, figsize=(6, 4))
+            axes = [axes]
+            ncols = 1
+            nrows = 1
+        else:
+            ncols = math.ceil(n_qubits / 2)
+            nrows = 2
+            fig, axes = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, figsize=(6 * ncols, 4 * nrows))
+            axes = axes.flatten()
+
+        x = self.run_number_list
+
+        for i, qb in enumerate(qubit_list):
+            ax = axes[i]
+            ax.errorbar(x, freq_data[qb], yerr=freq_err[qb], fmt='o-',  capsize=3)
+
+            highest_points = []
+            for idx in range(len(x)):
+                highest_point = freq_data[qb][idx] + freq_err[qb][idx]
+                highest_points.append(highest_point)
+
+            ax.set_ylabel('Freq (MHz)')
+            ax.set_title(qb)
+            ax.legend()
+
+
+            n = 0
+            # Annotate for each x-value with the corresponding note
+            for idx, x_val in enumerate(x):
+                if i == 0:
+                    words = run_notes_all[idx].split()
+                    plotting_note = '\n'.join(
+                        ' '.join(words[i:i + 3]) for i in range(0, len(words), 3))
+                    text_x_offset = x_val + 0.1 if n < 1 else x_val
+                    n += 1
+                    ax.annotate(
+                        plotting_note,
+                        xy=(text_x_offset, highest_points[idx]),
+                        xytext=(0, 10),
+                        textcoords='offset points',
+                        ha='center',
+                        va='bottom',
+                        fontsize=8,
+                        bbox=dict(boxstyle='round', facecolor='lightblue', edgecolor='black', alpha=1)
+                    )
+
+        # Turn off any unused subplots and set xlabel only for the bottom row
+        total_axes = nrows * ncols
+        for j in range(n_qubits, total_axes):
+            axes[j].axis('off')
+
+        for i, ax in enumerate(axes[:n_qubits]):
+            # Determine the row index based on grid placement
+            row_index = i // ncols
+            if row_index == nrows - 1:
+                ax.set_xlabel('Run Number')
+                ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+            else:
+                ax.set_xlabel('')
+
+        plt.tight_layout()
+        plt.show()
+        analysis_folder = f"/data/QICK_data/{self.run_name_folder}/benchmark_analysis_plots/"
+        self.create_folder_if_not_exists(analysis_folder)
+        plt.savefig(analysis_folder + 'compare_runs.pdf', dpi=500)
+
 
     def plot_decoherence_vs_run(self, skip_qubit_t2e=False, qubit_to_skip_t2e=None):
         import math

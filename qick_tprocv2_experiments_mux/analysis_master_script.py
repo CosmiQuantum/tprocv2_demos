@@ -54,30 +54,30 @@ top_folder_dates = ['2025-05-27_15-03-30','2025-05-27_16-06-12','2025-05-27_16-1
 #
 # date = '2025-03-28'
 # outerFolder = f"/data/QICK_data/{run_name}/" + date + "/study_data/"
-################################################ 01: Get all data ######################################################
-res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                       save_figs, fit_saved, signal, run_name)
-date_times_res_spec, res_freqs = res_spec_vs_time.run()
+# ################################################ 01: Get all data ######################################################
+# res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                        save_figs, fit_saved, signal, run_name)
+# date_times_res_spec, res_freqs = res_spec_vs_time.run()
+# #
+# q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                   save_figs, fit_saved, signal, run_name, FRIDGE)
+# date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run()
 #
-q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                  save_figs, fit_saved, signal, run_name, FRIDGE)
-date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run()
-
-pi_amps_vs_time = PiAmpsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
-                              fit_saved,signal, run_name)
-date_times_pi_amps, pi_amps = pi_amps_vs_time.run(plot_depths=False)
-
-t1_vs_time = T1VsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, FRIDGE)
-date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True)
-
-t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name)
-date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True)
-
-t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, FRIDGE)
-date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
+# pi_amps_vs_time = PiAmpsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+#                               fit_saved,signal, run_name)
+# date_times_pi_amps, pi_amps = pi_amps_vs_time.run(plot_depths=False)
+#
+# t1_vs_time = T1VsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
+#                  signal, run_name, FRIDGE)
+# date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True)
+#
+# t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
+#                  signal, run_name)
+# date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True)
+#
+# t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
+#                  signal, run_name, FRIDGE)
+# date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
 
 # # # ####################################### 02: Plot All Individual Data Plots ###########################################
 # #date = '2025-04-02'  #only plot all of the data for one date at a time because there is a lot
@@ -89,16 +89,16 @@ date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
 # plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_ss = True, plot_t1 = True,
 #             plot_t2r = True, plot_t2e = True)
 # #
-# ########################################## 03: Resonator Freqs vs Time Plots ###########################################
-res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
-
-######################################### 04: Qubit Freqs vs Time Plots #############################################
-q_spec_vs_time.plot_without_errs(date_times_q_spec, q_freqs,show_legends)
-q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends)
-q_spec_vs_time.plot_with_errs_single_plot(date_times_q_spec, q_freqs, qspec_fit_err, show_legends=True)
-
-############################################## 05: Pi Amp vs Time Plots ###############################################
-pi_amps_vs_time.plot(date_times_pi_amps, pi_amps, show_legends)
+# # ########################################## 03: Resonator Freqs vs Time Plots ###########################################
+# res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
+#
+# ######################################### 04: Qubit Freqs vs Time Plots #############################################
+# q_spec_vs_time.plot_without_errs(date_times_q_spec, q_freqs,show_legends)
+# q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends)
+# q_spec_vs_time.plot_with_errs_single_plot(date_times_q_spec, q_freqs, qspec_fit_err, show_legends=True)
+#
+# ############################################## 05: Pi Amp vs Time Plots ###############################################
+# pi_amps_vs_time.plot(date_times_pi_amps, pi_amps, show_legends)
 
 # #----------------------------------------------Extra pi amp analysis----------------------------------------------------
 # #can only have the 'depths' argument returned here if plot_depths=True, otherwise delete it
@@ -124,42 +124,42 @@ pi_amps_vs_time.plot(date_times_pi_amps, pi_amps, show_legends)
 #
 # qubit_temp_dates, qubit_temperatures = qtemp_vs_time.run()
 # qtemp_vs_time.plot(qubit_temp_dates, qubit_temperatures, show_legends)
+#
+# ################################################ 06: T1 vs Time Plots #################################################
+# t1_vs_time.plot_without_errs(date_times_t1, t1_vals, show_legends)
+# t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends)
+# t1_vs_time.plot_with_errs_single_plot(date_times_t1, t1_vals, t1_fit_err, show_legends=True)
+#
+# ################################################# 07: T2R vs Time Plots ################################################
+# #t2r_vs_time.plot_without_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends)
+# t2r_vs_time.plot_with_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends)
+# t2r_vs_time.plot_with_errs_single_plot(date_times_t2r, t2r_vals, t2r_fit_err, show_legends=True)
+#
+# ################################################# 08: T2E vs Time Plots ################################################
+# #t2e_vs_time.plot_without_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
+# t2e_vs_time.plot_with_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
+# t2e_vs_time.plot_with_errs_single_plot(date_times_t2e, t2e_vals, t2e_fit_err, show_legends=True)
+#
+# ############################################## 09: T1 hist/cumul/err Plots #############################################
+# t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                             save_figs, fit_saved, signal, run_name, run_notes, run_number, fridge=FRIDGE)
+# dates, t1_vals, t1_errs = t1_distribution_plots.run()
+# t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
+#
+# ############################################## 10: T2R hist/cumul/err Plots ############################################
+# t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                             save_figs, fit_saved, signal, run_name, fridge=FRIDGE)
+# dates, t2r_vals, t2r_errs = t2r_distribution_plots.run(t1_vals)
+# t2r_std_values, t2r_mean_values = t2r_distribution_plots.plot(dates, t2r_vals, t2r_errs, show_legends)
+#
+# ############################################## 11: T2E hist/cumul/err Plots ############################################
+# t2e_distribution_plots = T2eHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                             save_figs, fit_saved, signal, run_name, fridge=FRIDGE)
+# dates, t2e_vals, t2e_errs = t2e_distribution_plots.run(t1_vals)
+# t2e_std_values, t2e_mean_values = t2e_distribution_plots.plot(dates, t2e_vals, t2e_errs, show_legends)
 
-################################################ 06: T1 vs Time Plots #################################################
-t1_vs_time.plot_without_errs(date_times_t1, t1_vals, show_legends)
-t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends)
-t1_vs_time.plot_with_errs_single_plot(date_times_t1, t1_vals, t1_fit_err, show_legends=True)
-
-################################################# 07: T2R vs Time Plots ################################################
-#t2r_vs_time.plot_without_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends)
-t2r_vs_time.plot_with_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends)
-t2r_vs_time.plot_with_errs_single_plot(date_times_t2r, t2r_vals, t2r_fit_err, show_legends=True)
-
-################################################# 08: T2E vs Time Plots ################################################
-#t2e_vs_time.plot_without_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
-t2e_vs_time.plot_with_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
-t2e_vs_time.plot_with_errs_single_plot(date_times_t2e, t2e_vals, t2e_fit_err, show_legends=True)
-
-############################################## 09: T1 hist/cumul/err Plots #############################################
-t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, run_name, run_notes, run_number, fridge=FRIDGE)
-dates, t1_vals, t1_errs = t1_distribution_plots.run()
-t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
-
-############################################## 10: T2R hist/cumul/err Plots ############################################
-t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, run_name, fridge=FRIDGE)
-dates, t2r_vals, t2r_errs = t2r_distribution_plots.run(t1_vals)
-t2r_std_values, t2r_mean_values = t2r_distribution_plots.plot(dates, t2r_vals, t2r_errs, show_legends)
-
-############################################## 11: T2E hist/cumul/err Plots ############################################
-t2e_distribution_plots = T2eHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, run_name, fridge=FRIDGE)
-dates, t2e_vals, t2e_errs = t2e_distribution_plots.run(t1_vals)
-t2e_std_values, t2e_mean_values = t2e_distribution_plots.plot(dates, t2e_vals, t2e_errs, show_legends)
-
-# # ############################ 12: Save the Key Statistics for This Run to Compare Later #################################
-# #need to run 00,01, and 08-10 before this to get all of the variables
+# ############################ 12: Save the Key Statistics for This Run to Compare Later #################################
+#need to run 00,01, and 08-10 before this to get all of the variables
 # saver = SaveRunData(run_number,FRIDGE, run_notes)
 # saver.run(date_times_res_spec, date_times_q_spec, date_times_pi_amps, date_times_t1, date_times_t2r, date_times_t2e,
 #           res_freqs, q_freqs, pi_amps, t1_vals, t1_errs, t1_std_values, t1_mean_values, t2r_vals, t2r_errs,
@@ -172,18 +172,18 @@ t2e_std_values, t2e_mean_values = t2e_distribution_plots.plot(dates, t2e_vals, t
 # updater = UpdateNote(run_number_to_update, new_run_notes)
 # updater.run(FRIDGE)
 #
-# ############################################### 14: Run Comparison Plots ##############################################
-# run_number_list = [1,2,3]
-# comparing_runs = CompareRuns(run_number_list, run_name)
-#
+############################################### 14: Run Comparison Plots ##############################################
+run_number_list = [1,2,3]
+comparing_runs = CompareRuns(run_number_list, run_name)
+
 # run_stats_folder = f"run_stats/QUIET/run{2}/"
 # filename = run_stats_folder + 'experiment_data.h5'
 # loaded_data = comparing_runs.load_from_h5(filename)
-#
+
 # t1_vals_r2 = loaded_data['t1_vals']
 # t2r_vals_r2 = loaded_data['t2r_vals']
 # t2e_vals_r2 = loaded_data['t2e_vals']
-
+comparing_runs.plot_freqs_vs_run()
 # comparing_runs.plot_decoherence_vs_run(skip_qubit_t2e=False, qubit_to_skip_t2e=0)
 # #compare median qubit freq to median decoherence by run number
 # comparing_runs.plot_decoherence_vs_qfreq()
