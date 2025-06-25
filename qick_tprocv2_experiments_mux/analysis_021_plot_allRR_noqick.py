@@ -2308,13 +2308,20 @@ class PlotRR_noQick:
 
         # Titles for each subplot
         titles = [f"Qubit {i + 1}" for i in range(num_qubits)]
+
+        # From Gaussian fit
         mean_values = {}
         std_values = {}
+
+        # From weighted average method
+        w_mean_values = {}
+        w_std_values = {}
 
         # Loop over each qubit / subplot
         for i, ax in enumerate(axes):
             # Gather all temperature data for qubit i across all files.
             temp_vals = []
+            temp_errs = []
             for file_result in all_files_Qtemp_results:
                 qubit_data = file_result['qubits'].get(i)
                 if not qubit_data:
@@ -2326,10 +2333,11 @@ class PlotRR_noQick:
                 # skip if either is missing or relative error is larger than threshold
                 if T_mK is None or T_err is None:
                     continue
-                if T_err / T_mK >= 0.15: #15%
-                    continue
+                # if T_err / T_mK >= 0.80: #80%
+                #     continue
 
                 temp_vals.append(T_mK)
+                temp_errs.append(T_err)
 
             # If no data is present, hide the subplot.
             if len(temp_vals) == 0:
@@ -2344,6 +2352,18 @@ class PlotRR_noQick:
             mean_values[f"Qubit {i + 1}"] = mu
             std_values[f"Qubit {i + 1}"] = std
 
+            # Inverse-variance weighted average ---------------------------------------------
+            temps = np.asarray(temp_vals)
+            errs = np.asarray(temp_errs)
+            weights = 1.0 / errs ** 2  # w_i = 1/σ_i²
+
+            w_mean = np.sum(weights * temps) / np.sum(weights) # inverse-variance weighted average
+            w_err = np.sqrt(1.0 / np.sum(weights))  # 1-σ error (uncertainty) on the mean; this tells you how precisely you've determined the weighted average itself.
+
+            w_mean_values[f"Qubit {i + 1}"] = w_mean  # weighted mean
+            w_std_values[f"Qubit {i + 1}"] = w_err  # its uncertainty
+            # -------------------------------------------------------------------------------
+
             # Generate x values for plotting the Gaussian curve
             x_vals = np.linspace(min(temp_vals), max(temp_vals), optimal_bin_num)
             # Compute the probability density function for the fitted Gaussian
@@ -2357,9 +2377,9 @@ class PlotRR_noQick:
             scaled_pdf = pdf_vals * scale_factor
 
             # Plot the Gaussian fit (dashed line) and the histogram
-            ax.plot(x_vals, scaled_pdf, linestyle='--', linewidth=2, color=colors[i % len(colors)])
-            ax.hist(temp_vals, bins=optimal_bin_num, alpha=0.7, color=colors[i % len(colors)],
-                    edgecolor='black')
+            ax.plot(x_vals, scaled_pdf, linestyle='--', linewidth=2, color=colors[i % len(colors)], label='Gaussian fit')
+            ax.hist(temp_vals, bins=optimal_bin_num, alpha=0.7, color=colors[i % len(colors)], edgecolor='black')
+            ax.axvline(w_mean, color='k', lw=2, label=f'Weighted μ = {w_mean:.2f}±{w_err:.2f} mK')
 
             # Set subplot title and labels including the Gaussian parameters
             ax.set_title(f"{titles[i]}  $\mu$: {mu:.2f} mK,  $\sigma$: {std:.2f} mK", fontsize=font)
