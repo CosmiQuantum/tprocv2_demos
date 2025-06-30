@@ -2073,7 +2073,7 @@ class PlotRR_noQick:
                 post_step_time = datetime.datetime(2025, 5, 14, 22, 50)  # Heater was turned Off
 
                 # Creating list of bin edges: [[start to 20mK], [20mK to 40mK], ..., [160mK to heater off]]
-                bin_edges = [pre_step_time] + step_times + [post_step_time]
+                bin_edges = [pre_step_time] + step_times + [post_step_time, datetime.datetime.max]
 
                 times_np = np.array(times)
                 temps_np = np.array(temps)
