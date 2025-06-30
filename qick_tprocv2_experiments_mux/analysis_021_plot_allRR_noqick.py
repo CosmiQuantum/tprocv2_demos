@@ -2038,8 +2038,8 @@ class PlotRR_noQick:
                     T_err = qubit_data['T_mK_err']
                     T_mK = qubit_data['T_mK']
 
-                    # Skip if relative error is ≥ 15%
-                    if T_err / T_mK >= 0.15:
+                    # Skip if relative error is ≥ 80%
+                    if T_err / T_mK >= 0.80:
                         continue
 
                     # if T_err > 150:  # skip if error is too large (for example, larger than 300mK)
@@ -2072,8 +2072,8 @@ class PlotRR_noQick:
                 pre_step_time = datetime.datetime.min
                 post_step_time = datetime.datetime(2025, 5, 14, 22, 50)  # Heater was turned Off
 
-                # Creating list of bin edges: [start to 20mK), [20mK to 40mK), ..., [160mK to heater off), [heater off to end)
-                bin_edges = [pre_step_time] + step_times + [post_step_time, datetime.datetime.max]
+                # Creating list of bin edges: [[start to 20mK], [20mK to 40mK], ..., [160mK to heater off]]
+                bin_edges = [pre_step_time] + step_times + [post_step_time]
 
                 times_np = np.array(times)
                 temps_np = np.array(temps)
