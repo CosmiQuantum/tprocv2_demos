@@ -1948,7 +1948,7 @@ class PlotRR_noQick:
             zorder=10)
 
     def plot_qubit_temperatures_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6, yaxis_min = 10, yaxis_max = 950, restrict_time_xaxis = False,
-                                             plot_extra_event_lines = False, rad_events_plot_lines = True, plot_error_bars=False, fit_to_line=False):
+                                             plot_extra_event_lines = False, rad_events_plot_lines = True, plot_error_bars=False, fit_to_line=False, average_per_heater_step=False):
         """
         Plots qubit temperatures vs. time for each qubit in a separate subplot (max 3 columns).
 
@@ -1988,11 +1988,42 @@ class PlotRR_noQick:
             (datetime.datetime(2025, 5, 7, 16, 20), "Cs-137 removed")
         ]
 
+        # Optional: Now for other events. Only relevant if plot_extra_event_lines is set to True!!!
+        events_0418 = [
+            (datetime.datetime(2025, 4, 18, 11, 50), "Daniel Entry"),
+            (datetime.datetime(2025, 4, 18, 13, 30), "Daniel Exit"),
+            (datetime.datetime(2025, 4, 18, 14, 53), "Daniel Entry"),
+            (datetime.datetime(2025, 4, 18, 15, 0), "Door Intermission"),
+            (datetime.datetime(2025, 4, 18, 15, 6), "Exit/Re-entry Daniel"),
+            (datetime.datetime(2025, 4, 18, 15, 12), "Ryan Entry"),
+            (datetime.datetime(2025, 4, 18, 15, 40), "Door Intermission"),
+            (datetime.datetime(2025, 4, 18, 16, 11), "Daniel Exit"),
+            (datetime.datetime(2025, 4, 18, 16, 12), "Daniel Entry"),
+            (datetime.datetime(2025, 4, 18, 16, 16), "Daniel Exit")]
+
+        events_0423 = [
+            (datetime.datetime(2025, 4, 23, 12, 50), "Dan-Joyce Entry"),
+            (datetime.datetime(2025, 4, 23, 12, 54), "Dan-Joyce Exit"),
+            (datetime.datetime(2025, 4, 23, 13, 40), "Grace Entry"),
+            (datetime.datetime(2025, 4, 23, 13, 47), "Grace Exit"),
+            (datetime.datetime(2025, 4, 23, 16, 40), "Kester-Grace Entry"),
+            (datetime.datetime(2025, 4, 23, 16, 48), "Kester-Grace Exit")]
+
+        heater_events = [
+            (datetime.datetime(2025, 5, 8, 18, 50), "20mK step"),
+            (datetime.datetime(2025, 5, 9, 10, 24), "40mK step"),
+            (datetime.datetime(2025, 5, 10, 1, 39), "60mK step"),
+            (datetime.datetime(2025, 5, 10, 18, 31), "80mK step"),
+            (datetime.datetime(2025, 5, 11, 14, 46), "100mK step"),
+            (datetime.datetime(2025, 5, 12, 15, 11), "120mK step"),
+            (datetime.datetime(2025, 5, 13, 12, 2), "140mK step"),
+            (datetime.datetime(2025, 5, 14, 12, 31), "160mK step"),
+            (datetime.datetime(2025, 5, 14, 22, 50), "Heater Off")]
+
         # Optional: Restrict plot to specific date and time window. Will only go into effect if restrict_time_xaxis = True
         # date_to_plot = datetime.date(2025, 4, 17)
         # start_datetime = datetime.time(0, 0)  # Start of the window
         # end_datetime = datetime.time(23, 59)
-
         start_datetime = datetime.datetime(2025, 5, 7, 16, 20)
         end_datetime = datetime.datetime(2025, 5, 16, 23, 59)
 
@@ -2028,8 +2059,47 @@ class PlotRR_noQick:
                 ax.set_visible(False)
                 continue
 
-            if restrict_time_xaxis:
+            # ------------To average all of the points during each heater step to facilitate fitting the data to a line----------------------------------
+            if average_per_heater_step:
+                binned_times, binned_temps, binned_errs = [], [], []
 
+                # Extracting heater step times
+                step_events = [(dt, label) for dt, label in heater_events if "step" in label.lower()]
+                step_events.sort()
+                step_times = [dt for dt, _ in step_events]
+
+                # Adding start and end boundaries
+                pre_step_time = datetime.datetime.min
+                post_step_time = datetime.datetime(2025, 5, 14, 22, 50)  # Heater was turned Off
+
+                # Creating list of bin edges: [start to 20mK), [20mK to 40mK), ..., [160mK to heater off), [heater off to end)
+                bin_edges = [pre_step_time] + step_times + [post_step_time, datetime.datetime.max]
+
+                times_np = np.array(times)
+                temps_np = np.array(temps)
+                errs_np = np.array(errs)
+
+                # Bin and average data
+                for i in range(len(bin_edges) - 1):
+                    start, end = bin_edges[i], bin_edges[i + 1]
+                    mask = (times_np >= start) & (times_np < end)
+
+                    if np.sum(mask) < 2:
+                        continue  # skip bins with too few points
+
+                    avg_time = np.mean([t.timestamp() for t in times_np[mask]])
+                    avg_time_dt = datetime.datetime.fromtimestamp(avg_time)
+                    avg_temp = np.mean(temps_np[mask])
+                    avg_err = np.sqrt(np.sum(errs_np[mask] ** 2)) / np.sum(mask)
+
+                    binned_times.append(avg_time_dt)
+                    binned_temps.append(avg_temp)
+                    binned_errs.append(avg_err)
+
+                times, temps, errs = binned_times, binned_temps, binned_errs
+            # -----------------------------------------------------------------------------------------------------
+
+            if restrict_time_xaxis: # tweak format as needed for the x axis ticks
                 #for a single day
                 # start_time = datetime.datetime.combine(date_to_plot, start_datetime)
                 # end_time = datetime.datetime.combine(date_to_plot, end_datetime)
@@ -2089,38 +2159,6 @@ class PlotRR_noQick:
                         ax.text(vtime, ax.get_ylim()[1] * 0.95, label, rotation=90, verticalalignment='top',
                                 horizontalalignment='right', fontsize=10)
 
-            #----------------------Optional: Now for other events------------------------
-            # Only relevant if plot_extra_event_lines is set to True
-            events_0418 = [
-                (datetime.datetime(2025, 4, 18, 11, 50), "Daniel Entry"),
-                (datetime.datetime(2025, 4, 18, 13, 30), "Daniel Exit"),
-                (datetime.datetime(2025, 4, 18, 14, 53), "Daniel Entry"),
-                (datetime.datetime(2025, 4, 18, 15, 0), "Door Intermission"),
-                (datetime.datetime(2025, 4, 18, 15, 6), "Exit/Re-entry Daniel"),
-                (datetime.datetime(2025, 4, 18, 15, 12), "Ryan Entry"),
-                (datetime.datetime(2025, 4, 18, 15, 40), "Door Intermission"),
-                (datetime.datetime(2025, 4, 18, 16, 11), "Daniel Exit"),
-                (datetime.datetime(2025, 4, 18, 16, 12), "Daniel Entry"),
-                (datetime.datetime(2025, 4, 18, 16, 16), "Daniel Exit")]
-
-            events_0423 = [
-                (datetime.datetime(2025, 4, 23, 12, 50), "Dan-Joyce Entry"),
-                (datetime.datetime(2025, 4, 23, 12, 54), "Dan-Joyce Exit"),
-                (datetime.datetime(2025, 4, 23, 13, 40), "Grace Entry"),
-                (datetime.datetime(2025, 4, 23, 13, 47), "Grace Exit"),
-                (datetime.datetime(2025, 4, 23, 16, 40), "Kester-Grace Entry"),
-                (datetime.datetime(2025, 4, 23, 16, 48), "Kester-Grace Exit")]
-
-            heater_events = [
-                (datetime.datetime(2025, 5, 8, 18, 50), "20mK step"),
-                (datetime.datetime(2025, 5, 9, 10, 24), "40mK step"),
-                (datetime.datetime(2025, 5, 10, 1, 39), "60mK step"),
-                (datetime.datetime(2025, 5, 10, 18, 31), "80mK step"),
-                (datetime.datetime(2025, 5, 11, 14, 46), "100mK step"),
-                (datetime.datetime(2025, 5, 12, 15, 11), "120mK step"),
-                (datetime.datetime(2025, 5, 13, 12, 2), "140mK step"),
-                (datetime.datetime(2025, 5, 14, 12, 31), "160mK step"),
-                (datetime.datetime(2025, 5, 14, 22, 50), "Heater Off")]
 
             # Combine (conditionally) the extra events you want to plot
             plot_0418_events = False
@@ -2183,7 +2221,8 @@ class PlotRR_noQick:
                 # for Q5, start at the first time stamp plotted and go all the way to 160 mK for the “full” fit,
                 # but only to 120 mK for the “up to 120 mK” fit
 
-                drop_some_pts = False # set this to true if you want to disregard points above/under a certain temperature
+                drop_some_pts = False # set this to true if you want to disregard points above/under a certain temperature.
+                # This introduces biases though because you are essentially selecting the data. Use only for tests.
                 if q == 4:
                     start_ts = times_arr.min() # alternatively, you could start at t20_ts
                     final_full_ts = t160_ts

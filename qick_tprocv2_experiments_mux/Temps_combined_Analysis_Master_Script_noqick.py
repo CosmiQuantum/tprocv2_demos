@@ -43,8 +43,8 @@ qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "
                       "combined_studies_qtemps": False}
 
 # What analysis plots do you want to make?
-analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
-                  "Qtemps_hists_viaRPM": True,  "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
+analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
+                  "Qtemps_hists_viaRPM": False,  "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis
 comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
@@ -87,31 +87,31 @@ comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_tim
 #     ]
 
 # For data before heater temperature steps
-target_dates_qtemps_RPM = [
-    "2025-04-16",
-    "2025-04-17",
-    "2025-04-18",
-    "2025-04-19",
-    "2025-04-20",
-    "2025-04-21", #starts source on (Co)
-    "2025-04-22",
-    "2025-04-23", #switched source (to Cs)
-    "2025-04-24",
-    "2025-04-25",
-    "2025-04-26",
-    "2025-04-27",
-    "2025-04-28", #Cs source moved closer
-    "2025-04-29",
-    "2025-04-30",
-    "2025-05-01",
-    "2025-05-02",
-    "2025-05-03",
-    "2025-05-04", # Cs source removed. No sources in Cleanroom.
-    "2025-05-05",
-    "2025-05-06"]
+# target_dates_qtemps_RPM = [
+#     "2025-04-16",
+#     "2025-04-17",
+#     "2025-04-18",
+#     "2025-04-19",
+#     "2025-04-20",
+#     "2025-04-21", #starts source on (Co)
+#     "2025-04-22",
+#     "2025-04-23", #switched source (to Cs)
+#     "2025-04-24",
+#     "2025-04-25",
+#     "2025-04-26",
+#     "2025-04-27",
+#     "2025-04-28", #Cs source moved closer
+#     "2025-04-29",
+#     "2025-04-30",
+#     "2025-05-01",
+#     "2025-05-02",
+#     "2025-05-03",
+#     "2025-05-04", # Cs source removed. No sources in Cleanroom.
+#     "2025-05-05",
+#     "2025-05-06"]
 
 # For data during Heater temperature steps
-# target_dates_qtemps_RPM = ["2025-05-07", "2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16"]
+target_dates_qtemps_RPM = ["2025-05-07", "2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16"]
 
 # if you want to look at just one specific date
 # target_dates_qtemps_RPM = ["2025-05-05"]
@@ -151,8 +151,8 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
 
     if analysis_flags["Qtemps_vs_time_viaRPM"]:
         #------------------------------------------------------------------- Qubit temperatures vs time via RPMs ----------------------------------------------------
-        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 15, yaxis_max = 800, restrict_time_xaxis = False,
-                                                         plot_extra_event_lines = True, rad_events_plot_lines = False, plot_error_bars = True, fit_to_line=False)
+        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 15, yaxis_max = 450, restrict_time_xaxis = True,
+                                                         plot_extra_event_lines = True, rad_events_plot_lines = False, plot_error_bars = True, fit_to_line=True, average_per_heater_step=True)
 
     if analysis_flags["Qtemps_hists_viaRPM"]:
         #----------------------------------------------------------------- Histograms of Qubit temperatures (via RPMs) -----------------------------------------------
