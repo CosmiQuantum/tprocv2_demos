@@ -2090,7 +2090,7 @@ class PlotRR_noQick:
                     avg_time = np.mean([t.timestamp() for t in times_np[mask]])
                     avg_time_dt = datetime.datetime.fromtimestamp(avg_time)
                     avg_temp = np.mean(temps_np[mask])
-                    avg_err = np.sqrt(np.sum(errs_np[mask] ** 2)) / np.sum(mask)
+                    avg_err = np.sqrt(np.sum(errs_np[mask] ** 2)) / np.sum(mask) # propagating independent, uncorrelated, Gaussian uncertainties (standard deviations).
 
                     binned_times.append(avg_time_dt)
                     binned_temps.append(avg_temp)
