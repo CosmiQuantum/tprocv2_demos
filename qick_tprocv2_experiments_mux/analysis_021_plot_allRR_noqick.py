@@ -1963,7 +1963,7 @@ class PlotRR_noQick:
 
         # Define the colors you want for each qubit
         colors = ["orange", "blue", "purple", "green", "brown", "pink"]
-
+        legend_handles = []
         ncols = min(num_qubits, 3)
         nrows = math.ceil(num_qubits / 3)
 
@@ -2189,7 +2189,6 @@ class PlotRR_noQick:
                 label_to_color = {label: mcolors.to_hex(cmap(i)) for i, label in enumerate(unique_labels)}
 
                 # Track which labels were already used in the legend
-                legend_handles = []
                 used_labels = set()
 
                 # Plot vertical lines for each event, reusing colors
@@ -2306,7 +2305,7 @@ class PlotRR_noQick:
 
 
             # Add a combined legend (only once)
-            if q == 0:
+            if q == 0 and legend_handles:
                 fig.legend(handles= legend_handles)
 
         # Add a shared X label
