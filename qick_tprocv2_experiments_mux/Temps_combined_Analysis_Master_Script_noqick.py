@@ -27,6 +27,7 @@ replot_RPMs = False # Do you want to re-plot rabi population measurements from R
 save_figsRR = False # Do you want to save (or not save) re-plotted RR measurements plots?
 save_figs = False # To be used in general for any function or class to saver (or not save) plots.
 fit_saved = False # Not used here, set to false.
+exclude_temp_sweeps = True # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
 
 get_qtemp_data = True # Do you want to calculate qubit temperatures?
 
@@ -52,39 +53,45 @@ comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_tim
 ############################################################################## Set up ##############################################################################
 #-------------------------------------------- For qubit temperature calculations via rabi population measurements ---------------------------------------------------
 # Specify which dates you want to loop through. It will process all the files inside all the folders that contain these dates in their title.
-# target_dates_qtemps_RPM = [
-#     "2025-04-16",
-#     "2025-04-17",
-#     "2025-04-18",
-#     "2025-04-19",
-#     "2025-04-20",
-#     "2025-04-21", #starts source on (Co)
-#     "2025-04-22",
-#     "2025-04-23", #switched source (to Cs)
-#     "2025-04-24",
-#     "2025-04-25",
-#     "2025-04-26",
-#     "2025-04-27",
-#     "2025-04-28", #Cs source moved closer
-#     "2025-04-29",
-#     "2025-04-30",
-#     "2025-05-01",
-#     "2025-05-02",
-#     "2025-05-03",
-#     "2025-05-04", # Cs source removed. No sources in Cleanroom.
-#     "2025-05-05",
-#     "2025-05-06",
-#     "2025-05-07",
-#     "2025-05-08",
-#     "2025-05-09",
-#     "2025-05-10",
-#     "2025-05-11",
-#     "2025-05-12",
-#     "2025-05-13",
-#     "2025-05-14",
-#     "2025-05-15",
-#     "2025-05-16"
-#     ]
+target_dates_qtemps_RPM = [
+    "2025-04-16",
+    "2025-04-17",
+    "2025-04-18",
+    "2025-04-19",
+    "2025-04-20",
+    "2025-04-21", #starts source on (Co)
+    "2025-04-22",
+    "2025-04-23", #switched source (to Cs)
+    "2025-04-24",
+    "2025-04-25",
+    "2025-04-26",
+    "2025-04-27",
+    "2025-04-28", #Cs source moved closer
+    "2025-04-29",
+    "2025-04-30",
+    "2025-05-01",
+    "2025-05-02",
+    "2025-05-03",
+    "2025-05-04", # Cs source removed. No sources in Cleanroom.
+    "2025-05-05",
+    "2025-05-06",
+    "2025-05-07",
+    "2025-05-08",
+    "2025-05-09",
+    "2025-05-10",
+    "2025-05-11",
+    "2025-05-12",
+    "2025-05-13",
+    "2025-05-14",
+    "2025-05-15",
+    "2025-05-16",
+    "2025-05-20",
+    "2025-05-21",
+    "2025-05-28",
+    "2025-05-29",
+    "2025-05-31",
+    "2025-06-01" # Last Science run data
+    ]
 
 # For data before heater temperature steps
 # target_dates_qtemps_RPM = [
@@ -111,7 +118,7 @@ comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_tim
 #     "2025-05-06"]
 
 # For data during Heater temperature steps
-target_dates_qtemps_RPM = ["2025-05-07", "2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16"]
+# target_dates_qtemps_RPM = ["2025-05-07", "2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16"]
 
 # if you want to look at just one specific date
 # target_dates_qtemps_RPM = ["2025-05-05"]
@@ -124,7 +131,8 @@ outerFolder_qtemps_plots_RR = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QT
 # For RPM Analysis
 outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots" # Inside each analysis function, a subfolder will be defined
 
-filter_keywords = ['source_off', 'source_on']
+# filter_keywords = ['source_off', 'source_on'] # set up for RPM measurements. Which data do you want to look at? with source or no source?
+filter_keywords = ['source_off']
 
 #------------------- For qubit temperature calculations via SSF methods (double gaussian over g-state data and double gaussian over g and e-state data --------------
 # Note: you must write paths in this form: "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_03-03-40"
@@ -140,7 +148,7 @@ paths_SSFmethods = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Compreh
 if qtemp_method_flags["Qtemps_viaRPM"]:
     RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs)
     combined_qtemp_data = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal, run_name, list_of_all_qubits, tot_num_of_qubits,
-                            outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, figure_quality, save_figsRR)
+                            outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, figure_quality, save_figsRR, exclude_temp_sweeps)
     del RPM_calcs
     #----------------------------------------------------------------------- RPM Analysis -------------------------------------------------------------------------
     # These are not used in the definitions that follow, are just needed to re-initialize the class
@@ -151,8 +159,8 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
 
     if analysis_flags["Qtemps_vs_time_viaRPM"]:
         #------------------------------------------------------------------- Qubit temperatures vs time via RPMs ----------------------------------------------------
-        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 15, yaxis_max = 450, restrict_time_xaxis = True,
-                                                         plot_extra_event_lines = True, rad_events_plot_lines = False, plot_error_bars = True, fit_to_line=True, average_per_heater_step=True)
+        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 15, yaxis_max = 800, restrict_time_xaxis = False,
+                                                         plot_extra_event_lines = False, rad_events_plot_lines = False, plot_error_bars = True, fit_to_line=False, average_per_heater_step=False)
 
     if analysis_flags["Qtemps_hists_viaRPM"]:
         #----------------------------------------------------------------- Histograms of Qubit temperatures (via RPMs) -----------------------------------------------

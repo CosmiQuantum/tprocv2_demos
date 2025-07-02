@@ -1144,7 +1144,7 @@ class RPMTempCalcAndPlots:
         self.number_of_qubits = number_of_qubits
 
     def run_RPMqtemps(self, base_dir, target_dates, filter_keywords, fit_saved, signal, run_name, list_of_all_qubits, tot_num_of_qubits,
-                     outerFolder_RR_plots, replot_RPMs = False, get_qtemp_data = False, figure_quality = 200, save_figsRR = False):
+                     outerFolder_RR_plots, replot_RPMs = False, get_qtemp_data = False, figure_quality = 200, save_figsRR = False, exclude_temp_sweeps = False):
 
         combined_qtemp_data = []  # list of results from different .h5 files
 
@@ -1157,9 +1157,12 @@ class RPMTempCalcAndPlots:
             for d in dirs:
                 full_path = os.path.join(root, d)
                 # Match folders like '2025-04-16_11-47-09' based on prefix date
-                if any(d.startswith(date) for date in target_dates) and len(d) >= 19 and any(
-                        keyword in full_path for keyword in
-                        filter_keywords):  # also checks if path includes each keyword (source_off or source_on)
+                if (
+                        any(d.startswith(date) for date in target_dates)
+                        and len(d) >= 19
+                        and any(keyword in full_path for keyword in filter_keywords)
+                        and (not exclude_temp_sweeps or "temperature_sweep" not in full_path.lower())
+                    ):  # checks if path includes each keyword (source_off or source_on) and whether you set the temp sweep data to be excluded or not
                     optimization_path = os.path.join(full_path, "optimization")
                     if os.path.isdir(optimization_path):
                         date_string = d[:10]  # Extract 'YYYY-MM-DD'
