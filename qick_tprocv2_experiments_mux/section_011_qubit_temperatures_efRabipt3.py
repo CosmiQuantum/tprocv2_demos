@@ -343,10 +343,10 @@ class AmplitudeRabiProgram1(AveragerProgramV2):
         self.add_loop("gainloop", cfg["steps"])
 
     def _body(self, cfg): #this gives A_e
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # f-e pulse
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # e-f pulse
         self.delay_auto(t=0.0, tag='waiting')  # wait
 
-        self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play ge pi pulse
+        self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play g-e pi pulse
         self.delay_auto(t=0.0, tag='waiting after pi')  # Wait til ge pi pulse is done before proceeding
 
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # probe pulse
@@ -395,14 +395,14 @@ class AmplitudeRabiProgram2(AveragerProgramV2):
         self.add_loop("gainloop", cfg["steps"])
 
     def _body(self, cfg): # this gives A_g
-        self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play ge pi pulse
-        self.delay_auto(t=0.0, tag='waiting after pi')  # Wait til ge pi pulse is done before proceeding
+        self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play g-e pi pulse
+        self.delay_auto(t=0.0, tag='waiting after pi')  # Wait til g-e pi pulse is done before proceeding
 
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # f-e pulse
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # e-f pulse
         self.delay_auto(t=0.0, tag='waiting')  # wait
 
-        self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play ge pi pulse
-        self.delay_auto(t=0.0, tag='2nd waiting after pi')  # Wait til ge pi pulse is done before proceeding
+        self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play g-e pi pulse
+        self.delay_auto(t=0.0, tag='2nd waiting after pi')  # Wait til g-e pi pulse is done before proceeding
 
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
