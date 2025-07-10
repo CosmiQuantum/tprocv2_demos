@@ -2417,7 +2417,10 @@ class PlotRR_noQick:
             # Plot the Gaussian fit (dashed line) and the histogram
             ax.plot(x_vals, scaled_pdf, linestyle='--', linewidth=2, color=colors[i % len(colors)], label='Gaussian fit')
             ax.hist(temp_vals, bins=optimal_bin_num, alpha=0.7, color=colors[i % len(colors)], edgecolor='black')
-            # ax.axvline(w_mean, color='k', lw=2, label=f'Weighted μ = {w_mean:.2f}±{w_err:.2f} mK')
+            ax.axvline(w_mean, color='k', lw=2, label=f'Weighted μ = {w_mean:.2f}±{w_err:.2f} mK')
+            print(f"Qubit {i + 1} | Weighted Mean: {w_mean:.2f}, Gaussian μ: {mu:.2f}")
+            print(f"Weights: {weights}")
+            print(f"Sum(weights): {np.sum(weights):.2f}, Max weight: {np.max(weights):.2f}")
 
             # Set subplot title and labels including the Gaussian parameters
             ax.set_title(f"{titles[i]}  $\mu$: {mu:.2f} mK,  $\sigma$: {std:.2f} mK", fontsize=font)

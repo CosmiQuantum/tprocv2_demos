@@ -23,13 +23,13 @@ run_name = 'run6/6transmon'
 signal = 'None' # Do not change
 
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
-replot_RPMs = True # Do you want to re-plot rabi population measurements from RR data?
+replot_RPMs = False # Do you want to re-plot rabi population measurements from RR data?
 save_figsRR = False # Do you want to save (or not save) re-plotted RR measurements plots?
 save_figs = False # To be used in general for any function or class to saver (or not save) plots.
 fit_saved = False # Not used here, set to false.
-exclude_temp_sweeps = False # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
+exclude_temp_sweeps = True # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
 
-get_qtemp_data = False # Do you want to calculate qubit temperatures?
+get_qtemp_data = True # Do you want to calculate qubit temperatures?
 
 figure_quality = 200
 theta = 0
@@ -45,7 +45,7 @@ qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
-                  "Qtemps_hists_viaRPM": False,  "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
+                  "Qtemps_hists_viaRPM": True,  "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis
 comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
@@ -53,45 +53,45 @@ comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_tim
 ############################################################################## Set up ##############################################################################
 #-------------------------------------------- For qubit temperature calculations via rabi population measurements ---------------------------------------------------
 # Specify which dates you want to loop through. It will process all the files inside all the folders that contain these dates in their title.
-# target_dates_qtemps_RPM = [
-#     "2025-04-16",
-#     "2025-04-17",
-#     "2025-04-18",
-#     "2025-04-19",
-#     "2025-04-20",
-#     "2025-04-21", #starts source on (Co)
-#     "2025-04-22",
-#     "2025-04-23", #switched source (to Cs)
-#     "2025-04-24",
-#     "2025-04-25",
-#     "2025-04-26",
-#     "2025-04-27",
-#     "2025-04-28", #Cs source moved closer
-#     "2025-04-29",
-#     "2025-04-30",
-#     "2025-05-01",
-#     "2025-05-02",
-#     "2025-05-03",
-#     "2025-05-04", # Cs source removed. No sources in Cleanroom.
-#     "2025-05-05",
-#     "2025-05-06",
-#     "2025-05-07",
-#     "2025-05-08",
-#     "2025-05-09",
-#     "2025-05-10",
-#     "2025-05-11",
-#     "2025-05-12",
-#     "2025-05-13",
-#     "2025-05-14",
-#     "2025-05-15",
-#     "2025-05-16",
-#     "2025-05-20",
-#     "2025-05-21",
-#     "2025-05-28",
-#     "2025-05-29",
-#     "2025-05-31",
-#     "2025-06-01" # Last Science run data
-#     ]
+target_dates_qtemps_RPM = [
+    "2025-04-16",
+    "2025-04-17",
+    "2025-04-18",
+    "2025-04-19",
+    "2025-04-20",
+    "2025-04-21", #starts source on (Co)
+    "2025-04-22",
+    "2025-04-23", #switched source (to Cs)
+    "2025-04-24",
+    "2025-04-25",
+    "2025-04-26",
+    "2025-04-27",
+    "2025-04-28", #Cs source moved closer
+    "2025-04-29",
+    "2025-04-30",
+    "2025-05-01",
+    "2025-05-02",
+    "2025-05-03",
+    "2025-05-04", # Cs source removed. No sources in Cleanroom.
+    "2025-05-05",
+    "2025-05-06",
+    "2025-05-07",
+    "2025-05-08",
+    "2025-05-09",
+    "2025-05-10",
+    "2025-05-11",
+    "2025-05-12",
+    "2025-05-13",
+    "2025-05-14",
+    "2025-05-15",
+    "2025-05-16",
+    "2025-05-20",
+    "2025-05-21",
+    "2025-05-28",
+    "2025-05-29",
+    "2025-05-31",
+    "2025-06-01" # Last Science run data
+    ]
 
 # For data before heater temperature steps
 # target_dates_qtemps_RPM = [
@@ -121,7 +121,7 @@ comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_tim
 # target_dates_qtemps_RPM = ["2025-05-07", "2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16"]
 
 # if you want to look at just one specific date
-target_dates_qtemps_RPM = ["2025-05-05"]
+# target_dates_qtemps_RPM = ["2025-05-05"]
 
 base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study"
 
