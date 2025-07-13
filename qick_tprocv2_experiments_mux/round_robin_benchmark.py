@@ -7,11 +7,15 @@ import datetime
 import time
 import logging
 import visdom
+import gc, copy
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_001_time_of_flight import TOFExperiment
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
+from section_002_res_spec_ef import ResonanceSpectroscopyEF
 from section_004_qubit_spec_ge import QubitSpectroscopy
+from section_004_qubit_spec_ef import EFQubitSpectroscopy
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
+from section_011_qubit_temperatures_efRabipt3 import Temps_EFAmpRabiExperiment
 from section_007_T1_ge import T1Measurement
 from section_005_single_shot_ge import SingleShot
 from section_008_save_data_to_h5 import Data_H5
@@ -32,7 +36,8 @@ save_figs = True                     # save plots for everything as you go along
 live_plot = False                     # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
 fit_data = False                     # fit the data here and save or plot the fits?
 save_data_h5 = True                  # save all of the data to h5 files?
-verbose = False                      # print everything to the console in real time, good for debugging, bad for memory
+verbose = True                      # print everything to the console in real time, good for debugging, bad for memory
+qick_verbose = True                 # qick verbose prints the progress bar for each qick experiment as it is happening (the red bar that fills out as more experiment rounds/reps are being done)
 debug_mode = True                   # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 thresholding = False                 # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 increase_qubit_reps = False          # if you want to increase the reps for a qubit, set to True
@@ -48,11 +53,16 @@ substudy_txt_notes = ('Normal Round Robin during cooldown, now everything works 
 
 # set which of the following you'd like to run to 'True'
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True,
-             "t1": True, "t2r": True, "t2e": True}
+             "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True, "rabi_pop_meas": True}
 # optimization outputs
 res_leng_vals = [5.5, 12, 6.0, 6.5, 5.0, 6.0]
 res_gain = [0.9, 0.95, 0.78, 0.58, 0.95, 0.57]
 freq_offsets = [-0.1, 0.2, -0.1, -0.4, -0.1, -0.1]
+
+qubit_freqs_ef = [None]*6
+# increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
+increase_steps_to_ef = 600
+ef_res_sample_number = 1
 ################################################ Data Saving Setup ##################################################
 #Folders
 study = 'round_robin_benchmark'
@@ -465,7 +475,7 @@ while j < n:
                 if verbose:
                     print(f"RR g-e QSpec error on qubit {QubitIndex}: {e}")
                 continue
-        ###################################################### Rabi ####################################################
+        ###################################################### g-e Rabi ####################################################
         if run_flags["rabi"]:
             try:
                 rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs=save_figs,save_shots=False,
@@ -517,6 +527,175 @@ while j < n:
                     rr_logger.exception(f'Got the following error, continuing: {e}')
                     if verbose: print(f'Got the following error, continuing: {e}')
                     continue #skip the rest of this qubit
+
+        ############################################## res spec ef ####################################################
+        if run_flags["ef_res_spec"]:
+            rr_logger.info("----------------- Optimization: Starting Res Spec EF  -----------------")
+            if verbose:
+                print("----------------- Optimization: Starting Res Spec EF  -----------------")
+
+            ef_res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
+            ef_res_freqs_samples = []
+            for sample in range(ef_res_sample_number):
+                try:
+                    ef_res_spec = ResonanceSpectroscopyEF(QubitIndex, tot_num_of_qubits, optimizationFolder, sample,
+                                                          save_figs, experiment=experiment, verbose=verbose,
+                                                          logger=rr_logger, qick_verbose=qick_verbose)
+                    ef_res_freqs, ef_freq_pts, ef_freq_center, ef_amps, sys_config_rspec_ef = ef_res_spec.run()
+                    ef_res_freqs_samples.append(ef_res_freqs)
+                    rr_logger.info(f"EF ResSpec sample {sample} for qubit {QubitIndex + 1}: {ef_res_freqs}")
+
+                    ef_res_data[QubitIndex]['Dates'][0] = (
+                        time.mktime(datetime.datetime.now().timetuple()))
+                    ef_res_data[QubitIndex]['freq_pts'][0] = ef_freq_pts
+                    ef_res_data[QubitIndex]['freq_center'][0] = ef_freq_center
+                    ef_res_data[QubitIndex]['Amps'][0] = ef_amps
+                    ef_res_data[QubitIndex]['Found Freqs'][0] = ef_res_freqs
+                    ef_res_data[QubitIndex]['Round Num'][0] = sample
+                    ef_res_data[QubitIndex]['Batch Num'][0] = 0
+                    ef_res_data[QubitIndex]['Exp Config'][0] = expt_cfg
+                    ef_res_data[QubitIndex]['Syst Config'][0] = sys_config_rspec_ef
+
+                    saver_ef_res = Data_H5(optimizationFolder, ef_res_data, sample, save_r)  # save
+                    saver_ef_res.save_to_h5('res_ef')
+                    del saver_ef_res
+                    del ef_res_data
+                    gc.collect()
+                    ef_res_data = create_data_dict(res_keys, save_r,
+                                                   list_of_all_qubits)  # initialize again to a blank for saftey
+
+                    del ef_res_spec
+
+                except Exception as e:
+                    if debug_mode:
+                        raise  # In debug mode, re-raise the exception immediately
+                    rr_logger.exception(f"EF ResSpec error on qubit {QubitIndex + 1} sample {sample}: {e}")
+                    continue
+
+            if ef_res_freqs_samples:
+                # Average the resonator frequency values across samples
+                avg_ef_res_freqs = np.mean(np.array(ef_res_freqs_samples), axis=0).tolist()
+            else:
+                rr_logger.error(f"No resonator spectroscopy data collected for qubit {QubitIndex + 1}.")
+
+            experiment.readout_cfg['res_freq_ef'] = ef_res_freqs_samples[-1]  # use the last e-f res spec frequency to update the sys config
+
+            rr_logger.info(f"Avg. EF resonator frequencies for qubit {QubitIndex + 1}: {avg_ef_res_freqs[QubitIndex]}")
+            if verbose:
+                print(f"Avg. EF resonator frequencies for qubit {QubitIndex + 1}: {avg_ef_res_freqs}")
+
+        ################################################ Qubit Spec EF ################################################
+        if run_flags["ef_q_spec"]:
+            rr_logger.info("----------------- Starting Qubit Spec EF  -----------------")
+            if verbose:
+                print("----------------- Starting Qubit Spec EF  -----------------")
+
+            ef_qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
+
+            try:
+                increase_qubit_steps_ef = False
+                # Qubit 4 needs more steps for e-f spec
+                if QubitIndex == 3:
+                    increase_qubit_steps_ef = True  # if you want to increase the steps for a qubit, set to True
+
+                number_of_qubits = 6
+                j = 0
+                ef_q_spec = EFQubitSpectroscopy(QubitIndex, number_of_qubits, list_of_all_qubits, optimizationFolder, j,
+                                                signal,
+                                                save_figs, experiment, live_plot, increase_qubit_steps_ef,
+                                                increase_steps_to_ef)
+                efqspec_I, efqspec_Q, efqspec_freqs, efqspec_I_fit, efqspec_Q_fit, efqubit_freq, sys_config_qspec_ef = ef_q_spec.run(
+                    experiment.soccfg,
+                    experiment.soc)
+                qubit_freqs_ef[QubitIndex] = efqubit_freq
+                experiment.qubit_cfg['qubit_freq_ef'][QubitIndex] = float(efqubit_freq)
+
+                rr_logger.info(f"EF Qubit {QubitIndex + 1} frequency: {efqubit_freq}")
+                if verbose:
+                    print(f"EF Qubit {QubitIndex + 1} frequency: {efqubit_freq}")
+                del ef_q_spec
+
+                ef_qspec_data[QubitIndex]['Dates'][0] = (
+                    time.mktime(datetime.datetime.now().timetuple()))
+                ef_qspec_data[QubitIndex]['I'][0] = efqspec_I
+                ef_qspec_data[QubitIndex]['Q'][0] = efqspec_Q
+                ef_qspec_data[QubitIndex]['Frequencies'][0] = efqspec_freqs
+                ef_qspec_data[QubitIndex]['I Fit'][0] = efqspec_I_fit
+                ef_qspec_data[QubitIndex]['Q Fit'][0] = efqspec_Q_fit
+                ef_qspec_data[QubitIndex]['Round Num'][0] = 0
+                ef_qspec_data[QubitIndex]['Batch Num'][0] = 0
+                ef_qspec_data[QubitIndex]['Recycled QFreq'][0] = False  # no rr so no recycling here
+                ef_qspec_data[QubitIndex]['Exp Config'][0] = expt_cfg
+                ef_qspec_data[QubitIndex]['Syst Config'][0] = sys_config_qspec_ef
+
+                saver_ef_qspec = Data_H5(optimizationFolder, ef_qspec_data, 0, save_r)
+                saver_ef_qspec.save_to_h5('qspec_ef')
+                del saver_ef_qspec
+                del ef_qspec_data
+
+            except Exception as e:
+                if debug_mode:
+                    raise  # In debug mode, re-raise the exception immediately
+                rr_logger.exception(f"EF QubitSpectroscopy error on qubit {QubitIndex + 1}: {e}")
+
+        ################################################ e-f amp rabi pop meas. ################################################
+        if run_flags["rabi_pop_meas"]:
+            rr_logger.info(
+                "----------------- Starting EF Amplitude Rabi Population Measurements -----------------")
+            if verbose:
+                print("----------------- EF Amplitude Rabi Population Measurements  -----------------")
+
+            rabi_data_ef_Qtemps = create_data_dict(rabi_keys_ef_Qtemps, save_r, list_of_all_qubits)
+            try:
+                number_of_qubits = 6
+                j = 0
+                efAmprabi_Qtemps = Temps_EFAmpRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits,
+                                                             optimizationFolder,
+                                                             j,
+                                                             signal, save_figs,
+                                                             experiment, live_plot,
+                                                             increase_qubit_reps, qubit_to_increase_reps_for,
+                                                             multiply_qubit_reps_by)
+                (I1_qtemp, Q1_qtemp, gains1_qtemp, fit_cosine1_qtemp, pi_amp1_qtemp, A_amplitude1, amp_fit1,
+                 I2_qtemp, Q2_qtemp, gains2_qtemp, fit_cosine2_qtemp, pi_amp2_qtemp, A_amplitude2, amp_fit2,
+                 sysconfig_efrabi_Qtemps) = efAmprabi_Qtemps.run(experiment.soccfg, experiment.soc)
+
+                rr_logger.info(
+                    f"RPM Amplitudes for qubit {QubitIndex + 1}: A1 = {float(A_amplitude1)}, A2 = {float(A_amplitude2)}")
+                if verbose:
+                    print(
+                        f"RPM Amplitudes for qubit {QubitIndex + 1}: A1 = {float(A_amplitude1)}, A2 = {float(A_amplitude2)}")
+
+                batch_num = 0
+                rabi_data_ef_Qtemps[QubitIndex]['Dates'][0] = (time.mktime(datetime.datetime.now().timetuple()))
+                rabi_data_ef_Qtemps[QubitIndex]['Qfreq_ge'][
+                    0] = qubit_freq  # save the g-e qubit freq too for this qubit
+
+                rabi_data_ef_Qtemps[QubitIndex]['I1'][0] = I1_qtemp
+                rabi_data_ef_Qtemps[QubitIndex]['Q1'][0] = Q1_qtemp
+                rabi_data_ef_Qtemps[QubitIndex]['Gains1'][0] = gains1_qtemp
+                rabi_data_ef_Qtemps[QubitIndex]['Fit1'][0] = fit_cosine1_qtemp
+
+                rabi_data_ef_Qtemps[QubitIndex]['I2'][0] = I2_qtemp
+                rabi_data_ef_Qtemps[QubitIndex]['Q2'][0] = Q2_qtemp
+                rabi_data_ef_Qtemps[QubitIndex]['Gains2'][0] = gains2_qtemp
+                rabi_data_ef_Qtemps[QubitIndex]['Fit2'][0] = fit_cosine2_qtemp
+
+                rabi_data_ef_Qtemps[QubitIndex]['Round Num'][0] = j
+                rabi_data_ef_Qtemps[QubitIndex]['Batch Num'][0] = batch_num
+                rabi_data_ef_Qtemps[QubitIndex]['Exp Config'][0] = expt_cfg
+                rabi_data_ef_Qtemps[QubitIndex]['Syst Config'][0] = sysconfig_efrabi_Qtemps
+
+                saver_rabi_Qtemps = Data_H5(optimizationFolder, rabi_data_ef_Qtemps, batch_num, save_r)
+                saver_rabi_Qtemps.save_to_h5('q_temperatures')
+                del efAmprabi_Qtemps
+                del saver_rabi_Qtemps
+                del rabi_data_ef_Qtemps
+
+            except Exception as e:
+                if debug_mode:
+                    raise  # In debug mode, re-raise the exception immediately
+                rr_logger.exception(f"EF Rabi Population Measurements error on qubit {QubitIndex + 1}: {e}")
 
         ###################################################### g-e T1 ######################################################
         if run_flags["t1"]:
