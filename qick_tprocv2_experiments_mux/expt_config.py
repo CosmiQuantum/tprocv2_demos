@@ -3,11 +3,10 @@ import numpy as np
 FRIDGE = "QUIET"  # change to "NEXUS" as needed
 
 if FRIDGE == "QUIET":
-    VNA_res = np.array([6.20905, 6.26145, 6.321265, 6.401472, 6.467723, 6.5209414])*1000  # run 5
-    #VNA_res = np.array([6217.011, 6275.7973, 6335.1068, 6407.052, 6476.1091, 6538])
-    # VNA_res = np.array([6191.519, 6216, 6292.321, 6405.85, 6432.959, 6468.441,]) # run 4a
-    VNA_qubit = np.array([4190, 3819, 4161, 4462, 4471.5, 4999.5])  # Freqs of Qubit g/e Transition
-    #VNA_qubit = np.array([4189.8105, 3820.4723, 4156.53, 4462.374, 4471.4036, 4997.86])
+    VNA_res = np.array([6.20905, 6.28945, 6.321265, 6.401472, 6.467723, 6.5209414])*1000  # Olivia updated these so all resonators fit in same window for run 7. please look at hemiltonian spreadsheet or previous git commits to see old values
+   
+    VNA_qubit = np.array([4185, 3824, 4163, 4467, 4474.5, 5005.5])  # Freqs of Qubit g/e Transition
+    
     ef_freqs = np.array([4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17]) # Freqs of Qubit e/f Transition
     # Set this for your experiment
     tot_num_of_qubits = 6
@@ -25,9 +24,9 @@ if FRIDGE == "QUIET":
         "res_spec": {
             "reps": 100,
             "rounds": 1,
-            "start": -4,  # [MHz]
+            "start": 5,  # -4 #[MHz]
             "step_size": 0.05,  # [MHz]
-            "steps": 70,
+            "steps": 70,#70
             "relax_delay": 10,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -52,11 +51,11 @@ if FRIDGE == "QUIET":
         },
 
         "qubit_spec_ge": {
-            "reps": 500, #300
+            "reps": 1000, #500
             "rounds": 1, #10
-            "start": list(VNA_qubit-10), # [MHz] #-300 #-15
-            "stop": list(VNA_qubit+10), # [MHz] #+15
-            "steps": 450, #100
+            "start": list(VNA_qubit-10), # [MHz] #-300 #-10
+            "stop": list(VNA_qubit+10), # [MHz] #+10
+            "steps": 450, #450
             "relax_delay": 10, #1000, # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },

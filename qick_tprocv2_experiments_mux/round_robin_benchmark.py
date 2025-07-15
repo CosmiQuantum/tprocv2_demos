@@ -30,18 +30,18 @@ save_r = 1                           # how many rounds to save after
 signal = 'None'                      # 'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization
 save_figs = True                     # save plots for everything as you go along the RR script?
 live_plot = False                     # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
-fit_data = False                     # fit the data here and save or plot the fits?
+fit_data = True                     # fit the data here and save or plot the fits?
 save_data_h5 = True                  # save all of the data to h5 files?
-verbose = False                      # print everything to the console in real time, good for debugging, bad for memory
+verbose = True                      # print everything to the console in real time, good for debugging, bad for memory
 debug_mode = True                   # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 thresholding = False                 # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 increase_qubit_reps = False          # if you want to increase the reps for a qubit, set to True
 qubit_to_increase_reps_for = 0       # only has impact if previous line is True
 multiply_qubit_reps_by = 2           # only has impact if the line two above is True
-Qs_to_look_at = [0, 1, 2, 3, 4, 5]       # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,3,4,5]       # only list the qubits you want to do the RR for
 
 #Data saving info
-run_name = 'run6b'
+run_name = 'run7'
 device_name = '6transmon'
 substudy_txt_notes = ('Normal Round Robin during cooldown, now everything works properly, set debug to false to run '
                       'overnight and running in terminal with repeater script')
@@ -56,7 +56,7 @@ freq_offsets = [-0.1, 0.2, -0.1, -0.4, -0.1, -0.1]
 ################################################ Data Saving Setup ##################################################
 #Folders
 study = 'round_robin_benchmark'
-sub_study = 'cool_down'
+sub_study = 'find_qubits'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") #should have a new onoe for every optimization batch
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
