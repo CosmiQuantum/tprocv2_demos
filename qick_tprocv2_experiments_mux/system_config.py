@@ -25,8 +25,8 @@ class QICK_experiment:
             self.soc, self.soccfg = makeProxy()
             #print(self.soccfg)
 
-            self.FSGEN_CH =  2 # 0 for "old QICK", 6 for RF board
-            self.FSGEN_AMPL_CH = 0
+            self.FSGEN_CH =  0 # 0 for "old QICK", 6 for RF board
+            self.FSGEN_AMPL_CH = 2
             self.MIXMUXGEN_CH = 4 # Readout resonator DAC channel
             self.MUXRO_CH = [2, 3, 4, 5, 6, 7]
             self.MUXRO_CH_RF = 5  # New variable that we need for QICK box
@@ -75,7 +75,8 @@ class QICK_experiment:
                 #"res_freq_ge": [6217, 6276, 6335, 6407, 6476, 6538],  # MHz, run 5
                 #'res_freq_ge': [6217.011, 6275.7973, 6335.1068, 6407.052, 6476.1091, 6538], # Arianna 3/27/
                 #'res_freq_ge': [6216.811, 6275.9373, 6335, 6407.0338, 6475.8835, 6538], #Joyce 3/11
-                'res_freq_ge': [6216.79738, 6275.9373, 6335, 6407.0338, 6475.98988, 6538], #Joyce 04/07 DAC 0
+                'res_freq_ge': [6216.79738, 6277.9, 6337.5, 6408.0338, 6474.5, 6540.7],
+
                 # "res_freq_ge": [6191.419, 6216.1, 6292.361, 6405.77, 6432.759, 6468.481],  # MHz, run 4a
                 # "res_gain_ge": [1] + [0]*5,
                 "res_gain_ge": [0.96, 1, 0.7200, 0.5333, 0.8000, 0.55], #[1, 1, 1, 1, 1, 1],
@@ -129,7 +130,7 @@ class QICK_experiment:
                 "qubit_phase": 0,  # [deg]
                 #"sigma": [0.15]*6,  # [us] for Gaussian Pulse (5+10 DAC atten for qubit)
                 "sigma_ampl": [0.03, 0.03, 0.05, 0.04, 0.05, 0.05], #DAC 0 04/07
-                "sigma": [0.13, 0.15, 0.22, 0.14, 0.19, 0.14],  # DAC 2 04/07 [us] for Gaussian Pulse (5+10 DAC atten for qubit)
+                "sigma": [0.25, 0.55, 0.45, 0.33, 0.43, 0.39],  # DAC 2 04/07 [us] for Gaussian Pulse (5+10 DAC atten for qubit)
                 #"sigma": [0.05, 0.09, 0.07, 0.065, 0.09, 0.3],  # Goal: cut sigma in half [us] for Gaussian Pulse (5+4 DAC atten for qubit)
                 # "pi_amp": [0.92, 0.87, 0.75, 0.73, 0.77, 0.78], # old RR values
                 "sigma_ef": [0.09, 0.16, 0.16, 0.15, 0.15, 0.10],  # [us] for Gaussian Pulse, #Arianna 3/27

@@ -36,7 +36,7 @@ list_of_all_qubits = [0, 1, 2, 3, 4, 5] #for QUIET [0, 1, 2, 3, 4, 5], for NEXUS
 # For Quiet
 # outerFolder = os.path.join("/data/QICK_data/6transmon_run6/", str(datetime.date.today()))
 #outerFolder = os.path.join("/data/QICK_data/run6/6transmon/StarkShift/DAC0_check/Optimization/run2/", str(datetime.date.today()))
-outerFolder = os.path.join(f"/data/QICK_data/run6/6transmon/TLS_Comprehensive_Study/readout_optimization_{datetime.date.today().strftime('%Y-%m-%d')}", datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+outerFolder = os.path.join(f"/data/QICK_data/run7/6transmon/readout_optimization_{datetime.date.today().strftime('%Y-%m-%d')}", datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 def create_folder_if_not_exists(folder_path):
     """Creates a folder at the given path if it doesn't already exist."""
     if not os.path.exists(folder_path):
@@ -59,7 +59,8 @@ res_leng_vals = [4.3, 5, 5, 6.1, 4.5, 9]
 #res_gain = [0.9600, 1, 0.7200, 0.5733, 0.96, 0.55]
 res_gain = [0.9, 0.95, 0.78, 0.58, 0.95, 0.57]
 #freq_offsets = [-0.05, -0.19, -0.19, 0.15, -0.2, -0.05]
-freq_offsets = [-0.1, 0.2, -0.1, -0.4, -0.1, -0.1]
+# freq_offsets = [-0.1, 0.2, -0.1, -0.4, -0.1, -0.1]
+freq_offsets = [0,0,0,0,0,0]
 
 punch_out_vals = [1, 1, 0.8, 0.6, 1, 0.6]
 
