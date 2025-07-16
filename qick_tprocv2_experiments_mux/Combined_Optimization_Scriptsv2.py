@@ -34,9 +34,11 @@ list_of_all_qubits = [0, 1, 2, 3, 4, 5] #for QUIET [0, 1, 2, 3, 4, 5], for NEXUS
 # outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30", str(datetime.date.today())) #change run number in each new run
 
 # For Quiet
+substudy = "junkyard"
 # outerFolder = os.path.join("/data/QICK_data/6transmon_run6/", str(datetime.date.today()))
 #outerFolder = os.path.join("/data/QICK_data/run6/6transmon/StarkShift/DAC0_check/Optimization/run2/", str(datetime.date.today()))
-outerFolder = os.path.join(f"/data/QICK_data/run7/6transmon/readout_optimization_{datetime.date.today().strftime('%Y-%m-%d')}", datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+#outerFolder = os.path.join(f"/data/QICK_data/run6/6transmon/TLS_Comprehensive_Study/readout_optimization_{datetime.date.today().strftime('%Y-%m-%d')}", datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+outerFolder = os.path.join(f"/data/QICK_data/run7/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 def create_folder_if_not_exists(folder_path):
     """Creates a folder at the given path if it doesn't already exist."""
     if not os.path.exists(folder_path):
@@ -45,31 +47,33 @@ def create_folder_if_not_exists(folder_path):
 
 # Where to save readout length sweep data
 prefix = str(datetime.date.today())
-output_folder =outerFolder + "/SingleShot_Test/"
-create_folder_if_not_exists(output_folder)
+output_folder_length =outerFolder + "/study_data/Data_h5/ge_readout_length_optimization/"
+create_folder_if_not_exists(output_folder_length)
+
+#Where to save the RR plots
+outerfolder_plots = outerFolder + "/documentation/"
 
 n = 1  # Number of rounds
 n_loops = 4  # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [0,1,2,3,4,5]
+Qs = [5]
 
 #Change for NEXUS vs QUIET
-res_leng_vals = [4.3, 5, 5, 6.1, 4.5, 9]
+res_leng_vals = [8, 14, 8, 10, 12, 12]
 #res_gain = [0.9600, 1, 0.7200, 0.5733, 0.96, 0.55]
-res_gain = [0.9, 0.95, 0.78, 0.58, 0.95, 0.57]
+res_gain = [0.96, 0.92, 0.96, 0.98, 0.98, 0.80]
 #freq_offsets = [-0.05, -0.19, -0.19, 0.15, -0.2, -0.05]
-# freq_offsets = [-0.1, 0.2, -0.1, -0.4, -0.1, -0.1]
-freq_offsets = [0,0,0,0,0,0]
+freq_offsets = [-0.04, -0.32, -0.1200, 0.2000, -0.2800, -0.0800]
 
-punch_out_vals = [1, 1, 0.8, 0.6, 1, 0.6]
+punch_out_vals = [1, 1, 1, 1, 1, 1]
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_freq_ge = [None] * 6 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
 
 j=0 #round number, from RR code. Not really used here since we just run it once for each qubit
 
-lengs = np.arange(3, 8, 0.5)
+lengs = np.arange(0.1, 15, 0.5)
 
 for QubitIndex in Qs:
     # Get the config for this qubit
@@ -83,7 +87,7 @@ for QubitIndex in Qs:
 
     ################################################## Res spec ####################################################
 
-    res_spec = ResonanceSpectroscopy(QubitIndex, number_of_qubits, outerFolder, j, True,
+    res_spec = ResonanceSpectroscopy(QubitIndex, number_of_qubits, outerfolder_plots, j, True,
                                      experiment)
     res_freqs, freq_pts, freq_center, amps, res_spec_config = res_spec.run()
     experiment.readout_cfg['res_freq_ge'] = res_freqs
@@ -101,7 +105,7 @@ for QubitIndex in Qs:
 
     ################################################## Qubit spec ##################################################
 
-    q_spec = QubitSpectroscopy(QubitIndex, number_of_qubits, outerFolder, j, signal,
+    q_spec = QubitSpectroscopy(QubitIndex, number_of_qubits, outerfolder_plots, j, signal,
                                True, experiment, live_plot)
     qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq, qubit_spec_config = q_spec.run()
 
@@ -119,10 +123,10 @@ for QubitIndex in Qs:
     qubit_to_increase_reps_for = 0  # only has impact if previous line is True
     multiply_qubit_reps_by = 2  # only has impact if the line two above is True
 
-
-    rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, outerFolder, j, signal,
-                                   True, experiment, live_plot,
-                                   increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
+    rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, outerfolder_plots, j, signal,
+                                   False, experiment=experiment, live_plot=live_plot,
+                                   increase_qubit_reps=increase_qubit_reps, qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                   multiply_qubit_reps_by=multiply_qubit_reps_by)
     rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save = rabi.run()
 
     # if these are None, fit didnt work
@@ -137,14 +141,14 @@ for QubitIndex in Qs:
     #MAKE DEEP COPY OF CONFIG, IMPORTANT!!!
     tuned_experiment = copy.deepcopy(experiment)
 
-    # # #-----------Sweeping Readout Length----------------------------
+    # # # #-----------Sweeping Readout Length----------------------------
     QubitIndex = int(QubitIndex)  # Ensure QubitIndex is an integer
 
     avg_fids = []
     rms_fids = []
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    h5_filename = os.path.join(output_folder, f"qubit_{QubitIndex + 1}_data_{timestamp}.h5")
+    h5_filename = os.path.join(output_folder_length, f"ge_readoutlength_sweep_Q{QubitIndex + 1}_data_{timestamp}.h5")
     with h5py.File(h5_filename, 'w') as h5_file:
         # Top-level group for the qubit
         qubit_group = h5_file.create_group(f"Qubit_{QubitIndex + 1}")
@@ -154,6 +158,7 @@ for QubitIndex in Qs:
 
         # Iterate over each readout pulse length
         for leng in lengs:
+            print(len)
             # Subgroup for each readout length within the round
             length_group = qubit_group.create_group(f"Length_{leng}")
 
@@ -221,24 +226,28 @@ for QubitIndex in Qs:
     plt.xlabel('Readout and Pulse Length')
     plt.ylabel('Fidelity')
     plt.title(f'Avg Fidelity vs. Readout and Pulse Length for Qubit {QubitIndex + 1}, ({n_loops} repetitions)' , fontsize=10)
-    plt.savefig(os.path.join(output_folder, f'fidelity_Q{QubitIndex + 1}_{timestamp}.png'), dpi=300)
-    print('res leng sweep plot saved to:', output_folder)
+    path = os.path.join(outerfolder_plots, 'readout_length_ge')
+    create_folder_if_not_exists(path)
+    file_nm = os.path.join(path, f'ge_readoutlength_sweep_Q{QubitIndex + 1}_{timestamp}.png')
+    plt.savefig(file_nm, dpi=300)
+    print('res leng sweep plot saved to:', outerfolder_plots)
+    #plt.show()
     plt.close()
 
     del avg_fids, rms_fids, avg_ground_iq, avg_excited_iq, loop_group, length_group
 
-    # ##---------------------Res Gain and Res Freq Sweeps------------------------
-    # optimal_lengths = [6.5, 5.5, 5.5, 5.5, 4.5, 5.5] #optional # DAC 2 optimization
+    ##---------------------Res Gain and Res Freq Sweeps------------------------
+    # optimal_lengths = [8, 14, 8, 10, 12, 12] #optional # DAC 2 optimization
     # # optimal_lengths = [4.2, 5, 7.0, 6, 6, 7.5] # DAC 0 optimization
     # date_str = str(datetime.date.today())
-    # output_folder = outerFolder + "/readout_opt/Gain_Freq_Sweeps/"
+    # output_folder = outerFolder + "/study_data/Data_h5/2D_Gain_Freq_Sweeps/"
     # # Ensure the output folder exists
     # os.makedirs(output_folder, exist_ok=True)
     #
     # # Define sweeping parameters
-    # gain_range = [0.4, punch_out_vals[QubitIndex]]  # Gain range in a.u.
-    # freq_steps = 8 #20
-    # gain_steps = 15
+    # gain_range = [0.4, 1]  # Gain range in a.u.
+    # freq_steps = 30 #20
+    # gain_steps = 30
     #
     # print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')
     # # Select the reference frequency for the current resonator
@@ -277,9 +286,10 @@ for QubitIndex in Qs:
     # plt.ylabel("Readout frequency offset (MHz)")  # Frequency on y-axis
     # plt.title(f"Gain-Frequency Sweep for Qubit {QubitIndex + 1}")
     # # plt.show()
-    # file = f"Gain_Freq_Sweep_Qubit_{QubitIndex + 1}_{timestamp}.png"
-    # file_path = os.path.join(output_folder, file)
-    # plt.savefig(file_path, dpi=600, bbox_inches='tight')
+    # path = os.path.join(outerfolder_plots, '2D_GainFreq_Sweep')
+    # create_folder_if_not_exists(path)
+    # file_nm = os.path.join(path, f'ge_readoutlength_sweep_Q{QubitIndex + 1}_{timestamp}.png')
+    # plt.savefig(file_nm, dpi=600, bbox_inches='tight')
     #
     # plt.close()  # Close the plot to free up memory
     # del results, sweep
