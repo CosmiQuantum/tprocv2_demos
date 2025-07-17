@@ -6,9 +6,9 @@ if FRIDGE == "QUIET":
     VNA_res = np.array([6.20905, 6.26145, 6.321265, 6.401472, 6.467723, 6.5209414])*1000  # run 5
     #VNA_res = np.array([6217.011, 6275.7973, 6335.1068, 6407.052, 6476.1091, 6538])
     # VNA_res = np.array([6191.519, 6216, 6292.321, 6405.85, 6432.959, 6468.441,]) # run 4a
-    VNA_qubit = np.array([4185, 3824, 4163, 4467, 4474.5, 5005.5])  # Freqs of Qubit g/e Transition
+    VNA_qubit = np.array([4185, 3824, 4163, 4467, 4474.5, 5006.5])  # Freqs of Qubit g/e Transition
     #VNA_qubit = np.array([4189.8105, 3820.4723, 4156.53, 4462.374, 4471.4036, 4997.86])
-    ef_freqs = np.array([4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17]) # Freqs of Qubit e/f Transition
+    ef_freqs = np.array([4009.82, 3645.54, 3988.22, 4295.31, 4302.92, 4838.89]) # Freqs of Qubit e/f Transition, updated for run 7
     # Set this for your experiment
     tot_num_of_qubits = 6
 
@@ -45,9 +45,9 @@ if FRIDGE == "QUIET":
         "qubit_spec_ge": {
             "reps": 1000, #500
             "rounds": 1, #10
-            "start": list(VNA_qubit-10), # [MHz] #-300 #-10
-            "stop": list(VNA_qubit+10), # [MHz] #+10
-            "steps": 450, #450
+            "start": list(VNA_qubit-4), # [MHz] #-300 #-10
+            "stop": list(VNA_qubit+4), # [MHz] #+10
+            "steps": 225, #450
             "relax_delay": 10, #1000, # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -88,9 +88,9 @@ if FRIDGE == "QUIET":
         "qubit_spec_ef": {
             "reps": 3000,  # 300
             "rounds": 1,  # 10
-            "start": list(ef_freqs - 8),  # [MHz] #-300
-            "stop": list(ef_freqs + 8),  # [MHz]
-            "steps": 400,  # 1000
+            "start": list(ef_freqs - 3),  # [MHz] #-300
+            "stop": list(ef_freqs + 3),  # [MHz]
+            "steps": 225,  # 1000
             "relax_delay": 600, #1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -167,11 +167,11 @@ if FRIDGE == "QUIET":
 
         "power_rabi_ef": {
             "reps": 200,
-            "reps2": 700, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
+            "reps2": 850, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
             "stop": [1.0] * 6,  # [DAC units]
-            "steps": 150,
+            "steps": 155,
             "relax_delay": 600,  # [us]
         },
         "T1_ge": {

@@ -202,15 +202,17 @@ for QubitIndex in Qs:
             avg_ground_iq = np.mean(ground_iq_data, axis=0)
             avg_excited_iq = np.mean(excited_iq_data, axis=0)
 
-            # Save the averages and RMS to the HDF5 file for this length
-            length_group.create_dataset("avg_fidelity", data=avg_fid)
-            length_group.create_dataset("rms_fidelity", data=rms_fid)
-            length_group.create_dataset("avg_ground_iq_data", data=avg_ground_iq)
-            length_group.create_dataset("avg_excited_iq_data", data=avg_excited_iq)
-
             fids.clear()
             ground_iq_data.clear()
             excited_iq_data.clear()
+
+        # Save the averages and RMS to the HDF5 file for this length
+        length_group.create_dataset("avg_fidelity", data=avg_fids)
+        length_group.create_dataset("rms_fidelity", data=rms_fids)
+        length_group.create_dataset("avg_ground_iq_data", data=avg_ground_iq)
+        length_group.create_dataset("avg_excited_iq_data", data=avg_excited_iq)
+
+
 
     # avg_max = max(avg_fids[:10])
     avg_max = max(avg_fids)

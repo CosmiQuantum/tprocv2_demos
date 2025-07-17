@@ -217,7 +217,7 @@ class Temps_EFAmpRabiExperiment:
             plt.subplots_adjust(top=0.93)
 
             if self.save_figs:
-                outerFolder_expt = os.path.join(self.outerFolder, "Qtemps")
+                outerFolder_expt = os.path.join(self.outerFolder, "q_temperatures_plots")
                 self.create_folder_if_not_exists(outerFolder_expt)
                 now = datetime.datetime.now()
                 formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
