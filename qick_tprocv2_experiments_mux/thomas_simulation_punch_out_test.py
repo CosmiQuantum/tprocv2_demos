@@ -46,11 +46,11 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi":
              "t1": True, "t2r": True, "t2e": True}
 
 #Folders
-if not os.path.exists("/data/QICK_data/run6/"):
-    os.makedirs("/data/QICK_data/run6/")
-if not os.path.exists("/data/QICK_data/run6/6transmon/"):
-    os.makedirs("/data/QICK_data/run6/6transmon/")
-studyFolder = os.path.join("/data/QICK_data/run6/6transmon/", study)
+if not os.path.exists("/data/QICK_data/run7/"):
+    os.makedirs("/data/QICK_data/run7/")
+if not os.path.exists("/data/QICK_data/run7/6transmon/"):
+    os.makedirs("/data/QICK_data/run7/6transmon/")
+studyFolder = os.path.join("/data/QICK_data/run7/6transmon/", study)
 if not os.path.exists(studyFolder):
     os.makedirs(studyFolder)
 subStudyFolder = os.path.join(studyFolder, sub_study)
@@ -146,7 +146,7 @@ for QubitIndex in Qs_to_look_at:
     experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
 
     ################################ Do Res spec punch out test ####################################
-    gains = np.linspace(0,0.3,20)
+    gains = np.linspace(0,1,20)
     for gain in gains:
         exp_copy=deepcopy(experiment)
         res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)

@@ -57,6 +57,8 @@ class KappaPunchOutMeasurement:
         fcenter = self.config['res_freq_ge']
         amps = np.zeros((len(fcenter), len(fpts)))
 
+        #exp_cfg["list_of_all_qubits"] =[0,1,2,3,4,5] --> exp_cfg["list_of_all_qubits"] =[2]
+        #self.config["res_gain_ge"]=[0,0,1,0,0,0] --> self.config["res_gain_ge"]=[0,0,1,0,0,0]
         self.exp_cfg["list_of_all_qubits"]=[self.QubitIndex] #mask only one value
         self.config["res_gain_ge"][self.QubitIndex] = gain  #give it all the gain
 

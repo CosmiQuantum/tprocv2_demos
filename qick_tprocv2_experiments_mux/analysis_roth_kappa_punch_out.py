@@ -141,12 +141,13 @@ def grab(lst, value, power_index, qubit_index):
 
 ################################################ run ####################################
 ## replace with unzipped folder name
-base_path = '/data/QICK_data/run6/6transmon/'
+base_path = '/data/QICK_data/run7/6transmon/'
 
-data_file_path = base_path + 'roth_group_punch_out_kappa_data_for_simulation/kappa_punch_out/2025-05-22_13-42-47/study_data/Data_h5/Res/'
-
+data_file_path = base_path + 'thomas_punch_out_kappa_data_for_simulation/kappa_punch_out/2025-07-17_16-58-00/study_data/Data_h5/Res/'
+print(data_file_path )
 ## load everything and save it
 h5_files = glob.glob(os.path.join(data_file_path, "*.h5"))
+print(h5_files)
 
 power_sweep    = [] # is the same for all of the qubits
 for h5_file in h5_files:
