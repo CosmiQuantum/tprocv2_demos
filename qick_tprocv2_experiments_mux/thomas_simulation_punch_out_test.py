@@ -146,7 +146,7 @@ for QubitIndex in Qs_to_look_at:
     experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
 
     ################################ Do Res spec punch out test ####################################
-    gains = np.linspace(0,1,20)
+    gains = np.linspace(0,1,11)
     for gain in gains:
         exp_copy=deepcopy(experiment)
         res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
