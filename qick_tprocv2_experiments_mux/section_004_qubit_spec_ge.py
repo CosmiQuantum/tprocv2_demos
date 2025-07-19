@@ -13,7 +13,7 @@ class QubitSpectroscopy:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder,  round_num, signal, save_figs, experiment = None,
                  live_plot = None, verbose = False, logger = None, qick_verbose=True, increase_reps = False,
                  increase_reps_to = 500, plot_fit=True, zeno_stark=False, zeno_stark_pulse_gain=None,
-                 ext_q_spec=False, high_gain_q_spec=False, fit_data=True):
+                 ext_q_spec=False, high_gain_q_spec=False, fit_data=True, unmasking_resgain = False):
 
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
@@ -44,6 +44,8 @@ class QubitSpectroscopy:
         self.increase_reps = increase_reps
         self.increase_reps_to = increase_reps_to
 
+        if unmasking_resgain:
+            self.exp_cfg["list_of_all_qubits"] = [QubitIndex]
 
         if experiment is not None:
             if self.zeno_stark:

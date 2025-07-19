@@ -22,6 +22,7 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
 
+
         self.add_pulse(ch=res_ch, name="mymux",
                        style="const",
                        length=cfg["res_length"],
@@ -34,7 +35,7 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
 
 class ResonanceSpectroscopy:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, save_figs, experiment = None,
-                 verbose = False, logger = None, qick_verbose=True):
+                 verbose = False, logger = None, qick_verbose=True, unmasking_resgain = False):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
@@ -44,7 +45,11 @@ class ResonanceSpectroscopy:
         self.round_num = round_num
         self.save_figs = save_figs
         self.experiment = experiment
+
         self.exp_cfg = expt_cfg[self.expt_name]
+        if unmasking_resgain:
+            self.exp_cfg["list_of_all_qubits"] = [QubitIndex]
+
         self.verbose = verbose
         self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
 

@@ -198,7 +198,7 @@ class T2RProgram(AveragerProgramV2):
 class T2RMeasurement:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_figs, experiment = None,
                  live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
-                 multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True):
+                 multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, unmasking_resgain = False):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
@@ -214,6 +214,9 @@ class T2RMeasurement:
         self.live_plot = live_plot
         self.verbose = verbose
         self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
+
+        if unmasking_resgain:
+            self.exp_cfg["list_of_all_qubits"] = [QubitIndex]
 
         if experiment is not None:
             self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)

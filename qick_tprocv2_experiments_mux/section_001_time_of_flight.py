@@ -5,7 +5,7 @@ from expt_config import *
 from system_config import *
 
 class TOFExperiment:
-    def __init__(self, QubitIndex,  outerFolder, experiment, round_num = 1, save_figs = True, title = False, qick_verbose=True):
+    def __init__(self, QubitIndex,  outerFolder, experiment, round_num = 1, save_figs = True, title = False, qick_verbose=True, unmasking_resgain = False):
         # every time a class instance is created, these definitions are set
         self.expt_name = "tof"
         self.QubitIndex = QubitIndex
@@ -16,6 +16,9 @@ class TOFExperiment:
         self.save_figs = save_figs
         self.title = title
         self.qick_verbose=qick_verbose
+
+        if unmasking_resgain:
+            self.exp_cfg["list_of_all_qubits"] = [QubitIndex]
 
         self.q_config = all_qubit_state(self.experiment,6)
         self.round_num = round_num

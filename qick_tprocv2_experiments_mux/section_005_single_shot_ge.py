@@ -131,7 +131,7 @@ class SingleShotProgram_e(AveragerProgramV2):
 
 class SingleShot:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, save_figs=False, experiment = None,
-                 verbose = False, logger = None, qick_verbose=True):
+                 verbose = False, logger = None, qick_verbose=True, unmasking_resgain = False):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
@@ -143,6 +143,10 @@ class SingleShot:
         self.number_of_qubits = number_of_qubits
         self.verbose = verbose
         self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
+        self.exp_cfg = expt_cfg[self.expt_name]
+
+        if unmasking_resgain:
+            self.exp_cfg["list_of_all_qubits"] = [QubitIndex]
 
         if experiment is not None:
             self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
@@ -368,7 +372,7 @@ class SingleShot:
 
 
 class GainFrequencySweep:
-    def __init__(self,qubit_index, number_of_qubits, list_of_all_qubits, experiment, optimal_lengths=None, output_folder="/default/path/"):
+    def __init__(self,qubit_index, number_of_qubits, list_of_all_qubits, experiment, optimal_lengths=None, output_folder="/default/path/", unmasking_resgain = False):
         self.qubit_index = qubit_index
         self.list_of_all_qubits = list_of_all_qubits
         self.output_folder = output_folder
@@ -379,6 +383,11 @@ class GainFrequencySweep:
 
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
+        self.unmasking_resgain = unmasking_resgain
+
+        if unmasking_resgain:
+            self.exp_cfg["list_of_all_qubits"] = [qubit_index]
+
         self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
 
@@ -417,7 +426,7 @@ class GainFrequencySweep:
                 # Initialize SingleShot instance for fidelity calculation
                 round_num = 0
                 save_figs = False
-                single_shot = SingleShot(self.qubit_index, self.number_of_qubits,  self.output_folder, round_num, save_figs, fresh_experiment)
+                single_shot = SingleShot(self.qubit_index, self.number_of_qubits,  self.output_folder, round_num, save_figs, fresh_experiment, unmasking_resgain = self.unmasking_resgain)
                 fidelity = single_shot.fidelity_test(fresh_experiment.soccfg, fresh_experiment.soc)
                 fid_results.append(fidelity)
                 del fresh_experiment

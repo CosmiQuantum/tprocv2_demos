@@ -8,6 +8,7 @@ import time
 import logging
 import visdom
 import gc, copy
+import time
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_001_time_of_flight import TOFExperiment
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
@@ -24,9 +25,10 @@ from section_010_T2E_ge import T2EMeasurement
 from system_config import QICK_experiment
 from section_003_punch_out_ge_mux import PunchOut
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
+from analysis_021_plot_allRR_noqick import PlotRR_noQick
 
 ################################################ Run Configurations ####################################################
-n= 2
+n= 30
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
@@ -41,6 +43,7 @@ qick_verbose = True                 # qick verbose prints the progress bar for e
 debug_mode = False                   # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 thresholding = False                 # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 increase_qubit_reps = False          # if you want to increase the reps for a qubit, set to True
+unmask = True                          # Do you want to use the unmasking feature to increase resonator gain?
 qubit_to_increase_reps_for = 0       # only has impact if previous line is True
 multiply_qubit_reps_by = 2           # only has impact if the line two above is True
 Qs_to_look_at = [0,1,2,3,4,5]       # only list the qubits you want to do the RR for
@@ -53,22 +56,23 @@ substudy_txt_notes = ('Normal Round Robin during cooldown, now everything works 
 
 # set which of the following you'd like to run to 'True'
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": True, "rabi_pop_meas": True}
+             "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True, "rabi_pop_meas": True}
 # optimization outputs
-res_leng_vals = [10, 13.6, 7, 13, 7, 10]
-res_gain = [0.96, 0.92, 0.96, 0.98, 0.98, 0.80]
-freq_offsets = [-0.04, -0.32, -0.1200, 0.2000, -0.2800, -0.0800]
+res_leng_vals = [4.1, 4.0, 3.5, 6.0, 3.5, 4.1]
+res_gain = [0.3353, 0.3824, 0.2882, 0.1167, 0.3824, 0.1941]
+freq_offsets = [-0.024, -0.024, -0.168, 0.1167, -0.168, -0.072]
 
 qubit_freqs_ef = [None]*6
 # increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
 increase_steps_to_ef = 600
 ef_res_sample_number = 1
 number_of_qubits = 6
+figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 #Folders
 study = 'round_robin_benchmark'
-sub_study = 'RR_ef_debugging'
-data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") #should have a new onoe for every optimization batch
+sub_study = 'AB_tests_data'
+data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
     os.makedirs(f"/data/QICK_data/{run_name}/")
@@ -391,6 +395,7 @@ j = 0
 angles=[]
 while j < n:
     j += 1
+    print('Taking AB data')
     for QubitIndex in Qs_to_look_at:
         recycled_qfreq = False
 
@@ -402,11 +407,12 @@ while j < n:
         #Mask out all other resonators except this one
         res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=res_gain[QubitIndex], num_qubits=tot_num_of_qubits)
         experiment.readout_cfg['res_gain_ge'] = res_gains
+        experiment.readout_cfg['res_gain_ef'] = res_gains
         experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
 
         ###################################################### TOF #####################################################
         if run_flags["tof"]:
-            tof        = TOFExperiment(QubitIndex, studyDocumentationFolder, experiment, j, save_figs)
+            tof        = TOFExperiment(QubitIndex, studyDocumentationFolder, experiment, j, save_figs, unmasking_resgain = unmask)
             tof.run()
             del tof
 
@@ -414,7 +420,7 @@ while j < n:
         if run_flags["res_spec"]:
             try:
                 res_spec   = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
-                                                   experiment = experiment, verbose = verbose, logger = rr_logger)
+                                                   experiment = experiment, verbose = verbose, logger = rr_logger, unmasking_resgain = unmask)
                 res_freqs, freq_pts, freq_center, amps, sys_config_rspec = res_spec.run()
                 offset = freq_offsets[QubitIndex] #use optimized offset values or whats set at top of script based on pre_optimize flag
                 offset_res_freqs = [r + offset for r in res_freqs]
@@ -444,7 +450,7 @@ while j < n:
             try:
                 q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
                                            signal, save_figs, plot_fit=True,experiment=experiment,
-                                           live_plot=live_plot, verbose=verbose, logger=rr_logger)
+                                           live_plot=live_plot, verbose=verbose, logger=rr_logger, unmasking_resgain = unmask)
                 (qspec_I, qspec_Q, qspec_freqs, qspec_I_fit,
                  qspec_Q_fit, qubit_freq, sys_config_qspec) = q_spec.run()
 
@@ -488,7 +494,7 @@ while j < n:
                                                increase_qubit_reps = increase_qubit_reps,
                                                qubit_to_increase_reps_for = qubit_to_increase_reps_for,
                                                multiply_qubit_reps_by = multiply_qubit_reps_by,
-                                               verbose = verbose, logger = rr_logger)
+                                               verbose = verbose, logger = rr_logger, unmasking_resgain = unmask)
                 (rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp,
                  sys_config_rabi)  = rabi.run(thresholding=thresholding)
 
@@ -515,7 +521,7 @@ while j < n:
         if run_flags["ss"]:
             try:
                 ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs, experiment = experiment,
-                                verbose = verbose, logger = rr_logger)
+                                verbose = verbose, logger = rr_logger, unmasking_resgain = unmask)
                 fid, angle, iq_list_g, iq_list_e, sys_config_ss = ss.run()
                 I_g = iq_list_g[QubitIndex][0].T[0]
                 Q_g = iq_list_g[QubitIndex][0].T[1]
@@ -544,7 +550,7 @@ while j < n:
                 try:
                     ef_res_spec = ResonanceSpectroscopyEF(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, sample,
                                                           save_figs, experiment=experiment, verbose=verbose,
-                                                          logger=rr_logger, qick_verbose=qick_verbose)
+                                                          logger=rr_logger, qick_verbose=qick_verbose, unmasking_resgain = unmask)
                     ef_res_freqs, ef_freq_pts, ef_freq_center, ef_amps, sys_config_rspec_ef = ef_res_spec.run()
                     ef_res_freqs_samples.append(ef_res_freqs)
                     rr_logger.info(f"EF ResSpec sample {sample} for qubit {QubitIndex + 1}: {ef_res_freqs}")
@@ -584,7 +590,7 @@ while j < n:
                 ef_q_spec = EFQubitSpectroscopy(QubitIndex, number_of_qubits, list_of_all_qubits, studyDocumentationFolder, j,
                                                 signal,
                                                 save_figs, experiment, live_plot, increase_qubit_steps_ef,
-                                                increase_steps_to_ef)
+                                                increase_steps_to_ef, unmasking_resgain = unmask)
                 efqspec_I, efqspec_Q, efqspec_freqs, efqspec_I_fit, efqspec_Q_fit, efqubit_freq, sys_config_qspec_ef = ef_q_spec.run(
                     experiment.soccfg,
                     experiment.soc)
@@ -604,6 +610,7 @@ while j < n:
 
         ################################################ e-f amp rabi pop meas. ################################################
         if run_flags["rabi_pop_meas"]:
+            t0 = time.perf_counter()
             rr_logger.info(
                 "----------------- Starting EF Amplitude Rabi Population Measurements -----------------")
             if verbose:
@@ -616,10 +623,22 @@ while j < n:
                                                              signal, save_figs,
                                                              experiment, live_plot,
                                                              increase_qubit_reps, qubit_to_increase_reps_for,
-                                                             multiply_qubit_reps_by)
+                                                             multiply_qubit_reps_by, unmasking_resgain = unmask)
                 (I1_qtemp, Q1_qtemp, gains1_qtemp, fit_cosine1_qtemp, pi_amp1_qtemp, A_amplitude1, amp_fit1,
                  I2_qtemp, Q2_qtemp, gains2_qtemp, fit_cosine2_qtemp, pi_amp2_qtemp, A_amplitude2, amp_fit2,
                  sysconfig_efrabi_Qtemps) = efAmprabi_Qtemps.run(experiment.soccfg, experiment.soc)
+
+                # Just to quickly output the qubit temperature ---------------------
+                # date = data_set
+                # fit_saved = fit_data
+                # outerFolder_save_plots = ""
+                # unique_folder_path = ""
+                # outerFolder = ""
+                # qtempclass = PlotRR_noQick(date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
+                #  outerFolder_save_plots, unique_folder_path)
+                # T_K, T_mK, _, _ = qtempclass.Qubit_Temperature_Convert(A_amplitude1, A_amplitude2, qubit_freq)
+                # print(f"Q{QubitIndex + 1} temperature: {T_mK} mK")
+                #-------------------------------------------------------------------------
 
                 rr_logger.info(f"RPM Amplitudes for qubit {QubitIndex + 1}: A1 = {float(A_amplitude1)}, A2 = {float(A_amplitude2)}")
                 if verbose:
@@ -632,6 +651,9 @@ while j < n:
                     raise  # In debug mode, re-raise the exception immediately
                 rr_logger.exception(f"EF Rabi Population Measurements error on qubit {QubitIndex + 1}: {e}")
 
+            t1 = time.perf_counter()
+            print(f"RPM took {t1 - t0:.4f} seconds")
+
         ###################################################### g-e T1 ######################################################
         if run_flags["t1"]:
             try:
@@ -641,7 +663,7 @@ while j < n:
                                    increase_qubit_reps = increase_qubit_reps,
                                    qubit_to_increase_reps_for = qubit_to_increase_reps_for,
                                    multiply_qubit_reps_by = multiply_qubit_reps_by,
-                                   verbose = verbose, logger = rr_logger)
+                                   verbose = verbose, logger = rr_logger, unmasking_resgain = unmask)
                 t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential, sys_config_t1 = t1.run(
                     thresholding=thresholding)
                 del t1
@@ -662,7 +684,7 @@ while j < n:
                                      increase_qubit_reps = increase_qubit_reps,
                                      qubit_to_increase_reps_for = qubit_to_increase_reps_for,
                                      multiply_qubit_reps_by = multiply_qubit_reps_by,
-                                     verbose = verbose, logger = rr_logger)
+                                     verbose = verbose, logger = rr_logger, unmasking_resgain = unmask)
                 t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey, sys_config_t2r = t2r.run(
                     thresholding=thresholding)
                 del t2r
@@ -683,7 +705,7 @@ while j < n:
                                      increase_qubit_reps = increase_qubit_reps,
                                      qubit_to_increase_reps_for = qubit_to_increase_reps_for,
                                      multiply_qubit_reps_by = multiply_qubit_reps_by,
-                                     verbose = verbose, logger = rr_logger)
+                                     verbose = verbose, logger = rr_logger, unmasking_resgain = unmask)
                 (t2e_est, t2e_err, t2e_I, t2e_Q, t2e_delay_times,
                  fit_t2e, sys_config_t2e) = t2e.run(thresholding=thresholding)
                 del t2e

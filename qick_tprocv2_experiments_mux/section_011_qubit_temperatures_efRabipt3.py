@@ -12,7 +12,7 @@ from scipy.signal import argrelextrema
 
 class Temps_EFAmpRabiExperiment:
     def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits,  outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
-                 increase_qubit_reps = False, qubit_to_increase_reps_for = None, multiply_qubit_reps_by = 0):
+                 increase_qubit_reps = False, qubit_to_increase_reps_for = None, multiply_qubit_reps_by = 0, unmasking_resgain = False):
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
         self.outerFolder = outerFolder
@@ -25,6 +25,10 @@ class Temps_EFAmpRabiExperiment:
         self.save_figs = save_figs
         self.experiment = experiment
         self.list_of_all_qubits = list_of_all_qubits
+
+        if unmasking_resgain:
+            self.exp_cfg["list_of_all_qubits"] = [QubitIndex]
+
         if experiment is not None:
             self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)

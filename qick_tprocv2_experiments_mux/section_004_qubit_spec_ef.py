@@ -10,7 +10,7 @@ import copy
 import visdom
 
 class EFQubitSpectroscopy:
-    def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder,  round_num, signal, save_figs, experiment = None, live_plot = None, increase_steps = False, increase_steps_to = 500):
+    def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder,  round_num, signal, save_figs, experiment = None, live_plot = None, increase_steps = False, increase_steps_to = 500, unmasking_resgain = False):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "qubit_spec_ef"
@@ -24,6 +24,9 @@ class EFQubitSpectroscopy:
         self.list_of_all_qubits = list_of_all_qubits
         self.increase_steps = increase_steps
         self.increase_steps_to = increase_steps_to
+
+        if unmasking_resgain:
+            self.exp_cfg["list_of_all_qubits"] = [QubitIndex]
 
         if experiment is not None:
             self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
@@ -295,6 +298,7 @@ class EFPulseProbeSpectroscopyProgram(AveragerProgramV2):
 
 
         self.add_loop("freqloop", cfg["steps"])
+        print(cfg["list_of_all_qubits"])
 
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play ge pi pulse

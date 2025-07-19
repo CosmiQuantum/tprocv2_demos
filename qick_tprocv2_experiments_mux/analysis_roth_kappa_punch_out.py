@@ -1,11 +1,10 @@
 ################################################ imports ####################################
 import numpy as np
 import h5py
-import json
 import glob
 import os
 import matplotlib.pyplot as plt
-import datetime
+from scipy.optimize import curve_fit
 ################################################ definitions ####################################
 def scalar(thing):
     ## numpy scalars and python scalars are different,
@@ -49,7 +48,10 @@ def load_from_h5(filename, data_type, save_r= None):
             data[data_type][qname] = read_group_recursive(f[qname])
     return data
 
-def plot_res_sweeps(outerFolder, fpts, fcenter, frequency_sweeps, power_sweep, number_of_qubits=6):
+def lorentzian(f, f0, kappa, depth, offset):
+    return offset - depth / (1.0 + 4.0 * ((f - f0) / kappa) ** 2)
+
+def plot_res_sweeps(outerFolder, fpts, fcenter, amps, power_sweep, fit_power_index_low_gain_, fit_power_index_high_gain_, number_of_qubits=6,):
     plt.figure(figsize=(12, 8))
 
     # Set larger font sizes
@@ -61,40 +63,93 @@ def plot_res_sweeps(outerFolder, fpts, fcenter, frequency_sweeps, power_sweep, n
         'ytick.labelsize': 14,  # Y-axis tick label size
         'legend.fontsize': 14,  # Legend font size
     })
-    for power_index in range(len(power_sweep)):
-        for i in range(number_of_qubits):
+
+
+    for i in range(number_of_qubits):
+        title = f"Resonator {i + 1} fit"
+        kappa_low = None
+        kappa_high = None
+        freq_low = None
+        freq_high = None
+        for power_index_ in range(0, len(power_sweep)):
             plt.subplot(2, 3, i + 1)
-            plt.plot(fpts + fcenter[i], frequency_sweeps[power_index][i], '-', linewidth=1.5,
-                     label=round(power_sweep[power_index], 3))
+            plt.subplots_adjust(right=0.88)
+            x=[fcenter[power_index_][i][i] + f for f in fpts[power_index_][i]]
+            plt.plot( x , amps[power_index_][i][i], '-', linewidth=1.5,
+                     label=round(power_sweep[power_index_], 3))
 
             plt.xlabel("Frequency (MHz)", fontweight='normal')
             plt.ylabel("Amplitude (a.u)", fontweight='normal')
-            plt.title(f"Resonator {i + 1}", pad=10)
-            plt.legend(loc='upper left', fontsize='6', title='Gain')
 
-    # Add a main title to the figure
+            if round(power_sweep[power_index_],3) == round(fit_power_index_low_gain_[i], 3) or round(power_sweep[power_index_],3) == round(fit_power_index_high_gain_[i], 3):
+                if round(power_sweep[power_index_],3) == round(fit_power_index_low_gain_[i], 3):
+                    gain_is = 'High gain'
+                else:
+                    gain_is = 'Low gain'
+
+                freqs = np.asarray([fcenter[power_index_][i][i] + f for f in fpts[power_index_][i]])
+                amps_data = np.asarray(amps[power_index_][i][i])
+
+                ## first guesses
+                f0_guess = freqs[np.argmin(amps_data)]
+                kappa_guess = 0.02 * (freqs.max() - freqs.min())
+                depth_guess = amps_data.max() - amps_data.min()
+                offset_guess = np.median(amps_data)
+
+                popt, _ = curve_fit(lorentzian, freqs, amps_data, p0=[f0_guess, kappa_guess, depth_guess, offset_guess])
+                f0_fit, kappa_fit, depth_fit, offset_fit = popt
+
+                ## store it
+                if gain_is == 'Low gain':
+                    kappa_low = kappa_fit
+                    freq_low = x[amps[power_index_][i][i].index(min(amps[power_index_][i][i]))]
+
+                else:
+                    kappa_high = kappa_fit
+                    freq_high = x[amps[power_index_][i][i].index(min(amps[power_index_][i][i]))]
+
+                ## overlay fitted curve
+                f_fit = np.linspace(freqs.min(), freqs.max(), 1200)
+                plt.plot( f_fit, lorentzian(f_fit, *popt),  '--', linewidth=1.8)
+
+        if kappa_low is not None:
+            title += f"\nLow gain:  $\\kappa = {kappa_low:.3f}\\,\\mathrm{{MHz}}$"
+            title += f"\nLow gain:  $w_r = {freq_low:.3f}\\,\\mathrm{{MHz}}$"
+        if kappa_high is not None:
+            title += f"\nHigh gain: $\\kappa = {kappa_high:.3f}\\,\\mathrm{{MHz}}$"
+            title += f"\nLow gain:  $w_r = {freq_high:.3f}\\,\\mathrm{{MHz}}$"
+
+        plt.title(title, pad=10, fontsize=10)
+        plt.legend(loc='upper left',
+                   bbox_to_anchor=(1.02, 1.00),
+                   fontsize=5, title='Gain')
+
     plt.suptitle("Resonance At Various Probe Gains", fontsize=24, y=0.95)
 
-    plt.tight_layout(pad=2.0)
-    outerFolder = os.path.join(outerFolder, "documentation")
+    plt.tight_layout(pad=2)
+    outerFolder = os.path.join(outerFolder.replace('study_data/Data_h5/Res/',''), "documentation")
     if not os.path.exists(outerFolder):
         os.makedirs(outerFolder)
-    file_name = os.path.join(outerFolder, f"punch_out_res_sweep.png")
+    file_name = os.path.join(outerFolder, f"fit_kappas.pdf")
     plt.savefig(file_name, dpi=300)
+    plt.show()
     plt.close()
     return
 
 def grab(lst, value, power_index, qubit_index):
-    lst[power_index][qubit_index] = value[0]
+    lst[power_index][qubit_index]=value[0]
 
 ################################################ run ####################################
-data_file_path = '/data/QICK_data/run6/6transmon/thomas_punch_out_kappa_data_for_simulation/kappa_punch_out/2025-05-21_14-47-02/study_data/Data_h5/Res/'
+## replace with unzipped folder name
+base_path = '/data/QICK_data/run7/6transmon/'
 
+data_file_path = base_path + 'thomas_punch_out_kappa_data_for_simulation/kappa_punch_out/2025-07-18_16-05-32/study_data/Data_h5/Res/'
+print(data_file_path )
 ## load everything and save it
 h5_files = glob.glob(os.path.join(data_file_path, "*.h5"))
+print(h5_files)
 
 power_sweep    = [] # is the same for all of the qubits
-q=0
 for h5_file in h5_files:
     ## get the gain info
     power_value = float(h5_file.split('.h5')[0].split('_')[-1].replace('p', '.'))
@@ -113,7 +168,8 @@ Batch_Num      = [[[] for _ in range(6)] for _ in range(len(power_sweep))]
 Exp_Config     = [[[] for _ in range(6)] for _ in range(len(power_sweep))]
 Syst_Config    = [[[] for _ in range(6)] for _ in range(len(power_sweep))]
 
-print(Dates)
+fit_power_index_low_gain =[0.016, 0.016, 0.016, 0.016, 0.016, 0.016]
+fit_power_index_high_gain =[0.205, 0.284, 0.189, 0.126, 0.237, 0.079]
 
 for h5_file in h5_files:
     ## get the gain info
@@ -126,7 +182,11 @@ for h5_file in h5_files:
 
     ## get the res data for the qubits, loop through each qubit
     for q_name, q_group in data.get("Res_ge", {}).items():
-        qubit_index = int(q_name.split('Q')[-1])
+        qubit_index = int(q_name.split('Q')[-1]) -1
+
+        ## if theres no data for this qubit from this file then continue
+        if np.isnan(q_group['Amps'][0]).any():
+            continue
 
         grab(Dates, q_group.get("Dates"), power_index, qubit_index)
         grab(freq_pts, q_group.get("freq_pts"), power_index, qubit_index)
@@ -137,9 +197,6 @@ for h5_file in h5_files:
         grab(Batch_Num, q_group.get("Batch Num"), power_index, qubit_index)
         grab(Exp_Config, q_group.get("Exp Config"), power_index, qubit_index)
         grab(Syst_Config, q_group.get("Syst Config"), power_index, qubit_index)
-    q+=1
-
-
 
 ## now plot
-plot_res_sweeps(data_file_path, freq_pts, freq_center, Found_Freqs, power_sweep)
+plot_res_sweeps(data_file_path, freq_pts, freq_center, Amps, power_sweep, fit_power_index_low_gain, fit_power_index_high_gain)
