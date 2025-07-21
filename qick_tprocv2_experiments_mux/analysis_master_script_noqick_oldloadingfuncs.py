@@ -78,25 +78,25 @@ date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extens
 # t1_vs_time.plot_with_errs_single_plot(date_times_t1, t1_vals, t1_fit_err, show_legends=True)
 
 # ########################################## 03: Metrics Vs Each Other ############################################
-# Qubit spec data for Q1 and Q5 only
-Q1_freqs = q_freqs[0]
-Q1_dates_spec = date_times_q_spec[0]
-
-#This collects qubit spec data for Q5 only
-Q5_freqs = q_freqs[4]
-Q5_dates_spec = date_times_q_spec[4]
-
-# This collects T1 data for Q1 and Q5 only
-qubit1_t1times = date_times_t1[0]
-qubit1_t1 = t1_vals[0]
-
-qubit5_t1times = date_times_t1[4]
-qubit5_t1 = t1_vals[4]
-
-plotter = PlotMetricDependencies(run_name, tot_num_of_qubits, final_figure_quality, fridge=FRIDGE)
-
-plotter.plot(Q1_dates_spec, Q1_freqs, qubit1_t1times, qubit1_t1, metric_1_label = 'Q1 Freq (MHz)',
-             metric_2_label = 'T1 (us)')
+# # Qubit spec data for Q1 and Q5 only
+# Q1_freqs = q_freqs[0]
+# Q1_dates_spec = date_times_q_spec[0]
+#
+# #This collects qubit spec data for Q5 only
+# Q5_freqs = q_freqs[4]
+# Q5_dates_spec = date_times_q_spec[4]
+#
+# # This collects T1 data for Q1 and Q5 only
+# qubit1_t1times = date_times_t1[0]
+# qubit1_t1 = t1_vals[0]
+#
+# qubit5_t1times = date_times_t1[4]
+# qubit5_t1 = t1_vals[4]
+#
+# plotter = PlotMetricDependencies(run_name, tot_num_of_qubits, final_figure_quality, fridge=FRIDGE)
+#
+# plotter.plot(Q1_dates_spec, Q1_freqs, qubit1_t1times, qubit1_t1, metric_1_label = 'Q1 Freq (MHz)',
+#              metric_2_label = 'T1 (us)')
 # plotter.plot(Q5_dates_spec, Q5_freqs, qubit5_t1times, qubit5_t1, metric_1_label = 'Q5 Freq (MHz)',
 #              metric_2_label = 'T1 (us)')
 ########################################### 04: Qubits Vs Each Other ############################################
