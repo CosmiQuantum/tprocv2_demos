@@ -8,9 +8,11 @@ import os
 import datetime
 import numpy as np
 
-
+# ADC_attenuator MUST be above 16dB
+#DAC_attenuator1 and 2 are for the resonators
+#qubit_DAC_attenuator1 and 2 are for the qubits
 class QICK_experiment:
-    def __init__(self, folder, DAC_attenuator1 = 5, DAC_attenuator2 = 15, ADC_attenuator = 15, fridge = None):
+    def __init__(self, folder, DAC_attenuator1 = 5, DAC_attenuator2 = 15, qubit_DAC_attenuator1 = 5 , qubit_DAC_attenuator2 = 4 ,ADC_attenuator = 18, fridge = None):
         if fridge == "QUIET":
             # Where do you want to save data
             self.outerFolder = folder
@@ -20,33 +22,31 @@ class QICK_experiment:
             self.DAC_attenuator1 = DAC_attenuator1
             self.DAC_attenuator2 = DAC_attenuator2
             self.ADC_attenuator = ADC_attenuator
+            self.qubit_DAC_attenuator1 = qubit_DAC_attenuator1
+            self.qubit_DAC_attenuator2 = qubit_DAC_attenuator2
 
             # Make proxy to the QICK
             self.soc, self.soccfg = makeProxy()
-            #print(self.soccfg)
+            print(self.soccfg)
 
-            self.FSGEN_CH =  0 # 0 for "old QICK", 6 for RF board
+            self.FSGEN_CH =  5 # 0 for "old QICK", 5 for RF board 7/21/2025
             self.FSGEN_AMPL_CH = 2
             self.MIXMUXGEN_CH = 4 # Readout resonator DAC channel
             self.MUXRO_CH = [2, 3, 4, 5, 6, 7]
             self.MUXRO_CH_RF = 5  # New variable that we need for QICK box
 
-            self.TESTCH_DAC = 5 # loopback channel for RF board
-            self.TESTCH_ADC = 0  # loopback channel for RF board
-            self.TESTCH_ADC_RF = 4  # New variable that we need for QICK box
-
             ### NEW for the RF board
             self.qubit_center_freq = 4400  # To be in the middle of the qubit freqs.
             self.res_center_freq = 6330  # To be in the middle of the res freqs. 3000-5000 see nothing,6000 and 7000 see something, 8000+ see nothing
-            # self.soc.rfb_set_gen_filter(self.MIXMUXGEN_CH, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0)
-            # self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.0)
-            # self.soc.rfb_set_ro_filter(self.MUXRO_CH_RF, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0)
-            # # Set attenuator on DAC.
-            # self.soc.rfb_set_gen_rf(self.MIXMUXGEN_CH, self.DAC_attenuator1, self.DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
-            # self.soc.rfb_set_gen_rf(self.FSGEN_CH, 5, 4)  # Verified 30->25 see increased gain in loopback
-            # # Set attenuator on ADC.
-            # ### IMPORTANT: set this to 30 and you get 60 dB of warm gain. Set to 0 and you get 90 dB of warm gain
-            # self.soc.rfb_set_ro_rf(self.MUXRO_CH_RF, self.ADC_attenuator)  # Verified 30->25 see increased gain in loopback
+            self.soc.rfb_set_gen_filter(self.MIXMUXGEN_CH, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0)
+            self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.0)
+            self.soc.rfb_set_ro_filter(self.MUXRO_CH_RF, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0) #readout ADC
+            # Set attenuator on DAC.
+            self.soc.rfb_set_gen_rf(self.MIXMUXGEN_CH, self.DAC_attenuator1, self.DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
+            self.soc.rfb_set_gen_rf(self.FSGEN_CH, self.qubit_DAC_attenuator1, self.qubit_DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
+            # Set attenuator on ADC.
+            ### IMPORTANT: set this to 30 and you get 60 dB of warm gain. Set to 0 and you get 90 dB of warm gain
+            self.soc.rfb_set_ro_rf(self.MUXRO_CH_RF, self.ADC_attenuator)  # Verified 30->25 see increased gain in loopback
 
 
             # Qubit you want to work with
@@ -75,7 +75,7 @@ class QICK_experiment:
                 #"res_freq_ge": [6217, 6276, 6335, 6407, 6476, 6538],  # MHz, run 5
                 #'res_freq_ge': [6217.011, 6275.7973, 6335.1068, 6407.052, 6476.1091, 6538], # Arianna 3/27/
                 #'res_freq_ge': [6216.811, 6275.9373, 6335, 6407.0338, 6475.8835, 6538], #Joyce 3/11
-                'res_freq_ge': [6216.79738, 6277.9, 6337.5, 6408.0338, 6474.5, 6540.7], #updated by olivia for run 7
+                'res_freq_ge': [6216.79738, 6277.9, 6343.95, 6408.0338, 6474.5, 6540.7], #updated by olivia for run 7
 
                 # "res_freq_ge": [6191.419, 6216.1, 6292.361, 6405.77, 6432.759, 6468.481],  # MHz, run 4a
                 # "res_gain_ge": [1] + [0]*5,

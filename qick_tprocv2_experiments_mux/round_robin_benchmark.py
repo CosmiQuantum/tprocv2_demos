@@ -57,8 +57,8 @@ substudy_txt_notes = ('Normal Round Robin during cooldown, now everything works 
                       'overnight and running in terminal with repeater script')
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": True, "rabi_pop_meas": True, "ef_ss":True}
+run_flags = {"tof": False, "res_spec": True, "q_spec": False, "ss": False, "rabi": False,
+             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False, "rabi_pop_meas": False, "ef_ss":False}
 # optimization outputs
 res_leng_vals = [4.1, 4.0, 3.5, 6.0, 3.5, 4.1]
 res_gain = [0.3353, 0.3824, 0.2882, 0.1167, 0.3824, 0.1941]
@@ -104,7 +104,7 @@ with open(file_path, "w", encoding="utf-8") as file:
     file.write(substudy_txt_notes)
 
 ################################################## Configure logging ###################################################
-''' We need to create a custom logger and disable propagation like this 
+''' We need to create a custom logger and disable propagation like this
 to remove the logs from the underlying qick from saving to the log file for RR'''
 
 log_file = os.path.join(studyDocumentationFolder, "RR_script.log")
@@ -394,19 +394,17 @@ if pre_optimize:
     t2r_data = create_data_dict(t2r_keys, save_r, list_of_all_qubits)
     t2e_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
 
-
 batch_num=0
 j = 0
 angles=[]
 while j < n:
     j += 1
-    print('Taking AB data')
     for QubitIndex in Qs_to_look_at:
         recycled_qfreq = False
 
         #Get the config for this qubit
-        experiment = QICK_experiment(optimizationFolder, DAC_attenuator1 = 5, DAC_attenuator2 = 10, ADC_attenuator = 10,
-                                     fridge=FRIDGE)
+        experiment = QICK_experiment(optimizationFolder, DAC_attenuator1 = 10, DAC_attenuator2 = 10, qubit_DAC_attenuator1 = 5,
+                                     qubit_DAC_attenuator2 = 4, ADC_attenuator = 18, fridge=FRIDGE) # ADC_attenuator MUST be above 16dB
         experiment.create_folder_if_not_exists(optimizationFolder)
 
         #Mask out all other resonators except this one
@@ -724,55 +722,55 @@ while j < n:
 
         ################################################ e-f amp rabi pop meas. ################################################
 
-        increase_qubit_reps = False  # if you want to increase the reps for a qubit, set to True
-        qubit_to_increase_reps_for = 0  # only has impact if previous line is True
-        multiply_qubit_reps_by = 2  # only has impact if the line two above is True
-        print('ef rabi')
-        # try:
-        # thresholding = False
-
-        efrabi = EF_AmplitudeRabiExperiment(QubitIndex, number_of_qubits, studyDocumentationFolder, j, signal,
-                                            False, experiment=experiment, live_plot=live_plot,
-                                            increase_qubit_reps=increase_qubit_reps,
-                                            qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                                            multiply_qubit_reps_by=multiply_qubit_reps_by,
-                                            unmasking_resgain=unmask)
-        efrabi_I, efrabi_Q, efrabi_gains, efrabi_fit, efpi_amp, efsys_config_to_save = efrabi.run()
-        # experiment.soccfg
-        # if these are None, fit didnt work
-        if (efrabi_fit is None and efpi_amp is None):
-            print('Rabi fit didnt work, skipping the rest of this qubit')
-            continue  # skip the rest of this qubit
-
-        experiment.qubit_cfg['pi_ef_amp'][QubitIndex] = float(efpi_amp)
-        print('ef Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(efpi_amp))
-        del efrabi
-
-        ########################################## e-f Single Shot Measurements ############################################
-        if run_flags["ef_ss"]:
-            try:
-
-                ss_ef = SingleShot_ef(QubitIndex, number_of_qubits, studyDocumentationFolder, j,
-                                                 save_figs, experiment=experiment, unmasking_resgain=unmask)
-                iq_list_e, iq_list_f, ie_new, qe_new, if_new, qf_new, theta_ef, threshold_ef, sys_config_ss_ef = ss_ef.run()
-                # iq_list_g, iq_list_e, iq_list_f, ie_new, qe_new, if_new, qf_new, theta_ef, threshold_ef, self.config
-                I_e = iq_list_e[QubitIndex][0].T[0]
-                Q_e = iq_list_e[QubitIndex][0].T[1]
-                I_f = iq_list_f[QubitIndex][0].T[0]
-                Q_f = iq_list_f[QubitIndex][0].T[1]
-
-                # fid_ef, theta_ef, ie_new, if_new, threshold_ef = ss_ef.hist_ssf(
-                #     data=[I_e, Q_e, I_f, Q_f], cfg=sys_config_ss_ef, plot=save_figs)
-                fid_ef, theta_ef, ie_new, qe_new, if_new, qf_new = ss_ef.fidelity_test()
-                # fid, theta_ef, ie_new, qe_new, if_new, qf_new, threshold_ef
-                print(sys_config_ss_ef)
-            except Exception as e:
-                if debug_mode:
-                    raise  # In debug mode, re-raise the exception immediately
-                else:
-                    rr_logger.exception(f'Got the following error, continuing: {e}')
-                    if verbose: print(f'Got the following error, continuing: {e}')
-                    continue  # skip the rest of this qubit
+        # increase_qubit_reps = False  # if you want to increase the reps for a qubit, set to True
+        # qubit_to_increase_reps_for = 0  # only has impact if previous line is True
+        # multiply_qubit_reps_by = 2  # only has impact if the line two above is True
+        # print('ef rabi')
+        # # try:
+        # # thresholding = False
+        #
+        # efrabi = EF_AmplitudeRabiExperiment(QubitIndex, number_of_qubits, studyDocumentationFolder, j, signal,
+        #                                     False, experiment=experiment, live_plot=live_plot,
+        #                                     increase_qubit_reps=increase_qubit_reps,
+        #                                     qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+        #                                     multiply_qubit_reps_by=multiply_qubit_reps_by,
+        #                                     unmasking_resgain=unmask)
+        # efrabi_I, efrabi_Q, efrabi_gains, efrabi_fit, efpi_amp, efsys_config_to_save = efrabi.run()
+        # # experiment.soccfg
+        # # if these are None, fit didnt work
+        # if (efrabi_fit is None and efpi_amp is None):
+        #     print('Rabi fit didnt work, skipping the rest of this qubit')
+        #     continue  # skip the rest of this qubit
+        #
+        # experiment.qubit_cfg['pi_ef_amp'][QubitIndex] = float(efpi_amp)
+        # print('ef Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(efpi_amp))
+        # del efrabi
+        #
+        # ########################################## e-f Single Shot Measurements ############################################
+        # if run_flags["ef_ss"]:
+        #     try:
+        #
+        #         ss_ef = SingleShot_ef(QubitIndex, number_of_qubits, studyDocumentationFolder, j,
+        #                                          save_figs, experiment=experiment, unmasking_resgain=unmask)
+        #         iq_list_e, iq_list_f, ie_new, qe_new, if_new, qf_new, theta_ef, threshold_ef, sys_config_ss_ef = ss_ef.run()
+        #         # iq_list_g, iq_list_e, iq_list_f, ie_new, qe_new, if_new, qf_new, theta_ef, threshold_ef, self.config
+        #         I_e = iq_list_e[QubitIndex][0].T[0]
+        #         Q_e = iq_list_e[QubitIndex][0].T[1]
+        #         I_f = iq_list_f[QubitIndex][0].T[0]
+        #         Q_f = iq_list_f[QubitIndex][0].T[1]
+        #
+        #         # fid_ef, theta_ef, ie_new, if_new, threshold_ef = ss_ef.hist_ssf(
+        #         #     data=[I_e, Q_e, I_f, Q_f], cfg=sys_config_ss_ef, plot=save_figs)
+        #         fid_ef, theta_ef, ie_new, qe_new, if_new, qf_new = ss_ef.fidelity_test()
+        #         # fid, theta_ef, ie_new, qe_new, if_new, qf_new, threshold_ef
+        #         print(sys_config_ss_ef)
+        #     except Exception as e:
+        #         if debug_mode:
+        #             raise  # In debug mode, re-raise the exception immediately
+        #         else:
+        #             rr_logger.exception(f'Got the following error, continuing: {e}')
+        #             if verbose: print(f'Got the following error, continuing: {e}')
+        #             continue  # skip the rest of this qubit
         ############################################### Collect Results ################################################
         if save_data_h5:
             # ---------------------Collect g-e Res Spec Results----------------
@@ -924,19 +922,19 @@ while j < n:
                 t2e_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t2e
 
             # ---------------------Collect e-f Single Shot Results----------------
-            if run_flags["ef_ss"]:
-                ef_ss_data[QubitIndex]['Fidelity'][j - batch_num * save_r - 1] = fid_ef
-                ef_ss_data[QubitIndex]['Angle'][j - batch_num * save_r - 1] = theta_ef
-                ef_ss_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
-                    time.mktime(datetime.datetime.now().timetuple()))
-                ef_ss_data[QubitIndex]['I_g'][j - batch_num * save_r - 1] = I_e
-                ef_ss_data[QubitIndex]['Q_g'][j - batch_num * save_r - 1] = Q_e
-                ef_ss_data[QubitIndex]['I_e'][j - batch_num * save_r - 1] = I_f
-                ef_ss_data[QubitIndex]['Q_e'][j - batch_num * save_r - 1] = Q_f
-                ef_ss_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-                ef_ss_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-                ef_ss_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                ef_ss_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_ss_ef
+            # if run_flags["ef_ss"]:
+            #     ef_ss_data[QubitIndex]['Fidelity'][j - batch_num * save_r - 1] = fid_ef
+            #     ef_ss_data[QubitIndex]['Angle'][j - batch_num * save_r - 1] = theta_ef
+            #     ef_ss_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
+            #         time.mktime(datetime.datetime.now().timetuple()))
+            #     ef_ss_data[QubitIndex]['I_g'][j - batch_num * save_r - 1] = I_e
+            #     ef_ss_data[QubitIndex]['Q_g'][j - batch_num * save_r - 1] = Q_e
+            #     ef_ss_data[QubitIndex]['I_e'][j - batch_num * save_r - 1] = I_f
+            #     ef_ss_data[QubitIndex]['Q_e'][j - batch_num * save_r - 1] = Q_f
+            #     ef_ss_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+            #     ef_ss_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+            #     ef_ss_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+            #     ef_ss_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_ss_ef
 
         del experiment
 
