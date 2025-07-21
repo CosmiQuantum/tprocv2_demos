@@ -13,7 +13,7 @@ import logging
 import gc, copy
 import matplotlib.pyplot as plt
 np.set_printoptions(threshold=int(1e15))
-sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 
 # Relevant imports (QICK-related) 
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy

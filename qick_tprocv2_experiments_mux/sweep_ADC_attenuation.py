@@ -4,7 +4,7 @@ import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 
-sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from system_config import QICK_experiment
 from expt_config import FRIDGE
 from section_003_punch_out_ge_mux import PunchOut

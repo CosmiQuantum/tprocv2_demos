@@ -29,7 +29,7 @@ import os
 # -----------------This script currently has the capacity to plot T1, Qfreqs, and RPMs (ef Rabi) data--------=====
 # Can also do T1 vs time and Q1 vs time
 
-sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 class T1Measurement:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, signal, save_figs, experiment = None,
                  live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,

@@ -8,7 +8,7 @@ import gc, copy
 import visdom
 import matplotlib.pyplot as plt
 np.set_printoptions(threshold=int(1e15))
-sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 
 # Import experiments and configurations
 from section_001_time_of_flight import TOFExperiment

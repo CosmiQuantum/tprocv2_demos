@@ -2,7 +2,7 @@ import sys
 import os
 import numpy as np
 np.set_printoptions(threshold=int(1e15)) #need this so it saves absolutely everything returned from the classes
-sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 # from analysis_001_plot_all_RR_h5 import PlotAllRR
 from analysis_021_plot_allRR_noqick import PlotRR_noQick

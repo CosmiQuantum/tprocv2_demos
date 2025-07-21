@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import pprint as pp
 from scipy.constants import hbar, k, pi
 from qualang_tools.plot import Fit
-sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_002_res_spec_ef import ResonanceSpectroscopyEF
 from section_004_qubit_spec_ge import QubitSpectroscopy
