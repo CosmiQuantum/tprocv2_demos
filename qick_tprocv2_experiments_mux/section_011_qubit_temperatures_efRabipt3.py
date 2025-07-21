@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import visdom
 from scipy.optimize import curve_fit
 import datetime
 from build_task import *

@@ -7,12 +7,30 @@ import numpy as np
 from scipy.optimize import curve_fit
 import datetime
 import copy
+import logging
 import visdom
 
 class EFQubitSpectroscopy:
-    def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder,  round_num, signal, save_figs, experiment = None, live_plot = None, increase_steps = False, increase_steps_to = 500, unmasking_resgain = False):
+    def __init__(self, QubitIndex, number_of_qubits,  outerFolder,  round_num, signal, save_figs, experiment = None,
+                 live_plot = None, verbose = False, logger = None, qick_verbose=True, increase_reps = False,
+                 increase_reps_to = 500, plot_fit=True, zeno_stark=False, zeno_stark_pulse_gain=None,
+                 ext_q_spec=False, high_gain_q_spec=False, fit_data=True, unmasking_resgain = False):
+        self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
+        self.plot_fit = plot_fit
+        self.zeno_stark = zeno_stark
+        self.zeno_stark_pulse_gain = zeno_stark_pulse_gain
+        self.ext_q_spec = ext_q_spec
+        self.fit_data = fit_data
+        self.high_gain_q_spec = high_gain_q_spec
+        # if self.zeno_stark:
+        #     self.expt_name = "qubit_spec_ge_zeno_stark"
+        # elif self.ext_q_spec:
+        #     self.expt_name = "qubit_spec_ge_extended"
+        # elif self.high_gain_q_spec:
+        #     self.expt_name = "qubit_spec_ge_high_gain"
+        # else:
         self.expt_name = "qubit_spec_ef"
         self.signal = signal
         self.save_figs = save_figs
@@ -21,9 +39,10 @@ class EFQubitSpectroscopy:
         self.exp_cfg = expt_cfg[self.expt_name]
         self.round_num = round_num
         self.number_of_qubits = number_of_qubits
-        self.list_of_all_qubits = list_of_all_qubits
-        self.increase_steps = increase_steps
-        self.increase_steps_to = increase_steps_to
+        self.verbose = verbose
+        self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
+        self.increase_reps = increase_reps
+        self.increase_reps_to = increase_reps_to
 
         if unmasking_resgain:
             self.exp_cfg["list_of_all_qubits"] = [QubitIndex]
@@ -36,17 +55,17 @@ class EFQubitSpectroscopy:
 
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} EF Qubit Spec configuration: ', self.config)
 
-    def run(self, soccfg, soc):
-        if self.increase_steps:
-            self.config['steps'] = self.increase_steps_to
+    def run(self, return_fwhm=False):
+        if self.increase_reps:
+            self.config['reps'] = self.increase_reps_to
 
-        efqspec = EFPulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'], final_delay=0.5, cfg=self.config)
+        efqspec = EFPulseProbeSpectroscopyProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=0.5, cfg=self.config)
 
         # iq_lists= []
         if self.live_plot:
-            efI, efQ, effreqs = self.live_plotting(efqspec, soc)
+            efI, efQ, effreqs = self.live_plotting(efqspec, self.experiment.soc)
         else:
-            efiq_list = efqspec.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=True)
+            efiq_list = efqspec.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=self.qick_verbose)
             efI = efiq_list[self.QubitIndex][0, :, 0]
             efQ = efiq_list[self.QubitIndex][0, :, 1]
             effreqs = efqspec.get_pulse_param('qubit_pulse', "freq", as_array=True)

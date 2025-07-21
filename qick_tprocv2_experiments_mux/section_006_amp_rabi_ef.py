@@ -7,45 +7,74 @@ from build_state import *
 # from expt_config import *
 from expt_config import *
 import copy
+import logging
 import visdom
 
 class EF_AmplitudeRabiExperiment:
-    def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits,  outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
-                 increase_qubit_reps = False, qubit_to_increase_reps_for = None, multiply_qubit_reps_by = 0):
+    def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_shots=False, save_figs = True, experiment = None,
+                 live_plot = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
+                 multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, QZE=False,
+                 projective_readout_pulse_len_us=9,  time_between_projective_readout_pulses=None, expt_name = "power_rabi_ef", unmasking_resgain = False):
+        self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
         self.outerFolder = outerFolder
-        self.expt_name = "power_rabi_ef"
+        self.expt_name = expt_name
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.exp_cfg = expt_cfg[self.expt_name]
         self.round_num = round_num
         self.live_plot = live_plot
         self.signal = signal
         self.save_figs = save_figs
+        self.save_shots = save_shots
         self.experiment = experiment
-        self.list_of_all_qubits = list_of_all_qubits
-        if experiment is not None:
-            self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
-            self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
-            self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-            if increase_qubit_reps:
+        self.verbose = verbose
+        self.QZE = QZE
+        self.projective_readout_pulse_len_us = projective_readout_pulse_len_us
+        self.time_between_projective_readout_pulses = time_between_projective_readout_pulses
+        self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
+
+        if unmasking_resgain:
+            self.exp_cfg["list_of_all_qubits"] = [QubitIndex]
+
+            if experiment is not None:
+                self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
+                self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
+                self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+                if increase_qubit_reps:
                     if self.QubitIndex==qubit_to_increase_reps_for:
                         print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
                         self.config["reps"] *= multiply_qubit_reps_by
-            print(f'Q {self.QubitIndex + 1} Round {self.round_num} EF Rabi configuration: ', self.config)
+                print(f'Q {self.QubitIndex + 1} Round {self.round_num} EF Rabi configuration: ', self.config)
 
 
-    def run(self, soccfg, soc):
+    def run(self, thresholding=False):
         print(self.config)
-        amp_rabi = AmplitudeRabiProgram(soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
+
+        amp_rabi = EF_AmplitudeRabiProgram(self.experiment.soccfg, reps=self.config['reps'],
+                                        final_delay=self.config['relax_delay'], cfg=self.config)
 
         if self.live_plot:
-            I, Q, gains = self.live_plotting(amp_rabi, soc)
+            I, Q, gains = self.live_plotting(amp_rabi, thresholding)
         else:
-            iq_list = amp_rabi.acquire(soc, soft_avgs=self.config["rounds"], progress=True)
+            # Send the complied program that was set above to the qick hardware using soc
+            # Tell how many times to repeat using the rounds function, and the definition will do that many measurements
+            # and average over those
+            # progress=True shows you the bar as data is being collected. maybe disable for speed in the future
+            # The QICK will run the 'body' method in AmplitudeRabiProgram repeatedly for the iterations set in the
+            # initalize loop when this aquire def is used
+            # if thresholding:
+            #     iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=self.config["rounds"],
+            #                                threshold=self.experiment.readout_cfg["threshold"],
+            #                                angle=self.experiment.readout_cfg["ro_phase"], progress=self.qick_verbose)
+            # else:
+            #     iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=self.config["rounds"],
+            #                                progress=self.qick_verbose)
+            iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=self.config["rounds"], progress=self.qick_verbose)
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
-            gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
+        # get the gains that were used so you can use to plot on the x axis
+        gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
             # print('gains', gains)
             # print('I: ', I)
             # print('Q: ', Q)
@@ -252,7 +281,7 @@ class EF_AmplitudeRabiExperiment:
             os.makedirs(folder)
 
 
-class AmplitudeRabiProgram(AveragerProgramV2):
+class EF_AmplitudeRabiProgram(AveragerProgramV2):
     def _initialize(self, cfg):
         ro_ch = cfg['ro_ch']
         res_ch = cfg['res_ch']
