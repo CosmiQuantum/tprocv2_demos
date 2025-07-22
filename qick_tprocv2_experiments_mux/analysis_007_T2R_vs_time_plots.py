@@ -22,7 +22,7 @@ from scipy.optimize import curve_fit
 
 class T2rVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name):
+                 signal, run_name, fridge):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -31,6 +31,7 @@ class T2rVsTime:
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
+        self.fridge = fridge
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -117,11 +118,17 @@ class T2rVsTime:
         mean_values = {}
 
         for folder_date in self.top_folder_dates:
-            outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
-            outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
+            if self.fridge.upper() == 'QUIET':
+                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
+                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "/documentation/"
+            elif self.fridge.upper() == 'NEXUS':
+                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
+                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
+            else:
+                raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
             # -------------------------------------------------------Load/Plot/Save T2------------------------------------------
-            outerFolder_expt = outerFolder + "/Data_h5/T2_ge/"
+            outerFolder_expt = outerFolder + "/Data_h5/t2_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 
             for h5_file in h5_files:
@@ -129,23 +136,23 @@ class T2rVsTime:
                 H5_class_instance = Data_H5(h5_file)
 
                 # sometimes you get '1(1)' when redownloading the h5 files for some reason
-                load_data = H5_class_instance.load_from_h5(data_type='T2', save_r=int(save_round.split('(')[0]))
+                load_data = H5_class_instance.load_from_h5(data_type='t2', save_r=int(save_round.split('(')[0]))
 
-                for q_key in load_data['T2']:
-                    for dataset in range(len(load_data['T2'][q_key].get('Dates', [])[0])):
-                        if 'nan' in str(load_data['T2'][q_key].get('Dates', [])[0][dataset]):
+                for q_key in load_data['t2']:
+                    for dataset in range(len(load_data['t2'][q_key].get('Dates', [])[0])):
+                        if 'nan' in str(load_data['t2'][q_key].get('Dates', [])[0][dataset]):
                             continue
                         # T2 = load_data['T2'][q_key].get('T2', [])[0][dataset]
                         # errors = load_data['T2'][q_key].get('Errors', [])[0][dataset]
-                        date = datetime.datetime.fromtimestamp(load_data['T2'][q_key].get('Dates', [])[0][dataset])
-                        I = self.process_h5_data(load_data['T2'][q_key].get('I', [])[0][dataset].decode())
-                        Q = self.process_h5_data(load_data['T2'][q_key].get('Q', [])[0][dataset].decode())
-                        delay_times = self.process_h5_data(load_data['T2'][q_key].get('Delay Times', [])[0][dataset].decode())
+                        date = datetime.datetime.fromtimestamp(load_data['t2'][q_key].get('Dates', [])[0][dataset])
+                        I = self.process_h5_data(load_data['t2'][q_key].get('I', [])[0][dataset].decode())
+                        Q = self.process_h5_data(load_data['t2'][q_key].get('Q', [])[0][dataset].decode())
+                        delay_times = self.process_h5_data(load_data['t2'][q_key].get('Delay Times', [])[0][dataset].decode())
                         # fit = load_data['T2'][q_key].get('Fit', [])[0][dataset]
-                        round_num = load_data['T2'][q_key].get('Round Num', [])[0][dataset]
-                        batch_num = load_data['T2'][q_key].get('Batch Num', [])[0][dataset]
+                        round_num = load_data['t2'][q_key].get('Round Num', [])[0][dataset]
+                        batch_num = load_data['t2'][q_key].get('Batch Num', [])[0][dataset]
                         try:
-                            exp_config = load_data['T2'][q_key].get('Exp Config', [])[0][dataset].decode()
+                            exp_config = load_data['t2'][q_key].get('Exp Config', [])[0][dataset].decode()
                             safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
                             exp_config = eval(exp_config, safe_globals)
                         except:
@@ -239,10 +246,18 @@ class T2rVsTime:
 
     def plot_with_errs(self, date_times, t2_vals, t2_fit_err, show_legends):
         # ---------------------------------plot-----------------------------------------------------
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
-        self.create_folder_if_not_exists(analysis_folder)
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
-        self.create_folder_if_not_exists(analysis_folder)
+        if self.fridge.upper() == 'QUIET':
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
+        elif self.fridge.upper() == 'NEXUS':
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+            self.create_folder_if_not_exists(analysis_folder)
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
+        else:
+            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         font = 14
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
@@ -272,6 +287,8 @@ class T2rVsTime:
             sorted_x, sorted_y, sorted_err = zip(*combined)
             sorted_x = np.array(sorted_x)
 
+            # ax.set_ylim(7, 95)
+
             ax.errorbar(
                 sorted_x, sorted_y, yerr=sorted_err,
                 fmt='none',  #no marker
@@ -298,6 +315,7 @@ class T2rVsTime:
 
         plt.tight_layout()
         plt.savefig(analysis_folder + 'T2R_vals.pdf', transparent=True, dpi=self.final_figure_quality)
+        print('Plot saved to:', analysis_folder)
         plt.close()
 
     def plot_with_errs_single_plot(self, date_times, t2_vals, t2_fit_err, show_legends):

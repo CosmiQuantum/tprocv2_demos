@@ -4,7 +4,7 @@ import ast
 import numpy as np
 import h5py
 from sklearn.mixture import GaussianMixture
-from qicklab.analysis import qspec, t1, ssf
+# from qicklab.analysis import qspec, t1, ssf
 from matplotlib.ticker import MaxNLocator
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 import math
@@ -1163,7 +1163,7 @@ class RPMTempCalcAndPlots:
                         and any(keyword in full_path for keyword in filter_keywords)
                         and (not exclude_temp_sweeps or "temperature_sweep" not in full_path.lower())
                     ):  # checks if path includes each keyword (source_off or source_on) and whether you set the temp sweep data to be excluded or not
-                    optimization_path = os.path.join(full_path, "optimization")
+                    optimization_path = os.path.join(full_path, "study_data")
                     if os.path.isdir(optimization_path):
                         date_string = d[:10]  # Extract 'YYYY-MM-DD'
                         print(f"Analyzing: {optimization_path}")

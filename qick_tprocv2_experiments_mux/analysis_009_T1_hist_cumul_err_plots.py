@@ -117,8 +117,10 @@ class T1HistCumulErrPlots:
 
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
-                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
-                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
+                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
+                self.create_folder_if_not_exists(outerFolder)
+                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/{folder_date}_RRplots/"
+                self.create_folder_if_not_exists(outerFolder_save_plots)
             elif self.fridge.upper() == 'NEXUS':
                 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
                 outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
@@ -126,15 +128,15 @@ class T1HistCumulErrPlots:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
             if '_' in exp_extension:
-                outerFolder_expt = outerFolder + f"/Data_h5/T1{exp_extension}/"
+                outerFolder_expt = outerFolder + f"/Data_h5/t1{exp_extension}/"
             else:
-                outerFolder_expt = outerFolder + "/Data_h5/T1_ge/"
+                outerFolder_expt = outerFolder + "/Data_h5/t1_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 
             for h5_file in h5_files:
                 save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
                 H5_class_instance = Data_H5(h5_file)
-                load_data = H5_class_instance.load_from_h5(data_type=  f'T1{exp_extension}', save_r = int(save_round))
+                load_data = H5_class_instance.load_from_h5(data_type=  f't1{exp_extension}', save_r = int(save_round))
 
                 # Define specific days to exclude
                 exclude_dates = {
@@ -144,27 +146,27 @@ class T1HistCumulErrPlots:
                     datetime.date(2025, 1, 31)  #Optimization Issues and non RR work in progress
                 }
 
-                for q_key in load_data[f'T1{exp_extension}']:
-                    for dataset in range(len(load_data[f'T1{exp_extension}'][q_key].get('Dates', [])[0])):
-                        if 'nan' in str(load_data[f'T1{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
+                for q_key in load_data[f't1{exp_extension}']:
+                    for dataset in range(len(load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0])):
+                        if 'nan' in str(load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
                             continue
                         #T1 = load_data['T1'][q_key].get('T1', [])[0][dataset]
                         #errors = load_data['T1'][q_key].get('Errors', [])[0][dataset]
-                        date= datetime.datetime.fromtimestamp(load_data[f'T1{exp_extension}'][q_key].get('Dates', [])[0][dataset])
+                        date= datetime.datetime.fromtimestamp(load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0][dataset])
 
                         # Skip processing if the date (as a date object) is in the excluded set
                         if date.date() in exclude_dates:
                             print(f"Skipping data for {date} (excluded date)")
                             continue
 
-                        I = self.process_h5_data(load_data[f'T1{exp_extension}'][q_key].get('I', [])[0][dataset].decode())
-                        Q = self.process_h5_data(load_data[f'T1{exp_extension}'][q_key].get('Q', [])[0][dataset].decode())
-                        delay_times = self.process_h5_data(load_data[f'T1{exp_extension}'][q_key].get('Delay Times', [])[0][dataset].decode())
+                        I = self.process_h5_data(load_data[f't1{exp_extension}'][q_key].get('I', [])[0][dataset].decode())
+                        Q = self.process_h5_data(load_data[f't1{exp_extension}'][q_key].get('Q', [])[0][dataset].decode())
+                        delay_times = self.process_h5_data(load_data[f't1{exp_extension}'][q_key].get('Delay Times', [])[0][dataset].decode())
                         #fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
-                        round_num = load_data[f'T1{exp_extension}'][q_key].get('Round Num', [])[0][dataset]
-                        batch_num = load_data[f'T1{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
+                        round_num = load_data[f't1{exp_extension}'][q_key].get('Round Num', [])[0][dataset]
+                        batch_num = load_data[f't1{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
                         try:
-                            exp_config = load_data[f'T1{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
+                            exp_config = load_data[f't1{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
                             safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
                             exp_config = eval(exp_config, safe_globals)
                         except:
@@ -203,9 +205,7 @@ class T1HistCumulErrPlots:
     def plot(self, dates, t1_vals, t1_errs, show_legends,exp_extension=''):
         #---------------------------------plot-----------------------------------------------------
         if self.fridge.upper() == 'QUIET':
-            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
-            self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/T1/"
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/t1_ge/"
             self.create_folder_if_not_exists(analysis_folder)
         elif self.fridge.upper() == 'NEXUS':
             analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"

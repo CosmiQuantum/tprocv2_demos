@@ -19,7 +19,7 @@ from scipy.optimize import curve_fit
 
 class ResonatorFreqVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name):
+                 signal, run_name, fridge):
         self.figure_quality = figure_quality
         self.number_of_qubits = number_of_qubits
         self.save_figs = save_figs
@@ -28,6 +28,7 @@ class ResonatorFreqVsTime:
         self.run_name = run_name
         self.top_folder_dates = top_folder_dates
         self.final_figure_quality = final_figure_quality
+        self.fridge = fridge
 
 
     def datetime_to_unix(self, dt):
@@ -115,15 +116,21 @@ class ResonatorFreqVsTime:
         mean_values = {}
 
         for folder_date in self.top_folder_dates:
-            outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
-            outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
+            if self.fridge.upper() == 'QUIET':
+                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
+                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "/documentation/"
+            elif self.fridge.upper() == 'NEXUS':
+                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
+                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
+            else:
+                raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
             # ------------------------------------------Load/Plot/Save Res Spec------------------------------------
 
             if '_' in exp_extension:
-                outerFolder_expt = outerFolder + f"/Data_h5/Res{exp_extension}/"
+                outerFolder_expt = outerFolder + f"/Data_h5/res{exp_extension}/"
             else:
-                outerFolder_expt = outerFolder + "/Data_h5/Res_ge/"
+                outerFolder_expt = outerFolder + "/Data_h5/res_ge/"
 
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 
@@ -131,35 +138,35 @@ class ResonatorFreqVsTime:
                 save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
                 H5_class_instance = Data_H5(h5_file)
                 #H5_class_instance.print_h5_contents(h5_file)
-                load_data = H5_class_instance.load_from_h5(data_type=f'Res{exp_extension}', save_r=int(save_round))
+                load_data = H5_class_instance.load_from_h5(data_type=f'res{exp_extension}', save_r=int(save_round))
 
 
                 # just look at this resonator data, should have batch_num of arrays in each one
                 # right now the data writes the same thing batch_num of times, so it will do the same 5 datasets 5 times, until you fix this just grab the first one (All 5)
-                for q_key in load_data[f'Res{exp_extension}']:
+                for q_key in load_data[f'res{exp_extension}']:
                     # print("all batch_num datasets------------------------", load_data['Res'][q_key].get('Amps', [])[0])
                     # print("one dataset------------------------",load_data['Res'][q_key].get('Amps', [])[0][0].decode())
                     # go through each dataset in the batch and plot
-                    for dataset in range(len(load_data[f'Res{exp_extension}'][q_key].get('Dates', [])[0])):
-                        if 'nan' in str(load_data[f'Res{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
+                    for dataset in range(len(load_data[f'res{exp_extension}'][q_key].get('Dates', [])[0])):
+                        if 'nan' in str(load_data[f'res{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
                             continue
 
                         date = datetime.datetime.fromtimestamp(
-                            load_data[f'Res{exp_extension}'][q_key].get('Dates', [])[0][dataset])  # single date per dataset
+                            load_data[f'res{exp_extension}'][q_key].get('Dates', [])[0][dataset])  # single date per dataset
 
-                        freq_pts = self.process_h5_data(load_data[f'Res{exp_extension}'][q_key].get('freq_pts', [])[0][
+                        freq_pts = self.process_h5_data(load_data[f'res{exp_extension}'][q_key].get('freq_pts', [])[0][
                                                        dataset].decode())  # comes in as an array but put into a byte string, need to convert to list
-                        freq_center = self.process_h5_data(load_data[f'Res{exp_extension}'][q_key].get('freq_center', [])[0][
+                        freq_center = self.process_h5_data(load_data[f'res{exp_extension}'][q_key].get('freq_center', [])[0][
                                                           dataset].decode())  # comes in as an array but put into a string, need to convert to list
-                        freqs_found = self.string_to_float_list(load_data[f'Res{exp_extension}'][q_key].get('Found Freqs', [])[0][
+                        freqs_found = self.string_to_float_list(load_data[f'res{exp_extension}'][q_key].get('Found Freqs', [])[0][
                                                                dataset].decode())  # comes in as a list of floats in string format, need to convert
                         amps = self.process_string_of_nested_lists(
-                            load_data[f'Res{exp_extension}'][q_key].get('Amps', [])[0][dataset].decode())  # list of lists
-                        round_num = load_data[f'Res{exp_extension}'][q_key].get('Round Num', [])[0][dataset]  # already a float
-                        batch_num = load_data[f'Res{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
+                            load_data[f'res{exp_extension}'][q_key].get('Amps', [])[0][dataset].decode())  # list of lists
+                        round_num = load_data[f'res{exp_extension}'][q_key].get('Round Num', [])[0][dataset]  # already a float
+                        batch_num = load_data[f'res{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
 
                         try:
-                            exp_config = load_data[f'Res{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
+                            exp_config = load_data[f'res{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
                             safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
                             exp_config = eval(exp_config, safe_globals)
                         except:
@@ -182,10 +189,14 @@ class ResonatorFreqVsTime:
 
     def plot(self, date_times, resonator_centers, show_legends, exp_extension = ''):
         #---------------------------------plot-----------------------------------------------------
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
-        self.create_folder_if_not_exists(analysis_folder)
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
-        self.create_folder_if_not_exists(analysis_folder)
+        if self.fridge.upper() == 'QUIET':
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
+        elif self.fridge.upper() == 'NEXUS':
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+            self.create_folder_if_not_exists(analysis_folder)
+        else:
+            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         font = 14
         colors = ['orange','blue','purple','green','brown','pink']
@@ -231,5 +242,6 @@ class ResonatorFreqVsTime:
 
         plt.tight_layout()
         plt.savefig(analysis_folder + f'Res_Centers{exp_extension}.pdf', transparent=True, dpi=self.final_figure_quality)
+        print('Plot saved to:', analysis_folder)
 
         #plt.show()

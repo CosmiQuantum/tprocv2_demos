@@ -117,10 +117,18 @@ class T2rHistCumulErrPlots:
         dates = {i: [] for i in range(self.number_of_qubits)}
 
         for folder_date in self.top_folder_dates:
-            outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
-            outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
+            if self.fridge.upper() == 'QUIET':
+                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
+                self.create_folder_if_not_exists(outerFolder)
+                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/{folder_date}_RRplots/"
+                self.create_folder_if_not_exists(outerFolder_save_plots)
+            elif self.fridge.upper() == 'NEXUS':
+                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
+                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
+            else:
+                raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
-            outerFolder_expt = outerFolder + "/Data_h5/T2_ge/"
+            outerFolder_expt = outerFolder + "/Data_h5/t2_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 
             for h5_file in h5_files:
@@ -128,23 +136,23 @@ class T2rHistCumulErrPlots:
                 H5_class_instance = Data_H5(h5_file)
                 #save_round = save_round.split('(')[0]
                 # sometimes you get '1(1)' when redownloading the h5 files for some reason
-                load_data = H5_class_instance.load_from_h5(data_type='T2', save_r=int(save_round.split('(')[0]))
+                load_data = H5_class_instance.load_from_h5(data_type='t2', save_r=int(save_round.split('(')[0]))
 
-                for q_key in load_data['T2']:
-                    for dataset in range(len(load_data['T2'][q_key].get('Dates', [])[0])):
-                        if 'nan' in str(load_data['T2'][q_key].get('Dates', [])[0][dataset]):
+                for q_key in load_data['t2']:
+                    for dataset in range(len(load_data['t2'][q_key].get('Dates', [])[0])):
+                        if 'nan' in str(load_data['t2'][q_key].get('Dates', [])[0][dataset]):
                             continue
                         # T2 = load_data['T2'][q_key].get('T2', [])[0][dataset]
                         # errors = load_data['T2'][q_key].get('Errors', [])[0][dataset]
-                        date = datetime.datetime.fromtimestamp(load_data['T2'][q_key].get('Dates', [])[0][dataset])
-                        I = self.process_h5_data(load_data['T2'][q_key].get('I', [])[0][dataset].decode())
-                        Q = self.process_h5_data(load_data['T2'][q_key].get('Q', [])[0][dataset].decode())
-                        delay_times = self.process_h5_data(load_data['T2'][q_key].get('Delay Times', [])[0][dataset].decode())
+                        date = datetime.datetime.fromtimestamp(load_data['t2'][q_key].get('Dates', [])[0][dataset])
+                        I = self.process_h5_data(load_data['t2'][q_key].get('I', [])[0][dataset].decode())
+                        Q = self.process_h5_data(load_data['t2'][q_key].get('Q', [])[0][dataset].decode())
+                        delay_times = self.process_h5_data(load_data['t2'][q_key].get('Delay Times', [])[0][dataset].decode())
                         # fit = load_data['T2'][q_key].get('Fit', [])[0][dataset]
-                        round_num = load_data['T2'][q_key].get('Round Num', [])[0][dataset]
-                        batch_num = load_data['T2'][q_key].get('Batch Num', [])[0][dataset]
+                        round_num = load_data['t2'][q_key].get('Round Num', [])[0][dataset]
+                        batch_num = load_data['t2'][q_key].get('Batch Num', [])[0][dataset]
                         try:
-                            exp_config = load_data['T2'][q_key].get('Exp Config', [])[0][dataset].decode()
+                            exp_config = load_data['t2'][q_key].get('Exp Config', [])[0][dataset].decode()
                             safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
                             exp_config = eval(exp_config, safe_globals)
                         except:
@@ -179,7 +187,7 @@ class T2rHistCumulErrPlots:
         #---------------------------------plot-----------------------------------------------------
         analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/T2/"
+        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/t2_ge/"
         self.create_folder_if_not_exists(analysis_folder)
 
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
@@ -304,5 +312,6 @@ class T2rHistCumulErrPlots:
         plt.tight_layout()
         plt.savefig(analysis_folder + 'errs.pdf', transparent=True, dpi=self.final_figure_quality)
         #plt.show()
+        print('Plots saved to: ', analysis_folder)
 
         return std_values, mean_values

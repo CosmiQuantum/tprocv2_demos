@@ -117,21 +117,23 @@ class T2eHistCumulErrPlots:
 
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
-                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
-                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
+                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
+                self.create_folder_if_not_exists(outerFolder)
+                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/{folder_date}_RRplots/"
+                self.create_folder_if_not_exists(outerFolder_save_plots)
             elif self.fridge.upper() == 'NEXUS':
                 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
                 outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
             else:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
-            outerFolder_expt = outerFolder + "/Data_h5/T2E_ge/"
+            outerFolder_expt = outerFolder + "/Data_h5/t2e_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 
             for h5_file in h5_files:
                 save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
                 H5_class_instance = Data_H5(h5_file)
-                load_data = H5_class_instance.load_from_h5(data_type='T2E', save_r=int(save_round))
+                load_data = H5_class_instance.load_from_h5(data_type='t2e', save_r=int(save_round))
 
                 # Define specific days to exclude
                 exclude_dates = {
@@ -141,27 +143,27 @@ class T2eHistCumulErrPlots:
                     datetime.date(2025, 1, 31)  # Optimization Issues and non RR work in progress
                 }
 
-                for q_key in load_data['T2E']:
-                    for dataset in range(len(load_data['T2E'][q_key].get('Dates', [])[0])):
-                        if 'nan' in str(load_data['T2E'][q_key].get('Dates', [])[0][dataset]):
+                for q_key in load_data['t2e']:
+                    for dataset in range(len(load_data['t2e'][q_key].get('Dates', [])[0])):
+                        if 'nan' in str(load_data['t2e'][q_key].get('Dates', [])[0][dataset]):
                             continue
                         # T2E = load_data['T2E'][q_key].get('T2E', [])[0][dataset]
                         # errors = load_data['T2E'][q_key].get('Errors', [])[0][dataset]
-                        date = datetime.datetime.fromtimestamp(load_data['T2E'][q_key].get('Dates', [])[0][dataset])
+                        date = datetime.datetime.fromtimestamp(load_data['t2e'][q_key].get('Dates', [])[0][dataset])
 
                         # Skip processing if the date (as a date object) is in the excluded set
                         if date.date() in exclude_dates:
                             print(f"Skipping data for {date} (excluded date)")
                             continue
 
-                        I = self.process_h5_data(load_data['T2E'][q_key].get('I', [])[0][dataset].decode())
-                        Q = self.process_h5_data(load_data['T2E'][q_key].get('Q', [])[0][dataset].decode())
-                        delay_times = self.process_h5_data(load_data['T2E'][q_key].get('Delay Times', [])[0][dataset].decode())
+                        I = self.process_h5_data(load_data['t2e'][q_key].get('I', [])[0][dataset].decode())
+                        Q = self.process_h5_data(load_data['t2e'][q_key].get('Q', [])[0][dataset].decode())
+                        delay_times = self.process_h5_data(load_data['t2e'][q_key].get('Delay Times', [])[0][dataset].decode())
                         # fit = load_data['T2E'][q_key].get('Fit', [])[0][dataset]
-                        round_num = load_data['T2E'][q_key].get('Round Num', [])[0][dataset]
-                        batch_num = load_data['T2E'][q_key].get('Batch Num', [])[0][dataset]
+                        round_num = load_data['t2e'][q_key].get('Round Num', [])[0][dataset]
+                        batch_num = load_data['t2e'][q_key].get('Batch Num', [])[0][dataset]
                         try:
-                            exp_config = load_data['T2E'][q_key].get('Exp Config', [])[0][dataset].decode()
+                            exp_config = load_data['t2e'][q_key].get('Exp Config', [])[0][dataset].decode()
                             safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
                             exp_config = eval(exp_config, safe_globals)
                         except:
@@ -199,7 +201,7 @@ class T2eHistCumulErrPlots:
         if self.fridge.upper() == 'QUIET':
             analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
             self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/T2E/"
+            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/t2e_ge/"
             self.create_folder_if_not_exists(analysis_folder)
         elif self.fridge.upper() == 'NEXUS':
             analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
@@ -322,8 +324,6 @@ class T2eHistCumulErrPlots:
         plt.tight_layout()
         plt.savefig(analysis_folder + 'cumulative.pdf', transparent=False, dpi=self.final_figure_quality)
 
-
-
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
         plt.title('Fit Error vs T2E Time',fontsize = font)
         axes = axes.flatten()
@@ -355,5 +355,6 @@ class T2eHistCumulErrPlots:
         plt.tight_layout()
         plt.savefig(analysis_folder + 'errs.pdf', transparent=False, dpi=self.final_figure_quality)
         #plt.show()
+        print('Plots saved to: ', analysis_folder)
 
         return std_values, mean_values

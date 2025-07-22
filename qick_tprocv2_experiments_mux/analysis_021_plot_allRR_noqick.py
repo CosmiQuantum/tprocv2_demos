@@ -9,6 +9,7 @@ import sys
 # from section_011_qubit_temperatures_efRabipt3 import Temps_EFAmpRabiExperiment #uses qick modoule
 from section_011_qubit_temperatures_efRabipt3_noqick_analysis import Temps_EFAmpRabiExperiment
 import math
+import re
 from collections import defaultdict
 from bisect import bisect_left
 from scipy.stats import norm
@@ -1591,20 +1592,28 @@ class PlotRR_noQick:
                                                         self.figure_quality, return_fit_err = True) # You don’t need to mention every parameter in the call
                         del qspec_class_instance
 
-                        extracted_freqs.append({
-                            "filename": os.path.basename(h5_file),
-                            "q_key": int(q_key),
-                            "dataset": dataset,
-                            "round_num": round_num,
-                            "batch_num": batch_num,
-                            "freq_MHz": qubit_freq,
-                            "Qfreq_fit_err": qspec_fit_err,
-                            "timestamp": date.timestamp()
-                        })
+                        if qubit_freq is not None:
+                            extracted_freqs.append({
+                                "filename": os.path.basename(h5_file),
+                                "q_key": int(q_key),
+                                "dataset": dataset,
+                                "round_num": round_num,
+                                "batch_num": batch_num,
+                                "freq_MHz": qubit_freq,
+                                "Qfreq_fit_err": qspec_fit_err,
+                                "timestamp": date.timestamp()
+                            })
+                        else:
+                            print(f"Skipped Q{q_key + 1} in batch {batch_num} fit returned None for ge qspec freq.")
+
 
             del H5_class_instance
-
+        print(extracted_freqs)
         return extracted_freqs
+
+    def extract_batch_number(self, filename):
+        match = re.search(r'batch_(\d+)', filename)
+        return int(match.group(1)) if match else None
 
     def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, save_figs = False, get_qtemp_data = False):
         # ------------------------------------------------Load/Plot/Save Rabi---------------------------------------
@@ -1614,13 +1623,11 @@ class PlotRR_noQick:
         cutoff_timestamp = datetime.datetime(2025, 4, 11, 19, 0).timestamp()  # when I started saving qubit freqs in the same files
 
         extracted_qspec_results = self.load_plot_save_q_spec()
-        qspec_grouped_by_qkey = defaultdict(list)
-        #sort each list by qubit
+        qspec_by_batch_and_qkey = defaultdict(lambda: defaultdict(list))
         for item in extracted_qspec_results:
-            qspec_grouped_by_qkey[item['q_key']].append(item)
-        # Sort each list by timestamp
-        for qkey in qspec_grouped_by_qkey:
-            qspec_grouped_by_qkey[qkey].sort(key=lambda x: x['timestamp'])
+            batch = item['batch_num']
+            q_key = item['q_key']
+            qspec_by_batch_and_qkey[batch][q_key].append(item)
 
         for h5_file in h5_files_qtemps:
 
@@ -1647,12 +1654,14 @@ class PlotRR_noQick:
             A_amplitude_err1 = None
             A_amplitude_err2 = None
 
+            # print('populated_keys ', populated_keys)
+
             for q_key in populated_keys:
                 # print(f"Extracting data for QubitIndex: {q_key}")
                 for dataset in range(len(load_data['q_temperatures'][q_key].get('Dates', [])[0])):
                     date = datetime.datetime.fromtimestamp(load_data['q_temperatures'][q_key].get('Dates', [])[0][dataset])
                     round_num = load_data['q_temperatures'][q_key].get('Round Num', [])[0][dataset]
-                    # batch_num = load_data['q_temperatures'][q_key].get('Batch Num', [])[0][dataset]
+                    batch_num = load_data['q_temperatures'][q_key].get('Batch Num', [])[0][dataset]
 
                     #-------------------------------------Grabbing matching qubit frequency for this qubit-------------------------------------
                     if date.timestamp() > cutoff_timestamp and get_qtemp_data:
@@ -1660,56 +1669,44 @@ class PlotRR_noQick:
 
                         # The line below extracts the qfreq saved in each rabi pop. meas. file, but it does not extract the error of the qspec fit because that was not saved in the h5 files.
                         qubit_freq_MHz_rpmfile = load_data['q_temperatures'][q_key].get('Qfreq_ge', [])[0][dataset] #extract to compare with the 'matching' method
-                        print(f"QSpec from RPM file, Q{q_key}: {qubit_freq_MHz_rpmfile} MHz") # print to compare
+                        print(f"\n QSpec from RPM file for Q{q_key+1}: {qubit_freq_MHz_rpmfile} MHz)") # print to compare
 
-                        # To find the correct qspec fit error from the ge qspec files, we have to match the qspec files to the RPM files via time stamps.
-
-                        # Build the QTemp timestamp:
-                        qtemp_timestamp = date.timestamp()
-
-                        # Grab all QSpec entries for this qubit:
-                        qspec_entries = qspec_grouped_by_qkey.get(int(q_key), [])
+                        # Match QSpec entry using batch number and q_key
+                        qspec_entries = qspec_by_batch_and_qkey.get(batch_num, {}).get(int(q_key), [])
                         if not qspec_entries:
-                            print(f"No QSpec entries found for Q{q_key}")
+                            print(f"No QSpec entries found for Q{q_key + 1} in batch {batch_num + 1}")
                             continue
 
-                        # Find the QSpec dict whose timestamp is closest to qtemp_timestamp:
-                        # Computes the absolute time difference between that entry’s timestamp and your current qubit‐temperature timestamp
-                        closest_match = min(
-                            qspec_entries,
-                            key=lambda entry: abs(entry['timestamp'] - qtemp_timestamp) ) # tells Python to pick the element for which the key function returns the smallest value
+                        # If multiple entries exist, pick the first (or sort and pick closest timestamp if needed)
+                        closest_match = qspec_entries[0]
 
-                        # Extract frequency and its fit error from that match:
+                        # Extract frequency and fit error from the match
                         qubit_freq_MHz = closest_match['freq_MHz']
                         qfreq_err = closest_match['Qfreq_fit_err']
 
                         print(
-                            f"Matched QSpec for Q{q_key}: {qubit_freq_MHz:.3f} MHz  "
-                            f"(QSpec t={datetime.datetime.fromtimestamp(closest_match['timestamp'])})" )
+                            f"Matched QSpec for Q{q_key + 1} is: {qubit_freq_MHz} MHz  "
+                            f"(batch {batch_num + 1})"
+                        )
 
-                    elif date.timestamp() <= cutoff_timestamp and get_qtemp_data: #-----this look through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
-                        # Build the QTemp timestamp:
-                        qtemp_timestamp = date.timestamp()
-
-                        # Grab all QSpec entries for this qubit:
-                        qspec_entries = qspec_grouped_by_qkey.get(int(q_key), [])
+                    elif date.timestamp() <= cutoff_timestamp and get_qtemp_data: #-----this looks through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
+                        # Match QSpec entry using batch number and q_key
+                        qspec_entries = qspec_by_batch_and_qkey.get(batch_num, {}).get(int(q_key), [])
                         if not qspec_entries:
-                            print(f"No QSpec entries found for Q{q_key}")
+                            print(f"No QSpec entries found for Q{q_key + 1} in batch {batch_num + 1}")
                             continue
 
-                        # Find the QSpec dict whose timestamp is closest to qtemp_timestamp:
-                        # Computes the absolute time difference between that entry’s timestamp and your current qubit‐temperature timestamp
-                        closest_match = min(
-                            qspec_entries,
-                            key=lambda entry: abs(entry['timestamp'] - qtemp_timestamp) ) # tells Python to pick the element for which the key function returns the smallest value
+                        # If multiple entries exist, pick the first
+                        closest_match = qspec_entries[0] #there should only be one inside
 
-                        # Extract frequency and its fit error from that match:
+                        # Extract frequency and fit error from the match
                         qubit_freq_MHz = closest_match['freq_MHz']
                         qfreq_err = closest_match['Qfreq_fit_err']
 
                         print(
-                            f"Matched QSpec for Q{q_key}: {qubit_freq_MHz:.3f} MHz  "
-                            f"(QSpec t={datetime.datetime.fromtimestamp(closest_match['timestamp'])})")
+                            f"Matched QSpec for Q{q_key + 1} is: {qubit_freq_MHz} MHz  "
+                            f"(batch {batch_num + 1})"
+                        )
                     #---------------------------------------------------------------------------------------------
 
                     I1 = self.process_h5_data(load_data['q_temperatures'][q_key].get('I1', [])[0][dataset].decode())
@@ -2038,8 +2035,8 @@ class PlotRR_noQick:
                     T_err = qubit_data['T_mK_err']
                     T_mK = qubit_data['T_mK']
 
-                    # Skip if relative error is ≥ 80%
-                    if T_err / T_mK >= 0.80:
+                    # Skip if relative error is ≥ 40%
+                    if T_err / T_mK >= 0.40:
                         continue
 
                     # if T_err > 150:  # skip if error is too large (for example, larger than 300mK)
@@ -2371,8 +2368,8 @@ class PlotRR_noQick:
                 # skip if either is missing or relative error is larger than threshold
                 if T_mK is None or T_err is None:
                     continue
-                # if T_err / T_mK >= 0.80: #80%
-                #     continue
+                if T_err / T_mK >= 0.40: #40%
+                    continue
 
                 temp_vals.append(T_mK)
                 temp_errs.append(T_err)
@@ -2417,10 +2414,10 @@ class PlotRR_noQick:
             # Plot the Gaussian fit (dashed line) and the histogram
             ax.plot(x_vals, scaled_pdf, linestyle='--', linewidth=2, color=colors[i % len(colors)], label='Gaussian fit')
             ax.hist(temp_vals, bins=optimal_bin_num, alpha=0.7, color=colors[i % len(colors)], edgecolor='black')
-            ax.axvline(w_mean, color='k', lw=2, label=f'Weighted μ = {w_mean:.2f}±{w_err:.2f} mK')
-            print(f"Qubit {i + 1} | Weighted Mean: {w_mean:.2f}, Gaussian μ: {mu:.2f}")
-            print(f"Weights: {weights}")
-            print(f"Sum(weights): {np.sum(weights):.2f}, Max weight: {np.max(weights):.2f}")
+            # ax.axvline(w_mean, color='k', lw=2, label=f'Weighted μ = {w_mean:.2f}±{w_err:.2f} mK')
+            # print(f"Qubit {i + 1} | Weighted Mean: {w_mean:.2f}, Gaussian μ: {mu:.2f}")
+            # print(f"Weights: {weights}")
+            # print(f"Sum(weights): {np.sum(weights):.2f}, Max weight: {np.max(weights):.2f}")
 
             # Set subplot title and labels including the Gaussian parameters
             ax.set_title(f"{titles[i]}  $\mu$: {mu:.2f} mK,  $\sigma$: {std:.2f} mK", fontsize=font)

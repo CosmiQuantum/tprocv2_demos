@@ -125,8 +125,8 @@ class T1VsTime:
         #print(self.top_folder_dates)
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
-                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
-                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
+                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
+                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "/documentation/"
             elif self.fridge.upper() == 'NEXUS':
                 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
                 outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
@@ -135,16 +135,16 @@ class T1VsTime:
 
             # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
             if '_' in exp_extension:
-                outerFolder_expt = outerFolder + f"/Data_h5/T1{exp_extension}/"
+                outerFolder_expt = outerFolder + f"/Data_h5/t1{exp_extension}/"
             else:
-                outerFolder_expt = outerFolder + "/Data_h5/T1_ge/"
+                outerFolder_expt = outerFolder + "/Data_h5/t1_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
             #print(outerFolder_expt)
             for h5_file in h5_files:
 
                 save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
                 H5_class_instance = Data_H5(h5_file)
-                load_data = H5_class_instance.load_from_h5(data_type=f'T1{exp_extension}', save_r=int(save_round))
+                load_data = H5_class_instance.load_from_h5(data_type=f't1{exp_extension}', save_r=int(save_round))
                 # if '01-27' in outerFolder_expt:
                 #     print(load_data)
                 # Define specific days to exclude
@@ -155,28 +155,28 @@ class T1VsTime:
                     datetime.date(2025, 1, 31)  # Optimization Issues and non RR work in progress
                 }
 
-                for q_key in load_data[f'T1{exp_extension}']:
-                    for dataset in range(len(load_data[f'T1{exp_extension}'][q_key].get('Dates', [])[0])):
-                        if 'nan' in str(load_data[f'T1{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
+                for q_key in load_data[f't1{exp_extension}']:
+                    for dataset in range(len(load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0])):
+                        if 'nan' in str(load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
                             continue
                         # T1 = load_data['T1'][q_key].get('T1', [])[0][dataset]
                         # errors = load_data['T1'][q_key].get('Errors', [])[0][dataset]
-                        date = datetime.datetime.fromtimestamp(load_data[f'T1{exp_extension}'][q_key].get('Dates', [])[0][dataset])
+                        date = datetime.datetime.fromtimestamp(load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0][dataset])
 
                         # Skip processing if the date (as a date object) is in the excluded set
                         if date.date() in exclude_dates:
                             print(f"Skipping data for {date} (excluded date)")
                             continue
 
-                        I = self.process_h5_data(load_data[f'T1{exp_extension}'][q_key].get('I', [])[0][dataset].decode())
-                        Q = self.process_h5_data(load_data[f'T1{exp_extension}'][q_key].get('Q', [])[0][dataset].decode())
-                        delay_times = self.process_h5_data(load_data[f'T1{exp_extension}'][q_key].get('Delay Times', [])[0][dataset].decode())
+                        I = self.process_h5_data(load_data[f't1{exp_extension}'][q_key].get('I', [])[0][dataset].decode())
+                        Q = self.process_h5_data(load_data[f't1{exp_extension}'][q_key].get('Q', [])[0][dataset].decode())
+                        delay_times = self.process_h5_data(load_data[f't1{exp_extension}'][q_key].get('Delay Times', [])[0][dataset].decode())
                         # fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
-                        round_num = load_data[f'T1{exp_extension}'][q_key].get('Round Num', [])[0][dataset]
+                        round_num = load_data[f't1{exp_extension}'][q_key].get('Round Num', [])[0][dataset]
                         try:
-                            batch_num = load_data[f'T1{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
-                            syst_config = load_data[f'T1{exp_extension}'][q_key].get('Syst Config', [])[0][dataset].decode()
-                            exp_config = load_data[f'T1{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
+                            batch_num = load_data[f't1{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
+                            syst_config = load_data[f't1{exp_extension}'][q_key].get('Syst Config', [])[0][dataset].decode()
+                            exp_config = load_data[f't1{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
                             safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
                             exp_config = eval(exp_config, safe_globals)
                         except:
@@ -318,14 +318,14 @@ class T1VsTime:
 
         # ----------------To Plot a specific timeframe------------------
         from datetime import datetime
-        year = 2025
-        month = 1
-        day1 = 22  # Start date
-        day2 = 23  # End date
-        hour_start = 0  # Start hour
-        hour_end = 23  # End hour
-        start_time = datetime(year, month, day1, hour_start, 0)
-        end_time = datetime(year, month, day2, hour_end, 59)
+        # year = 2025
+        # month = 1
+        # day1 = 22  # Start date
+        # day2 = 23  # End date
+        # hour_start = 0  # Start hour
+        # hour_end = 23  # End hour
+        # start_time = datetime(year, month, day1, hour_start, 0)
+        # end_time = datetime(year, month, day2, hour_end, 59)
         # -----------------------------------------------------------------
 
         font = 14
@@ -361,6 +361,7 @@ class T1VsTime:
             sorted_x = np.array(sorted_x)
 
             #ax.set_xlim(start_time, end_time)
+            # ax.set_ylim(5, 90)
 
             ax.errorbar(
                 sorted_x, sorted_y, yerr=sorted_err,

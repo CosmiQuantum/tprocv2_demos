@@ -120,8 +120,8 @@ class QubitFreqsVsTime:
         mean_values = {}
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
-                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
-                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
+                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
+                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "/documentation/"
             elif self.fridge.upper() == 'NEXUS':
                 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
                 outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
@@ -130,9 +130,9 @@ class QubitFreqsVsTime:
 
             # ------------------------------------------Load/Plot/Save Q Spec------------------------------------
             if '_' in exp_extension:
-                outerFolder_expt = outerFolder + f"/Data_h5/QSpec{exp_extension}/"
+                outerFolder_expt = outerFolder + f"/Data_h5/qspec{exp_extension}/"
             else:
-                outerFolder_expt = outerFolder + "/Data_h5/QSpec_ge/"
+                outerFolder_expt = outerFolder + "/Data_h5/qspec_ge/"
 
 
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -143,7 +143,7 @@ class QubitFreqsVsTime:
                 H5_class_instance = Data_H5(h5_file)
                 #H5_class_instance.print_h5_contents(h5_file)
                 #sometimes you get '1(1)' when redownloading the h5 files for some reason
-                load_data = H5_class_instance.load_from_h5(data_type=f'QSpec{exp_extension}', save_r=int(save_round.split('(')[0]))
+                load_data = H5_class_instance.load_from_h5(data_type=f'qspec{exp_extension}', save_r=int(save_round.split('(')[0]))
 
                 # Define specific days to exclude
                 exclude_dates = {
@@ -153,27 +153,27 @@ class QubitFreqsVsTime:
                     datetime.date(2025, 1, 31)  # Optimization Issues and non RR work in progress
                 }
 
-                for q_key in load_data[f'QSpec{exp_extension}']:
-                    for dataset in range(len(load_data[f'QSpec{exp_extension}'][q_key].get('Dates', [])[0])):
-                        if 'nan' in str(load_data[f'QSpec{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
+                for q_key in load_data[f'qspec{exp_extension}']:
+                    for dataset in range(len(load_data[f'qspec{exp_extension}'][q_key].get('Dates', [])[0])):
+                        if 'nan' in str(load_data[f'qspec{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
                             continue
-                        date = datetime.datetime.fromtimestamp(load_data[f'QSpec{exp_extension}'][q_key].get('Dates', [])[0][dataset])
+                        date = datetime.datetime.fromtimestamp(load_data[f'qspec{exp_extension}'][q_key].get('Dates', [])[0][dataset])
 
                         # Skip processing if the date (as a date object) is in the excluded set
                         if date.date() in exclude_dates:
                             print(f"Skipping data for {date} (excluded date)")
                             continue
 
-                        I = self.process_h5_data(load_data[f'QSpec{exp_extension}'][q_key].get('I', [])[0][dataset].decode())
-                        Q = self.process_h5_data(load_data[f'QSpec{exp_extension}'][q_key].get('Q', [])[0][dataset].decode())
+                        I = self.process_h5_data(load_data[f'qspec{exp_extension}'][q_key].get('I', [])[0][dataset].decode())
+                        Q = self.process_h5_data(load_data[f'qspec{exp_extension}'][q_key].get('Q', [])[0][dataset].decode())
                         # I_fit = load_data['QSpec'][q_key].get('I Fit', [])[0][dataset]
                         # Q_fit = load_data['QSpec'][q_key].get('Q Fit', [])[0][dataset]
-                        freqs = self.process_h5_data(load_data[f'QSpec{exp_extension}'][q_key].get('Frequencies', [])[0][dataset].decode())
-                        round_num = load_data[f'QSpec{exp_extension}'][q_key].get('Round Num', [])[0][dataset]
-                        batch_num = load_data[f'QSpec{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
+                        freqs = self.process_h5_data(load_data[f'qspec{exp_extension}'][q_key].get('Frequencies', [])[0][dataset].decode())
+                        round_num = load_data[f'qspec{exp_extension}'][q_key].get('Round Num', [])[0][dataset]
+                        batch_num = load_data[f'qspec{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
                         try:
-                            syst_config = load_data[f'QSpec{exp_extension}'][q_key].get('Syst Config', [])[0][dataset].decode()
-                            exp_config = load_data[f'QSpec{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
+                            syst_config = load_data[f'qspec{exp_extension}'][q_key].get('Syst Config', [])[0][dataset].decode()
+                            exp_config = load_data[f'qspec{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
                             safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
                             exp_config = eval(exp_config, safe_globals)
                         except:
@@ -376,15 +376,15 @@ class QubitFreqsVsTime:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
         # ----------------To Plot a specific timeframe------------------
-        from datetime import datetime
-        year = 2025
-        month = 1
-        day1 = 24  # Start date
-        day2 = 25  # End date
-        hour_start = 0  # Start hour
-        hour_end = 12  # End hour
-        start_time = datetime(year, month, day1, hour_start, 0)
-        end_time = datetime(year, month, day2, hour_end, 0)
+        # from datetime import datetime
+        # year = 2025
+        # month = 1
+        # day1 = 24  # Start date
+        # day2 = 25  # End date
+        # hour_start = 0  # Start hour
+        # hour_end = 12  # End hour
+        # start_time = datetime(year, month, day1, hour_start, 0)
+        # end_time = datetime(year, month, day2, hour_end, 0)
         # -----------------------------------------------------------------
 
         font = 14
@@ -459,6 +459,7 @@ class QubitFreqsVsTime:
 
         plt.tight_layout()
         plt.savefig(analysis_folder + f'Q_Freqs{exp_extension}.pdf', transparent=True, dpi=self.final_figure_quality)
+        print('Plot saved to:', analysis_folder)
         plt.close()
 
     def plot_with_errs_single_plot(self, date_times, qubit_frequencies, qspec_fit_err, show_legends):
