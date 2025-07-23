@@ -157,6 +157,10 @@ class TempCalcAndPlots:
             return None
 
     def run(self):
+        """
+        NOTE to self: this function matches the SS data to QSpec data by checking if the FILE NAME timestamps were within ±10 seconds of each other.
+        So, it takes the name of each file (which contains a timestamp) and uses that to match the qspec and ssf files. It does not look at internal time stamps in the h5 files.
+        """
         all_qubit_temperatures = {i: [] for i in range(self.number_of_qubits)}
         all_qubit_timestamps = {i: [] for i in range(self.number_of_qubits)}
         # ----------------------------------------------Load/Plot/Save QSpec------------------------------------
