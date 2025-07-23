@@ -37,7 +37,8 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 run_number = 3 # Starting from first run with qubits: Run 1 = run4a at quiet, run 2 = run5a at quiet, etc
 figure_quality = 200
-Science_Qubits = [0, 1, 2, 3, 4, 5]
+Science_Qubits = [0,4] # [0, 1, 2, 3, 4, 5] for run 7, [0, 4] for run 6
+run_num = 6 # first run with qubits was QUIET run 3, second run with qubits was QUIET run 4, and so forth
 
 # What method or methods do you want to use to calculate qubit temperatures?
 qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
@@ -45,7 +46,7 @@ qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
-                  "Qtemps_hists_viaRPM": True,  "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
+                  "Qtemps_hists_viaRPM": False,  "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis
 comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
@@ -54,7 +55,7 @@ comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_tim
 #-------------------------------------------- For qubit temperature calculations via rabi population measurements ---------------------------------------------------
 # Specify which dates you want to loop through. It will process all the files inside all the folders that contain these dates in their title.
 
-# Run 6 ----------------------------------------------------------------
+# Run 6
 # target_dates_qtemps_RPM = [
 #     "2025-04-16",
 #     "2025-04-17",
@@ -95,7 +96,7 @@ comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_tim
 #     "2025-06-01" # Last Science run data
 #     ]
 
-# For data before heater temperature steps
+# For data before heater temperature steps, run 6
 # target_dates_qtemps_RPM = [
 #     "2025-04-16",
 #     "2025-04-17",
@@ -119,35 +120,33 @@ comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_tim
 #     "2025-05-05",
 #     "2025-05-06"]
 
-# For data during Heater temperature steps
-# target_dates_qtemps_RPM = ["2025-05-07", "2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16"]
+# For data during Heater temperature steps, run 6
+target_dates_qtemps_RPM = ["2025-05-07", "2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16"]
 
 # if you want to look at just one specific date
 # target_dates_qtemps_RPM = ["2025-05-05"]
 #---------------------------------------------------------------------------------------------------------------------------------------------------
 # run 7
-target_dates_qtemps_RPM = ["2025-07-19", "2025-07-20"]
-#---------------------------------------------------------------------------------------------------------------------------------------------
-
-# run 6
-# base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study"
+# target_dates_qtemps_RPM = ["2025-07-19", "2025-07-20"] # for 24hr AB data
+# base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run7/6transmon/round_robin_benchmark"
+#
 # # To re-make and save RPM RR plots
-# outerFolder_qtemps_plots_RR = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/Plots_RR"
+# outerFolder_qtemps_plots_RR = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_tests_data/benchmark_analysis_plots/RPM_RR_plots"
 #
 # # For RPM Analysis
-# outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots" # Inside each analysis function, a subfolder will be defined
-
-#run 7
-base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run7/6transmon/round_robin_benchmark"
+# outerFolder_qtemps_plots = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_tests_data/benchmark_analysis_plots/q_temperatures_plots" # Inside each analysis function, a subfolder will be defined
+# filter_keywords = ['AB_tests_data'] #substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name
+#---------------------------------------------------------------------------------------------------------------------------------------------
+# run 6
+base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study"
 
 # To re-make and save RPM RR plots
-outerFolder_qtemps_plots_RR = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_tests_data/benchmark_analysis_plots/RPM_RR_plots"
+outerFolder_qtemps_plots_RR = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/Plots_RR"
 
 # For RPM Analysis
-outerFolder_qtemps_plots = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_tests_data/benchmark_analysis_plots/q_temperatures_plots" # Inside each analysis function, a subfolder will be defined
+outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots" # Inside each analysis function, a subfolder will be defined
 
-# filter_keywords = ['source_off', 'source_on'] # set up for RPM measurements. Which data do you want to look at? with source or no source?
-filter_keywords = ['AB_tests_data'] #substudy
+filter_keywords = ['source_off', 'source_on'] # set up for RPM measurements. Which data do you want to look at? with source or no source?
 
 #------------------- For qubit temperature calculations via SSF methods (double gaussian over g-state data and double gaussian over g and e-state data --------------
 # Note: you must write paths in this form: "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_03-03-40"
@@ -162,7 +161,7 @@ paths_SSFmethods = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Compreh
 ###################################################### Qubit temperature calculations via rabi population measurements #############################################
 if qtemp_method_flags["Qtemps_viaRPM"]:
     RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs)
-    combined_qtemp_data = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal, run_name, list_of_all_qubits, tot_num_of_qubits,
+    combined_qtemp_data = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
                             outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, figure_quality, save_figsRR, exclude_temp_sweeps)
     del RPM_calcs
     #----------------------------------------------------------------------- RPM Analysis -------------------------------------------------------------------------

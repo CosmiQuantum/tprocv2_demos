@@ -1548,7 +1548,7 @@ class PlotRR_noQick:
         # ----------------------------------------------Load/Plot/Save QSpec------------------------------------
         outerFolder_expt = self.outerFolder + "/Data_h5/qspec_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
-        extracted_freqs = []
+        extracted_qfreqs = []
         for h5_file in h5_files:
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
             H5_class_instance = Data_H5(h5_file)
@@ -1593,13 +1593,13 @@ class PlotRR_noQick:
                         del qspec_class_instance
 
                         if qubit_freq is not None:
-                            extracted_freqs.append({
+                            extracted_qfreqs.append({
                                 "filename": os.path.basename(h5_file),
                                 "q_key": int(q_key),
                                 "dataset": dataset,
                                 "round_num": round_num,
                                 "batch_num": batch_num,
-                                "freq_MHz": qubit_freq,
+                                "qfreq_MHz": qubit_freq,
                                 "Qfreq_fit_err": qspec_fit_err,
                                 "timestamp": date.timestamp()
                             })
@@ -1608,26 +1608,122 @@ class PlotRR_noQick:
 
 
             del H5_class_instance
-        print(extracted_freqs)
-        return extracted_freqs
+        print(extracted_qfreqs)
+        return extracted_qfreqs
+
+    #
+    def load_plot_save_res_spec(self):
+        # ------------------------------------------Load/Plot/Save Res Spec------------------------------------
+        outerFolder_expt = os.path.join(self.outerFolder, "Data_h5")
+
+        #Searches for all .h5 files in the res_ge subdirectory and res subdirectory. Combines them into a single list h5_files.
+        h5_files = glob.glob(os.path.join(outerFolder_expt, "res_ge", "*.h5"))
+        h5_files += glob.glob(os.path.join(outerFolder_expt, "res", "*.h5"))
+
+        # print(outerFolder_expt)
+        extracted_resfreqs =[]
+
+        for h5_file in h5_files:
+            save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
+            H5_class_instance = Data_H5(h5_file)
+            # H5_class_instance.print_h5_contents(h5_file)
+            load_data = H5_class_instance.load_from_h5(data_type='res_ge', save_r=int(save_round))
+
+            # just look at this resonator data, should have batch_num of arrays in each one
+            # right now the data writes the same thing batch_num of times, so it will do the same 5 datasets 5 times, until you fix this just grab the first one (All 5)
+
+            populated_keys = []
+            for q_key in load_data['res_ge']:
+                # Access 'Dates' for the current q_key
+                dates_list = load_data['res_ge'][q_key].get('Dates', [[]])
+
+                # Check if any entry in 'Dates' is not NaN
+                if any(
+                        not np.isnan(date)
+                        for date in dates_list[0]  # Iterate over the first batch of dates
+                ):
+                    populated_keys.append(q_key)
+
+            for q_key in populated_keys:
+                # go through each dataset in the batch and plot
+                for dataset in range(len(load_data['res_ge'][q_key].get('Dates', [])[0])):
+                    date = datetime.datetime.fromtimestamp(load_data['res_ge'][q_key].get('Dates', [])[0][dataset])  # single date per dataset
+                    freq_pts = self.process_h5_data(load_data['res_ge'][q_key].get('freq_pts', [])[0][
+                                                        dataset].decode())  # comes in as an array but put into a byte string, need to convert to list
+
+                    freq_center = self.process_h5_data(load_data['res_ge'][q_key].get('freq_center', [])[0][
+                                                           dataset].decode())  # comes in as an array but put into a string, need to convert to list
+                    freqs_found = self.string_to_float_list(load_data['res_ge'][q_key].get('Found Freqs', [])[0][
+                                                                dataset].decode())  # comes in as a list of floats in string format, need to convert
+                    amps = self.process_string_of_nested_lists(
+                        load_data['res_ge'][q_key].get('Amps', [])[0][dataset].decode())  # list of lists
+                    syst_config = load_data['res_ge'][q_key].get('Syst Config', [])[0][dataset].decode()
+                    exp_config = load_data['res_ge'][q_key].get('Exp Config', [])[0][dataset].decode()
+                    safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                    syst_config = eval(syst_config, safe_globals)
+                    exp_config = eval(exp_config, safe_globals)
+
+                    round_num = load_data['res_ge'][q_key].get('Round Num', [])[0][dataset]  # already a float
+                    batch_num = load_data['res_ge'][q_key].get('Batch Num', [])[0][dataset]
+                    freq_pts_data = load_data['res_ge'][q_key].get('freq_pts', [])[0][dataset].decode()
+
+                    # Replace whitespace between numbers with commas to make it a valid list
+                    formatted_str = freq_pts_data.replace('  ', ',').replace('\n', '')
+                    formatted_str = formatted_str.replace(' ', ',').replace('\n', '')
+                    formatted_str = formatted_str.replace(',]', ']').replace('\n', '')
+                    formatted_str = formatted_str.replace('],[', '],[')
+                    formatted_str = re.sub(r",,", ",", formatted_str)
+                    formatted_str = re.sub(r",\s*([\]])", r"\1", formatted_str)
+                    formatted_str = re.sub(r"(\d+)\.,", r"\1.0,",
+                                           formatted_str)  # Fix malformed floating-point numbers (e.g., '5829.,' -> '5829.0')
+                    # Convert to NumPy array
+                    freq_points = np.array(eval(formatted_str))
+                    # print('here: ', freq_points)
+                    if len(freq_pts) > 0:
+                        if freq_center is not None:
+                            extracted_resfreqs.append({
+                                "filename": os.path.basename(h5_file),
+                                "q_key": int(q_key),
+                                "dataset": dataset,
+                                "round_num": round_num,
+                                "batch_num": batch_num,
+                                "resfreq_MHz": freq_center,
+                                "timestamp": date.timestamp()
+                            })
+                        else:
+                            print(f"Skipped Q{q_key + 1} in batch {batch_num} fit returned None for ge res spec freq.")
+
+            del H5_class_instance
 
     def extract_batch_number(self, filename):
         match = re.search(r'batch_(\d+)', filename)
         return int(match.group(1)) if match else None
 
-    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, save_figs = False, get_qtemp_data = False):
+    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, run_num, save_figs = False, get_qtemp_data = False):
         # ------------------------------------------------Load/Plot/Save Rabi---------------------------------------
         outerFolder_expt_qtemps = self.unique_folder_path+ "/Data_h5/q_temperatures/"
         h5_files_qtemps = glob.glob(os.path.join(outerFolder_expt_qtemps, "*.h5"))
         all_files_Qtemp_results = [] #to store qubit temperature results
         cutoff_timestamp = datetime.datetime(2025, 4, 11, 19, 0).timestamp()  # when I started saving qubit freqs in the same files
 
-        extracted_qspec_results = self.load_plot_save_q_spec()
-        qspec_by_batch_and_qkey = defaultdict(lambda: defaultdict(list))
-        for item in extracted_qspec_results:
-            batch = item['batch_num']
-            q_key = item['q_key']
-            qspec_by_batch_and_qkey[batch][q_key].append(item)
+        if run_num == 7:
+        # qspec data to be matched by batch number (there are multiple qubits in each file, so multiple timestamps inside)
+            extracted_qspec_results = self.load_plot_save_q_spec()
+            qspec_by_batch_and_qkey = defaultdict(lambda: defaultdict(list))
+            for item in extracted_qspec_results:
+                batch = item['batch_num']
+                q_key = item['q_key']
+                qspec_by_batch_and_qkey[batch][q_key].append(item)
+        if run_num == 6:
+        # qspec data to be matched by time stamp inside the h5 file (there is only one qubit inside and one timestamp)
+            extracted_qspec_results = self.load_plot_save_q_spec()
+            qspec_grouped_by_qkey = defaultdict(list)
+            # sort each list by qubit
+            for item in extracted_qspec_results:
+                qspec_grouped_by_qkey[item['q_key']].append(item)
+            # Sort each list by timestamp
+            for qkey in qspec_grouped_by_qkey:
+                qspec_grouped_by_qkey[qkey].sort(key=lambda x: x['timestamp'])
 
         for h5_file in h5_files_qtemps:
 
@@ -1663,8 +1759,8 @@ class PlotRR_noQick:
                     round_num = load_data['q_temperatures'][q_key].get('Round Num', [])[0][dataset]
                     batch_num = load_data['q_temperatures'][q_key].get('Batch Num', [])[0][dataset]
 
-                    #-------------------------------------Grabbing matching qubit frequency for this qubit-------------------------------------
-                    if date.timestamp() > cutoff_timestamp and get_qtemp_data:
+                    #-----------------------Grabbing matching qubit frequency for this qubit if RUN 7---------------------------------
+                    if date.timestamp() > cutoff_timestamp and get_qtemp_data and run_num == 7:
                         # Files after this date contain the matching g-e qubit frequency already BUT the files do not contain the corresponding qspec fit errors.
 
                         # The line below extracts the qfreq saved in each rabi pop. meas. file, but it does not extract the error of the qspec fit because that was not saved in the h5 files.
@@ -1681,7 +1777,7 @@ class PlotRR_noQick:
                         closest_match = qspec_entries[0]
 
                         # Extract frequency and fit error from the match
-                        qubit_freq_MHz = closest_match['freq_MHz']
+                        qubit_freq_MHz = closest_match['qfreq_MHz']
                         qfreq_err = closest_match['Qfreq_fit_err']
 
                         print(
@@ -1689,7 +1785,7 @@ class PlotRR_noQick:
                             f"(batch {batch_num + 1})"
                         )
 
-                    elif date.timestamp() <= cutoff_timestamp and get_qtemp_data: #-----this looks through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
+                    elif date.timestamp() <= cutoff_timestamp and get_qtemp_data and run_num == 7: #-----this looks through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
                         # Match QSpec entry using batch number and q_key
                         qspec_entries = qspec_by_batch_and_qkey.get(batch_num, {}).get(int(q_key), [])
                         if not qspec_entries:
@@ -1700,13 +1796,74 @@ class PlotRR_noQick:
                         closest_match = qspec_entries[0] #there should only be one inside
 
                         # Extract frequency and fit error from the match
-                        qubit_freq_MHz = closest_match['freq_MHz']
+                        qubit_freq_MHz = closest_match['qfreq_MHz']
                         qfreq_err = closest_match['Qfreq_fit_err']
 
                         print(
                             f"Matched QSpec for Q{q_key + 1} is: {qubit_freq_MHz} MHz  "
                             f"(batch {batch_num + 1})"
                         )
+
+                    # -----------------------Grabbing matching qubit frequency for this qubit if RUN 6------------------------
+                    elif date.timestamp() > cutoff_timestamp and get_qtemp_data and run_num ==6:
+                        # Files after this date contain the matching g-e qubit frequency already BUT the files do not contain the corresponding qspec fit errors.
+
+                        # The line below extracts the qfreq saved in each rabi pop. meas. file, but it does not extract the error of the qspec fit because that was not saved in the h5 files.
+                        qubit_freq_MHz_rpmfile = load_data['q_temperatures'][q_key].get('Qfreq_ge', [])[0][
+                            dataset]  # extract to compare with the 'matching' method
+                        print(f"QSpec from RPM file, Q{q_key + 1}: {qubit_freq_MHz_rpmfile} MHz")  # print to compare
+
+                        # To find the correct qspec fit error from the ge qspec files, we have to match the qspec files to the RPM files via time stamps.
+
+                        # Build the QTemp timestamp:
+                        qtemp_timestamp = date.timestamp()
+
+                        # Grab all QSpec entries for this qubit:
+                        qspec_entries = qspec_grouped_by_qkey.get(int(q_key), [])
+                        if not qspec_entries:
+                            print(f"No QSpec entries found for Q{q_key + 1}")
+                            continue
+
+                        # Find the QSpec dict whose timestamp is closest to qtemp_timestamp:
+                        # Computes the absolute time difference between that entry’s timestamp and your current qubit‐temperature timestamp
+                        closest_match = min(
+                            qspec_entries,
+                            key=lambda entry: abs(entry[
+                                                      'timestamp'] - qtemp_timestamp))  # tells Python to pick the element for which the key function returns the smallest value
+
+                        # Extract frequency and its fit error from that match:
+                        qubit_freq_MHz = closest_match['qfreq_MHz']
+                        qfreq_err = closest_match['Qfreq_fit_err']
+
+                        print(
+                            f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz} MHz  "
+                            f"(QSpec t={datetime.datetime.fromtimestamp(closest_match['timestamp'])})")
+
+                    elif date.timestamp() <= cutoff_timestamp and get_qtemp_data and run_num ==6:  # -----this look through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
+                        # Build the QTemp timestamp:
+                        qtemp_timestamp = date.timestamp()
+
+                        # Grab all QSpec entries for this qubit:
+                        qspec_entries = qspec_grouped_by_qkey.get(int(q_key), [])
+                        if not qspec_entries:
+                            print(f"No QSpec entries found for Q{q_key + 1}")
+                            continue
+
+                        # Find the QSpec dict whose timestamp is closest to qtemp_timestamp:
+                        # Computes the absolute time difference between that entry’s timestamp and your current qubit‐temperature timestamp
+                        closest_match = min(
+                            qspec_entries,
+                            key=lambda entry: abs(entry[
+                                                      'timestamp'] - qtemp_timestamp))  # tells Python to pick the element for which the key function returns the smallest value
+
+                        # Extract frequency and its fit error from that match:
+                        qubit_freq_MHz = closest_match['qfreq_MHz']
+                        qfreq_err = closest_match['Qfreq_fit_err']
+
+                        print(
+                            f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz:.3f} MHz  "
+                            f"(QSpec t={datetime.datetime.fromtimestamp(closest_match['timestamp'])})")
+
                     #---------------------------------------------------------------------------------------------
 
                     I1 = self.process_h5_data(load_data['q_temperatures'][q_key].get('I1', [])[0][dataset].decode())
