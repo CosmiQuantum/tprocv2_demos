@@ -1708,6 +1708,9 @@ class PlotRR_noQick:
 
         if run_num == 7:
         # qspec data to be matched by batch number (there are multiple qubits in each file, so multiple timestamps inside)
+        # confirmed that the batch number was properly saved inside the h5 files for both qspec and rapi pop. meas. for run 7
+        # NOTE: the batch number inside each h5 file is one digit less than the batch number printed on the file NAME. Inside the file, batch name starts at zero, but in the file NAME it starts at 1.
+        # In this script we are using the batch number saved inside the h5 files
             extracted_qspec_results = self.load_plot_save_q_spec()
             qspec_by_batch_and_qkey = defaultdict(lambda: defaultdict(list))
             for item in extracted_qspec_results:
@@ -1715,7 +1718,9 @@ class PlotRR_noQick:
                 q_key = item['q_key']
                 qspec_by_batch_and_qkey[batch][q_key].append(item)
         if run_num == 6:
-        # qspec data to be matched by time stamp inside the h5 file (there is only one qubit inside and one timestamp)
+        # qspec data to be matched by time stamp inside the h5 file (there is only one qubit inside and one timestamp).
+        # Batch numbers were not a thing in this run (was just set to zero the entire run)
+        # Could have also used the time stamp in the file NAME, but this script is already written so I'm not changing that now.
             extracted_qspec_results = self.load_plot_save_q_spec()
             qspec_grouped_by_qkey = defaultdict(list)
             # sort each list by qubit
@@ -2903,7 +2908,7 @@ class PlotRR_noQick:
                     batch_num = load_data['q_temperatures'][q_key].get('Batch Num', [])[0][dataset]
 
                     #-----------------------Grabbing matching qubit frequency for this qubit if RUN 7---------------------------------
-                    if date.timestamp() > cutoff_timestamp and get_qtemp_data and run_num == 7:
+                    if get_qtemp_data and run_num == 7:
                         # Files after this date contain the matching g-e qubit frequency already BUT the files do not contain the corresponding qspec fit errors.
 
                         # The line below extracts the qfreq saved in each rabi pop. meas. file, but it does not extract the error of the qspec fit because that was not saved in the h5 files.
@@ -2928,7 +2933,7 @@ class PlotRR_noQick:
                             f"(batch {batch_num + 1})"
                         )
 
-                    elif date.timestamp() <= cutoff_timestamp and get_qtemp_data and run_num == 7: #-----this looks through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
+                    elif get_qtemp_data and run_num == 7: #-----this looks through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
                         # Match QSpec entry using batch number and q_key
                         qspec_entries = qspec_by_batch_and_qkey.get(batch_num, {}).get(int(q_key), [])
                         if not qspec_entries:
@@ -2948,7 +2953,7 @@ class PlotRR_noQick:
                         )
 
                     # -----------------------Grabbing matching qubit frequency for this qubit if RUN 6------------------------
-                    elif date.timestamp() > cutoff_timestamp and get_qtemp_data and run_num ==6:
+                    elif get_qtemp_data and run_num ==6:
                         # Files after this date contain the matching g-e qubit frequency already BUT the files do not contain the corresponding qspec fit errors.
 
                         # The line below extracts the qfreq saved in each rabi pop. meas. file, but it does not extract the error of the qspec fit because that was not saved in the h5 files.
@@ -2982,7 +2987,7 @@ class PlotRR_noQick:
                             f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz} MHz  "
                             f"(QSpec t={datetime.datetime.fromtimestamp(closest_match['timestamp'])})")
 
-                    elif date.timestamp() <= cutoff_timestamp and get_qtemp_data and run_num ==6:  # -----this look through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
+                    elif get_qtemp_data and run_num ==6:  # -----this look through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
                         # Build the QTemp timestamp:
                         qtemp_timestamp = date.timestamp()
 
