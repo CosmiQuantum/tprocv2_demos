@@ -1927,7 +1927,7 @@ class PlotRR_noQick:
                                 sigma_qfreq_MHz=qfreq_err
                             )
                         except Exception as e:
-                            print(f"Error computing T_err for Q{q_key}: {e}")
+                            print(f"Error computing T_err for Q{q_key + 1}: {e}")
                             continue
 
                         if T_err is not None:
@@ -1944,7 +1944,7 @@ class PlotRR_noQick:
                                 'date': date.timestamp(),
                                 'filepath': h5_file}
                         else:
-                            print(f"Skipping Q{q_key} entry because T_err was not calculated successfully.")
+                            print(f"Skipping Q{q_key + 1} entry because T_err was not calculated successfully.")
 
             if get_qtemp_data:
                 all_files_Qtemp_results.append(file_result)
