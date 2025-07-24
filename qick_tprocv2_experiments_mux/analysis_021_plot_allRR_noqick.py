@@ -1699,6 +1699,16 @@ class PlotRR_noQick:
         match = re.search(r'batch_(\d+)', filename)
         return int(match.group(1)) if match else None
 
+    # Helper function to extract datetime from filename
+    def extract_timestamp_from_filename(self, filename):
+        """
+        Extracts a datetime object from the prefix of a filename like:
+        '2025-07-19_09-03-21_qspec_ge_results_batch_1_Num_per_batch1.h5'
+        """
+        from datetime import datetime
+        time_str = "_".join(os.path.basename(filename).split('_')[:2])
+        return datetime.strptime(time_str, "%Y-%m-%d_%H-%M-%S")
+
     def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, run_num, save_figs = False, get_qtemp_data = False):
         # ------------------------------------------------Load/Plot/Save Rabi---------------------------------------
         outerFolder_expt_qtemps = self.unique_folder_path+ "/Data_h5/q_temperatures/"
@@ -1706,29 +1716,19 @@ class PlotRR_noQick:
         all_files_Qtemp_results = [] #to store qubit temperature results
         cutoff_timestamp = datetime.datetime(2025, 4, 11, 19, 0).timestamp()  # when I started saving qubit freqs in the same files
 
-        if run_num == 7:
-        # qspec data to be matched by batch number (there are multiple qubits in each file, so multiple timestamps inside)
-        # confirmed that the batch number was properly saved inside the h5 files for both qspec and rapi pop. meas. for run 7
-        # NOTE: the batch number inside each h5 file is one digit less than the batch number printed on the file NAME. Inside the file, batch name starts at zero, but in the file NAME it starts at 1.
-        # In this script we are using the batch number saved inside the h5 files
-            extracted_qspec_results = self.load_plot_save_q_spec()
-            qspec_by_batch_and_qkey = defaultdict(lambda: defaultdict(list))
-            for item in extracted_qspec_results:
-                batch = item['batch_num']
-                q_key = item['q_key']
-                qspec_by_batch_and_qkey[batch][q_key].append(item)
-        if run_num == 6:
-        # qspec data to be matched by time stamp inside the h5 file (there is only one qubit inside and one timestamp).
-        # Batch numbers were not a thing in this run (was just set to zero the entire run)
-        # Could have also used the time stamp in the file NAME, but this script is already written so I'm not changing that now.
-            extracted_qspec_results = self.load_plot_save_q_spec()
-            qspec_grouped_by_qkey = defaultdict(list)
-            # sort each list by qubit
-            for item in extracted_qspec_results:
-                qspec_grouped_by_qkey[item['q_key']].append(item)
-            # Sort each list by timestamp
-            for qkey in qspec_grouped_by_qkey:
-                qspec_grouped_by_qkey[qkey].sort(key=lambda x: x['timestamp'])
+        # This function returns a list of dicts with keys like 'h5_file', 'q_key', 'qfreq_MHz', 'Qfreq_fit_err', etc.
+        extracted_qspec_results = self.load_plot_save_q_spec()
+
+        # Index QSpec results by timestamp and q_key
+        qspec_by_qkey_and_time = defaultdict(list)
+        for entry in extracted_qspec_results:
+            timestamp = self.extract_timestamp_from_filename(entry['h5_file']).timestamp()
+            q_key = entry['q_key']
+            qspec_by_qkey_and_time[q_key].append((timestamp, entry))
+
+        # Sort by timestamp for efficient matching
+        for qkey in qspec_by_qkey_and_time:
+            qspec_by_qkey_and_time[qkey].sort()
 
         for h5_file in h5_files_qtemps:
 
@@ -1737,6 +1737,7 @@ class PlotRR_noQick:
             load_data = H5_class_instance.load_from_h5(data_type='q_temperatures', save_r=int(save_round))
 
             file_result = {'filename': os.path.basename(h5_file), 'qubits': {}}
+            file_timestamp = self.extract_timestamp_from_filename(h5_file).timestamp() #extracts the timestamp in the h5 file name
 
             populated_keys = []
             for q_key in load_data['q_temperatures']:
@@ -1764,110 +1765,65 @@ class PlotRR_noQick:
                     round_num = load_data['q_temperatures'][q_key].get('Round Num', [])[0][dataset]
                     batch_num = load_data['q_temperatures'][q_key].get('Batch Num', [])[0][dataset]
 
-                    #-----------------------Grabbing matching qubit frequency for this qubit if RUN 7---------------------------------
-                    if date.timestamp() > cutoff_timestamp and get_qtemp_data and run_num == 7:
+                    #-----------------------Grabbing matching qubit frequency for this qubit---------------------------------
+                    if date.timestamp() > cutoff_timestamp and get_qtemp_data:
                         # Files after this date contain the matching g-e qubit frequency already BUT the files do not contain the corresponding qspec fit errors.
 
                         # The line below extracts the qfreq saved in each rabi pop. meas. file, but it does not extract the error of the qspec fit because that was not saved in the h5 files.
                         qubit_freq_MHz_rpmfile = load_data['q_temperatures'][q_key].get('Qfreq_ge', [])[0][dataset] #extract to compare with the 'matching' method
                         print(f"\n QSpec from RPM file for Q{q_key+1}: {qubit_freq_MHz_rpmfile} MHz)") # print to compare
 
-                        # Match QSpec entry using batch number and q_key
-                        qspec_entries = qspec_by_batch_and_qkey.get(batch_num, {}).get(int(q_key), [])
-                        if not qspec_entries:
-                            print(f"No QSpec entries found for Q{q_key + 1} in batch {batch_num + 1}")
-                            continue
+                        # Get qspec candidates for this qubit
+                        qspec_entries = qspec_by_qkey_and_time.get(q_key, [])
 
-                        # If multiple entries exist, pick the first (or sort and pick closest timestamp if needed)
-                        closest_match = qspec_entries[0]
-
-                        # Extract frequency and fit error from the match
-                        qubit_freq_MHz = closest_match['qfreq_MHz']
-                        qfreq_err = closest_match['Qfreq_fit_err']
-
-                        print(
-                            f"Matched QSpec for Q{q_key + 1} is: {qubit_freq_MHz} MHz  "
-                            f"(batch {batch_num + 1})"
-                        )
-
-                    elif date.timestamp() <= cutoff_timestamp and get_qtemp_data and run_num == 7: #-----this looks through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
-                        # Match QSpec entry using batch number and q_key
-                        qspec_entries = qspec_by_batch_and_qkey.get(batch_num, {}).get(int(q_key), [])
-                        if not qspec_entries:
-                            print(f"No QSpec entries found for Q{q_key + 1} in batch {batch_num + 1}")
-                            continue
-
-                        # If multiple entries exist, pick the first
-                        closest_match = qspec_entries[0] #there should only be one inside
-
-                        # Extract frequency and fit error from the match
-                        qubit_freq_MHz = closest_match['qfreq_MHz']
-                        qfreq_err = closest_match['Qfreq_fit_err']
-
-                        print(
-                            f"Matched QSpec for Q{q_key + 1} is: {qubit_freq_MHz} MHz  "
-                            f"(batch {batch_num + 1})"
-                        )
-
-                    # -----------------------Grabbing matching qubit frequency for this qubit if RUN 6------------------------
-                    elif date.timestamp() > cutoff_timestamp and get_qtemp_data and run_num ==6:
-                        # Files after this date contain the matching g-e qubit frequency already BUT the files do not contain the corresponding qspec fit errors.
-
-                        # The line below extracts the qfreq saved in each rabi pop. meas. file, but it does not extract the error of the qspec fit because that was not saved in the h5 files.
-                        qubit_freq_MHz_rpmfile = load_data['q_temperatures'][q_key].get('Qfreq_ge', [])[0][
-                            dataset]  # extract to compare with the 'matching' method
-                        print(f"QSpec from RPM file, Q{q_key + 1}: {qubit_freq_MHz_rpmfile} MHz")  # print to compare
-
-                        # To find the correct qspec fit error from the ge qspec files, we have to match the qspec files to the RPM files via time stamps.
-
-                        # Build the QTemp timestamp:
-                        qtemp_timestamp = date.timestamp()
-
-                        # Grab all QSpec entries for this qubit:
-                        qspec_entries = qspec_grouped_by_qkey.get(int(q_key), [])
                         if not qspec_entries:
                             print(f"No QSpec entries found for Q{q_key + 1}")
                             continue
 
-                        # Find the QSpec dict whose timestamp is closest to qtemp_timestamp:
-                        # Computes the absolute time difference between that entry’s timestamp and your current qubit‐temperature timestamp
-                        closest_match = min(
-                            qspec_entries,
-                            key=lambda entry: abs(entry[
-                                                      'timestamp'] - qtemp_timestamp))  # tells Python to pick the element for which the key function returns the smallest value
+                        # Find closest match in timestamp from filename
+                        closest_match = min(qspec_entries, key=lambda pair: abs(pair[0] - file_timestamp))  # pair[0] is timestamp from qspec filename. pair = (timestamp, qspec_dict) and it is defined in this line
+                        # Note: closest_match = (timestamp_from_filename, qspec_entry_dict)
+                        # closest_match[0] is timestamp_from_filename (a float, in seconds since epoch)
+                        # closest_match[1] is the actual QSpec result dictionary with keys
 
-                        # Extract frequency and its fit error from that match:
-                        qubit_freq_MHz = closest_match['qfreq_MHz']
-                        qfreq_err = closest_match['Qfreq_fit_err']
+                        time_diff = abs(closest_match[0] - file_timestamp)
+                        tolerance_seconds = 10  # You can adjust this
 
-                        print(
-                            f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz} MHz  "
-                            f"(QSpec t={datetime.datetime.fromtimestamp(closest_match['timestamp'])})")
+                        if time_diff <= tolerance_seconds:
+                            matched_qspec = closest_match[1]
+                            qubit_freq_MHz = matched_qspec['qfreq_MHz']
+                            qfreq_err = matched_qspec['Qfreq_fit_err']
 
-                    elif date.timestamp() <= cutoff_timestamp and get_qtemp_data and run_num ==6:  # -----this look through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
-                        # Build the QTemp timestamp:
-                        qtemp_timestamp = date.timestamp()
+                            print(f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz:.3f} MHz "
+                                f"(Δt = {time_diff:.2f} s from filename timestamp)")
+                        else:
+                            print(f"No close-enough QSpec match for Q{q_key + 1}. "f"Closest Δt = {time_diff:.2f} s")
+                            continue
 
-                        # Grab all QSpec entries for this qubit:
-                        qspec_entries = qspec_grouped_by_qkey.get(int(q_key), [])
+                    elif date.timestamp() <= cutoff_timestamp and get_qtemp_data: #-----this looks through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
+                        # Get qspec candidates for this qubit
+                        qspec_entries = qspec_by_qkey_and_time.get(q_key, [])
+
                         if not qspec_entries:
                             print(f"No QSpec entries found for Q{q_key + 1}")
                             continue
 
-                        # Find the QSpec dict whose timestamp is closest to qtemp_timestamp:
-                        # Computes the absolute time difference between that entry’s timestamp and your current qubit‐temperature timestamp
-                        closest_match = min(
-                            qspec_entries,
-                            key=lambda entry: abs(entry[
-                                                      'timestamp'] - qtemp_timestamp))  # tells Python to pick the element for which the key function returns the smallest value
+                        # Find closest match in timestamp from filename
+                        closest_match = min(qspec_entries,key=lambda pair: abs(pair[0] - file_timestamp))  # pair[0] is timestamp from qspec filename (the first element in each tuple)
 
-                        # Extract frequency and its fit error from that match:
-                        qubit_freq_MHz = closest_match['qfreq_MHz']
-                        qfreq_err = closest_match['Qfreq_fit_err']
+                        time_diff = abs(closest_match[0] - file_timestamp)
+                        tolerance_seconds = 10  # You can adjust this
 
-                        print(
-                            f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz:.3f} MHz  "
-                            f"(QSpec t={datetime.datetime.fromtimestamp(closest_match['timestamp'])})")
+                        if time_diff <= tolerance_seconds:
+                            matched_qspec = closest_match[1]
+                            qubit_freq_MHz = matched_qspec['qfreq_MHz']
+                            qfreq_err = matched_qspec['Qfreq_fit_err']
+
+                            print(f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz:.3f} MHz "
+                                f"(Δt = {time_diff:.2f} s from filename timestamp)")
+                        else:
+                            print(f"No close-enough QSpec match for Q{q_key + 1}. "f"Closest Δt = {time_diff:.2f} s")
+                            continue
 
                     #---------------------------------------------------------------------------------------------
 
