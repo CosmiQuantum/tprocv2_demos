@@ -3051,7 +3051,7 @@ class PlotRR_noQick:
                             print(f"Error computing T_err for Q{q_key + 1}: {e}")
                             continue
 
-                        if T_err is not None: # You're accessing the 'qubits' dictionary inside file_result and adding info for the qubit
+                        if T_err is not None and qubit_freq is not None and res_freq_MHz is not None : # You're accessing the 'qubits' dictionary inside file_result and adding info for the qubit
                             file_result['qubits'][int(q_key)] = { # qubits index starts at zero
                                 'A1': A_amplitude1,
                                 'A1_err': A_amplitude_err1,
