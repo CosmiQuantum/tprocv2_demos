@@ -1612,7 +1612,7 @@ class PlotRR_noQick:
         return extracted_qfreqs
 
     #
-    def load_plot_save_res_spec(self, run_num):
+    def load_plot_save_res_spec(self):
         # ------------------------------------------Load/Plot/Save Res Spec------------------------------------
         outerFolder_expt = os.path.join(self.outerFolder, "Data_h5")
 
