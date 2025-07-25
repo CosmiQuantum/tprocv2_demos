@@ -172,8 +172,6 @@ class ResonatorFreqVsTime:
                         except:
                             exp_config = None
 
-
-
                         if len(freq_pts) > 0:
                             res_class_instance = ResonanceSpectroscopy(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.save_figs)
                             #res_spec_cfg = exp_config['res_spec']

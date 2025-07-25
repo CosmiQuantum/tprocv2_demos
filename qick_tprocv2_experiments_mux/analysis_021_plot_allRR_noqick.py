@@ -1652,8 +1652,7 @@ class PlotRR_noQick:
 
                     freq_center = self.process_h5_data(load_data['res_ge'][q_key].get('freq_center', [])[0][
                                                            dataset].decode())  # comes in as an array but put into a string, need to convert to list
-                    freqs_found = self.string_to_float_list(load_data['res_ge'][q_key].get('Found Freqs', [])[0][
-                                                                dataset].decode())  # comes in as a list of floats in string format, need to convert
+                    freqs_found = self.string_to_float_list(load_data['res_ge'][q_key].get('Found Freqs', [])[0][dataset].decode())  # comes in as a list of floats in string format, need to convert
                     amps = self.process_string_of_nested_lists(
                         load_data['res_ge'][q_key].get('Amps', [])[0][dataset].decode())  # list of lists
                     syst_config = load_data['res_ge'][q_key].get('Syst Config', [])[0][dataset].decode()
@@ -1679,14 +1678,14 @@ class PlotRR_noQick:
                     freq_points = np.array(eval(formatted_str))
                     # print('here: ', freq_points)
                     if len(freq_pts) > 0:
-                        if freq_center is not None:
+                        if freqs_found[q_key] is not None:
                             extracted_resfreqs.append({
                                 "filename": os.path.basename(h5_file),
                                 "q_key": int(q_key),
                                 "dataset": dataset,
                                 "round_num": round_num,
                                 "batch_num": batch_num,
-                                "resfreq_MHz": freq_center,
+                                "resfreq_MHz": freqs_found[q_key],
                                 "timestamp": date.timestamp()
                             })
                         else:
@@ -1798,7 +1797,7 @@ class PlotRR_noQick:
                         qubit_freq_MHz = matched_qspec['qfreq_MHz']
                         qfreq_err = matched_qspec['Qfreq_fit_err']
 
-                        print(f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz:.3f} MHz "
+                        print(f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz} MHz "
                               f"(Δt = {time_diff:.2f} s from filename timestamp)")
 
                     elif date.timestamp() <= cutoff_timestamp and get_qtemp_data: #-----this looks through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
@@ -1818,7 +1817,7 @@ class PlotRR_noQick:
                         qubit_freq_MHz = matched_qspec['qfreq_MHz']
                         qfreq_err = matched_qspec['Qfreq_fit_err']
 
-                        print(f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz:.3f} MHz "
+                        print(f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz} MHz "
                               f"(Δt = {time_diff:.2f} s from filename timestamp)")
 
                     #---------------------------------------------------------------------------------------------
@@ -2925,7 +2924,7 @@ class PlotRR_noQick:
                         qubit_freq_MHz = matched_qspec['qfreq_MHz']
                         qfreq_err = matched_qspec['Qfreq_fit_err']
 
-                        print(f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz:.3f} MHz "
+                        print(f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz} MHz "
                               f"(Δt = {time_diff:.2f} s from filename timestamp)")
 
                     elif date.timestamp() <= cutoff_timestamp and get_data:  # -----this looks through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
@@ -2945,7 +2944,7 @@ class PlotRR_noQick:
                         qubit_freq_MHz = matched_qspec['qfreq_MHz']
                         qfreq_err = matched_qspec['Qfreq_fit_err']
 
-                        print(f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz:.3f} MHz "
+                        print(f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz} MHz "
                               f"(Δt = {time_diff:.2f} s from filename timestamp)")
 
                     # ---------------------------------------------------------------------------------------------
