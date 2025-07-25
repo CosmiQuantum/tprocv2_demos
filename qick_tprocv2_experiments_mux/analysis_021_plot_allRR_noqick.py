@@ -1615,7 +1615,7 @@ class PlotRR_noQick:
     def load_plot_save_res_spec(self):
         # ------------------------------------------Load/Plot/Save Res Spec------------------------------------
         outerFolder_expt = os.path.join(self.outerFolder, "Data_h5")
-
+        print('outerFolder_expt: ', outerFolder_expt)
         #Searches for all .h5 files in the res_ge subdirectory and res subdirectory. Combines them into a single list h5_files.
         h5_files = glob.glob(os.path.join(outerFolder_expt, "res_ge", "*.h5"))
         h5_files += glob.glob(os.path.join(outerFolder_expt, "res", "*.h5"))
