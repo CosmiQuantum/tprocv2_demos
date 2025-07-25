@@ -1163,7 +1163,14 @@ class RPMTempCalcAndPlots:
                         and any(keyword in full_path for keyword in filter_keywords)
                         and (not exclude_temp_sweeps or "temperature_sweep" not in full_path.lower())
                     ):  # checks if path includes each keyword (source_off or source_on) and whether you set the temp sweep data to be excluded or not
-                    optimization_path = os.path.join(full_path, "study_data")
+
+                    if run_num == 7:
+                        optimization_path = os.path.join(full_path, "study_data")
+                    elif run_num == 6:
+                        optimization_path = os.path.join(full_path, "optimization")
+                    else:
+                        raise ValueError("run_num must be 6 or 7 OR you must add an 'if statement' for the run number you want. Specify if RPM data is in optimization OR study_data folder.")
+
                     if os.path.isdir(optimization_path):
                         date_string = d[:10]  # Extract 'YYYY-MM-DD'
                         print(f"Analyzing: {optimization_path}")
