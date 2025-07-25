@@ -19,7 +19,8 @@ from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_name = 'run7/6transmon'
+run_num = 6 # first run with qubits was QUIET run 3, second run with qubits was QUIET run 4, and so forth
+run_name = f'run{run_num}/6transmon'
 signal = 'None' # Do not change
 
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
@@ -39,7 +40,6 @@ tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 run_number = 3 # Starting from first run with qubits: Run 1 = run4a at quiet, run 2 = run5a at quiet, etc
 figure_quality = 200
 Science_Qubits = [0,4] # [0, 1, 2, 3, 4, 5] for run 7, [0, 4] for run 6
-run_num = 6 # first run with qubits was QUIET run 3, second run with qubits was QUIET run 4, and so forth
 
 # What method or methods do you want to use to calculate qubit temperatures?
 qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
