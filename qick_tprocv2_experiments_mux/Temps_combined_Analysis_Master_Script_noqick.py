@@ -124,8 +124,8 @@ london_flags = {"get_qfreqs_resfreqs_qtemps": True}
 #     "2025-05-05",
 #     "2025-05-06"]
 
-# For data during Heater temperature steps, run 6
-target_dates_qtemps_RPM = ["2025-05-07", "2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16"]
+# For data during Heater temperature steps, run 6 (20mK to 160mK)
+target_dates_qtemps_RPM = ["2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14"]
 
 # if you want to look at just one specific date
 # target_dates_qtemps_RPM = ["2025-05-05"]
@@ -153,7 +153,7 @@ outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemp
 # For London Penetration Depth analysis
 outerFolder_london_path = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/London_Penetration_Depth"
 
-filter_keywords = ['source_off', 'source_on'] # set up for RPM measurements. Which data do you want to look at? with source or no source?
+filter_keywords = ['source_off_temperature_sweep'] #['source_off', 'source_on'] # set up for RPM measurements. Which data do you want to look at? with source or no source?
 
 #------------------- For qubit temperature calculations via SSF methods (double gaussian over g-state data and double gaussian over g and e-state data --------------
 # Note: you must write paths in this form: "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_03-03-40"
