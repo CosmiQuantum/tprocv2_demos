@@ -297,7 +297,7 @@ if qtemp_method_flags["combined_studies_qtemps"]:
                                      restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
 
 #################################################### London Penetration Analysis ##########################################################
-if qtemp_method_flags["get_qfreqs_resfreqs_qtemps"]:
+if london_flags["get_qfreqs_resfreqs_qtemps"]:
     #--------------------------------------Get RPM qubit temps, qfreqs and res freqs, etc. -----------------------
     RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs)
     qfreqs_resfreqs_qtemps_data = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal,
