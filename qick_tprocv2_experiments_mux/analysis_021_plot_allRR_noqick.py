@@ -3069,7 +3069,7 @@ class PlotRR_noQick:
                         else:
                             print(f"Skipping Q{q_key + 1} entry because T_err was not calculated successfully.")
 
-            if get_data:
+            if get_data and file_result['qubits']:
                 all_files_qfreqs_resfreqs_qtemps.append(file_result)
 
             del H5_class_instance
