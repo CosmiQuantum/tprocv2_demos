@@ -1688,7 +1688,7 @@ class PlotRR_noQick:
                                 "timestamp": date.timestamp()
                             })
                         else:
-                            print(f"Skipped Q{q_key + 1} in batch {batch_num} fit returned None for ge res spec freq.")
+                            print(f"Skipped Q{q_key + 1} in round {round_num} batch {batch_num}; fit returned None for ge res spec freq.")
 
             del H5_class_instance
         return extracted_resfreqs
