@@ -1622,7 +1622,6 @@ class PlotRR_noQick:
 
         # print(outerFolder_expt)
         extracted_resfreqs =[]
-        print('h5_files: ', h5_files)
         for h5_file in h5_files:
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
             H5_class_instance = Data_H5(h5_file)
@@ -1694,7 +1693,6 @@ class PlotRR_noQick:
                             print(f"Skipped Q{q_key + 1} in batch {batch_num} fit returned None for ge res spec freq.")
 
             del H5_class_instance
-        print('extracted_resfreqs: ', extracted_resfreqs)
         return extracted_resfreqs
 
     def extract_batch_number(self, filename):
@@ -2818,7 +2816,7 @@ class PlotRR_noQick:
         # Index res spec results by timestamp and q_key
         res_spec_by_qkey_and_time = defaultdict(list)
         for entry in extracted_res_spec_results:
-            timestamp = self.extract_timestamp_from_filename(entry['h5_file']).timestamp()
+            timestamp = self.extract_timestamp_from_filename(entry['filename']).timestamp()
             q_key = entry['q_key']
             res_spec_by_qkey_and_time[q_key].append((timestamp, entry))
         # Sort by timestamp for efficient matching
@@ -2831,7 +2829,7 @@ class PlotRR_noQick:
             # Index QSpec results by timestamp and q_key
             qspec_by_qkey_and_time = defaultdict(list)
             for entry in extracted_qspec_results:
-                timestamp = self.extract_timestamp_from_filename(entry['h5_file']).timestamp()
+                timestamp = self.extract_timestamp_from_filename(entry['filename']).timestamp()
                 q_key = entry['q_key']
                 qspec_by_qkey_and_time[q_key].append((timestamp, entry))
             # Sort by timestamp for efficient matching
