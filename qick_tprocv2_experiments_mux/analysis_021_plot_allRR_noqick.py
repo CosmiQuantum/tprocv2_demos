@@ -1650,8 +1650,7 @@ class PlotRR_noQick:
                     freq_pts = self.process_h5_data(load_data['res_ge'][q_key].get('freq_pts', [])[0][
                                                         dataset].decode())  # comes in as an array but put into a byte string, need to convert to list
 
-                    freq_center = self.process_h5_data(load_data['res_ge'][q_key].get('freq_center', [])[0][
-                                                           dataset].decode())  # comes in as an array but put into a string, need to convert to list
+                    freq_center = self.process_h5_data(load_data['res_ge'][q_key].get('freq_center', [])[0][dataset].decode())  # comes in as an array but put into a string, need to convert to list
                     freqs_found = self.string_to_float_list(load_data['res_ge'][q_key].get('Found Freqs', [])[0][dataset].decode())  # comes in as a list of floats in string format, need to convert
                     amps = self.process_string_of_nested_lists(
                         load_data['res_ge'][q_key].get('Amps', [])[0][dataset].decode())  # list of lists
@@ -2893,7 +2892,7 @@ class PlotRR_noQick:
 
                         res_freq_MHz = matched_res_spec['resfreq_MHz']
 
-                        print(f"Matched res spec for Q{q_key + 1}: {res_freq_MHz} MHz "
+                        print(f"\n Matched res spec for Q{q_key + 1}: {res_freq_MHz} MHz "
                               f"(Δt = {time_diff:.2f} s from filename timestamp)")
 
                     # -----------------------Grabbing matching qubit frequency for this qubit---------------------------------
@@ -2903,7 +2902,7 @@ class PlotRR_noQick:
                         # The line below extracts the qfreq saved in each rabi pop. meas. file, but it does not extract the error of the qspec fit because that was not saved in the h5 files.
                         qubit_freq_MHz_rpmfile = load_data['q_temperatures'][q_key].get('Qfreq_ge', [])[0][
                             dataset]  # extract to compare with the 'matching' method
-                        print(f"\n QSpec from RPM file for Q{q_key + 1}: {qubit_freq_MHz_rpmfile} MHz)")  # print to compare
+                        print(f"QSpec from RPM file for Q{q_key + 1}: {qubit_freq_MHz_rpmfile} MHz)")  # print to compare
 
                         # Get qspec candidates for this qubit
                         qspec_entries = qspec_by_qkey_and_time.get(q_key, [])
