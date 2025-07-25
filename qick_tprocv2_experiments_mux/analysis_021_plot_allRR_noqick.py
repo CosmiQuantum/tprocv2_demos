@@ -1794,18 +1794,13 @@ class PlotRR_noQick:
                         # closest_match[1] is the actual QSpec result dictionary with keys
 
                         time_diff = abs(closest_match[0] - file_timestamp)
-                        tolerance_seconds = 10  # You can adjust this
+                        matched_qspec = closest_match[1]  # dictionary containing qspec and its err
 
-                        if time_diff <= tolerance_seconds:
-                            matched_qspec = closest_match[1]
-                            qubit_freq_MHz = matched_qspec['qfreq_MHz']
-                            qfreq_err = matched_qspec['Qfreq_fit_err']
+                        qubit_freq_MHz = matched_qspec['qfreq_MHz']
+                        qfreq_err = matched_qspec['Qfreq_fit_err']
 
-                            print(f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz:.3f} MHz "
-                                f"(Δt = {time_diff:.2f} s from filename timestamp)")
-                        else:
-                            print(f"No close-enough QSpec match for Q{q_key + 1}. "f"Closest Δt = {time_diff:.2f} s")
-                            continue
+                        print(f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz:.3f} MHz "
+                              f"(Δt = {time_diff:.2f} s from filename timestamp)")
 
                     elif date.timestamp() <= cutoff_timestamp and get_qtemp_data: #-----this looks through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
                         # Get qspec candidates for this qubit
@@ -1819,18 +1814,13 @@ class PlotRR_noQick:
                         closest_match = min(qspec_entries,key=lambda pair: abs(pair[0] - file_timestamp))  # pair[0] is timestamp from qspec filename (the first element in each tuple)
 
                         time_diff = abs(closest_match[0] - file_timestamp)
-                        tolerance_seconds = 10  # You can adjust this
+                        matched_qspec = closest_match[1]  # dictionary containing qspec and its err
 
-                        if time_diff <= tolerance_seconds:
-                            matched_qspec = closest_match[1]
-                            qubit_freq_MHz = matched_qspec['qfreq_MHz']
-                            qfreq_err = matched_qspec['Qfreq_fit_err']
+                        qubit_freq_MHz = matched_qspec['qfreq_MHz']
+                        qfreq_err = matched_qspec['Qfreq_fit_err']
 
-                            print(f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz:.3f} MHz "
-                                f"(Δt = {time_diff:.2f} s from filename timestamp)")
-                        else:
-                            print(f"No close-enough QSpec match for Q{q_key + 1}. "f"Closest Δt = {time_diff:.2f} s")
-                            continue
+                        print(f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz:.3f} MHz "
+                              f"(Δt = {time_diff:.2f} s from filename timestamp)")
 
                     #---------------------------------------------------------------------------------------------
 
@@ -1879,7 +1869,7 @@ class PlotRR_noQick:
                         results = self.Qubit_Temperature_Convert(A_e, A_g, qubit_freq_MHz)
                         if results is None:
                             continue  # Skip this dataset
-                        T_K, T_mK, P_e, qubit_freq = results
+                        T_K, T_mK, P_e, qubit_freq_MHz = results
                         print(f"Q{q_key + 1} calculated Temperature:{T_mK}, with P_e = {P_e}, and Qfreq {qubit_freq_MHz} MHz")
 
                         # Compute propagated 1-sigma error (std) on T_mK
@@ -1889,7 +1879,7 @@ class PlotRR_noQick:
                                 A2=A_amplitude2,
                                 Pe=P_e,
                                 T_mK=T_mK,
-                                qubit_freq_MHz=qubit_freq,
+                                qubit_freq_MHz=qubit_freq_MHz,
                                 sigma_A1=A_amplitude_err1,
                                 sigma_A2=A_amplitude_err2,
                                 sigma_qfreq_MHz=qfreq_err
@@ -1907,8 +1897,8 @@ class PlotRR_noQick:
                                 'T_mK': T_mK,
                                 'T_mK_err': T_err,
                                 'P_e': P_e,
-                                'qubit_freq_MHz': qubit_freq,
-                                "Qfreq_fit_err" : qfreq_err,
+                                'qubit_freq_MHz': qubit_freq_MHz,
+                                "Qfreq_fit_err" : qfreq_err, #MHz
                                 'date': date.timestamp(),
                                 'filepath': h5_file}
                         else:
@@ -2837,14 +2827,12 @@ class PlotRR_noQick:
         # Extract Qubit Spectroscopy Data and sort by qubit index (starts at zero) and time stamp in the file name
             # This function returns a list of dicts with keys like 'h5_file', 'q_key', 'qfreq_MHz', 'Qfreq_fit_err', etc.
             extracted_qspec_results = self.load_plot_save_q_spec()
-
             # Index QSpec results by timestamp and q_key
             qspec_by_qkey_and_time = defaultdict(list)
             for entry in extracted_qspec_results:
                 timestamp = self.extract_timestamp_from_filename(entry['h5_file']).timestamp()
                 q_key = entry['q_key']
                 qspec_by_qkey_and_time[q_key].append((timestamp, entry))
-
             # Sort by timestamp for efficient matching
             for qkey in qspec_by_qkey_and_time:
                 qspec_by_qkey_and_time[qkey].sort()
@@ -2899,20 +2887,16 @@ class PlotRR_noQick:
                             continue
 
                         # Find closest match in timestamp from filename
-                        closest_match = min(res_spec_entries, key=lambda pair: abs(pair[0] - file_timestamp))  # pair[0] is timestamp from res spec filename (the first element in each tuple)
+                        # closest_match[0] is the timestamp, closest_match[1] is the dictionary.
+                        closest_res_match = min(res_spec_entries, key=lambda pair: abs(pair[0] - file_timestamp))  # pair[0] is timestamp from res spec filename (the first element in each tuple)
 
-                        time_diff = abs(closest_match[0] - file_timestamp)
-                        tolerance_seconds = 10  # You can adjust this
+                        time_diff = abs(closest_res_match[0] - file_timestamp)
+                        matched_res_spec = closest_res_match[1] # dictionary containing res spec
 
-                        if time_diff <= tolerance_seconds:
-                            matched_res_spec = closest_match[1]
-                            res_freq_MHz = matched_res_spec['resfreq_MHz']
+                        res_freq_MHz = matched_res_spec['resfreq_MHz']
 
-                            print(f"Matched res spec for Q{q_key + 1}: {res_freq_MHz:.3f} MHz "
-                                  f"(Δt = {time_diff:.2f} s from filename timestamp)")
-                        else:
-                            print(f"No close-enough res spec match for Q{q_key + 1}. "f"Closest Δt = {time_diff:.2f} s")
-                            continue
+                        print(f"Matched res spec for Q{q_key + 1}: {res_freq_MHz} MHz "
+                              f"(Δt = {time_diff:.2f} s from filename timestamp)")
 
                     # -----------------------Grabbing matching qubit frequency for this qubit---------------------------------
                     if date.timestamp() > cutoff_timestamp and get_data:
@@ -2921,8 +2905,7 @@ class PlotRR_noQick:
                         # The line below extracts the qfreq saved in each rabi pop. meas. file, but it does not extract the error of the qspec fit because that was not saved in the h5 files.
                         qubit_freq_MHz_rpmfile = load_data['q_temperatures'][q_key].get('Qfreq_ge', [])[0][
                             dataset]  # extract to compare with the 'matching' method
-                        print(
-                            f"\n QSpec from RPM file for Q{q_key + 1}: {qubit_freq_MHz_rpmfile} MHz)")  # print to compare
+                        print(f"\n QSpec from RPM file for Q{q_key + 1}: {qubit_freq_MHz_rpmfile} MHz)")  # print to compare
 
                         # Get qspec candidates for this qubit
                         qspec_entries = qspec_by_qkey_and_time.get(q_key, [])
@@ -2932,26 +2915,19 @@ class PlotRR_noQick:
                             continue
 
                         # Find closest match in timestamp from filename
-                        closest_match = min(qspec_entries, key=lambda pair: abs(pair[
-                                                                                    0] - file_timestamp))  # pair[0] is timestamp from qspec filename. pair = (timestamp, qspec_dict) and it is defined in this line
+                        closest_match = min(qspec_entries, key=lambda pair: abs(pair[0] - file_timestamp))  # pair[0] is timestamp from qspec filename. pair = (timestamp, qspec_dict) and it is defined in this line
                         # Note: closest_match = (timestamp_from_filename, qspec_entry_dict)
                         # closest_match[0] is timestamp_from_filename (a float, in seconds since epoch)
                         # closest_match[1] is the actual QSpec result dictionary with keys
 
                         time_diff = abs(closest_match[0] - file_timestamp)
-                        tolerance_seconds = 10  # You can adjust this
+                        matched_qspec = closest_match[1] # dictionary containing qspec and its err
 
-                        if time_diff <= tolerance_seconds:
-                            matched_qspec = closest_match[1]
-                            qubit_freq_MHz = matched_qspec['qfreq_MHz']
-                            qfreq_err = matched_qspec['Qfreq_fit_err']
+                        qubit_freq_MHz = matched_qspec['qfreq_MHz']
+                        qfreq_err = matched_qspec['Qfreq_fit_err']
 
-                            print(f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz:.3f} MHz "
-                                  f"(Δt = {time_diff:.2f} s from filename timestamp)")
-                        else:
-                            print(
-                                f"No close-enough QSpec match for Q{q_key + 1}. "f"Closest Δt = {time_diff:.2f} s")
-                            continue
+                        print(f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz:.3f} MHz "
+                              f"(Δt = {time_diff:.2f} s from filename timestamp)")
 
                     elif date.timestamp() <= cutoff_timestamp and get_data:  # -----this looks through matching qspec file ONLY, does not extract qfreq from RPM h5 file----
                         # Get qspec candidates for this qubit
@@ -2962,23 +2938,16 @@ class PlotRR_noQick:
                             continue
 
                         # Find closest match in timestamp from filename
-                        closest_match = min(qspec_entries, key=lambda pair: abs(pair[
-                                                                                    0] - file_timestamp))  # pair[0] is timestamp from qspec filename (the first element in each tuple)
+                        closest_match = min(qspec_entries, key=lambda pair: abs(pair[0] - file_timestamp))  # pair[0] is timestamp from qspec filename (the first element in each tuple)
 
                         time_diff = abs(closest_match[0] - file_timestamp)
-                        tolerance_seconds = 10  # You can adjust this
+                        matched_qspec = closest_match[1] # dictionary containing qspec and its err
 
-                        if time_diff <= tolerance_seconds:
-                            matched_qspec = closest_match[1]
-                            qubit_freq_MHz = matched_qspec['qfreq_MHz']
-                            qfreq_err = matched_qspec['Qfreq_fit_err']
+                        qubit_freq_MHz = matched_qspec['qfreq_MHz']
+                        qfreq_err = matched_qspec['Qfreq_fit_err']
 
-                            print(f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz:.3f} MHz "
-                                  f"(Δt = {time_diff:.2f} s from filename timestamp)")
-                        else:
-                            print(
-                                f"No close-enough QSpec match for Q{q_key + 1}. "f"Closest Δt = {time_diff:.2f} s")
-                            continue
+                        print(f"Matched QSpec for Q{q_key + 1}: {qubit_freq_MHz:.3f} MHz "
+                              f"(Δt = {time_diff:.2f} s from filename timestamp)")
 
                     # ---------------------------------------------------------------------------------------------
 
@@ -3032,7 +3001,7 @@ class PlotRR_noQick:
                         results = self.Qubit_Temperature_Convert(A_e, A_g, qubit_freq_MHz)
                         if results is None:
                             continue  # Skip this dataset
-                        T_K, T_mK, P_e, qubit_freq = results
+                        T_K, T_mK, P_e, qubit_freq_MHz = results
                         print(
                             f"Q{q_key + 1} calculated Temperature:{T_mK}, with P_e = {P_e}, and Qfreq {qubit_freq_MHz} MHz")
 
@@ -3043,7 +3012,7 @@ class PlotRR_noQick:
                                 A2=A_amplitude2,
                                 Pe=P_e,
                                 T_mK=T_mK,
-                                qubit_freq_MHz=qubit_freq,
+                                qubit_freq_MHz=qubit_freq_MHz,
                                 sigma_A1=A_amplitude_err1,
                                 sigma_A2=A_amplitude_err2,
                                 sigma_qfreq_MHz=qfreq_err
@@ -3052,7 +3021,7 @@ class PlotRR_noQick:
                             print(f"Error computing T_err for Q{q_key + 1}: {e}")
                             continue
 
-                        if T_err is not None and qubit_freq is not None and res_freq_MHz is not None : # You're accessing the 'qubits' dictionary inside file_result and adding info for the qubit
+                        if T_err is not None and qubit_freq_MHz is not None and res_freq_MHz is not None : # You're accessing the 'qubits' dictionary inside file_result and adding info for the qubit
                             file_result['qubits'][int(q_key)] = { # qubits index starts at zero
                                 'A1': A_amplitude1,
                                 'A1_err': A_amplitude_err1,
@@ -3061,7 +3030,7 @@ class PlotRR_noQick:
                                 'T_mK': T_mK,
                                 'T_mK_err': T_err,
                                 'P_e': P_e,
-                                'qubit_freq_MHz': qubit_freq,
+                                'qubit_freq_MHz': qubit_freq_MHz,
                                 "Qfreq_fit_err": qfreq_err,
                                 "res_freq_MHz": res_freq_MHz,
                                 'date': date.timestamp(),
