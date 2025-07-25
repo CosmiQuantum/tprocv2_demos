@@ -1622,7 +1622,7 @@ class PlotRR_noQick:
 
         # print(outerFolder_expt)
         extracted_resfreqs =[]
-
+        print('h5_files: ', h5_files)
         for h5_file in h5_files:
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
             H5_class_instance = Data_H5(h5_file)
