@@ -3051,7 +3051,7 @@ class PlotRR_noQick:
         from datetime import datetime
         os.makedirs(output_folder_path, exist_ok=True)
         rows = []
-        print(all_files_qfreqs_resfreqs_qtemps)
+
         for file_result in all_files_qfreqs_resfreqs_qtemps:
             for q_key, data in file_result.get("qubits", {}).items():
                 rows.append({
