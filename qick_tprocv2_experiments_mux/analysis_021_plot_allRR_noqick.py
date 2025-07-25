@@ -1694,6 +1694,7 @@ class PlotRR_noQick:
                             print(f"Skipped Q{q_key + 1} in batch {batch_num} fit returned None for ge res spec freq.")
 
             del H5_class_instance
+        print('extracted_resfreqs: ', extracted_resfreqs)
         return extracted_resfreqs
 
     def extract_batch_number(self, filename):
