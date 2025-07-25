@@ -29,7 +29,8 @@ save_figs = False # To be used in general for any function or class to saver (or
 fit_saved = False # Not used here, set to false.
 exclude_temp_sweeps = False # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
 
-get_qtemp_data = True # Do you want to calculate qubit temperatures?
+get_qtemp_data = False # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
+get_london_data = True # This returns RPM qubit temperatures, resonator freqs, and qubit freqs for specified dates. Designed for London Penetration analysis.
 
 figure_quality = 200
 theta = 0
@@ -41,7 +42,7 @@ Science_Qubits = [0,4] # [0, 1, 2, 3, 4, 5] for run 7, [0, 4] for run 6
 run_num = 6 # first run with qubits was QUIET run 3, second run with qubits was QUIET run 4, and so forth
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
                       "combined_studies_qtemps": False}
 
 # What analysis plots do you want to make?
@@ -51,6 +52,9 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
 # For combined analysis
 comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
                        "Pe_vs_time_comb_single_plt": False }
+
+# For London Penetration Depth analysis
+london_flags = {"get_qfreqs_resfreqs_qtemps": True}
 ############################################################################## Set up ##############################################################################
 #-------------------------------------------- For qubit temperature calculations via rabi population measurements ---------------------------------------------------
 # Specify which dates you want to loop through. It will process all the files inside all the folders that contain these dates in their title.
@@ -146,6 +150,9 @@ outerFolder_qtemps_plots_RR = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QT
 # For RPM Analysis
 outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots" # Inside each analysis function, a subfolder will be defined
 
+# For London Penetration Depth analysis
+outerFolder_london_path = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/London_Penetration_Depth"
+
 filter_keywords = ['source_off', 'source_on'] # set up for RPM measurements. Which data do you want to look at? with source or no source?
 
 #------------------- For qubit temperature calculations via SSF methods (double gaussian over g-state data and double gaussian over g and e-state data --------------
@@ -162,7 +169,7 @@ paths_SSFmethods = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Compreh
 if qtemp_method_flags["Qtemps_viaRPM"]:
     RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs)
     combined_qtemp_data = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
-                            outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, figure_quality, save_figsRR, exclude_temp_sweeps)
+                            outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps)
     del RPM_calcs
     #----------------------------------------------------------------------- RPM Analysis -------------------------------------------------------------------------
     # These are not used in the definitions that follow, are just needed to re-initialize the class
@@ -288,3 +295,20 @@ if qtemp_method_flags["combined_studies_qtemps"]:
         # Plots two rows (one for each qubit) and 1 column (all methods in a single plot)
         combined_studies.Pe_vs_time_comb_2subplts(all_files_Qtemp_results_RPMs, fit_results_g, fit_results_ge, outerFolder_qtemps_plots,
                                      restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
+
+#################################################### London Penetration Analysis ##########################################################
+if qtemp_method_flags["get_qfreqs_resfreqs_qtemps"]:
+    #--------------------------------------Get RPM qubit temps, qfreqs and res freqs, etc. -----------------------
+    RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs)
+    qfreqs_resfreqs_qtemps_data = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal,
+                                                  run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
+                                                  outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data,
+                                                  figure_quality, save_figsRR, exclude_temp_sweeps)
+    # ----------------------------Dump RPM qubit temps, qfreqs and res freqs, etc in excel spreadhseet -----------------------
+    # These are not used in the definitions that follow, are just needed to re-initialize the class
+    outerFolder = ""
+    outerFolder_qtemps_data = ""
+    date_string = ""
+    RPM_plotter = PlotRR_noQick(date_string, figure_quality, save_figs, fit_saved, signal, run_name, tot_num_of_qubits, outerFolder, outerFolder_qtemps_plots, outerFolder_qtemps_data)
+    RPM_plotter.save_RPM_qtemp_data_to_excel(qfreqs_resfreqs_qtemps_data, outerFolder_london_path, run_num, FRIDGE)
+    del RPM_calcs

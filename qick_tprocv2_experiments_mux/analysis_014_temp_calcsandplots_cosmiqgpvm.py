@@ -1144,14 +1144,14 @@ class RPMTempCalcAndPlots:
         self.number_of_qubits = number_of_qubits
 
     def run_RPMqtemps(self, base_dir, target_dates, filter_keywords, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
-                     outerFolder_RR_plots, replot_RPMs = False, get_qtemp_data = False, figure_quality = 200, save_figsRR = False, exclude_temp_sweeps = False):
+                     outerFolder_RR_plots, replot_RPMs = False, get_qtemp_data = False, get_london_data = False, figure_quality = 200, save_figsRR = False, exclude_temp_sweeps = False):
 
         combined_qtemp_data = []  # list of results from different .h5 files
 
         os.makedirs(outerFolder_RR_plots, exist_ok=True)
 
         #------------------------------------------ Looping through data folders and files -------------------------------------------------------
-        # Note: this is tailored for how things are organized in cosmiqgpvm02
+        # Note: this is tailored for how files are organized by ryan for QUIET
         for root, dirs, files in os.walk(base_dir):
             dirs.sort()  # alphabetical → chronological for YYYY-MM-DD_HH-MM-SS
             for d in dirs:
@@ -1183,12 +1183,17 @@ class RPMTempCalcAndPlots:
                             plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_ss = False,  ss_plot_gef = False, plot_t1 = False,
                                         plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = True)
 
-                        if get_qtemp_data:
+                        if get_qtemp_data: # returns RPM qubit temperature data (and qfreqs that were used for the calculations)
                             # ---------------------------------------- Load data and append to list spanning multiple dates --------------------------------------------------
                             qtemp_data = plotter.load_plot_save_rabis_Qtemps(list_of_all_qubits, run_num, save_figs = False, get_qtemp_data = get_qtemp_data)
                             combined_qtemp_data.extend(qtemp_data)
 
-        return combined_qtemp_data # Will be empty if get_qtemp_data is set to False
+                        if get_london_data: # returns RPM qubit temperature data, qfreqs that were used to calculate the temps, and resonator freqs
+                            # ---------------------------------------- Load data and append to list spanning multiple dates --------------------------------------------------
+                            london_data = plotter.load_qfreqs_resfreqs_qtemps(list_of_all_qubits, run_num, save_figs = False, get_data = get_london_data)
+                            combined_qtemp_data.extend(london_data)
+
+        return combined_qtemp_data # Will be empty if get_qtemp_data or get_london_data are set to False
 
 
 class combined_Qtemp_studies:
