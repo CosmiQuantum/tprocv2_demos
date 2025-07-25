@@ -1608,11 +1608,11 @@ class PlotRR_noQick:
 
 
             del H5_class_instance
-        print(extracted_qfreqs)
+        # print(extracted_qfreqs)
         return extracted_qfreqs
 
     #
-    def load_plot_save_res_spec(self):
+    def load_plot_save_res_spec(self, run_num):
         # ------------------------------------------Load/Plot/Save Res Spec------------------------------------
         outerFolder_expt = os.path.join(self.outerFolder, "Data_h5")
 
@@ -1694,6 +1694,7 @@ class PlotRR_noQick:
                             print(f"Skipped Q{q_key + 1} in batch {batch_num} fit returned None for ge res spec freq.")
 
             del H5_class_instance
+        return extracted_resfreqs
 
     def extract_batch_number(self, filename):
         match = re.search(r'batch_(\d+)', filename)

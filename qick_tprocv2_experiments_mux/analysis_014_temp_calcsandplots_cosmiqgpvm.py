@@ -1152,7 +1152,7 @@ class RPMTempCalcAndPlots:
 
         #------------------------------------------ Looping through data folders and files -------------------------------------------------------
         # Note: this is tailored for how files are organized by ryan for QUIET
-        for root, dirs, files in os.walk(base_dir):
+        for root, dirs, _ in os.walk(base_dir): # root = substudy, dirs = date folder
             dirs.sort()  # alphabetical → chronological for YYYY-MM-DD_HH-MM-SS
             for d in dirs:
                 full_path = os.path.join(root, d)
