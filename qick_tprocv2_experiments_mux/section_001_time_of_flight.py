@@ -39,7 +39,7 @@ class TOFExperiment:
                 self.declare_gen(
                     ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
                     mux_freqs=[f+1 for f in cfg['res_freq_ge']],
-                    mux_gains=[1,0,0,0,0,0],#cfg['res_gain_ge'], #[1,0,0,0,0,0]
+                    mux_gains= cfg['res_gain_ge'], #[1,0,0,0,0,0],#cfg['res_gain_ge'], #[1,0,0,0,0,0]
                     mux_phases=cfg['res_phase'],
                     mixer_freq=cfg['mixer_freq']
                 )
@@ -51,7 +51,7 @@ class TOFExperiment:
                 self.add_pulse(
                     ch=gen_ch, name="mymux",
                     style="const",
-                    length=9,#cfg["res_length"],
+                    length=cfg["res_length"],
                     mask=cfg["list_of_all_qubits"],
                 )
 
@@ -91,7 +91,7 @@ class TOFExperiment:
             plot.legend()
             plot.set_ylabel("a.u.")
             plot.set_xlabel("us")
-            plot.axvline(0.75, c='r')
+            plot.axvline(0.6, c='r')
 
             phase_offset = np.angle(iq_list[i].dot([1, 1j]).sum(), deg=True)
             # print("measured phase %f degrees" % (phase_offset))

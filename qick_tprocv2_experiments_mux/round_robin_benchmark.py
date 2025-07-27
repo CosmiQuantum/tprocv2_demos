@@ -30,7 +30,7 @@ from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 
 ################################################ Run Configurations ####################################################
-n= 1#30
+n= 10000
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
@@ -42,26 +42,26 @@ fit_data = False                     # fit the data here and save or plot the fi
 save_data_h5 = True                  # save all of the data to h5 files?
 verbose = False                      # print everything to the console in real time, good for debugging, bad for memory
 qick_verbose = True                 # qick verbose prints the progress bar for each qick experiment as it is happening (the red bar that fills out as more experiment rounds/reps are being done)
-debug_mode = True                   # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
+debug_mode = False                   # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 thresholding = False                 # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 increase_qubit_reps = False          # if you want to increase the reps for a qubit, set to True
 unmask = True                          # Do you want to use the unmasking feature to increase resonator gain?
 qubit_to_increase_reps_for = 0       # only has impact if previous line is True
 multiply_qubit_reps_by = 2           # only has impact if the line two above is True
-Qs_to_look_at = [2]#[0,1,2,3,4,5]       # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,3,4,5]#,1,2,3,4,5]       # only list the qubits you want to do the RR for
 
 #Data saving info
 run_name = 'run7'
 device_name = '6transmon'
 substudy_txt_notes = ('Normal Round Robin during cooldown, now everything works properly, set debug to false to run '
-                      'overnight and running in terminal with repeater script')
+                      'overFalsenight and running in terminal with repeater script')
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": True, "q_spec": False, "ss": False, "rabi": False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False, "rabi_pop_meas": False, "ef_ss":False}
-# optimization outputs
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True,
+             "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True, "rabi_pop_meas": True, "ef_ss": False}
+# optimization outputs from qick board, unmasking set to true
 res_leng_vals = [4.1, 4.0, 3.5, 6.0, 3.5, 4.1]
-res_gain = [0.3353, 0.3824, 0.2882, 0.1167, 0.3824, 0.1941]
+res_gain = [0.3353, 0.3824, 0.2882, 0.4, 0.3824, 0.5]
 freq_offsets = [-0.024, -0.024, -0.168, 0.1167, -0.168, -0.072]
 
 qubit_freqs_ef = [None]*6
@@ -73,7 +73,7 @@ figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 #Folders
 study = 'round_robin_benchmark'
-sub_study = 'junkyard'#'AB_tests_data'
+sub_study = 'temperature_sweep'#'AB_tests_data'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -143,7 +143,7 @@ rabi_keys_ef_Qtemps = ['Dates', 'Qfreq_ge', 'I1', 'Q1', 'Gains1', 'Fit1', 'I2', 
 
 #initialize a simple list to store the qspec values in incase a fit fails
 stored_qspec_list = [None] * tot_num_of_qubits
-
+True
 if live_plot:
     # Check if visdom is connected right away, otherwise, throw an error
     if not (viz := visdom.Visdom()).check_connection(timeout_seconds=5):
@@ -403,8 +403,8 @@ while j < n:
         recycled_qfreq = False
 
         #Get the config for this qubit
-        experiment = QICK_experiment(optimizationFolder, DAC_attenuator1 = 10, DAC_attenuator2 = 10, qubit_DAC_attenuator1 = 5,
-                                     qubit_DAC_attenuator2 = 4, ADC_attenuator = 18, fridge=FRIDGE) # ADC_attenuator MUST be above 16dB
+        experiment = QICK_experiment(optimizationFolder, DAC_attenuator1 = 10, DAC_attenuator2 = 15, qubit_DAC_attenuator1 = 5,
+                                     qubit_DAC_attenuator2 = 4, ADC_attenuator = 17, fridge=FRIDGE) # ADC_attenuator MUST be above 16dB
         experiment.create_folder_if_not_exists(optimizationFolder)
 
         #Mask out all other resonators except this one
@@ -837,7 +837,7 @@ while j < n:
                 ef_res_data[QubitIndex]['freq_center'][0] = ef_freq_center
                 ef_res_data[QubitIndex]['Amps'][0] = ef_amps
                 ef_res_data[QubitIndex]['Found Freqs'][0] = ef_res_freqs
-                ef_res_data[QubitIndex]['Round Num'][0] = sample
+                ef_res_data[QubitIndex]['Round Num'][0] = j
                 ef_res_data[QubitIndex]['Batch Num'][0] = batch_num
                 ef_res_data[QubitIndex]['Exp Config'][0] = expt_cfg
                 ef_res_data[QubitIndex]['Syst Config'][0] = sys_config_rspec_ef
@@ -851,7 +851,7 @@ while j < n:
                 ef_qspec_data[QubitIndex]['Frequencies'][0] = efqspec_freqs
                 ef_qspec_data[QubitIndex]['I Fit'][0] = efqspec_I_fit
                 ef_qspec_data[QubitIndex]['Q Fit'][0] = efqspec_Q_fit
-                ef_qspec_data[QubitIndex]['Round Num'][0] = 0
+                ef_qspec_data[QubitIndex]['Round Num'][0] = j
                 ef_qspec_data[QubitIndex]['Batch Num'][0] = batch_num
                 ef_qspec_data[QubitIndex]['Recycled QFreq'][0] = False  # no rr so no recycling here
                 ef_qspec_data[QubitIndex]['Exp Config'][0] = expt_cfg

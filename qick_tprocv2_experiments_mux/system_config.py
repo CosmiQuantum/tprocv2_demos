@@ -12,7 +12,7 @@ import numpy as np
 #DAC_attenuator1 and 2 are for the resonators
 #qubit_DAC_attenuator1 and 2 are for the qubits
 class QICK_experiment:
-    def __init__(self, folder, DAC_attenuator1 = 5, DAC_attenuator2 = 15, qubit_DAC_attenuator1 = 5 , qubit_DAC_attenuator2 = 4 ,ADC_attenuator = 18, fridge = None):
+    def __init__(self, folder, DAC_attenuator1 = 15, DAC_attenuator2 = 15, qubit_DAC_attenuator1 = 5 , qubit_DAC_attenuator2 = 4 ,ADC_attenuator = 18, fridge = None):
         if fridge == "QUIET":
             # Where do you want to save data
             self.outerFolder = folder
@@ -33,20 +33,19 @@ class QICK_experiment:
             self.FSGEN_AMPL_CH = 2
             self.MIXMUXGEN_CH = 4 # Readout resonator DAC channel
             self.MUXRO_CH = [2, 3, 4, 5, 6, 7]
-            self.MUXRO_CH_RF = 5  # New variable that we need for QICK box
 
             ### NEW for the RF board
             self.qubit_center_freq = 4400  # To be in the middle of the qubit freqs.
             self.res_center_freq = 6330  # To be in the middle of the res freqs. 3000-5000 see nothing,6000 and 7000 see something, 8000+ see nothing
             self.soc.rfb_set_gen_filter(self.MIXMUXGEN_CH, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0)
-            self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.0)
-            self.soc.rfb_set_ro_filter(self.MUXRO_CH_RF, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0) #readout ADC
+            self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.0) # change to 2 in futrue tests
+            self.soc.rfb_set_ro_filter(self.MUXRO_CH[0], fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0) #readout ADC
             # Set attenuator on DAC.
             self.soc.rfb_set_gen_rf(self.MIXMUXGEN_CH, self.DAC_attenuator1, self.DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
             self.soc.rfb_set_gen_rf(self.FSGEN_CH, self.qubit_DAC_attenuator1, self.qubit_DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
             # Set attenuator on ADC.
             ### IMPORTANT: set this to 30 and you get 60 dB of warm gain. Set to 0 and you get 90 dB of warm gain
-            self.soc.rfb_set_ro_rf(self.MUXRO_CH_RF, self.ADC_attenuator)  # Verified 30->25 see increased gain in loopback
+            self.soc.rfb_set_ro_rf(self.MUXRO_CH[0], self.ADC_attenuator)  # Verified 30->25 see increased gain in loopback
 
 
             # Qubit you want to work with
@@ -68,14 +67,15 @@ class QICK_experiment:
 
             # Readout Configuration
             self.readout_cfg = {
-                "trig_time": 0.75,  # [Clock ticks] - get this value from TOF experiment
+                "trig_time": 0.6,  # [Clock ticks] - get this value from TOF experiment (updated by Sara July 22 2025 QICK box)
 
                 # Changes related to the resonator output channel
                 "mixer_freq": 6000,  # [MHz]
                 #"res_freq_ge": [6217, 6276, 6335, 6407, 6476, 6538],  # MHz, run 5
                 #'res_freq_ge': [6217.011, 6275.7973, 6335.1068, 6407.052, 6476.1091, 6538], # Arianna 3/27/
                 #'res_freq_ge': [6216.811, 6275.9373, 6335, 6407.0338, 6475.8835, 6538], #Joyce 3/11
-                'res_freq_ge': [6216.79738, 6277.9, 6343.95, 6408.0338, 6474.5, 6540.7], #updated by olivia for run 7
+                'res_freq_ge': [6223.097, 6284.55, 6343.95, 6414.934, 6414.910, 6547.25], #updated by Kester for run 7, Qick board, 6418.4 R5
+                #'res_freq_ge': [6219.097, 6284.55, 6343.95, 6414.934, 6418.4, 6547.25],  # updated by Kester for run 7, QICK box
 
                 # "res_freq_ge": [6191.419, 6216.1, 6292.361, 6405.77, 6432.759, 6468.481],  # MHz, run 4a
                 # "res_gain_ge": [1] + [0]*5,
@@ -89,7 +89,7 @@ class QICK_experiment:
                 "res_gain_ef": [0.96, 1, 0.7200, 0.5333, 0.8000, 0.55],  # [DAC units]
                 "res_freq_fh": [6216.798, 6275.8973, 6335, 6407.132, 6476.0891, 6538],  # [MHz]
                 "res_gain_fh": [0.96, 1, 0.7200, 0.5333, 0.8000, 0.55],  # [DAC units]
-                "res_length": 9.0,  # [us] (1.0 for res spec)
+                "res_length": 2.0,  # [us] (1.0 for res spec)
                 "res_phase": [ 1.281174 * 180/np.pi, -10, 85,
                               0, 150,
                             -90], #Joyce 3/11
@@ -105,7 +105,7 @@ class QICK_experiment:
 
             # Qubit Configuration
             self.qubit_cfg = {
-                "qubit_freq_ge": [4189.8773, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86],  # Joyce 3/11
+                "qubit_freq_ge": [4189.8773, 3820.4723, 4161.3726, 4463.15226, 4467.23, 5006.14],  # Joyce 3/11
                 "qubit_freq_chevron_detuned_ge": [4189.7582, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86], # Olivia May 17
                 "qubit_freq_ge_starked": [4189.737678, 3820.4723, 4161.3726, 4463.15226, 4471.4469, 4997.86], # Olivia 4/04 for zeno/stark tone
                 "fwhm_w01_starked": None, #for err bars
@@ -114,7 +114,7 @@ class QICK_experiment:
                 #"qubit_freq_ge": [4184.14, 3821.144, 4156.57, 4459.19, 4471.12, 4997.86], #old
                 #"qubit_freq_ge": [4184.13, 3821.142, 4156.58, 4459.19, 4471.10, 4997.87], #old
                 #"qubit_freq_ge": [4184.15, 3821.156, 4156.88, 4459.12, 4471.18, 4998.04],  # Freqs of Qubit g/e Transition, old
-                "qubit_gain_ge": [0.1, 0.1, 0.1, 0.1, 0.1, 0.09],#[0.04, 0.12, 0.06, 0.04, 0.13, 0.18],#[0.05] * 6, #[1] * 6,
+                "qubit_gain_ge": [0.02, 0.02, 0.02, 0.05, 0.05, 0.11],#[0.04, 0.12, 0.06, 0.04, 0.13, 0.18],#[0.05] * 6, #[1] * 6,
                 "qubit_ampl_gain_ge": [0.025] *6,
                 "qubit_pi_len": 0.11, # Olivia May 17th
                 # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
@@ -122,7 +122,7 @@ class QICK_experiment:
                 "qubit_freq_ef": [4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17], #Q4 not fixed, looks like it shifted quite a lot
                 # [MHz] Freqs of Qubit e/f Transition
                 "qubit_freq_ftores": [4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17],
-                "qubit_gain_ef": [0.03, 0.14, 0.04, 0.1, 0.09, 0.08], #Arianna 3/27. 0.03
+                "qubit_gain_ef": [0.03, 0.14, 0.04, 0.1, 0.15, 0.08],
                 'qubit_gain_ftores': [1]*6,#[0.2, 0.14, 0.04, 0.17, 0.13, 0.08],
                 # [0.01, 0.05, 0.05, 0.05, 0.01, 0.5], # [DAC units] Pulse Gain
                 "qubit_length_ef": 22, #22.0,
@@ -130,10 +130,10 @@ class QICK_experiment:
                 "qubit_phase": 0,  # [deg]
                 #"sigma": [0.15]*6,  # [us] for Gaussian Pulse (5+10 DAC atten for qubit)
                 "sigma_ampl": [0.03, 0.03, 0.05, 0.04, 0.05, 0.05], #DAC 0 04/07
-                "sigma": [0.33, 0.72, 0.45, 0.39, 0.48, 0.44],  # DAC 2 04/07 [us] for Gaussian Pulse (5+10 DAC atten for qubit). Updated on 7/17 by Arianna
+                "sigma": [0.15, 0.42, 0.25, 0.29, 0.28, 1],  # DAC 2 04/07 [us] for Gaussian Pulse (5+10 DAC atten for qubit). Updated on 7/17 by Arianna
                 #"sigma": [0.05, 0.09, 0.07, 0.065, 0.09, 0.3],  # Goal: cut sigma in half [us] for Gaussian Pulse (5+4 DAC atten for qubit)
                 # "pi_amp": [0.92, 0.87, 0.75, 0.73, 0.77, 0.78], # old RR values
-                "sigma_ef": [0.31, 0.5, 0.47, 0.35, 0.36, 0.35],  # [us] for Gaussian Pulse, #Arianna 3/27
+                "sigma_ef": [0.16, 0.4, 0.24, 0.18, 0.18, 0.53],  # [us] for Gaussian Pulse, #Arianna 3/27
                 "pi_amp": [0.6748, 0.634499, 0.76542, 0.7754, 0.6546, 0.9], #Joyce 3/11
                 "pi_amp_ampl": [0.5942, 0.634499, 0.76542, 0.7754, 0.55393, 0.9], # Joyce 04/07 DAC 0
                 #"pi_amp": [1.0, 0.93, 0.77, 0.8, 0.81, 0.9], # Eyeballed by Sara today (5+10 DAC atten for qubit)

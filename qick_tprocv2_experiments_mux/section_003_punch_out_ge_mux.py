@@ -33,29 +33,34 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
 class PunchOut:
-    def __init__(self, number_of_qubits, outerFolder, experiment):
+    def __init__(self, QubitIndex, number_of_qubits, outerFolder, experiment, unmasking_resgain=False):
         self.outerFolder = outerFolder
         self.expt_name = "res_spec"
         self.number_of_qubits = number_of_qubits
         self.experiment = experiment
         self.Qubit = 'Q' + str(1)
+        self.QubitIndex = QubitIndex
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
+
+        if unmasking_resgain:
+            self.exp_cfg["list_of_all_qubits"] = [self.QubitIndex]
+
         self.q_config = all_qubit_state(experiment, self.number_of_qubits)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
         print(f'Punch Out configuration: ', self.config)
 
-    def run(self, soccfg, soc, start_gain, stop_gain, num_points, attn_1, attn_2, plot_Center_shift = True, plot_res_sweeps = True):
+    def run(self, soccfg, soc, start_gain, stop_gain, num_points, DAC_att, ADC_att, plot_Center_shift = True, plot_res_sweeps = True):
         fpts = self.exp_cfg["start"] + self.exp_cfg["step_size"] * np.arange(self.exp_cfg["steps"])
         fcenter = self.config['res_freq_ge']
 
         resonance_vals, power_sweep, frequency_sweeps = self.sweep_power(soccfg, soc, fpts, fcenter, start_gain, stop_gain, num_points)
 
         if plot_Center_shift:
-            self.plot_center_shift(resonance_vals, power_sweep, attn_1, attn_2)
+            self.plot_center_shift(resonance_vals, power_sweep, DAC_att, ADC_att)
 
         if plot_res_sweeps:
-            self.plot_res_sweeps(fpts, fcenter, frequency_sweeps, power_sweep, attn_1, attn_2,)
+            self.plot_res_sweeps(fpts, fcenter, frequency_sweeps, power_sweep, DAC_att, ADC_att,)
 
         return
 
@@ -84,7 +89,7 @@ class PunchOut:
             resonance_vals.append(freq_res)
         return resonance_vals, power_sweep, frequency_sweeps
 
-    def plot_center_shift(self, resonance_vals, power_sweep,attn_1, attn_2 ):
+    def plot_center_shift(self, resonance_vals, power_sweep,DAC_att, ADC_att ):
         plt.figure(figsize=(12, 8))
 
         # Set larger font sizes
@@ -106,7 +111,7 @@ class PunchOut:
             plt.title(f"Resonator {i + 1}", pad=10)
 
         # Add a main title to the figure
-        plt.suptitle("Frequency vs Probe Gain", fontsize=24, y=0.95)
+        plt.suptitle(f"Frequency vs Probe Gain, _DAC_Att_{DAC_att}, ADC_ATT_{ADC_att}", fontsize=24, y=0.95)
 
         plt.tight_layout(pad=2.0)
 
@@ -114,12 +119,12 @@ class PunchOut:
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_punch_out_center_shift_attn1_{attn_1}_attn2_{attn_2}.png")
+        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_punch_out_center_shift_DAC_Att_{DAC_att}_ADC_ATT_{ADC_att}.png")
         plt.savefig(file_name, dpi=300)
         plt.close()
         return
 
-    def plot_res_sweeps(self, fpts, fcenter, frequency_sweeps, power_sweep, attn_1, attn_2):
+    def plot_res_sweeps(self, fpts, fcenter, frequency_sweeps, power_sweep, DAC_att, ADC_att):
         plt.figure(figsize=(12, 8))
 
         # Set larger font sizes
@@ -143,14 +148,14 @@ class PunchOut:
                 plt.legend(loc='upper left', fontsize='6', title='Gain')
 
         # Add a main title to the figure
-        plt.suptitle("Resonance At Various Probe Gains", fontsize=24, y=0.95)
+        plt.suptitle(f"Resonance At Various Probe Gains DAC_Att_{DAC_att}, ADC_ATT_{ADC_att}", fontsize=24, y=0.95)
 
         plt.tight_layout(pad=2.0)
         outerFolder_expt = os.path.join(self.outerFolder, "punch_out")
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_punch_out_res_sweep_attn1_{attn_1}_attn2_{attn_2}.png")
+        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_punch_out_res_sweep_DAC_Att_{DAC_att}_ADC_ATT_{ADC_att}.png")
         plt.savefig(file_name, dpi=300)
         plt.close()
         return
