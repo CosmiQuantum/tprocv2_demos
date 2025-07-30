@@ -4,6 +4,7 @@ import numpy as np
 np.set_printoptions(threshold=int(1e15)) #need this so it saves absolutely everything returned from the classes
 import datetime
 import time
+import logging
 sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_002_res_spec_ef import ResonanceSpectroscopyEF
@@ -30,23 +31,70 @@ live_plot = False      # for live plotting do "visdom" in comand line and then o
 fit_data = True      # fit the data here and save or plot the fits?
 save_data_h5 = True   # save the data of the measurements you are taking to h5 files?
 number_of_qubits = 6 # 4 for nexus, 6 for quiet
-
+thresholding = False
 Qs_to_look_at = [0] #only list the qubits you want to do the RR for
-
-
+verbose = False
+unmask = True
 increase_qubit_reps = False #if you want to increase the reps for a qubit, set to True
 qubit_to_increase_reps_for = 0 #only has impact if previous line is True
 multiply_qubit_reps_by = 2 #only has impact if the line two above is True
 
 increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
 increase_steps_to_ef = 600
+debug_mode = False
+#Data saving info
+run_name = 'run7'
+device_name = '6transmon'
+substudy_txt_notes = ('Tests')
+
 
 #For f-state studies: (please comment out outerFolder and write a new one for other experiments)
-outerFolder = os.path.join("/data/QICK_data/run6/6transmon/ef_studies/gef_SSF_fstate_IQspace/", str(datetime.date.today()), "Optimization/Round_Robin_mode") # for RR folders FOR fSTATE EXPERIMENT
-outerFolder_fstate = f"/data/QICK_data/run6/6transmon/ef_studies/gef_SSF_fstate_IQspace/" # for identifying the f state in IQ space (ss_gef_fstate experiment)
+#Folders
+study = 'round_robin_benchmark'
+sub_study = 'junkyard'#'temperature_sweep'#'AB_tests_data'
+data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-if not os.path.exists(outerFolder): os.makedirs(outerFolder)
-if not os.path.exists(outerFolder_fstate): os.makedirs(outerFolder_fstate)
+if not os.path.exists(f"/data/QICK_data/{run_name}/"):
+    os.makedirs(f"/data/QICK_data/{run_name}/")
+if not os.path.exists(f"/data/QICK_data/{run_name}/{device_name}/"):
+    os.makedirs(f"/data/QICK_data/{run_name}/{device_name}/")
+studyFolder = os.path.join(f"/data/QICK_data/{run_name}/{device_name}/", study)
+if not os.path.exists(studyFolder):
+    os.makedirs(studyFolder)
+subStudyFolder = os.path.join(studyFolder, sub_study)
+if not os.path.exists(subStudyFolder):
+    os.makedirs(subStudyFolder)
+
+dataSetFolder = os.path.join(subStudyFolder, data_set)
+optimizationFolder = os.path.join(dataSetFolder, 'optimization')
+studyFolder = os.path.join(dataSetFolder, 'study_data')
+studyDocumentationFolder = os.path.join(dataSetFolder, 'documentation')
+subStudyDataFolder = os.path.join(dataSetFolder, 'study_data')
+if not os.path.exists(studyDocumentationFolder):
+    os.makedirs(studyDocumentationFolder)
+if not os.path.exists(optimizationFolder):
+    os.makedirs(optimizationFolder)
+if not os.path.exists(subStudyDataFolder):
+    os.makedirs(subStudyDataFolder)
+
+file_path = os.path.join(studyDocumentationFolder, 'sub_study_notes.txt')
+with open(file_path, "w", encoding="utf-8") as file:
+    file.write(substudy_txt_notes)
+
+################################################## Configure logging ###################################################
+''' We need to create a custom logger and disable propagation like this
+to remove the logs from the underlying qick from saving to the log file for RR'''
+
+log_file = os.path.join(studyDocumentationFolder, "RR_script.log")
+rr_logger = logging.getLogger("custom_logger_for_rr_only")
+rr_logger.setLevel(logging.DEBUG)
+
+file_handler = logging.FileHandler(log_file, mode='a')
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+
+rr_logger.addHandler(file_handler)
+rr_logger.propagate = False  #dont propagate logs from underlying qick package
 
 # set which of the following measurements you would like to take
 run_flags = {"res_spec_ge": True, "q_spec_ge": True, "rabi_ge": True, "res_spec_ef": True, "q_spec_ef": True,
@@ -105,7 +153,11 @@ while j < n:
     j += 1
     for QubitIndex in Qs_to_look_at:
         #Get the config for this qubit
-        experiment = QICK_experiment(outerFolder, DAC_attenuator1 = 5, DAC_attenuator2 = 10, ADC_attenuator = 10, fridge=FRIDGE)
+        experiment = QICK_experiment(optimizationFolder,
+                DAC_attenuator1=5,
+                DAC_attenuator2=10,
+                ADC_attenuator=10,
+                fridge=FRIDGE)
         #Mask out all other resonators except this one
         res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=res_gain[QubitIndex])
         experiment.readout_cfg['res_gain_ge'] = res_gains
@@ -114,7 +166,7 @@ while j < n:
 
         ################################################# g-e Res spec ####################################################
         if run_flags["res_spec_ge"]:
-            res_spec = ResonanceSpectroscopy(QubitIndex, number_of_qubits, outerFolder, j, save_figs,
+            res_spec = ResonanceSpectroscopy(QubitIndex, number_of_qubits, studyDocumentationFolder, j, save_figs,
                                              experiment)
             res_freqs, freq_pts, freq_center, amps, sys_config_rspec = res_spec.run()
             experiment.readout_cfg['res_freq_ge'] = res_freqs
@@ -133,7 +185,7 @@ while j < n:
 
         ################################################### g-e Qubit spec ##################################################
         if run_flags["q_spec_ge"]:
-            q_spec = QubitSpectroscopy(QubitIndex, number_of_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, verbose = False, logger = None, qick_verbose = True, increase_reps = False, increase_reps_to = 500)
+            q_spec = QubitSpectroscopy(QubitIndex, number_of_qubits, studyDocumentationFolder, j, signal, save_figs, experiment, live_plot, verbose = False, logger = None, qick_verbose = True, increase_reps = False, increase_reps_to = 500)
             qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq, sys_config_qspec = q_spec.run()
 
             qubit_freqs_ge[QubitIndex] = qubit_freq
@@ -142,21 +194,51 @@ while j < n:
             del q_spec
 
         ###################################################### g-e Rabi ####################################################
+        # if run_flags["rabi_ge"]:
+        #     rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, studyDocumentationFolder, j, signal, save_figs,
+        #                                    experiment, live_plot,
+        #                                    increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
+        #
+        #     rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_rabi = rabi.run()
+        #
+        #     experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
+        #     print('Qubit ', QubitIndex + 1, ' g-e Pi Amp: ', float(pi_amp))
+        #
+        #     del rabi
         if run_flags["rabi_ge"]:
-            rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, outerFolder, j, signal, save_figs,
-                                           experiment, live_plot,
-                                           increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
+            try:
+                rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs=save_figs,save_shots=False,
+                                               experiment = experiment, live_plot = live_plot,
+                                               increase_qubit_reps = increase_qubit_reps,
+                                               qubit_to_increase_reps_for = qubit_to_increase_reps_for,
+                                               multiply_qubit_reps_by = multiply_qubit_reps_by,
+                                               verbose = verbose, logger = rr_logger, unmasking_resgain = unmask)
+                (rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp,
+                 sys_config_rabi)  = rabi.run(thresholding=thresholding)
 
-            rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_rabi = rabi.run()
+                # if these are None, fit didnt work
+                if (rabi_fit is None and pi_amp is None):
+                    rr_logger.info('g-e Rabi fit didnt work, skipping the rest of this qubit')
+                    if verbose: print('g-e Rabi fit didnt work, skipping the rest of this qubit')
+                    continue  # skip the rest of this qubit
 
-            experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
-            print('Qubit ', QubitIndex + 1, ' g-e Pi Amp: ', float(pi_amp))
+                experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
+                rr_logger.info(f'g-e Pi amplitude for qubit {QubitIndex + 1} is: {float(pi_amp)}')
+                if verbose: print('g-e Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
+                del rabi
 
-            del rabi
+            except Exception as e:
+                if debug_mode:
+                    raise e # In debug mode, re-raise the exception immediately
+                else:
+                    rr_logger.exception(f'Got the following error, continuing: {e}')
+                    if verbose: print(f'Got the following error, continuing: {e}')
+                    continue #skip the rest of this qubit
+
 
         ################################################# e-f Res spec ####################################################
         if run_flags["res_spec_ef"]:
-            res_specEF = ResonanceSpectroscopyEF(QubitIndex, number_of_qubits, outerFolder, j, save_figs,
+            res_specEF = ResonanceSpectroscopyEF(QubitIndex, number_of_qubits, studyDocumentationFolder, j, save_figs,
                                                  experiment)
             res_freqs, freq_pts, freq_center, amps, sys_config_rspec_ef = res_specEF.run()
             experiment.readout_cfg['res_freq_ef'] = res_freqs
@@ -170,7 +252,7 @@ while j < n:
             if QubitIndex == 3:
                 increase_qubit_steps_ef = True  # if you want to increase the steps for a qubit, set to True
 
-            ef_q_spec = EFQubitSpectroscopy(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal,
+            ef_q_spec = EFQubitSpectroscopy(QubitIndex, number_of_qubits, list_of_all_qubits, studyDocumentationFolder, j, signal,
                                             save_figs, experiment, live_plot, increase_qubit_steps_ef,
                                             increase_steps_to_ef)
             efqspec_I, efqspec_Q, efqspec_freqs, efqspec_I_fit, efqspec_Q_fit, efqubit_freq, sys_config_qspec_ef = ef_q_spec.run(
@@ -184,7 +266,7 @@ while j < n:
 
         ###################################################### e-f Rabi ####################################################
         if run_flags["rabi_ef"]:
-            efrabi = EF_AmplitudeRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal, save_figs,
+            efrabi = EF_AmplitudeRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits, studyDocumentationFolder, j, signal, save_figs,
                                            experiment, live_plot,
                                            increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             efrabi_I, efrabi_Q, efrabi_gains, efrabi_fit, efpi_amp, sys_config_rabi_ef = efrabi.run(experiment.soccfg, experiment.soc)
@@ -196,7 +278,7 @@ while j < n:
 
         ###################################################### g-e T1 ####################################################
         if run_flags["t1_ge"]:
-            t1_ge = T1Measurement(QubitIndex, tot_num_of_qubits, outerFolder, j, signal, save_figs,
+            t1_ge = T1Measurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                      experiment=experiment,
                                      live_plot=live_plot, fit_data=fit_data,
                                      increase_qubit_reps=increase_qubit_reps,
@@ -211,7 +293,7 @@ while j < n:
 
         ###################################################### f-g T1 ####################################################
         if run_flags["t1_fg"]:
-            t1_fg = EF_T1Measurement(QubitIndex, tot_num_of_qubits, outerFolder, j, signal, save_figs,
+            t1_fg = EF_T1Measurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                experiment=experiment,
                                live_plot=live_plot, fit_data=fit_data,
                                increase_qubit_reps=increase_qubit_reps,
@@ -226,7 +308,7 @@ while j < n:
 
         ###################################################### f-e T1 ####################################################
         if run_flags["t1_fe"]:
-            t1_fe = EF_T1Measurement(QubitIndex, tot_num_of_qubits, outerFolder, j, signal, save_figs,
+            t1_fe = EF_T1Measurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                      experiment=experiment,
                                      live_plot=live_plot, fit_data=fit_data,
                                      increase_qubit_reps=increase_qubit_reps,
@@ -243,7 +325,7 @@ while j < n:
         # This experiment is what Kester uses to transfer the f state to the resonator
         if run_flags["FtoRes_Spec"]:
             # experiment.qubit_cfg['pi_ef_amp'][QubitIndex] = efrabis[QubitIndex]
-            FtoResq_spec = FtoResQubitSpectroscopy(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j,
+            FtoResq_spec = FtoResQubitSpectroscopy(QubitIndex, number_of_qubits, list_of_all_qubits, studyDocumentationFolder, j,
                                                    signal,
                                                    save_figs, experiment, live_plot)
             FtoResqspec_I, FtoResqspec_Q, FtoResqspec_freqs = FtoResq_spec.run(
@@ -256,7 +338,7 @@ while j < n:
 
         ########################################### g-e-f Single Shot Measurements ############################################
         if run_flags["ss_gef"]:
-            ss = SingleShot_ef(QubitIndex, number_of_qubits, outerFolder,  j, save_figs, experiment)
+            ss = SingleShot_ef(QubitIndex, number_of_qubits, studyDocumentationFolder,  j, save_figs, experiment)
             iq_list_g, iq_list_e, iq_list_f, ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge, sys_config_ss_gef = ss.run(experiment.soccfg, experiment.soc)
 
             I_g = iq_list_g[QubitIndex][0].T[0]
@@ -272,7 +354,7 @@ while j < n:
                 RR = True # Keep as true, we are in RR mode here
                 date_analysis = None # This only matters if you are in post-processing mode (for analysis purposes), keep as None here.
                 round_num = j
-                analysis_gef_SSF = GEF_SSF_ANALYSIS(outerFolder_fstate, QubitIndex, Analysis, RR, date_analysis, round_num)
+                analysis_gef_SSF = GEF_SSF_ANALYSIS(studyDocumentationFolder, QubitIndex, Analysis, RR, date_analysis, round_num)
                 (line_point1, line_point2, center_e, radius_e, T, v, f_outside, line_point1_rot, line_point2_rot,
                  center_e_rot, radius_e_rot, T_rot, v_rot, f_outside_rot
                  ) = analysis_gef_SSF.fstate_analysis_plot(I_g, Q_g, I_e, Q_e, I_f, Q_f, ig_new, qg_new, ie_new, qe_new,
@@ -435,70 +517,70 @@ while j < n:
 
             # --------------------------save g-e Res Spec-----------------------
             if run_flags["res_spec_ge"]:
-                saver_res = Data_H5(outerFolder, res_data, batch_num, save_r)
+                saver_res = Data_H5(subStudyDataFolder, res_data, batch_num, save_r)
                 saver_res.save_to_h5('Res_ge')
                 del saver_res
                 del res_data
 
             # --------------------------save e-f Res Spec-----------------------
             if run_flags["res_spec_ef"]:
-                saver_res = Data_H5(outerFolder, res_data_ef, batch_num, save_r)
+                saver_res = Data_H5(subStudyDataFolder, res_data_ef, batch_num, save_r)
                 saver_res.save_to_h5('Res_ef')
                 del saver_res
                 del res_data_ef
 
             # --------------------------save g-e QSpec-----------------------
             if run_flags["q_spec_ge"]:
-                saver_qspec = Data_H5(outerFolder, qspec_data, batch_num, save_r)
+                saver_qspec = Data_H5(subStudyDataFolder, qspec_data, batch_num, save_r)
                 saver_qspec.save_to_h5('QSpec_ge')
                 del saver_qspec
                 del qspec_data
 
             # --------------------------save e-f QSpec-----------------------
             if run_flags["q_spec_ef"]:
-                saver_qspec = Data_H5(outerFolder, qspec_data_ef, batch_num, save_r)
+                saver_qspec = Data_H5(subStudyDataFolder, qspec_data_ef, batch_num, save_r)
                 saver_qspec.save_to_h5('QSpec_ef')
                 del saver_qspec
                 del qspec_data_ef
 
             # --------------------------save g-e Rabi-----------------------
             if run_flags["rabi_ge"]:
-                saver_rabi = Data_H5(outerFolder, rabi_data, batch_num, save_r)
+                saver_rabi = Data_H5(subStudyDataFolder, rabi_data, batch_num, save_r)
                 saver_rabi.save_to_h5('Rabi_ge')
                 del saver_rabi
                 del rabi_data
 
             # --------------------------save e-f Rabi-----------------------
             if run_flags["rabi_ef"]:
-                saver_rabi = Data_H5(outerFolder, rabi_data_ef, batch_num, save_r)
+                saver_rabi = Data_H5(subStudyDataFolder, rabi_data_ef, batch_num, save_r)
                 saver_rabi.save_to_h5('Rabi_ef')
                 del saver_rabi
                 del rabi_data_ef
 
             # --------------------------save t1 e-g -----------------------
             if run_flags["t1_ge"]:
-                saver_t1 = Data_H5(outerFolder, t1_data_eg, batch_num, save_r)
+                saver_t1 = Data_H5(subStudyDataFolder, t1_data_eg, batch_num, save_r)
                 saver_t1.save_to_h5('T1_ge')
                 del saver_t1
                 del t1_data_eg
 
             # --------------------------save t1 f-g -----------------------
             if run_flags["t1_fg"]:
-                saver_t1 = Data_H5(outerFolder, t1_data_fg, batch_num, save_r)
+                saver_t1 = Data_H5(subStudyDataFolder, t1_data_fg, batch_num, save_r)
                 saver_t1.save_to_h5('T1_fg')
                 del saver_t1
                 del t1_data_fg
 
             # --------------------------save t1 f-e -----------------------
             if run_flags["t1_fe"]:
-                saver_t1 = Data_H5(outerFolder, t1_data_fe, batch_num, save_r)
+                saver_t1 = Data_H5(subStudyDataFolder, t1_data_fe, batch_num, save_r)
                 saver_t1.save_to_h5('T1_fe')
                 del saver_t1
                 del t1_data_fe
 
             # --------------------------save g-e-f SS-----------------------
             if run_flags["ss_gef"]:
-                saver_ss = Data_H5(outerFolder, ss_data_gef, batch_num, save_r)
+                saver_ss = Data_H5(subStudyDataFolder, ss_data_gef, batch_num, save_r)
                 saver_ss.save_to_h5('SS_gef')
                 del saver_ss
                 del ss_data_gef

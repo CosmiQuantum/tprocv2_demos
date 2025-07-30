@@ -3,12 +3,13 @@ import numpy as np
 FRIDGE = "QUIET"  # change to "NEXUS" as needed
 
 if FRIDGE == "QUIET":
-    VNA_res = np.array([6.20905, 6.26145, 6.321265, 6.401472, 6.467723, 6.5209414])*1000  # run 5
+    VNA_res = np.array([6223.097, 6284.61, 6343.95, 6414.9, 6481.4, 6547.09])#*1000  # run 5
     #VNA_res = np.array([6217.011, 6275.7973, 6335.1068, 6407.052, 6476.1091, 6538])
     # VNA_res = np.array([6191.519, 6216, 6292.321, 6405.85, 6432.959, 6468.441,]) # run 4a
-    VNA_qubit = np.array([4185, 3824, 4163, 4467, 4467.23, 5006.14])  # Freqs of Qubit g/e Transition
+    VNA_qubit = np.array([4184.1, 3823.37, 4162.9, 4467.37, 4467.23, 5006.13])  # Freqs of Qubit g/e Transition
     #VNA_qubit = np.array([4189.8105, 3820.4723, 4156.53, 4462.374, 4471.4036, 4997.86])
-    ef_freqs = np.array([4009.82, 3645.54, 3988.22, 4295.31, 4295.38, 4838.89]) # Freqs of Qubit e/f Transition, updated for run 7
+    ef_freqs = np.array([4009.81, 3645.58, 3988.21, 4292.73, 4292.73, 4838.86]) # Freqs of Qubit e/f Transition, updated for run 7
+    fh_freqs = np.array([3820.97, 3450.85, 3798.97, 4110, 4660, 4660.28])
     # Set this for your experiment
     tot_num_of_qubits = 6
 
@@ -23,11 +24,11 @@ if FRIDGE == "QUIET":
         },
 
         "res_spec": {
-            "reps": 200,
+            "reps": 400,
             "rounds": 1,
             "start": -1,  # -4 #[MHz]
-            "step_size": 0.01,  # [MHz]
-            "steps": 200,#70
+            "step_size": 0.01,#0.01,  # [MHz]
+            "steps": 200,#,200,#70
             "relax_delay": 5,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -43,11 +44,11 @@ if FRIDGE == "QUIET":
         },
 
         "qubit_spec_ge": {
-            "reps": 500, #500
+            "reps": 400, #500
             "rounds": 1, #10
             "start": list(VNA_qubit-4), # [MHz] #-300 #-10 # -4
             "stop": list(VNA_qubit+4), # [MHz] #+10 # 4
-            "steps": 227, #450 # 227
+            "steps": 450, # 227
             "relax_delay": 10, #1000, # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -86,12 +87,21 @@ if FRIDGE == "QUIET":
         },
 
         "qubit_spec_ef": {
-            "reps": 3000,  # 300
+            "reps": 400,  # 300
             "rounds": 1,  # 10
-            "start": list(ef_freqs - 6),  # [MHz] #-300 #-6
-            "stop": list(ef_freqs + 6),  # [MHz] #6
+            "start": list(ef_freqs - 4),# 0.2),  # [MHz] #-300 #-6
+            "stop":  list(ef_freqs + 4),#0.2),  # [MHz] #6
             "steps": 450,  # 1000 #450
             "relax_delay": 600, #1000,  # [us]
+            "list_of_all_qubits": list_of_all_qubits,
+        },
+        "qubit_spec_fh": {
+            "reps": 5000,  # 300
+            "rounds": 1,  # 10
+            "start": list(fh_freqs - 1), # [MHz] #-300 #-6
+            "stop": list(fh_freqs +  1),  # [MHz] #6
+            "steps": 300,#450,  # 1000 #450
+            "relax_delay": 1000,  # 1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
         "qubit_spec_ftores": {

@@ -70,9 +70,9 @@ class EFQubitSpectroscopy:
             efQ = efiq_list[self.QubitIndex][0, :, 1]
             effreqs = efqspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
             #print(effreqs)
-
+        # self.plot_results(efI, efQ, effreqs, config=self.config)
         largest_amp_curve_mean, efI_fit, efQ_fit = self.plot_results(efI, efQ, effreqs, config = self.config)
-        return efI, efQ, effreqs, efI_fit, efQ_fit, largest_amp_curve_mean, self.config
+        return efI, efQ, effreqs ,  efI_fit, efQ_fit, largest_amp_curve_mean, self.config
 
     def live_plotting(self, qspec, soc):
         I = Q = expt_mags = expt_phases = expt_pop = None
@@ -306,7 +306,7 @@ class EFPulseProbeSpectroscopyProgram(AveragerProgramV2):
                        mask=cfg["list_of_all_qubits"],
                        )
 
-
+        print('FH',cfg['qubit_length_ge'], cfg['qubit_freq_ef'],cfg['qubit_gain_ef'])
         self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_ch[0],
                        style="const",
                        length=cfg['qubit_length_ge'],

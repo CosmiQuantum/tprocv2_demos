@@ -13,8 +13,9 @@ import datetime
 #For QUIET
 #outerFolder1 = os.path.join("/data/QICK_data/6transmon_run6/", '2025-03-02')
 # outerFolder1 = os.path.join("/data/QICK_data/run6/6transmon/ef_studies/Optimization/", str(datetime.date.today())) # for RR folders
-outerFolder = "/data/QICK_data/run7/6transmon/readout_optimization/unmasking_resgain/2025-07-18_21-34-17/study_data/Data_h5/2D_Gain_Freq_Sweeps"
-
+# outerFolder = "/data/QICK_data/run7/6transmon/readout_optimization/unmasking_resgain/2025-07-18_21-34-17/study_data/Data_h5/2D_Gain_Freq_Sweeps"
+outerFolder = "/data/QICK_data/run7/6transmon/readout_optimization/qick_box_optimization/2025-07-29_22-13-25/study_data/Data_h5/2D_Gain_Freq_Sweeps"
+#/data/QICK_data/run7/6transmon/readout_optimization/junkyard/2025-07-28_12-25-16/study_data/Data_h5/2D_Gain_Freq_Sweeps
 print('For files inside: ', outerFolder)
 
 def find_max_fidelity(file_path):
@@ -126,8 +127,8 @@ def find_configurations_below_threshold(file_path, threshold):
     return valid_configurations
 
 #Now getting results
-punchout_thresholds =  [0.4,0.4,0.4,0.2,0.4,0.2] #[0.34, 0.233, 0.233, 0.233]  #from punchout test on 2/7/2025
-for qubit_index in range(0, 7):
+punchout_thresholds =  [1.0, 0.925, 1.0, 0.55, 0.663, 1.0] #[1.1,0.925,1.1,0.66,0.66,1.1] #[0.34, 0.233, 0.233, 0.233]  #from punchout test on 2/7/2025
+for qubit_index in range(1, 7):
     file_pattern = os.path.join(outerFolder, f"*_Qubit_{qubit_index}_*.h5")
     file_list = glob.glob(file_pattern)
 

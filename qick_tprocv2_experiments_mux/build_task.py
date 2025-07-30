@@ -68,6 +68,8 @@ def add_single_qubit_experiment(expt_cfg, expt_name, QubitIndex):
         exp_cfg.update([('res_freq_ef', QickSweep1D('freqloop', start, stop))])
     elif expt_name == 'qubit_spec_ef':
         exp_cfg.update([('qubit_freq_ef', QickSweep1D('freqloop', start, stop))])
+    elif expt_name == 'qubit_spec_fh':
+        exp_cfg.update([('qubit_freq_fh', QickSweep1D('freqloop', start, stop))])
     elif expt_name == 'qubit_spec_ftores':
         exp_cfg.update([('qubit_freq_ftores', QickSweep1D('freqloop', start, stop))])
     elif expt_name == 'power_rabi_ef':
