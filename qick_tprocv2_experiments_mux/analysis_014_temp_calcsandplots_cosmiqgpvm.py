@@ -1144,7 +1144,7 @@ class RPMTempCalcAndPlots:
         self.number_of_qubits = number_of_qubits
 
     def run_RPMqtemps(self, base_dir, target_dates, filter_keywords, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
-                     outerFolder_RR_plots, replot_RPMs = False, get_qtemp_data = False, get_london_data = False, figure_quality = 200, save_figsRR = False, exclude_temp_sweeps = False):
+                     outerFolder_RR_plots, replot_RPMs = False, get_qtemp_data = False, get_london_data = False, figure_quality = 200, save_figsRR = False, exclude_temp_sweeps = False, passing_pre_sciencerun_data = False):
 
         combined_qtemp_data = []  # list of results from different .h5 files
 
@@ -1164,19 +1164,23 @@ class RPMTempCalcAndPlots:
                         and (not exclude_temp_sweeps or "temperature_sweep" not in full_path.lower())
                     ):  # checks if path includes each keyword (source_off or source_on) and whether you set the temp sweep data to be excluded or not
 
-                    if run_num == 7:
-                        optimization_path = os.path.join(full_path, "study_data")
+                    if run_num == 7: # depending on the run, the q_temperatures data is stored in a different place
+                        data_path = os.path.join(full_path, "study_data") # run 7 qubit temperature and RR data was stored in study_data folder
                     elif run_num == 6:
-                        optimization_path = os.path.join(full_path, "optimization")
+                        if passing_pre_sciencerun_data:
+                            data_path = os.path.join(full_path, "study_data") # pre-science-run data was stored in study_data folder
+                        else:
+                            data_path = os.path.join(full_path, "optimization") # science-run data was stored in optimization folder
                     else:
                         raise ValueError("run_num must be 6 or 7 OR you must add an 'if statement' for the run number you want. Specify if RPM data is in optimization OR study_data folder.")
 
-                    if os.path.isdir(optimization_path):
+                    if os.path.isdir(data_path):
                         date_string = d[:10]  # Extract 'YYYY-MM-DD'
-                        print(f"Analyzing: {optimization_path}")
+                        print(f"Analyzing: {data_path}")
 
-                        outerFolder = optimization_path  # RR data (g-e Qspec) folder path before Data_h5
-                        outerFolder_qtemps_data = optimization_path  # Qubit temps data folder path before Data_h5
+                        # If both are set equal to data_path, it is assumed that q_temperatures and qspec_ge data are share the same path
+                        outerFolder = data_path  # RR data (g-e Qspec) folder path before Data_h5
+                        outerFolder_qtemps_data = data_path  # Qubit temps data folder path before Data_h5
 
                         if not os.path.exists(outerFolder): os.makedirs(outerFolder)
                         if not os.path.exists(outerFolder_qtemps_data): os.makedirs(outerFolder_qtemps_data)

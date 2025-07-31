@@ -2869,8 +2869,7 @@ class PlotRR_noQick:
             for q_key in populated_keys:
                 # print(f"Extracting data for QubitIndex: {q_key}")
                 for dataset in range(len(load_data['q_temperatures'][q_key].get('Dates', [])[0])):
-                    date = datetime.datetime.fromtimestamp(
-                        load_data['q_temperatures'][q_key].get('Dates', [])[0][dataset])
+                    date = datetime.datetime.fromtimestamp(load_data['q_temperatures'][q_key].get('Dates', [])[0][dataset])
                     round_num = load_data['q_temperatures'][q_key].get('Round Num', [])[0][dataset]
                     batch_num = load_data['q_temperatures'][q_key].get('Batch Num', [])[0][dataset]
 
@@ -3062,7 +3061,7 @@ class PlotRR_noQick:
                     "Qubit Effective Temperature (mK)": data.get("T_mK"),
                     "Qubit Effective Temperature Error (mK)": data.get("T_mK_err"),
                     "Date": datetime.fromtimestamp(data.get("date")).strftime('%Y-%m-%d %H:%M:%S'),
-                    "Filepath": data.get("filepath")
+                    "Effective Qubit Temperature Filepaths": data.get("filepath")
                 })
 
         # Extract timestamps for filename date range

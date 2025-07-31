@@ -15,7 +15,7 @@ from sklearn.mixture import GaussianMixture
 import matplotlib.pyplot as plt
 import math
 import h5py
-from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
+from expt_config import expt_cfg, list_of_all_qubits, FRIDGE
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -33,20 +33,19 @@ exclude_temp_sweeps = False # Do you want to exclude the folders that contain da
 get_qtemp_data = False # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
 get_london_data = True # This returns RPM qubit temperatures, resonator freqs, and qubit freqs for specified dates. Designed for London Penetration analysis.
 
+pre_sciencerun6_data = True # Do you also want to incorporate the run 6 pre-science run data? THis only applies when run_num = 6
+
 figure_quality = 200
 theta = 0
 threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
-run_number = 3 # Starting from first run with qubits: Run 1 = run4a at quiet, run 2 = run5a at quiet, etc
-figure_quality = 200
-Science_Qubits = [0,4] # [0, 1, 2, 3, 4, 5] for run 7, [0, 4] for run 6
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
                       "combined_studies_qtemps": False}
 
 # What analysis plots do you want to make?
-analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
+analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False,  "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis
@@ -54,54 +53,53 @@ comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_tim
                        "Pe_vs_time_comb_single_plt": False }
 
 # For London Penetration Depth analysis
-london_flags = {"get_qfreqs_resfreqs_qtemps": True}
+london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 ############################################################################## Set up ##############################################################################
 #-------------------------------------------- For qubit temperature calculations via rabi population measurements ---------------------------------------------------
 # Specify which dates you want to loop through. It will process all the files inside all the folders that contain these dates in their title.
-
-# Run 6
-# target_dates_qtemps_RPM = [
-#     "2025-04-16",
-#     "2025-04-17",
-#     "2025-04-18",
-#     "2025-04-19",
-#     "2025-04-20",
-#     "2025-04-21", #starts source on (Co)
-#     "2025-04-22",
-#     "2025-04-23", #switched source (to Cs)
-#     "2025-04-24",
-#     "2025-04-25",
-#     "2025-04-26",
-#     "2025-04-27",
-#     "2025-04-28", #Cs source moved closer
-#     "2025-04-29",
-#     "2025-04-30",
-#     "2025-05-01",
-#     "2025-05-02",
-#     "2025-05-03",
-#     "2025-05-04", # Cs source removed. No sources in Cleanroom.
-#     "2025-05-05",
-#     "2025-05-06",
-#     "2025-05-07",
-#     "2025-05-08",
-#     "2025-05-09",
-#     "2025-05-10",
-#     "2025-05-11",
-#     "2025-05-12",
-#     "2025-05-13",
-#     "2025-05-14",
-#     "2025-05-15",
-#     "2025-05-16",
-#     "2025-05-20",
-#     "2025-05-21",
-#     "2025-05-28",
-#     "2025-05-29",
-#     "2025-05-31",
-#     "2025-06-01" # Last Science run data
-#     ]
+# ----------------------------------------------------------------------------- Run 6 --------------------------------------------------------------------
+target_dates_qtemps_RPM_sciencerun = [
+    "2025-04-16",
+    "2025-04-17",
+    "2025-04-18",
+    "2025-04-19",
+    "2025-04-20",
+    "2025-04-21", #starts source on (Co)
+    "2025-04-22",
+    "2025-04-23", #switched source (to Cs)
+    "2025-04-24",
+    "2025-04-25",
+    "2025-04-26",
+    "2025-04-27",
+    "2025-04-28", #Cs source moved closer
+    "2025-04-29",
+    "2025-04-30",
+    "2025-05-01",
+    "2025-05-02",
+    "2025-05-03",
+    "2025-05-04", # Cs source removed. No sources in Cleanroom.
+    "2025-05-05",
+    "2025-05-06",
+    "2025-05-07",
+    "2025-05-08",
+    "2025-05-09",
+    "2025-05-10",
+    "2025-05-11",
+    "2025-05-12",
+    "2025-05-13",
+    "2025-05-14",
+    "2025-05-15",
+    "2025-05-16",
+    "2025-05-20",
+    "2025-05-21",
+    "2025-05-28",
+    "2025-05-29",
+    "2025-05-31",
+    "2025-06-01" # Last Science run data
+    ]
 
 # For data before heater temperature steps, run 6
-# target_dates_qtemps_RPM = [
+# target_dates_qtemps_RPM_sciencerun = [
 #     "2025-04-16",
 #     "2025-04-17",
 #     "2025-04-18",
@@ -125,35 +123,73 @@ london_flags = {"get_qfreqs_resfreqs_qtemps": True}
 #     "2025-05-06"]
 
 # For data during Heater temperature steps, run 6 (20mK to 160mK)
-target_dates_qtemps_RPM = ["2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14"]
+# target_dates_qtemps_RPM_sciencerun = ["2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14"]
 
-# if you want to look at just one specific date
-# target_dates_qtemps_RPM = ["2025-05-05"]
-#---------------------------------------------------------------------------------------------------------------------------------------------------
-# run 7
-# target_dates_qtemps_RPM = ["2025-07-19", "2025-07-20"] # for 24hr AB data
-# base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run7/6transmon/round_robin_benchmark"
-#
-# # To re-make and save RPM RR plots
-# outerFolder_qtemps_plots_RR = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_tests_data/benchmark_analysis_plots/RPM_RR_plots"
-#
-# # For RPM Analysis
-# outerFolder_qtemps_plots = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_tests_data/benchmark_analysis_plots/q_temperatures_plots" # Inside each analysis function, a subfolder will be defined
-# filter_keywords = ['AB_tests_data'] #substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name
-#---------------------------------------------------------------------------------------------------------------------------------------------
-# run 6
-base_dir = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study"
+# For pre-science-run data
+target_dates_qtemps_RPM_presciencerun = ['2025-04-11', '2025-04-12']
+
+# Base path of where the data is stored up to the Study Name (TLS_Comprehensive_Study or ef_studies_pre_science_run)
+base_dir_sciencerun = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study" # for QUIET run 6 science run data
+base_dir_pre_sciencerun = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ef_studies_pre_science_run" # for run 6 pre-science run data
 
 # To re-make and save RPM RR plots
-outerFolder_qtemps_plots_RR = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/Plots_RR"
+outerFolder_qtemps_plots_RR_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/Plots_RR"
 
 # For RPM Analysis
-outerFolder_qtemps_plots = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots" # Inside each analysis function, a subfolder will be defined
+outerFolder_qtemps_plots_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots" # Inside each analysis function, a subfolder will be defined
 
-# For London Penetration Depth analysis
+# For London Penetration Depth analysis, which is done on run 6 temperature sweep data. This is where we save the plots:
 outerFolder_london_path = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/London_Penetration_Depth"
 
-filter_keywords = ['source_off_temperature_sweep'] #['source_off', 'source_on'] # set up for RPM measurements. Which data do you want to look at? with source or no source?
+# Which RPM qubit temperature data do you want to look at? List here key words in the substudy name
+# For the heater temperature sweep:
+# filter_keywords_sciencerun = ['source_off_temperature_sweep']
+
+# For source on and source off:
+# filter_keywords_sciencerun = ['source_off', 'source_on']
+
+# Specifically to look at source off data for run 6: science-run data as well as pre-science-run data
+filter_keywords_sciencerun = ['source_off']
+filter_keywords_presciencerun = ['q_temperatures_efRabi'] # no source was present, although not specified in the substudy name.
+
+#-----------------------------------------------------------------------run 7------------------------------------------------------------
+# Base path of where the data is stored up to the Study Name (round_robin_benchmark)
+base_dir_run7 = "/exp/cosmiq/data/QUIET/QICK_data/run7/6transmon/round_robin_benchmark"
+
+# for 24hr AB data
+target_dates_qtemps_RPM_run7 = ["2025-07-19", "2025-07-20"]
+
+# To re-make and save RPM RR plots
+outerFolder_qtemps_plots_RR_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_tests_data/benchmark_analysis_plots/RPM_RR_plots"
+#
+# For RPM Analysis
+outerFolder_qtemps_plots_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_tests_data/benchmark_analysis_plots/q_temperatures_plots" # Inside each analysis function, a subfolder will be defined
+
+# Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name
+filter_keywords_run7 = ['AB_tests_data']
+
+#------------------------------------------------ Assign func variables depending on run number ---------------------------------------
+
+if run_num == 6: # We have science-run data as well as pre-science-run data available
+    Science_Qubits = [0, 4]
+    base_dir = base_dir_sciencerun
+    filter_keywords = filter_keywords_sciencerun
+    outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run6
+    outerFolder_qtemps_plots = outerFolder_qtemps_plots_RR_run6
+    target_dates_qtemps_RPM = target_dates_qtemps_RPM_sciencerun
+    if pre_sciencerun6_data: # if True, it means you also want to analyze or incorporate pre-science-run data from run 6
+        base_dir2 = base_dir_pre_sciencerun
+        filter_keywords2 = filter_keywords_presciencerun
+        target_dates_qtemps_RPM2 = target_dates_qtemps_RPM_presciencerun
+elif run_num == 7:
+    Science_Qubits = [0, 1, 2, 3, 4, 5]
+    base_dir = base_dir_run7
+    filter_keywords = filter_keywords_run7
+    outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run7
+    outerFolder_qtemps_plots = outerFolder_qtemps_plots_run7
+    target_dates_qtemps_RPM = target_dates_qtemps_RPM_run7
+else:
+    raise ValueError("You must choose run_num = 6 or run_num = 7. Otherwise, define a section for your run of interest.")
 
 #------------------- For qubit temperature calculations via SSF methods (double gaussian over g-state data and double gaussian over g and e-state data --------------
 # Note: you must write paths in this form: "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_03-03-40"
@@ -169,8 +205,14 @@ paths_SSFmethods = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Compreh
 if qtemp_method_flags["Qtemps_viaRPM"]:
     RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs)
     combined_qtemp_data = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
-                            outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps)
-    del RPM_calcs
+                            outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, passing_pre_sciencerun_data = False)
+
+    if pre_sciencerun6_data:
+        combined_qtemp_data2 = RPM_calcs.run_RPMqtemps(base_dir2, target_dates_qtemps_RPM2, filter_keywords2, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
+                                                      outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, passing_pre_sciencerun_data = True)
+        combined_qtemp_data += combined_qtemp_data2
+
+    del RPM_calcs # to free up memory
     #----------------------------------------------------------------------- RPM Analysis -------------------------------------------------------------------------
     # These are not used in the definitions that follow, are just needed to re-initialize the class
     outerFolder = ""
@@ -263,7 +305,11 @@ if qtemp_method_flags["combined_studies_qtemps"]:
     # ----------- Get Qubit temperature results via RPMs
     RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs)
     all_files_Qtemp_results_RPMs = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal, run_name, list_of_all_qubits, tot_num_of_qubits,
-                                outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, figure_quality, save_figsRR)
+                                outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, figure_quality, save_figsRR, passing_pre_sciencerun_data = False)
+    if pre_sciencerun6_data:
+        all_files_Qtemp_results_RPMs2 = RPM_calcs.run_RPMqtemps(base_dir2, target_dates_qtemps_RPM2, filter_keywords2, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
+                                                      outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, passing_pre_sciencerun_data = True)
+        all_files_Qtemp_results_RPMs += all_files_Qtemp_results_RPMs2
 
     # ----------- Get Qubit temperature results via SSF g-e threshold method and SSF g-state double gaussian threshold method
     SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs)
@@ -297,13 +343,13 @@ if qtemp_method_flags["combined_studies_qtemps"]:
                                      restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
 
 #################################################### London Penetration Analysis ##########################################################
-if london_flags["get_qfreqs_resfreqs_qtemps"]:
+if london_flags["get_qfreqs_resfreqs_qtemps"]: # There was no "pre-science-run" data for this analysis, since the relevant data is the science run heater temperature sweep data
     #--------------------------------------Get RPM qubit temps, qfreqs and res freqs, etc. -----------------------
     RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs)
     qfreqs_resfreqs_qtemps_data = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal,
                                                   run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
                                                   outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data,
-                                                  figure_quality, save_figsRR, exclude_temp_sweeps)
+                                                  figure_quality, save_figsRR, exclude_temp_sweeps, passing_pre_sciencerun_data = False)
     # ----------------------------Dump RPM qubit temps, qfreqs and res freqs, etc in excel spreadhseet -----------------------
     # These are not used in the definitions that follow, are just needed to re-initialize the class
     outerFolder = ""
