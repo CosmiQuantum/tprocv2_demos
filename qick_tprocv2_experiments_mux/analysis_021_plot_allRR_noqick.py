@@ -2056,7 +2056,7 @@ class PlotRR_noQick:
             label=f"{label_prefix}: slope={m:.1f} mK/h, R²={r2:.2f}",
             zorder=10)
 
-    def plot_qubit_temperatures_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6, yaxis_min = 10, yaxis_max = 950, restrict_time_xaxis = False,
+    def plot_qubit_temperatures_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6, yaxis_min = 10, yaxis_max = 950, rel_err_cutoff = 1, restrict_time_xaxis = False,
                                              plot_extra_event_lines = False, rad_events_plot_lines = True, plot_error_bars=False, fit_to_line=False, average_per_heater_step=False):
         """
         Plots qubit temperatures vs. time for each qubit in a separate subplot (max 3 columns).
@@ -2147,8 +2147,8 @@ class PlotRR_noQick:
                     T_err = qubit_data['T_mK_err']
                     T_mK = qubit_data['T_mK']
 
-                    # Skip if relative error is ≥ 40%
-                    if T_err / T_mK >= 0.40:
+                    # Skip if relative error is ≥ rel_err_cutoff
+                    if T_err / T_mK >= rel_err_cutoff: # rel_err_cutoff is a decimal (0.8 = a relative error of 80% and so forth)
                         continue
 
                     # if T_err > 150:  # skip if error is too large (for example, larger than 300mK)
@@ -2431,7 +2431,7 @@ class PlotRR_noQick:
         plt.savefig(save_path, dpi=self.figure_quality)
         plt.close(fig)
 
-    def plot_qubit_temperature_histograms_RPMs(self, all_files_Qtemp_results, num_qubits=6):
+    def plot_qubit_temperature_histograms_RPMs(self, all_files_Qtemp_results, num_qubits, rel_err_cutoff = 1):
         """
         Plots histograms for the temperature (T_mK) data of each qubit.
 
@@ -2480,7 +2480,7 @@ class PlotRR_noQick:
                 # skip if either is missing or relative error is larger than threshold
                 if T_mK is None or T_err is None:
                     continue
-                if T_err / T_mK >= 0.40: #40%
+                if T_err / T_mK >= rel_err_cutoff: # rel_err_cutoff is a decimal (0.8 = a relative error of 80% and so forth)
                     continue
 
                 temp_vals.append(T_mK)
