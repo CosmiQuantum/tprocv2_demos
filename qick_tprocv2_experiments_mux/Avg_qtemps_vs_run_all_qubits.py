@@ -4,18 +4,18 @@ import numpy as np
 # Each sublist corresponds to a qubit, and contains temperatures from Run 1 with qubits (run 4), Run 2 with qubits (run 5),
 # and Run 3 with qubits (run 6).
 
-from_run = 2 # we have a total of 3 runs with qubits thus far
+from_run = 2 # we have a total of 3 runs with qubits thus far, but don't have valid qubit temperature data for the first one
 
 if from_run == 2:
     qubit_temps = [
-        [200, 183],  # Qubit 1
-        [275, 95],  # Qubit 2
-        [160, 131],  # Qubit 3, 110
-        [350, 144],  # Qubit 4, 195
-        [170, 114],  # Qubit 5
-        [220, 120]   # Qubit 6
+        [200, 186.2, 111.01],  # Qubit 1
+        [275, 98.36, 117.45],  # Qubit 2
+        [160, 131.18, 111.01],  # Qubit 3, 110
+        [350, 144.01, 123.55],  # Qubit 4, 195
+        [170, 114.04, 121.76],  # Qubit 5
+        [220, 120.45, 103.69]   # Qubit 6
     ]
-    runs = np.array([2, 3])
+    runs = np.array([2, 3, 4])
 
 if from_run == 1:
     qubit_temps = [
@@ -63,7 +63,8 @@ for qubit_index, temps in enumerate(qubit_temps):
 plt.xlabel("Run Number")
 plt.ylabel("Average Effective Qubit Temperature (mK)")
 plt.title("Average Effective Qubit Temperature vs Run Number")
-plt.xticks(runs)
+plt.xticks(runs, ['Run 2\n(SSF Meas.)', 'Run 3\n(Rabi Pop. Meas.)', 'Run 4\n(Rabi Pop. Meas.)'])
+plt.yticks(np.arange(100, 351, 25))
 plt.legend()
 plt.grid(True)
 plt.tight_layout()

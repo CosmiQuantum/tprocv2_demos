@@ -4,7 +4,7 @@ np.set_printoptions(threshold=int(1e15)) #need this so it saves absolutely every
 import os
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from analysis_021_plot_allRR_noqick import QubitSpectroscopy
-# from qicklab.analysis import qspec, ssf
+from qicklab.analysis import qspec, ssf
 from section_008_save_data_to_h5 import Data_H5
 from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots, combined_Qtemp_studies, RPMTempCalcAndPlots
 import glob
@@ -19,7 +19,7 @@ from expt_config import expt_cfg, list_of_all_qubits, FRIDGE
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 6 # first run with qubits was QUIET run 3, second run with qubits was QUIET run 4, and so forth
+run_num = 4 # first run with qubits was QUIET run 3, second run with qubits was QUIET run 4, and so forth
 run_name = f'run{run_num}/6transmon'
 signal = 'None' # Do not change
 
@@ -194,12 +194,40 @@ else:
 #------------------- For qubit temperature calculations via SSF methods (double gaussian over g-state data and double gaussian over g and e-state data --------------
 # Note: you must write paths in this form: "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_03-03-40"
 # If you want to loop through all the data corresponding to 1 day, you must list all the paths for that day. This method does not accept just a single date as a path.
-paths_SSFmethods = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_03-03-40",
+# I have included examples for how the paths are structured for each run
+
+# run 4
+paths_SSFmethods_run4 = ["/exp/cosmiq/data/QUIET/QICK_data/run4/6transmon/folders_with_SSF_data_entire_run4/ssf_data_and_readoutopt/2024-11-12_10-00-32",
+                         "/exp/cosmiq/data/QUIET/QICK_data/run4/6transmon/folders_with_SSF_data_entire_run4/ssf_data_and_readoutopt/2024-11-13_08-23-41",
+                         "/exp/cosmiq/data/QUIET/QICK_data/run4/6transmon/folders_with_SSF_data_entire_run4/ssf_data_and_readoutopt/2024-11-17_09-40-05",
+                        "/exp/cosmiq/data/QUIET/QICK_data/run4/6transmon/folders_with_SSF_data_entire_run4/ssf_data_and_readoutopt/2024-11-19_01-21-45"]
+
+# run 5
+
+# run 6
+# Science-Run Data
+paths_SSFmethods_SR = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_03-03-40",
                     "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_06-40-15",
                     "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_10-18-53",
                     "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_13-57-22",
                     "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_17-34-21",
                     "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_21-18-14"]
+# Pre-Science-Run Data
+paths_SSFmethods_preSR = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ef_studies_pre_science_run/q_temperatures_efRabi/2025-04-11_14-05-22"]
+
+# run 7
+paths_SSFmethods_run7 = ["/exp/cosmiq/data/QUIET/QICK_data/run7/6transmon/round_robin_benchmark/AB_tests_data/2025-07-19_08-34-39"]
+
+if run_num == 6:  # We have science-run data as well as pre-science-run data available
+    paths_SSFmethods = paths_SSFmethods_SR
+    if pre_sciencerun6_data:  # If True, include pre-science-run data
+        paths_SSFmethods += paths_SSFmethods_preSR
+elif run_num == 7:
+    paths_SSFmethods = paths_SSFmethods_run7
+elif run_num == 4:
+    paths_SSFmethods = paths_SSFmethods_run4
+else:
+    raise ValueError("You must choose run_num = 4, 6 or 7. Otherwise, define a section for your run of interest.")
 
 ###################################################### Qubit temperature calculations via rabi population measurements #############################################
 if qtemp_method_flags["Qtemps_viaRPM"]:

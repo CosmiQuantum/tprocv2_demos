@@ -4,7 +4,7 @@ import ast
 import numpy as np
 import h5py
 from sklearn.mixture import GaussianMixture
-# from qicklab.analysis import qspec, t1, ssf
+from qicklab.analysis import qspec, t1, ssf
 from matplotlib.ticker import MaxNLocator
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 import math
@@ -1036,7 +1036,7 @@ class SSFTempCalcAndPlots:
 
     def process_ssf_and_qfreq_data_qtemps(self, Science_Qubits, paths):
         """
-        This function processes the ssf and g-e quit spec data for each qubit found inside the files in cosmiqgpvm02 and returns the dictionary:
+        This function processes the ssf and g-e quit spec data for each qubit found inside the files in CEPH and returns the dictionary:
 
         pairs_info[q].append({
             "qspec_path": qspec_path,
