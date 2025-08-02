@@ -217,8 +217,8 @@ class SingleShot:
             fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(16, 4))
             fig.tight_layout()
 
-            axs[0].scatter(ig, qg, label='g', color='b', marker='*')
-            axs[0].scatter(ie, qe, label='e', color='r', marker='*')
+            axs[0].scatter(ig, qg, label='g', color='b', marker='*', alpha=0.2)
+            axs[0].scatter(ie, qe, label='e', color='r', marker='*', alpha=0.2)
             axs[0].scatter(xg, yg, color='k', marker='o')
             axs[0].scatter(xe, ye, color='k', marker='o')
             axs[0].set_xlabel('I (a.u.)')
@@ -243,8 +243,8 @@ class SingleShot:
         xlims = [np.min(ig_new), np.max(ie_new)]
 
         if plot == True:
-            axs[1].scatter(ig_new, qg_new, label='g', color='b', marker='*')
-            axs[1].scatter(ie_new, qe_new, label='e', color='r', marker='*')
+            axs[1].scatter(ig_new, qg_new, label='g', color='b', marker='*', alpha=0.2)
+            axs[1].scatter(ie_new, qe_new, label='e', color='r', marker='*', alpha=0.2)
             axs[1].scatter(xg, yg, color='k', marker='o')
             axs[1].scatter(xe, ye, color='k', marker='o')
             axs[1].set_xlabel('I (a.u.)')
@@ -253,8 +253,8 @@ class SingleShot:
             axs[1].axis('equal')
 
             """X and Y ranges for histogram"""
-            ng, binsg, pg = axs[2].hist(ig_new, bins=numbins, range=xlims, color='b', label='g', alpha=0.5)
-            ne, binse, pe = axs[2].hist(ie_new, bins=numbins, range=xlims, color='r', label='e', alpha=0.5)
+            ng, binsg, pg = axs[2].hist(ig_new, bins=numbins, range=xlims, color='b', label='g', alpha=0.2)
+            ne, binse, pe = axs[2].hist(ie_new, bins=numbins, range=xlims, color='r', label='e', alpha=0.2)
 
             axs[2].set_xlabel('I(a.u.)')
         else:

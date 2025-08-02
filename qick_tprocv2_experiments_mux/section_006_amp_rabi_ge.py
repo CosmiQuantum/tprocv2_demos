@@ -93,9 +93,11 @@ class AmplitudeRabiExperiment:
                                                angle=self.experiment.readout_cfg["ro_phase"], progress=self.qick_verbose)
                 else:
                     iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=self.config["rounds"], progress=self.qick_verbose)
-
+                print('len(iq_list[0])',len(iq_list[0]))
                 I = iq_list[self.QubitIndex][0, :, 0]
                 Q = iq_list[self.QubitIndex][0, :, 1]
+                # I = iq_list[self.QubitIndex][-1 :, 0]
+                # Q = iq_list[self.QubitIndex][-1 :, 1]
             #get the gains that were used so you can use to plot on the x axis
             gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
 
@@ -1506,6 +1508,28 @@ class AmplitudeRabiProgram(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         # Trigger the readout channels to start collecting the data
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+
+        ################ Active Reset #################################
+        # self.label("before")
+        # # n=n+1
+        # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
+        # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+        #
+        # self.read_and_jump(ro_ch=cfg['ro_ch'][0],
+        #                    component='I',
+        #                    threshold=cfg['threshold1'],
+        #                    test=">=", label='after')
+        # # print('measuring again')
+        # self.read_and_jump(ro_ch=cfg['ro_ch'][0],
+        #                    component='I',
+        #                    threshold=cfg['threshold2'],
+        #                    test=">=", label='before')
+        #
+        # # print('playing pi in active to move e to g')
+        # self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play pulse pi
+        # self.delay_auto(self.cfg['sigma'] * 4)
+        # self.jump('before')
+        # self.label('after')
 
 class AmplitudeRabi_QZE_Program(AveragerProgramV2):
     def __init__(self, soccfg, reps, final_delay, final_wait=0, initial_delay=1.0,

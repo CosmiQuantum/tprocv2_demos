@@ -60,7 +60,7 @@ def add_single_qubit_experiment(expt_cfg, expt_name, QubitIndex):
     elif expt_name == 'length_rabi_Qtemps':
         exp_cfg.update([('qubit_length_ef', QickSweep1D('lenloop', start, stop))])
 
-    elif (expt_name == 'Ramsey_ge' or expt_name == 'SpinEcho_ge' or expt_name == 'T1_ge' or expt_name == 'T1_fg'
+    elif (expt_name == 'Ramsey_ge' or expt_name == 'SpinEcho_ge' or expt_name == 'T1_ge' or expt_name == 'T1_IBM_qze' or expt_name == 'T1_fg'
           or expt_name == 'T1_fe' or expt_name == 'Ramsey_ef' or expt_name == 'Ramsey_stark'):
         exp_cfg.update([('wait_time', QickSweep1D('waitloop', start, stop))])
 

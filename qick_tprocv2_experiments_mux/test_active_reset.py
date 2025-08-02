@@ -27,14 +27,14 @@ class Active_Reset(AveragerProgramV2):
         ro_chs = cfg['ro_ch']
         gen_ch = cfg['res_ch']
         qubit_ch = cfg['qubit_ch']
+        # self.q_index=q_index
+        # self.r_thresh1 = 6
 
-        self.r_thresh1 = 6
-
-        self.add_reg('thresh1',init = cfg["threshold1"])# * cfg["readout_length"])
-
-
-
-        self.add_reg('thresh2',init = cfg["threshold2"])
+        # self.add_reg('thresh1',init = cfg["threshold1"])# * cfg["readout_length"])
+        #
+        #
+        #
+        # self.add_reg('thresh2',init = cfg["threshold2"])
 
         self.declare_gen(ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
                          mux_freqs=cfg['res_freq_ge'],
@@ -72,25 +72,44 @@ class Active_Reset(AveragerProgramV2):
         # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
         # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
         ################ Active Reset #################################
-        self.label("before")
-
-        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
+        n=0
+        ################ Active Reset #################################
+        self.label("Readout and check conditions")
+        n=n+1
+        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0 )  # play probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
-        self.read_and_jump(adcs=cfg['ro_ch'],
-                           component='I',
-                           threshold=cfg['threshold1'],
-                           test="=<", label='after')
+        # Wait for readout to be completed
+        self.wait_auto(cfg['res_length'])
+        self.delay_auto(cfg['res_length']+0.2)
 
-        self.read_and_jump(adcs=cfg['ro_ch'],
+        # Read from ro_ch buffer???
+        print("cfg['ro_ch'][0])",cfg['ro_ch'][0])
+        self.read_input(ro_ch=cfg['ro_ch'][0])
+        self.write_dmem(addr=0, src='s_port_l')
+        self.write_dmem(addr=1, src='s_port_h')
+
+        # if whatever is read from ro_ch is greater or equal to threshold 1, skip to label('skip everything'))
+        self.read_and_jump(ro_ch=cfg['ro_ch'][0],
                            component='I',
-                           threshold=cfg['threshold2'],
-                           test="<", label='before')
-        self.condj(0, 1, '<', self.r_thresh2, 'before')
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play pulse
-        self.delay_auto(0.0)
-        self.jump('before')
-        self.label('after')
+                           threshold=cfg['g_value'],
+                           test=">=", label='skip everything')
+
+        # if whatever is read from ro_ch is greater or equal to threshold 2 (between_g_and_e), go back to label("Readout and check conditions")
+        self.read_and_jump(ro_ch=cfg['ro_ch'][0],
+                           component='I',
+                           threshold=cfg['between_g_and_e'],
+                           test=">=", label="Readout and check conditions")
+
+        # print('playing pi in active to move e to g')
+        # Play a pi pulse if whatever is read from ro_ch is lesser than both thresholds 1 and 2
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play pulse pi
+        # self.delay_auto(self.cfg['sigma'] * 4) # ????
+        self.jump("Readout and check conditions")
+        self.label('skip everything')
+
+        print('n=',n)
+        # print('passed. Moving on')
 
 
 class Active_Reset_test:
@@ -99,7 +118,7 @@ class Active_Reset_test:
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
-        self.expt_name = "Readout_Optimization"#"Active_Reset"
+        self.expt_name = "Readout_Optimization"
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.round_num = round_num
         self.save_figs = save_figs
@@ -116,8 +135,9 @@ class Active_Reset_test:
             self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-            if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} Active_Reset_test: ', self.config)
-            self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} Active_Reset_test: {self.config}')
+            if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} Active Reset ',
+                                   self.config)
+            self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} Active Reset: {self.config}')
 
         self.q1_t1 = []
         self.q1_t1_err = []
@@ -125,14 +145,21 @@ class Active_Reset_test:
 
     def run(self, ):
         # Run the single shot programs (g and e)
-        self.config['relax_delay']=1
-        act = Active_Reset(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
-        iq_act = act.acquire(self.experiment.soc, soft_avgs=1, progress=False)
+        # self.config['relax_delay']=1
+        act = Active_Reset(self.experiment.soccfg, reps=1, final_delay=0.0,
+                                    cfg=self.config)
+        iq_act = act.acquire(self.experiment.soc, soft_avgs=1, progress=True)
+        print('iq_act',iq_act)
+        print("feedback readout:", self.experiment.soc.read_mem(2, 'dmem'))
+        # print('resL to cycles',self.experiment.soc.us2cycles(self.config['res_length'], ro_ch=self.config['ro_ch'][0]))
+        # act_idata = iq_act[self.QubitIndex][-1].T[0]
+        # act_qdata = iq_act[self.QubitIndex][-1].T[1]
+        act_idata = iq_act[self.QubitIndex][-1][:,0]
+        act_qdata = iq_act[self.QubitIndex][-1][:,1]
 
-        act_idata = iq_act[self.QubitIndex][-1].T[0]
-        act_qdata = iq_act[self.QubitIndex][-1].T[1]
-        self.config['relax_delay'] = 1
-        ssp_e = SingleShotProgram_e(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'],cfg=self.config)
+        # self.config['relax_delay'] = 1
+        ssp_e = SingleShotProgram_e(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'],
+                                    cfg=self.config)
         iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=True)
         no_act_idata = iq_list_e[self.QubitIndex][0].T[0]
         no_act_qdata = iq_list_e[self.QubitIndex][0].T[1]
@@ -150,29 +177,101 @@ class Active_Reset_test:
 
 #     fid, angle = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
 #     return fid, angle, iq_list_g, iq_list_e, self.config
+    def create_folder_if_not_exists(self, folder):
+        """Creates a folder at the given path if it doesn't already exist."""
+        if not os.path.exists(folder):
+            os.makedirs(folder)
 
     def plot_results(self, act_idata, act_qdata, no_act_idata, no_act_qdata, QubitIndex, fig_quality=100):
-        act_x, act_y = np.median(act_idata), np.median(act_qdata)
-        no_act_x, no_act_y = np.median(no_act_idata), np.median(no_act_qdata)
+        qe = act_qdata
+        ie = act_idata
+        qg = no_act_qdata
+        ig = no_act_idata
+        xg, yg = np.median(ig), np.median(qg)
+        xe, ye = np.median(ie), np.median(qe)
+        # act_x, act_y = np.median(act_idata), np.median(act_qdata)
+        # no_act_x, no_act_y = np.median(no_act_idata), np.median(no_act_qdata)
 
 
         # if plot == True:
-        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(16, 4))
+        fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(16, 4))
         fig.tight_layout()
 
-        axs[0].scatter(act_idata, act_qdata, label = 'act data', color = 'b', marker = '*')
+        axs[0].scatter(ie, qe, label = 'pi-pulse then active reset', color = 'b', marker = '*', alpha=0.1)
 
-        axs[0].scatter(act_x, act_y, color='k', marker='o')
+        axs[0].scatter(xe, ye, color='k', marker='o')
 
-        axs[0].scatter(no_act_idata, no_act_qdata, label='no act data', color='r', marker='*')
+        axs[0].scatter(ig, qg, label='pi-pulse only', color='r', marker='*', alpha=0.1)
 
-        axs[0].scatter(no_act_x, no_act_y, color='k', marker='o')
+        axs[0].scatter(xg, yg, color='k', marker='o')
 
         axs[0].set_xlabel('I (a.u.)')
         axs[0].set_ylabel('Q (a.u.)')
         axs[0].legend(loc='upper right')
-        axs[0].set_title('Unrotated Act vs No act Data')
+        axs[0].set_title('Unrotated Active reset data\n and Rotated Pi pulse only Data')
         axs[0].axis('equal')
+
+        theta = -np.arctan2((ye - yg), (xe - xg))
+
+        """Rotate the IQ data"""
+        ig_new = ig * np.cos(theta) - qg * np.sin(theta)
+        qg_new = ig * np.sin(theta) + qg * np.cos(theta)
+        ie_new = ie * np.cos(theta) - qe * np.sin(theta)
+        qe_new = ie * np.sin(theta) + qe * np.cos(theta)
+
+        """New means of each blob"""
+        xg, yg = np.median(ig_new), np.median(qg_new)
+        xe, ye = np.median(ie_new), np.median(qe_new)
+
+        # theta= -np.arctan2((act_y - no_act_y), (act_x - no_act_x))
+        # no_act_idata_new = no_act_idata * np.cos(theta) - no_act_qdata * np.sin(theta)
+        # no_act_qdata_new = no_act_idata * np.sin(theta) + no_act_qdata * np.cos(theta)
+        # act_idata_new = act_idata * np.cos(theta) - act_qdata * np.sin(theta)
+        # act_qdata_new = act_idata * np.sin(theta) + act_qdata * np.cos(theta)
+        # no_act_x_new = no_act_x * np.cos(theta) - no_act_y * np.sin(theta)
+        # no_act_y_new = no_act_x * np.sin(theta) + no_act_y * np.cos(theta)
+        # act_x_new = act_x * np.cos(theta) - act_y * np.sin(theta)
+        # act_y_new = act_x * np.sin(theta) + act_y * np.cos(theta)
+
+        axs[1].scatter(ie_new, qe_new, label='pi-pulse then active reset', color='b', marker='*', alpha=0.1)
+
+        axs[1].scatter(xe, ye, color='k', marker='o')
+
+        axs[1].scatter(ig_new, qg_new, label='pi-pulse only', color='r', marker='*', alpha=0.1)
+
+        axs[1].scatter(xg, yg, color='k', marker='o')
+
+        axs[1].set_xlabel('I (a.u.)')
+        axs[1].set_ylabel('Q (a.u.)')
+        axs[1].legend(loc='upper right')
+        axs[1].set_title('Rotated Active reset data\n and Rotated Pi pulse only Data')
+        axs[1].axis('equal')
+
+        xlims = [np.min(ig_new), np.max(ie_new)]
+        numbins = round(math.sqrt(float(self.config["steps"])))
+
+        """X and Y ranges for histogram"""
+        ng, binsg, pg = axs[2].hist(ig_new, bins=numbins, range=xlims, color='r', label='pi pulse only', alpha=0.1)
+        ne, binse, pe = axs[2].hist(ie_new, bins=numbins, range=xlims, color='b', label='pi pulse then active reset', alpha=0.1)
+        axs[2].set_xlabel('Rotated Idata (a.u.)')
+        axs[2].set_ylabel('Counts')
+        axs[2].legend(loc='upper right')
+        axs[2].set_title('Rotated Active reset data\n and Rotated Pi pulse only Data')
+        axs[2].axis('equal')
+
+        self.create_folder_if_not_exists(self.outerFolder)
+        outerFolder_expt = os.path.join(self.outerFolder, "Active_reset")
+        # self.create_folder_if_not_exists(outerFolder_expt)
+        outerFolder_expt = os.path.join(outerFolder_expt, "Q" + str(self.QubitIndex + 1))
+        self.create_folder_if_not_exists(outerFolder_expt)
+        now = datetime.datetime.now()
+        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+        file_name = os.path.join(outerFolder_expt,
+                                 f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
+
+
+        fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
+        plt.close(fig)
 
         return
 

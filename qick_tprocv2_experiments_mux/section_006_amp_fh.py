@@ -10,11 +10,11 @@ import copy
 import logging
 import visdom
 
-class EF_AmplitudeRabiExperiment:
+class FH_AmplitudeRabiExperiment:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_shots=False, save_figs = True, experiment = None,
                  live_plot = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
                  multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, QZE=False,
-                 projective_readout_pulse_len_us=9,  time_between_projective_readout_pulses=None, expt_name = "power_rabi_ef", unmasking_resgain = False):
+                 projective_readout_pulse_len_us=9,  time_between_projective_readout_pulses=None, expt_name = "power_rabi_fh", unmasking_resgain = False):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
@@ -45,13 +45,13 @@ class EF_AmplitudeRabiExperiment:
                     if self.QubitIndex==qubit_to_increase_reps_for:
                         print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
                         self.config["reps"] *= multiply_qubit_reps_by
-                print(f'Q {self.QubitIndex + 1} Round {self.round_num} EF Rabi configuration: ', self.config)
+                print(f'Q {self.QubitIndex + 1} Round {self.round_num} FH Rabi configuration: ', self.config)
 
 
     def run(self, thresholding=False):
         print(self.config)
 
-        amp_rabi = EF_AmplitudeRabiProgram(self.experiment.soccfg, reps=self.config['reps'],
+        amp_rabi = FH_AmplitudeRabiProgram(self.experiment.soccfg, reps=self.config['reps'],
                                         final_delay=self.config['relax_delay'], cfg=self.config)
 
         if self.live_plot:
@@ -177,11 +177,11 @@ class EF_AmplitudeRabiExperiment:
 
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"e-f Rabi Q{self.QubitIndex + 1}: {pi_amp:.4f} (a.u.) _"  + f", {config['reps']}*{config['rounds']} avgs",
+                         f"f-h Rabi Q{self.QubitIndex + 1}: {pi_amp:.4f} (a.u.) _"  + f", {config['reps']}*{config['rounds']} avgs",
                          fontsize=24, ha='center', va='top') #f", {config['sigma'] * 1000} ns sigma" need to add in all qqubit sigmas to save exp_cfg before putting htis back
             else:
                 fig.text(plot_middle, 0.98,
-                         f"e-f Rabi Q{self.QubitIndex + 1}: {pi_amp:.4f} (a.u.)_" f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']}*{self.config['rounds']} avgs",
+                         f"f-h Rabi Q{self.QubitIndex + 1}: {pi_amp:.4f} (a.u.)_" f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']}*{self.config['rounds']} avgs",
                          fontsize=24, ha='center', va='top')
             # print(len(gains))
             ax1.plot(gains, I, label="Gain (a.u.)", linewidth=2)
@@ -281,7 +281,7 @@ class EF_AmplitudeRabiExperiment:
             os.makedirs(folder)
 
 
-class EF_AmplitudeRabiProgram(AveragerProgramV2):
+class FH_AmplitudeRabiProgram(AveragerProgramV2):
     def _initialize(self, cfg):
         ro_ch = cfg['ro_ch']
         res_ch = cfg['res_ch']
@@ -291,7 +291,7 @@ class EF_AmplitudeRabiProgram(AveragerProgramV2):
                          mux_gains=cfg['res_gain_fh'],
                          mux_phases=cfg['res_phase'],
                          mixer_freq=cfg['mixer_freq'])
-        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ef'], cfg['ro_phase']):
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_fh'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
 
         self.add_pulse(ch=res_ch, name="res_pulse",
@@ -311,24 +311,32 @@ class EF_AmplitudeRabiProgram(AveragerProgramV2):
                        gain=cfg['pi_amp'],
                        )
 
-        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma_ef'], length=cfg['sigma_ef'] * 4, even_length=False)
+        self.add_gauss(ch=qubit_ch, name="eframp", sigma=cfg['sigma_ef'], length=cfg['sigma_ef'] * 4, even_length=False)
 
+        self.add_pulse(ch=qubit_ch, name="ef_pi_pulse",
+                       style="arb",
+                       envelope="eframp",
+                       freq=cfg['qubit_freq_ef'],
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['pi_ef_amp'],
+                       )
+
+        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma_fh'], length=cfg['sigma_fh'] * 4, even_length=False)
         self.add_pulse(ch=qubit_ch, name="qubit_pulse",
                        style="arb",
                        envelope="ramp",
-                       freq=cfg['qubit_freq_ef'],
+                       freq=cfg['qubit_freq_fh'],
                        phase=cfg['qubit_phase'],
-                       gain=cfg['qubit_gain_ef'],
+                       gain=cfg['qubit_gain_fh'],
                        )
-
-
 
         self.add_loop("gainloop", cfg["steps"])
 
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play pulse: ge pi
         self.delay_auto(0.0)
-
+        self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # play pulse: ef pi
+        self.delay_auto(0.0)
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0) #  play pulse: variable-gain fh pi
         self.delay_auto(t=0.0, tag='waiting') #wait
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0) #probe pulse

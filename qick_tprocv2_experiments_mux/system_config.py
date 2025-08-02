@@ -75,7 +75,7 @@ class QICK_experiment:
                 #"res_freq_ge": [6217, 6276, 6335, 6407, 6476, 6538],  # MHz, run 5
                 #'res_freq_ge': [6217.011, 6275.7973, 6335.1068, 6407.052, 6476.1091, 6538], # Arianna 3/27/
                 #'res_freq_ge': [6216.811, 6275.9373, 6335, 6407.0338, 6475.8835, 6538], #Joyce 3/11
-                'res_freq_ge': [6223.097, 6284.61, 6343.95, 6414.9, 6481.4, 6547.09], #updated by Kester for run 7, Qick board, 6418.4 R5
+                'res_freq_ge': [6223.097, 6284.63, 6343.98, 6414.9, 6481.4, 6547.08], #updated by Kester for run 7, Qick board, 6418.4 R5
                 #'res_freq_ge': [6219.097, 6284.55, 6343.95, 6414.934, 6418.4, 6547.25],  # updated by Kester for run 7, QICK box
 
                 # "res_freq_ge": [6191.419, 6216.1, 6292.361, 6405.77, 6432.759, 6468.481],  # MHz, run 4a
@@ -86,12 +86,12 @@ class QICK_experiment:
                 # "res_gain_ge": [1,1,0.7,0.7,0.7,1], #[0.4287450656184295, 0.4903077560386716, 0.4903077560386716, 0.3941941738241592, 0.3941941738241592, 0.4903077560386716],  # DAC units
                 # "res_freq_ef": [7149.44, 0, 0, 0, 0, 0], # [MHz]
                 # "res_gain_ef": [0.6, 0, 0, 0, 0, 0], # [DAC units]
-                "res_freq_ef": [6223.033, 6284.543, 6343.883, 6414.893, 6414.893, 6546.82],  # [MHz] updated by arianna for run 7
-                "res_gain_ef": [0.96, 1, 0.7200, 0.5333, 0.8000, 0.55],  # [DAC units]
-                "res_freq_fh": [6216.798, 6275.8973, 6335, 6407.132, 6476.0891, 6538],  # [MHz]
-                "res_gain_fh": [0.96, 1, 0.7200, 0.5333, 0.8000, 0.55],  # [DAC units]
+                "res_freq_ef": [6223.016, 6284.544, 6343.861, 6414.893, 6414.893, 6546.754],  # [MHz] updated by arianna for run 7
+                "res_gain_ef": [0.95,0.9,0.95,0.55,0.55,0.95],  # [DAC units]
+                "res_freq_fh": [6223.016, 6284.544, 6343.861, 6414.893, 6414.893, 6546.754],  # [MHz]
+                "res_gain_fh": [0.95,0.9,0.95,0.55,0.55,0.95],  # [DAC units]
                 "res_length": 2.0,  # [us] (1.0 for res spec)
-                "res_phase": [ 1.281174 * 180/np.pi, -10, 85,
+                "res_phase": [ -180+((1.281174-2.6703) * 180/np.pi), -10, 85,
                               0, 150,
                             -90], #Joyce 3/11
                 #"res_phase": [(0.19-0.38) * 180/np.pi, (2.07-3.12-1.16) * 180/np.pi, (-0.35+2.28) * 180/np.pi,
@@ -102,13 +102,13 @@ class QICK_experiment:
                 "threshold": [-5.84, 1, -5, -3, -1, 4], #Joyce 3/11
                 #"threshold": [7.3961, -12.5812, 4.8613, -7.5323, 7.0689, 4.6805], # Threshold for Distinguish g/e, from QICK Function
                 "res_ring_up_time": 4,  # Olivia May 17th
-                "threshold1": -300,
-                "threshold2": -200,
+                "threshold1": -30*269,
+                "threshold2": -91*269,
             }
 
             # Qubit Configuration
             self.qubit_cfg = {
-                "qubit_freq_ge": [4184.1, 3823.37, 4162.9, 4467.37, 4467.23, 5006.13],  # Joyce 3/11
+                "qubit_freq_ge": [4184.1, 3823.37, 4162.91, 4467.37, 4467.23, 5006.11],  # Joyce 3/11
                 "qubit_freq_chevron_detuned_ge": [4189.7582, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86], # Olivia May 17
                 "qubit_freq_ge_starked": [4189.737678, 3820.4723, 4161.3726, 4463.15226, 4471.4469, 4997.86], # Olivia 4/04 for zeno/stark tone
                 "fwhm_w01_starked": None, #for err bars
@@ -126,8 +126,8 @@ class QICK_experiment:
                 # [MHz] Freqs of Qubit e/f Transition
                 "qubit_freq_fh": [4016.3, 3644.76, 3988.44, 4292.73, 4292.73, 4833.17],
                 "qubit_freq_ftores": [4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17],
-                "qubit_gain_ef": [0.03, 0.14, 0.04, 0.1, 0.15, 0.08],
-                "qubit_gain_fh": [0.001, 0.005, 0.0075, 0.1, 0.15, 0.005],
+                "qubit_gain_ef":  [0.001, 0.0065, 0.0075, 0.1, 0.15, 0.005],# [0.03, 0.14, 0.04, 0.1, 0.15, 0.08],#
+                "qubit_gain_fh": [0.001, 0.015, 0.0075, 0.1, 0.15, 0.005],
                 'qubit_gain_ftores': [1]*6,#[0.2, 0.14, 0.04, 0.17, 0.13, 0.08],
                 # [0.01, 0.05, 0.05, 0.05, 0.01, 0.5], # [DAC units] Pulse Gain
                 "qubit_length_ef": 22, #22.0,
@@ -139,12 +139,13 @@ class QICK_experiment:
                 #"sigma": [0.05, 0.09, 0.07, 0.065, 0.09, 0.3],  # Goal: cut sigma in half [us] for Gaussian Pulse (5+4 DAC atten for qubit)
                 # "pi_amp": [0.92, 0.87, 0.75, 0.73, 0.77, 0.78], # old RR values
                 "sigma_ef": [0.15, 0.2, 0.25, 0.29, 0.28, 0.5],  # [us] for Gaussian Pulse, #Arianna 3/27
-                "pi_amp": [0.709, 0.622, 0.615, 0.7754, 0.6546, 0.9], #Joyce 3/11
+                "pi_amp": [0.722, 0.555, 0.635, 0.7754, 0.6546, 0.682], #Joyce 3/11
                 "pi_amp_ampl": [0.5942, 0.634499, 0.76542, 0.7754, 0.55393, 0.9], # Joyce 04/07 DAC 0
                 #"pi_amp": [1.0, 0.93, 0.77, 0.8, 0.81, 0.9], # Eyeballed by Sara today (5+10 DAC atten for qubit)
                 #"pi_amp": [0.7, 0.95, 0.75, 0.78, 0.77, 0.8],  # With shorter sigma (5+4 DAC instead of 5+5 DAC atten for qubit)
-                "pi_ef_amp": [0.7085, 0.6817, 0.6617, 0.7018, 0.6751, 0.6951], # Arianna 3/27
+                "pi_ef_amp": [0.563, 0.673, 0.511, 0.7018, 0.6751, 0.589], # Arianna 3/27
                 "qubit_mixer_freq": 4300,  # [MHz]
+
             }
 
         elif fridge == "NEXUS":
