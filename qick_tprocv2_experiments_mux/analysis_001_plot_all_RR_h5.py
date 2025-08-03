@@ -24,11 +24,12 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 from bisect import bisect_left
 from scipy.stats import norm
+import h5py
 
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 
 class PlotAllRR:
-    def __init__(self,  date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
+    def __init__(self,  date, figure_quality, save_figs, fit_saved, signal, run_name, run_num, number_of_qubits, outerFolder,
                  outerFolder_save_plots, unique_folder_path):
         self.date = date
         self.figure_quality = figure_quality
@@ -36,6 +37,7 @@ class PlotAllRR:
         self.fit_saved = fit_saved
         self.signal = signal
         self.run_name = run_name
+        self.run_num = run_num
         self.number_of_qubits = number_of_qubits
         self.outerFolder = outerFolder
         self.outerFolder_save_plots = outerFolder_save_plots
@@ -106,7 +108,10 @@ class PlotAllRR:
             else:
                 self.load_plot_save_rabi()
         if plot_ss:
-            self.load_plot_save_ss(plot_ss_hist_only = plot_ss_hist_only, plot_title = ss_plot_title)
+            if self.run_num == 4:
+                self.run4_load_plot_save_ss(plot_ss_hist_only = plot_ss_hist_only, plot_title = ss_plot_title)
+            else:
+                self.load_plot_save_ss(plot_ss_hist_only = plot_ss_hist_only, plot_title = ss_plot_title)
         if ss_plot_gef:
             self.load_plot_save_ss_gef(plot_ssf_gef = ss_plot_gef)
         if plot_t1:
@@ -307,14 +312,16 @@ class PlotAllRR:
             del H5_class_instance
 
     def load_plot_save_ss(self, plot_ss_hist_only, plot_title):
-        
+        print('Running load_plot_save_ss function')
         # ------------------------------------------------Load/Plot/Save SS---------------------------------------
-        outerFolder_expt = self.outerFolder + "/Data_h5/SS_ge/"
+        outerFolder_expt = self.outerFolder + "/Data_h5/ss_ge/"
+
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
-        
+
         for h5_file in h5_files:
         
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
+
             H5_class_instance = Data_H5(h5_file)
             load_data = H5_class_instance.load_from_h5(data_type=  'SS', save_r = int(save_round))
         
@@ -370,6 +377,56 @@ class PlotAllRR:
                         del ss_class_instance
         
             del H5_class_instance
+
+    def run4_load_plot_save_ss(self, plot_ss_hist_only, plot_title, print_contents_ofH5 = False):
+        print('Running RUN 4 version of load_plot_save_ss function')
+        # ------------------------------------------------Load/Plot/Save SS---------------------------------------
+        outerFolder_expt = self.outerFolder + "/Data_h5/ss_ge/"
+
+        h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+
+        for h5_file in h5_files:
+            filename = os.path.basename(h5_file)
+            QubitIndex = None
+            if 'Qubit_3' in filename:
+                QubitIndex = 2
+            elif 'Qubit_4' in filename:
+                QubitIndex = 3
+
+            with h5py.File(h5_file, 'r') as f:
+                if print_contents_ofH5:
+                    print(f"\n--- Contents of {filename} ---")
+                    for name in f:
+                        print(name)
+                    for name in f.keys():
+                        obj = f[name]
+                        if isinstance(obj, h5py.Group):
+                            print(f"Group: {name}/")
+                            for subname in obj:
+                                print(f"  {name}/{subname}")
+                        elif isinstance(obj, h5py.Dataset):
+                            print(f"Dataset available for: {name}")
+                    print("--- End of contents ---\n")
+
+                try:
+                    iq_list_e = f['excited_iq_data'][:]
+                    iq_list_g = f['ground_iq_data'][:]
+                    qubit_frequency = f['qubit_frequency'][()]
+                    print('qubit freq:',qubit_frequency)
+                    frequency = f['frequency'][()]
+                    print('resonator freq:', frequency)
+
+                    if "2024-11-12_10-00-32" in self.outerFolder:
+                        iq_list_e = f['excited_iq_data'][QubitIndex, 0, :, :]  # shape (3000, 2)
+                        iq_list_g = f['ground_iq_data'][QubitIndex, 0, :, :]  # shape (3000, 2)
+
+                except Exception as e:
+                    print(f"Failed to extract IQ data from {filename}: {e}")
+                    continue
+
+            ss_class = SingleShot(QubitIndex, self.number_of_qubits,  self.outerFolder, self.outerFolder_save_plots, self.run_num, save_figs=self.save_figs, experiment = None,
+                                    verbose = False, logger = None, qick_verbose=False)
+            ss_class.plot_results(iq_list_g, iq_list_e, QubitIndex,  fig_quality=200)
 
     def load_plot_save_t1(self):
         # ------------------------------------------------Load/Plot/Save T1----------------------------------------------

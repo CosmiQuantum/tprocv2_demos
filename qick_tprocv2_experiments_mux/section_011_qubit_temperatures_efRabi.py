@@ -20,7 +20,7 @@ from build_state import *
 from system_config import *
 import os
 import h5py
-from qualang_tools.plot import Fit
+# from qualang_tools.plot import Fit
 import pprint as pp
 from system_config import QICK_experiment
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE

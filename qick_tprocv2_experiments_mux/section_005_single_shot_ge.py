@@ -130,11 +130,12 @@ class SingleShotProgram_e(AveragerProgramV2):
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 class SingleShot:
-    def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, save_figs=False, experiment = None,
+    def __init__(self, QubitIndex, number_of_qubits,  outerFolder , outerFolder_save_plots, round_num, save_figs=False, experiment = None,
                  verbose = False, logger = None, qick_verbose=True):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
+        self.outerFolder_save_plots = outerFolder_save_plots
         self.expt_name = "Readout_Optimization"
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.round_num = round_num
@@ -190,21 +191,22 @@ class SingleShot:
         I_e = iq_list_e[QubitIndex][0].T[0]
         Q_e = iq_list_e[QubitIndex][0].T[1]
 
-        fid, threshold, angle, ig_new, ie_new = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=self.save_figs,  fig_quality=fig_quality)
+        fid, threshold, angle, ig_new, ie_new = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], plot=self.save_figs,  fig_quality=fig_quality)
         if self.verbose: print('Optimal fidelity after rotation = %.3f' % fid)
         if self.verbose: print('Optimal angle after rotation = %f' % angle)
         self.logger.info('Optimal fidelity after rotation = %.3f' % fid)
         self.logger.info('Optimal angle after rotation = %f' % angle)
         return fid, angle
 
-    def hist_ssf(self, data=None, cfg=None, plot=True,  fig_quality = 100):
+    def hist_ssf(self, data=None, plot=True,  fig_quality = 100):
 
         ig = data[0]
         qg = data[1]
         ie = data[2]
         qe = data[3]
 
-        numbins = round(math.sqrt(float(cfg["steps"])))
+        # numbins = round(math.sqrt(float(self.config["steps"])))
+        numbins = 50
 
         xg, yg = np.median(ig), np.median(qg)
         xe, ye = np.median(ie), np.median(qe)
@@ -266,8 +268,8 @@ class SingleShot:
 
 
         if plot == True:
-            self.create_folder_if_not_exists(self.outerFolder)
-            outerFolder_expt = os.path.join(self.outerFolder, "ss_repeat_meas_ge")
+            self.create_folder_if_not_exists(self.outerFolder_save_plots)
+            outerFolder_expt = os.path.join(self.outerFolder_save_plots, "ss_ge")
             self.create_folder_if_not_exists(outerFolder_expt)
             outerFolder_expt = os.path.join(outerFolder_expt, "Q" + str(self.QubitIndex + 1))
             self.create_folder_if_not_exists(outerFolder_expt)
