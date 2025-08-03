@@ -49,7 +49,7 @@ if FRIDGE == "QUIET":
             "start": list(VNA_qubit-4), # [MHz] #-300 #-10 # -4
             "stop": list(VNA_qubit+4), # [MHz] #+10 # 4
             "steps": 450, # 227
-            "relax_delay": 10, #1000, # [us]
+            "relax_delay": 1000, #1000, # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
@@ -199,7 +199,7 @@ if FRIDGE == "QUIET":
             "start": [0.0] * 6,  # [us]
             "stop": [200]*6, #[250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
             "steps": 60,
-            "relax_delay": 600,  # [us] ### Should be >10x T1!
+            "relax_delay": 1000,  # [us] ### Should be >10x T1!
             "wait_time": 0.0,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -207,10 +207,10 @@ if FRIDGE == "QUIET":
         "T1_IBM_qze": {
             "reps": 500,  # 300
             "rounds": 1,  # 1
-            "start": [30] * 6,  # [us]
-            "stop": [31] * 6,  # [250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
+            "start": [10] * 6,  # [us]
+            "stop": [11] * 6,  # [250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
             "steps": 1,
-            "relax_delay": 600,  # [us] ### Should be >10x T1!
+            "relax_delay": 1000,  # [us] ### Should be >10x T1!
             "wait_time": 0.0,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },

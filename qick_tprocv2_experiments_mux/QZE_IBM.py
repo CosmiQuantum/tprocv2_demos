@@ -108,265 +108,267 @@ rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
 # https://iopscience.iop.org/article/10.1088/1367-2630/17/6/063035/pdf)
 batch_num=0
 j = 0
+slices=[10,20,30]
+for slice in slices:
+    for repeat_round in range(2):
+        for QubitIndex in Qs_to_look_at:
+            sub_study = f'300_t1_points_500_avgs_relax_delay1ms_2tests_slice{slice}ms_round{repeat_round}'
+            data_set = 'qubit_' + str(QubitIndex) + '_' +datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-for QubitIndex in Qs_to_look_at:
-    sub_study = '1000_t1_points_500_avgs'
-    data_set = 'qubit_' + str(QubitIndex) + '_' +datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            # set which of the following you'd like to run to 'True'
+            run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True,
+                         "t1": True}
 
-    # set which of the following you'd like to run to 'True'
-    run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True,
-                 "t1": True}
+            if not os.path.exists(f"/data/QICK_data/{run_name}/"):
+                os.makedirs(f"/data/QICK_data/{run_name}/")
+            if not os.path.exists(f"/data/QICK_data/{run_name}/{device_name}/"):
+                os.makedirs(f"/data/QICK_data/{run_name}/{device_name}/")
+            studyFolder = os.path.join(f"/data/QICK_data/{run_name}/{device_name}/", study)
+            if not os.path.exists(studyFolder):
+                os.makedirs(studyFolder)
+            subStudyFolder = os.path.join(studyFolder, sub_study)
+            if not os.path.exists(subStudyFolder):
+                os.makedirs(subStudyFolder)
 
-    if not os.path.exists(f"/data/QICK_data/{run_name}/"):
-        os.makedirs(f"/data/QICK_data/{run_name}/")
-    if not os.path.exists(f"/data/QICK_data/{run_name}/{device_name}/"):
-        os.makedirs(f"/data/QICK_data/{run_name}/{device_name}/")
-    studyFolder = os.path.join(f"/data/QICK_data/{run_name}/{device_name}/", study)
-    if not os.path.exists(studyFolder):
-        os.makedirs(studyFolder)
-    subStudyFolder = os.path.join(studyFolder, sub_study)
-    if not os.path.exists(subStudyFolder):
-        os.makedirs(subStudyFolder)
+            dataSetFolder = os.path.join(subStudyFolder, data_set)
+            optimizationFolder = os.path.join(dataSetFolder, 'optimization')
+            studyFolder = os.path.join(dataSetFolder, 'study_data')
+            studyDocumentationFolder = os.path.join(dataSetFolder, 'documentation')
+            subStudyDataFolder = os.path.join(dataSetFolder, 'study_data')
+            if not os.path.exists(studyDocumentationFolder):
+                os.makedirs(studyDocumentationFolder)
+            if not os.path.exists(optimizationFolder):
+                os.makedirs(optimizationFolder)
+            if not os.path.exists(subStudyDataFolder):
+                os.makedirs(subStudyDataFolder)
 
-    dataSetFolder = os.path.join(subStudyFolder, data_set)
-    optimizationFolder = os.path.join(dataSetFolder, 'optimization')
-    studyFolder = os.path.join(dataSetFolder, 'study_data')
-    studyDocumentationFolder = os.path.join(dataSetFolder, 'documentation')
-    subStudyDataFolder = os.path.join(dataSetFolder, 'study_data')
-    if not os.path.exists(studyDocumentationFolder):
-        os.makedirs(studyDocumentationFolder)
-    if not os.path.exists(optimizationFolder):
-        os.makedirs(optimizationFolder)
-    if not os.path.exists(subStudyDataFolder):
-        os.makedirs(subStudyDataFolder)
+            file_path = os.path.join(studyDocumentationFolder, 'sub_study_notes.txt')
+            with open(file_path, "w", encoding="utf-8") as file:
+                file.write(substudy_txt_notes)
 
-    file_path = os.path.join(studyDocumentationFolder, 'sub_study_notes.txt')
-    with open(file_path, "w", encoding="utf-8") as file:
-        file.write(substudy_txt_notes)
+            ################################################## Configure logging ###################################################
+            ''' We need to create a custom logger and disable propagation like this
+            to remove the logs from the underlying qick from saving to the log file for RR'''
 
-    ################################################## Configure logging ###################################################
-    ''' We need to create a custom logger and disable propagation like this
-    to remove the logs from the underlying qick from saving to the log file for RR'''
+            log_file = os.path.join(studyDocumentationFolder, "RR_script.log")
+            rr_logger = logging.getLogger("custom_logger_for_rr_only")
+            rr_logger.setLevel(logging.DEBUG)
 
-    log_file = os.path.join(studyDocumentationFolder, "RR_script.log")
-    rr_logger = logging.getLogger("custom_logger_for_rr_only")
-    rr_logger.setLevel(logging.DEBUG)
+            file_handler = logging.FileHandler(log_file, mode='a')
+            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+            file_handler.setFormatter(formatter)
 
-    file_handler = logging.FileHandler(log_file, mode='a')
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    file_handler.setFormatter(formatter)
+            rr_logger.addHandler(file_handler)
+            rr_logger.propagate = False  # dont propagate logs from underlying qick package
 
-    rr_logger.addHandler(file_handler)
-    rr_logger.propagate = False  # dont propagate logs from underlying qick package
+            ####################################### start everything #######################################
+           # Get the config for this qubit
+            experiment = QICK_experiment(optimizationFolder, DAC_attenuator1=10, DAC_attenuator2=15, qubit_DAC_attenuator1=5,
+                                         qubit_DAC_attenuator2=4, ADC_attenuator=17,
+                                         fridge=FRIDGE)  # ADC_attenuator MUST be above 16dB
+            experiment.create_folder_if_not_exists(optimizationFolder)
 
-    ####################################### start everything #######################################
-   # Get the config for this qubit
-    experiment = QICK_experiment(optimizationFolder, DAC_attenuator1=10, DAC_attenuator2=15, qubit_DAC_attenuator1=5,
-                                 qubit_DAC_attenuator2=4, ADC_attenuator=17,
-                                 fridge=FRIDGE)  # ADC_attenuator MUST be above 16dB
-    experiment.create_folder_if_not_exists(optimizationFolder)
+            # Mask out all other resonators except this one
+            res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=res_gain[QubitIndex], num_qubits=tot_num_of_qubits)
+            experiment.readout_cfg['res_gain_ge'] = res_gains
+            experiment.readout_cfg['res_gain_ef'] = res_gains
+            experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
+            ################################ Do Res spec once per qubit and store the value ####################################
+            ################################################# g-e Res spec ####################################################
+            if run_flags["res_spec"]:
+                try:
+                    res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
+                                                     experiment=experiment, verbose=verbose, logger=rr_logger,
+                                                     unmasking_resgain=unmask)
+                    res_freqs, freq_pts, freq_center, amps, sys_config_rspec = res_spec.run()
+                    offset = freq_offsets[
+                        QubitIndex]  # use optimized offset values or whats set at top of script based on pre_optimize flag
+                    offset_res_freqs = [r + offset for r in res_freqs]
+                    experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
+                    del res_spec
 
-    # Mask out all other resonators except this one
-    res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=res_gain[QubitIndex], num_qubits=tot_num_of_qubits)
-    experiment.readout_cfg['res_gain_ge'] = res_gains
-    experiment.readout_cfg['res_gain_ef'] = res_gains
-    experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
-    ################################ Do Res spec once per qubit and store the value ####################################
-    ################################################# g-e Res spec ####################################################
-    if run_flags["res_spec"]:
-        try:
-            res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
-                                             experiment=experiment, verbose=verbose, logger=rr_logger,
-                                             unmasking_resgain=unmask)
-            res_freqs, freq_pts, freq_center, amps, sys_config_rspec = res_spec.run()
-            offset = freq_offsets[
-                QubitIndex]  # use optimized offset values or whats set at top of script based on pre_optimize flag
-            offset_res_freqs = [r + offset for r in res_freqs]
-            experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
-            del res_spec
+                    res_data[QubitIndex]['Dates'][0] = (
+                        time.mktime(datetime.datetime.now().timetuple()))
+                    res_data[QubitIndex]['freq_pts'][0] = freq_pts
+                    res_data[QubitIndex]['freq_center'][0] = freq_center
+                    res_data[QubitIndex]['Amps'][0] = amps
+                    res_data[QubitIndex]['Found Freqs'][0] = res_freqs
+                    res_data[QubitIndex]['Batch Num'][0] = 0
+                    res_data[QubitIndex]['Exp Config'][0] = expt_cfg
+                    res_data[QubitIndex]['Syst Config'][0] = sys_config_rspec
 
-            res_data[QubitIndex]['Dates'][0] = (
-                time.mktime(datetime.datetime.now().timetuple()))
-            res_data[QubitIndex]['freq_pts'][0] = freq_pts
-            res_data[QubitIndex]['freq_center'][0] = freq_center
-            res_data[QubitIndex]['Amps'][0] = amps
-            res_data[QubitIndex]['Found Freqs'][0] = res_freqs
-            res_data[QubitIndex]['Batch Num'][0] = 0
-            res_data[QubitIndex]['Exp Config'][0] = expt_cfg
-            res_data[QubitIndex]['Syst Config'][0] = sys_config_rspec
-
-            saver_res = Data_H5(optimizationFolder, res_data, 0, save_r)  # save
-            saver_res.save_to_h5('Res')
-            del saver_res
-            del res_data
-            res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)  # initialize again to a blank for saftey
+                    saver_res = Data_H5(optimizationFolder, res_data, 0, save_r)  # save
+                    saver_res.save_to_h5('Res')
+                    del saver_res
+                    del res_data
+                    res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)  # initialize again to a blank for saftey
 
 
-        except Exception as e:
-            if debug_mode:
-                raise e  # In debug mode, re-raise the exception immediately
-            else:
-                rr_logger.exception(f'Got the following error, continuing: {e}')
-                if verbose: print(f'Got the following error, continuing: {e}')
-                continue  # skip the rest of this qubit
+                except Exception as e:
+                    if debug_mode:
+                        raise e  # In debug mode, re-raise the exception immediately
+                    else:
+                        rr_logger.exception(f'Got the following error, continuing: {e}')
+                        if verbose: print(f'Got the following error, continuing: {e}')
+                        continue  # skip the rest of this qubit
 
-    ############ Qubit Spec ##############
-    qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
+            ############ Qubit Spec ##############
+            qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
 
-    if run_flags["q_spec"]:
-        try:
-            q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
-                                           signal, save_figs, plot_fit=True,experiment=experiment,
-                                           live_plot=live_plot, verbose=verbose, logger=rr_logger, unmasking_resgain = unmask)
-            (qspec_I, qspec_Q, qspec_freqs, qspec_I_fit,
-             qspec_Q_fit, qubit_freq, sys_config_qspec) = q_spec.run()
+            if run_flags["q_spec"]:
+                try:
+                    q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
+                                                   signal, save_figs, plot_fit=True,experiment=experiment,
+                                                   live_plot=live_plot, verbose=verbose, logger=rr_logger, unmasking_resgain = unmask)
+                    (qspec_I, qspec_Q, qspec_freqs, qspec_I_fit,
+                     qspec_Q_fit, qubit_freq, sys_config_qspec) = q_spec.run()
 
-            if qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None:
-                if stored_qspec_list[QubitIndex] is not None:
-                    experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = stored_qspec_list[QubitIndex]
-                    rr_logger.warning(f"Using previous stored value: {stored_qspec_list[QubitIndex]}")
-                    recycled_qfreq = True
-                    qubit_freq = stored_qspec_list[QubitIndex]
-                    experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
-                    stored_qspec_list[QubitIndex] = float(qubit_freq)
+                    if qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None:
+                        if stored_qspec_list[QubitIndex] is not None:
+                            experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = stored_qspec_list[QubitIndex]
+                            rr_logger.warning(f"Using previous stored value: {stored_qspec_list[QubitIndex]}")
+                            recycled_qfreq = True
+                            qubit_freq = stored_qspec_list[QubitIndex]
+                            experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
+                            stored_qspec_list[QubitIndex] = float(qubit_freq)
+                            if verbose:
+                                print(f"Using previous stored value: {qubit_freq}")
+                        else:
+                            rr_logger.warning(f"No stored g-e qubit spec value for qubit {QubitIndex}; skipping iteration.")
+                            if verbose:
+                                print('No stored g-e qubit spec value for qubit {QubitIndex}; skipping iteration.')
+                            del q_spec
+
+                            continue
+
+                    else:
+                        experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
+                        stored_qspec_list[QubitIndex] = float(qubit_freq)
+
+                    qspec_data[QubitIndex]['Dates'][0] = (
+                        time.mktime(datetime.datetime.now().timetuple()))
+                    qspec_data[QubitIndex]['I'][0] = qspec_I
+                    qspec_data[QubitIndex]['Q'][0] = qspec_Q
+                    qspec_data[QubitIndex]['Frequencies'][0] = qspec_freqs
+                    qspec_data[QubitIndex]['I Fit'][0] = qspec_I_fit
+                    qspec_data[QubitIndex]['Q Fit'][0] = qspec_Q_fit
+                    qspec_data[QubitIndex]['Round Num'][0] = 0
+                    qspec_data[QubitIndex]['Batch Num'][0] = 0
+                    qspec_data[QubitIndex]['Recycled QFreq'][0] = False  # no rr so no recycling here
+                    qspec_data[QubitIndex]['Exp Config'][0] = expt_cfg
+                    qspec_data[QubitIndex]['Syst Config'][0] = sys_config_qspec
+
+                    saver_qspec = Data_H5(optimizationFolder, qspec_data, 0, save_r)
+                    saver_qspec.save_to_h5('QSpec')
+                    del saver_qspec
+                    del qspec_data
+
+                    rr_logger.info(f"g-e Qubit {QubitIndex + 1} frequency: {float(qubit_freq)}")
                     if verbose:
-                        print(f"Using previous stored value: {qubit_freq}")
-                else:
-                    rr_logger.warning(f"No stored g-e qubit spec value for qubit {QubitIndex}; skipping iteration.")
-                    if verbose:
-                        print('No stored g-e qubit spec value for qubit {QubitIndex}; skipping iteration.')
+                        print(f"g-e Qubit {QubitIndex + 1} frequency: {float(qubit_freq)}")
                     del q_spec
 
+                except Exception as e:
+                    if debug_mode:
+                        raise e
+                    rr_logger.exception(f"RR g-e QSpec error on qubit {QubitIndex}: {e}")
+                    if verbose:
+                        print(f"RR g-e QSpec error on qubit {QubitIndex}: {e}")
                     continue
 
-            else:
-                experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
-                stored_qspec_list[QubitIndex] = float(qubit_freq)
+            # reinitialize
+            res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
+            qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
 
-            qspec_data[QubitIndex]['Dates'][0] = (
-                time.mktime(datetime.datetime.now().timetuple()))
-            qspec_data[QubitIndex]['I'][0] = qspec_I
-            qspec_data[QubitIndex]['Q'][0] = qspec_Q
-            qspec_data[QubitIndex]['Frequencies'][0] = qspec_freqs
-            qspec_data[QubitIndex]['I Fit'][0] = qspec_I_fit
-            qspec_data[QubitIndex]['Q Fit'][0] = qspec_Q_fit
-            qspec_data[QubitIndex]['Round Num'][0] = 0
-            qspec_data[QubitIndex]['Batch Num'][0] = 0
-            qspec_data[QubitIndex]['Recycled QFreq'][0] = False  # no rr so no recycling here
-            qspec_data[QubitIndex]['Exp Config'][0] = expt_cfg
-            qspec_data[QubitIndex]['Syst Config'][0] = sys_config_qspec
+            ################### amp rabi ################
+            rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
+            if run_flags["rabi"]:
+                try:
+                    rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
+                                                   save_figs=save_figs, save_shots=False,
+                                                   experiment=experiment, live_plot=live_plot,
+                                                   increase_qubit_reps=increase_qubit_reps,
+                                                   qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                                   multiply_qubit_reps_by=multiply_qubit_reps_by,
+                                                   verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
+                    (rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp,
+                     sys_config_rabi) = rabi.run(thresholding=thresholding)
 
-            saver_qspec = Data_H5(optimizationFolder, qspec_data, 0, save_r)
-            saver_qspec.save_to_h5('QSpec')
-            del saver_qspec
-            del qspec_data
+                    # if these are None, fit didnt work
+                    if (rabi_fit is None and pi_amp is None):
+                        rr_logger.info('g-e Rabi fit didnt work, skipping the rest of this qubit')
+                        if verbose: print('g-e Rabi fit didnt work, skipping the rest of this qubit')
+                        continue  # skip the rest of this qubit
 
-            rr_logger.info(f"g-e Qubit {QubitIndex + 1} frequency: {float(qubit_freq)}")
-            if verbose:
-                print(f"g-e Qubit {QubitIndex + 1} frequency: {float(qubit_freq)}")
-            del q_spec
+                    experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
+                    rr_logger.info(f'g-e Pi amplitude for qubit {QubitIndex + 1} is: {float(pi_amp)}')
+                    if verbose: print('g-e Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
+                    del rabi
 
-        except Exception as e:
-            if debug_mode:
-                raise e
-            rr_logger.exception(f"RR g-e QSpec error on qubit {QubitIndex}: {e}")
-            if verbose:
-                print(f"RR g-e QSpec error on qubit {QubitIndex}: {e}")
-            continue
+                    rabi_data[QubitIndex]['Dates'][0] = (
+                        time.mktime(datetime.datetime.now().timetuple()))
+                    rabi_data[QubitIndex]['I'][0] = rabi_I
+                    rabi_data[QubitIndex]['Q'][0] = rabi_Q
+                    rabi_data[QubitIndex]['Gains'][0] = rabi_gains
+                    rabi_data[QubitIndex]['Fit'][0] = rabi_fit
+                    rabi_data[QubitIndex]['Round Num'][0] = 0
+                    rabi_data[QubitIndex]['Batch Num'][0] = 0
+                    rabi_data[QubitIndex]['Exp Config'][0] = expt_cfg
+                    rabi_data[QubitIndex]['Syst Config'][0] = sys_config_rabi
+                    saver_rabi = Data_H5(optimizationFolder, rabi_data, 0, save_r)
+                    saver_rabi.save_to_h5('Rabi')
+                    del saver_rabi
+                    del rabi_data
+                except Exception as e:
+                    if debug_mode:
+                        raise e
+                    rr_logger.exception(f"Rabi error on qubit {QubitIndex}: {e}")
+                    continue
 
-    # reinitialize
-    res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
-    qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
+                rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
 
-    ################### amp rabi ################
-    rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
-    if run_flags["rabi"]:
-        try:
-            rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
-                                           save_figs=save_figs, save_shots=False,
-                                           experiment=experiment, live_plot=live_plot,
-                                           increase_qubit_reps=increase_qubit_reps,
-                                           qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                                           multiply_qubit_reps_by=multiply_qubit_reps_by,
-                                           verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
-            (rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp,
-             sys_config_rabi) = rabi.run(thresholding=thresholding)
+            pulse_gains=np.linspace(0.001, res_gain[QubitIndex], 300)
 
-            # if these are None, fit didnt work
-            if (rabi_fit is None and pi_amp is None):
-                rr_logger.info('g-e Rabi fit didnt work, skipping the rest of this qubit')
-                if verbose: print('g-e Rabi fit didnt work, skipping the rest of this qubit')
-                continue  # skip the rest of this qubit
+            for gain in pulse_gains:
+                ############################################## Start IBM like experiment ###########################################
+                exp = deepcopy(experiment) #before updating for qze
 
-            experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
-            rr_logger.info(f'g-e Pi amplitude for qubit {QubitIndex + 1} is: {float(pi_amp)}')
-            if verbose: print('g-e Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
-            del rabi
+                ###################################################### T1 ######################################################
+                if run_flags["t1"]:
 
-            rabi_data[QubitIndex]['Dates'][0] = (
-                time.mktime(datetime.datetime.now().timetuple()))
-            rabi_data[QubitIndex]['I'][0] = rabi_I
-            rabi_data[QubitIndex]['Q'][0] = rabi_Q
-            rabi_data[QubitIndex]['Gains'][0] = rabi_gains
-            rabi_data[QubitIndex]['Fit'][0] = rabi_fit
-            rabi_data[QubitIndex]['Round Num'][0] = 0
-            rabi_data[QubitIndex]['Batch Num'][0] = 0
-            rabi_data[QubitIndex]['Exp Config'][0] = expt_cfg
-            rabi_data[QubitIndex]['Syst Config'][0] = sys_config_rabi
-            saver_rabi = Data_H5(optimizationFolder, rabi_data, 0, save_r)
-            saver_rabi.save_to_h5('Rabi')
-            del saver_rabi
-            del rabi_data
-        except Exception as e:
-            if debug_mode:
-                raise e
-            rr_logger.exception(f"Rabi error on qubit {QubitIndex}: {e}")
-            continue
+                    t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
+                    t1 = T1Measurement_with_Zeno(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
+                                       experiment = experiment,
+                                       live_plot = live_plot, fit_data = False,
+                                       increase_qubit_reps = increase_qubit_reps,
+                                       qubit_to_increase_reps_for = qubit_to_increase_reps_for,
+                                       multiply_qubit_reps_by = multiply_qubit_reps_by,
+                                       verbose = verbose, logger = rr_logger, unmasking_resgain = unmask, zeno_pulse_gain=gain, slice=slice)
+                    t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential, sys_config_t1 = t1.run(
+                        thresholding=thresholding)
 
-        rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
+                    t1_data[QubitIndex]['T1'][j - batch_num * save_r - 1] = t1_est
+                    t1_data[QubitIndex]['Errors'][j - batch_num * save_r - 1] = t1_err
+                    t1_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
+                        time.mktime(datetime.datetime.now().timetuple()))
+                    t1_data[QubitIndex]['I'][j - batch_num * save_r - 1] = t1_I
+                    t1_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = t1_Q
+                    t1_data[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = t1_delay_times
+                    t1_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = q1_fit_exponential
+                    t1_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                    t1_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                    t1_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                    t1_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t1
 
-    pulse_gains=np.linspace(0.001, res_gain[QubitIndex], 1000)
-
-    for gain in pulse_gains:
-        ############################################## Start IBM like experiment ###########################################
-        exp = deepcopy(experiment) #before updating for qze
-
-        ###################################################### T1 ######################################################
-        if run_flags["t1"]:
-
-            t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
-            t1 = T1Measurement_with_Zeno(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
-                               experiment = experiment,
-                               live_plot = live_plot, fit_data = False,
-                               increase_qubit_reps = increase_qubit_reps,
-                               qubit_to_increase_reps_for = qubit_to_increase_reps_for,
-                               multiply_qubit_reps_by = multiply_qubit_reps_by,
-                               verbose = verbose, logger = rr_logger, unmasking_resgain = unmask, zeno_pulse_gain=gain)
-            t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential, sys_config_t1 = t1.run(
-                thresholding=thresholding)
-
-            t1_data[QubitIndex]['T1'][j - batch_num * save_r - 1] = t1_est
-            t1_data[QubitIndex]['Errors'][j - batch_num * save_r - 1] = t1_err
-            t1_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
-                time.mktime(datetime.datetime.now().timetuple()))
-            t1_data[QubitIndex]['I'][j - batch_num * save_r - 1] = t1_I
-            t1_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = t1_Q
-            t1_data[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = t1_delay_times
-            t1_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = q1_fit_exponential
-            t1_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-            t1_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-            t1_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-            t1_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t1
-
-            saver_t1 = Data_H5(subStudyDataFolder, t1_data, batch_num, save_r)
-            saver_t1.save_to_h5('T1_ge')
-            del saver_t1
-            del t1_data
-            del t1
-            t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
+                    saver_t1 = Data_H5(subStudyDataFolder, t1_data, batch_num, save_r)
+                    saver_t1.save_to_h5('T1_ge')
+                    del saver_t1
+                    del t1_data
+                    del t1
+                    t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
 
 
-    del experiment
+            del experiment
 
 
 
