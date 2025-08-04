@@ -182,7 +182,7 @@ if FRIDGE == "QUIET":
             "start": [0.0] * 6,  # [DAC units]
             "stop": [1.0] * 6,  # [DAC units]
             "steps": 155,
-            "relax_delay": 600,  # [us]
+            "relax_delay": 1000,  # [us]
         },
         "power_rabi_fh": {
             "reps": 200,
@@ -191,24 +191,24 @@ if FRIDGE == "QUIET":
             "start": [0.0] * 6,  # [DAC units]
             "stop": [1.0] * 6,  # [DAC units]
             "steps": 155,
-            "relax_delay": 600,  # [us]
+            "relax_delay": 1000,  # [us]
         },
         "T1_ge": {
             "reps": 200, #300
             "rounds": 1, #1
-            "start": [0.0] * 6,  # [us]
-            "stop": [200]*6, #[250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
-            "steps": 60,
+            "start":  [10] * 6,#[0.0] * 6,  # [us]
+            "stop": [11] * 6,#[200]*6, #[250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
+            "steps": 1, #60
             "relax_delay": 1000,  # [us] ### Should be >10x T1!
             "wait_time": 0.0,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
         "T1_IBM_qze": {
-            "reps": 500,  # 300
+            "reps": 1500,  # 300
             "rounds": 1,  # 1
-            "start": [10] * 6,  # [us]
-            "stop": [11] * 6,  # [250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
+            "start": [30] * 6,  # [us]
+            "stop": [31] * 6,  # [250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
             "steps": 1,
             "relax_delay": 1000,  # [us] ### Should be >10x T1!
             "wait_time": 0.0,  # [us]

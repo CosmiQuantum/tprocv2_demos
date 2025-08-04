@@ -38,7 +38,7 @@ thresholding = False                 # use internal QICK threshold for ratio of 
 increase_qubit_reps = False          # if you want to increase the reps for a qubit, set to True
 qubit_to_increase_reps_for = 0       # only has impact if previous line is True
 multiply_qubit_reps_by = 2           # only has impact if the line two above is True
-Qs_to_look_at = [0,1,2,3,4,5]        # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,3,5]        # only list the qubits you want to do the RR for
 
 #Data saving info
 run_name = 'run7'
@@ -110,41 +110,41 @@ batch_num=0
 j = 0
 slices=[10,20,30]
 for slice in slices:
-    for repeat_round in range(2):
-        for QubitIndex in Qs_to_look_at:
-            sub_study = f'300_t1_points_500_avgs_relax_delay1ms_2tests_slice{slice}ms_round{repeat_round}'
-            data_set = 'qubit_' + str(QubitIndex) + '_' +datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    for QubitIndex in Qs_to_look_at:
 
-            # set which of the following you'd like to run to 'True'
-            run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True,
-                         "t1": True}
+        sub_study = f'50_t1_points_1500_avgs_relax_delay1ms_2tests_slice{slice}ms_round0'
+        data_set = 'qubit_' + str(QubitIndex) #+ '_' +datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-            if not os.path.exists(f"/data/QICK_data/{run_name}/"):
-                os.makedirs(f"/data/QICK_data/{run_name}/")
-            if not os.path.exists(f"/data/QICK_data/{run_name}/{device_name}/"):
-                os.makedirs(f"/data/QICK_data/{run_name}/{device_name}/")
-            studyFolder = os.path.join(f"/data/QICK_data/{run_name}/{device_name}/", study)
-            if not os.path.exists(studyFolder):
-                os.makedirs(studyFolder)
-            subStudyFolder = os.path.join(studyFolder, sub_study)
-            if not os.path.exists(subStudyFolder):
-                os.makedirs(subStudyFolder)
+        # set which of the following you'd like to run to 'True'
+        run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True,
+                     "t1": True}
 
-            dataSetFolder = os.path.join(subStudyFolder, data_set)
-            optimizationFolder = os.path.join(dataSetFolder, 'optimization')
-            studyFolder = os.path.join(dataSetFolder, 'study_data')
-            studyDocumentationFolder = os.path.join(dataSetFolder, 'documentation')
-            subStudyDataFolder = os.path.join(dataSetFolder, 'study_data')
-            if not os.path.exists(studyDocumentationFolder):
-                os.makedirs(studyDocumentationFolder)
-            if not os.path.exists(optimizationFolder):
-                os.makedirs(optimizationFolder)
-            if not os.path.exists(subStudyDataFolder):
-                os.makedirs(subStudyDataFolder)
+        if not os.path.exists(f"/data/QICK_data/{run_name}/"):
+            os.makedirs(f"/data/QICK_data/{run_name}/")
+        if not os.path.exists(f"/data/QICK_data/{run_name}/{device_name}/"):
+            os.makedirs(f"/data/QICK_data/{run_name}/{device_name}/")
+        studyFolder = os.path.join(f"/data/QICK_data/{run_name}/{device_name}/", study)
+        if not os.path.exists(studyFolder):
+            os.makedirs(studyFolder)
+        subStudyFolder = os.path.join(studyFolder, sub_study)
+        if not os.path.exists(subStudyFolder):
+            os.makedirs(subStudyFolder)
 
-            file_path = os.path.join(studyDocumentationFolder, 'sub_study_notes.txt')
-            with open(file_path, "w", encoding="utf-8") as file:
-                file.write(substudy_txt_notes)
+        dataSetFolder = os.path.join(subStudyFolder, data_set)
+        optimizationFolder = os.path.join(dataSetFolder, 'optimization')
+        studyFolder = os.path.join(dataSetFolder, 'study_data')
+        studyDocumentationFolder = os.path.join(dataSetFolder, 'documentation')
+        subStudyDataFolder = os.path.join(dataSetFolder, 'study_data')
+        if not os.path.exists(studyDocumentationFolder):
+            os.makedirs(studyDocumentationFolder)
+        if not os.path.exists(optimizationFolder):
+            os.makedirs(optimizationFolder)
+        if not os.path.exists(subStudyDataFolder):
+            os.makedirs(subStudyDataFolder)
+
+        file_path = os.path.join(studyDocumentationFolder, 'sub_study_notes.txt')
+        with open(file_path, "w", encoding="utf-8") as file:
+            file.write(substudy_txt_notes)
 
             ################################################## Configure logging ###################################################
             ''' We need to create a custom logger and disable propagation like this
@@ -327,47 +327,81 @@ for slice in slices:
 
                 rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
 
-            pulse_gains=np.linspace(0.001, res_gain[QubitIndex], 300)
+            pulse_gains=np.linspace(0.001, res_gain[QubitIndex], 50)
+            for repeat_round in range(2):
+                sub_study = f'50_t1_points_1500_avgs_relax_delay1ms_2tests_slice{slice}ms_round{repeat_round}'
+                data_set = 'qubit_' + str(QubitIndex)  # + '_' +datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-            for gain in pulse_gains:
-                ############################################## Start IBM like experiment ###########################################
-                exp = deepcopy(experiment) #before updating for qze
+                # set which of the following you'd like to run to 'True'
+                run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True,
+                             "t1": True}
 
-                ###################################################### T1 ######################################################
-                if run_flags["t1"]:
+                if not os.path.exists(f"/data/QICK_data/{run_name}/"):
+                    os.makedirs(f"/data/QICK_data/{run_name}/")
+                if not os.path.exists(f"/data/QICK_data/{run_name}/{device_name}/"):
+                    os.makedirs(f"/data/QICK_data/{run_name}/{device_name}/")
+                studyFolder = os.path.join(f"/data/QICK_data/{run_name}/{device_name}/", study)
+                if not os.path.exists(studyFolder):
+                    os.makedirs(studyFolder)
+                subStudyFolder = os.path.join(studyFolder, sub_study)
+                if not os.path.exists(subStudyFolder):
+                    os.makedirs(subStudyFolder)
 
-                    t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
-                    t1 = T1Measurement_with_Zeno(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
-                                       experiment = experiment,
-                                       live_plot = live_plot, fit_data = False,
-                                       increase_qubit_reps = increase_qubit_reps,
-                                       qubit_to_increase_reps_for = qubit_to_increase_reps_for,
-                                       multiply_qubit_reps_by = multiply_qubit_reps_by,
-                                       verbose = verbose, logger = rr_logger, unmasking_resgain = unmask, zeno_pulse_gain=gain, slice=slice)
-                    t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential, sys_config_t1 = t1.run(
-                        thresholding=thresholding)
+                dataSetFolder = os.path.join(subStudyFolder, data_set)
+                optimizationFolder = os.path.join(dataSetFolder, 'optimization')
+                studyFolder = os.path.join(dataSetFolder, 'study_data')
+                studyDocumentationFolder = os.path.join(dataSetFolder, 'documentation')
+                subStudyDataFolder = os.path.join(dataSetFolder, 'study_data')
+                if not os.path.exists(studyDocumentationFolder):
+                    os.makedirs(studyDocumentationFolder)
+                if not os.path.exists(optimizationFolder):
+                    os.makedirs(optimizationFolder)
+                if not os.path.exists(subStudyDataFolder):
+                    os.makedirs(subStudyDataFolder)
 
-                    t1_data[QubitIndex]['T1'][j - batch_num * save_r - 1] = t1_est
-                    t1_data[QubitIndex]['Errors'][j - batch_num * save_r - 1] = t1_err
-                    t1_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
-                        time.mktime(datetime.datetime.now().timetuple()))
-                    t1_data[QubitIndex]['I'][j - batch_num * save_r - 1] = t1_I
-                    t1_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = t1_Q
-                    t1_data[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = t1_delay_times
-                    t1_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = q1_fit_exponential
-                    t1_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-                    t1_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-                    t1_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                    t1_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t1
+                file_path = os.path.join(studyDocumentationFolder, 'sub_study_notes.txt')
+                with open(file_path, "w", encoding="utf-8") as file:
+                    file.write(substudy_txt_notes)
 
-                    saver_t1 = Data_H5(subStudyDataFolder, t1_data, batch_num, save_r)
-                    saver_t1.save_to_h5('T1_ge')
-                    del saver_t1
-                    del t1_data
-                    del t1
-                    t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
+                for gain in pulse_gains:
+                    ############################################## Start IBM like experiment ###########################################
+                    exp = deepcopy(experiment) #before updating for qze
 
+                    ###################################################### T1 ######################################################
+                    if run_flags["t1"]:
 
+                        t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
+                        t1 = T1Measurement_with_Zeno(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs=False,
+                                           experiment = exp,
+                                           live_plot = live_plot, fit_data = False,
+                                           increase_qubit_reps = increase_qubit_reps,
+                                           qubit_to_increase_reps_for = qubit_to_increase_reps_for,
+                                           multiply_qubit_reps_by = multiply_qubit_reps_by,
+                                           verbose = verbose, logger = rr_logger, unmasking_resgain = unmask, zeno_pulse_gain=gain, slice=slice)
+                        t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential, sys_config_t1 = t1.run(
+                            thresholding=thresholding)
+
+                        t1_data[QubitIndex]['T1'][j - batch_num * save_r - 1] = t1_est
+                        t1_data[QubitIndex]['Errors'][j - batch_num * save_r - 1] = t1_err
+                        t1_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
+                            time.mktime(datetime.datetime.now().timetuple()))
+                        t1_data[QubitIndex]['I'][j - batch_num * save_r - 1] = t1_I
+                        t1_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = t1_Q
+                        t1_data[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = t1_delay_times
+                        t1_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = q1_fit_exponential
+                        t1_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                        t1_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                        t1_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                        t1_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t1
+
+                        saver_t1 = Data_H5(subStudyDataFolder, t1_data, batch_num, save_r)
+                        saver_t1.save_to_h5('T1_ge')
+                        del saver_t1
+                        del t1_data
+                        del t1
+                        t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
+
+                    del exp
             del experiment
 
 

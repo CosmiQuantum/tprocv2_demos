@@ -313,11 +313,11 @@ stats.plot_welch_spectral_density(date_times_t2r, t2r_vals, show_legends, label=
 stats.plot_welch_spectral_density(date_times_t2e, t2e_vals, show_legends, label='T2E')
 
 # ################################################### 19: Extra #########################################################
-# plotter = PlotMetricDependencies(run_name, tot_num_of_qubits, final_figure_quality, FRIDGE)
-# plotter.plot_shared_datetimes(date_times_q_spec, q_freqs, qspec_fit_err, metric_1_label = 'Q Freq (MHz)',
-#              metric_2_label = 'Q Freq Fit Err (MHz)')
-# plotter.scatter_plot_two_y_axis(date_times_q_spec, q_freqs, date_times_q_spec, qspec_fit_err, metric_1_label = 'Q Freq (MHz)',
-#              metric_2_label = 'Q Freq Fit Err (MHz)')
+plotter = PlotMetricDependencies(run_name, tot_num_of_qubits, final_figure_quality, FRIDGE)
+plotter.plot_shared_datetimes(date_times_q_spec, q_freqs, qspec_fit_err, metric_1_label = 'Q Freq (MHz)',
+             metric_2_label = 'Q Freq Fit Err (MHz)')
+plotter.scatter_plot_two_y_axis(date_times_q_spec, q_freqs, date_times_q_spec, qspec_fit_err, metric_1_label = 'Q Freq (MHz)',
+             metric_2_label = 'Q Freq Fit Err (MHz)')
 
 # plot SSF historgrams nicely
 #

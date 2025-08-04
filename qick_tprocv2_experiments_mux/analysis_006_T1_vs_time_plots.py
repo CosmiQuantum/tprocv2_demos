@@ -14,6 +14,7 @@ from section_010_T2E_ge import T2EMeasurement
 import glob
 import re
 import datetime
+import math
 import ast
 import os
 import matplotlib.pyplot as plt
@@ -210,6 +211,140 @@ class T1VsTime:
             return date_times, t1_vals, t1_errs
         else:
             return date_times, t1_vals
+
+    def run_IBM_qze(self, exp_extension=''):
+        import datetime
+
+        # ----------Load/get data------------------------
+        Is = {i: [] for i in range(self.number_of_qubits)}
+        Qs = {i: [] for i in range(self.number_of_qubits)}
+        amps = {i: [] for i in range(self.number_of_qubits)}
+        gains = {i: [] for i in range(self.number_of_qubits)}
+        rounds = []
+        reps = []
+        file_names = []
+        date_times = {i: [] for i in range(self.number_of_qubits)}
+        mean_values = {}
+        #print(self.top_folder_dates)
+        for folder_date in self.top_folder_dates:
+            if self.fridge.upper() == 'QUIET':
+                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data"
+                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
+            elif self.fridge.upper() == 'NEXUS':
+                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
+                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
+            else:
+                raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+
+            # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
+            if '_' in exp_extension:
+                outerFolder_expt = outerFolder + f"/Data_h5/T1{exp_extension}/"
+            else:
+                outerFolder_expt = outerFolder + "/Data_h5/T1_ge/"
+            h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+            #print(outerFolder_expt)
+            for h5_file in h5_files:
+
+                save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
+                H5_class_instance = Data_H5(h5_file)
+                load_data = H5_class_instance.load_from_h5(data_type=f'T1{exp_extension}', save_r=int(save_round))
+                # if '01-27' in outerFolder_expt:
+                #     print(load_data)
+                # Define specific days to exclude
+                exclude_dates = {
+                    datetime.date(2025, 1, 26),  # power outage
+                    datetime.date(2025, 1, 29),  # HEMT Issues
+                    datetime.date(2025, 1, 30),  # HEMT Issues
+                    datetime.date(2025, 1, 31)  # Optimization Issues and non RR work in progress
+                }
+
+                for q_key in load_data[f'T1{exp_extension}']:
+                    for dataset in range(len(load_data[f'T1{exp_extension}'][q_key].get('Dates', [])[0])):
+                        if 'nan' in str(load_data[f'T1{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
+                            continue
+                        # T1 = load_data['T1'][q_key].get('T1', [])[0][dataset]
+                        # errors = load_data['T1'][q_key].get('Errors', [])[0][dataset]
+                        date = datetime.datetime.fromtimestamp(load_data[f'T1{exp_extension}'][q_key].get('Dates', [])[0][dataset])
+
+                        # Skip processing if the date (as a date object) is in the excluded set
+                        if date.date() in exclude_dates:
+                            print(f"Skipping data for {date} (excluded date)")
+                            continue
+
+                        I = self.process_h5_data(load_data[f'T1{exp_extension}'][q_key].get('I', [])[0][dataset].decode())
+                        Q = self.process_h5_data(load_data[f'T1{exp_extension}'][q_key].get('Q', [])[0][dataset].decode())
+                        delay_times = self.process_h5_data(load_data[f'T1{exp_extension}'][q_key].get('Delay Times', [])[0][dataset].decode())
+                        # fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
+                        round_num = load_data[f'T1{exp_extension}'][q_key].get('Round Num', [])[0][dataset]
+                        try:
+                            batch_num = load_data[f'T1{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
+                            syst_config = load_data[f'T1{exp_extension}'][q_key].get('Syst Config', [])[0][dataset].decode()
+                            exp_config = load_data[f'T1{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
+                            #print(exp_config)
+                            safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                            exp_config = eval(exp_config, safe_globals)
+                        except:
+                            exp_config =None
+
+                        if len(I) > 0:
+                            Is[q_key].extend(I)
+                            Qs[q_key].extend(Q)
+                            gain = round(
+                                float(syst_config.split('res_gain_qze\': [')[-1].split(']')[0].split(',')[-1].split('(')[-1].replace(')','')), 6)
+
+                            gains[q_key].append(gain)
+                            amp=np.hypot(I, Q)
+                            amps[q_key].extend(amp)
+                            date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
+
+
+                del H5_class_instance
+        return Is,Qs,amps, gains
+
+    def plot_IBM_qze(self,amps,gains, save_path):
+
+        qubit_ids = sorted(amps.keys())  # → [0, 1, 2, 3, 4, 5]
+        fig, axes = plt.subplots(2, 3, figsize=(12, 6), sharex=False, sharey=False)
+        axes = axes.flatten()
+
+        for idx, q in enumerate(qubit_ids):
+            ax = axes[idx]
+            #print(len(gains[q]), len(amps[q]))
+            ax.plot(gains[q], [1/n for n in amps[q]], marker='o', linewidth=1)
+            ax.set_title(f"Qubit {q}")
+            ax.set_xlabel("Pulse gain (a.u.)")
+            ax.set_ylabel("1/ T1 Signal amplitude (a.u.)")
+
+        for j in range(len(qubit_ids), len(axes)):
+            axes[j].set_visible(False)
+
+        fig.tight_layout()
+        self.create_folder_if_not_exists(save_path)
+        fig.savefig(save_path + 'gamma.png', transparent=False, dpi=self.final_figure_quality)
+
+        print('Plot saved to: ', save_path)
+    def plot_IBM_qze_normal(self,amps,gains, save_path):
+
+        qubit_ids = sorted(amps.keys())  # → [0, 1, 2, 3, 4, 5]
+        fig, axes = plt.subplots(2, 3, figsize=(12, 6), sharex=False, sharey=False)
+        axes = axes.flatten()
+
+        for idx, q in enumerate(qubit_ids):
+            ax = axes[idx]
+            #print(len(gains[q]), len(amps[q]))
+            ax.plot(gains[q], amps[q], marker='o', linewidth=1)
+            ax.set_title(f"Qubit {q}")
+            ax.set_xlabel("Pulse gain (a.u.)")
+            ax.set_ylabel("T1 Signal amplitude (a.u.)")
+
+        for j in range(len(qubit_ids), len(axes)):
+            axes[j].set_visible(False)
+
+        fig.tight_layout()
+        self.create_folder_if_not_exists(save_path)
+        fig.savefig(save_path + 't1.png', transparent=False, dpi=self.final_figure_quality)
+
+        print('Plot saved to: ', save_path)
 
     def plot_without_errs(self, date_times, t1_vals, show_legends):
         #---------------------------------plot-----------------------------------------------------
