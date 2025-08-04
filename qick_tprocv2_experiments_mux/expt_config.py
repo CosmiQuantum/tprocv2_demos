@@ -205,7 +205,7 @@ if FRIDGE == "QUIET":
         },
 
         "T1_IBM_qze": {
-            "reps": 1500,  # 300
+            "reps": 1000,  # 300
             "rounds": 1,  # 1
             "start": [30] * 6,  # [us]
             "stop": [31] * 6,  # [250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.

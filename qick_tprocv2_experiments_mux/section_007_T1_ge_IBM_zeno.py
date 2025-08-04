@@ -53,9 +53,9 @@ class T1ProgramIBMZeno(AveragerProgramV2):
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play probe pulse
         self.delay_auto(tag='wait_pi_pulse')                          # wait for it to be done, now qubit is in e
-        self.pulse(ch=cfg['res_ch'], name="qze_pulse", t=0)           # play res pulse that has same length as wait_time
+        self.pulse(ch=cfg['res_ch'], name="qze_pulse", t=0.01)           # play res pulse that has same length as wait_time
         self.delay_auto(tag='wait_qze_pulse')                         # wait for that pulse to finish
-        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)           # play readout pulse
+        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0.01)           # play readout pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 
