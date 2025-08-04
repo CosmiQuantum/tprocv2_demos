@@ -41,7 +41,7 @@ save_r = 1                           # how many rounds to save after
 signal = 'None'                      # 'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization
 save_figs = True                     # save plots for everything as you go along the RR script?
 live_plot = False                     # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
-fit_data = False                     # fit the data here and save or plot the fits?
+fit_data = True                     # fit the data here and save or plot the fits?
 save_data_h5 = True                  # save all of the data to h5 files?
 verbose = False                      # print everything to the console in real time, good for debugging, bad for memory
 qick_verbose = True                 # qick verbose prints the progress bar for each qick experiment as it is happening (the red bar that fills out as more experiment rounds/reps are being done)
@@ -52,17 +52,17 @@ unmask = True                          # Do you want to use the unmasking featur
 qubit_to_increase_reps_for = 0       # only has impact if previous line is True
 multiply_qubit_reps_by = 2           # only has impact if the line two above is True
 
-Qs_to_look_at = [1]#[0,1,2,5]#,1,2,3,4,5]       # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,3,5]#[0,1,2,5]#,1,2,3,4,5]       # only list the qubits you want to do the RR for
 
 #Data saving info
 run_name = 'run7'
 device_name = '6transmon'
-substudy_txt_notes = ('FH frequency search')#('Active Reset Test')#('Normal Round Robin during cooldown, now everything works properly, set debug to false to run '
+substudy_txt_notes = ('round robin with relax delays of 1000us for T1 and T2 measurements.')#('Active Reset Test')#('Normal Round Robin during cooldown, now everything works properly, set debug to false to run '
                       # 'overFalsenight and running in terminal with repeater script')
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": False, "q_spec": False, "ss": False, "rabi":False, "ss_gef": False, "test_act":False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": False, "fh_q_spec":True, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi":True, "ss_gef": False, "test_act":False,
+             "t1": True, "t2r": True, "t2e": True, "ef_res_spec":True, "ef_q_spec": True, "fh_q_spec":False, "rabi_pop_meas": True, "ef_Rabi":False, "ef_ss": False}
 # run_flags = {"tof": False, "res_spec": False, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False, "test_act":False,
 #              "t1": False, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": True, "fh_q_spec":True, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 
@@ -81,7 +81,7 @@ figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 #Folders
 study = 'round_robin_benchmark'
-sub_study = 'FH frequency_Q2'#'Active_Reset_Test'#'temperature_sweep'#'AB_tests_data'
+sub_study = 'AB_data_relax_delays_1000us'#'Active_Reset_Test'#'temperature_sweep'#'AB_tests_data'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -578,7 +578,7 @@ while j < n:
                     if debug_mode:
                         raise  # In debug mode, re-raise the exception immediately
                     rr_logger.exception(f"EF ResSpec error on qubit {QubitIndex + 1} sample {sample}: {e}")
-                    continue
+
 
             if ef_res_freqs_samples:
                 # Average the resonator frequency values across samples
@@ -607,14 +607,14 @@ while j < n:
                 ef_q_spec = EFQubitSpectroscopy(QubitIndex, number_of_qubits, studyDocumentationFolder, j, signal,
                                True, experiment, live_plot, unmasking_resgain = unmask)
 
-                efqspec_I, efqspec_Q, efqspec_freqs ,   sys_config_qspec_ef = ef_q_spec.run()
-                # efqspec_I_fit, efqspec_Q_fit, efqubit_freq,
-                # qubit_freqs_ef[QubitIndex] = efqubit_freq
-                # experiment.qubit_cfg['qubit_freq_ef'][QubitIndex] = float(efqubit_freq)
-                #
-                # rr_logger.info(f"EF Qubit {QubitIndex + 1} frequency: {efqubit_freq}")
-                # if verbose:
-                #     print(f"EF Qubit {QubitIndex + 1} frequency: {efqubit_freq}")
+                efqspec_I, efqspec_Q, efqspec_freqs, sys_config_qspec_ef, efqspec_I_fit, efqspec_Q_fit, efqubit_freq = ef_q_spec.run()
+
+                qubit_freqs_ef[QubitIndex] = efqubit_freq
+                experiment.qubit_cfg['qubit_freq_ef'][QubitIndex] = float(efqubit_freq)
+
+                rr_logger.info(f"EF Qubit {QubitIndex + 1} frequency: {efqubit_freq}")
+                if verbose:
+                    print(f"EF Qubit {QubitIndex + 1} frequency: {efqubit_freq}")
 
                 del ef_q_spec
 
@@ -733,7 +733,7 @@ while j < n:
                     if verbose: print(f'Got the following error, continuing: {e}')
                     continue #skip the rest of this qubit
 
-        ################################################ e-f amp rabi pop meas. ################################################
+        ################################################ e-f rabi ################################################
         if run_flags["ef_Rabi"]:
             increase_qubit_reps = False  # if you want to increase the reps for a qubit, set to True
             qubit_to_increase_reps_for = 0  # only has impact if previous line is True
@@ -958,8 +958,8 @@ while j < n:
                 ef_qspec_data[QubitIndex]['I'][0] = efqspec_I
                 ef_qspec_data[QubitIndex]['Q'][0] = efqspec_Q
                 ef_qspec_data[QubitIndex]['Frequencies'][0] = efqspec_freqs
-                ef_qspec_data[QubitIndex]['I Fit'][0] = None#efqspec_I_fit
-                ef_qspec_data[QubitIndex]['Q Fit'][0] = None#efqspec_Q_fit
+                ef_qspec_data[QubitIndex]['I Fit'][0] = efqspec_I_fit
+                ef_qspec_data[QubitIndex]['Q Fit'][0] = efqspec_Q_fit
                 ef_qspec_data[QubitIndex]['Round Num'][0] = j
                 ef_qspec_data[QubitIndex]['Batch Num'][0] = batch_num
                 ef_qspec_data[QubitIndex]['Recycled QFreq'][0] = False  # no rr so no recycling here
@@ -1123,13 +1123,13 @@ while j < n:
 
             # --------------------------save e-f res spec-----------------------
             if run_flags["ef_res_spec"]:
-                saver_ef_res = Data_H5(subStudyDataFolder, ef_res_data, sample, save_r)  # save
+                saver_ef_res = Data_H5(subStudyDataFolder, ef_res_data, batch_num, save_r)  # save
                 saver_ef_res.save_to_h5('res_ef')
                 del saver_ef_res
                 del ef_res_data
             # --------------------------save e-f qspec-----------------------
             if run_flags["ef_q_spec"]:
-                saver_ef_qspec = Data_H5(subStudyDataFolder, ef_qspec_data, 0, save_r)
+                saver_ef_qspec = Data_H5(subStudyDataFolder, ef_qspec_data, batch_num, save_r)
                 saver_ef_qspec.save_to_h5('qspec_ef')
                 del saver_ef_qspec
                 del ef_qspec_data
@@ -1141,7 +1141,7 @@ while j < n:
                 del ef_rabi_data
             # --------------------------save f-h qspec-----------------------
             if run_flags["fh_q_spec"]:
-                saver_ef_qspec = Data_H5(subStudyDataFolder, fh_qspec_data, 0, save_r)
+                saver_ef_qspec = Data_H5(subStudyDataFolder, fh_qspec_data, batch_num, save_r)
                 saver_ef_qspec.save_to_h5('qspec_fh')
                 del saver_ef_qspec
                 del fh_qspec_data

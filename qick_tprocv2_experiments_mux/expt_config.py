@@ -150,7 +150,7 @@ if FRIDGE == "QUIET":
             "start": [0.02] * 6,  # [us]
             "stop": [2] * 6,#[0.7] * 6,  # [us]
             "steps": 200,
-            "relax_delay": 800,# [us]
+            "relax_delay": 1000,# [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
         "length_rabi_ge_pi_len": { #for the zeno tests, bare qubit frequency rabi
