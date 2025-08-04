@@ -42,34 +42,10 @@ signal = 'None'
 run_number = 3 #starting from first run with qubits. Run 1 = run4a at quiet, run 2 = run5a at quiet, etc
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
-#run_name = 'run7/6transmon/QZE_IBM/300_t1_points_500_avgs_relax_delay1ms_2tests_slice30ms_round0/'
-#run_name = 'run7/6transmon/QZE_IBM/300_t1_points_500_avgs_relax_delay1ms_2tests_slice30ms_round1/'
-#run_name = 'run7/6transmon/QZE_IBM/300_t1_points_500_avgs_relax_delay1ms_2tests_slice20ms_round1/'
-#run_name = 'run7/6transmon/QZE_IBM/300_t1_points_500_avgs_relax_delay1ms_2tests_slice20ms_round0/'
-# run_name = 'run7/6transmon/QZE_IBM/300_t1_points_500_avgs_relax_delay1ms_2tests_slice10ms_round0/'
-# run_name = 'run7/6transmon/QZE_IBM/300_t1_points_500_avgs_relax_delay1ms_2tests_slice10ms_round1/'
-run_name = 'run7/6transmon/QZE_IBM/50_t1_points_1500_avgs_relax_delay1ms_2tests_slice20ms_round1/'
+run_name = 'run7/6transmon/QZE_IBM/50_t1_points_500_avgs_relax_delay1ms_2tests_slice30us_round0/'
 
 FRIDGE = "QUIET"
 run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB attenuator ') #please make it brief for the plot
-# top_folder_dates = ['qubit_0_2025-08-03_17-06-20','qubit_1_2025-08-03_17-12-03','qubit_2_2025-08-03_17-17-13',
-#                     'qubit_3_2025-08-03_17-22-21', 'qubit_4_2025-08-03_17-27-33',
-#                     'qubit_5_2025-08-03_17-32-42']
-# top_folder_dates = ['qubit_0_2025-08-03_17-38-00','qubit_1_2025-08-03_17-44-11','qubit_2_2025-08-03_17-49-23',
-#                     'qubit_3_2025-08-03_17-54-37', 'qubit_4_2025-08-03_17-59-56',
-#                     'qubit_5_2025-08-03_18-05-16']
-# top_folder_dates = ['qubit_0_2025-08-03_16-34-31','qubit_1_2025-08-03_16-39-41','qubit_2_2025-08-03_16-44-55',
-#                     'qubit_3_2025-08-03_16-50-36', 'qubit_4_2025-08-03_16-55-50',
-#                     'qubit_5_2025-08-03_17-01-02']
-# top_folder_dates = ['qubit_0_2025-08-03_16-02-17','qubit_1_2025-08-03_16-07-28','qubit_2_2025-08-03_16-12-42',
-#                     'qubit_3_2025-08-03_16-18-15', 'qubit_4_2025-08-03_16-23-32',
-#                     'qubit_5_2025-08-03_16-29-12']
-# top_folder_dates = ['qubit_0_2025-08-03_14-59-50','qubit_1_2025-08-03_15-05-01','qubit_2_2025-08-03_15-10-12',
-#                     'qubit_3_2025-08-03_15-15-21', 'qubit_4_2025-08-03_15-20-26',
-#                     'qubit_5_2025-08-03_15-25-35']
-# top_folder_dates = ['qubit_0_2025-08-03_15-30-53','qubit_1_2025-08-03_15-36-13','qubit_2_2025-08-03_15-41-29',
-#                     'qubit_3_2025-08-03_15-46-27', 'qubit_4_2025-08-03_15-51-45',
-#                     'qubit_5_2025-08-03_15-56-51']
 top_folder_dates = ['qubit_0','qubit_1','qubit_2','qubit_3', 'qubit_4','qubit_5']
 
 # ################################################ 01: Get all data ######################################################

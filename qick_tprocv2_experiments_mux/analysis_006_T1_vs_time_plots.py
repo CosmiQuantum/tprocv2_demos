@@ -273,7 +273,7 @@ class T1VsTime:
 
                         I = self.process_h5_data(load_data[f'T1{exp_extension}'][q_key].get('I', [])[0][dataset].decode())
                         Q = self.process_h5_data(load_data[f'T1{exp_extension}'][q_key].get('Q', [])[0][dataset].decode())
-                        delay_times = self.process_h5_data(load_data[f'T1{exp_extension}'][q_key].get('Delay Times', [])[0][dataset].decode())
+                        #delay_times = self.process_h5_data(load_data[f'T1{exp_extension}'][q_key].get('Delay Times', [])[0][dataset])
                         # fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
                         round_num = load_data[f'T1{exp_extension}'][q_key].get('Round Num', [])[0][dataset]
                         try:

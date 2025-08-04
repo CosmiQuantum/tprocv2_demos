@@ -31,7 +31,7 @@ class T1ProgramIBMZeno(AveragerProgramV2):
                        length=cfg["res_length"],
                        mask=cfg["list_of_all_qubits"],
                        )
-
+        print(cfg['wait_time'])
         self.add_pulse(ch=res_ch, name="qze_pulse",
                        style="const",
                        length=cfg['wait_time'],
@@ -48,13 +48,11 @@ class T1ProgramIBMZeno(AveragerProgramV2):
                        gain=cfg['pi_amp'],
                        )
 
-        self.add_loop("waitloop", cfg["steps"])
+        #self.add_loop("waitloop", cfg["steps"])
 
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play probe pulse
-        self.delay_auto(tag='wait_pi_pulse')                          # wait for it to be done, not qubit ia in e
-
-        self.delay(cfg['wait_time'], tag='wait')                      # delay doesnt hold up the pulses, so here we just use it to return delay_time using the wait variable
+        self.delay_auto(tag='wait_pi_pulse')                          # wait for it to be done, now qubit is in e
         self.pulse(ch=cfg['res_ch'], name="qze_pulse", t=0)           # play res pulse that has same length as wait_time
         self.delay_auto(tag='wait_qze_pulse')                         # wait for that pulse to finish
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)           # play readout pulse
@@ -87,8 +85,7 @@ class T1Measurement_with_Zeno:
         self.zeno_pulse_gain = zeno_pulse_gain
         if unmasking_resgain:
             self.exp_cfg["list_of_all_qubits"] = [QubitIndex]
-        self.exp_cfg["start"] = [slice] * 6
-        self.exp_cfg["stop"] = [slice+1] * 6
+        self.exp_cfg["wait_time"] = slice
         self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
         qze_mask = np.arange(0, self.number_of_qubits + 1)
         qze_mask = np.delete(qze_mask, QubitIndex)
@@ -122,7 +119,6 @@ class T1Measurement_with_Zeno:
 
     def run(self, thresholding=False):
         now = datetime.datetime.now()
-        print(self.experiment.readout_cfg['res_gain_qze'])
         t1 = T1ProgramIBMZeno(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
 
         if self.live_plot:
@@ -135,10 +131,11 @@ class T1Measurement_with_Zeno:
             else:
                 iq_list = t1.acquire(self.experiment.soc, soft_avgs=self.config['rounds'], progress=True)
 
-
-            I = iq_list[self.QubitIndex][0, :, 0]
-            Q = iq_list[self.QubitIndex][0, :, 1]
-            delay_times = t1.get_time_param('wait', "t", as_array=True)
+            print(iq_list[self.QubitIndex][:, 0])
+            print(iq_list[self.QubitIndex][:, 1])
+            I = iq_list[self.QubitIndex][:, 0]
+            Q = iq_list[self.QubitIndex][:, 1]
+            delay_times = self.config['wait_time']
 
 
         if self.fit_data:

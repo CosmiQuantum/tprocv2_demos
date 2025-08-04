@@ -43,7 +43,7 @@ Qs_to_look_at = [0,1,2,3,5]        # only list the qubits you want to do the RR 
 #Data saving info
 run_name = 'run7'
 device_name = '6transmon'
-substudy_txt_notes = ('Debug scripts and get everthing wokring')
+substudy_txt_notes = ('fixed the t1 code so now the pulse length for zeno isnt 0')
 
 study = 'QZE_IBM'
 
@@ -112,7 +112,7 @@ slices=[10,20,30]
 for slice in slices:
     for QubitIndex in Qs_to_look_at:
 
-        sub_study = f'50_t1_points_1500_avgs_relax_delay1ms_2tests_slice{slice}ms_round0'
+        sub_study = f'50_t1_points_1500_avgs_relax_delay1ms_2tests_slice{slice}us_round0'
         data_set = 'qubit_' + str(QubitIndex) #+ '_' +datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
         # set which of the following you'd like to run to 'True'
@@ -329,7 +329,7 @@ for slice in slices:
 
             pulse_gains=np.linspace(0.001, res_gain[QubitIndex], 50)
             for repeat_round in range(2):
-                sub_study = f'50_t1_points_1500_avgs_relax_delay1ms_2tests_slice{slice}ms_round{repeat_round}'
+                sub_study = f'50_t1_points_1500_avgs_relax_delay1ms_2tests_slice{slice}us_round{repeat_round}'
                 data_set = 'qubit_' + str(QubitIndex)  # + '_' +datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
                 # set which of the following you'd like to run to 'True'

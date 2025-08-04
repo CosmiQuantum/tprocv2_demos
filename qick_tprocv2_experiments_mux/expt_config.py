@@ -211,7 +211,7 @@ if FRIDGE == "QUIET":
             "stop": [31] * 6,  # [250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
             "steps": 1,
             "relax_delay": 1000,  # [us] ### Should be >10x T1!
-            "wait_time": 0.0,  # [us]
+            "wait_time": 30,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
