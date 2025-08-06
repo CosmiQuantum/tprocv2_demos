@@ -26,8 +26,8 @@ if FRIDGE == "QUIET":
         "res_spec": {
             "reps": 400,
             "rounds": 1,
-            "start": -1,  # -4 #[MHz]
-            "step_size": 0.01,#0.01,  # [MHz]
+            "start": -30,  # -4 #[MHz]
+            "step_size": 0.3,#0.01,  # [MHz]
             "steps": 200,#,200,#70
             "relax_delay": 5,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
@@ -49,7 +49,7 @@ if FRIDGE == "QUIET":
             "start": list(VNA_qubit-4), # [MHz] #-300 #-10 # -4
             "stop": list(VNA_qubit+4), # [MHz] #+10 # 4
             "steps": 450, # 227
-            "relax_delay": 1000, #1000, # [us]
+            "relax_delay": 0, #1000, # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
@@ -89,14 +89,14 @@ if FRIDGE == "QUIET":
         "qubit_spec_ef": {
             "reps": 5000,  # 300
             "rounds": 1,  # 10
-            "start": list(ef_freqs - 0.3),# 0.2),  # [MHz] #-300 #-6
-            "stop":  list(ef_freqs + 0.3),#0.2),  # [MHz] #6
-            "steps": 300,  # 1000 #450
+            "start": list(ef_freqs - 0.2),# 0.2),  # [MHz] #-300 #-6
+            "stop":  list(ef_freqs + 0.2),#0.2),  # [MHz] #6
+            "steps": 220,  # 1000 #450
             "relax_delay": 1000, #1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
         "qubit_spec_fh": {
-            "reps": 18000,  # 300
+            "reps": 20000,  # 300
             "rounds": 1,  # 10
             "start": list(fh_freqs - 0.3), # [MHz] #-300 #-6
             "stop": list(fh_freqs +  0.2),  # [MHz] #6
@@ -130,7 +130,7 @@ if FRIDGE == "QUIET":
             "start": [0] * 6,  # [DAC units]
             "stop": [1] * 6,#[1.0] * 6,  # [DAC units]
             "steps": 150, #50,
-            "relax_delay": 1000,#1000,  # [us]
+            "relax_delay": 1000,#1000,#1000,#1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
@@ -238,17 +238,17 @@ if FRIDGE == "QUIET":
         },
 
         "res_stark_shift_2D": {
-            "reps": 200,
+            "reps": 400,
             "rounds": 1,
             "list_of_all_qubits": list_of_all_qubits,
-            "qubit_pulse_delay": 0.5, #[us] time to wait for qubit pulse after stark tone is sent
-            "stark_length": 16,  # [us] stark tone length for 2D scan, overlaps qubit pulse
+            "qubit_pulse_delay": 3, #[us] time to wait for qubit pulse after stark tone is sent
+            "stark_length": 19,  # [us] stark tone length for 2D scan, overlaps qubit pulse
             "gain_steps": 20,
             "start_gain": 0.00,
             "end_gain": 1.0, #res gain values between -1 and 1
-            "qubit_pulse_steps": 400,
-            "start_freq": -35, #[MHz] from qubit freq
-            "end_freq":  3, # [MHz] from qubit freq
+            "qubit_pulse_steps": 500,
+            "start_freq": -55,#-35, #[MHz] from qubit freq
+            "end_freq":  4,#3, # [MHz] from qubit freq
             "readout_pulse_delay": 2, #2/kappa
             "stark_gain": [],
             "res_freq_stark": [],
@@ -419,7 +419,7 @@ if FRIDGE == "QUIET":
     # #
 
         "Readout_Optimization":{
-            "steps": 1,#3000, # shots
+            "steps": 3000, # shots
             "py_avg": 1,
             "gain_start" : [0, 0, 0, 0],
             "gain_stop" : [1, 0, 0, 0],

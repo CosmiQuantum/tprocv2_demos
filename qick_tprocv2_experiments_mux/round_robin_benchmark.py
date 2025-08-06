@@ -2,6 +2,9 @@ import copy
 import sys
 import os
 import numpy as np
+
+# from tprocv2_demos.qick_tprocv2_experiments_mux.long_qubit_spectroscopy import fh_config
+
 np.set_printoptions(threshold=int(1e15)) #need this so it saves absolutely everything returned from the classes
 import datetime
 import time
@@ -17,6 +20,7 @@ from section_004_qubit_spec_ge import QubitSpectroscopy
 from section_004_qubit_spec_ef import EFQubitSpectroscopy
 from section_004_qubit_spec_fh_V2 import FHQubitSpectroscopy
 from section_006_amp_rabi_ef import EF_AmplitudeRabiExperiment
+from section_006_amp_fh import FH_AmplitudeRabiExperiment
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
 from section_011_qubit_temperatures_efRabipt3 import Temps_EFAmpRabiExperiment
 from section_007_T1_ge import T1Measurement
@@ -33,6 +37,8 @@ from test_active_reset import Active_Reset_test
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 from analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
 ################################################ Run Configurations ####################################################
+st = time.time()
+#
 n= 1000000
 pre_optimize = False
 freq_offset_steps = 10
@@ -57,12 +63,12 @@ Qs_to_look_at = [0,1,2,3,5]#[0,1,2,5]#,1,2,3,4,5]       # only list the qubits y
 #Data saving info
 run_name = 'run7'
 device_name = '6transmon'
-substudy_txt_notes = ('round robin with relax delays of 1000us for T1 and T2 measurements.')#('Active Reset Test')#('Normal Round Robin during cooldown, now everything works properly, set debug to false to run '
+substudy_txt_notes = ('FH Spec Study. We will move the source about 50cm away from the fridge')#('Active Reset Test')##('round robin with relax delays of 1000us for T1 and T2 measurements.')#('Active Reset Test')#('Normal Round Robin during cooldown, now everything works properly, set debug to false to run '
                       # 'overFalsenight and running in terminal with repeater script')
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi":True, "ss_gef": False, "test_act":False,
-             "t1": True, "t2r": True, "t2e": True, "ef_res_spec":True, "ef_q_spec": True, "fh_q_spec":False, "rabi_pop_meas": True, "ef_Rabi":False, "ef_ss": False}
+run_flags = {"tof": False, "res_spec": True, "q_spec": False, "ss": False, "rabi":False, "ss_gef": False, "test_act":False, "fh_rabi":False,
+             "t1": False, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": False, "fh_q_spec":False, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 # run_flags = {"tof": False, "res_spec": False, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False, "test_act":False,
 #              "t1": False, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": True, "fh_q_spec":True, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 
@@ -80,8 +86,8 @@ number_of_qubits = 6
 figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 #Folders
-study = 'round_robin_benchmark'
-sub_study = 'AB_data_relax_delays_1000us'#'Active_Reset_Test'#'temperature_sweep'#'AB_tests_data'
+study = 'warm_up_res_data'
+sub_study = 'FH_Spec_Q2_Source_distance'#junkyard'#'AB_data_relax_delays_1000us'#'Active_Reset_Test'#'temperature_sweep'#'AB_tests_data'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -173,6 +179,7 @@ t2e_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
 ef_res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
 ef_qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
 ef_rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
+fh_rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
 fh_qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
 rabi_data_ef_Qtemps = create_data_dict(rabi_keys_ef_Qtemps, save_r, list_of_all_qubits)
 ss_data_gef = create_data_dict(ss_keys_gef, save_r, list_of_all_qubits)
@@ -487,7 +494,7 @@ while j < n:
                             print('No stored g-e qubit spec value for qubit {QubitIndex}; skipping iteration.')
                         del q_spec
 
-                        continue
+                    continue
                 else:
                     experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
                     stored_qspec_list[QubitIndex] = float(qubit_freq)
@@ -545,8 +552,8 @@ while j < n:
             I_e = iq_list_e[QubitIndex][0].T[0]
             Q_e = iq_list_e[QubitIndex][0].T[1]
 
-            fid, threshold, angle, ig_new, ie_new = ss.hist_ssf(
-                data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
+            # fid, threshold, angle, ig_new, ie_new = ss.hist_ssf(
+            #     data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
             print(sys_config_ss)
             # except Exception as e:
             #     if debug_mode:
@@ -598,30 +605,30 @@ while j < n:
             if verbose:
                 print("----------------- Starting Qubit Spec EF  -----------------")
 
-            try:
-                increase_qubit_steps_ef = False
-                # Qubit 4 needs more steps for e-f spec
-                if QubitIndex == 3:
-                    increase_qubit_steps_ef = True  # if you want to increase the steps for a qubit, set to True
+            # try:
+            increase_qubit_steps_ef = False
+            # Qubit 4 needs more steps for e-f spec
+            if QubitIndex == 3:
+                increase_qubit_steps_ef = True  # if you want to increase the steps for a qubit, set to True
 
-                ef_q_spec = EFQubitSpectroscopy(QubitIndex, number_of_qubits, studyDocumentationFolder, j, signal,
-                               True, experiment, live_plot, unmasking_resgain = unmask)
+            ef_q_spec = EFQubitSpectroscopy(QubitIndex, number_of_qubits, studyDocumentationFolder, j, signal,
+                           True, experiment, live_plot, unmasking_resgain = unmask)
 
-                efqspec_I, efqspec_Q, efqspec_freqs, sys_config_qspec_ef, efqspec_I_fit, efqspec_Q_fit, efqubit_freq = ef_q_spec.run()
+            efqspec_I, efqspec_Q, efqspec_freqs, sys_config_qspec_ef, efqspec_I_fit, efqspec_Q_fit, efqubit_freq = ef_q_spec.run()
+            # efqspec_I, efqspec_Q, efqspec_freqs, sys_config_qspec_ef,  efqubit_freq = ef_q_spec.run()
+            qubit_freqs_ef[QubitIndex] = efqubit_freq
+            # experiment.qubit_cfg['qubit_freq_ef'][QubitIndex] = float(efqubit_freq)
 
-                qubit_freqs_ef[QubitIndex] = efqubit_freq
-                experiment.qubit_cfg['qubit_freq_ef'][QubitIndex] = float(efqubit_freq)
+            # rr_logger.info(f"EF Qubit {QubitIndex + 1} frequency: {efqubit_freq}")
+            if verbose:
+                print(f"EF Qubit {QubitIndex + 1} frequency: {efqubit_freq}")
 
-                rr_logger.info(f"EF Qubit {QubitIndex + 1} frequency: {efqubit_freq}")
-                if verbose:
-                    print(f"EF Qubit {QubitIndex + 1} frequency: {efqubit_freq}")
+            del ef_q_spec
 
-                del ef_q_spec
-
-            except Exception as e:
-                if debug_mode:
-                    raise  # In debug mode, re-raise the exception immediately
-                rr_logger.exception(f"EF QubitSpectroscopy error on qubit {QubitIndex + 1}: {e}")
+            # except Exception as e:
+            #     if debug_mode:
+            #         raise  # In debug mode, re-raise the exception immediately
+            #     rr_logger.exception(f"EF QubitSpectroscopy error on qubit {QubitIndex + 1}: {e}")
 
         ################################################ e-f amp rabi pop meas. ################################################
         if run_flags["rabi_pop_meas"]:
@@ -817,6 +824,32 @@ while j < n:
             #     if debug_mode:
             #         raise  # In debug mode, re-raise the exception immediately
             #     rr_logger.exception(f"FH QubitSpectroscopy error on qubit {QubitIndex + 1}: {e}")
+
+            ################################################ f-h rabi ################################################
+        if run_flags["fh_rabi"]:
+            increase_qubit_reps = False  # if you want to increase the reps for a qubit, set to True
+            qubit_to_increase_reps_for = 0  # only has impact if previous line is True
+            multiply_qubit_reps_by = 2  # only has impact if the line two above is True
+            print('fh rabi')
+            # try:
+            # thresholding = False
+
+            fhrabi = FH_AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs=save_figs,save_shots=False,
+                                           experiment = experiment, live_plot = live_plot,
+                                           increase_qubit_reps = increase_qubit_reps,
+                                           qubit_to_increase_reps_for = qubit_to_increase_reps_for,
+                                           multiply_qubit_reps_by = multiply_qubit_reps_by,
+                                           verbose = verbose, logger = rr_logger, unmasking_resgain = unmask)
+            fhrabi_I, fhrabi_Q, fhrabi_gains, fhrabi_fit, fhpi_amp, fhsys_config_to_save = fhrabi.run()
+            # experiment.soccfg
+            # if these are None, fit didnt work
+            if (fhrabi_fit is None and fhpi_amp is None):
+                print('Rabi fit didnt work, skipping the rest of this qubit')
+                continue  # skip the rest of this qubit
+
+            experiment.qubit_cfg['pi_fh_amp'][QubitIndex] = float(fhpi_amp)
+            print('fh Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(fhpi_amp))
+            del fhrabi
         ########################################### g-e-f Single Shot Measurements ############################################
 
         if run_flags["ss_gef"]:
@@ -967,18 +1000,18 @@ while j < n:
                 ef_qspec_data[QubitIndex]['Syst Config'][0] = sys_config_qspec_ef
 
             if run_flags["fh_q_spec"]:
-                fh_qspec_data[QubitIndex]['Dates'][0] = (
+                fh_qspec_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
                     time.mktime(datetime.datetime.now().timetuple()))
-                fh_qspec_data[QubitIndex]['I'][0] = fhqspec_I
-                fh_qspec_data[QubitIndex]['Q'][0] = fhqspec_Q
-                fh_qspec_data[QubitIndex]['Frequencies'][0] = fhqspec_freqs
-                fh_qspec_data[QubitIndex]['I Fit'][0] = None #fhqspec_I_fit
-                fh_qspec_data[QubitIndex]['Q Fit'][0] = None #fhqspec_Q_fit
-                fh_qspec_data[QubitIndex]['Round Num'][0] = j
-                fh_qspec_data[QubitIndex]['Batch Num'][0] = batch_num
-                fh_qspec_data[QubitIndex]['Recycled QFreq'][0] = False  # no rr so no recycling here
-                fh_qspec_data[QubitIndex]['Exp Config'][0] = expt_cfg
-                fh_qspec_data[QubitIndex]['Syst Config'][0] = sys_config_qspec_fh
+                fh_qspec_data[QubitIndex]['I'][j - batch_num * save_r - 1] = fhqspec_I
+                fh_qspec_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = fhqspec_Q
+                fh_qspec_data[QubitIndex]['Frequencies'][j - batch_num * save_r - 1] = fhqspec_freqs
+                fh_qspec_data[QubitIndex]['I Fit'][j - batch_num * save_r - 1] = None #fhqspec_I_fit
+                fh_qspec_data[QubitIndex]['Q Fit'][j - batch_num * save_r - 1] = None #fhqspec_Q_fit
+                fh_qspec_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                fh_qspec_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                fh_qspec_data[QubitIndex]['Recycled QFreq'][j - batch_num * save_r - 1] = False  # no rr so no recycling here
+                fh_qspec_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                fh_qspec_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_qspec_fh
 
             # ----------Collect rabi population measurements (qubit temperature data) ----------------
             if run_flags["rabi_pop_meas"]:
@@ -1084,6 +1117,19 @@ while j < n:
                 act_data[QubitIndex]['noactQ'][j - batch_num * save_r - 1] = no_act_qdata
                 act_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = act_cfg
 
+            # ---------------------Collect g-e Rabi Results----------------
+            if run_flags["fh_rabi"]:
+                rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
+                    time.mktime(datetime.datetime.now().timetuple()))
+                rabi_data[QubitIndex]['I'][j - batch_num * save_r - 1] = fhrabi_I
+                rabi_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = fhrabi_Q
+                rabi_data[QubitIndex]['Gains'][j - batch_num * save_r - 1] = fhrabi_gains
+                rabi_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = fhrabi_fit
+                rabi_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                rabi_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                rabi_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                rabi_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = fhsys_config_to_save
+
         del experiment
 
     ################################################## Potentially Save ################################################
@@ -1139,6 +1185,13 @@ while j < n:
                 saver_ef_rabi.save_to_h5('rabi_ef')
                 del saver_ef_rabi
                 del ef_rabi_data
+
+            # --------------------------save e-f Rabi-----------------------
+            if run_flags["fh_rabi"]:
+                saver_fh_rabi = Data_H5(subStudyDataFolder, fh_rabi_data, batch_num, save_r)
+                saver_fh_rabi.save_to_h5('rabi_fh')
+                del saver_fh_rabi
+                del fh_rabi_data
             # --------------------------save f-h qspec-----------------------
             if run_flags["fh_q_spec"]:
                 saver_ef_qspec = Data_H5(subStudyDataFolder, fh_qspec_data, batch_num, save_r)
@@ -1198,6 +1251,7 @@ while j < n:
     res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
     qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
     rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
+    fh_rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
     ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
     ss_data_ef = create_data_dict(ss_keys, save_r, list_of_all_qubits)
     ef_ss_data = create_data_dict(ss_ef_keys, save_r, list_of_all_qubits)
@@ -1210,3 +1264,6 @@ while j < n:
     t2e_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
     ss_data_gef = create_data_dict(ss_keys_gef, save_r, list_of_all_qubits)
     act_data = create_data_dict(act_keys, save_r, list_of_all_qubits)
+
+en=time.time()
+print('timetaken=',en-st)

@@ -70,9 +70,9 @@ class EFQubitSpectroscopy:
             efQ = efiq_list[self.QubitIndex][0, :, 1]
             effreqs = efqspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
             #print(effreqs)
-        self.plot_results(efI, efQ, effreqs, config=self.config)
+        # self.plot_results(efI, efQ, effreqs, config=self.config)
         largest_amp_curve_mean, efI_fit, efQ_fit = self.plot_results(efI, efQ, effreqs, config = self.config)
-        return efI, efQ, effreqs, self.config, efI_fit, efQ_fit, largest_amp_curve_mean
+        return efI, efQ, effreqs , self.config, efI_fit, efQ_fit , largest_amp_curve_mean
 
     def live_plotting(self, qspec, soc):
         I = Q = expt_mags = expt_phases = expt_pop = None
@@ -166,7 +166,7 @@ class EFQubitSpectroscopy:
                                      f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
             fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
         plt.close(fig)
-        return largest_amp_curve_mean, I_fit, Q_fit
+        # return largest_amp_curve_mean, I_fit, Q_fit
 
     def get_results(self, I, Q, freqs):
         freqs = np.array(freqs)

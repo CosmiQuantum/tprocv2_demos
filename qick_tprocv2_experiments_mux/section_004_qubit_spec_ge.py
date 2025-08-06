@@ -84,6 +84,8 @@ class QubitSpectroscopy:
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
             freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
+            self.plot_results(I, Q, freqs, config=self.config,
+                              return_fwhm=return_fwhm)
 
         if self.fit_data:
             if return_fwhm:
@@ -96,6 +98,7 @@ class QubitSpectroscopy:
                 return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config
         else:
             return I, Q, freqs, None, None, None, self.config
+        # return I, Q, freqs, None, None, None, self.config
 
     def run_with_stark_tone(self, wait_for_res_ring_up=False):
 
@@ -463,7 +466,7 @@ class PulseProbeSpectroscopyProgram(AveragerProgramV2):
                          mixer_freq=cfg['mixer_freq'])
         for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
-
+        print(cfg["list_of_all_qubits"])
         self.add_pulse(ch=res_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],

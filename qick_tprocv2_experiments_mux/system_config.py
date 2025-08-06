@@ -91,9 +91,9 @@ class QICK_experiment:
                 "res_freq_fh": [6223.016, 6284.544, 6343.861, 6414.893, 6414.893, 6546.754],  # [MHz]
                 "res_gain_fh": [0.95,0.9,0.95,0.55,0.55,0.95],  # [DAC units]
                 "res_length": 2.0,  # [us] (1.0 for res spec)
-                "res_phase": [ -180+((1.281174-2.6703) * 180/np.pi), -10, 85,
-                              0, 150,
-                            -90], #Joyce 3/11
+                "res_phase": [0,0,0,0,0,0],#[ -180+((1.281174-2.6703) * 180/np.pi), -10, 85,
+                            #   0, 150,
+                            # -90], #Joyce 3/11
                 #"res_phase": [(0.19-0.38) * 180/np.pi, (2.07-3.12-1.16) * 180/np.pi, (-0.35+2.28) * 180/np.pi,
                    #           (-1.36+1.68+1.1) * 180/np.pi, (-2.4-1.5) * 180/np.pi, (-0.56+1.18) * 180/np.pi],
                 # [-0.1006 *360/np.pi, -2.412527*360/np.pi, -1.821284*360/np.pi, -1.90962*360/np.pi, -0.566479*360/np.pi, -0.5941687*360/np.pi], # Rotation Angle From QICK Function, is the ang of 10 ss angles per qubit
@@ -102,8 +102,8 @@ class QICK_experiment:
                 "threshold": [-5.84, 1, -5, -3, -1, 4], #Joyce 3/11
                 #"threshold": [7.3961, -12.5812, 4.8613, -7.5323, 7.0689, 4.6805], # Threshold for Distinguish g/e, from QICK Function
                 "res_ring_up_time": 4,  # Olivia May 17th
-                "threshold1": -30*269,
-                "threshold2": -91*269,
+                "qubit_is_in_g_threshold": 100000, #100000,#-8837,
+                "edge_of_e_state_threshold": -26046,
             }
 
             # Qubit Configuration
@@ -124,9 +124,9 @@ class QICK_experiment:
                 "qubit_length_ge": 15,  # 15 [us] for spec Pulse
                 "qubit_freq_ef": [4009.81, 3645.58, 3988.21, 4292.73, 4292.73, 4838.86], #Q4 not fixed, looks like it shifted quite a lot
                 # [MHz] Freqs of Qubit e/f Transition
-                "qubit_freq_fh": [4016.3, 3644.76, 3988.44, 4292.73, 4292.73, 4833.17],
+                "qubit_freq_fh": [4016.3, 3450.8, 3988.44, 4292.73, 4292.73, 4833.17],
                 "qubit_freq_ftores": [4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17],
-                "qubit_gain_ef":  [0.001, 0.0065, 0.0075, 0.1, 0.15, 0.005],# [0.03, 0.14, 0.04, 0.1, 0.15, 0.08],#
+                "qubit_gain_ef":  [0.001, 0.001, 0.0075, 0.1, 0.15, 0.005],# [0.03, 0.14, 0.04, 0.1, 0.15, 0.08],#
                 "qubit_gain_fh": [0.001, 0.015, 0.0075, 0.1, 0.15, 0.005],
                 'qubit_gain_ftores': [1]*6,#[0.2, 0.14, 0.04, 0.17, 0.13, 0.08],
                 # [0.01, 0.05, 0.05, 0.05, 0.01, 0.5], # [DAC units] Pulse Gain
@@ -139,11 +139,13 @@ class QICK_experiment:
                 #"sigma": [0.05, 0.09, 0.07, 0.065, 0.09, 0.3],  # Goal: cut sigma in half [us] for Gaussian Pulse (5+4 DAC atten for qubit)
                 # "pi_amp": [0.92, 0.87, 0.75, 0.73, 0.77, 0.78], # old RR values
                 "sigma_ef": [0.15, 0.2, 0.25, 0.29, 0.28, 0.5],  # [us] for Gaussian Pulse, #Arianna 3/27
+                "sigma_fh": [0.15, 0.21, 0.25, 0.29, 0.28, 0.5],  # [us] for Gaussian Pulse, #Arianna 3/27
                 "pi_amp": [0.722, 0.555, 0.635, 0.7754, 0.6546, 0.682], #Joyce 3/11
                 "pi_amp_ampl": [0.5942, 0.634499, 0.76542, 0.7754, 0.55393, 0.9], # Joyce 04/07 DAC 0
                 #"pi_amp": [1.0, 0.93, 0.77, 0.8, 0.81, 0.9], # Eyeballed by Sara today (5+10 DAC atten for qubit)
                 #"pi_amp": [0.7, 0.95, 0.75, 0.78, 0.77, 0.8],  # With shorter sigma (5+4 DAC instead of 5+5 DAC atten for qubit)
                 "pi_ef_amp": [0.563, 0.673, 0.511, 0.7018, 0.6751, 0.589], # Arianna 3/27
+                "pi_fh_amp": [0.563, 0.8023, 0.511, 0.7018, 0.6751, 0.589],  # Arianna 3/27
                 "qubit_mixer_freq": 4300,  # [MHz]
 
             }

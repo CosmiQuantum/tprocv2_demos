@@ -181,18 +181,26 @@ class SingleShot:
     def run(self):
         ssp_g = SingleShotProgram_g(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
         iq_list_g = ssp_g.acquire(self.experiment.soc, soft_avgs=1, progress=True)
+        g_shots= ssp_g.get_raw()
 
         ssp_e = SingleShotProgram_e(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
         iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=True)
+        e_shots= ssp_e.get_raw()
+        # print('e_shots[0]',e_shots[0])
 
-        fid, angle = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
+        # fid, angle = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
+        fid, angle = self.plot_results(g_shots, e_shots, self.QubitIndex)
         return fid, angle, iq_list_g, iq_list_e, self.config
 
     def plot_results(self, iq_list_g, iq_list_e, QubitIndex,  fig_quality=100):
-        I_g = iq_list_g[QubitIndex][0].T[0]
-        Q_g = iq_list_g[QubitIndex][0].T[1]
-        I_e = iq_list_e[QubitIndex][0].T[0]
-        Q_e = iq_list_e[QubitIndex][0].T[1]
+        # I_g = iq_list_g[QubitIndex][0].T[0]
+        # Q_g = iq_list_g[QubitIndex][0].T[1]
+        # I_e = iq_list_e[QubitIndex][0].T[0]
+        # Q_e = iq_list_e[QubitIndex][0].T[1]
+        I_g = iq_list_g[self.QubitIndex][:, :, 0, 0][0]
+        Q_g = iq_list_g[self.QubitIndex][:, :, 0, 1][0]
+        I_e = iq_list_e[self.QubitIndex][:, :, 0, 0][0]
+        Q_e = iq_list_e[self.QubitIndex][:, :, 0, 1][0]
 
         fid, threshold, angle, ig_new, ie_new = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=self.save_figs,  fig_quality=fig_quality)
         if self.verbose: print('Optimal fidelity after rotation = %.3f' % fid)

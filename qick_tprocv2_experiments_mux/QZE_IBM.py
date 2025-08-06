@@ -112,7 +112,7 @@ slices=[30]
 for slice in slices:
     for QubitIndex in Qs_to_look_at:
         for repeat_round in range(4000):
-            sub_study = f'final_run7_300_t1_points_1000_avgs_slice{slice}us'
+            sub_study = f'final_run7_300_t1_points_1000_avgs_slice{slice}us_try2'
             data_set = f'qubit_' + str(QubitIndex) + f'round{repeat_round}' #+ '_' +datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
             # set which of the following you'd like to run to 'True'

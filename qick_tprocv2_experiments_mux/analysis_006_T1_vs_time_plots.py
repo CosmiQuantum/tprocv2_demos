@@ -450,17 +450,23 @@ class T1VsTime:
             ax.plot(
                 gains_q[mask],
                 1.0 / amps_q[mask],
-                marker="o",
                 linestyle="-",
                 label=f"Round {r_id}",
                 color=next(colour_cycle),
+                linewidth=0.8,
+
             )
 
         ax.set_title("Qubit 0")
         ax.set_xlabel("Pulse gain (a.u.)")
         ax.set_ylabel("1 / T1 signal amplitude (a.u.)")
-        ax.legend(frameon=False)
-        fig.tight_layout()
+        ax.legend(
+            loc="center left",  # anchor on the left‐centre of the legend box
+            bbox_to_anchor=(1.02, 0.5),  # shift legend just outside the axes
+            frameon=False,  # remove legend border
+            fontsize="small"  # or an explicit int, e.g. 8
+        )
+        fig.tight_layout(rect=[0, 0, 0.85, 1])
 
         self.create_folder_if_not_exists(save_path)
         fig.savefig(save_path + "gamma_q0.png",
@@ -483,17 +489,23 @@ class T1VsTime:
             ax.plot(
                 gains_q[mask],
                 1.0 / amps_q[mask],
-                marker="o",
                 linestyle="-",
                 label=f"Round {r_id}",
                 color=next(colour_cycle),
+                linewidth=0.8,
             )
 
         ax.set_title("Qubit 0")
         ax.set_xlabel("Pulse gain (a.u.)")
         ax.set_ylabel("T1 signal amplitude (a.u.)")
-        ax.legend(frameon=False)
-        fig.tight_layout()
+        ax.legend(
+            loc="center left",  # anchor on the left‐centre of the legend box
+            bbox_to_anchor=(1.02, 0.5),  # shift legend just outside the axes
+            frameon=False,  # remove legend border
+            fontsize="small"  # or an explicit int, e.g. 8
+        )
+        fig.tight_layout(rect=[0, 0, 0.85, 1])
+
         self.create_folder_if_not_exists(save_path)
         fig.savefig(save_path + "t1_q0.png",
                     transparent=False,

@@ -51,9 +51,9 @@ class FH_AmplitudeRabiExperiment:
     def run(self, thresholding=False):
         print(self.config)
 
-        amp_rabi = FH_AmplitudeRabiProgram(self.experiment.soccfg, reps=self.config['reps'],
-                                        final_delay=self.config['relax_delay'], cfg=self.config)
-
+        amp_rabi = FH_AmplitudeRabiProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
+        print("self.config['sigma_fh']", self.config['sigma_fh'])
+        print("self.config['sigma']", self.config['sigma'])
         if self.live_plot:
             I, Q, gains = self.live_plotting(amp_rabi, thresholding)
         else:
@@ -283,34 +283,36 @@ class FH_AmplitudeRabiExperiment:
 
 class FH_AmplitudeRabiProgram(AveragerProgramV2):
     def _initialize(self, cfg):
-        ro_ch = cfg['ro_ch']
-        res_ch = cfg['res_ch']
+        ro_chs = cfg['ro_ch']
+        gen_ch = cfg['res_ch']
         qubit_ch = cfg['qubit_ch']
-        self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
-                         mux_freqs=cfg['res_freq_fh'],
-                         mux_gains=cfg['res_gain_fh'],
+
+        self.declare_gen(ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
+                         mux_freqs=cfg['res_freq_ef'],
+                         mux_gains=cfg['res_gain_ef'],
                          mux_phases=cfg['res_phase'],
                          mixer_freq=cfg['mixer_freq'])
-        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_fh'], cfg['ro_phase']):
-            self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
 
-        self.add_pulse(ch=res_ch, name="res_pulse",
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ef'], cfg['ro_phase']):
+            self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch)
+
+        self.add_pulse(ch=gen_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
-                       mask=cfg["list_of_all_qubits"],
+                       mask=cfg["list_of_all_qubits"]  # [0, 1, 2, 3, 4, 5],
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
 
-        self.add_gauss(ch=qubit_ch, name="ge_ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
-        self.add_pulse(ch=qubit_ch, name="pi_ge",
+        self.add_gauss(ch=qubit_ch, name="geramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+
+        self.add_pulse(ch=qubit_ch, name="ge_pi_pulse",
                        style="arb",
-                       envelope="ge_ramp",
+                       envelope="geramp",
                        freq=cfg['qubit_freq_ge'],
                        phase=cfg['qubit_phase'],
                        gain=cfg['pi_amp'],
                        )
-
         self.add_gauss(ch=qubit_ch, name="eframp", sigma=cfg['sigma_ef'], length=cfg['sigma_ef'] * 4, even_length=False)
 
         self.add_pulse(ch=qubit_ch, name="ef_pi_pulse",
@@ -321,6 +323,7 @@ class FH_AmplitudeRabiProgram(AveragerProgramV2):
                        gain=cfg['pi_ef_amp'],
                        )
 
+        print("cfg['sigma_fh']",cfg['sigma_fh'])
         self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma_fh'], length=cfg['sigma_fh'] * 4, even_length=False)
         self.add_pulse(ch=qubit_ch, name="qubit_pulse",
                        style="arb",
@@ -333,9 +336,9 @@ class FH_AmplitudeRabiProgram(AveragerProgramV2):
         self.add_loop("gainloop", cfg["steps"])
 
     def _body(self, cfg):
-        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play pulse: ge pi
+        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play pulse
         self.delay_auto(0.0)
-        self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # play pulse: ef pi
+        self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # play pulse
         self.delay_auto(0.0)
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0) #  play pulse: variable-gain fh pi
         self.delay_auto(t=0.0, tag='waiting') #wait

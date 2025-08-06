@@ -149,7 +149,7 @@ class StarkShift2DProgram(AveragerProgramV2):
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 class ResStarkShift2D:
-    def __init__(self, QubitIndex, number_of_qubits, outerFolder, res_freq_stark, res_phase_stark, save_figs, experiment=None, signal=None):
+    def __init__(self, QubitIndex, number_of_qubits, outerFolder, res_freq_stark, res_phase_stark, save_figs, experiment=None, signal=None, unmasking_resgain=False):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "res_stark_shift_2D"
@@ -169,7 +169,10 @@ class ResStarkShift2D:
             self.config['res_phase_stark'] = res_phase_stark
             stark_mask = np.arange(0, self.number_of_qubits + 1)
             stark_mask = np.delete(stark_mask,QubitIndex)
-            self.config['stark_mask'] = stark_mask
+            if unmasking_resgain:
+                self.config["stark_mask"] = [QubitIndex, 6]
+            else:
+                self.config['stark_mask'] = stark_mask
 
     def run(self):
         I = []
@@ -228,7 +231,7 @@ class ResStarkShift2DProgram(AveragerProgramV2):
         ro_ch = cfg['ro_ch']
         res_ch = cfg['res_ch']
         qubit_ch = cfg['qubit_ch']
-
+        print(cfg['stark_gain'], cfg['stark_mask'])
         self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
                          mux_freqs=cfg['res_freq_stark'], # res of interest frequency at QubitIndex and 7
                          mux_gains=cfg['stark_gain'], # readout gain, stark gain

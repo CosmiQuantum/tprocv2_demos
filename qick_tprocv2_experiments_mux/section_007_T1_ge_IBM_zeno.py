@@ -89,7 +89,7 @@ class T1Measurement_with_Zeno:
         self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
         qze_mask = np.arange(0, self.number_of_qubits + 1)
         qze_mask = np.delete(qze_mask, QubitIndex)
-        self.exp_cfg['qze_mask'] = qze_mask
+        self.exp_cfg['qze_mask'] = [0,6]#qze_mask
 
         self.experiment.readout_cfg['res_gain_qze'] = [0, 0, 0, 0, 0, 0, self.zeno_pulse_gain]
         self.experiment.readout_cfg['res_gain_qze'][QubitIndex] = self.experiment.readout_cfg['res_gain_ge'][QubitIndex]
