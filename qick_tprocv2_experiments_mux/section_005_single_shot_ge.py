@@ -191,22 +191,31 @@ class SingleShot:
         I_e = iq_list_e[QubitIndex][0].T[0]
         Q_e = iq_list_e[QubitIndex][0].T[1]
 
-        fid, threshold, angle, ig_new, ie_new = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], plot=self.save_figs,  fig_quality=fig_quality)
+        if "run4" in self.outerFolder or "run5" in self.outerFolder:
+            # We can update this later if we really care about extracting the config for hist_ssf()
+            config = None #it's not that we didn't save it for runs 4 and 5, it was just saved differently (inside a separate folder as an h5 file, not within our experiment h5 files).
+        else:
+            config = self.config
+
+
+        fid, threshold, angle, ig_new, ie_new = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg = config, plot=self.save_figs,  fig_quality=fig_quality)
         if self.verbose: print('Optimal fidelity after rotation = %.3f' % fid)
         if self.verbose: print('Optimal angle after rotation = %f' % angle)
         self.logger.info('Optimal fidelity after rotation = %.3f' % fid)
         self.logger.info('Optimal angle after rotation = %f' % angle)
         return fid, angle
 
-    def hist_ssf(self, data=None, plot=True,  fig_quality = 100):
+    def hist_ssf(self, data=None, cfg=None, plot=True,  fig_quality = 100):
 
         ig = data[0]
         qg = data[1]
         ie = data[2]
         qe = data[3]
 
-        # numbins = round(math.sqrt(float(self.config["steps"])))
-        numbins = 50
+        if cfg is not None:
+            numbins = round(math.sqrt(float(self.config["steps"])))
+        else:
+            numbins = 60
 
         xg, yg = np.median(ig), np.median(qg)
         xe, ye = np.median(ie), np.median(qe)

@@ -47,13 +47,12 @@ run_name = 'run4/6transmon/folders_with_SSF_data_entire_run4/ssf_data_and_readou
 FRIDGE = "QUIET"
 run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB attenuator ') #please make it brief for the plot
 
-# For AB data, run7
 top_folder_dates = ["2024-11-12_10-00-32", "2024-11-13_08-23-41", "2024-11-17_09-40-05", "2024-11-19_01-21-45"]
 
 # ################################################ 01: Get all data ######################################################
-# res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-#                                        save_figs, fit_saved, signal, run_name, FRIDGE)
-# date_times_res_spec, res_freqs = res_spec_vs_time.run()
+res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+                                       save_figs, fit_saved, signal, run_name, FRIDGE)
+date_times_res_spec, res_freqs = res_spec_vs_time.run()
 # #
 # q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
 #                                   save_figs, fit_saved, signal, run_name, FRIDGE)
@@ -88,7 +87,7 @@ plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, rabi_
             plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = False)
 # #
 # # ########################################## 03: Resonator Freqs vs Time Plots ###########################################
-# res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
+res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
 #
 # ######################################### 04: Qubit Freqs vs Time Plots #############################################
 # q_spec_vs_time.plot_without_errs(date_times_q_spec, q_freqs,show_legends)

@@ -2,9 +2,15 @@ from bisect import bisect_left
 import re
 import ast
 import numpy as np
+import sys
 import h5py
 from sklearn.mixture import GaussianMixture
-from qicklab.analysis import qspec, t1, ssf
+import os
+from scipy.stats import norm
+sys.path.insert(0, os.path.abspath("/home/quietuser/Documents/GitHub/QICK_Qubit_LabSuite/src"))
+from qicklab.analysis.qspec import AnaQSpec
+from qicklab.analysis.ssf import AnaSSF
+
 from matplotlib.ticker import MaxNLocator
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 import math
@@ -20,10 +26,11 @@ figure_quality = 100 #ramp this up to like 500 for presentation plots
 
 
 class SSFTempCalcAndPlots:
-    def __init__(self, figure_quality, number_of_qubits, save_figs):
+    def __init__(self, figure_quality, number_of_qubits, run_num, save_figs):
         self.save_figs = save_figs
         self.figure_quality = figure_quality
         self.number_of_qubits = number_of_qubits
+        self.run_num = run_num
 
     def calculate_qubit_temperature(self, frequency_mhz, ground_state_population, excited_state_population):
         k_B = 1.380649e-23  # Boltzmann constant in J/K
@@ -665,7 +672,7 @@ class SSFTempCalcAndPlots:
 
     #  Scatter plot – qubit temperatures vs. time  (all dates, each qubit its own subplot)
     def plot_qubit_temperatures_vs_time_ssf(self, all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs,
-                                            out_dir, plot_error_bars = False):
+                                            out_dir, rel_err_cutoff = 1, plot_error_bars = False):
         """Scatter plot of qubit temperatures vs. time for each qubit, optionally with error bars."""
 
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
@@ -686,7 +693,7 @@ class SSFTempCalcAndPlots:
             # Filter out temperature data with error > 300 mK
             filtered = [(t, T, e)
                 for t, T, e in zip(times, temps, errs)
-                if e <= 300]
+                if T > 0 and e / T < rel_err_cutoff] # rel_err_cutoff is the relative error, it should be a decimal (aka 0.4 = 40% relative error and so forth)
             if not filtered:
                 continue
 
@@ -733,7 +740,7 @@ class SSFTempCalcAndPlots:
         print("Saved all-dates scatter →", fname)
 
     # Histograms – temperature distributions  (all dates, each qubit subplot)
-    def plot_all_qubits_hist_ssf(self, all_qubit_temperatures, out_dir, bins=20):
+    def plot_all_qubits_hist_ssf(self, all_qubit_temperatures, all_qubit_temperatures_errs, out_dir, bins=20, rel_err_cutoff = 1):
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
 
         os.makedirs(out_dir, exist_ok=True)
@@ -742,15 +749,39 @@ class SSFTempCalcAndPlots:
 
         for q in all_qubit_temperatures.keys():
             temps = all_qubit_temperatures[q]
+            errs = all_qubit_temperatures_errs[q]
             if not temps:
                 continue
 
+            # Apply relative error cutoff
+            filtered = [T for T, e in zip(temps, errs) if T > 0 and e / T < rel_err_cutoff]
+            if not filtered:
+                continue
+
+            # Fit Gaussian to filtered temps
+            mu, std = norm.fit(filtered)
+
+            # Prepare x-axis for Gaussian overlay
+            x_vals = np.linspace(min(filtered), max(filtered), 100)
+            pdf_vals = norm.pdf(x_vals, mu, std)
+
+            # Scale to match histogram height
+            hist_data, bins = np.histogram(filtered, bins=bins)
+            bin_width = np.diff(bins)[0]
+            scale_factor = hist_data.sum() * bin_width
+            scaled_pdf = pdf_vals * scale_factor
+
+            # Plot the Gaussian fit
             ax = plt.subplot(2, 3, q + 1)
+            ax.plot(x_vals, scaled_pdf, linestyle='--', linewidth=2, color=colors[q], label='Gaussian fit')
+
+            #Plot the histograms
             ax.hist(temps, bins=bins,
                     color=colors[q], alpha=0.7, edgecolor='black')
-            ax.set_title(f"Qubit {q + 1} Temperature Distribution")
+            ax.set_title(f"Qubit {q + 1}  $\mu$: {mu:.2f} mK,  $\sigma$: {std:.2f} mK")
             ax.set_xlabel("Temperature (mK)")
             ax.set_ylabel("Count")
+            ax.set_xlim(left=50, right=600)
             ax.grid(alpha=0.3)
 
         plt.tight_layout()
@@ -1051,23 +1082,73 @@ class SSFTempCalcAndPlots:
         The dictionary contains matched up SSF and g-e qubit spec h5 files that are within a specified number of seconds (tolerance_seconds). That way the user can
         use the returned dictionary to calculate qubit temperatures using SSF data and the qubit freq that was measured at around the same time that the SSF data was taken.
         """
+        print('Processing SSF and g-e quit spec data for temperature analysis...')
         freq_cache = {}  # for qubit freqs (MHz)
         freq_err_cache = {}  # 1-σ error (std) on that freq
         ig_new_cache = {}  # for ground state roated I data (SSF)
         ie_new_cache = {}  # for first excited state roated I data (SSF)
         timestamp_ssf_cache = {}  # for ssf data time stamps (qubit temperature time stamps)
 
+        if self.run_num == 4 or self.run_num ==5:
+            folder_qspec = "study_data"
+            expt_name_qspec = "qspec_ge"
+            datagroup_qspec = 'QSpec'
+
+            expt_name_ssf = "ss_ge"
+            datagroup_ssf = 'SS'
+            folder_ssf = "study_data"
+
+        elif self.run_num == 6:
+            folder_qspec = "optimization"
+            expt_name_qspec = "qspec_ge"
+            datagroup_qspec = 'QSpec'
+
+            expt_name_ssf = "ss_ge"
+            datagroup_ssf = 'SS'
+            folder_ssf = "optimization"
+
+        elif self.run_num == 7:
+            folder_qspec = "study_data"
+            expt_name_qspec = "qspec_ge"
+            datagroup_qspec = 'QSpec'
+
+            expt_name_ssf = "ss_ge"
+            datagroup_ssf = 'SS'
+            folder_ssf = "study_data"
+
+        else:
+            raise ValueError("You must choose run_num = 4,5,6 or 7. Otherwise, define a section for your run of interest inside process_ssf_and_qfreq_data_qtemps().")
+
         for full_path in paths:
+
+            # Check existence of Data_h5 folder before doing anything else
+            ssf_data_h5_path = os.path.join(full_path, folder_ssf, "Data_h5", expt_name_ssf)
+            qspec_data_h5_path = os.path.join(full_path, folder_qspec, "Data_h5", expt_name_qspec)
+
+            if not os.path.isdir(ssf_data_h5_path):
+                print(f"Skipping {full_path}; SSF Data_h5 folder missing: {ssf_data_h5_path}")
+                continue
+
+            if not os.path.isdir(qspec_data_h5_path):
+                print(f"Skipping {full_path}; QSpec Data_h5 folder missing: {qspec_data_h5_path}")
+                continue
+
             path = os.path.dirname(full_path)  # one level up from the dataset
             dataset = os.path.basename(full_path)  # just the '2025-04-16_11-47-09' part
 
             for QubitIndex in Science_Qubits:  # We are only taking science data for some qubits
                 try:
                     # --- Load QSpec ---
-                    qspec_obj = qspec(path, dataset, QubitIndex)
-                    qspec_dates, qspec_n, qspec_probe_freqs, qspec_I, qspec_Q = qspec_obj.load_all()
-                    qspec_freqs, qspec_errs, qspec_fwhms = qspec_obj.get_all_qspec_freq(qspec_probe_freqs, qspec_I,
-                                                                                        qspec_Q, qspec_n)
+                    qspec_obj = AnaQSpec(path, dataset, QubitIndex, folder_qspec, expt_name_qspec, datagroup_qspec)
+                    qspec_data = qspec_obj.load_all()
+
+                    qspec_dates = qspec_data["dates"]
+                    qspec_n = int(qspec_data["n"])
+                    qspec_probe_freqs = qspec_data["probe_freqs"]
+                    qspec_I = qspec_data["I"]
+                    qspec_Q = qspec_data["Q"]
+
+                    qspec_freqs, qspec_errs, qspec_fwhms = qspec_obj.get_all_qspec_freq(qspec_probe_freqs, qspec_I, qspec_Q, qspec_n)
 
                     # recreate the list of file–paths in the SAME order the helper used
                     qspec_dir = os.path.join(path, dataset, qspec_obj.folder, "Data_h5", qspec_obj.expt_name)
@@ -1079,11 +1160,19 @@ class SSFTempCalcAndPlots:
                         freq_err_cache[(h5_paths[i], QubitIndex)] = qspec_errs[i]
                 except Exception as e:
                     print(f"Skipped QSpec scan in {dataset} for Q{QubitIndex}: {e}")
+                    #raise ValueError(f"Skipped QSpec scan in {dataset} for Q{QubitIndex}: {e}") # for debugging
 
                 try:
                     # --- Load SSF ---
-                    ssf_ge = ssf(path, dataset, QubitIndex)
-                    ssf_dates, ssf_n, I_g, Q_g, I_e, Q_e = ssf_ge.load_all()
+                    ssf_ge = AnaSSF(path, dataset, QubitIndex, folder_ssf, expt_name_ssf, datagroup_ssf)
+                    ssf_data= ssf_ge.load_all()
+
+                    ssf_dates = ssf_data["dates"]
+                    ssf_n = int(ssf_data["n"])  # convert here if needed
+                    I_g = ssf_data["I_g"]
+                    Q_g = ssf_data["Q_g"]
+                    I_e = ssf_data["I_e"]
+                    Q_e = ssf_data["Q_e"]
 
                     # recreate the list of SSF-file paths in the SAME order the helper used
                     ssf_dir = os.path.join(path, dataset, ssf_ge.folder, "Data_h5", ssf_ge.expt_name)
@@ -1104,6 +1193,7 @@ class SSFTempCalcAndPlots:
 
                 except Exception as e:
                     print(f"Failed loading SSF for qubit {QubitIndex} from {full_path}: {e}")
+                    #raise ValueError(f"Failed loading SSF for qubit {QubitIndex} from {full_path}: {e}") # for debugging
 
         # Organize files by type and qubit index after loading all the data
         qspec_h5s = {q: [] for q in Science_Qubits}
