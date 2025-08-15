@@ -82,7 +82,7 @@ for QubitIndex in Qs:
                 config = {**q_config[Qubit], **exp_cfg}"""
                 #print(f"Single Shot configuration:", config)
 
-                #ss = SingleShot(QubitIndex,list_of_all_qubits, output_folder, k, round(leng, 3)) #Old way
+                #ss = SingleShotGE(QubitIndex,list_of_all_qubits, output_folder, k, round(leng, 3)) #Old way
                 ss = SingleShot(QubitIndex,list_of_all_qubits, output_folder, experiment, round_num=k, save_figs=True)#New way
                 fid, angle, iq_list_g, iq_list_e = ss.run()
                 fids.append(fid)

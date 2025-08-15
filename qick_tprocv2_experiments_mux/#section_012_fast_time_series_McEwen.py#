@@ -137,7 +137,7 @@ class SingleShotProgram_e(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
-class SingleShot:
+class SingleShotGE:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, save_figs=False, experiment = None,
                  verbose = False, logger = None, qick_verbose=True):
         self.qick_verbose = qick_verbose
@@ -174,7 +174,7 @@ class SingleShot:
                                     cfg=self.config)
         iq_list_e = ssp_e.acquire(soc, soft_avgs=1, progress=False)
 
-        # Use the fidelity calculation from SingleShot
+        # Use the fidelity calculation from SingleShotGE
         fidelity, _, _, _,_ = self.hist_ssf(
             data=[iq_list_g[self.QubitIndex][0].T[0], iq_list_g[self.QubitIndex][0].T[1],
                   iq_list_e[self.QubitIndex][0].T[0], iq_list_e[self.QubitIndex][0].T[1]],
@@ -343,10 +343,10 @@ class GainFrequencySweep:
                 res_gains = fresh_experiment.mask_gain_res(self.qubit_index, gain, num_qubits=tot_num_of_qubits)
                 fresh_experiment.readout_cfg['res_gain_ge'] = res_gains
 
-                # Initialize SingleShot instance for fidelity calculation
+                # Initialize SingleShotGE instance for fidelity calculation
                 round_num = 0
                 save_figs = False
-                single_shot = SingleShot(self.qubit_index, self.number_of_qubits,  self.output_folder, round_num, save_figs, fresh_experiment)
+                single_shot = SingleShotGE(self.qubit_index, self.number_of_qubits,  self.output_folder, round_num, save_figs, fresh_experiment)
                 fidelity = single_shot.fidelity_test(fresh_experiment.soccfg, fresh_experiment.soc)
                 fid_results.append(fidelity)
                 del fresh_experiment

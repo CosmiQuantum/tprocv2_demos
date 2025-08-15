@@ -206,7 +206,7 @@ def main():
                 if len(I) == 0 or len(Q) == 0:
                     continue  # skip if no data
 
-                # Prepare the QubitSpectroscopy instance (if you need it for something else)
+                # Prepare the QubitSpectroscopyGE instance (if you need it for something else)
                 qspec_instance = QubitSpectroscopy(
                     q_key, number_of_qubits, outerFolder_save_plots,
                     round_num, signal, save_figs

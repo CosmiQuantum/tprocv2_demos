@@ -30,7 +30,7 @@ while j < n:
         # #--------------------Qubit spec--------------------
         # # Right now this does not return qubit frequency or update the config with the found values, do we want to change that?
         # #only need to update the res_freqs here, it will update the imported config and will change all following classes
-        # q_spec = QubitSpectroscopy(QubitIndex, outerFolder, res_freqs, j)
+        # q_spec = QubitSpectroscopyGE(QubitIndex, outerFolder, res_freqs, j)
         # q_spec.run(soccfg, soc)
         #
         # #-----------------------Rabi-----------------------
@@ -40,5 +40,5 @@ while j < n:
         #
         # #------------------------T1-------------------------
         # # Also need to update the fit here. Maybe do custom fits for all three of these classes (QSpec/Rabi/T1)
-        # t1 = T1Measurement(QubitIndex, outerFolder, j)
+        # t1 = T1MeasurementGE(QubitIndex, outerFolder, j)
         # t1.run(soccfg, soc)

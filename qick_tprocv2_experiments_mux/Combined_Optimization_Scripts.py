@@ -85,7 +85,7 @@ for QubitIndex in Qs:
 
                 experiment.readout_cfg['res_gain_ge'] = res_gains
 
-                # ss = SingleShot(QubitIndex,list_of_all_qubits, output_folder, k, round(leng, 3)) #Old way
+                # ss = SingleShotGE(QubitIndex,list_of_all_qubits, output_folder, k, round(leng, 3)) #Old way
                 ss = SingleShot(QubitIndex,list_of_all_qubits, output_folder, experiment,  save_figs=False)  # New way
                 fid, angle, iq_list_g, iq_list_e = ss.run()
                 fids.append(fid)

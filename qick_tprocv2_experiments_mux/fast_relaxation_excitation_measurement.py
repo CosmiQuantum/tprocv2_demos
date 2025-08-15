@@ -355,7 +355,7 @@ def run_optimization(QubitIndex, experiment):
     except Exception as e:
         if debug_mode:
             raise  # In debug mode, re-raise the exception immediately
-        rr_logger.exception(f"QubitSpectroscopy error on qubit {QubitIndex +1}: {e}")
+        rr_logger.exception(f"QubitSpectroscopyGE error on qubit {QubitIndex +1}: {e}")
         print(f"Qubit Spectroscopy error on qubit {QubitIndex +1}")
         return
 

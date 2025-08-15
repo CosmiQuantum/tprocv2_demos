@@ -55,7 +55,7 @@ class QubitSpectroscopy:
         return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean
 
     # def run(self, soccfg, soc):
-    #     qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'], final_delay=0.5, cfg=self.config)
+    #     qspec = PulseProbeSpectroscopyProgramGE(soccfg, reps=self.config['reps'], final_delay=0.5, cfg=self.config)
     #
     #     # iq_lists= []
     #     if self.live_plot:

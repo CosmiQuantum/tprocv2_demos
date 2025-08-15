@@ -491,7 +491,7 @@ def run_full_cycle_for_qubit(outputDirectories, QubitIndex, ss_sample_number, re
         del qspec_data
 
     except Exception as e:
-        rr_logger.exception(f"QubitSpectroscopy error on qubit {QubitIndex}: {e}")
+        rr_logger.exception(f"QubitSpectroscopyGE error on qubit {QubitIndex}: {e}")
         return
 
 

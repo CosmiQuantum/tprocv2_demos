@@ -86,7 +86,7 @@ for QubitIndex in Qs:
     #
     # ################################################## Qubit spec ##################################################
     # try:
-    #     q_spec = QubitSpectroscopy(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
+    #     q_spec = QubitSpectroscopyGE(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
     #     qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg,
     #                                                                                      experiment.soc)
     #     # if these are None, fit didnt work
@@ -156,7 +156,7 @@ for QubitIndex in Qs:
                 res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=gain)
                 experiment.readout_cfg['res_gain_ge'] = res_gains
 
-                # ss = SingleShot(QubitIndex, output_folder, k, round(leng, 3)) #Old way
+                # ss = SingleShotGE(QubitIndex, output_folder, k, round(leng, 3)) #Old way
                 ss = SingleShot(QubitIndex, outerFolder,  j, save_figs, experiment)  # updated way
                 fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
                 fids.append(fid)

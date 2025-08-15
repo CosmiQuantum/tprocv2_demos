@@ -103,7 +103,7 @@ while j < n:
         # # # ############################################ Roll Signal into I ##############################################
         # # # #get the average theta value, then use that to rotate the signal. Plug that value into system_config res_phase
         # # # leng=4
-        # # # ss = SingleShot(QubitIndex, outerFolder, experiment, j, save_figs)
+        # # # ss = SingleShotGE(QubitIndex, outerFolder, experiment, j, save_figs)
         # # # fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
         # # # angles.append(angle)
         # # # #print(angles)

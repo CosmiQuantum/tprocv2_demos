@@ -504,10 +504,10 @@ class Active_Reset_test:
 #                 res_gains = fresh_experiment.mask_gain_res(self.qubit_index, gain, num_qubits=tot_num_of_qubits)
 #                 fresh_experiment.readout_cfg['res_gain_ge'] = res_gains
 
-#                 # Initialize SingleShot instance for fidelity calculation
+#                 # Initialize SingleShotGE instance for fidelity calculation
 #                 round_num = 0
 #                 save_figs = False
-#                 single_shot = SingleShot(self.qubit_index, self.number_of_qubits,  self.output_folder, round_num, save_figs, fresh_experiment, unmasking_resgain = self.unmasking_resgain)
+#                 single_shot = SingleShotGE(self.qubit_index, self.number_of_qubits,  self.output_folder, round_num, save_figs, fresh_experiment, unmasking_resgain = self.unmasking_resgain)
 #                 fidelity = single_shot.fidelity_test(fresh_experiment.soccfg, fresh_experiment.soc)
 #                 fid_results.append(fidelity)
 #                 del fresh_experiment

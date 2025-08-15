@@ -281,7 +281,7 @@ for QubitIndex in Qs_to_look_at:
     #     if QubitIndex == 3:
     #         increase_qubit_steps_ef = True  # if you want to increase the steps for a qubit, set to True
     #
-    #     ef_q_spec = EFQubitSpectroscopy(QubitIndex, tot_num_of_qubits, list_of_all_qubits, subStudyDataFolder, j,
+    #     ef_q_spec = QubitSpectroscopyEF(QubitIndex, tot_num_of_qubits, list_of_all_qubits, subStudyDataFolder, j,
     #                                     signal,
     #                                     save_figs, experiment, live_plot, increase_qubit_steps_ef,
     #                                     increase_steps_to_ef)

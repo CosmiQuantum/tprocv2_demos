@@ -221,7 +221,7 @@ class SingleShot_ef:
                                     cfg=self.config)
         iq_list_f = ssp_f.acquire(soc, soft_avgs=1, progress=False)
 
-        # Use the fidelity calculation from SingleShot
+        # Use the fidelity calculation from SingleShotGE
         fidelity, _, _, _,_ = self.hist_ssf(
             data=[iq_list_g[self.QubitIndex][0].T[0], iq_list_g[self.QubitIndex][0].T[1],
                   iq_list_e[self.QubitIndex][0].T[0], iq_list_e[self.QubitIndex][0].T[1],
@@ -439,7 +439,7 @@ class GainFrequencySweep:
                 # Initialize SingleShot_ef instance for fidelity calculation
                 round_num = 0
                 save_figs = False
-                single_shot = SingleShot_ef(self.qubit_index,  self.output_folder, round_num, save_figs, fresh_experiment) #SingleShot(self.qubit_index, self.output_folder, fresh_experiment, round_num=0, save_figs = False)
+                single_shot = SingleShot_ef(self.qubit_index,  self.output_folder, round_num, save_figs, fresh_experiment) #SingleShotGE(self.qubit_index, self.output_folder, fresh_experiment, round_num=0, save_figs = False)
                 fidelity = single_shot.fidelity_test(fresh_experiment.soccfg, fresh_experiment.soc)
                 fid_results.append(fidelity)
                 del fresh_experiment

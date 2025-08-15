@@ -22,8 +22,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # # import single shot information for g-e calibration
-# from SingleShot import SingleShotProgram_g, SingleShotProgram_e
-# from SingleShot import config as ss_config
+# from SingleShotGE import SingleShotProgram_g, SingleShotProgram_e
+# from SingleShotGE import config as ss_config
 from scipy.optimize import curve_fit
 
 # ----- Experiment configurations ----- #

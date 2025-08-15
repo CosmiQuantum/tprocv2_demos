@@ -220,7 +220,7 @@ def run_optimization(experiment, QubitIndex, ss_sample_number, res_sample_number
         del qspec_data
 
     except Exception as e:
-        logging.exception(f"QubitSpectroscopy error on qubit {QubitIndex}: {e}")
+        logging.exception(f"QubitSpectroscopyGE error on qubit {QubitIndex}: {e}")
         return
 
     logging.info("----------------- Moving to Rabi -----------------")

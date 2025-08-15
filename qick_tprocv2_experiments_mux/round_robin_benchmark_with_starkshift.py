@@ -303,7 +303,7 @@ if pre_optimize:
             del qspec_data
 
         except Exception as e:
-            rr_logger.exception(f"QubitSpectroscopy error on qubit {Q}: {e}")
+            rr_logger.exception(f"QubitSpectroscopyGE error on qubit {Q}: {e}")
             continue
 
         ################### amp rabi ################
@@ -420,7 +420,7 @@ while j < n:
         # ################### Roll Signal into I (need to configure for recent updates) ################################
         # #get the average theta value, then use that to rotate the signal. Plug that value into system_config res_phase
         # leng=4
-        # ss = SingleShot(QubitIndex, outerFolder, experiment, j, save_figs)
+        # ss = SingleShotGE(QubitIndex, outerFolder, experiment, j, save_figs)
         # fid, angle, iq_list_g, iq_list_e = ss.run()
         # angles.append(angle)
         # #rr_logger.info(angles)
@@ -607,7 +607,7 @@ while j < n:
                 experiment.qubit_cfg['qubit_gain_ge'] = qubit_gain_temp  # restore parameters for regular qspec
 
             except Exception as e:
-                rr_logger.exception(f"medium gain QubitSpectroscopy error on qubit {QubitIndex}: {e}")
+                rr_logger.exception(f"medium gain QubitSpectroscopyGE error on qubit {QubitIndex}: {e}")
                 continue
 
 
@@ -633,7 +633,7 @@ while j < n:
                 experiment.qubit_cfg['qubit_gain_ge'] = qubit_gain_temp  # restore parameters for regular qspec
 
             except Exception as e:
-                rr_logger.exception(f"high gain QubitSpectroscopy error on qubit {QubitIndex}: {e}")
+                rr_logger.exception(f"high gain QubitSpectroscopyGE error on qubit {QubitIndex}: {e}")
                 continue
 
         ##################################################### stark shift spectroscopy ######################################################

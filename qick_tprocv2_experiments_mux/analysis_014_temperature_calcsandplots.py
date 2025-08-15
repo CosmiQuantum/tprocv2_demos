@@ -674,7 +674,7 @@ class TempCalcAndPlots:
     #
     #                     if len(I)>0:
     #
-    #                         qspec_class_instance = QubitSpectroscopy(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, signal, save_figs)
+    #                         qspec_class_instance = QubitSpectroscopyGE(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, signal, save_figs)
     #                         q_spec_cfg = ast.literal_eval(self.exp_config['qubit_spec_ge'].decode())
     #                         largest_amp_curve_mean, I_fit, Q_fit = qspec_class_instance.get_results(I, Q, freqs)
     #
@@ -754,7 +754,7 @@ class TempCalcAndPlots:
     #
     #                     if len(Q_g)>0:
     #
-    #                         ss_class_instance = SingleShot(q_key, self.number_of_qubits, self.list_of_all_qubits, outerFolder_save_plots, round_num, save_figs)
+    #                         ss_class_instance = SingleShotGE(q_key, self.number_of_qubits, self.list_of_all_qubits, outerFolder_save_plots, round_num, save_figs)
     #                         ss_cfg = ast.literal_eval(self.exp_config['Readout_Optimization'].decode())
     #                         #ss_class_instance.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=True)
     #                         fid, threshold, rotation_angle, ig_new, ie_new = ss_class_instance.hist_ssf(
@@ -849,7 +849,7 @@ class TempCalcAndPlots:
     #
     #                     if len(I)>0:
     #
-    #                         qspec_class_instance = QubitSpectroscopy(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, signal, save_figs)
+    #                         qspec_class_instance = QubitSpectroscopyGE(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, signal, save_figs)
     #                         q_spec_cfg = ast.literal_eval(self.exp_config['qubit_spec_ge'].decode())
     #                         largest_amp_curve_mean, I_fit, Q_fit = qspec_class_instance.get_results(I, Q, freqs)
     #
@@ -927,7 +927,7 @@ class TempCalcAndPlots:
     #
     #                     if len(Q_g)>0:
     #
-    #                         ss_class_instance = SingleShot(q_key, self.number_of_qubits, self.list_of_all_qubits, outerFolder_save_plots, round_num, save_figs)
+    #                         ss_class_instance = SingleShotGE(q_key, self.number_of_qubits, self.list_of_all_qubits, outerFolder_save_plots, round_num, save_figs)
     #                         ss_cfg = ast.literal_eval(self.exp_config['Readout_Optimization'].decode())
     #                         #ss_class_instance.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=True)
     #                         fid, threshold, rotation_angle, ig_new, ie_new = ss_class_instance.hist_ssf(

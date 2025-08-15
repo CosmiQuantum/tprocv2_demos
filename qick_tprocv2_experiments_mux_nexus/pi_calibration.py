@@ -101,7 +101,7 @@ while j < n:
         # # ############################################ Roll Signal into I ##############################################
         # # #get the average theta value, then use that to rotate the signal. Plug that value into system_config res_phase
         # # leng=4
-        # # ss = SingleShot(QubitIndex, outerFolder, experiment, j, save_figs)
+        # # ss = SingleShotGE(QubitIndex, outerFolder, experiment, j, save_figs)
         # # fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
         # # angles.append(angle)
         # # #print(angles)
@@ -110,7 +110,7 @@ while j < n:
         #
         # ################################################## Qubit spec ##################################################
         # try:
-        #     q_spec = QubitSpectroscopy(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
+        #     q_spec = QubitSpectroscopyGE(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
         #     qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg,
         #                                                                                      experiment.soc)
         #     # if these are None, fit didnt work

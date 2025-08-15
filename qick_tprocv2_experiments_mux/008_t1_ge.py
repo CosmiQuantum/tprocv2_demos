@@ -28,8 +28,8 @@ from system_config import *
 import pprint as pp
 
 # import single shot information for g-e calibration
-# from SingleShot import SingleShotProgram_g, SingleShotProgram_e
-# from SingleShot import config as ss_config
+# from SingleShotGE import SingleShotProgram_g, SingleShotProgram_e
+# from SingleShotGE import config as ss_config
 
 # ----- Experiment configurations ----- #
 expt_name = "T1_ge"

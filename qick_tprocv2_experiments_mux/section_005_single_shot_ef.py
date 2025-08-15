@@ -297,7 +297,7 @@ class SingleShot_ef:
                                     cfg=self.config)
         iq_list_f = ssp_f.acquire(self.experiment.soc, soft_avgs=1, progress=True)
 
-        # Use the fidelity calculation from SingleShot
+        # Use the fidelity calculation from SingleShotGE
         # fid, theta_ef, ie_new, qe_new, if_new, qf_new, threshold_ef = self.hist_ssf(self.config["res_freq_ef"][self.QubitIndex],  self.config["res_gain_ef"][self.QubitIndex], outerfolder_plots,
         #     data=[iq_list_e[self.QubitIndex][0].T[0], iq_list_e[self.QubitIndex][0].T[1],
         #           iq_list_f[self.QubitIndex][0].T[0], iq_list_f[self.QubitIndex][0].T[1]],
@@ -570,7 +570,7 @@ class GainFrequencySweep:
                 res_gains = fresh_experiment.mask_gain_res(self.qubit_index, gain, num_qubits=tot_num_of_qubits)
                 fresh_experiment.readout_cfg['res_gain_ef'] = res_gains
 
-                # Initialize SingleShot instance for fidelity calculation
+                # Initialize SingleShotGE instance for fidelity calculation
                 round_num = 0
                 # save_figs = False
 
@@ -590,7 +590,7 @@ class GainFrequencySweep:
                                                  self.save_figs, fresh_experiment,
                                                  unmasking_resgain=self.unmasking_resgain)
                         fidelity = single_shot.run(fresh_experiment.soccfg, fresh_experiment.soc)
-                        # ss = SingleShot(self.QubitIndex, number_of_qubits, outerFolder, j, self.save_figs, experiment,
+                        # ss = SingleShotGE(self.QubitIndex, number_of_qubits, outerFolder, j, self.save_figs, experiment,
                         #                 unmasking_resgain=unmask)  # updated way
                         fid, angle, iq_list_g, iq_list_e = ss.run()
                         fids.append(fid)

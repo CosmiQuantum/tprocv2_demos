@@ -357,7 +357,7 @@ def run_optimization(QubitIndex, ss_sample_number, res_sample_number, experiment
         except Exception as e:
             if debug_mode:
                 raise  # In debug mode, re-raise the exception immediately
-            rr_logger.exception(f"QubitSpectroscopy error on qubit {QubitIndex +1}: {e}")
+            rr_logger.exception(f"QubitSpectroscopyGE error on qubit {QubitIndex +1}: {e}")
             return
 
     t2 = time.perf_counter()
@@ -372,7 +372,7 @@ def run_optimization(QubitIndex, ss_sample_number, res_sample_number, experiment
     #   qubit_gain_temp = experiment.qubit_cfg['qubit_gain_ge']
     #   try:
     #       experiment.qubit_cfg['qubit_gain_ge'] = np.ones(len(qubit_gain_temp))
-    #       ext_q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, 0,
+    #       ext_q_spec = QubitSpectroscopyGE(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, 0,
     #                                  signal, save_figs=save_figs, experiment=experiment,
     #                                  live_plot=live_plot, verbose=verbose, logger=rr_logger,
     #                                  qick_verbose=qick_verbose, increase_reps = True, increase_reps_to = 500,
@@ -400,7 +400,7 @@ def run_optimization(QubitIndex, ss_sample_number, res_sample_number, experiment
     #   except Exception as e:
     #       if debug_mode:
     #           raise  # In debug mode, re-raise the exception immediately
-    #       rr_logger.exception(f"Extended QubitSpectroscopy error on qubit {QubitIndex +1}: {e}")
+    #       rr_logger.exception(f"Extended QubitSpectroscopyGE error on qubit {QubitIndex +1}: {e}")
     #       return
     #   experiment.qubit_cfg['qubit_gain_ge'] = qubit_gain_temp
     #
@@ -803,7 +803,7 @@ def run_optimization(QubitIndex, ss_sample_number, res_sample_number, experiment
     except Exception as e:
         if debug_mode:
             raise  # In debug mode, re-raise the exception immediately
-        rr_logger.exception(f"EF QubitSpectroscopy error on qubit {QubitIndex +1}: {e}")
+        rr_logger.exception(f"EF QubitSpectroscopyGE error on qubit {QubitIndex +1}: {e}")
         return
 
     t11 = time.perf_counter()
@@ -1003,7 +1003,7 @@ def run_dataset(Qs_to_look_at, experiment, j, batch_num):
             except Exception as e:
                 if debug_mode:
                     raise  # In debug mode, re-raise the exception immediately
-                rr_logger.exception(f"medium gain QubitSpectroscopy error on qubit {QubitIndex +1}: {e}")
+                rr_logger.exception(f"medium gain QubitSpectroscopyGE error on qubit {QubitIndex +1}: {e}")
 
             experiment.qubit_cfg['qubit_gain_ge'] = qubit_gain_temp  # restore parameters for regular qspec
 
@@ -1028,7 +1028,7 @@ def run_dataset(Qs_to_look_at, experiment, j, batch_num):
             except Exception as e:
                 if debug_mode:
                     raise  # In debug mode, re-raise the exception immediately
-                rr_logger.exception(f"high gain QubitSpectroscopy error on qubit {QubitIndex +1}: {e}")
+                rr_logger.exception(f"high gain QubitSpectroscopyGE error on qubit {QubitIndex +1}: {e}")
 
             experiment.qubit_cfg['qubit_gain_ge'] = qubit_gain_temp  # restore parameters for regular qspec
 

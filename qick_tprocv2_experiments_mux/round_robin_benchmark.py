@@ -337,7 +337,7 @@ if pre_optimize:
             del qspec_data
 
         except Exception as e:
-            rr_logger.exception(f"g-e QubitSpectroscopy error on qubit {Q}: {e}")
+            rr_logger.exception(f"g-e QubitSpectroscopyGE error on qubit {Q}: {e}")
             continue
 
         ################### g-e amp rabi ################
@@ -462,7 +462,7 @@ while j < n:
         # ################### Roll Signal into I (need to configure for recent updates) ################################
         # #get the average theta value, then use that to rotate the signal. Plug that value into system_config res_phase
         # leng=4
-        # ss = SingleShot(QubitIndex, outerFolder, experiment, j, save_figs)
+        # ss = SingleShotGE(QubitIndex, outerFolder, experiment, j, save_figs)
         # fid, angle, iq_list_g, iq_list_e = ss.run()
         # angles.append(angle)
         # #rr_logger.info(angles)
@@ -628,7 +628,7 @@ while j < n:
             # except Exception as e:
             #     if debug_mode:
             #         raise  # In debug mode, re-raise the exception immediately
-            #     rr_logger.exception(f"EF QubitSpectroscopy error on qubit {QubitIndex + 1}: {e}")
+            #     rr_logger.exception(f"EF QubitSpectroscopyGE error on qubit {QubitIndex + 1}: {e}")
 
         ################################################ e-f amp rabi pop meas. ################################################
         if run_flags["rabi_pop_meas"]:
@@ -823,7 +823,7 @@ while j < n:
             # except Exception as e:
             #     if debug_mode:
             #         raise  # In debug mode, re-raise the exception immediately
-            #     rr_logger.exception(f"FH QubitSpectroscopy error on qubit {QubitIndex + 1}: {e}")
+            #     rr_logger.exception(f"FH QubitSpectroscopyGE error on qubit {QubitIndex + 1}: {e}")
 
             ################################################ f-h rabi ################################################
         if run_flags["fh_rabi"]:

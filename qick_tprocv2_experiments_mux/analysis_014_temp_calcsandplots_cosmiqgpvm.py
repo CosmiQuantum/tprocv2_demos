@@ -926,7 +926,8 @@ class SSFTempCalcAndPlots:
         for qubit temperature calculations the user should only provide ig_new.
 
         Serves the same purpose as fit_double_gaussian_with_full_coverage(), but sets the population threshold
-        as the midpoint between the two Gaussian means instead of the crossing point of the two gaussians.
+        as the midpoint between the two Gaussian means instead of the crossing point of the two gaussians. Also calculates
+        the populations properly, since fit_double_gaussian_with_full_coverage used labels and was less accurate.
 
         Returns:
           Pg, Pe, gmm, means, sigmas, weights,

@@ -126,7 +126,7 @@ for QubitIndex in Qs:
     # ################################################## Qubit spec ##################################################
     # print('ge speci')
     # try:
-    #     q_spec = QubitSpectroscopy(QubitIndex, number_of_qubits, outerfolder_plots, j, signal,
+    #     q_spec = QubitSpectroscopyGE(QubitIndex, number_of_qubits, outerfolder_plots, j, signal,
     #                                True, experiment, live_plot, unmasking_resgain=unmask)
     #     qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq, qubit_spec_config = q_spec.run()
     #     # if these are None, fit didnt work
@@ -193,7 +193,7 @@ for QubitIndex in Qs:
     #     ################################################ Qubit Spec EF ################################################
     # print('ef qu spec')
     # try:
-    #     ef_q_spec = EFQubitSpectroscopy(QubitIndex, number_of_qubits, outerfolder_plots, j, signal,
+    #     ef_q_spec = QubitSpectroscopyEF(QubitIndex, number_of_qubits, outerfolder_plots, j, signal,
     #                                     True, experiment, live_plot, unmasking_resgain=unmask)
     #     ef_qspec_I, ef_qspec_Q, ef_qspec_freqs, ef_qspec_I_fit, ef_qspec_Q_fit, ef_qubit_freq, efqubit_spec_config = ef_q_spec.run()
     #     # if these are None, fit didnt work
