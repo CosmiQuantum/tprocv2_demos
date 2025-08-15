@@ -9,16 +9,26 @@ import copy
 # Add DAC and ADC Channels
 def add_qubit_channel(system_config, QubitIndex):
     hw_config = copy.deepcopy(system_config.hw_cfg)
-    var = ["qubit_ch", "qubit_ampl_ch", "res_ch", "ro_ch", "qubit_ch_ef"]
+    var = ["qubit_ch", "qubit_ampl_ch", "res_ch", "ro_ch" "qubit_ch_ef"]
     for Index in var:
         value = hw_config[Index][QubitIndex]
         hw_config.update([(Index,value)])
     return hw_config
 
+## Add DAC and ADC channels for resonators (jc_run7)
+def add_resonator_channel(system_config, ResonatorIndex):
+    hw_config = copy.deepcopy(system_config.hw_cfg)
+    var = ["gen_ch"]
+    for Index in var:
+        value = hw_config[Index][ResonatorIndex]
+        hw_config.update([(Index, value)])
+    return hw_config
+
 # Add Readout Parameters
 def add_readout_cfg(system_config, QubitIndex):
     readout_config = copy.deepcopy(system_config.readout_cfg)
-    var = ["res_freq_ge", "res_gain_ge", "res_phase", "res_freq_ef", "res_gain_ef", ] # "threshold"]
+    #var = ["res_freq_ge", "res_gain_ge", "res_phase"] # "threshold", "res_freq_ef", "res_gain_ef"]
+    var = ["res_freq", "res_gain", "res_phase"]
     for Index in var:
         value = readout_config[Index] #[QubitIndex]
         readout_config.update([(Index,value)])
@@ -47,9 +57,17 @@ def all_qubit_state(system_config,num_qubits):
         state.update([("Q"+str(QubitIndex),Qi_state)])
     return state
 
-# print(qubit_state(system_config,1))
+# Build a Single Resonator State Dictionary
+def resonator_state(system_config, ResonatorIndex):
+    hw_cfg = add_resonator_channel(system_config, ResonatorIndex)
+    readout_cfg = add_readout_cfg(system_config, ResonatorIndex)
+    return {**hw_cfg, **readout_cfg}
 
-#print(all_qubit_state(system_config))
+def all_resonator_state(system_config, num_resonators):
+    state = {}
+    for ResonatorIndex in range(num_resonators):
+        Ri_state = copy.deepcopy(resonator_state(system_config, ResonatorIndex))
+        state.update([("R"+str(ResonatorIndex),Ri_state)])
+    return state
 
-# state = {"Q0": qubit_state(system_config,0),"Q1": qubit_state(system_config,1),
-          #"Q2": qubit_state(system_config,2),"Q3": qubit_state(system_config,3)}
+
