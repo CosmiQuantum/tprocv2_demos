@@ -4,6 +4,8 @@ from copy import deepcopy
 
 import numpy as np
 
+from tprocv2_demos.qick_tprocv2_experiments_mux.T2R_stark import starkT2RMeasurement
+
 np.set_printoptions(threshold=int(1e15)) #need this so it saves absolutely everything returned from the classes
 import datetime
 import time
@@ -47,8 +49,6 @@ device_name = '6transmon'
 substudy_txt_notes = ('testing')
 
 study = 'QZE_IBM'
-
-
 
 ################################################ optimization outputs ##################################################
 # Optimization parameters for resonator spectroscopy
@@ -220,7 +220,7 @@ for QubitIndex in Qs_to_look_at:
 
                 (qspec_I, qspec_Q, qspec_freqs, qspec_I_fit,
                  qspec_Q_fit, qubit_freq, sys_config_qspec) = q_spec.run()
-                print(qubit_freq)
+
                 if qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None:
                     if stored_qspec_list[QubitIndex] is not None:
                         experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = stored_qspec_list[QubitIndex]
@@ -279,38 +279,39 @@ for QubitIndex in Qs_to_look_at:
         qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
 
         ################### calibrate ################
-        stark2D_keys = ['Dates', 'I', 'Q', 'Qu Frequency Sweep', 'Res Gain Sweep', 'Round Num', 'Batch Num',
-                        'Exp Config',
-                        'Syst Config']
-        res_stark_data = create_data_dict(stark2D_keys, save_r, list_of_all_qubits)
+        starkRamsey_keys = ['Ramsey Freq', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num', 'Batch Num',
+                            'Exp Config',
+                            'Syst Config']
 
-        import copy
-        res_freq_stark = copy.deepcopy(experiment.readout_cfg['res_freq_ge'])
-        res_phase_stark = copy.deepcopy(experiment.readout_cfg['res_phase'])
-        res_phase_stark.append(res_phase_stark[QubitIndex])
-        res_freq_stark.append(res_freq_stark[QubitIndex])
 
-        calibrate = ResStarkShift2D(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, res_freq_stark, res_phase_stark, save_figs, experiment=experiment, signal=signal,unmasking_resgain=True)
-        stark_res_I, stark_res_Q, stark_res_qu_freq_sweep, stark_res_gain_sweep, calibrate_config = calibrate.run()
-        calibrate.plot(stark_res_I, stark_res_Q, stark_res_qu_freq_sweep, stark_res_gain_sweep)
+        qubitFolder = os.path.join(studyDocumentationFolder, f'Q{QubitIndex}/starkRamsey')
+        starkRamsey_data = create_data_dict(starkRamsey_keys, save_r, list_of_all_qubits)
 
-        res_stark_data[QubitIndex]['Dates'][0] = time.mktime(datetime.datetime.now().timetuple())
-        res_stark_data[QubitIndex]['I'][0] = stark_res_I
-        res_stark_data[QubitIndex]['Q'][0] = stark_res_Q
-        res_stark_data[QubitIndex]['Qu Frequency Sweep'][0] = stark_res_qu_freq_sweep
-        res_stark_data[QubitIndex]['Res Gain Sweep'][0] = stark_res_gain_sweep
-        res_stark_data[QubitIndex]['Round Num'][0] = 0
-        res_stark_data[QubitIndex]['Batch Num'][0] = 0
-        res_stark_data[QubitIndex]['Exp Config'][0] = expt_cfg
-        res_stark_data[QubitIndex]['Syst Config'][0] = calibrate_config
+        t2r = starkT2RMeasurement(QubitIndex, tot_num_of_qubits, qubitFolder, j, signal, save_figs,
+                                  experiment=experiment, fit_data=True, verbose=verbose, logger=logging)
+        t2r_est, t2r_err, f_est, f_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey, sys_config_t2r = t2r.run(
+            thresholding=False)
 
-        saver_stark_res = Data_H5(dataSetFolder, res_stark_data, 0, save_r)
-        saver_stark_res.save_to_h5('stark_res_calibration')
+        starkRamsey_data[QubitIndex]['Ramsey Freq'][j - batch_num * save_r - 1] = f_est
+        starkRamsey_data[QubitIndex]['Errors'][j - batch_num * save_r - 1] = f_err
+        starkRamsey_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
+            time.mktime(datetime.datetime.now().timetuple()))
+        starkRamsey_data[QubitIndex]['I'][j - batch_num * save_r - 1] = t2r_I
+        starkRamsey_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = t2r_Q
+        starkRamsey_data[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = t2r_delay_times
+        starkRamsey_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = fit_ramsey
+        starkRamsey_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+        starkRamsey_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+        starkRamsey_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+        starkRamsey_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t2r
 
-        del saver_stark_res
-        del res_stark_data
+        saver_spec = Data_H5(qubitFolder, starkRamsey_data, batch_num, save_r)
+        saver_spec.save_to_h5('StarkRamsey')
+        starkRamsey_data = create_data_dict(starkRamsey_keys, n, list_of_all_qubits)
+        del saver_spec
+        del t2r
 
-        del experiment
+
 
 
 
