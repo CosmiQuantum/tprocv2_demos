@@ -236,7 +236,27 @@ if FRIDGE == "QUIET":
             "wait_time": 0.0,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
-
+        "ckp_nbar_calibration":{
+            "reps": 400,
+            "rounds": 1,
+            "list_of_all_qubits": list_of_all_qubits,
+            "qubit_pulse_delay": 3,  # [us] time to wait for qubit pulse after stark tone is sent
+            "stark_length": 19,  # [us] stark tone length for 2D scan, overlaps qubit pulse
+            "gain_steps": 20,
+            "start_gain": 0.00,
+            "end_gain": 1.0,  # res gain values between -1 and 1
+            "qubit_pulse_steps": 500,
+            "res_freq_steps": 20,
+            "res_freq_start": 0.00,
+            "res_freq_stop": 1.0,
+            "start_freq": -55,  # -35, #[MHz] from qubit freq
+            "end_freq": 4,  # 3, # [MHz] from qubit freq
+            "readout_pulse_delay": 2,  # 2/kappa
+            "ckp_gain": [],
+            "res_freq_ckp": [],
+            "res_phase_ckp": [],
+            "ckp_mask": [],
+        },
         "res_stark_shift_2D": {
             "reps": 400,
             "rounds": 1,

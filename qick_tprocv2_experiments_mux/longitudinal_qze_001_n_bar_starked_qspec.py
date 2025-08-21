@@ -1,5 +1,5 @@
 import sys
-import os
+import os, copy
 from copy import deepcopy
 
 import numpy as np
@@ -282,7 +282,6 @@ for QubitIndex in Qs_to_look_at:
                         'Syst Config']
         res_stark_data = create_data_dict(stark2D_keys, save_r, list_of_all_qubits)
 
-        import copy
         res_freq_stark = copy.deepcopy(experiment.readout_cfg['res_freq_ge'])
         res_phase_stark = copy.deepcopy(experiment.readout_cfg['res_phase'])
         res_phase_stark.append(res_phase_stark[QubitIndex])

@@ -1,11 +1,6 @@
 import sys
-import os
-from copy import deepcopy
-
+import os, copy
 import numpy as np
-
-from tprocv2_demos.qick_tprocv2_experiments_mux.T2R_stark import starkT2RMeasurement
-
 np.set_printoptions(threshold=int(1e15)) #need this so it saves absolutely everything returned from the classes
 import datetime
 import time
@@ -21,6 +16,7 @@ from starkshift import ResStarkShift2D
 from section_008_save_data_to_h5 import Data_H5
 from system_config import QICK_experiment
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
+from ckp_nbar_calibration import CKPMeasurement
 from section_007_T1_ge_IBM_zeno import T1Measurement_with_Zeno
 ################################################ Run Configurations ####################################################
 zero_qubit_drive_gain = False
@@ -37,7 +33,7 @@ fit_data = False                     # fit the data here and save or plot the fi
 save_data_h5 = True                  # save all of the data to h5 files?
 verbose = True                       # print everything to the console in real time, good for debugging, bad for memory
 debug_mode = False                    # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
-thresholding = False                 # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
+thresholding = False                 # use internal QICK threshold for ratio of Binary values on y for rabi/t1/ckp/t2e, or analog avg when false
 increase_qubit_reps = False          # if you want to increase the reps for a qubit, set to True
 qubit_to_increase_reps_for = 0       # only has impact if previous line is True
 multiply_qubit_reps_by = 2           # only has impact if the line two above is True
@@ -74,7 +70,7 @@ ss_ef_keys = ['Fidelity', 'Angle', 'Dates', 'I_e', 'Q_e', 'I_f', 'Q_f', 'Round N
            'Syst Config']
 t1_keys = ['T1', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num', 'Batch Num', 'Exp Config',
            'Syst Config']
-t2r_keys = ['T2', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num', 'Batch Num', 'Exp Config',
+ckp_keys = ['T2', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num', 'Batch Num', 'Exp Config',
             'Syst Config']
 t2e_keys = ['T2E', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num', 'Batch Num', 'Exp Config',
             'Syst Config']
@@ -278,38 +274,69 @@ for QubitIndex in Qs_to_look_at:
         res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
         qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
 
+        ################################################ amp rabi ################################################
+        rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
+
+        rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, 0, signal,
+                                       save_figs=True,
+                                       experiment=experiment,
+                                       live_plot=live_plot,
+                                       increase_qubit_reps=increase_qubit_reps,
+                                       qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                       multiply_qubit_reps_by=multiply_qubit_reps_by,
+                                       verbose=verbose, logger=logging)
+        (rabi_I, rabi_Q, rabi_gains, rabi_fit, stored_pi_amp, sys_config_rabi) = rabi.run()
+        experiment.qubit_cfg['pi_amp'][QubitIndex] = float(stored_pi_amp)
+        logging.info(f"Tune-up: Pi amplitude for qubit {QubitIndex}: {float(stored_pi_amp)}")
+        rabi_data[QubitIndex]['Dates'][0] = (time.mktime(datetime.datetime.now().timetuple()))
+        rabi_data[QubitIndex]['I'][0] = rabi_I
+        rabi_data[QubitIndex]['Q'][0] = rabi_Q
+        rabi_data[QubitIndex]['Gains'][0] = rabi_gains
+        rabi_data[QubitIndex]['Fit'][0] = rabi_fit
+        rabi_data[QubitIndex]['Round Num'][0] = 0
+        rabi_data[QubitIndex]['Batch Num'][0] = 0
+        rabi_data[QubitIndex]['Exp Config'][0] = expt_cfg
+        rabi_data[QubitIndex]['Syst Config'][0] = sys_config_rabi
+        saver_rabi = Data_H5(optimizationFolder, rabi_data, 0, save_r)
+        saver_rabi.save_to_h5('Rabi')
+        del rabi
+        del saver_rabi
+        del rabi_data
         ################### calibrate ################
-        starkRamsey_keys = ['Ramsey Freq', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num', 'Batch Num',
-                            'Exp Config',
-                            'Syst Config']
+        ckp_keys = ['Dates', 'I_e', 'Q_e','I_g', 'Q_g', 'Qu Frequency Sweep', 'Res Gain Sweep', 'Round Num', 'Batch Num',
+                        'Exp Config',
+                        'Syst Config']
 
 
-        qubitFolder = os.path.join(studyDocumentationFolder, f'Q{QubitIndex}/starkRamsey')
-        starkRamsey_data = create_data_dict(starkRamsey_keys, save_r, list_of_all_qubits)
+        qubitFolder = os.path.join(studyDocumentationFolder, f'Q{QubitIndex}/ckp')
+        ckp_data = create_data_dict(ckp_keys, save_r, list_of_all_qubits)
 
-        t2r = starkT2RMeasurement(QubitIndex, tot_num_of_qubits, qubitFolder, j, signal, save_figs,
+        res_freq_ckp = copy.deepcopy(experiment.readout_cfg['res_freq_ge'])
+        res_phase_ckp = copy.deepcopy(experiment.readout_cfg['res_phase'])
+        res_phase_ckp.append(res_phase_ckp[QubitIndex])
+        res_freq_ckp.append(res_freq_ckp[QubitIndex])
+
+        ckp = CKPMeasurement(QubitIndex, tot_num_of_qubits, qubitFolder, j, signal, save_figs, res_freq_ckp, res_phase_ckp,
                                   experiment=experiment, fit_data=True, verbose=verbose, logger=logging)
-        t2r_est, t2r_err, f_est, f_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey, sys_config_t2r = t2r.run(
-            thresholding=False)
+        ckp_I_g, ckp_Q_g, ckp_I_e, ckp_Q_e, ckp_qu_freq_sweep, ckp_gain_sweep, res_freq_sweep, sys_config_ckp = ckp.run()
 
-        starkRamsey_data[QubitIndex]['Ramsey Freq'][j - batch_num * save_r - 1] = f_est
-        starkRamsey_data[QubitIndex]['Errors'][j - batch_num * save_r - 1] = f_err
-        starkRamsey_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
-            time.mktime(datetime.datetime.now().timetuple()))
-        starkRamsey_data[QubitIndex]['I'][j - batch_num * save_r - 1] = t2r_I
-        starkRamsey_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = t2r_Q
-        starkRamsey_data[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = t2r_delay_times
-        starkRamsey_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = fit_ramsey
-        starkRamsey_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-        starkRamsey_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-        starkRamsey_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-        starkRamsey_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t2r
+        ckp_data[QubitIndex]['Dates'][0] = time.mktime(datetime.datetime.now().timetuple())
+        ckp_data[QubitIndex]['I_e'][0] = ckp_I_e
+        ckp_data[QubitIndex]['Q_e'][0] = ckp_Q_e
+        ckp_data[QubitIndex]['I_g'][0] = ckp_I_g
+        ckp_data[QubitIndex]['Q_g'][0] = ckp_Q_g
+        ckp_data[QubitIndex]['Qu Frequency Sweep'][0] = ckp_qu_freq_sweep
+        ckp_data[QubitIndex]['Res Gain Sweep'][0] = ckp_gain_sweep
+        ckp_data[QubitIndex]['Round Num'][0] = 0
+        ckp_data[QubitIndex]['Batch Num'][0] = 0
+        ckp_data[QubitIndex]['Exp Config'][0] = expt_cfg
+        ckp_data[QubitIndex]['Syst Config'][0] = sys_config_ckp
 
-        saver_spec = Data_H5(qubitFolder, starkRamsey_data, batch_num, save_r)
-        saver_spec.save_to_h5('StarkRamsey')
-        starkRamsey_data = create_data_dict(starkRamsey_keys, n, list_of_all_qubits)
+        saver_spec = Data_H5(qubitFolder, ckp_data, batch_num, save_r)
+        saver_spec.save_to_h5('ckp_calibration')
+        ckp_data = create_data_dict(ckp_keys, n, list_of_all_qubits)
         del saver_spec
-        del t2r
+        del ckp
 
 
 

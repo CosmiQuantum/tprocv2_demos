@@ -77,8 +77,7 @@ class AmplitudeRabiExperiment:
                                            progress=self.qick_verbose)
         else:
             amp_rabi = AmplitudeRabiProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
-            print("self.config['sigma']",self.config['sigma'])
-            print("self.config['sigma_fh']", self.config['sigma_fh'])
+
             if self.live_plot:
                 I, Q, gains = self.live_plotting(amp_rabi, thresholding)
             else:
@@ -94,14 +93,10 @@ class AmplitudeRabiExperiment:
                                                angle=self.experiment.readout_cfg["ro_phase"], progress=self.qick_verbose)
                 else:
                     iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=self.config["rounds"], progress=self.qick_verbose)
-                print('len(iq_list)',len(iq_list))
-                print('len(iq_list[0])', len(iq_list[0]))
-                print('len(iq_list[0][0])', len(iq_list[0][0]))
-                print('len(iq_list[0][0])', len(iq_list[0][0][0]))
+
                 I = iq_list[self.QubitIndex][0][ :, 0]
                 Q = iq_list[self.QubitIndex][0][ :, 1]
-                # I = iq_list[self.QubitIndex][-1 :, 0]
-                # Q = iq_list[self.QubitIndex][-1 :, 1]
+
             #get the gains that were used so you can use to plot on the x axis
             gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
 
