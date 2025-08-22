@@ -15,6 +15,8 @@ from section_004_qubit_spec_ge import QubitSpectroscopy
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
 from section_006p5_length_rabi_ge import LengthRabiExperiment
 from section_005_single_shot_ge import SingleShot
+from section_007_T1_ge import T1Measurement
+from section_009_T2R_ge import T2RMeasurement
 from section_008_save_data_to_h5 import Data_H5
 from system_config import QICK_experiment
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
@@ -330,6 +332,60 @@ for slice in slices:
                 pulse_gains=np.linspace(0.01, res_gain[QubitIndex], 300)
 
                 for gain in pulse_gains:
+                    t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
+                    t2r_data = create_data_dict(t2r_keys, save_r, list_of_all_qubits)
+                    ###################################################### g-e T1 ######################################################
+                    t1 = T1Measurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
+                                       save_figs,
+                                       experiment=experiment,
+                                       live_plot=live_plot, fit_data=fit_data,
+                                       increase_qubit_reps=increase_qubit_reps,
+                                       qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                       multiply_qubit_reps_by=multiply_qubit_reps_by,
+                                       verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
+                    t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential, sys_config_t1 = t1.run(
+                        thresholding=thresholding)
+
+
+                    t1_data[QubitIndex]['T1'][j - batch_num * save_r - 1] = t1_est
+                    t1_data[QubitIndex]['Errors'][j - batch_num * save_r - 1] = t1_err
+                    t1_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
+                        time.mktime(datetime.datetime.now().timetuple()))
+                    t1_data[QubitIndex]['I'][j - batch_num * save_r - 1] = t1_I
+                    t1_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = t1_Q
+                    t1_data[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = t1_delay_times
+                    t1_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = q1_fit_exponential
+                    t1_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                    t1_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                    t1_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                    t1_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t1
+                    del t1
+                    ###################################################### g-e T2R #####################################################
+                    t2r = T2RMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
+                                         save_figs,
+                                         experiment=experiment, live_plot=live_plot, fit_data=fit_data,
+                                         increase_qubit_reps=increase_qubit_reps,
+                                         qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                         multiply_qubit_reps_by=multiply_qubit_reps_by,
+                                         verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
+                    t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey, sys_config_t2r = t2r.run(
+                        thresholding=thresholding)
+                    t2r_data[QubitIndex]['T2'][j - batch_num * save_r - 1] = t2r_est
+                    t2r_data[QubitIndex]['Errors'][j - batch_num * save_r - 1] = t2r_err
+                    t2r_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
+                        time.mktime(datetime.datetime.now().timetuple()))
+                    t2r_data[QubitIndex]['I'][j - batch_num * save_r - 1] = t2r_I
+                    t2r_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = t2r_Q
+                    t2r_data[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = t2r_delay_times
+                    t2r_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = fit_ramsey
+                    t2r_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                    t2r_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                    t2r_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                    t2r_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t2r
+                    del t2r
+                    t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
+                    t2r_data = create_data_dict(t2r_keys, save_r, list_of_all_qubits)
+
                     ############################################## Start IBM like experiment ###########################################
                     exp = deepcopy(experiment) #before updating for qze
 

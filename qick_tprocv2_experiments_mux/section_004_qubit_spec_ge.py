@@ -63,9 +63,13 @@ class QubitSpectroscopy:
                         experiment.readout_cfg['res_phase_qze'][self.QubitIndex])
 
             self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
+            print(self.q_config)
             self.live_plot = live_plot
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
+            print(expt_cfg)
+            print(self.exp_cfg)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            print(self.config)
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} Qubit Spec configuration: ', self.config)
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} Qubit Spec configuration: {self.config}')
 
