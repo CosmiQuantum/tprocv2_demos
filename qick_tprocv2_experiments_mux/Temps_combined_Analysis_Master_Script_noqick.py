@@ -7,6 +7,7 @@ import os
 from analysis_021_plot_allRR_noqick import QubitSpectroscopy
 from qicklab.analysis.qspec import AnaQSpec
 from qicklab.analysis.ssf import AnaSSF
+from Arianna_non_prebuilt_SSF_doublegauss_funcs import non_prebuilt_ssf_analysis_class
 from section_008_save_data_to_h5 import Data_H5
 from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots, combined_Qtemp_studies, RPMTempCalcAndPlots
 import glob
@@ -48,7 +49,7 @@ qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, 
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
-                  "Qtemps_hists_viaRPM": False, "Qtemps_hists_viaSSF": True, "Qtemps_chi2_hists_viaSSF": True, "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
+                  "Qtemps_hists_viaRPM": False, "Qtemps_hists_viaSSF": True, "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis
 comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
@@ -56,6 +57,9 @@ comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_tim
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
+
+# For double-gaussian SSF analysis using non-pre-built functions (ft Dan)
+non_prebuilt_ana_flags = {"Qtemps_chi2_hists_viaSSF": True}
 ############################################################################## Set up #######################################################################################################################
 #----------------------------------------------------- For qubit temperature calculations via rabi population measurements --------------------------------------------------------------------------------------
 # Specify which dates you want to loop through. It will process all the files inside all the folders that contain these dates in their title.
@@ -340,7 +344,6 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
     #------------------------------------------------------------------ Temperatures vs Time Scatter Plot --------------------------------------------------------------------------
     if analysis_flags["Qtemps_vs_time_viaSSF"]:
         SSF_calcs_obj.plot_qubit_temperatures_vs_time_ssf(all_qubit_temps, all_qubit_times, all_qubit_temps_errs, path_saveplots_ssf_qtemps_vsT, rel_err_cutoff = 0.4, plot_error_bars = True)
-
     #--------------------------------------------------------------------------- SSF Temperature Histograms --------------------------------------------------------------------------------------
     if analysis_flags["Qtemps_hists_viaSSF"]:
         SSF_calcs_obj.plot_all_qubits_hist_ssf(all_qubit_temps, all_qubit_temps_errs, path_saveplots_ssf_qtemps_vsT, bins=30, rel_err_cutoff = 0.4)
@@ -372,7 +375,11 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
                     # plots the g-e threshold and only the ground state data to show how the g-e threshold was used to determine Pg and Pe
                     SSF_calcs_obj.plot_threshold_split(q_key, rec, made_on_folder)
 
-#################################################### Combined Qubit Temperature Analyses ##########################################################
+####################################### SSF qubit temps analysis WITHOUT pre-built sklearn.mixture.GaussianMixture double gaussian fitting functions ##########################################
+if non_prebuilt_ana_flags["Qtemps_chi2_hists_viaSSF"]:
+    non_pre_built_ana = non_prebuilt_ssf_analysis_class()
+    # To be continued
+################################################### Combined Qubit Temperature Analyses ##########################################################
 if qtemp_method_flags["combined_studies_qtemps"]:
     # ----------- Get Qubit temperature results via RPMs
     RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs)
