@@ -21,7 +21,7 @@ from expt_config import expt_cfg, list_of_all_qubits, FRIDGE
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 5 # first run with qubits was QUIET run 3, second run with qubits was QUIET run 4, and so forth
+run_num = 7 # first run with qubits was QUIET run 3, second run with qubits was QUIET run 4, and so forth
 run_name = f'run{run_num}/6transmon'
 signal = 'None' # Do not change
 
@@ -48,7 +48,7 @@ qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, 
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
-                  "Qtemps_hists_viaRPM": False, "Qtemps_hists_viaSSF": True, "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
+                  "Qtemps_hists_viaRPM": False, "Qtemps_hists_viaSSF": True, "Qtemps_chi2_hists_viaSSF": True, "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis
 comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
