@@ -144,9 +144,9 @@ while j < n:
         experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
 
         ###################################################### TOF #####################################################
-        #tof        = TOFExperiment(QubitIndex, outerFolder, experiment, j, save_figs)
-        #tof.run(experiment.soccfg, experiment.soc)
-        #del tof
+        tof        = TOFExperiment(QubitIndex, outerFolder, experiment, j, save_figs)
+        tof.run(experiment.soccfg, experiment.soc)
+        del tof
 
         ################################################## Res spec ####################################################
         # try:
@@ -223,59 +223,59 @@ while j < n:
         #     continue #skip the rest of this qubit
 
         ###################################################### Rabi ####################################################
-        for i in range(2):
-            # if i ==0:
-            #     BiasPS.setVoltage(vcent[QubitIndex], Bias_ch[QubitIndex])
-            #     BiasPS.enable(Bias_ch[QubitIndex])
-            # elif i==1:
-            #     BiasPS.setVoltage(vwide[QubitIndex], Bias_ch[QubitIndex])
-            #     BiasPS.enable(Bias_ch[QubitIndex])
-            try:
-                ##experiment.readout_cfg['res_phases'] = res_phases
-                nowq = time.time()
-                rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot,
-                                               increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
-                rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save  = rabi.run(experiment.soccfg, experiment.soc)
-
-                # if these are None, fit didnt work
-                if (rabi_fit is None and pi_amp is None):
-                    # logging.info('Rabi fit didnt work, skipping the rest of this qubit')
-                    print('Rabi fit didnt work, skipping the rest of this qubit')
-                    continue  # skip the rest of this qubit
-
-                experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
-                # logging.info('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
-                print('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
-                qgs[QubitIndex][j - 1] = float(pi_amp)
-                if QubitIndex==0:
-                    q1time.append(nowq)
-                    q1fit.append(rabi_fit)
-                    q1plt.append(np.sqrt(rabi_I**2 + rabi_Q**2))
-
-                elif QubitIndex==1:
-                    q2time.append(nowq)
-                    q2fit.append(rabi_fit)
-                    q2plt.append(np.sqrt(rabi_I ** 2 + rabi_Q ** 2))
-
-                elif QubitIndex==2:
-                    q3time.append(nowq)
-                    q3fit.append(rabi_fit)
-                    q3plt.append(np.sqrt(rabi_I ** 2 + rabi_Q ** 2))
-
-                elif QubitIndex==3:
-                    q4time.append(nowq)
-                    q4fit.append(rabi_fit)
-                    q4plt.append(np.sqrt(rabi_I ** 2 + rabi_Q ** 2))
-
-                del rabi
-
-            except Exception as e:
-                # logging.exception(f'Got the following error, continuing: {e}')
-                print(f'Got the following error, continuing: {e}')
-                continue #skip the rest of this qubit
-            # BiasPS.setVoltage(0, Bias_ch[QubitIndex])
-            # BiasPS.enable(Bias_ch[QubitIndex])
-            #
+        # for i in range(2):
+        #     # if i ==0:
+        #     #     BiasPS.setVoltage(vcent[QubitIndex], Bias_ch[QubitIndex])
+        #     #     BiasPS.enable(Bias_ch[QubitIndex])
+        #     # elif i==1:
+        #     #     BiasPS.setVoltage(vwide[QubitIndex], Bias_ch[QubitIndex])
+        #     #     BiasPS.enable(Bias_ch[QubitIndex])
+        #     try:
+        #         ##experiment.readout_cfg['res_phases'] = res_phases
+        #         nowq = time.time()
+        #         rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot,
+        #                                        increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
+        #         rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save  = rabi.run(experiment.soccfg, experiment.soc)
+        #
+        #         # if these are None, fit didnt work
+        #         if (rabi_fit is None and pi_amp is None):
+        #             # logging.info('Rabi fit didnt work, skipping the rest of this qubit')
+        #             print('Rabi fit didnt work, skipping the rest of this qubit')
+        #             continue  # skip the rest of this qubit
+        #
+        #         experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
+        #         # logging.info('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
+        #         print('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
+        #         qgs[QubitIndex][j - 1] = float(pi_amp)
+        #         if QubitIndex==0:
+        #             q1time.append(nowq)
+        #             q1fit.append(rabi_fit)
+        #             q1plt.append(np.sqrt(rabi_I**2 + rabi_Q**2))
+        #
+        #         elif QubitIndex==1:
+        #             q2time.append(nowq)
+        #             q2fit.append(rabi_fit)
+        #             q2plt.append(np.sqrt(rabi_I ** 2 + rabi_Q ** 2))
+        #
+        #         elif QubitIndex==2:
+        #             q3time.append(nowq)
+        #             q3fit.append(rabi_fit)
+        #             q3plt.append(np.sqrt(rabi_I ** 2 + rabi_Q ** 2))
+        #
+        #         elif QubitIndex==3:
+        #             q4time.append(nowq)
+        #             q4fit.append(rabi_fit)
+        #             q4plt.append(np.sqrt(rabi_I ** 2 + rabi_Q ** 2))
+        #
+        #         del rabi
+        #
+        #     except Exception as e:
+        #         # logging.exception(f'Got the following error, continuing: {e}')
+        #         print(f'Got the following error, continuing: {e}')
+        #         continue #skip the rest of this qubit
+        #     # BiasPS.setVoltage(0, Bias_ch[QubitIndex])
+        #     # BiasPS.enable(Bias_ch[QubitIndex])
+        #     #
         # ########################################## Single Shot Measurements ############################################
         # if QubitIndex == 0:
         #     synth[0].power = -12.69
@@ -300,27 +300,27 @@ while j < n:
         #     synth[0].frequency = 7.771e9
         #     synth[0].enable = True
         #     time.sleep(0.5)
-        try:
-            #experiment.readout_cfg['res_phases'] = res_phases
-            #experiment.qubit_cfg['pi_amp'][QubitIndex] = angle
-            timestamp = time.strftime("%H%M%S")
-            ss = SingleShot(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder,  j, save_figs, experiment)
-            fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
-            I_g = iq_list_g[QubitIndex][0].T[0]
-            Q_g = iq_list_g[QubitIndex][0].T[1]
-            I_e = iq_list_e[QubitIndex][0].T[0]
-            Q_e = iq_list_e[QubitIndex][0].T[1]
-
-            fid, threshold, angle, ig_new, ie_new = ss.hist_ssf(
-                data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
-            #experiment.qubit_cfg['res_phase'][QubitIndex] = angle
-            #res_phases[QubitIndex]=angle
-            #np.savez(outerFolder+timestamp+'ssf'+f'Q{QubitIndex+1}'+f'round{j}', fid=fid, threshold=threshold, angle=angle, ig_new=ig_new, ie_new=ie_new)
-
-        except Exception as e:
-            # logging.exception(f'Got the following error, continuing: {e}')
-            print(f'Got the following error, continuing: {e}')
-            continue #skip the rest of this qubit
+        # try:
+        #     #experiment.readout_cfg['res_phases'] = res_phases
+        #     #experiment.qubit_cfg['pi_amp'][QubitIndex] = angle
+        #     timestamp = time.strftime("%H%M%S")
+        #     ss = SingleShot(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder,  j, save_figs, experiment)
+        #     fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
+        #     I_g = iq_list_g[QubitIndex][0].T[0]
+        #     Q_g = iq_list_g[QubitIndex][0].T[1]
+        #     I_e = iq_list_e[QubitIndex][0].T[0]
+        #     Q_e = iq_list_e[QubitIndex][0].T[1]
+        #
+        #     fid, threshold, angle, ig_new, ie_new = ss.hist_ssf(
+        #         data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
+        #     #experiment.qubit_cfg['res_phase'][QubitIndex] = angle
+        #     #res_phases[QubitIndex]=angle
+        #     #np.savez(outerFolder+timestamp+'ssf'+f'Q{QubitIndex+1}'+f'round{j}', fid=fid, threshold=threshold, angle=angle, ig_new=ig_new, ie_new=ie_new)
+        #
+        # except Exception as e:
+        #     # logging.exception(f'Got the following error, continuing: {e}')
+        #     print(f'Got the following error, continuing: {e}')
+        #     continue #skip the rest of this qubit
         # ###################################################### T1 ######################################################
         # # try:
         # #     t1 = T1Measurement(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
@@ -370,7 +370,7 @@ while j < n:
             # res_data[QubitIndex]['Found Freqs'][j - batch_num * save_r - 1] = res_freqs
             # res_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
             # res_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-            #
+
             # # ---------------------Collect QSpec Results----------------
             # qspec_data[QubitIndex]['Dates'][j - batch_num * save_r - 1]=time.mktime(datetime.datetime.now().timetuple())
             # qspec_data[QubitIndex]['I'][j - batch_num * save_r - 1] = qspec_I
@@ -382,13 +382,13 @@ while j < n:
             # qspec_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
 
         #     # ---------------------Collect Rabi Results----------------
-            rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
-            rabi_data[QubitIndex]['I'][j - batch_num * save_r - 1] = rabi_I
-            rabi_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = rabi_Q
-            rabi_data[QubitIndex]['Gains'][j - batch_num * save_r - 1] = rabi_gains
-            rabi_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = rabi_fit
-            rabi_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-            rabi_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+        #     rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
+        #     rabi_data[QubitIndex]['I'][j - batch_num * save_r - 1] = rabi_I
+        #     rabi_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = rabi_Q
+        #     rabi_data[QubitIndex]['Gains'][j - batch_num * save_r - 1] = rabi_gains
+        #     rabi_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = rabi_fit
+        #     rabi_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+        #     rabi_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
         #
         #     # ---------------------Collect Single Shot Results----------------
         #     ss_data[QubitIndex]['Fidelity'][j - batch_num * save_r - 1] = fid
@@ -467,10 +467,10 @@ while j < n:
             # del rabi_data
             #
             # # --------------------------save SS-----------------------
-            saver_ss = Data_H5(outerFolder, ss_data, batch_num, save_r)
-            saver_ss.save_to_h5('SS')
-            del saver_ss
-            del ss_data
+            # saver_ss = Data_H5(outerFolder, ss_data, batch_num, save_r)
+            # saver_ss.save_to_h5('SS')
+            # del saver_ss
+            # del ss_data
             #
             # # --------------------------save t1-----------------------
             # saver_t1 = Data_H5(outerFolder, t1_data, batch_num, save_r)
