@@ -52,13 +52,13 @@ increase_qubit_reps = False #if you want to increase the reps for a qubit, set t
 qubit_to_increase_reps_for = 0 #only has impact if previous line is True
 multiply_qubit_reps_by = 2 #only has impact if the line two above is True
 
-outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/", str(datetime.date.today()))
+outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run33/", str(datetime.date.today()))
 # outerFolder = os.path.join("/data/QICK_data/", str(datetime.date.today()))
 
 ################################################ optimization outputs ##################################################
 # For NEXUS
 res_leng_vals = [5.1, 3.3, 4.5, 3.25] # from 2/27/2025 optimization
-res_gain = [0.3143, 0.1857, 0.1429, 0.1857]#[0.365, 0.295, 0.255, 0.325] # from 2/27/2025 optimization
+res_gain = [1, 1, 1, 1] #[0.3143, 0.1857, 0.1429, 0.1857]#[0.365, 0.295, 0.255, 0.325] # from 2/27/2025 optimization
 freq_offsets = [0,0,0,0]#[0.1333, -0.0667, -0.0667, -0.6667] # from 2/27/2025 optimization
 #res_phases=[0,0,0,0]
 ####################################################### RR #############################################################
@@ -144,7 +144,7 @@ while j < n:
         experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
 
         ###################################################### TOF #####################################################
-        tof        = TOFExperiment(QubitIndex, outerFolder, experiment, j, save_figs)
+        tof = TOFExperiment(QubitIndex, outerFolder, experiment, j, save_figs=True)
         tof.run(experiment.soccfg, experiment.soc)
         del tof
 
@@ -361,7 +361,7 @@ while j < n:
         # #     continue #skip the rest of this qubit
         #
         # ############################################### Collect Results ################################################
-        if save_data_h5:
+        #if save_data_h5:
             # ---------------------Collect Res Spec Results----------------
             # res_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
             # res_data[QubitIndex]['freq_pts'][j - batch_num * save_r - 1] = freq_pts
@@ -500,7 +500,7 @@ while j < n:
             t2e_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
 
 
-np.savez(outerFolder+timestamp+'rabis',   qgs=qgs, q1plt=q1plt,  q2plt=q2plt, q3plt=q3plt,  q4plt=q4plt, q1fit=q1fit,  q2fit=q2fit, q3fit=q3fit,  q4fit=q4fit,  rabi_gains=rabi_gains)
+#np.savez(outerFolder+timestamp+'rabis',   qgs=qgs, q1plt=q1plt,  q2plt=q2plt, q3plt=q3plt,  q4plt=q4plt, q1fit=q1fit,  q2fit=q2fit, q3fit=q3fit,  q4fit=q4fit,  rabi_gains=rabi_gains)
 
 end_time = time.time()
 elapsed_time = end_time - start_time

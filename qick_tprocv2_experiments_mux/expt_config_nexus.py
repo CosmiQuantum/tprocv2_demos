@@ -10,7 +10,7 @@ list_of_all_qubits = list(range(tot_num_of_qubits))
 expt_cfg = {
     "tof": {
         "reps": 1, #reps doesnt make a difference here, leave it at 1
-        "soft_avgs": 500,
+        "soft_avgs": 2000, #500,
         "relax_delay": 0,  # [us]
         "list_of_all_qubits": list_of_all_qubits,
     },

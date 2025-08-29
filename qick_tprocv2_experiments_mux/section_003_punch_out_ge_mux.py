@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from qick.asm_v2 import AveragerProgramV2
 from tqdm import tqdm
 from build_state import *
-from expt_config import *
+from expt_config_nexusw import *
 import copy
 import datetime
 import time

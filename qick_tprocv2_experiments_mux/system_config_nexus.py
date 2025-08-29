@@ -73,10 +73,10 @@ class QICK_experiment:
 
         # Readout Configuration
         self.readout_cfg = {
-            "trig_time": 0.75,  # [Clock ticks] - get this value from TOF experiment
+            "trig_time": 0, #0.75,  # [Clock ticks] - get this value from TOF experiment
             # Changes related to the resonator output channel
             "mixer_freq": 5500, # [MHz]
-            "res_freq_ge":[6187.392, 5827.874, 6073.915, 5958.535],#[6187.411, 5827.898, 6073.955, 5958.553], #MHz
+            "res_freq_ge":[6187.89, 5828.51, 6075.04, 5958.98], #[6187.392, 5827.874, 6073.915, 5958.535],#[6187.411, 5827.898, 6073.955, 5958.553], #MHz
             "res_gain_ge": [0.3143, 0.1857, 0.1429, 0.1857], # from 2/19 optimization
             "res_length": 3.0, # Choose the one for the qubit you want: [5.15, 2.75, 5.35, 3.25] from 2/19 optimization
             "res_phase": [0] * 4, #[2.904058* 180 / np.pi,1.177098* 180 / np.pi,0.812419* 180 / np.pi,1.427213* 180 / np.pi],

@@ -1,6 +1,6 @@
 from qick import *
 from qick.pyro import make_proxy
-import system_config
+import system_config_nexus
 import copy
 
 # soc, soccfg = make_proxy(ns_host="192.168.1.144", ns_port=8000, proxy_name="rfsoc")

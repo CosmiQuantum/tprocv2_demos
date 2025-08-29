@@ -1,8 +1,8 @@
 from qick.asm_v2 import AveragerProgramV2
 import matplotlib.pyplot as plt
 from build_state import *
-from expt_config import *
-from system_config import *
+from expt_config_nexus import *
+from system_config_nexus import *
 
 class TOFExperiment:
     def __init__(self, QubitIndex,  outerFolder, experiment, round_num = 1, save_figs = True, title = False):
@@ -16,9 +16,9 @@ class TOFExperiment:
         self.save_figs = save_figs
         self.title = title
 
-        self.q_config = all_qubit_state(self.experiment)
+        self.q_config = all_qubit_state(self.experiment, num_qubits=4)
         self.round_num = round_num
-        if 'All' in self.QubitIndex:
+        if 'All' in self.Qubit: #Index:
             self.config = {**self.q_config['Q0'], **self.exp_cfg}
             print(f'Q {self.QubitIndex} Round {round_num} TOF configuration: ', self.config)
         else:
@@ -140,7 +140,7 @@ class TOFExperiment:
             self.experiment.create_folder_if_not_exists(outerFolder_expt)
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-            if 'All' in self.QubitIndex:
+            if 'All' in self.Qubit: #Index:
                 file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}" + f"Q_{self.QubitIndex}" + f"{formatted_datetime}_" + self.expt_name + ".png")
             else:
                 file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + ".png")

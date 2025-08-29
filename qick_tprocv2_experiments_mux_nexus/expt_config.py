@@ -20,9 +20,9 @@ expt_cfg = {
     "res_spec": {
         "reps": 500,
         "rounds": 1,
-        "start": -3.5, # [MHz]
-        "step_size": 0.12,  # [MHz]
-        "steps": 58,
+        "start": -5, #-3.5, # [MHz]
+        "step_size": 0.1,  # [MHz]
+        "steps": 100,
         "relax_delay": 20,  # [us]
         "list_of_all_qubits": list_of_all_qubits,
     },

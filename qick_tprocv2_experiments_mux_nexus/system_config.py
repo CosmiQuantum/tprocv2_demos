@@ -78,7 +78,7 @@ class QICK_experiment:
             # Changes related to the resonator output channel
             "mixer_freq": 5500, # [MHz]
             "res_freq_ge": [6187.392, 5827.874, 6073.915, 5958.535],#[6187.411, 5827.898, 6073.955, 5958.553], #MHz
-            "res_gain_ge":  [0]*4,#[0.3143, 0.1857, 0.1429, 0.1857], # from 2/19 optimization
+            "res_gain_ge":  [1]*4,#[0.3143, 0.1857, 0.1429, 0.1857], # from 2/19 optimization
             "res_length": 3.0, # Choose the one for the qubit you want: [5.15, 2.75, 5.35, 3.25] from 2/19 optimization
             "res_phase": [0,0,0,0],#[2.904058* 180 / np.pi,1.177098* 180 / np.pi,0.812419* 180 / np.pi,1.427213* 180 / np.pi],# * 4,
             "ro_phase": [0,0,0,0] # Rotation Angle From QICK Function

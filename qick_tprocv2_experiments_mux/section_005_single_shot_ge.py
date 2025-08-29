@@ -11,7 +11,7 @@ from build_task import *
 from build_state import *
 # from expt_config import *
 from expt_config_nexus import * # Change for quiet vs nexus
-from system_config import QICK_experiment
+from system_config_nexus import QICK_experiment
 import copy
 import os
 
