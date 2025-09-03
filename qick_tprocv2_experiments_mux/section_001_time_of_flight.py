@@ -20,7 +20,7 @@ class TOFExperiment:
         if unmasking_resgain:
             self.exp_cfg["list_of_all_qubits"] = [QubitIndex]
 
-        self.q_config = all_qubit_state(self.experiment,6)
+        self.q_config = all_qubit_state(self.experiment,4)
         self.round_num = round_num
         if 'All' in self.Qubit:
             self.config = {**self.q_config['Q0'], **self.exp_cfg}

@@ -166,6 +166,7 @@ class QICK_experiment:
 
             self.FSGEN_CH = 10  # set to 8 for bias spectroscopy, and 10 for everything else (pi pulses, RR)
             self.MIXMUXGEN_CH = 4  # Readout resonator DAC channel
+            #self.FSGEN_AMPL_CH = None #Dummy variable
             self.MUXRO_CH = [2, 3, 4, 5]
             # self.MUXRO_CH_RF = 5  # New variable that we need for QICK box
 
@@ -203,8 +204,9 @@ class QICK_experiment:
             self.hw_cfg = {
                 # DAC
                 "qubit_ch": [self.FSGEN_CH] * 4,  # Qubit Channel Port, Full-speed DAC
+                "qubit_ampl_ch": [self.FSGEN_CH] * 4, #Dummy
                 "res_ch": [self.MIXMUXGEN_CH] * 4,  # Single Tone Readout Port, MUX DAC
-                # "qubit_ch_ef": [GEN_CH5]*6, # Qubit ef Channel, Full-speed DAC
+                "qubit_ch_ef": [self.FSGEN_CH] * 4, #Dummy
                 "nqz_qubit": 2,
                 "nqz_res": 2,
                 # ADC
@@ -214,10 +216,10 @@ class QICK_experiment:
 
             # Readout Configuration
             self.readout_cfg = {
-                "trig_time": 0.75,  # [Clock ticks] - get this value from TOF experiment
+                "trig_time": 0, #0.75,  # [Clock ticks] - get this value from TOF experiment
                 # Changes related to the resonator output channel
                 "mixer_freq": 5500,  # [MHz]
-                "res_freq_ge": [6187.191, 5827.678, 6074.095, 5958.453],  # MHz #5958.8 (Grace)
+                "res_freq_ge": [6187.973, 5828.51, 6074.622, 5959.343], #Run 33, high power VNA #[6187.191, 5827.678, 6074.095, 5958.453],  # MHz #5958.8 (Grace)
                 "res_gain_ge": [0.4, 0.4, 0.4, 0.3875],  # [0.15]*4, #[1, 1, 1, 1],
                 "res_length": 4.6,  # 10,  # [us] (1.0 for res spec)
                 "res_phase": [0] * 4,

@@ -1,6 +1,6 @@
 import numpy as np
 
-FRIDGE = "QUIET"  # change to "NEXUS" as needed
+FRIDGE = "NEXUS" #"QUIET"  # change to "NEXUS" as needed
 
 if FRIDGE == "QUIET":
     VNA_res = np.array([6223.097, 6284.61, 6343.95, 6414.9, 6481.4, 6547.09])#*1000  # run 5
@@ -434,7 +434,7 @@ if FRIDGE == "QUIET":
     }
 
 elif FRIDGE == "NEXUS":
-    VNA_res = np.array([6187.8, 5828.3, 6074.6, 5959.3])
+    VNA_res = np.array([6187.9, 5828.5, 6074.6, 5959.3]) #Run 33 VNA low power   # Old [6187.8, 5828.3, 6074.6, 5959.3])
     VNA_qubit = np.array([4909, 4749.4, 4569, 4759])  # Found on NR25 with the QICK
 
     tot_num_of_qubits = 4
@@ -443,7 +443,7 @@ elif FRIDGE == "NEXUS":
     expt_cfg = {
         "tof": {
             "reps": 1,  # reps doesnt make a difference here, leave it at 1
-            "soft_avgs": 500,
+            "soft_avgs": 2000, #500,
             "relax_delay": 0,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -451,9 +451,9 @@ elif FRIDGE == "NEXUS":
         "res_spec": {
             "reps": 500,
             "rounds": 1,
-            "start": -3.5,  # [MHz]
-            "step_size": 0.12,  # [MHz]
-            "steps": 101,
+            "start": -0.5, #-3.5,  # [MHz]
+            "step_size": 0.02, #0.12,  # [MHz]
+            "steps": 51, #101,
             "relax_delay": 20,  # [us]
             "relax_delay_ef": 600,
             "list_of_all_qubits": list_of_all_qubits,

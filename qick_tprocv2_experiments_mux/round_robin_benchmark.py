@@ -12,7 +12,8 @@ import logging
 import visdom
 import gc, copy
 import time
-sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+#sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+sys.path.append(os.path.abspath("/home/nexusadmin/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_001_time_of_flight import TOFExperiment
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_002_res_spec_ef import ResonanceSpectroscopyEF
@@ -39,7 +40,7 @@ from analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
 ################################################ Run Configurations ####################################################
 st = time.time()
 #
-n= 1000000
+n= 1
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
@@ -58,12 +59,16 @@ unmask = True                          # Do you want to use the unmasking featur
 qubit_to_increase_reps_for = 0       # only has impact if previous line is True
 multiply_qubit_reps_by = 2           # only has impact if the line two above is True
 
-Qs_to_look_at = [0,1,2,3,5]#[0,1,2,5]#,1,2,3,4,5]       # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,3] #[0,1,2,5]#,1,2,3,4,5]       # only list the qubits you want to do the RR for
+
+
+#debug
+print(FRIDGE)
 
 #Data saving info
-run_name = 'run7'
-device_name = '6transmon'
-substudy_txt_notes = ('FH Spec Study. We will move the source about 50cm away from the fridge')#('Active Reset Test')##('round robin with relax delays of 1000us for T1 and T2 measurements.')#('Active Reset Test')#('Normal Round Robin during cooldown, now everything works properly, set debug to false to run '
+run_name = 'run33'
+device_name = '4charge'
+substudy_txt_notes = ('Initial Checkout')#('Active Reset Test')##('round robin with relax delays of 1000us for T1 and T2 measurements.')#('Active Reset Test')#('Normal Round Robin during cooldown, now everything works properly, set debug to false to run '
                       # 'overFalsenight and running in terminal with repeater script')
 
 # set which of the following you'd like to run to 'True'
@@ -73,28 +78,27 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": False, "ss": False, "rabi
 #              "t1": False, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": True, "fh_q_spec":True, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 
 # optimization outputs from qick board, unmasking set to true
-res_leng_vals = [5.0,5.5,5.5,6.0,6.0,6.0]#[7.0, 5.1, 5.1, 5.6, 5.6, 5.6] # all updated on 7/29/2025
-res_gain = [0.95,0.9,0.95,0.55,0.55,0.95]#[0.8, 0.9, 0.95, 0.51, 0.61, 0.95] # all updated on
-# 7/29/2025 except R5, we need to debug res spec for that resonator
-freq_offsets = [-0.2143, 0, -0.16, -0.16, -0.16, -0.16,]#[0.1190, 0.0238, -0.1190, 0.2143, -0.0714, 0.0238] # # all updated on 7/29/2025 except R5, we need to debug res spec for that resonator
+res_leng_vals = [5.0, 5.0, 5.0, 5.0] #Not optimized yet
+res_gain = [1, 1, 1, 1] #Not optimized yet
+freq_offsets = [0, 0, 0, 0] #Not optimized yet
 
-qubit_freqs_ef = [None]*6
+qubit_freqs_ef = [None]*4
 # increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
 increase_steps_to_ef = 600
 ef_res_sample_number = 1
-number_of_qubits = 6
+number_of_qubits = 4
 figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 #Folders
-study = 'warm_up_res_data'
-sub_study = 'FH_Spec_Q2_Source_distance'#junkyard'#'AB_data_relax_delays_1000us'#'Active_Reset_Test'#'temperature_sweep'#'AB_tests_data'
+study = 'Initial Checkout'
+sub_study = 'ResSpec'#junkyard'#'AB_data_relax_delays_1000us'#'Active_Reset_Test'#'temperature_sweep'#'AB_tests_data'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-if not os.path.exists(f"/data/QICK_data/{run_name}/"):
-    os.makedirs(f"/data/QICK_data/{run_name}/")
-if not os.path.exists(f"/data/QICK_data/{run_name}/{device_name}/"):
-    os.makedirs(f"/data/QICK_data/{run_name}/{device_name}/")
-studyFolder = os.path.join(f"/data/QICK_data/{run_name}/{device_name}/", study)
+if not os.path.exists(f"/home/nexusadmin/Documents/Data/{run_name}/"):
+    os.makedirs(f"/home/nexusadmin/Documents/Data/{run_name}/")
+if not os.path.exists(f"/home/nexusadmin/Documents/Data/{run_name}/{device_name}/"):
+    os.makedirs(f"/home/nexusadmin/Documents/Data/{run_name}/{device_name}/")
+studyFolder = os.path.join(f"/home/nexusadmin/Documents/Data/{run_name}/{device_name}/", study)
 if not os.path.exists(studyFolder):
     os.makedirs(studyFolder)
 subStudyFolder = os.path.join(studyFolder, sub_study)
@@ -113,9 +117,9 @@ if not os.path.exists(optimizationFolder):
 if not os.path.exists(subStudyDataFolder):
     os.makedirs(subStudyDataFolder)
 
-file_path = os.path.join(studyDocumentationFolder, 'sub_study_notes.txt')
-with open(file_path, "w", encoding="utf-8") as file:
-    file.write(substudy_txt_notes)
+# file_path = os.path.join(studyDocumentationFolder, 'sub_study_notes.txt')
+# with open(file_path, "w", encoding="utf-8") as file:
+#     file.write(substudy_txt_notes)
 
 ################################################## Configure logging ###################################################
 ''' We need to create a custom logger and disable propagation like this
@@ -188,7 +192,7 @@ act_data = create_data_dict(act_keys, save_r, list_of_all_qubits)
 if pre_optimize:
     ################################################## Simple Optimization ###############################################
 
-    def sweep_frequency_offset(experiment_opt, QubitIndex_opt, offset_values, n_loops=10, number_of_qubits=6,
+    def sweep_frequency_offset(experiment_opt, QubitIndex_opt, offset_values, n_loops=10, number_of_qubits=4,
                                outerFolder="", studyDocumentationFolder_opt="", optimizationFolder_opt="", j=0):
         baseline_freq = experiment_opt.readout_cfg['res_freq_ge'][QubitIndex]
         ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
@@ -394,7 +398,7 @@ if pre_optimize:
 
         freq_range = np.linspace(-0.5, 0.5, freq_offset_steps)
 
-        optimal_offset, ssf_dict = sweep_frequency_offset(experiment, Q, freq_range, n_loops=ssf_avgs_per_opt_pt, number_of_qubits=6,
+        optimal_offset, ssf_dict = sweep_frequency_offset(experiment, Q, freq_range, n_loops=ssf_avgs_per_opt_pt, number_of_qubits=4,
                                                           outerFolder=optimizationFolder, studyDocumentationFolder_opt=studyDocumentationFolder,
                                                           optimizationFolder_opt=optimizationFolder, j=0)
 

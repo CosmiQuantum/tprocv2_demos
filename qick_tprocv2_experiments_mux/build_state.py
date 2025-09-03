@@ -9,7 +9,8 @@ import copy
 # Add DAC and ADC Channels
 def add_qubit_channel(system_config, QubitIndex):
     hw_config = copy.deepcopy(system_config.hw_cfg)
-    var = ["qubit_ch", "qubit_ampl_ch", "res_ch", "ro_ch", "qubit_ch_ef"]
+    #var = ["qubit_ch", "qubit_ampl_ch", "res_ch", "ro_ch", "qubit_ch_ef"]
+    var = ["qubit_ch", "res_ch", "ro_ch"]
     for Index in var:
         value = hw_config[Index][QubitIndex]
         hw_config.update([(Index,value)])
@@ -18,7 +19,8 @@ def add_qubit_channel(system_config, QubitIndex):
 # Add Readout Parameters
 def add_readout_cfg(system_config, QubitIndex):
     readout_config = copy.deepcopy(system_config.readout_cfg)
-    var = ["res_freq_ge", "res_gain_ge", "res_phase", "res_freq_ef", "res_gain_ef", ] # "threshold"]
+    #var = ["res_freq_ge", "res_gain_ge", "res_phase", "res_freq_ef", "res_gain_ef", ] # "threshold"]
+    var = ["res_freq_ge", "res_gain_ge", "res_phase"]
     for Index in var:
         value = readout_config[Index] #[QubitIndex]
         readout_config.update([(Index,value)])
@@ -27,7 +29,8 @@ def add_readout_cfg(system_config, QubitIndex):
 # Add Qubit Frequency and Constant Drive Gain Parameters
 def add_qubit_cfg(system_config, QubitIndex):
     qubit_config = copy.deepcopy(system_config.qubit_cfg)
-    var = ["qubit_freq_ge", "qubit_gain_ge", "sigma", "sigma_ef", "sigma_fh", "pi_amp", "pi_ef_amp", "pi_fh_amp" , "qubit_freq_ef",  "qubit_gain_ef", "qubit_freq_fh",  "qubit_gain_fh", 'qubit_freq_ftores', 'qubit_gain_ftores',  "qubit_length_ftores"]
+    #var = ["qubit_freq_ge", "qubit_gain_ge", "sigma", "sigma_ef", "sigma_fh", "pi_amp", "pi_ef_amp", "pi_fh_amp" , "qubit_freq_ef",  "qubit_gain_ef", "qubit_freq_fh",  "qubit_gain_fh", 'qubit_freq_ftores', 'qubit_gain_ftores',  "qubit_length_ftores"]
+    var = ["qubit_freq_ge", "qubit_gain_ge", "sigma", "pi_amp"]
     for Index in var:
         value = qubit_config[Index][QubitIndex]
         qubit_config.update([(Index,value)])
