@@ -216,12 +216,12 @@ class QICK_experiment:
 
             # Readout Configuration
             self.readout_cfg = {
-                "trig_time": 0, #0.75,  # [Clock ticks] - get this value from TOF experiment
+                "trig_time": 0.7, # [Clock ticks] - get this value from TOF experiment, Updated 9/3
                 # Changes related to the resonator output channel
                 "mixer_freq": 5500,  # [MHz]
-                "res_freq_ge": [6187.973, 5828.51, 6074.622, 5959.343], #Run 33, high power VNA #[6187.191, 5827.678, 6074.095, 5958.453],  # MHz #5958.8 (Grace)
-                "res_gain_ge": [0.4, 0.4, 0.4, 0.3875],  # [0.15]*4, #[1, 1, 1, 1],
-                "res_length": 4.6,  # 10,  # [us] (1.0 for res spec)
+                "res_freq_ge": [6187.973, 5828.530, 6074.662, 5959.343], #Run 33, high power VNA #[6187.191, 5827.678, 6074.095, 5958.453],  # MHz #5958.8 (Grace)
+                "res_gain_ge": [0.4, 0.4, 0.4, 0.4],  # [0.15]*4, #[1, 1, 1, 1],
+                "res_length": 3.0, #4.6,  # 10,  # [us] (1.0 for res spec)
                 "res_phase": [0] * 4,
                 "ro_phase": [0, 0, 0, 0]  # [0] * 4,  # Rotation Angle From QICK Function
             }

@@ -36,14 +36,15 @@ DAC_att=DAC_att_1+DAC_att_2
 ADC_att=17
 from expt_config import FRIDGE
 experiment = QICK_experiment(outerfolder_plots, DAC_attenuator1 = DAC_att_1, DAC_attenuator2 = DAC_att_2, qubit_DAC_attenuator1 = 5 , qubit_DAC_attenuator2 = 4 ,ADC_attenuator = ADC_att, fridge=FRIDGE)
-Qubit_index= 3 #starts at 0
+#Qubit_index= 3 #starts at
+qubits = [0, 1, 2, 3]
 Unmask = True
-punch_out   = PunchOut(Qubit_index, number_of_qubits, outerfolder_plots, experiment, Unmask)
+for Q in qubits:
+    punch_out   = PunchOut(Q, number_of_qubits, outerfolder_plots, experiment, Unmask)
 
-start_gain, stop_gain, num_points =  0.1, 1, 10 # for QUIET 0.55, 0.775, 5 #
-#start_gain, stop_gain, num_points = 0.0, 0.8, 10 # for NEXUS
+    #start_gain, stop_gain, num_points =  0.1, 1, 5 # for QUIET 0.55, 0.775, 5 #
+    start_gain, stop_gain, num_points = 0.1, 1.0, 15 # for NEXUS
+    punch_out.run(experiment.soccfg, experiment.soc, start_gain, stop_gain, num_points, DAC_att, ADC_att, plot_Center_shift = True, plot_res_sweeps = True, plot_2d = True)
 
-punch_out.run(experiment.soccfg, experiment.soc, start_gain, stop_gain, num_points, DAC_att, ADC_att, plot_Center_shift = True, plot_res_sweeps = True)
-
-del punch_out
+    del punch_out
 del experiment

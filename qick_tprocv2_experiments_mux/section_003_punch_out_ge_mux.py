@@ -50,7 +50,7 @@ class PunchOut:
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
         print(f'Punch Out configuration: ', self.config)
 
-    def run(self, soccfg, soc, start_gain, stop_gain, num_points, DAC_att, ADC_att, plot_Center_shift = True, plot_res_sweeps = True):
+    def run(self, soccfg, soc, start_gain, stop_gain, num_points, DAC_att, ADC_att, plot_Center_shift = True, plot_res_sweeps = True, plot_2d = True):
         fpts = self.exp_cfg["start"] + self.exp_cfg["step_size"] * np.arange(self.exp_cfg["steps"])
         fcenter = self.config['res_freq_ge']
 
@@ -61,6 +61,9 @@ class PunchOut:
 
         if plot_res_sweeps:
             self.plot_res_sweeps(fpts, fcenter, frequency_sweeps, power_sweep, DAC_att, ADC_att,)
+
+        if plot_2d:
+            self.plot_2d_sweeps(fpts, fcenter, frequency_sweeps, resonance_vals, power_sweep, DAC_att, ADC_att)
 
         return
 
@@ -111,7 +114,9 @@ class PunchOut:
             plt.title(f"Resonator {i + 1}", pad=10)
 
         # Add a main title to the figure
-        plt.suptitle(f"Frequency vs Probe Gain, _DAC_Att_{DAC_att}, ADC_ATT_{ADC_att}", fontsize=24, y=0.95)
+        #plt.suptitle(f"Frequency vs Probe Gain, _DAC_Att_{DAC_att}, ADC_ATT_{ADC_att}", fontsize=24, y=0.95)
+        plt.suptitle(f"Frequency vs Probe Gain, Q{self.QubitIndex+1}", fontsize=24, y=0.95)
+
 
         plt.tight_layout(pad=2.0)
 
@@ -119,10 +124,46 @@ class PunchOut:
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_punch_out_center_shift_DAC_Att_{DAC_att}_ADC_ATT_{ADC_att}.png")
+        #file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_punch_out_center_shift_DAC_Att_{DAC_att}_ADC_ATT_{ADC_att}.png")
+        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_punch_out_center_shift_Q{self.QubitIndex+1}.png")
         plt.savefig(file_name, dpi=300)
         plt.close()
         return
+
+    def plot_2d_sweeps(self, fpts, fcenter, frequency_sweeps, resonance_vals, power_sweep, DAC_att, ADC_att):
+        plt.figure(figsize=(12, 8))
+
+        # Set larger font sizes
+        plt.rcParams.update({
+            'font.size': 14,  # Base font size
+            'axes.titlesize': 18,  # Title font size
+            'axes.labelsize': 16,  # Axis label font size
+            'xtick.labelsize': 14,  # X-axis tick label size
+            'ytick.labelsize': 14,  # Y-axis tick label size
+            'legend.fontsize': 14,  # Legend font size
+        })
+        q = self.QubitIndex
+        amps_qubit = np.array([amps[q,:] for amps in frequency_sweeps]) #get amps for one qubit, shape: (len(power_sweep), len(fpts))
+        mesh = plt.pcolormesh(fpts + fcenter[q], power_sweep, amps_qubit, shading='auto')
+        plt.xlabel("Frequency (MHz)", fontweight='normal')
+        plt.ylabel("Gain", fontweight='normal')
+        cbar = plt.colorbar(mesh)
+        cbar.set_label("Amplitude (a.u)", fontweight='normal')
+        plt.title(f"Resonance at Various Probe Gains, Q{self.QubitIndex+1}", fontsize=24)
+
+        plt.tight_layout(pad=2.0)
+
+        outerFolder_expt = os.path.join(self.outerFolder, "punch_out")
+        self.experiment.create_folder_if_not_exists(outerFolder_expt)
+        now = datetime.datetime.now()
+        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+        # file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_punch_out_res_sweep_DAC_Att_{DAC_att}_ADC_ATT_{ADC_att}.png")
+        file_name = os.path.join(outerFolder_expt,
+                                 f"{formatted_datetime}_punch_out_2d_res_sweep_Q{self.QubitIndex + 1}.png")
+        plt.savefig(file_name, dpi=300)
+        plt.close()
+        return
+
 
     def plot_res_sweeps(self, fpts, fcenter, frequency_sweeps, power_sweep, DAC_att, ADC_att):
         plt.figure(figsize=(12, 8))
@@ -148,14 +189,16 @@ class PunchOut:
                 plt.legend(loc='upper left', fontsize='6', title='Gain')
 
         # Add a main title to the figure
-        plt.suptitle(f"Resonance At Various Probe Gains DAC_Att_{DAC_att}, ADC_ATT_{ADC_att}", fontsize=24, y=0.95)
+        #plt.suptitle(f"Resonance At Various Probe Gains DAC_Att_{DAC_att}, ADC_ATT_{ADC_att}", fontsize=24, y=0.95)
+        plt.suptitle(f"Resonance At Various Probe Gains, Q{self.QubitIndex +1}", fontsize=24, y=0.95)
 
         plt.tight_layout(pad=2.0)
         outerFolder_expt = os.path.join(self.outerFolder, "punch_out")
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_punch_out_res_sweep_DAC_Att_{DAC_att}_ADC_ATT_{ADC_att}.png")
+        #file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_punch_out_res_sweep_DAC_Att_{DAC_att}_ADC_ATT_{ADC_att}.png")
+        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_punch_out_res_sweep_Q{self.QubitIndex+1}.png")
         plt.savefig(file_name, dpi=300)
         plt.close()
         return

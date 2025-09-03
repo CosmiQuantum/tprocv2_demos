@@ -91,7 +91,7 @@ class TOFExperiment:
             plot.legend()
             plot.set_ylabel("a.u.")
             plot.set_xlabel("us")
-            plot.axvline(0.6, c='r')
+            plot.axvline(0.7, c='r')
 
             phase_offset = np.angle(iq_list[i].dot([1, 1j]).sum(), deg=True)
             # print("measured phase %f degrees" % (phase_offset))

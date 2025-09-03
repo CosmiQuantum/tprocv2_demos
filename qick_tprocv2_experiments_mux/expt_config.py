@@ -443,17 +443,17 @@ elif FRIDGE == "NEXUS":
     expt_cfg = {
         "tof": {
             "reps": 1,  # reps doesnt make a difference here, leave it at 1
-            "soft_avgs": 2000, #500,
+            "soft_avgs": 1000, #500,
             "relax_delay": 0,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
         "res_spec": {
-            "reps": 500,
+            "reps": 1500, #500,
             "rounds": 1,
             "start": -0.5, #-3.5,  # [MHz]
-            "step_size": 0.02, #0.12,  # [MHz]
-            "steps": 51, #101,
+            "step_size": 0.01, #0.12,  # [MHz]
+            "steps": 101, #101,
             "relax_delay": 20,  # [us]
             "relax_delay_ef": 600,
             "list_of_all_qubits": list_of_all_qubits,
