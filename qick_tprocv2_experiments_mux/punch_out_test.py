@@ -43,7 +43,7 @@ for Q in qubits:
     punch_out   = PunchOut(Q, number_of_qubits, outerfolder_plots, experiment, Unmask)
 
     #start_gain, stop_gain, num_points =  0.1, 1, 5 # for QUIET 0.55, 0.775, 5 #
-    start_gain, stop_gain, num_points = 0.1, 1.0, 15 # for NEXUS
+    start_gain, stop_gain, num_points = 0.5, 1.0, 15 # for NEXUS
     punch_out.run(experiment.soccfg, experiment.soc, start_gain, stop_gain, num_points, DAC_att, ADC_att, plot_Center_shift = True, plot_res_sweeps = True, plot_2d = True)
 
     del punch_out

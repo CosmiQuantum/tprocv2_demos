@@ -435,7 +435,8 @@ if FRIDGE == "QUIET":
 
 elif FRIDGE == "NEXUS":
     VNA_res = np.array([6187.9, 5828.5, 6074.6, 5959.3]) #Run 33 VNA low power   # Old [6187.8, 5828.3, 6074.6, 5959.3])
-    VNA_qubit = np.array([4909, 4749.4, 4569, 4759])  # Found on NR25 with the QICK
+    VNA_qubit = np.array([4921.5, 4761.8, 4575.8, 4784.6]) #Found with QICK, 9/3
+    # #np.array([4909, 4749.4, 4569, 4759])  # Found on NR25 with the QICK
 
     tot_num_of_qubits = 4
     list_of_all_qubits = list(range(tot_num_of_qubits))
@@ -451,8 +452,8 @@ elif FRIDGE == "NEXUS":
         "res_spec": {
             "reps": 1500, #500,
             "rounds": 1,
-            "start": -0.5, #-3.5,  # [MHz]
-            "step_size": 0.01, #0.12,  # [MHz]
+            "start": -0.3, #-0.5, #-3.5,  # [MHz]
+            "step_size": 0.006, #0.12,  # [MHz]
             "steps": 101, #101,
             "relax_delay": 20,  # [us]
             "relax_delay_ef": 600,
@@ -481,28 +482,28 @@ elif FRIDGE == "NEXUS":
         "qubit_spec_ge": {
             "reps": 700,  # 100
             "rounds": 1,  # 10
-            "start": list(VNA_qubit - 70),  # [MHz]
-            "stop": list(VNA_qubit + 70),  # [MHz]
+            "start": list(VNA_qubit - 15), #70),  # [MHz]
+            "stop": list(VNA_qubit + 15), #70),  # [MHz]
             "steps": 300,
             "relax_delay": 0.5,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
         "bias_qubit_spec_ge": {
-            "reps": 700,  # 100
+            "reps": 800,  # 100
             "rounds": 1,  # 10
-            "start": list(VNA_qubit - 7),  # [MHz]
-            "stop": list(VNA_qubit),  # [MHz]
-            "steps": 400,
+            "start": list(VNA_qubit - 5),  # [MHz]
+            "stop": list(VNA_qubit + 5),  # [MHz]
+            "steps": 150,
             "relax_delay": 0.5,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
         "power_rabi_ge": {
-            "reps": 500,  # 100
+            "reps": 1000,  # 100
             "rounds": 1,  # 5
-            "start": [0.0] * 6,  # [DAC units]
-            "stop": [1.0] * 6,  # [DAC units]
+            "start": [0.0] * 4,  # [DAC units]
+            "stop": [1.0] * 4,  # [DAC units]
             "steps": 100,
             "relax_delay": 500,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
@@ -524,8 +525,8 @@ elif FRIDGE == "NEXUS":
         "T1_ge": {
             "reps": 1000,  # 300
             "rounds": 1,  # 1
-            "start": [0.0] * 6,  # [us]
-            "stop": [150] * 6,  # [250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
+            "start": [0.0] * 4,  # [us]
+            "stop": [150] * 4,  # [250.0] * 4,  # [us] ### Should be ~10x T1! Should change this per qubit.
             "steps": 80,
             "relax_delay": 500,  # [us] ### Should be >10x T1!
             "wait_time": 0.0,  # [us]
@@ -535,8 +536,8 @@ elif FRIDGE == "NEXUS":
         "Ramsey_ge": {
             "reps": 2000,  # 300
             "rounds": 1,  # 10
-            "start": [0.0] * 6,  # [us]
-            "stop": [8.0] * 6,  # [us]
+            "start": [0.0] * 4,  # [us]
+            "stop": [8.0] * 4,  # [us]
             "steps": 100,
             "ramsey_freq": 0.3,  # [MHz]
             "relax_delay": 500,
@@ -548,8 +549,8 @@ elif FRIDGE == "NEXUS":
         "SpinEcho_ge": {
             "reps": 2000,
             "rounds": 1,
-            "start": [0.0] * 6,  # [us]
-            "stop": [15] * 6,  # [us]
+            "start": [0.0] * 4,  # [us]
+            "stop": [15] * 4,  # [us]
             "steps": 100,
             "ramsey_freq": 0.6,  # [MHz]
             "relax_delay": 500,  # [us]

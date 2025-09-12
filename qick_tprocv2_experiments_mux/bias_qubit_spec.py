@@ -1,3 +1,5 @@
+from dask.array import outer
+
 from build_task import *
 from build_state import *
 from expt_config import *
@@ -11,41 +13,53 @@ import time
 from NetDrivers import E36300
 
 class BiasQubitSpectroscopy:
-    def __init__(self, QubitIndex, outerFolder, experiment):
+    def __init__(self, QubitIndex, number_of_qubits, outerFolder, experiment, unmasking_resgain=False):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "bias_qubit_spec_ge"
         self.experiment = experiment
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.exp_cfg = expt_cfg[self.expt_name]
-        self.q_config = all_qubit_state(self.experiment)
+        self.number_of_qubits = number_of_qubits
+        #self.list_of_all_qubits = list_of_all_qubits
         self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
+
+        if unmasking_resgain:
+            self.exp_cfg["list_of_all_qubits"] = [self.QubitIndex]
+
+        self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
 
         print(f'Q {self.QubitIndex + 1} Qubit Spec configuration: ', self.config)
 
-    def run(self, soccfg, soc, start_volt, stop_volt, volt_pts, plot_sweeps=True, plot_2d=True):
+    def run(self, soccfg, soc, start_volt, stop_volt, volt_pts, plot_sweeps=True, plot_2d=True, plot_2dbacksub = True):
+
+        now = datetime.datetime.now()
+        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
 
         vsweep = np.linspace(start_volt, stop_volt, volt_pts, endpoint=True)
-        Is, Qs, amps, freqs = self.sweep_bias(soccfg, soc, vsweep)
+        Is, Qs, amps, freqs = self.sweep_bias(soccfg, soc, vsweep, formatted_datetime, save_csvs=True)
 
         if plot_sweeps:
-            self.plot_sweeps(vsweep, Is, Qs, freqs)
+            self.plot_sweeps(vsweep, Is, Qs, freqs, formatted_datetime)
 
         if plot_2d:
-            self.plot2d(vsweep, Is, Qs, amps, freqs)
+            self.plot2d(vsweep, Is, Qs, amps, freqs, formatted_datetime)
+
+        if plot_2dbacksub:
+            self.plot2d_backsub(vsweep, Is, Qs, amps, freqs, formatted_datetime)
 
         return
 
-    def sweep_bias(self, soccfg, soc, vsweep):
+    def sweep_bias(self, soccfg, soc, vsweep, timestamp, save_csvs=True):
 
         Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44', '192.168.0.41'] #IP address of bias PS (qubits 1-3 are the same PS)
         Bias_ch = [1, 2, 3, 1] #Channel number of qubit 1-4 on associated PS
         qubit_index = int(self.QubitIndex)
 
         print(f"Qubit_index {qubit_index}")
-        print(f"PSip {Bias_PS_ip[qubit_index]}")
-        print(f"PSch {Bias_ch[qubit_index]}")
+        print(f"PS ip {Bias_PS_ip[qubit_index]}")
+        print(f"PS ch {Bias_ch[qubit_index]}")
         BiasPS = E36300(Bias_PS_ip[qubit_index], server_port = 5025)
 
         BiasPS.setVoltage(0, Bias_ch[qubit_index])
@@ -54,11 +68,12 @@ class BiasQubitSpectroscopy:
         I_arr = []
         Q_arr = []
         amps_arr = []
-        freq_arr = []
+        freq_arrs = []
 
         for index, v in enumerate(vsweep):
-            print(f"Setting bias to {v}V")
-            BiasPS.setVoltage(v, Bias_ch[qubit_index])
+            voltage = round(v,3)
+            print(f"Setting bias to {voltage}V")
+            BiasPS.setVoltage(voltage, Bias_ch[qubit_index])
             time.sleep(5)
 
 
@@ -68,37 +83,53 @@ class BiasQubitSpectroscopy:
             Q = iq_list[self.QubitIndex][0, :, 1]
             amps = np.abs(I + 1j * Q)
             freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
-            print(freqs)
+            #print(freqs)
             I_arr.append(I)
             Q_arr.append(Q)
             amps_arr.append(amps)
-            freq_arr.append(freqs)
+            freq_arrs.append(freqs)
         BiasPS.disable(Bias_ch[qubit_index])
+        BiasPS.setVoltage(0, Bias_ch[qubit_index])
 
-        '''outerFolder_expt = os.path.join(self.outerFolder, 'bias_spec')
-        self.experiment.create_folder_if_not_exists(outerFolder_expt)
-        now = datetime.datetime.now()
-        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name_Iarr = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex + 1}_Iarr")
-        file_name_Qarr = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex + 1}_Qarr")
-        file_name_Amparr = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex + 1}_Amparr")
-        #file_name_freqarr = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex + 1}_freqarr")
-        with open(f"{file_name_Iarr}.csv", 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerows(I_arr)
-        with open(f"{file_name_Qarr}.csv", 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerows(Q_arr)
-        with open(f"{file_name_Amparr}.csv", 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerows(amps_arr)
-        # with open(f"{file_name_freqarr}.csv", 'w', newline='') as f:
-        #     writer = csv.writer(f)
-        #     writer.writerows(freq_arr)'''
+        freq_arr = freq_arrs[0]
+
+        # #Resave as numpy arrays for plotting
+        # I_arr = np.array(I_list)
+        # Q_arr = np.array(Q_list)
+        # amps_arr = np.array(amps_list) #shape  is (len(vsweep), len(freqs))
+        # freq_arr = np.array(freq_list[0]) #Just saving one freq sweep since they're all the same
+        # print(freq_arr)
+
+        if save_csvs==True:
+
+            outerFolder_expt = os.path.join(self.outerFolder, timestamp)
+            self.experiment.create_folder_if_not_exists(outerFolder_expt)
+            # now = datetime.datetime.now()
+            # formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            file_name_Iarr = os.path.join(outerFolder_expt, f"{timestamp}_BiasSpec_Q{self.QubitIndex + 1}_Iarr")
+            file_name_Qarr = os.path.join(outerFolder_expt, f"{timestamp}_BiasSpec_Q{self.QubitIndex + 1}_Qarr")
+            file_name_amparr = os.path.join(outerFolder_expt, f"{timestamp}_BiasSpec_Q{self.QubitIndex + 1}_amparr")
+            file_name_freqarr = os.path.join(outerFolder_expt, f"{timestamp}_BiasSpec_Q{self.QubitIndex + 1}_freqarr")
+            file_name_vsweep = os.path.join(outerFolder_expt, f"{timestamp}_BiasSpec_Q{self.QubitIndex + 1}_vsweep")
+            with open(f"{file_name_Iarr}.csv", 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerows(I_arr)
+            with open(f"{file_name_Qarr}.csv", 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerows(Q_arr)
+            with open(f"{file_name_amparr}.csv", 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerows(amps_arr)
+            with open(f"{file_name_freqarr}.csv", 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(freq_arr)
+            with open(f"{file_name_vsweep}.csv", 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(vsweep)
 
         return I_arr, Q_arr, amps_arr, freq_arr
 
-    def plot_sweeps(self, vsweep, I_arr, Q_arr, freq_arr):
+    def plot_sweeps(self, vsweep, I_arr, Q_arr, freq_arr, timestamp):
         #plt.figure(figsize=(12, 8))
 
         # Set larger font sizes
@@ -113,48 +144,100 @@ class BiasQubitSpectroscopy:
 
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex='all')
         #plt.rcParams.update({'font.size': 18})
-        ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
+        ax1.set_ylabel("I Amplitude (a.u.)", fontsize=18)
         ax1.tick_params(axis='both', which='major', labelsize=16)
-        ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
+        ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=18)
         ax2.tick_params(axis='both', which='major', labelsize=16)
-        ax2.set_xlabel("Qubit Frequency (MHz)", fontsize=20)
+        ax2.set_xlabel("Qubit Frequency (MHz)", fontsize=18)
 
         for volt_index in range(len(vsweep)):
-            ax1.plot(freq_arr[volt_index], I_arr[volt_index], linewidth=2, label=round(vsweep[volt_index],3))
-            ax2.plot(freq_arr[volt_index], Q_arr[volt_index], line_width=2, label = round(vsweep[volt_index],3))
+            ax1.plot(freq_arr, I_arr[volt_index], linewidth=2, label=round(vsweep[volt_index],3))
+            ax2.plot(freq_arr, Q_arr[volt_index], linewidth=2, label = round(vsweep[volt_index],3))
 
         ax1.legend(fontsize='6', title='Voltage')
         ax2.legend(fontsize='6', title='Voltage')
-        fig.suptitle(f"Qubit Spectroscopy Q{self.QubitIndex+1} at Voltage Bias Points", fontsize=24)
+        fig.suptitle(f"Qubit Spectroscopy Q{self.QubitIndex+1} at Voltage Bias Points", fontsize=20)
 
         plt.tight_layout()
 
         # Adjust the top margin to make room for the title
         plt.subplots_adjust(top=0.93)
 
-        outerFolder_expt = os.path.join(self.outerFolder, 'bias_spec')
+        outerFolder_expt = os.path.join(self.outerFolder, timestamp)
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
-        now = datetime.datetime.now()
-        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex+1}_sweeps.png")
+        file_name = os.path.join(outerFolder_expt, f"{timestamp}_BiasSpec_Q{self.QubitIndex+1}_sweeps.png")
         fig.savefig(file_name, dpi=300, bbox_inches='tight')
         plt.close(fig)
         return
 
-    def plot2d(self, vsweep, I_arr, Q_arr, amps_arr, freq_arr):
-        plt.imshow(amps_arr, aspect='auto', origin='lower',
-                   extent=[freq_arr[0], freq_arr[-1], vsweep[0], vsweep[-1]])
-        plt.colorbar(label="Amplitude (a.u.)")
-        plt.xlabel("Qubit Frequency (MHz)")
-        plt.ylabel("Voltage Bias (V)")
-        plt.title(f"Bias Spectrocopy for Q{self.QubitIndex+1}")
+    def plot2d(self, vsweep, I_arr, Q_arr, amps_arr, freq_arr, timestamp):
+        Is = np.array(I_arr)
+        I_val = Is.astype(float)
+        Qs = np.array(Q_arr)
+        Q_val = Qs.astype(float)
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10,8), sharex='all')
+        ax1.set_ylabel("Voltage Bias (V)", fontsize = 16)
+        ax1.tick_params(axis='both', which='major', labelsize=14)
+        im1 = ax1.imshow(I_val, aspect='auto', origin='lower',
+                       extent = [float(freq_arr[0]), float(freq_arr[-1]), vsweep[0], vsweep[-1]])
+        fig.colorbar(im1, label="I Amplitude (a.u.)")
+        ax2.set_ylabel("Voltage Bias (V)", fontsize = 16)
+        ax2.tick_params(axis='both', which='major', labelsize=14)
+        ax2.set_xlabel("Qubit Frequency (MHz)", fontsize=16)
+        im2 = ax2.imshow(Q_val, aspect='auto', origin='lower',
+                       extent = [float(freq_arr[0]), float(freq_arr[-1]), vsweep[0], vsweep[-1]])
+        fig.colorbar(im2, label="Q Amplitude (a.u.)")
+
+        fig.suptitle(f"Bias Spectrocopy for Q{self.QubitIndex+1}", fontsize = 18)
+
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.89)
+
 
         # Save the plot
-        outerFolder_expt = os.path.join(self.outerFolder, 'bias_spec')
+        outerFolder_expt = os.path.join(self.outerFolder, timestamp)
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
-        now = datetime.datetime.now()
-        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_BiasSpec_Q{self.QubitIndex+1}_2d.png")
+        file_name = os.path.join(outerFolder_expt, f"{timestamp}_BiasSpec_Q{self.QubitIndex+1}_2d.png")
+        plt.savefig(file_name, dpi=300, bbox_inches='tight')
+        plt.close()
+        return
+
+    def plot2d_backsub(self, vsweep, I_arr, Q_arr, amps_arr, freq_arr, timestamp):
+        Is = np.array(I_arr)
+        I_val = Is.astype(float)
+        I_bkgd = np.zeros_like(I_val)
+        for i in range(0, len(I_val)):
+            I_bkgd[i] = np.mean(I_val[i])
+            I_val[i] = I_val[i] - I_bkgd[i]
+        Qs = np.array(Q_arr)
+        Q_val = Qs.astype(float)
+        Q_bkgd = np.zeros_like(Q_val)
+        for i in range(0, len(Q_val)):
+            Q_bkgd[i] = np.mean(Q_val[i])
+            Q_val[i] = Q_val[i] - Q_bkgd[i]
+
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex='all')
+        ax1.set_ylabel("Voltage Bias (V)", fontsize=16)
+        ax1.tick_params(axis='both', which='major', labelsize=14)
+        im1 = ax1.imshow(I_val, aspect='auto', origin='lower',
+                       extent=[float(freq_arr[0]), float(freq_arr[-1]), vsweep[0], vsweep[-1]])
+        fig.colorbar(im1, label="I Amplitude bkg sub (a.u.)")
+        ax2.set_ylabel("Voltage Bias (V)", fontsize=16)
+        ax2.tick_params(axis='both', which='major', labelsize=14)
+        ax2.set_xlabel("Qubit Frequency (MHz)", fontsize=16)
+        im2 = ax2.imshow(Q_val, aspect='auto', origin='lower',
+                       extent=[float(freq_arr[0]), float(freq_arr[-1]), vsweep[0], vsweep[-1]])
+        fig.colorbar(im2, label="Q Amplitude bkg sub (a.u.)")
+
+        fig.suptitle(f"Bias Spectrocopy for Q{self.QubitIndex + 1}, Bkgd Sub", fontsize=18)
+
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.89)
+
+        # Save the plot
+        outerFolder_expt = os.path.join(self.outerFolder, timestamp)
+        self.experiment.create_folder_if_not_exists(outerFolder_expt)
+        file_name = os.path.join(outerFolder_expt, f"{timestamp}_BiasSpec_Q{self.QubitIndex + 1}_2d_backsub.png")
         plt.savefig(file_name, dpi=300, bbox_inches='tight')
         plt.close()
         return

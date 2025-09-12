@@ -179,8 +179,9 @@ class PunchOut:
         })
         for power_index in range(len(power_sweep)):
             for i in range(self.number_of_qubits):
+                offset = (max(frequency_sweeps[0][i])-min(frequency_sweeps[0][i]))/2
                 plt.subplot(2, 3, i + 1)
-                plt.plot(fpts + fcenter[i], frequency_sweeps[power_index][i], '-', linewidth=1.5,
+                plt.plot(fpts + fcenter[i], frequency_sweeps[power_index][i] + offset*power_index, '-', linewidth=1.5,
                          label=round(power_sweep[power_index], 3))
 
                 plt.xlabel("Frequency (MHz)", fontweight='normal')

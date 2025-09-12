@@ -40,7 +40,7 @@ from analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
 ################################################ Run Configurations ####################################################
 st = time.time()
 #
-n= 1
+n= 3
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
@@ -68,19 +68,19 @@ print(FRIDGE)
 #Data saving info
 run_name = 'run33'
 device_name = '4charge'
-substudy_txt_notes = ('Initial Checkout')#('Active Reset Test')##('round robin with relax delays of 1000us for T1 and T2 measurements.')#('Active Reset Test')#('Normal Round Robin during cooldown, now everything works properly, set debug to false to run '
+substudy_txt_notes = ('Res spec at gain pt')#('Active Reset Test')##('round robin with relax delays of 1000us for T1 and T2 measurements.')#('Active Reset Test')#('Normal Round Robin during cooldown, now everything works properly, set debug to false to run '
                       # 'overFalsenight and running in terminal with repeater script')
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": True, "q_spec": False, "ss": False, "rabi":False, "ss_gef": False, "test_act":False, "fh_rabi":False,
+run_flags = {"tof": False, "res_spec": True, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False, "test_act":False, "fh_rabi":False,
              "t1": False, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": False, "fh_q_spec":False, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 # run_flags = {"tof": False, "res_spec": False, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False, "test_act":False,
 #              "t1": False, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": True, "fh_q_spec":True, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 
 # optimization outputs from qick board, unmasking set to true
-res_leng_vals = [5.0, 5.0, 5.0, 5.0] #Not optimized yet
-res_gain = [1, 1, 1, 1] #Not optimized yet
-freq_offsets = [0, 0, 0, 0] #Not optimized yet
+res_leng_vals = [6.0, 6.0, 5.0, 5.0] #Q1, Q2 optimized, pre-TWPA
+res_gain = [0.7, 0.85, 0.7, 0.8] #[1, 1, 1, 1] #Q1, Q2 optimized, pre-TWPA
+freq_offsets = [-0.4286, -0.1429, 0, 0] #Q1, Q2 optimized, pre-TWPA
 
 qubit_freqs_ef = [None]*4
 # increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
@@ -91,7 +91,7 @@ figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 #Folders
 study = 'Initial Checkout'
-sub_study = 'ResSpec'#junkyard'#'AB_data_relax_delays_1000us'#'Active_Reset_Test'#'temperature_sweep'#'AB_tests_data'
+sub_study = 'ResSpec' #'SSF_PostRabi'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/home/nexusadmin/Documents/Data/{run_name}/"):
@@ -551,6 +551,7 @@ while j < n:
             ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs, experiment = experiment,
                             verbose = verbose, logger = rr_logger, unmasking_resgain = unmask)
             fid, angle, iq_list_g, iq_list_e, sys_config_ss = ss.run()
+            print('fid', fid)
             I_g = iq_list_g[QubitIndex][0].T[0]
             Q_g = iq_list_g[QubitIndex][0].T[1]
             I_e = iq_list_e[QubitIndex][0].T[0]

@@ -78,7 +78,7 @@ class AmplitudeRabiExperiment:
         else:
             amp_rabi = AmplitudeRabiProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
             print("self.config['sigma']",self.config['sigma'])
-            print("self.config['sigma_fh']", self.config['sigma_fh'])
+            #rint("self.config['sigma_fh']", self.config['sigma_fh'])
             if self.live_plot:
                 I, Q, gains = self.live_plotting(amp_rabi, thresholding)
             else:
