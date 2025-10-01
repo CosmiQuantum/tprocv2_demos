@@ -92,7 +92,7 @@ class T1Measurement:
                 print(f'set t1 relax delay to {relax_delay} us')
 
     def run(self, thresholding=False):
-        now = datetime.datetime.now()
+        # now = datetime.datetime.now()
         t1 = T1Program(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
 
         if self.live_plot:
@@ -117,7 +117,7 @@ class T1Measurement:
             q1_fit_exponential, T1_est, T1_err = None, None, None
 
         if self.plot_results:
-            self.plot_results( I, Q, delay_times, now)
+            self.plot_results( I, Q, delay_times)
 
         if self.save_shots:
             raw_0 = t1.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
@@ -209,7 +209,7 @@ class T1Measurement:
 
         return q1_fit_exponential, T1_err, T1_est, plot_sig
 
-    def plot_results(self, I, Q, delay_times, now, config = None, fig_quality =100):
+    def plot_results(self, I, Q, delay_times, config = None, fig_quality =100):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
