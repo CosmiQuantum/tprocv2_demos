@@ -502,7 +502,7 @@ class SingleShot_ef:
             # return fid, threshold_ge, theta, ig_new, ie_new, if_new
 
             # return fid, theta_ef, ie_new, qe_new, if_new, qf_new, threshold_ef
-            return fid, fid_fh, theta_ef, theta_fh, ie_new, qe_new, if_new, qf_new, threshold_ef, ih_new, qh_new, threshold_fh
+        return fid, fid_fh, theta_ef, theta_fh, ie_new, qe_new, if_new, qf_new, threshold_ef, ih_new, qh_new, threshold_fh
 
 
     def create_folder_if_not_exists(self, folder):

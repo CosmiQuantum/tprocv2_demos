@@ -186,7 +186,6 @@ class SingleShot:
         ssp_e = SingleShotProgram_e(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
         iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=True)
         e_shots= ssp_e.get_raw()
-        # print('e_shots[0]',e_shots[0])
 
         # fid, angle = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
         fid, angle = self.plot_results(g_shots, e_shots, self.QubitIndex)
