@@ -41,7 +41,7 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
 
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play pi pulse
-        self.delay_auto(0.01)  # wait_time after last pulse
+        self.delay_auto(0.0)  # wait_time after last pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'], ddr4=True)
         self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 

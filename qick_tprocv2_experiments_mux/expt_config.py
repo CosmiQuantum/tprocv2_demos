@@ -3,13 +3,10 @@ import numpy as np
 FRIDGE = "QUIET"  # change to "NEXUS" as needed
 
 if FRIDGE == "QUIET":
-    VNA_res = np.array([6223.097, 6284.61, 6343.95, 6414.9, 6481.4, 6547.09])#*1000  # run 5
-    #VNA_res = np.array([6217.011, 6275.7973, 6335.1068, 6407.052, 6476.1091, 6538])
-    # VNA_res = np.array([6191.519, 6216, 6292.321, 6405.85, 6432.959, 6468.441,]) # run 4a
-    VNA_qubit = np.array([4184.1, 3823.37, 4162.9, 4467.37, 4467.23, 5006.13])  # Freqs of Qubit g/e Transition
-    #VNA_qubit = np.array([4189.8105, 3820.4723, 4156.53, 4462.374, 4471.4036, 4997.86])
-    ef_freqs = np.array([4009.81, 3645.58, 3988.21, 4292.73, 4292.73, 4838.86]) # Freqs of Qubit e/f Transition, updated for run 7
-    fh_freqs = np.array([3820.97, 3450.85, 3798.97, 4110, 4660, 4660.28])
+    VNA_res = np.array([6223.097, 6284.55, 6343.95, 6414.934, 6481.4, 6547.250])# ge resonator freqs, updated for run 8, 10/2
+    VNA_qubit = np.array([4184.05, 3823.35, 4162.87, 4467.36, 4475.01, 5006.15])  # Qubit freqs g/e Transition, updated for run 8, 10/2
+    ef_freqs = np.array([4009.83, 3645.54, 3988.22, 4295.32, 4302.93, 4838.87]) # Qubit freqs e/f Transition, updated for run 8, 10/2
+    fh_freqs = np.array([3820.97, 3450.85, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition
     # Set this for your experiment
     tot_num_of_qubits = 6
 
@@ -29,7 +26,7 @@ if FRIDGE == "QUIET":
             "start": -30,  # -4 #[MHz]
             "step_size": 0.3,#0.01,  # [MHz]
             "steps": 200,#,200,#70
-            "relax_delay": 5,  # [us]
+            "relax_delay": 10, # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
@@ -39,7 +36,7 @@ if FRIDGE == "QUIET":
             "start": -2,  # [MHz]
             "step_size": 0.05,  # [MHz]
             "steps": 100,
-            "relax_delay": 600,  # [us]
+            "relax_delay": 1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
@@ -49,7 +46,7 @@ if FRIDGE == "QUIET":
             "start": list(VNA_qubit-4), # [MHz] #-300 #-10 # -4
             "stop": list(VNA_qubit+4), # [MHz] #+10 # 4
             "steps": 450, # 227
-            "relax_delay": 0, #1000, # [us]
+            "relax_delay":10,#1000 # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 

@@ -75,7 +75,7 @@ class QICK_experiment:
                 #"res_freq_ge": [6217, 6276, 6335, 6407, 6476, 6538],  # MHz, run 5
                 #'res_freq_ge': [6217.011, 6275.7973, 6335.1068, 6407.052, 6476.1091, 6538], # Arianna 3/27/
                 #'res_freq_ge': [6216.811, 6275.9373, 6335, 6407.0338, 6475.8835, 6538], #Joyce 3/11
-                'res_freq_ge': [6223.097, 6284.63, 6343.98, 6414.9, 6481.4, 6547.08], #updated by Kester for run 7, Qick board, 6418.4 R5
+                'res_freq_ge': [6223.097, 6284.55, 6343.95, 6414.934, 6481.4, 6547.250], #updated by Arianna for run 8, 10/2
                 #'res_freq_ge': [6219.097, 6284.55, 6343.95, 6414.934, 6418.4, 6547.25],  # updated by Kester for run 7, QICK box
 
                 # "res_freq_ge": [6191.419, 6216.1, 6292.361, 6405.77, 6432.759, 6468.481],  # MHz, run 4a
@@ -86,7 +86,7 @@ class QICK_experiment:
                 # "res_gain_ge": [1,1,0.7,0.7,0.7,1], #[0.4287450656184295, 0.4903077560386716, 0.4903077560386716, 0.3941941738241592, 0.3941941738241592, 0.4903077560386716],  # DAC units
                 # "res_freq_ef": [7149.44, 0, 0, 0, 0, 0], # [MHz]
                 # "res_gain_ef": [0.6, 0, 0, 0, 0, 0], # [DAC units]
-                "res_freq_ef": [6223.016, 6284.544, 6343.861, 6414.893, 6414.893, 6546.754],  # [MHz] updated by arianna for run 7
+                "res_freq_ef": [6222.923, 6284.426, 6343.882, 6414.8, 6481.282, 6547.128],  # [MHz] updated by arianna for run 8, 10/2
                 "res_gain_ef": [0.95,0.9,0.95,0.55,0.55,0.95],  # [DAC units]
                 "res_freq_fh": [6223.016, 6284.544, 6343.861, 6414.893, 6414.893, 6546.754],  # [MHz]
                 "res_gain_fh": [0.95,0.9,0.95,0.55,0.55,0.95],  # [DAC units]
@@ -108,7 +108,7 @@ class QICK_experiment:
 
             # Qubit Configuration
             self.qubit_cfg = {
-                "qubit_freq_ge": [4184.1, 3823.37, 4162.91, 4467.37, 4467.23, 5006.11],  # Joyce 3/11
+                "qubit_freq_ge": [4184.05, 3823.35, 4162.87, 4467.36, 4475.01, 5006.15],  # Arianna 10/2
                 "qubit_freq_chevron_detuned_ge": [4189.7582, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86], # Olivia May 17
                 "qubit_freq_ge_starked": [4189.737678, 3820.4723, 4161.3726, 4463.15226, 4471.4469, 4997.86], # Olivia 4/04 for zeno/stark tone
                 "fwhm_w01_starked": None, #for err bars
@@ -122,7 +122,7 @@ class QICK_experiment:
                 "qubit_pi_len": 0.11, # Olivia May 17th
                 # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
                 "qubit_length_ge": 15,  # 15 [us] for spec Pulse
-                "qubit_freq_ef": [4009.81, 3645.58, 3988.21, 4292.73, 4292.73, 4838.86], #Q4 not fixed, looks like it shifted quite a lot
+                "qubit_freq_ef": [4009.83, 3645.54, 3988.22, 4295.32, 4302.93, 4838.87], # Arianna 10/2
                 # [MHz] Freqs of Qubit e/f Transition
                 "qubit_freq_fh": [4016.3, 3450.8, 3988.44, 4292.73, 4292.73, 4833.17],
                 "qubit_freq_ftores": [4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17],
