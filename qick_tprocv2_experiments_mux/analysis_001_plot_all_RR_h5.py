@@ -75,6 +75,25 @@ class PlotAllRR:
         numbers = [float(x) for x in cleaned_data.split() if x]
         return numbers
 
+    import re
+
+    def process_h5_data_new(self, data):
+        if isinstance(data, bytes):
+            data_str = data.decode()
+        elif isinstance(data, str):
+            data_str = data
+        else:
+            raise ValueError("Unsupported data type. Data should be bytes or string.")
+
+        # Match numbers like: -1, +2.3, .5, 5., 1e-3, -2.3E+5
+        pattern = r"""
+            [+-]?                    # optional sign
+            (?:\d+\.\d*|\.\d+|\d+)   # int or float
+            (?:[eE][+-]?\d+)?        # optional exponent
+        """
+        nums = re.findall(pattern, data_str, flags=re.VERBOSE)
+        return [float(n) for n in nums]
+
     def string_to_float_list(self, input_string):
         try:
             # Remove 'np.float64()' parts
@@ -89,12 +108,16 @@ class PlotAllRR:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
     
-    def run(self, plot_res_spec = True, plot_q_spec = True, plot_rabi = True, rabi_rolling_avg=False, plot_ss = True,
+    def run(self, plot_res_spec_ge = True,plot_res_spec_ef = True, plot_res_spec_fh = True, plot_q_spec = True, plot_rabi = True, rabi_rolling_avg=False, plot_ss = True,
             plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = True, plot_t1 = True,
             plot_t2r = True, plot_t2e = True, plot_rabis_Qtemps = False):
 
-        if plot_res_spec:
+        if plot_res_spec_ge:
             self.load_plot_save_res_spec()
+        if plot_res_spec_ef:
+            self.load_plot_save_res_spec(exp_extension='_ef')
+        if plot_res_spec_fh:
+            self.load_plot_save_res_spec(exp_extension='_fh')
         if plot_q_spec:
             self.load_plot_save_q_spec()
         if plot_rabis_Qtemps:
@@ -117,13 +140,17 @@ class PlotAllRR:
             self.load_plot_save_t2e()
         
 
-    def load_plot_save_res_spec(self):
+    def load_plot_save_res_spec(self,exp_extension='_ge'):
         # ------------------------------------------Load/Plot/Save Res Spec------------------------------------
         outerFolder_expt = os.path.join(self.outerFolder, "Data_h5")
-        h5_files = glob.glob(os.path.join(outerFolder_expt, "Res_ge", "*.h5"))
+        h5_files = glob.glob(os.path.join(outerFolder_expt, f"Res{exp_extension}", "*.h5"))
         h5_files += glob.glob(os.path.join(outerFolder_expt, "Res", "*.h5"))
-        print(outerFolder_expt)
+        if len(h5_files) ==0:
+            h5_files = glob.glob(os.path.join(outerFolder_expt, f"res{exp_extension}", "*.h5"))
+            h5_files += glob.glob(os.path.join(outerFolder_expt, "res", "*.h5"))
+
         for h5_file in h5_files:
+
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
             H5_class_instance = Data_H5(h5_file)
             #H5_class_instance.print_h5_contents(h5_file)
@@ -147,10 +174,11 @@ class PlotAllRR:
             for q_key in populated_keys:
                 #go through each dataset in the batch and plot
                 for dataset in range(len(load_data['Res'][q_key].get('Dates', [])[0])):
+
                     date = datetime.datetime.fromtimestamp(load_data['Res'][q_key].get('Dates', [])[0][dataset])   #single date per dataset
                     freq_pts = self.process_h5_data(load_data['Res'][q_key].get('freq_pts', [])[0][dataset].decode())   # comes in as an array but put into a byte string, need to convert to list
 
-                    freq_center = self.process_h5_data(load_data['Res'][q_key].get('freq_center', [])[0][dataset].decode()) # comes in as an array but put into a string, need to convert to list
+                    freq_center = self.process_h5_data_new(load_data['Res'][q_key].get('freq_center', [])[0][dataset].decode()) # comes in as an array but put into a string, need to convert to list
                     freqs_found = self.string_to_float_list(load_data['Res'][q_key].get('Found Freqs', [])[0][dataset].decode()) #comes in as a list of floats in string format, need to convert
                     amps =  self.process_string_of_nested_lists(load_data['Res'][q_key].get('Amps', [])[0][dataset].decode())  #list of lists
                     syst_config = load_data['Res'][q_key].get('Syst Config', [])[0][dataset].decode()
@@ -162,7 +190,7 @@ class PlotAllRR:
                     round_num = load_data['Res'][q_key].get('Round Num', [])[0][dataset] #already a float
                     batch_num = load_data['Res'][q_key].get('Batch Num', [])[0][dataset]
                     freq_pts_data = load_data['Res'][q_key].get('freq_pts', [])[0][dataset].decode()
-        
+
                     # Replace whitespace between numbers with commas to make it a valid list
                     formatted_str = freq_pts_data.replace('  ', ',').replace('\n', '')
                     formatted_str = formatted_str.replace(' ', ',').replace('\n', '')
@@ -178,9 +206,9 @@ class PlotAllRR:
                     if len(freq_pts) > 0:
                         res_class_instance = ResonanceSpectroscopy(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.save_figs)
                         res_spec_cfg = exp_config['res_spec']
-                        res_class_instance.plot_results(freq_points, freq_center, amps, res_spec_cfg, self.figure_quality)
+                        res_class_instance.plot_results(freq_points, freq_center, amps, res_spec_cfg, self.figure_quality, exp_extension=exp_extension)
                         del res_class_instance
-        
+
             del H5_class_instance
 
     def load_plot_save_q_spec(self):

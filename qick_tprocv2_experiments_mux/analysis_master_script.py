@@ -1,4 +1,4 @@
-from syspurpose.files import three_way_merge
+
 from section_008_save_data_to_h5 import Data_H5
 from analysis_000_load_configs import LoadConfigs
 from analysis_001_plot_all_RR_h5 import PlotAllRR
@@ -42,23 +42,25 @@ signal = 'None'
 run_number = 3 #starting from first run with qubits. Run 1 = run4a at quiet, run 2 = run5a at quiet, etc
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
-run_name = 'run6b/6transmon/round_robin_benchmark/cool_down'
+run_name = 'run7/6transmon/round_robin_benchmark/EF_Spec_Measurments'
 #run_name = 'run6/6transmon/QZE/QZE_measurement/Optimization/'
 FRIDGE = "QUIET"
 run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB attenuator ') #please make it brief for the plot
-top_folder_dates = ['2025-05-27_15-03-30','2025-05-27_16-06-12','2025-05-27_16-11-59','2025-05-28_10-36-17']
+top_folder_dates = ['2025-07-29_04-38-34','2025-07-29_09-56-06','2025-07-29_10-09-21','2025-07-29_10-21-19','2025-07-29_11-05-31','2025-07-29_11-42-47']
 
-#
-#top_folder_dates = ['2025-04-02']
-
-#
-# date = '2025-03-28'
-# outerFolder = f"/data/QICK_data/{run_name}/" + date + "/study_data/"
 # ################################################ 01: Get all data ######################################################
 # res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
 #                                        save_figs, fit_saved, signal, run_name)
 # date_times_res_spec, res_freqs = res_spec_vs_time.run()
-# #
+#
+# res_spec_vs_time_e = ResonatorFreqVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                        save_figs, fit_saved, signal, run_name)
+# date_times_res_spec_e, res_freqs_e = res_spec_vs_time_e.run(exp_extension='_ef')
+#
+# res_spec_vs_time_f = ResonatorFreqVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                        save_figs, fit_saved, signal, run_name)
+# date_times_res_spec_f, res_freqs_f = res_spec_vs_time_e.run(exp_extension='_fh')
+#
 # q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
 #                                   save_figs, fit_saved, signal, run_name, FRIDGE)
 # date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run()
@@ -80,14 +82,13 @@ top_folder_dates = ['2025-05-27_15-03-30','2025-05-27_16-06-12','2025-05-27_16-1
 # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
 
 # # # ####################################### 02: Plot All Individual Data Plots ###########################################
-# #date = '2025-04-02'  #only plot all of the data for one date at a time because there is a lot
-# #outerFolder = f"/data/QICK_data/{run_name}/" + date + "/"
-# outerFolder ="/data/QICK_data/run6b/6transmon/round_robin_benchmark/cool_down/2025-05-27_15-03-30/study_data/"
-# outerFolder_save_plots = "/data/QICK_data/run6b/6transmon/round_robin_benchmark/cool_down/2025-05-27_15-03-30/documentation/"
-# plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, tot_num_of_qubits, outerFolder,
-#                   outerFolder_save_plots)
-# plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_ss = True, plot_t1 = True,
-#             plot_t2r = True, plot_t2e = True)
+date = '2025-07-29_11-05-31'  #only plot all of the data for one date at a time because there is a lot
+outerFolder = f"/data/QICK_data/{run_name}/" + date + "/study_data/"
+outerFolder_save_plots = f"/data/QICK_data/{run_name}/" + date + "/documentation/"
+plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, tot_num_of_qubits, outerFolder,
+                  outerFolder_save_plots)
+plotter.run(plot_res_spec_ge = True,plot_res_spec_ef = True,plot_res_spec_fh = True, plot_q_spec = False, plot_rabi = False, plot_ss = False, plot_t1 = False,
+            plot_t2r = False, plot_t2e = False)
 # #
 # # ########################################## 03: Resonator Freqs vs Time Plots ###########################################
 # res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
@@ -173,8 +174,8 @@ top_folder_dates = ['2025-05-27_15-03-30','2025-05-27_16-06-12','2025-05-27_16-1
 # updater.run(FRIDGE)
 #
 ############################################### 14: Run Comparison Plots ##############################################
-run_number_list = [1,2,3]
-comparing_runs = CompareRuns(run_number_list, run_name)
+# run_number_list = [1,2,3]
+# comparing_runs = CompareRuns(run_number_list, run_name)
 
 # run_stats_folder = f"run_stats/QUIET/run{2}/"
 # filename = run_stats_folder + 'experiment_data.h5'
@@ -183,7 +184,7 @@ comparing_runs = CompareRuns(run_number_list, run_name)
 # t1_vals_r2 = loaded_data['t1_vals']
 # t2r_vals_r2 = loaded_data['t2r_vals']
 # t2e_vals_r2 = loaded_data['t2e_vals']
-comparing_runs.plot_freqs_vs_run()
+# comparing_runs.plot_freqs_vs_run()
 # comparing_runs.plot_decoherence_vs_run(skip_qubit_t2e=False, qubit_to_skip_t2e=0)
 # #compare median qubit freq to median decoherence by run number
 # comparing_runs.plot_decoherence_vs_qfreq()
