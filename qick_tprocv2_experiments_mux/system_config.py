@@ -3,7 +3,7 @@ import sys
 import os
 # sys.path.append(os.path.abspath("/home/nexusadmin/Documents/GitHub/tprocv2_demos"))
 sys.path.append(os.path.abspath("/home/auxuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
-from tprocv2_demos.qick_tprocv2_experiments_mux.socProxy import makeProxy
+from tprocv2_demos.qick_tprocv2_experiments_mux.socProxy import makeProxy, device
 
 import os
 import datetime
@@ -26,7 +26,7 @@ class QICK_experiment:
             self.soc, self.soccfg = makeProxy()
 
             self.MIXMUXGEN_CH = 4 # Readout resonator DAC channel
-            self.DYNRO_CH = 0 # dynamic readout channel
+            self.DYNRO_CH = 1 # dynamic readout channel
 
             #self.FSGEN_CH =  2 # 0 for "old QICK", 6 for RF board
             #self.FSGEN_AMPL_CH = 0
@@ -40,21 +40,27 @@ class QICK_experiment:
             # Hardware Configuration
             self.hw_cfg = {
                 # DAC
-                "gen_ch": [self.MIXMUXGEN_CH] * 6,  # MUX DAC
+                "gen_ch": [self.MIXMUXGEN_CH] * 8,  # MUX DAC
                 "nqz_res": 2,
                 # ADC
                 #"ro_ch": [self.MUXRO_CH] * 6,  # MUX readout channel
                 "dynro_ch": [self.DYNRO_CH], # dynamic readout channel
-                "list_of_all_resonators": [0, 1, 2, 3, 4, 5]
+                "list_of_all_resonators": [0, 1, 2, 3, 4, 5, 6, 7]
             }
 
             # Readout Configuration
+
+            if device == "hBN_resonator":
+                freqs = [4630.0, 5012.575, 5379.6512,5730.438, 6105.8585, 6831.0991]
+            elif device == "control_resonator":
+                freqs = [4265, 4630.36741, 5012.575, 5379.6512,5730.438, 6105.8585, 6831.0991]
+
             self.readout_cfg = {
                 "trig_time": 0.75,  # [Clock ticks] - get this value from TOF experiment
 
                 # Changes related to the resonator output channel
                 "mixer_freq": 5400,  # [MHz]
-                'res_freq': [4630.36741, 5012.575, 5379.6512,5730.438, 6105.8585, 6831.0991], #hBN resonators from VNA
+                'res_freq': freqs, #hBN resonators from VNA
                 "res_gain": [1.0],#[1, 1, 1, 1, 1, 1],
                 "ro_length": 1.0,  # [us] (1.0 for res spec)
                 "res_phase": [0],#[0,0,0,0,0,0], #Joyce 3/11

@@ -94,16 +94,69 @@ class MultiResonatorTimestream(AveragerProgramV2):
                 self.send_readoutconfig(ch=cfg['dynro_ch'][0], name=ro_config_name, t=t)
                 t = t + cfg['dynro_time']
 
+class SingleResonatorTimestreamWithDrive(AveragerProgramV2):
+    def _initialize(self, cfg):
+        ro_ch = cfg['dynro_ch'][0]
+        gen_ch = cfg['gen_ch']
+        drive_ch = cfg['drive_ch'] ## channel added to send pulse to drive resonator
+
+        # play individual resonator pulse from MUX DAC
+        self.declare_gen(ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch,
+                         mux_freqs=cfg['this_res_freq'],
+                         mux_gains=cfg['res_gain'],
+                         mux_phases=cfg['res_phase'],
+                         mixer_freq=cfg['mixer_freq'])
+
+        self.add_pulse(ch=gen_ch, name="mux_pulse",
+                       style="const",
+                       length=cfg["pulse_length"],
+                       mask=cfg["res_mask"], #for a single resonator, this will always be [0] and is set in system_config
+                       )
+
+        ## set up drive pulse from nonMUX DAC
+        self.declare_gen(ch=drive_ch, nqz=cfg['nqz_res'], mixer_freq=cfg['mixer_freq'])
+        self.add_pulse(ch=drive_ch, name="drive_pulse",
+                               style="const",
+                               freq=cfg['drive_res_freq'],
+                               length=cfg["drive_length"],
+                               phase=cfg['res_phase'],
+                               gain=cfg['drive_gain'],
+                               )
+
+
+        # dynamic readout on one channel
+        self.declare_readout(ch=ro_ch, length=cfg['ro_length'])
+        self.add_readoutconfig(ch=ro_ch, name="ro",
+                               freq=cfg['this_res_freq'][0], #entry res_freq
+                               gen_ch=gen_ch,
+                               outsel='product')
+        self.send_readoutconfig(ch=ro_ch, name="ro", t=0)
+
+        ## trigger DDR4 buffer, data collection begins now
+        #self.trigger(t=cfg['trig_time'], ddr4=True)
+        self.trigger(ros=cfg['dynro_ch'], pins=[0], t=cfg['trig_time'], ddr4=True)
+
+        # send drive resonator pulse
+        self.pulse(ch=cfg['drive_ch'],name="drive_pulse",t=0)
+
+        # send readout resonator pulse
+        self.pulse(ch=cfg['gen_ch'], name="mux_pulse", t=0)
 
 class ResonatorTimestream:
-    def __init__(self, ResonatorIndex, number_of_resonators, studyDocumentationFolder, round_num, save_figs=False, experiment=None,
+    def __init__(self, ResonatorIndex, number_of_resonators, studyDocumentationFolder, dataSetFolder, round_num, drive=False, driveIndex = 0, save_figs=False, experiment=None,
                  verbose=False, logger=None):
         self.ResonatorIndex = ResonatorIndex
+        self.round_num = round_num
         self.Resonator = "R0" #+ str(self.ResonatorIndex)
         self.number_of_resonators = number_of_resonators
         self.studyDocumentationFolder = studyDocumentationFolder
+        self.dataSetFolder = dataSetFolder
+        self.drive = drive ## use drive resonator
+        self.driveIndex = driveIndex
         if self.number_of_resonators == 1:
             self.expt_name = "single_res_timestream"
+            if self.drive is True:
+                self.expt_name = "single_res_timestream_drive"
         else:
             self.expt_name = "multi_res_timestream"
         self.round_num = round_num
@@ -120,7 +173,7 @@ class ResonatorTimestream:
             if self.verbose: print(f'R {self.ResonatorIndex} Round {self.round_num} Res Spec configuration: ',
                                    self.config)
 
-    def run(self):
+    def run(self, threading=False, multi_file = False):
 
         #set number of transfers
         total_transfers = int(self.config['reps']*np.ceil(self.config['pulse_length']/(self.config['period'] * 128)))
@@ -135,80 +188,91 @@ class ResonatorTimestream:
 
             prog = SingleResonatorTimestream(self.experiment.soccfg, reps=self.config["reps"], final_delay=self.config["relax_delay"],
                                              cfg=self.config)
-        else:
+        elif self.expt_name == "single_res_timestream_drive":
+            self.config["this_res_freq"] = [self.config["res_freq"][self.ResonatorIndex] + self.config['offset']]
+            self.config["res_mask"] = [0]
+            self.config["mixer_freq"] = self.config["this_res_freq"][0] + 300
+            self.config["drive_res_freq"] = self.config["res_freq"][self.driveIndex]
+
+            prog = SingleResonatorTimestreamWithDrive(self.experiment.soccfg, reps=self.config["reps"], final_delay=self.config["relax_delay"], cfg=self.config)
+
+        elif self.expt_name == "multi_res_timestream":
             self.config['dynro_time'] = self.config['pulse_length']/len(self.config['res_idx'])
             prog = MultiResonatorTimestream(self.experiment.soccfg, reps=self.config["reps"],
                                              final_delay=self.config["relax_delay"],
                                              cfg=self.config)
-
         #run program
         prog.run_rounds(self.experiment.soc)
 
+        ## define data saving functions
+        def save_pandas(iq_ddr4, data_path, idx, multi_file = False):
+            ### store data in a series object
+            series_I = pd.Series(iq_ddr4[:,0])
+            series_Q = pd.Series(iq_ddr4[:,1])
 
-        def multi_analyze(queue, t, iq_ddr4, chunk_size, batch_idx):
-            series_amps = pd.Series(np.abs(iq_ddr4[:,0] + 1j * iq_ddr4[:,1]))
-            print(np.mean(series_amps))
-            series_t = pd.Series(t)
-            print("read transfer subset from ddr4 buffer")
-            block_amps = [series_amps[i:i + chunk_size].mean() for i in range(0, len(series_amps), chunk_size)]
-            block_t = [series_t[i:i + chunk_size].mean() for i in range(0, len(series_t), chunk_size)]
+            if multi_file is False:
+                ## create one file and append batches of data
+                file_path = os.join(data_path, f"timestream_{self.round_num}_{formatted_datetime}.h5")
 
-            if block_t[0] < 100.0:
-                block_amps, block_t = self.trim_data(block_amps, block_t)
-                print("trimmed first transfer subset")
+                series_I.to_hdf(file_path, key="I",mode='a',format='fixed')
+                series_Q.to_hdf(file_path, key="Q",mode='a',format='fixed')
 
-            counts = self.get_histogram(block_amps)
-            #pulse_cuts, t_cuts = self.find_pulses(block_amps, block_t, batch_idx)
-            pulse_cuts=[0]
-            t_cuts=[0]
-            queue.put([counts, t_cuts, pulse_cuts])
-            print(f"added data {batch_idx} to queue")
+            else:
+                ### save batches of data in individual files labeled with their index
+                file_path = os.join(data_path, f"timestream_{self.round_num}_{formatted_datetime}_{idx}.h5")
 
-        #create a queue to store data
-        queue = multiprocessing.Queue()
-        processes=[]
+                series_I.to_hdf(file_path, key="I", mode='w', format='fixed')
+                series_Q.to_hdf(file_path, key="Q", mode='w', format='fixed')
 
-        #unload data from ddr4 in chunks
-        num_process = 8 #how many concurrent processes to allow
-        last_t = 0
-        start_time = time.time()
-        for idx in np.arange(0,int(np.floor(total_transfers/self.config['num_transfers']))):
-            iq_ddr4 = self.experiment.soc.get_ddr4(nt=int(self.config['num_transfers']),
+        #def save_ascii():
+
+        def multi_save(queue, iq_ddr4, data_path, idx):
+            save_pandas(iq_ddr4, data_path, idx, multi_file=True)
+
+        ## set up data saving path
+        formatted_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        data_path = os.join(self.dataSetFolder, "Data_h5", "timestream_run8")
+
+        ### transfer a few samples from the buffer to find the timestep and record
+        iq_ddr4 = self.experiment.soc.get_ddr4(nt=10,start=int(401 + 128))
+        t = prog.get_time_axis_ddr4(self.config['dynro_ch'][0], iq_ddr4)
+        timestep = t[1] - t[0]
+
+        start_time = time.time() ## marker to calculate data saving time
+        if threading is False:
+            ## save data without multi-processing
+            for idx in np.arange(0, int(np.floor(total_transfers / self.config['num_transfers']))):
+                iq_ddr4 = self.experiment.soc.get_ddr4(nt=int(self.config['num_transfers']),
                                                        start=int(401 + 128 * idx * self.config['num_transfers']))
-            t = prog.get_time_axis_ddr4(self.config['dynro_ch'][0], iq_ddr4) + last_t
-            last_t = t[-1]
-            end_time = time.time()
-            diff_time = end_time - start_time
-            start_time = end_time
-            print(f"unloading transfer subset of {t[-1] - t[0]} us took {diff_time} s")
 
-            p = Process(target=multi_analyze, args=(queue, t, iq_ddr4, self.config["chunk_size"] ,idx))
+                save_pandas(iq_ddr4, data_path, idx, multi_file=multi_file)
 
-            processes.append(p)
+        else:
+            ## speed up writing data with multi-processing
+            #create a queue to store data
+            queue = multiprocessing.Queue()
+            processes=[]
 
-            while len(multiprocessing.active_children()) > num_process:
-                time.sleep(0.10)
+            num_process = 8 #how many concurrent processes to allow
 
-            p.start()
+            for idx in np.arange(0,int(np.floor(total_transfers/self.config['num_transfers']))):
+                iq_ddr4 = self.experiment.soc.get_ddr4(nt=int(self.config['num_transfers']),
+                                                       start=int(401 + 128 * idx * self.config['num_transfers']))
 
+                p = Process(target=multi_save, args=(queue, iq_ddr4, idx))
+                processes.append(p)
 
-        print(f"waiting for all processes {processes} to finish")
-        for p in processes:
-           p.join()
-        print("all processes complete")
+                while len(multiprocessing.active_children()) > num_process:
+                    time.sleep(0.10)
 
-        t_cuts = []
-        pulse_cuts =[]
-        counts = []
-        while not queue.empty():
-            outputs = queue.get()
-            counts.append(outputs[0])
-            print("counts appended")
-            if len(outputs[1]) > 0:
-                t_cuts.append(outputs[1])
-                pulse_cuts.append(outputs[2])
+                p.start()
 
-        return np.array(counts), np.array(t_cuts), np.array(pulse_cuts), self.config
+            print(f"waiting for all processes {processes} to finish")
+            for p in processes:
+                p.join()
+            print("all processes complete")
+
+        return timestep, self.config
 
 
     def plot_accumulated_histogram(self, counts, hmin=0.5, hmax=4.0, bins=250):

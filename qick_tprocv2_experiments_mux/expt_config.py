@@ -11,7 +11,7 @@ if FRIDGE == "QUIET":
     # ef_freqs = np.array([4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17]) # Freqs of Qubit e/f Transition
 
     # # Set this for your experiment
-    tot_num_of_qubits = 6
+    tot_num_of_qubits = 8
     list_of_all_qubits = list(range(tot_num_of_qubits))
 
     expt_cfg = {
@@ -25,8 +25,8 @@ if FRIDGE == "QUIET":
         "res_spec_jcrun7": {
             "reps": 300,
             "rounds": 1,
-            "span": 2.0, #span of scan in MHz
-            "steps": 2000,#5000, #number of steps in frequency sweep
+            "span": 3, #span of scan in MHz
+            "steps": 1000,#5000, #number of steps in frequency sweep
             "relax_delay": 0.0, #relax delay in us. can be 0 for res spec
             "pulse_length": 2.0, #mux pulse length in us.
             "this_res_freq": [0],
@@ -38,14 +38,26 @@ if FRIDGE == "QUIET":
             "reps": 1, #cycles through sending pulse/triggering one dynro channel
             "relax_delay": 0.00,  # relax delay in us. can be 0? for res spec
             "pulse_length": 3400000, #3400000,  # mux pulse length in us.
-            "period": 0.0040690104, #time to acquire one I,Q data point in us.
+            #"period": 0.0040690104, #time to acquire one I,Q data point in us.
             "this_res_freq": [0], #frequency of selected resonator, gets populated in code
             "num_transfers": 500000, #num transfers from DDR4 buffer. set to ___ in code.
             "offset": 0.0, #offset from fR in MHz
-            "chunk_size": 50, #can I think of this equivalent to 100 reps?
-            "trim_buffer": 250.0, #trim first few us from front of dataset
-            "sigma_factor": 5.0, #threshold i x*sigma for peak finding algorithm
-            "window": 10.0, #length of window to cut around each pulse for data-saving
+            #"chunk_size": 50, #can I think of this equivalent to 100 reps?
+            #"trim_buffer": 250.0, #trim first few us from front of dataset
+            #"sigma_factor": 5.0, #threshold i x*sigma for peak finding algorithm
+            #"window": 10.0, #length of window to cut around each pulse for data-saving
+        },
+
+        "single_res_timestream_drive": {
+            "reps": 1,  # cycles through sending pulse/triggering one dynro channel
+            "relax_delay": 0.00,  # relax delay in us. can be 0? for res spec
+            "pulse_length": 3400000,  # 3400000,  # mux pulse length in us.
+            "drive_length": 20, # drive pulse length in us.
+            "this_res_freq": [0],  # frequency of selected resonator, gets populated in code
+            "drive_res_freq": [0], # frequency of drive resonator, gets populated in code
+            "num_transfers": 500000,  # num transfers from DDR4 buffer. set to ___ in code.
+            "offset": 0.0,  # offset from fR in MHz
+            "drive_gain": 1.0, #gain of drive resonator pulse
         },
 
         "multi_res_timestream": {
@@ -56,7 +68,7 @@ if FRIDGE == "QUIET":
             "dynro_time": 5.0,  # time spent on each dynamic readout channel in us. set to pulse_length / len(res_list) within code
             "res_idx": [0,1],  #indices of resonators to measure
             "num_transfers": 0,  # num transfers from DDR4 buffer. set to ___ in code.
-            "chunk_size": 300,
+            #"chunk_size": 300,
         },
 
         "res_spec": {

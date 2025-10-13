@@ -26,7 +26,7 @@ from tprocv2_demos.qick_tprocv2_experiments_mux.socProxy import device
 
 ##check if temp was provided from shell script
 if len(sys.argv) < 2:
-    temperature = 1.1 #0.011 #default to 11 mK base temp of fridge run 7
+    temperature = 0.011 #0.011 #default to 11 mK base temp of fridge run 7
     print(f"QUIET at base temperature: {temperature} K")
 else:
     temperature = float(sys.argv[1])
@@ -47,9 +47,9 @@ fit_data = True  # fit data during the run?
 save_data_h5 = True  # save data to h5 files?
 verbose = True  # verbose output
 debug_mode = True  # if True, errors will stop the run immediately
-use_prev_freq = True
+use_prev_freq = False
 
-study = 'temperature_sweep'
+study = 'Debugging'
 sub_study = f'{temperature}_K'
 substudy_txt_notes = 'temperature sweep. collecting S21 data at 3 powers.'
 resonator_list = [0,1,2,3,4,5]  # list of resonators to process

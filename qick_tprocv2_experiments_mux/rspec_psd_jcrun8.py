@@ -11,48 +11,34 @@ import matplotlib.pyplot as plt
 np.set_printoptions(threshold=int(1e15))
 sys.path.append(os.path.abspath("/home/auxuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 sys.path.append(os.path.abspath("/home/auxuser/Documents/GitHub/"))
-
+from tprocv2_demos.qick_tprocv2_experiments_mux.socProxy import device
 
 # Import experiments and configurations
 from res_spec_jcsrun7 import ResonanceSpectroscopy
 from system_config import QICK_experiment
 from expt_config import expt_cfg, FRIDGE
 from section_008_save_data_to_h5 import Data_H5
-from tprocv2_demos.qick_tprocv2_experiments_mux.socProxy import device
 
 ################################################
 # Run Configurations and Optimization Params
 ################################################
 
-##check if temp was provided from shell script
-if len(sys.argv) < 2:
-    temperature = 1.1 #0.011 #default to 11 mK base temp of fridge run 7
-    print(f"QUIET at base temperature: {temperature} K")
-else:
-    temperature = float(sys.argv[1])
-    print(f"QUIET at temperature: {temperature} K")
+temperature = 0.011 #default to 11 mK base temp of fridge run 7
 
-## read in resonator frequencies from previous increment
-prev_freq_file = '/home/auxuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/prev_freq.csv'
-if os.path.exists(prev_freq_file):
-    with open(prev_freq_file, 'r') as file:
-        csvreader = csv.reader(file)
-        prev_freq = np.array(next(csvreader)).astype(float)
-    print(prev_freq)
-
-run = "run8"
 save_r = 1  # how many rounds to save after
-save_figs = True  # whether to save plots
-fit_data = True  # fit data during the run?
+save_figs = False  # whether to save plots
+fit_data = False  # fit data during the run?
 save_data_h5 = True  # save data to h5 files?
 verbose = True  # verbose output
 debug_mode = True  # if True, errors will stop the run immediately
 use_prev_freq = True
+num_rounds = 10000
 
-study = 'temperature_sweep'
-sub_study = f'{temperature}_K'
-substudy_txt_notes = 'temperature sweep. collecting S21 data at 3 powers.'
-resonator_list = [0,1,2,3,4,5]  # list of resonators to process
+run = "run8"
+study = 'PSD'
+sub_study = 'psd_source_off'
+substudy_txt_notes = 'Running PSD on six resonators. power 3 spacing, 400 pts, 0.2 us pulse'
+resonator_list = [0]  # list of resonators to process
 
 # Set which experiments to run
 run_flags = {"rspec":True}
@@ -111,61 +97,58 @@ experiment.create_folder_if_not_exists(studyDocumentationFolder)
 with open(study_notes_path, "w", encoding="utf-8") as file:
     file.write('Study Notes:')
 
-if use_prev_freq is True:
-    experiment.readout_cfg['res_freq'] = prev_freq
-    print(f"using frequencies of previous increment: {prev_freq}")
 
 for ResonatorIndex in resonator_list:
-    rspec_data = create_data_dict(rspec_keys, save_r, resonator_list)
-    timestamp_rspec = time.mktime(datetime.datetime.now().timetuple())
-    r_spec = ResonanceSpectroscopy(ResonatorIndex, len(resonator_list), studyDocumentationFolder, 0,
+    for this_round in np.arange(0, num_rounds):
+        rspec_data = create_data_dict(rspec_keys, save_r, resonator_list)
+        timestamp_rspec = time.mktime(datetime.datetime.now().timetuple())
+        r_spec = ResonanceSpectroscopy(ResonatorIndex, len(resonator_list), studyDocumentationFolder, 0,
                                save_figs=save_figs, experiment=experiment,
                                verbose=verbose, logger=rr_logger)
-    freq_sweep, I, Q, gain_sweep, sys_config = r_spec.run()
-    if fit_data is True:
-        try:
-            fR, Ql, Qi, Qc = r_spec.DCM_fit(freq_sweep, I, Q, gain_sweep)
-            experiment.readout_cfg["res_freq"][ResonatorIndex] = fR[len(gain_sweep)-1]
-            print(f"R{ResonatorIndex} fR = {experiment.readout_cfg['res_freq'][ResonatorIndex]} MHz")
-        except:
-            print("DCM fit failed, continuing")
-            fR = 0
+        freq_sweep, I, Q, gain_sweep, sys_config = r_spec.run()
+        #r_spec.plot_raw(freq_sweep, I, Q)
+        #plt.show()
+        if fit_data is True:
+            try:
+                fR, Ql, Qi, Qc = r_spec.DCM_fit(freq_sweep, I, Q, gain_sweep)
+                #plt.show()
+                experiment.readout_cfg["res_freq"][ResonatorIndex] = fR[len(gain_sweep)-1]
+                print(f"R{ResonatorIndex} fR = {experiment.readout_cfg['res_freq'][ResonatorIndex]} MHz")
+            except:
+                print("DCM fit failed, continuing")
+                fR = 0
+                Ql = 0
+                Qi = 0
+                Qc = 0
+        else:
             Ql = 0
             Qi = 0
             Qc = 0
-    else:
-        Ql = 0
-        Qi = 0
-        Qc = 0
-        fR = 0
+            fR = 0
 
-    if save_data_h5:
-        rspec_data[ResonatorIndex]['Dates'][0] = timestamp_rspec
-        rspec_data[ResonatorIndex]['Batch Num'][0] = 0
-        rspec_data[ResonatorIndex]['Round Num'][0] = 0
-        rspec_data[ResonatorIndex]['temperature'][0] = temperature
-        rspec_data[ResonatorIndex]['I'][0] = I
-        rspec_data[ResonatorIndex]['Q'][0] = Q
-        rspec_data[ResonatorIndex]['freq_sweep'][0] = freq_sweep
-        rspec_data[ResonatorIndex]['gain_sweep'][0] = gain_sweep
-        rspec_data[ResonatorIndex]['fR'][0] = fR
-        rspec_data[ResonatorIndex]['Ql'][0] = Ql
-        rspec_data[ResonatorIndex]['Qi'][0] = Qi
-        rspec_data[ResonatorIndex]['Qc'][0] = Qc
-        rspec_data[ResonatorIndex]['Exp Config'][0] = expt_cfg
-        rspec_data[ResonatorIndex]['Syst Config'][0] = sys_config
+        if save_data_h5:
+            rspec_data[ResonatorIndex]['Dates'][0] = timestamp_rspec
+            rspec_data[ResonatorIndex]['Batch Num'][0] = 0
+            rspec_data[ResonatorIndex]['Round Num'][0] = 0
+            rspec_data[ResonatorIndex]['temperature'][0] = temperature
+            rspec_data[ResonatorIndex]['I'][0] = I
+            rspec_data[ResonatorIndex]['Q'][0] = Q
+            rspec_data[ResonatorIndex]['freq_sweep'][0] = freq_sweep
+            rspec_data[ResonatorIndex]['gain_sweep'][0] = gain_sweep
+            rspec_data[ResonatorIndex]['fR'][0] = fR
+            rspec_data[ResonatorIndex]['Ql'][0] = Ql
+            rspec_data[ResonatorIndex]['Qi'][0] = Qi
+            rspec_data[ResonatorIndex]['Qc'][0] = Qc
+            rspec_data[ResonatorIndex]['Exp Config'][0] = expt_cfg
+            rspec_data[ResonatorIndex]['Syst Config'][0] = sys_config
 
 
-        saver_rspec = Data_H5(studyFolder, data=rspec_data, save_r=save_r)
-        saver_rspec.save_to_h5('rspec_jcrun7')
-        del saver_rspec
-        gc.collect()
+            saver_rspec = Data_H5(studyFolder, data=rspec_data, save_r=save_r)
+            saver_rspec.save_to_h5('rspec_jcrun7')
+            del saver_rspec
+            gc.collect()
 
-    del rspec_data
-
-with open(prev_freq_file, 'w') as csvfile:
-    csvwriter = csv.writer(csvfile, delimiter=',')
-    csvwriter.writerow(experiment.readout_cfg['res_freq'])
+        del rspec_data
 
 del experiment
 

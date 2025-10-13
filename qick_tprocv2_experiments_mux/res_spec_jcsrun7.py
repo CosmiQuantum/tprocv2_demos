@@ -68,11 +68,12 @@ class ResonanceSpectroscopy:
         self.config["res_mask"] = [0]
         self.config["mixer_freq"] = self.config["this_res_freq"][0] + 300
 
-        half_fpts = np.power(np.array(np.linspace(0, np.power(self.config['span']/2,1/3), num=int(np.floor(self.config['steps']/2)))),3)
-        fpts = np.concatenate((-1*np.flip(half_fpts), half_fpts))
-        #fpts = np.linspace(-self.config['span'] / 2, self.config['span'] / 2, num=self.config['steps'])
+        #half_fpts = np.power(np.array(np.linspace(0, np.power(self.config['span']/2,1/3), num=int(np.floor(self.config['steps']/2)))),3)
+        #fpts = np.concatenate((-1*np.flip(half_fpts), half_fpts))
+        fpts = np.linspace(-self.config['span'] / 2, self.config['span'] / 2, num=self.config['steps'])
         freq_sweep = self.config['this_res_freq'] + fpts
-        gain_sweep = np.linspace(self.config["gain_start"], 1.0, num=self.config["gain_steps"])
+        #gain_sweep = np.linspace(self.config["gain_start"], 1.0, num=self.config["gain_steps"])
+        gain_sweep = [1.0]
         #gain_sweep = [0.1, 0.3, 1.0] #hard coded in for now.
 
         I = np.zeros((len(gain_sweep),len(fpts)))
