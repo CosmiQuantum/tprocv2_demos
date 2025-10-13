@@ -65,7 +65,7 @@ save_shots_efrabi = False  # save IQ shots instead of averaged IQ data? for ef r
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [0,1,2,3,4,5]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [3, 4]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
@@ -74,7 +74,7 @@ substudy_txt_notes = ('Checking that QICK box is alive for quiet run 8') # Initi
 
 # set which of the following you'd like to run to 'True'
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": False, "rabi": True, "ss_gef": False,
-             "t1": False, "t2r": False, "t2e": True, "ef_res_spec": False, "ef_q_spec": False,
+             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False}
 
 res_leng_vals = [5.0, 5.5, 5.5, 6.0, 6.0, 6.0]
