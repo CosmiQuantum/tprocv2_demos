@@ -187,28 +187,28 @@ class SingleShot:
         iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=True)
         e_shots= ssp_e.get_raw()
 
-        # fid, angle = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
-        fid, angle = self.plot_results(g_shots, e_shots, self.QubitIndex)
+        fid, angle = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
+        # fid, angle = self.plot_results(g_shots, e_shots, self.QubitIndex)
         return fid, angle, iq_list_g, iq_list_e, self.config
 
     def plot_results(self, iq_list_g, iq_list_e, QubitIndex,  fig_quality=100):
-        # I_g = iq_list_g[QubitIndex][0].T[0]
-        # Q_g = iq_list_g[QubitIndex][0].T[1]
-        # I_e = iq_list_e[QubitIndex][0].T[0]
-        # Q_e = iq_list_e[QubitIndex][0].T[1]
-        I_g = iq_list_g[self.QubitIndex][:, :, 0, 0][0]
-        Q_g = iq_list_g[self.QubitIndex][:, :, 0, 1][0]
-        I_e = iq_list_e[self.QubitIndex][:, :, 0, 0][0]
-        Q_e = iq_list_e[self.QubitIndex][:, :, 0, 1][0]
+        I_g = iq_list_g[QubitIndex][0].T[0]
+        Q_g = iq_list_g[QubitIndex][0].T[1]
+        I_e = iq_list_e[QubitIndex][0].T[0]
+        Q_e = iq_list_e[QubitIndex][0].T[1]
+        # I_g = iq_list_g[self.QubitIndex][:, :, 0, 0][0]
+        # Q_g = iq_list_g[self.QubitIndex][:, :, 0, 1][0]
+        # I_e = iq_list_e[self.QubitIndex][:, :, 0, 0][0]
+        # Q_e = iq_list_e[self.QubitIndex][:, :, 0, 1][0]
 
-        fid, threshold, angle, ig_new, ie_new = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=self.save_figs,  fig_quality=fig_quality)
+        fid, threshold, angle, ig_new, ie_new = self.hist_ssf(QubitIndex, data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=self.save_figs,  fig_quality=fig_quality)
         if self.verbose: print('Optimal fidelity after rotation = %.3f' % fid)
         if self.verbose: print('Optimal angle after rotation = %f' % angle)
         self.logger.info('Optimal fidelity after rotation = %.3f' % fid)
         self.logger.info('Optimal angle after rotation = %f' % angle)
         return fid, angle
 
-    def hist_ssf(self, data=None, cfg=None, plot=True,  fig_quality = 100):
+    def hist_ssf(self, QubitIndex, data=None, cfg=None, plot=True,  fig_quality = 100):
 
         ig = data[0]
         qg = data[1]
@@ -273,12 +273,12 @@ class SingleShot:
         tind = contrast.argmax()
         threshold = binsg[tind]
         fid = contrast[tind]
-        #axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
+        axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
 
 
         if plot == True:
             self.create_folder_if_not_exists(self.outerFolder)
-            outerFolder_expt = os.path.join(self.outerFolder, "ss_repeat_meas_ge")
+            outerFolder_expt = os.path.join(self.outerFolder, "ss_ge_plots")
             self.create_folder_if_not_exists(outerFolder_expt)
             outerFolder_expt = os.path.join(outerFolder_expt, "Q" + str(self.QubitIndex + 1))
             self.create_folder_if_not_exists(outerFolder_expt)
@@ -287,7 +287,7 @@ class SingleShot:
             file_name = os.path.join(outerFolder_expt,
                                      f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
 
-            axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
+            axs[2].set_title(f"Q{QubitIndex + 1} Fidelity = {fid * 100:.2f}%")
             fig.savefig(file_name,  dpi=fig_quality, bbox_inches='tight')
             plt.close(fig)
 

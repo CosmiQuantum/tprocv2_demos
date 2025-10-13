@@ -34,7 +34,7 @@ from analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1000000
+n = 1
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
@@ -43,35 +43,43 @@ signal = 'None'  # 'I', or 'Q' depending on where the signal is (after optimizat
 save_figs = True  # save plots for everything as you go along the RR script?
 live_plot = False  # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
 fit_data = True  # fit the data here and save or plot the fits?
-save_data_h5 = True  # save all of the data to h5 files?
-verbose = False  # print everything to the console in real time, good for debugging, bad for memory
+save_data_h5 = False  # save all of the data to h5 files?
+verbose = True  # print everything to the console in real time, good for debugging, bad for memory
 qick_verbose = True  # qick verbose prints the progress bar for each qick experiment as it is happening (the red bar that fills out as more experiment rounds/reps are being done)
-debug_mode = False  # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
+debug_mode = True  # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 thresholding = False  # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
-increase_qubit_reps = False  # if you want to increase the reps for a qubit, set to True
+
+increase_qubit_reps_gerabi = False  # if you want to increase the reps for a qubit, set to True
+increase_qubit_reps_t1 = False  # if you want to increase the reps for a qubit, set to True
+increase_qubit_reps_t2r = False  # if you want to increase the reps for a qubit, set to True
+increase_qubit_reps_t2e = False  # if you want to increase the reps for a qubit, set to True
+increase_qubit_reps_efrabi = False  # if you want to increase the reps for a qubit, set to True
+increase_qubit_reps_rpm = False  # if you want to increase the reps for a qubit, set to True
+increase_qubit_reps_qspec = False
+qubit_to_increase_reps_for = 4  # only has impact if previous line is True
+multiply_qubit_reps_by = 1.5  # only has impact if the line above is True
+qspecge_increase_reps_to = 700
+
 unmask = True  # Do you want to use the unmasking feature to increase resonator gain?
-qubit_to_increase_reps_for = 0  # only has impact if previous line is True
 save_shots_efrabi = False  # save IQ shots instead of averaged IQ data? for ef rabi
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
-multiply_qubit_reps_by = 2  # only has impact if the line two above is True
 
-Qs_to_look_at = [0, 1, 2, 3, 5]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,3,4,5]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
 device_name = '6transmon'
-substudy_txt_notes = ('Initial qubit checkouts quiet run 8')
+substudy_txt_notes = ('Checking that QICK box is alive for quiet run 8') # Initial qubit checkouts quiet run 8
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": True, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": False, "rabi": True, "ss_gef": False,
+             "t1": False, "t2r": False, "t2e": True, "ef_res_spec": False, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False}
 
-# optimization outputs from qick board, unmasking set to true
 res_leng_vals = [5.0, 5.5, 5.5, 6.0, 6.0, 6.0]
 res_gain = [0.95, 0.9, 0.95, 0.55, 0.55, 0.95]
-freq_offsets = [-0.2143, 0, -0.16, -0.16, -0.16, -0.16]  # [0.1190, 0.0238, -0.1190, 0.2143, -0.0714, 0.0238] # # all updated on 7/29/2025 except R5, we need to debug res spec for that resonator
+freq_offsets = [0, 0, 0, 0, 0, 0]
 
 qubit_freqs_ef = [None] * 6
 increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
@@ -81,7 +89,7 @@ number_of_qubits = 6
 figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 # Folders
-study = 'qubit_checkouts'
+study = 'qubit_checkouts' #qubit_checkouts
 sub_study = 'initial_checkouts'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -302,9 +310,9 @@ if pre_optimize:
         qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
         try:
             q_spec = QubitSpectroscopy(Q, tot_num_of_qubits, optimizationFolder, 0,
-                                       signal, plot_fit=False, save_figs=True, experiment=experiment,
-                                       live_plot=live_plot, verbose=verbose, logger=rr_logger,
-                                       qick_verbose=True, increase_reps=True, increase_reps_to=500)
+                                       signal, plot_fit=False, save_figs=True, increase_reps = increase_qubit_reps_qspec,
+                                       increase_reps_to = qspecge_increase_reps_to, experiment=experiment, live_plot=live_plot,
+                                       verbose=verbose, logger=rr_logger, qick_verbose=True)
             (qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit,
              qubit_freq, sys_config_qspec) = q_spec.run()
             experiment.qubit_cfg['qubit_freq_ge'][Q] = float(qubit_freq)
@@ -340,7 +348,7 @@ if pre_optimize:
             rabi = AmplitudeRabiExperiment(Q, tot_num_of_qubits, optimizationFolder, 0,
                                            signal, save_figs=True, experiment=experiment,
                                            live_plot=live_plot,
-                                           increase_qubit_reps=increase_qubit_reps,
+                                           increase_qubit_reps=increase_qubit_reps_gerabi,
                                            qubit_to_increase_reps_for=qubit_to_increase_reps_for,
                                            multiply_qubit_reps_by=multiply_qubit_reps_by,
                                            verbose=verbose, logger=rr_logger,
@@ -470,10 +478,13 @@ while j < n:
         ################################################## g-e Qubit spec ##################################################
         if run_flags["q_spec"]:
             try:
+                if QubitIndex == 4: # Qubit 5
+                    increase_qubit_reps_qspec = True
+
                 q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
-                                           signal, save_figs, plot_fit=True, experiment=experiment,
-                                           live_plot=live_plot, verbose=verbose, logger=rr_logger,
-                                           unmasking_resgain=unmask)
+                                           signal, save_figs, increase_reps = increase_qubit_reps_qspec, increase_reps_to = qspecge_increase_reps_to,
+                                           plot_fit=True, experiment=experiment, live_plot=live_plot, verbose=verbose,
+                                           logger=rr_logger, unmasking_resgain=unmask)
                 (qspec_I, qspec_Q, qspec_freqs, qspec_I_fit,
                  qspec_Q_fit, qubit_freq, sys_config_qspec) = q_spec.run()
 
@@ -516,7 +527,7 @@ while j < n:
                 rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
                                                save_figs=save_figs, save_shots=save_shots_gerabi,
                                                experiment=experiment, live_plot=live_plot,
-                                               increase_qubit_reps=increase_qubit_reps,
+                                               increase_qubit_reps=increase_qubit_reps_gerabi,
                                                qubit_to_increase_reps_for=qubit_to_increase_reps_for,
                                                multiply_qubit_reps_by=multiply_qubit_reps_by,
                                                verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
@@ -554,7 +565,6 @@ while j < n:
                 I_e = iq_list_e[QubitIndex][0].T[0]
                 Q_e = iq_list_e[QubitIndex][0].T[1]
 
-                # ss.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
             except Exception as e:
                 if debug_mode:
                     raise e  # In debug mode, re-raise the exception immediately
@@ -628,14 +638,14 @@ while j < n:
         ################################################ e-f rabi ################################################
         # NOT needed for rpm qubit temps, rpm itself is an ef rabi experiment
         if run_flags["ef_Rabi"]:
-            increase_qubit_reps = False  # if you want to increase the reps for a qubit, set to True
+            increase_qubit_reps_efrabi = False  # if you want to increase the reps for a qubit, set to True
             qubit_to_increase_reps_for = 0  # only has impact if previous line is True
             multiply_qubit_reps_by = 2  # only has impact if the line two above is True
             try:
                 efrabi = EF_AmplitudeRabiExperiment(QubitIndex, number_of_qubits, studyDocumentationFolder, j,
                                                     signal, save_shots_efrabi, experiment=experiment,
                                                     live_plot=live_plot,
-                                                    increase_qubit_reps=increase_qubit_reps,
+                                                    increase_qubit_reps=increase_qubit_reps_efrabi,
                                                     qubit_to_increase_reps_for=qubit_to_increase_reps_for,
                                                     multiply_qubit_reps_by=multiply_qubit_reps_by,
                                                     unmasking_resgain=unmask)
@@ -664,7 +674,7 @@ while j < n:
                                                              j,
                                                              signal, save_figs,
                                                              experiment, live_plot,
-                                                             increase_qubit_reps, qubit_to_increase_reps_for,
+                                                             increase_qubit_reps_rpm, qubit_to_increase_reps_for,
                                                              multiply_qubit_reps_by, unmasking_resgain=unmask)
                 (I1_qtemp, Q1_qtemp, gains1_qtemp, fit_cosine1_qtemp, pi_amp1_qtemp, A_amplitude1, amp_fit1,
                  I2_qtemp, Q2_qtemp, gains2_qtemp, fit_cosine2_qtemp, pi_amp2_qtemp, A_amplitude2, amp_fit2,
@@ -707,7 +717,7 @@ while j < n:
                 t1 = T1Measurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                    experiment=experiment,
                                    live_plot=live_plot, fit_data=fit_data,
-                                   increase_qubit_reps=increase_qubit_reps,
+                                   increase_qubit_reps=increase_qubit_reps_t1,
                                    qubit_to_increase_reps_for=qubit_to_increase_reps_for,
                                    multiply_qubit_reps_by=multiply_qubit_reps_by,
                                    verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
@@ -728,7 +738,7 @@ while j < n:
             try:
                 t2r = T2RMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                      experiment=experiment, live_plot=live_plot, fit_data=fit_data,
-                                     increase_qubit_reps=increase_qubit_reps,
+                                     increase_qubit_reps=increase_qubit_reps_t2r,
                                      qubit_to_increase_reps_for=qubit_to_increase_reps_for,
                                      multiply_qubit_reps_by=multiply_qubit_reps_by,
                                      verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
@@ -749,7 +759,7 @@ while j < n:
             try:
                 t2e = T2EMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                      experiment=experiment, live_plot=live_plot, fit_data=fit_data,
-                                     increase_qubit_reps=increase_qubit_reps,
+                                     increase_qubit_reps=increase_qubit_reps_t2e,
                                      qubit_to_increase_reps_for=qubit_to_increase_reps_for,
                                      multiply_qubit_reps_by=multiply_qubit_reps_by,
                                      verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)

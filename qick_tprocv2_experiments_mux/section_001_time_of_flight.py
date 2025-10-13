@@ -91,7 +91,7 @@ class TOFExperiment:
             plot.legend()
             plot.set_ylabel("a.u.")
             plot.set_xlabel("us")
-            plot.axvline(0.6, c='r')
+            plot.axvline(0.75, c='r')
 
             phase_offset = np.angle(iq_list[i].dot([1, 1j]).sum(), deg=True)
             # print("measured phase %f degrees" % (phase_offset))
@@ -149,8 +149,8 @@ class TOFExperiment:
             else:
                 file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + ".png")
             plt.savefig(file_name, dpi=50)
-            plt.show()
-            plt.close(fig)
+            # plt.show()
+            # plt.close(fig)
 
         return average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, self.experiment.DAC_attenuator1, self.experiment.DAC_attenuator2, self.experiment.ADC_attenuator
 
