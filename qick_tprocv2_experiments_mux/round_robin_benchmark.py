@@ -43,10 +43,10 @@ signal = 'None'  # 'I', or 'Q' depending on where the signal is (after optimizat
 save_figs = True  # save plots for everything as you go along the RR script?
 live_plot = False  # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
 fit_data = True  # fit the data here and save or plot the fits?
-save_data_h5 = False  # save all of the data to h5 files?
+save_data_h5 = True  # save all of the data to h5 files?
 verbose = True  # print everything to the console in real time, good for debugging, bad for memory
 qick_verbose = True  # qick verbose prints the progress bar for each qick experiment as it is happening (the red bar that fills out as more experiment rounds/reps are being done)
-debug_mode = True  # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
+debug_mode = False  # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 thresholding = False  # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 
 increase_qubit_reps_gerabi = False  # if you want to increase the reps for a qubit, set to True
@@ -73,13 +73,14 @@ device_name = '6transmon'
 substudy_txt_notes = ('Checking that qubits are alive for quiet run 8') # Initial qubit checkouts quiet run 8
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": False, "rabi": True, "ss_gef": False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": True,
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
+             "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
              "rabi_pop_meas": True, "ef_Rabi": False}
 
-res_leng_vals = [5.0, 5.5, 5.5, 6.0, 6.0, 6.0]
-res_gain = [0.95, 0.9, 0.95, 0.55, 0.55, 0.95]
-freq_offsets = [0, 0, 0, 0, 0, 0]
+#Updated 10/14:
+res_leng_vals = [6.5, 5.5, 7.0, 9.0, 8.5, 9.0]
+res_gain = [0.95, 0.85, 0.85, 0.55, 0.85, 0.85]
+freq_offsets = [-0.3182, -0.1364, -0.2273, -0.2273, -0.5000, -0.1364]
 
 qubit_freqs_ef = [None] * 6
 increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
@@ -679,15 +680,15 @@ while j < n:
 
                 # Just to quickly output the qubit temperature live---------------------
                 # this ocasionally throws errs if something goes wrong with a fit
-                date = data_set
-                fit_saved = fit_data
-                outerFolder_save_plots = ""
-                unique_folder_path = ""
-                outerFolder = ""
-                qtempclass = PlotRR_noQick(date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
-                 outerFolder_save_plots, unique_folder_path)
-                T_K, T_mK, _, _ = qtempclass.Qubit_Temperature_Convert(A_amplitude1, A_amplitude2, qubit_freq)
-                print(f"Q{QubitIndex + 1} temperature: {T_mK} mK")
+                # date = data_set
+                # fit_saved = fit_data
+                # outerFolder_save_plots = ""
+                # unique_folder_path = ""
+                # outerFolder = ""
+                # qtempclass = PlotRR_noQick(date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
+                #  outerFolder_save_plots, unique_folder_path)
+                # T_K, T_mK, _, _ = qtempclass.Qubit_Temperature_Convert(A_amplitude1, A_amplitude2, qubit_freq)
+                # print(f"Q{QubitIndex + 1} temperature: {T_mK} mK")
                 # -------------------------------------------------------------------------
 
                 rr_logger.info(

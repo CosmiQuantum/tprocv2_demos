@@ -171,7 +171,7 @@ class SingleShot:
         iq_list_e = ssp_e.acquire(soc, soft_avgs=1, progress=False)
 
         # Use the fidelity calculation from SingleShotGE
-        fidelity, _, _, _,_ = self.hist_ssf(
+        fidelity, _, _, _,_ = self.hist_ssf(self.QubitIndex,
             data=[iq_list_g[self.QubitIndex][0].T[0], iq_list_g[self.QubitIndex][0].T[1],
                   iq_list_e[self.QubitIndex][0].T[0], iq_list_e[self.QubitIndex][0].T[1]],
             cfg=self.config, plot=False)
@@ -273,8 +273,6 @@ class SingleShot:
         tind = contrast.argmax()
         threshold = binsg[tind]
         fid = contrast[tind]
-        axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
-
 
         if plot == True:
             self.create_folder_if_not_exists(self.outerFolder)
