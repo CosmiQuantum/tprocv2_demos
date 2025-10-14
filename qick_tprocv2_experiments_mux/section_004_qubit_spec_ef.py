@@ -166,7 +166,7 @@ class EFQubitSpectroscopy:
                                      f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
             fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
         plt.close(fig)
-        # return largest_amp_curve_mean, I_fit, Q_fit
+        return largest_amp_curve_mean, I_fit, Q_fit
 
     def get_results(self, I, Q, freqs):
         freqs = np.array(freqs)

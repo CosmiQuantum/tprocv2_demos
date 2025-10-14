@@ -39,7 +39,7 @@ class QICK_experiment:
             self.qubit_center_freq = 4225 #4400  # To be in the middle of the qubit freqs.
             self.res_center_freq   = 6330  # To be in the middle of the res freqs. 3000-5000 see nothing,6000 and 7000 see something, 8000+ see nothing
             self.soc.rfb_set_gen_filter(self.MIXMUXGEN_CH, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0)
-            self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.6) # change to 2 in futrue tests
+            self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.7) # 4225 + 1650/2 = 5050 MHz, so freqs above that get filtered out
             self.soc.rfb_set_ro_filter(self.MUXRO_CH[0], fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0) #readout ADC
             # Set attenuator on DAC.
             self.soc.rfb_set_gen_rf(self.MIXMUXGEN_CH, self.DAC_attenuator1, self.DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
@@ -122,11 +122,11 @@ class QICK_experiment:
                 "qubit_pi_len": 0.11, # Olivia May 17th
                 # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
                 "qubit_length_ge": 15,  # 15 [us] for spec Pulse
-                "qubit_freq_ef": [4009.83, 3645.54, 3988.22, 4295.32, 4302.93, 4838.87], # Arianna 10/2
+                "qubit_freq_ef": [4020.48, 3650.81, 3999.01, 4303.08, 4313.19, 4848.81], # Arianna 10/13
                 # [MHz] Freqs of Qubit e/f Transition
                 "qubit_freq_fh": [4016.3, 3450.8, 3988.44, 4292.73, 4292.73, 4833.17],
                 "qubit_freq_ftores": [4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17],
-                "qubit_gain_ef":  [0.001, 0.001, 0.0075, 0.1, 0.15, 0.005],# [0.03, 0.14, 0.04, 0.1, 0.15, 0.08],#
+                "qubit_gain_ef":  [0.002, 0.004, 0.0075, 0.0045, 0.008, 0.01],# [0.03, 0.14, 0.04, 0.1, 0.15, 0.08],#
                 "qubit_gain_fh": [0.001, 0.015, 0.0075, 0.1, 0.15, 0.005],
                 'qubit_gain_ftores': [1]*6,#[0.2, 0.14, 0.04, 0.17, 0.13, 0.08],
                 # [0.01, 0.05, 0.05, 0.05, 0.01, 0.5], # [DAC units] Pulse Gain
@@ -135,10 +135,10 @@ class QICK_experiment:
                 "qubit_phase": 0,  # [deg]
                 #"sigma": [0.15]*6,  # [us] for Gaussian Pulse (5+10 DAC atten for qubit)
                 "sigma_ampl": [0.03, 0.03, 0.05, 0.04, 0.05, 0.05], #DAC 0 04/07
-                "sigma": [0.15, 0.25, 0.27, 0.29, 0.28, 1.1],  # DAC 2 04/07 [us] for Gaussian Pulse (5+10 DAC atten for qubit). Updated on 7/17 by Arianna
+                "sigma": [0.15, 0.25, 0.27, 0.26, 0.25, 0.57],  # DAC 2 04/07 [us] for Gaussian Pulse (5+10 DAC atten for qubit). Updated on 7/17 by Arianna
                 #"sigma": [0.05, 0.09, 0.07, 0.065, 0.09, 0.3],  # Goal: cut sigma in half [us] for Gaussian Pulse (5+4 DAC atten for qubit)
                 # "pi_amp": [0.92, 0.87, 0.75, 0.73, 0.77, 0.78], # old RR values
-                "sigma_ef": [0.15, 0.2, 0.25, 0.29, 0.28, 0.5],  # [us] for Gaussian Pulse, #Arianna 3/27
+                "sigma_ef": [0.09, 0.25, 0.21, 0.12, 0.13, 0.27],  # [us] for Gaussian Pulse, #Arianna 3/27
                 "sigma_fh": [0.15, 0.21, 0.25, 0.29, 0.28, 0.5],  # [us] for Gaussian Pulse, #Arianna 3/27
                 "pi_amp": [0.66, 0.68, 0.65, 0.65, 0.66, 0.69], # Arianna 10/10, run 8
                 "pi_amp_ampl": [0.5942, 0.634499, 0.76542, 0.7754, 0.55393, 0.9], # Joyce 04/07 DAC 0

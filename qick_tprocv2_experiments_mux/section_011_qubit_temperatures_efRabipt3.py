@@ -163,7 +163,7 @@ class Temps_EFAmpRabiExperiment:
 
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"e-f Rabi Q{self.QubitIndex + 1}: {pi_amp:.4f} (a.u.) _"  + f", {config['reps']}*{config['rounds']} avgs",
+                         f"e-f Rabi Q{self.QubitIndex + 1}: {pi_amp:.4f} (a.u.) ", #{config['reps']}*{config['rounds']} avgs
                          fontsize=24, ha='center', va='top') #f", {config['sigma'] * 1000} ns sigma" need to add in all qqubit sigmas to save exp_cfg before putting htis back
             else:
                 fig.text(plot_middle, 0.98,

@@ -287,8 +287,8 @@ class EF_AmplitudeRabiProgram(AveragerProgramV2):
         res_ch = cfg['res_ch']
         qubit_ch = cfg['qubit_ch']
         self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
-                         mux_freqs=cfg['res_freq_fh'],
-                         mux_gains=cfg['res_gain_fh'],
+                         mux_freqs=cfg['res_freq_ef'],
+                         mux_gains=cfg['res_gain_ef'],
                          mux_phases=cfg['res_phase'],
                          mixer_freq=cfg['mixer_freq'])
         for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ef'], cfg['ro_phase']):
@@ -312,7 +312,6 @@ class EF_AmplitudeRabiProgram(AveragerProgramV2):
                        )
 
         self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma_ef'], length=cfg['sigma_ef'] * 4, even_length=False)
-
         self.add_pulse(ch=qubit_ch, name="qubit_pulse",
                        style="arb",
                        envelope="ramp",
@@ -321,39 +320,13 @@ class EF_AmplitudeRabiProgram(AveragerProgramV2):
                        gain=cfg['qubit_gain_ef'],
                        )
 
-
-
         self.add_loop("gainloop", cfg["steps"])
 
     def _body(self, cfg):
-        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play pulse: ge pi
-        self.delay_auto(0.0)
-
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0) #  play pulse: variable-gain fh pi
+        self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play ge pi pulse
+        self.delay_auto(t=0.0, tag='waiting after pi')  # Wait til ge pi pulse is done before proceeding
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0) #ef pulse
         self.delay_auto(t=0.0, tag='waiting') #wait
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0) #probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
-    #For temperature calculations, DO NOT USE (just storing this here for now)
-    # def _body(self, cfg):
-    #     self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # f-e pulse
-    #     self.delay_auto(t=0.0, tag='waiting')  # wait
-    #
-    #     self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play ge pi pulse
-    #     self.delay_auto(t=0.0, tag='waiting after pi')  # Wait til ge pi pulse is done before proceeding
-    #
-    #     self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0) #probe pulse
-    #     self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
-    #
-    # def _body(self, cfg):
-    #     self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play ge pi pulse
-    #     self.delay_auto(t=0.0, tag='waiting after pi')  # Wait til ge pi pulse is done before proceeding
-    #
-    #     self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # f-e pulse
-    #     self.delay_auto(t=0.0, tag='waiting')  # wait
-    #
-    #     self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play ge pi pulse
-    #     self.delay_auto(t=0.0, tag='waiting after pi')  # Wait til ge pi pulse is done before proceeding
-    #
-    #     self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # probe pulse
-    #     self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])

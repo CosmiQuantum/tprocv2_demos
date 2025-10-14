@@ -57,25 +57,25 @@ increase_qubit_reps_efrabi = False  # if you want to increase the reps for a qub
 increase_qubit_reps_rpm = False  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_qspec = False
 qubit_to_increase_reps_for = 4  # only has impact if previous line is True
-multiply_qubit_reps_by = 1.5  # only has impact if the line above is True
+multiply_qubit_reps_by = 2  # only has impact if the line above is True. MUST be an integer.
 qspecge_increase_reps_to = 700
 
 unmask = True  # Do you want to use the unmasking feature to increase resonator gain?
-save_shots_efrabi = False  # save IQ shots instead of averaged IQ data? for ef rabi
-save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi
+save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi ?
+save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [3, 4]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [4,5]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
 device_name = '6transmon'
-substudy_txt_notes = ('Checking that QICK box is alive for quiet run 8') # Initial qubit checkouts quiet run 8
+substudy_txt_notes = ('Checking that qubits are alive for quiet run 8') # Initial qubit checkouts quiet run 8
 
 # set which of the following you'd like to run to 'True'
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": False, "rabi": True, "ss_gef": False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": False,
-             "rabi_pop_meas": False, "ef_Rabi": False}
+             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": True,
+             "rabi_pop_meas": True, "ef_Rabi": False}
 
 res_leng_vals = [5.0, 5.5, 5.5, 6.0, 6.0, 6.0]
 res_gain = [0.95, 0.9, 0.95, 0.55, 0.55, 0.95]
@@ -83,7 +83,7 @@ freq_offsets = [0, 0, 0, 0, 0, 0]
 
 qubit_freqs_ef = [None] * 6
 increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
-increase_steps_to_ef = 600
+increase_steps_to_ef = 400
 ef_res_sample_number = 1
 number_of_qubits = 6
 figure_quality = 200
@@ -611,13 +611,13 @@ while j < n:
             ################################################ Qubit Spec EF ################################################
             if run_flags["ef_q_spec"]:
                 try:
-                    increase_qubit_steps_ef = False
-                    # Qubit 4 usually needs more steps for e-f spec
-                    if QubitIndex == 3:
-                        increase_qubit_steps_ef = True  # if you want to increase the steps for a qubit, set to True
+                    # # Qubit 4 usually needs more steps for e-f spec
+                    # if QubitIndex == 1:
+                    #     increase_qubit_steps_ef = True  # if you want to increase the steps for a qubit, set to True
 
                     ef_q_spec = EFQubitSpectroscopy(QubitIndex, number_of_qubits, studyDocumentationFolder, j, signal,
-                                                    save_figs, experiment, live_plot, unmasking_resgain=unmask)
+                                                    save_figs, experiment, live_plot, increase_reps = increase_qubit_steps_ef,
+                                                    increase_reps_to = increase_steps_to_ef, unmasking_resgain=unmask)
 
                     efqspec_I, efqspec_Q, efqspec_freqs, sys_config_qspec_ef, efqspec_I_fit, efqspec_Q_fit, efqubit_freq = ef_q_spec.run()
                     qubit_freqs_ef[QubitIndex] = efqubit_freq
@@ -638,9 +638,6 @@ while j < n:
         ################################################ e-f rabi ################################################
         # NOT needed for rpm qubit temps, rpm itself is an ef rabi experiment
         if run_flags["ef_Rabi"]:
-            increase_qubit_reps_efrabi = False  # if you want to increase the reps for a qubit, set to True
-            qubit_to_increase_reps_for = 0  # only has impact if previous line is True
-            multiply_qubit_reps_by = 2  # only has impact if the line two above is True
             try:
                 efrabi = EF_AmplitudeRabiExperiment(QubitIndex, number_of_qubits, studyDocumentationFolder, j,
                                                     signal, save_shots_efrabi, experiment=experiment,
@@ -652,7 +649,7 @@ while j < n:
                 efrabi_I, efrabi_Q, efrabi_gains, efrabi_fit, efpi_amp, efsys_config_to_save = efrabi.run()
                 # if these are None, fit didnt work
                 if (efrabi_fit is None and efpi_amp is None):
-                    print('Rabi fit didnt work, skipping the rest of this qubit')
+                    print('EF Rabi fit didnt work for this qubit.')
                     continue  # skip the rest of this qubit
 
                 experiment.qubit_cfg['pi_ef_amp'][QubitIndex] = float(efpi_amp)
