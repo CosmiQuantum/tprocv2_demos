@@ -65,7 +65,7 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [4,5]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [5]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
@@ -679,15 +679,15 @@ while j < n:
 
                 # Just to quickly output the qubit temperature live---------------------
                 # this ocasionally throws errs if something goes wrong with a fit
-                # date = data_set
-                # fit_saved = fit_data
-                # outerFolder_save_plots = ""
-                # unique_folder_path = ""
-                # outerFolder = ""
-                # qtempclass = PlotRR_noQick(date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
-                #  outerFolder_save_plots, unique_folder_path)
-                # T_K, T_mK, _, _ = qtempclass.Qubit_Temperature_Convert(A_amplitude1, A_amplitude2, qubit_freq)
-                # print(f"Q{QubitIndex + 1} temperature: {T_mK} mK")
+                date = data_set
+                fit_saved = fit_data
+                outerFolder_save_plots = ""
+                unique_folder_path = ""
+                outerFolder = ""
+                qtempclass = PlotRR_noQick(date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
+                 outerFolder_save_plots, unique_folder_path)
+                T_K, T_mK, _, _ = qtempclass.Qubit_Temperature_Convert(A_amplitude1, A_amplitude2, qubit_freq)
+                print(f"Q{QubitIndex + 1} temperature: {T_mK} mK")
                 # -------------------------------------------------------------------------
 
                 rr_logger.info(
