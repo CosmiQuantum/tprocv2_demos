@@ -224,8 +224,8 @@ class SingleShot:
             fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(16, 4))
             fig.tight_layout()
 
-            axs[0].scatter(ig, qg, label='g', color='b', marker='*', alpha=0.2)
-            axs[0].scatter(ie, qe, label='e', color='r', marker='*', alpha=0.2)
+            axs[0].scatter(ig, qg, label='g', color='b', marker='*', alpha=0.4)
+            axs[0].scatter(ie, qe, label='e', color='r', marker='*', alpha=0.4)
             axs[0].scatter(xg, yg, color='k', marker='o')
             axs[0].scatter(xe, ye, color='k', marker='o')
             axs[0].set_xlabel('I (a.u.)')
@@ -250,8 +250,8 @@ class SingleShot:
         xlims = [np.min(ig_new), np.max(ie_new)]
 
         if plot == True:
-            axs[1].scatter(ig_new, qg_new, label='g', color='b', marker='*', alpha=0.2)
-            axs[1].scatter(ie_new, qe_new, label='e', color='r', marker='*', alpha=0.2)
+            axs[1].scatter(ig_new, qg_new, label='g', color='b', marker='*', alpha=0.4)
+            axs[1].scatter(ie_new, qe_new, label='e', color='r', marker='*', alpha=0.4)
             axs[1].scatter(xg, yg, color='k', marker='o')
             axs[1].scatter(xe, ye, color='k', marker='o')
             axs[1].set_xlabel('I (a.u.)')
@@ -260,8 +260,8 @@ class SingleShot:
             axs[1].axis('equal')
 
             """X and Y ranges for histogram"""
-            ng, binsg, pg = axs[2].hist(ig_new, bins=numbins, range=xlims, color='b', label='g', alpha=0.2)
-            ne, binse, pe = axs[2].hist(ie_new, bins=numbins, range=xlims, color='r', label='e', alpha=0.2)
+            ng, binsg, pg = axs[2].hist(ig_new, bins=numbins, range=xlims, color='b', label='g', alpha=0.4)
+            ne, binse, pe = axs[2].hist(ie_new, bins=numbins, range=xlims, color='r', label='e', alpha=0.4)
 
             axs[2].set_xlabel('I(a.u.)')
         else:
@@ -363,10 +363,6 @@ class SingleShot:
                                      f"R_{self.round_num}_Q_{self.QubitIndex + 1}_{formatted_datetime}_{self.expt_name}_q{self.QubitIndex + 1}.png")
             fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
             plt.close(fig)
-
-
-
-
 
         return fid, threshold, theta, ig_new, ie_new
 

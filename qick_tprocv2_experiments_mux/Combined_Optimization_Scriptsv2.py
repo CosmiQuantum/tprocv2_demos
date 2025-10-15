@@ -60,7 +60,7 @@ n_loops = 4  # Number of repetitions per length to average
 Qs = [0,1,2,3,4,5]
 
 #Change for NEXUS vs QUIET
-res_leng_vals = [6.5, 5.5, 7.0, 9.0, 8.5, 9.0]
+res_leng_vals = [5.0, 7.5, 8.0, 7.0, 9.0, 7.5]#[6.5, 5.5, 7.0, 9.0, 8.5, 9.0]
 res_gain = [0.95, 0.85, 0.85, 0.55, 0.85, 0.85]
 freq_offsets = [-0.3182, -0.1364, -0.2273, -0.2273, -0.5000, -0.1364] # # all updated on 7/29/2025 except R5, we need to debug res spec for that resonator
 punch_out_vals = [1.0, 0.867, 0.867, 0.625, 0.867, 0.867] #updated 10/14/2025
