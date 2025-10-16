@@ -34,7 +34,7 @@ from analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1
+n = 1000
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
@@ -65,20 +65,20 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [5]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,5]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
 device_name = '6transmon'
-substudy_txt_notes = ('Checking that qubits are alive for quiet run 8') # Initial qubit checkouts quiet run 8
+substudy_txt_notes = ('This is not official AB paper data yet. Still optimizing.\n') # Initial qubit checkouts quiet run 8
 
 # set which of the following you'd like to run to 'True'
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
-             "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
+             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": True,
              "rabi_pop_meas": True, "ef_Rabi": False}
 
 #Updated 10/14:
-res_leng_vals = [6.5, 5.5, 7.0, 9.0, 8.5, 9.0]
+res_leng_vals = [6.5, 7.5, 7.5, 7.0, 8.0, 7.0]
 res_gain = [0.95, 0.85, 0.85, 0.55, 0.85, 0.85]
 freq_offsets = [-0.3182, -0.1364, -0.2273, -0.2273, -0.5000, -0.1364]
 
@@ -90,8 +90,8 @@ number_of_qubits = 6
 figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 # Folders
-study = 'qubit_checkouts' #qubit_checkouts
-sub_study = 'initial_checkouts'
+study = 'round_robin' #qubit_checkouts
+sub_study = 'pre_AB_paper_data_still_optimizing' #pre_AB_paper_data_still_optimizing
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -689,6 +689,16 @@ while j < n:
                 #  outerFolder_save_plots, unique_folder_path)
                 # T_K, T_mK, _, _ = qtempclass.Qubit_Temperature_Convert(A_amplitude1, A_amplitude2, qubit_freq)
                 # print(f"Q{QubitIndex + 1} temperature: {T_mK} mK")
+
+                try: #adding them to the notes text file instead
+                    qtemp = PlotRR_noQick(data_set, figure_quality, False, False, signal, run_name, number_of_qubits,
+                                          "", "", "")
+                    T_K, T_mK, _, _ = qtemp.Qubit_Temperature_Convert(A_amplitude1, A_amplitude2, qubit_freq)
+                    with open(file_path, "a", encoding="utf-8") as f:
+                        f.write(
+                            f"Q{QubitIndex + 1} Effective Temperature: {T_mK} mK using A1 = {float(A_amplitude1)}, A2 = {float(A_amplitude2)}, and Qfreq: {qubit_freq} MHz\n")
+                except Exception as e:
+                    rr_logger.exception(f"Temp calc/log failed for Q{QubitIndex + 1}: {e}")
                 # -------------------------------------------------------------------------
 
                 rr_logger.info(

@@ -3,7 +3,7 @@ import numpy as np
 FRIDGE = "QUIET"  # change to "NEXUS" as needed
 
 if FRIDGE == "QUIET":
-    VNA_res = np.array([6227.197, 6289.15, 6348.55, 6419.7, 6485.3, 6552.3])# ge resonator freqs, updated 10/10 during run 8
+    VNA_res = np.array([6227.187, 6289.175, 6348.525, 6419.665, 6485.315, 6552.35])# ge resonator freqs, updated 10/10 during run 8
     VNA_qubit = np.array([4194.77, 3828.69, 4173.69, 4474.23, 4485.38, 5018.12])  # Qubit freqs g/e Transition, updated during run 8 on 10/10
     ef_freqs = np.array([4020.48, 3650.81, 3999.01, 4303.08, 4313.19, 4848.81]) # Qubit freqs e/f Transition,Arianna 10/13
     fh_freqs = np.array([3820.97, 3450.85, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition
@@ -20,6 +20,16 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
         },
 
+        # "res_spec": { # For thomas roth data
+        #     "reps": 500,
+        #     "rounds": 1,
+        #     "start": -0.5,       # MHz, sweep from -0.5 to +0.5 around center
+        #     "step_size": 0.005,  # MHz (~5 kHz)
+        #     "steps": 200,        # 200 points total
+        #     "relax_delay": 10,  # [us]
+        #     "list_of_all_qubits": list_of_all_qubits,
+        # },
+
         "res_spec": {
             "reps": 200,
             "rounds": 1,
@@ -29,6 +39,16 @@ if FRIDGE == "QUIET":
             "relax_delay": 10,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
+
+        # "res_spec_ef": { # for thomas roth data
+        #     "reps": 500,
+        #     "rounds": 1,
+        #     "start": -0.5,       # MHz, sweep from -0.5 to +0.5 around center
+        #     "step_size": 0.005,  # MHz (~5 kHz)
+        #     "steps": 200,        # 200 points total
+        #     "relax_delay": 1000,  # [us]
+        #     "list_of_all_qubits": list_of_all_qubits,
+        # },
 
         "res_spec_ef": {
             "reps": 250,
@@ -173,7 +193,7 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ef": {
-            "reps": 200,
+            "reps": 300,
             "reps2": 850, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
@@ -452,7 +472,7 @@ elif FRIDGE == "NEXUS":
             "step_size": 0.12,  # [MHz]
             "steps": 101,
             "relax_delay": 20,  # [us]
-            "relax_delay_ef": 600,
+            "relax_delay_ef": 1000,
             "list_of_all_qubits": list_of_all_qubits,
         },
         "res_spec_ef": {
@@ -461,7 +481,7 @@ elif FRIDGE == "NEXUS":
             "start": -3.5,  # [MHz]
             "step_size": 0.12,  # [MHz]
             "steps": 101,
-            "relax_delay": 600,  # [us]
+            "relax_delay": 1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
