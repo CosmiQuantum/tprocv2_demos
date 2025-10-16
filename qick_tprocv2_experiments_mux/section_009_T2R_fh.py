@@ -233,7 +233,7 @@ class T2R_FHProgram(AveragerProgramV2):
 
 class T2R_FHMeasurement:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_figs, experiment = None,
-                 live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
+                 live_plot = None, fit_data = False, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
                  multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, unmasking_resgain = False):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
@@ -426,7 +426,9 @@ class T2R_FHMeasurement:
 
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
-            delay_times = ramsey.get_time_param('wait', "t", as_array=True)
+        delay_times = ramsey.get_time_param('wait', "t", as_array=True)
+        print('delay_times', delay_times)
+        # gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
 
         if self.fit_data:
             fit, t2r_est, t2r_err, plot_sig = self.t2_fit(delay_times, I, Q)
@@ -435,6 +437,7 @@ class T2R_FHMeasurement:
 
         if self.save_figs:
             self.plot_results(I, Q, delay_times, now, fit, t2r_est, t2r_err, plot_sig)
+
 
         return  t2r_est, t2r_err, I, Q, delay_times, fit, self.config
 
@@ -518,6 +521,8 @@ class T2R_FHMeasurement:
                          fontsize=24, ha='center', va='top')
 
         # I subplot
+        print('I',I)
+        print('delay_times',delay_times)
         ax1.plot(delay_times, I, label="Gain (a.u.)", linewidth=2)
         ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
         ax1.tick_params(axis='both', which='major', labelsize=16)

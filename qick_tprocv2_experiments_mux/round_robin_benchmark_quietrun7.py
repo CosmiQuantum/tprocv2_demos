@@ -1170,7 +1170,7 @@ while j < n:
                 del saver_ef_rabi
                 del ef_rabi_data
 
-            # --------------------------save e-f Rabi-----------------------
+            # --------------------------save f-h Rabi-----------------------
             if run_flags["fh_rabi"]:
                 saver_fh_rabi = Data_H5(subStudyDataFolder, fh_rabi_data, batch_num, save_r)
                 saver_fh_rabi.save_to_h5('rabi_fh')
