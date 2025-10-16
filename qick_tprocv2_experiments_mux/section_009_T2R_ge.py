@@ -396,6 +396,7 @@ class T2RMeasurement:
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
             delay_times = ramsey.get_time_param('wait', "t", as_array=True)
+            # print('delay_times:', delay_times)
 
         if self.fit_data:
             fit, t2r_est, t2r_err, plot_sig = self.t2_fit(delay_times, I, Q)

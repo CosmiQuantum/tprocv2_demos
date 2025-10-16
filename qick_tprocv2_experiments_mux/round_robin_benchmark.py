@@ -2,6 +2,9 @@ import copy
 import sys
 import os
 import numpy as np
+
+from tprocv2_demos.qick_tprocv2_experiments_mux.section_006_amp_htores import Htores_AmplitudeRabiExperiment
+
 np.set_printoptions(threshold=int(1e15))  # need this so it saves absolutely everything returned from the classes
 import datetime
 import time
@@ -18,8 +21,10 @@ from section_004_qubit_spec_ge import QubitSpectroscopy
 from section_004_qubit_spec_ef import EFQubitSpectroscopy
 from section_004_qubit_spec_fh_V2 import FHQubitSpectroscopy
 from section_004_qubit_spec_eh import EHQubitSpectroscopy
+from section_004_qubit_spec_htores import HtoresQubitSpectroscopy
 from section_006_amp_rabi_ef import EF_AmplitudeRabiExperiment
 from section_006_amp_fh import FH_AmplitudeRabiExperiment
+from section_006_amp_htores import Htores_AmplitudeRabiExperiment
 from section_009_T2R_fh import T2R_FHMeasurement
 from section_006_amp_rabi_eh import EH_AmplitudeRabiExperiment
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
@@ -31,6 +36,7 @@ from section_005_single_shot_gef import SingleShot_ef # Arianna way: Fix for exa
 from section_008_save_data_to_h5 import Data_H5
 from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
+from section_010_T2E_fh import T2E_FHMeasurement
 from system_config import QICK_experiment
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
@@ -80,7 +86,8 @@ substudy_txt_notes = ('Testing and debugging') # Initial qubit checkouts quiet r
 # set which of the following you'd like to run to 'True'
 run_flags = {"tof": False, "res_spec": False, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False,
              "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
-             "rabi_pop_meas": False, "ef_Rabi": False, "fh_q_spec":False, "fh_rabi":False, "eh_q_spec":False, "eh_rabi":False,  "fh_t2r":True}
+             "rabi_pop_meas": False, "ef_Rabi": False, "fh_q_spec":False, "fh_rabi":False, "eh_q_spec":False,
+             "eh_rabi":False,  "fh_t2r":False, "fh_t2e": False, "htores_q_spec":True, "htores_rabi":False}
 
 #Updated 10/14:
 res_leng_vals = [6.5, 7.5, 7.5, 7.0, 7.5, 7.5]
@@ -196,8 +203,12 @@ ss_data_gef = create_data_dict(ss_keys_gef, save_r, list_of_all_qubits)
 fh_rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
 fh_qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
 fh_t2r_data = create_data_dict(t2r_keys, save_r, list_of_all_qubits)
+fh_t2e_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
 eh_rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
 eh_qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
+
+htores_qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
+htores_rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
 
 if pre_optimize:
     ################################################## Simple Optimization ###############################################
@@ -853,6 +864,35 @@ while j < n:
                 rr_logger.exception(f"FH qspec error on qubit {QubitIndex + 1}: {e}")
                 # we don't skip the qubit if this throws an err because we want to save the rest of the data that was taken
 
+        ############################################### Qubit Spec Htores ################################################
+        if run_flags["htores_q_spec"]:
+            # try:
+            increase_qubit_steps_htores = False
+            # Qubit 4 needs more steps for e-f spec
+            # if QubitIndex == 3:
+            #     increase_qubit_steps_fh = True  # if you want to increase the steps for a qubit, set to True
+
+            htores_q_spec = HtoresQubitSpectroscopy(QubitIndex, number_of_qubits, studyDocumentationFolder, j,signal, save_figs, experiment, live_plot, unmasking_resgain=unmask)
+
+            htoresqspec_I, htoresqspec_Q, htoresqspec_freqs, sys_config_qspec_htores = htores_q_spec.run()
+            # fhqspec_I_fit, fhqspec_Q_fit, fhqubit_freq,
+            # experiment.soccfg,
+            # experiment.soc)
+            # qubit_freqs_fh[QubitIndex] = fhqubit_freq
+            # experiment.qubit_cfg['qubit_freq_fh'][QubitIndex] = float(fhqubit_freq)
+
+            # rr_logger.info(f"FH Qubit {QubitIndex + 1} frequency: {fhqubit_freq}")
+            # if verbose:
+            #     print(f"FH Qubit {QubitIndex + 1} frequency: {fhqubit_freq}")
+
+            del htores_q_spec
+
+            # except Exception as e:
+            #     if debug_mode:
+            #         raise e  # In debug mode, re-raise the exception immediately
+            #     rr_logger.exception(f"FH qspec error on qubit {QubitIndex + 1}: {e}")
+            #     # we don't skip the qubit if this throws an err because we want to save the rest of the data that was taken
+
         ################################################ f-h rabi ################################################
         if run_flags["fh_rabi"]:
             increase_qubit_reps = False  # if you want to increase the reps for a qubit, set to True
@@ -882,6 +922,35 @@ while j < n:
                 rr_logger.exception(f"FH rabi error on qubit {QubitIndex + 1}: {e}")
                 # we don't skip the qubit if this throws an err because we want to save the rest of the data that was taken
 
+        ################################################ htores rabi ################################################
+        if run_flags["htores_rabi"]:
+            increase_qubit_reps = False  # if you want to increase the reps for a qubit, set to True
+            qubit_to_increase_reps_for = 0  # only has impact if previous line is True
+            multiply_qubit_reps_by = 2  # only has impact if the line two above is True
+            try:
+                htoresrabi = Htores_AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
+                                                    signal, save_figs=save_figs, save_shots=save_shots_fhrabi,
+                                                    experiment=experiment, live_plot=live_plot,
+                                                    increase_qubit_reps=increase_qubit_reps,
+                                                    qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                                    multiply_qubit_reps_by=multiply_qubit_reps_by,
+                                                    verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
+                htores_rabi_I, htores_rabi_Q, htores_rabi_gains, htores_rabi_fit, htores_pi_amp, htores_sys_config_to_save = htoresrabi.run()
+
+                # if these are None, fit didnt work
+                if (htores_rabi_fit is None and htores_pi_amp is None):
+                    print('Rabi fit didnt work, skipping the rest of this qubit')
+                    continue  # skip the rest of this qubit
+
+                experiment.qubit_cfg['pi_htores_amp'][QubitIndex] = float(htores_pi_amp)
+                print('htores Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(htores_pi_amp))
+                del fhrabi
+            except Exception as e:
+                if debug_mode:
+                    raise e  # In debug mode, re-raise the exception immediately
+                rr_logger.exception(f"htores rabi error on qubit {QubitIndex + 1}: {e}")
+                # we don't skip the qubit if this throws an err because we want to save the rest of the data that was taken
+
         ###################################################### g-e T2R #####################################################
         if run_flags["fh_t2r"]:
             # try:
@@ -904,68 +973,89 @@ while j < n:
             #         if verbose: print(f'Got the following error in fh_t2r, continuing: {e}')
             #         # we don't skip the qubit if this throws an err because we want to save the rest of the data that was taken
 
+    ##################################################### f-h T2E ######################################################
+    if run_flags["fh_t2e"]:
+        try:
+            fh_t2e = T2E_FHMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
+                                 experiment=experiment, live_plot=live_plot, fit_data=fit_data,
+                                 increase_qubit_reps=increase_qubit_reps_t2e,
+                                 qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                 multiply_qubit_reps_by=multiply_qubit_reps_by,
+                                 verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
+            (fh_t2e_est, fh_t2e_err, fh_t2e_I, fh_t2e_Q, fh_t2e_delay_times,
+             fh_fit_t2e, fh_sys_config_t2e) = fh_t2e.run(thresholding=thresholding)
+            del fh_t2e
 
-        ################################################ Qubit Spec EH ################################################
-        if run_flags["eh_q_spec"]:
-            try:
-                increase_qubit_steps_eh = False
-                # Qubit 4 needs more steps for e-f spec
-                # if QubitIndex == 3:
-                #     increase_qubit_steps_fh = True  # if you want to increase the steps for a qubit, set to True
-
-                eh_q_spec = EHQubitSpectroscopy(QubitIndex, number_of_qubits, studyDocumentationFolder, j,
-                                                signal,
-                                                save_figs, experiment, live_plot, unmasking_resgain=unmask)
-
-                ehqspec_I, ehqspec_Q, ehqspec_freqs, sys_config_qspec_eh = eh_q_spec.run()
-                # fhqspec_I_fit, fhqspec_Q_fit, fhqubit_freq,
-                # experiment.soccfg,
-                # experiment.soc)
-                # qubit_freqs_fh[QubitIndex] = fhqubit_freq
-                # experiment.qubit_cfg['qubit_freq_fh'][QubitIndex] = float(fhqubit_freq)
-
-                # rr_logger.info(f"FH Qubit {QubitIndex + 1} frequency: {fhqubit_freq}")
-                # if verbose:
-                #     print(f"FH Qubit {QubitIndex + 1} frequency: {fhqubit_freq}")
-
-                del eh_q_spec
-
-            except Exception as e:
-                if debug_mode:
-                    raise e  # In debug mode, re-raise the exception immediately
-                rr_logger.exception(f"EH qspec error on qubit {QubitIndex + 1}: {e}")
+        except Exception as e:
+            if debug_mode:
+                raise e  # In debug mode, re-raise the exception immediately
+            else:
+                rr_logger.exception(f'Got the following error in ge t2e: {e}')
+                if verbose: print(f'Got the following error in ge t2e: {e}')
                 # we don't skip the qubit if this throws an err because we want to save the rest of the data that was taken
 
-        ################################################ e-h rabi ################################################
-        if run_flags["eh_rabi"]:
-            increase_qubit_reps = False  # if you want to increase the reps for a qubit, set to True
-            qubit_to_increase_reps_for = 0  # only has impact if previous line is True
-            multiply_qubit_reps_by = 2  # only has impact if the line two above is True
-            try:
-                ehrabi = EH_AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
-                                                    signal, save_figs=save_figs, save_shots=save_shots_fhrabi,
-                                                    experiment=experiment, live_plot=live_plot,
-                                                    increase_qubit_reps=increase_qubit_reps,
-                                                    qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                                                    multiply_qubit_reps_by=multiply_qubit_reps_by,
-                                                    verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
-                ehrabi_I, ehrabi_Q, ehrabi_gains, ehrabi_fit, ehpi_amp, ehsys_config_to_save = ehrabi.run()
 
-                # if these are None, fit didnt work
-                if (ehrabi_fit is None and ehpi_amp is None):
-                    print('Rabi fit didnt work, skipping the rest of this qubit')
-                    continue  # skip the rest of this qubit
+    ################################################ Qubit Spec EH ################################################
+    if run_flags["eh_q_spec"]:
+        # try:
+        increase_qubit_steps_eh = False
+        # Qubit 4 needs more steps for e-f spec
+        # if QubitIndex == 3:
+        #     increase_qubit_steps_fh = True  # if you want to increase the steps for a qubit, set to True
 
-                experiment.qubit_cfg['pi_eh_amp'][QubitIndex] = float(ehpi_amp)
-                print('eh Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(ehpi_amp))
-                del ehrabi
-            except Exception as e:
-                if debug_mode:
-                    raise e  # In debug mode, re-raise the exception immediately
-                rr_logger.exception(f"EH rabi error on qubit {QubitIndex + 1}: {e}")
-                # we don't skip the qubit if this throws an err because we want to save the rest of the data that was taken
+        eh_q_spec = EHQubitSpectroscopy(QubitIndex, number_of_qubits, studyDocumentationFolder, j,
+                                        signal,
+                                        save_figs, experiment, live_plot, unmasking_resgain=unmask)
 
-        ############################################### Collect Results ################################################
+        ehqspec_I, ehqspec_Q, ehqspec_freqs, sys_config_qspec_eh = eh_q_spec.run()
+        # fhqspec_I_fit, fhqspec_Q_fit, fhqubit_freq,
+        # experiment.soccfg,
+        # experiment.soc)
+        # qubit_freqs_fh[QubitIndex] = fhqubit_freq
+        # experiment.qubit_cfg['qubit_freq_fh'][QubitIndex] = float(fhqubit_freq)
+
+        # rr_logger.info(f"FH Qubit {QubitIndex + 1} frequency: {fhqubit_freq}")
+        # if verbose:
+        #     print(f"FH Qubit {QubitIndex + 1} frequency: {fhqubit_freq}")
+
+        del eh_q_spec
+
+        # except Exception as e:
+        #     if debug_mode:
+        #         raise e  # In debug mode, re-raise the exception immediately
+        #     rr_logger.exception(f"EH qspec error on qubit {QubitIndex + 1}: {e}")
+        #     # we don't skip the qubit if this throws an err because we want to save the rest of the data that was taken
+
+    ################################################ e-h rabi ################################################
+    if run_flags["eh_rabi"]:
+        increase_qubit_reps = False  # if you want to increase the reps for a qubit, set to True
+        qubit_to_increase_reps_for = 0  # only has impact if previous line is True
+        multiply_qubit_reps_by = 2  # only has impact if the line two above is True
+        try:
+            ehrabi = EH_AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
+                                                signal, save_figs=save_figs, save_shots=save_shots_fhrabi,
+                                                experiment=experiment, live_plot=live_plot,
+                                                increase_qubit_reps=increase_qubit_reps,
+                                                qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                                multiply_qubit_reps_by=multiply_qubit_reps_by,
+                                                verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
+            ehrabi_I, ehrabi_Q, ehrabi_gains, ehrabi_fit, ehpi_amp, ehsys_config_to_save = ehrabi.run()
+
+            # if these are None, fit didnt work
+            if (ehrabi_fit is None and ehpi_amp is None):
+                print('Rabi fit didnt work, skipping the rest of this qubit')
+                continue  # skip the rest of this qubit
+
+            experiment.qubit_cfg['pi_eh_amp'][QubitIndex] = float(ehpi_amp)
+            print('eh Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(ehpi_amp))
+            del ehrabi
+        except Exception as e:
+            if debug_mode:
+                raise e  # In debug mode, re-raise the exception immediately
+            rr_logger.exception(f"EH rabi error on qubit {QubitIndex + 1}: {e}")
+            # we don't skip the qubit if this throws an err because we want to save the rest of the data that was taken
+
+    ############################################### Collect Results ################################################
         if save_data_h5:
             # ---------------------Collect g-e Res Spec Results----------------
             if run_flags["res_spec"]:
@@ -1149,6 +1239,22 @@ while j < n:
                 fh_qspec_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
                 fh_qspec_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_qspec_fh
 
+            # --------------------------save htores qspec-----------------------
+            if run_flags["htores_q_spec"]:
+                htores_qspec_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
+                    time.mktime(datetime.datetime.now().timetuple()))
+                htores_qspec_data[QubitIndex]['I'][j - batch_num * save_r - 1] = htoresqspec_I
+                htores_qspec_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = htoresqspec_Q
+                htores_qspec_data[QubitIndex]['Frequencies'][j - batch_num * save_r - 1] = htoresqspec_freqs
+                htores_qspec_data[QubitIndex]['I Fit'][j - batch_num * save_r - 1] = None  # fhqspec_I_fit
+                htores_qspec_data[QubitIndex]['Q Fit'][j - batch_num * save_r - 1] = None  # fhqspec_Q_fit
+                htores_qspec_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                htores_qspec_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                htores_qspec_data[QubitIndex]['Recycled QFreq'][
+                    j - batch_num * save_r - 1] = False  # no rr so no recycling here
+                htores_qspec_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                htores_qspec_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_qspec_htores
+
             # ---------------------Collect f-h Rabi Results----------------
             if run_flags["fh_rabi"]:
                 rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
@@ -1161,6 +1267,19 @@ while j < n:
                 rabi_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 rabi_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
                 rabi_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = fhsys_config_to_save
+
+            # ---------------------Collect htores Rabi Results----------------
+            if run_flags["htores_rabi"]:
+                htores_rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
+                    time.mktime(datetime.datetime.now().timetuple()))
+                htores_rabi_data[QubitIndex]['I'][j - batch_num * save_r - 1] = htores_rabi_I
+                htores_rabi_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = htores_rabi_Q
+                htores_rabi_data[QubitIndex]['Gains'][j - batch_num * save_r - 1] = htores_rabi_gains
+                htores_rabi_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = htores_rabi_fit
+                htores_rabi_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                htores_rabi_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                htores_rabi_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                htores_rabi_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = htores_sys_config_to_save
 
             # ---------------------Collect f-h T2R Results----------------
             if run_flags["fh_t2r"]:
@@ -1176,6 +1295,21 @@ while j < n:
                 t2r_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 t2r_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
                 t2r_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_fh_t2r
+
+            # ---------------------Collect f-h T2E Results----------------
+            if run_flags["fh_t2e"]:
+                t2e_data[QubitIndex]['T2E'][j - batch_num * save_r - 1] = fh_t2e_est
+                t2e_data[QubitIndex]['Errors'][j - batch_num * save_r - 1] = fh_t2e_err
+                t2e_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
+                    time.mktime(datetime.datetime.now().timetuple()))
+                t2e_data[QubitIndex]['I'][j - batch_num * save_r - 1] = fh_t2e_I
+                t2e_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = fh_t2e_Q
+                t2e_data[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = fh_t2e_delay_times
+                t2e_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = fh_fit_t2e
+                t2e_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                t2e_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                t2e_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                t2e_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = fh_sys_config_t2e
 
             # --------------------------save e-h qspec-----------------------
             if run_flags["eh_q_spec"]:
@@ -1311,6 +1445,19 @@ while j < n:
                 del saver_fh_qspec
                 del fh_qspec_data
 
+            # --------------------------save htores Rabi-----------------------
+            if run_flags["htores_rabi"]:
+                saver_htores_rabi = Data_H5(subStudyDataFolder, htores_rabi_data, batch_num, save_r)
+                saver_htores_rabi.save_to_h5('rabi_htores')
+                del saver_htores_rabi
+                del htores_rabi_data
+            # --------------------------save f-h qspec-----------------------
+            if run_flags["htores_q_spec"]:
+                saver_htores_qspec = Data_H5(subStudyDataFolder, htores_qspec_data, batch_num, save_r)
+                saver_htores_qspec.save_to_h5('qspec_htores')
+                del saver_htores_qspec
+                del htores_qspec_data
+
             # --------------------------save e-h Rabi-----------------------
             if run_flags["eh_rabi"]:
                 saver_eh_rabi = Data_H5(subStudyDataFolder, eh_rabi_data, batch_num, save_r)
@@ -1324,12 +1471,19 @@ while j < n:
                 del saver_eh_qspec
                 del eh_qspec_data
 
-            # --------------------------save g-e t2r-----------------------
+            # --------------------------save f-h t2r-----------------------
             if run_flags["fh_t2r"]:
                 saver_fh_t2r = Data_H5(subStudyDataFolder, fh_t2r_data, batch_num, save_r)
                 saver_fh_t2r.save_to_h5('t2_fh')
                 del saver_fh_t2r
                 del fh_t2r_data
+
+            # --------------------------save g-e t2e-----------------------
+            if run_flags["fh_t2e"]:
+                saver_fh_t2e = Data_H5(subStudyDataFolder, fh_t2e_data, batch_num, save_r)
+                saver_fh_t2e.save_to_h5('fh_t2e_ge')
+                del saver_fh_t2e
+                del fh_t2e_data
 
     # reset all dictionaries to none for safety
     res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
@@ -1341,11 +1495,14 @@ while j < n:
     ef_qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
     fh_qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
     fh_rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
+    htores_qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
+    htores_rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
     rabi_data_ef_Qtemps = create_data_dict(rabi_keys_ef_Qtemps, save_r, list_of_all_qubits)
     t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
     t2r_data = create_data_dict(t2r_keys, save_r, list_of_all_qubits)
     fh_t2r_data = create_data_dict(t2r_keys, save_r, list_of_all_qubits)
     t2e_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
+    fh_t2e_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
     ss_data_gef = create_data_dict(ss_keys_gef, save_r, list_of_all_qubits)
 
 en = time.time()

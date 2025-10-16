@@ -18,7 +18,6 @@ import warnings
 from scipy.optimize import OptimizeWarning
 import logging
 
-
 class Fit:
     """
     This class takes care of the fitting to the measured data.
@@ -146,7 +145,7 @@ class Fit:
 
         return out
 
-class T2R_FHProgram(AveragerProgramV2):
+class T2EProgram(AveragerProgramV2):
     def _initialize(self, cfg):
         ro_ch = cfg['ro_ch']
         res_ch = cfg['res_ch']
@@ -192,14 +191,26 @@ class T2R_FHProgram(AveragerProgramV2):
                        )
 
         # normal wfh pulse
-        self.add_gauss(ch=qubit_ch, name="fhramp1", sigma=cfg['sigma_fh'], length=cfg['sigma_fh'] * 4, even_length=False)
+        self.add_gauss(ch=qubit_ch, name="fhramp1", sigma=cfg['sigma_fh'], length=cfg['sigma_fh'] * 4,
+                       even_length=False)
 
         self.add_pulse(ch=qubit_ch, name="fh_pi2_pulse1",
                        style="arb",
                        envelope="fhramp1",
                        freq=cfg['qubit_freq_fh'],
                        phase=cfg['qubit_phase'],
-                       gain=cfg['pi_fh_amp']/2,
+                       gain=cfg['pi_fh_amp'] / 2,
+                       )
+
+        self.add_gauss(ch=qubit_ch, name="fhramp", sigma=cfg['sigma_fh'], length=cfg['sigma_fh'] * 4,
+                      even_length=False)
+
+        self.add_pulse(ch=qubit_ch, name="fh_pi_pulse",
+                       style="arb",
+                       envelope="fhramp",
+                       freq=cfg['qubit_freq_fh'],
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['pi_fh_amp'],
                        )
         self.add_gauss(ch=qubit_ch, name="fhramp2", sigma=cfg['sigma_fh'], length=cfg['sigma_fh'] * 4,
                        even_length=False)
@@ -208,11 +219,9 @@ class T2R_FHProgram(AveragerProgramV2):
                        style="arb",
                        envelope="fhramp2",
                        freq=cfg['qubit_freq_fh'],
-                       phase=cfg['qubit_phase'] + cfg['wait_time']*360*cfg['ramsey_freq'],
+                       phase=cfg['qubit_phase'] + cfg['wait_time'] * 360 * cfg['ramsey_freq'],
                        gain=cfg['pi_fh_amp'] / 2,
                        )
-
-
 
 
 
@@ -221,39 +230,39 @@ class T2R_FHProgram(AveragerProgramV2):
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play ge drive pulse
         self.delay_auto(t=0.01, tag='waiting after ge drive')  # Wait a small time after ge drive pulse is complete
+
         self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # f-e drive pulse
         self.delay_auto(t=0.01, tag='waiting after ef drive')  # Wait a small time after ge drive pulse is complete
+
         self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi2_pulse1", t=0)  # play fh pi/2 drive pulse
-        self.delay_auto(cfg['wait_time'] + 0.01, tag='wait')  # wait_time after last pi/2 pulse
+        self.delay_auto(cfg['wait_time']/2 + 0.01, tag='wait1')  # wait_time after last pi/2 pulse
+
+        self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi_pulse", t=0)  # play fh pi drive pulse
+        self.delay_auto(cfg['wait_time'] / 2 + 0.01, tag='wait2')  # wait_time before next pi/2 pulse
+
         self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi2_pulse2", t=0)  # play fh pi/2 drive pulse
         self.delay_auto(0.01)  # wait_time after last pulse
 
-        self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # f-e drive pulse
-        self.delay_auto(t=0.01, tag='waiting after final ef drive')  # Wait a small time after ge drive pulse is complete
-        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play ge drive pulse
-
-        self.delay_auto(t=0.01, tag='waiting after final ge drive')  # Wait a small time after ge drive pulse is complete
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
-
-class T2R_FHMeasurement:
+class T2E_FHMeasurement:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_figs, experiment = None,
-                 live_plot = None, fit_data = False, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
+                 live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
                  multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, unmasking_resgain = False):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.fit_data = fit_data
-        self.expt_name = "Ramsey_fh"
+        self.expt_name = "SpinEcho_fh"
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
         self.round_num = round_num
         self.signal = signal
-        self.number_of_qubits = number_of_qubits
         self.save_figs = save_figs
         self.live_plot = live_plot
+        self.number_of_qubits = number_of_qubits
         self.verbose = verbose
         self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
 
@@ -269,9 +278,9 @@ class T2R_FHMeasurement:
                         if self.verbose: print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
                         self.logger.info(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
                         self.config["reps"] *=multiply_qubit_reps_by
-                        #self.config['ramsey_freq'] = 2 * self.config['ramsey_freq']
-            if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration: ', self.config)
-            self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration:{self.config}')
+                        # self.config['ramsey_freq'] = 2 * self.config['ramsey_freq']
+            if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2E configuration: ', self.config)
+            self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} T2E configuration: {self.config}')
 
     def t2_fit(self, x_data, I, Q, verbose = False, guess=None, plot=False):
         #fitting code adapted from https://github.com/qua-platform/py-qua-tools/blob/37c741ade5a8f91888419c6fd23fd34e14372b06/qualang_tools/plot/fitting.py
@@ -369,7 +378,12 @@ class T2R_FHMeasurement:
         def fit_type(x_var, a):
             return func(x_var, a[0], a[1], a[2], a[3], a[4], a[5])
 
-        popt, pcov = optimize.curve_fit(func,x,y,p0=[1, 1, 1, guess_phase, 1, 1],)
+        popt, pcov = optimize.curve_fit(
+            func,
+            x,
+            y,
+            p0=[1, 1, 1, guess_phase, 1, 1],
+        )
 
         perr = np.sqrt(np.diag(pcov))
 
@@ -410,58 +424,57 @@ class T2R_FHMeasurement:
                 label=f"T2  = {out['T2'][0]:.1f} +/- {out['T2'][1]:.1f}ns \n f = {out['f'][0] * 1000:.3f} +/- {out['f'][1] * 1000:.3f} MHz",
             )
             plt.legend(loc="upper right")
-        t2r_est = out['T2'][0] #in ns
-        t2r_err = out['T2'][1] #in ns
-        return fit_type(x, popt) * y_normal, t2r_est, t2r_err, plot_sig
+        t2e_est = out['T2'][0] #in ns
+        t2e_err = out['T2'][1] #in ns
+        return fit_type(x, popt) * y_normal, t2e_est, t2e_err, plot_sig
 
     def run(self, thresholding=False):
         now = datetime.datetime.now()
-        ramsey = T2R_FHProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
+        echo = T2EProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
                          cfg=self.config)
-
         # for live plotting open http://localhost:8097/ on firefox
         if self.live_plot:
-            I, Q, delay_times = self.live_plotting(ramsey, thresholding)
+            I, Q, delay_times = self.live_plotting(echo, thresholding)
         else:
             if thresholding:
-                iq_list = ramsey.acquire(self.experiment.soc, soft_avgs=self.config['rounds'],
-                                         threshold=self.experiment.readout_cfg["threshold"],
-                                         angle=self.experiment.readout_cfg["ro_phase"], progress=self.qick_verbose)
+                iq_list = echo.acquire(self.experiment.soc, soft_avgs=self.config['rounds'],
+                                           threshold=self.experiment.readout_cfg["threshold"],
+                                           angle=self.experiment.readout_cfg["ro_phase"], progress=self.qick_verbose)
             else:
-                iq_list = ramsey.acquire(self.experiment.soc, soft_avgs=self.config['rounds'], progress=self.qick_verbose)
+                iq_list = echo.acquire(self.experiment.soc, soft_avgs=self.config['rounds'], progress=self.qick_verbose)
 
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
-            delay_times = ramsey.get_time_param('wait', "t", as_array=True)
-            # print('delay_times', delay_times)
-        # gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
+            delay_times1 = echo.get_time_param('wait1', "t", as_array=True)
+            delay_times2 = echo.get_time_param('wait2', "t", as_array=True)
+            delay_times = delay_times1+delay_times2
 
         if self.fit_data:
-            fit, t2r_est, t2r_err, plot_sig = self.t2_fit(delay_times, I, Q)
+            fit, t2e_est, t2e_err, plot_sig = self.t2_fit(delay_times, I, Q)
         else:
-            fit, t2r_est, t2r_err, plot_sig = None, None, None, None
+            fit, t2e_est, t2e_err, plot_sig = None, None, None, None
 
         if self.save_figs:
-            self.plot_results(I, Q, delay_times, now, fit, t2r_est, t2r_err, plot_sig)
+            self.plot_results(I, Q, delay_times, now, fit, t2e_est, t2e_err, plot_sig)
 
+        return  t2e_est, t2e_err, I, Q, delay_times, fit, self.config
 
-        return  t2r_est, t2r_err, I, Q, delay_times, fit, self.config
-
-    def live_plotting(self, ramsey, thresholding):
+    def live_plotting(self, echo,thresholding):
         I = Q = expt_mags = expt_phases = expt_pop = None
         viz = visdom.Visdom()
         if not viz.check_connection(timeout_seconds=5):
             raise RuntimeError("Visdom server not connected!")
-
         for ii in range(self.config["rounds"]):
             if thresholding:
-                iq_list = ramsey.acquire(self.experiment.soc, soft_avgs=1,
-                                         threshold=self.experiment.readout_cfg["threshold"],
-                                         angle=self.experiment.readout_cfg["ro_phase"], progress=self.qick_verbose)
+                iq_list = echo.acquire(self.experiment.soc, soft_avgs=1,
+                                       threshold=self.experiment.readout_cfg["threshold"],
+                                       angle=self.experiment.readout_cfg["ro_phase"], progress=self.qick_verbose)
             else:
-                iq_list = ramsey.acquire(self.experiment.soc, soft_avgs=1, progress=self.qick_verbose)
+                iq_list = echo.acquire(self.experiment.soc, soft_avgs=1, progress=self.qick_verbose)
 
-            delay_times = ramsey.get_time_param('wait', "t", as_array=True)
+            delay_times1 = echo.get_time_param('wait1', "t", as_array=True)
+            delay_times2 = echo.get_time_param('wait2', "t", as_array=True)
+            delay_times = delay_times1 + delay_times2
 
             this_I = iq_list[self.QubitIndex][0, :, 0]
             this_Q = iq_list[self.QubitIndex][0, :, 1]
@@ -472,8 +485,8 @@ class T2R_FHMeasurement:
                 I = (I * ii + this_I) / (ii + 1.0)
                 Q = (Q * ii + this_Q) / (ii + 1.0)
 
-            viz.line(X=delay_times, Y=I, opts=dict(height=400, width=700, title='T2 Ramsey I', showlegend=True, xlabel='expt_pts'),win='T2R_I')
-            viz.line(X=delay_times, Y=Q, opts=dict(height=400, width=700, title='T2 Ramsey Q', showlegend=True, xlabel='expt_pts'),win='T2R_Q')
+            viz.line(X=delay_times, Y=I, opts=dict(height=400, width=700, title='T2 Echo I', showlegend=True, xlabel='expt_pts'),win='T2E_I')
+            viz.line(X=delay_times, Y=Q, opts=dict(height=400, width=700, title='T2 Echo Q', showlegend=True, xlabel='expt_pts'),win='T2E_Q')
         return I, Q, delay_times
 
     def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):
@@ -491,12 +504,13 @@ class T2R_FHMeasurement:
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-    def plot_results(self, I, Q, delay_times, now, fit, t2r_est, t2r_err, plot_sig, config = None, fig_quality = 100):
+    def plot_results(self, I, Q, delay_times, now, fit, t2e_est, t2e_err, plot_sig, config = None, fig_quality = 100):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
         # Calculate the middle of the plot area
         plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
+
         if self.fit_data:
             if 'I' in plot_sig:
                 ax1.plot(delay_times, fit, '-', color='red', linewidth=3, label="Fit")
@@ -506,29 +520,28 @@ class T2R_FHMeasurement:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"T2 FH Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         f"Q{self.QubitIndex + 1}" + f" T2E={t2e_est:.2f} us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
                          fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
                 fig.text(plot_middle, 0.98,
-                         f"T2 FH Q{self.QubitIndex + 1}, T2R %.2f us" % float(
-                             t2r_est) + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
+                         f"T2 Q{self.QubitIndex + 1}, T2E %.2f us" % float(
+                             t2e_est) + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
                          fontsize=24, ha='center', va='top')
 
         else:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"T2 FH Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs," ,
-                         fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
+                         f"T2 Q{self.QubitIndex + 1}, pi gain %.2f" % float(config[
+                             'pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma" + f", {float(config['reps'])}*{float(config['rounds'])} avgs," ,
+                         fontsize=24, ha='center', va='top')
             else:
                 fig.text(plot_middle, 0.98,
-                         f"T2 FH Q{self.QubitIndex + 1}, pi gain %.2f" % float(self.config[
+                         f"T2 Q{self.QubitIndex + 1}, pi gain %.2f" % float(self.config[
                                                                                 'pi_amp']) + f", {float(self.config['sigma']) * 1000} ns sigma" + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
                          fontsize=24, ha='center', va='top')
 
         # I subplot
-        #
-        # _times',delay_times)
         ax1.plot(delay_times, I, label="Gain (a.u.)", linewidth=2)
         ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
         ax1.tick_params(axis='both', which='major', labelsize=16)
@@ -554,3 +567,5 @@ class T2R_FHMeasurement:
             file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
             fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
+
+
