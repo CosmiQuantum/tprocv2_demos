@@ -4,7 +4,7 @@ import ast
 import numpy as np
 import h5py
 from sklearn.mixture import GaussianMixture
-from qicklab.analysis import qspec, t1, ssf
+# from qicklab.analysis import qspec, t1, ssf
 from matplotlib.ticker import MaxNLocator
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 import math
@@ -1138,6 +1138,103 @@ class SSFTempCalcAndPlots:
                 })
         return pairs_info
 
+    def get_ssf_qtemps_duringRR(self, QubitIndex, I_g, Q_g, I_e, Q_e, Qubit_Freq_MHz, config):
+        fid, threshold, angle, ig_new, ie_new = self.hist_ssf(QubitIndex, data=[I_g, Q_g, I_e, Q_e], cfg=config,
+                                                              plot=False)
+
+        (Pg, Pe, gmm, means, sigmas, weights, threshold_mid, threshold_mid_err, ground_gaussian, excited_gaussian,
+         ground_data, excited_data, _) = self.fit_double_gaussian_midpoint(ig_new)
+
+        temp_k = self.calculate_qubit_temperature(Qubit_Freq_MHz, Pg, Pe)
+
+        return temp_k * 1000 #mK
+
+    def hist_ssf(self, QubitIndex, data=None, cfg=None, plot=True,  fig_quality = 100):
+
+        ig = data[0]
+        qg = data[1]
+        ie = data[2]
+        qe = data[3]
+
+        if cfg is None:
+            numbins = 55
+        else:
+            numbins = round(math.sqrt(float(cfg["steps"])))
+
+        xg, yg = np.median(ig), np.median(qg)
+        xe, ye = np.median(ie), np.median(qe)
+
+        if plot == True:
+            fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(16, 4))
+            fig.tight_layout()
+
+            axs[0].scatter(ig, qg, label='g', color='b', marker='*', alpha=0.2)
+            axs[0].scatter(ie, qe, label='e', color='r', marker='*', alpha=0.2)
+            axs[0].scatter(xg, yg, color='k', marker='o')
+            axs[0].scatter(xe, ye, color='k', marker='o')
+            axs[0].set_xlabel('I (a.u.)')
+            axs[0].set_ylabel('Q (a.u.)')
+            axs[0].legend(loc='upper right')
+            axs[0].set_title('Unrotated')
+            axs[0].axis('equal')
+        """Compute the rotation angle"""
+        theta = -np.arctan2((ye - yg), (xe - xg))
+        """Rotate the IQ data"""
+        ig_new = ig * np.cos(theta) - qg * np.sin(theta)
+        qg_new = ig * np.sin(theta) + qg * np.cos(theta)
+        ie_new = ie * np.cos(theta) - qe * np.sin(theta)
+        qe_new = ie * np.sin(theta) + qe * np.cos(theta)
+
+        """New means of each blob"""
+        xg, yg = np.median(ig_new), np.median(qg_new)
+        xe, ye = np.median(ie_new), np.median(qe_new)
+
+        # print(xg, xe)
+        #xlims = [xg - ran, xg + ran]
+        xlims = [np.min(ig_new), np.max(ie_new)]
+
+        if plot == True:
+            axs[1].scatter(ig_new, qg_new, label='g', color='b', marker='*', alpha=0.2)
+            axs[1].scatter(ie_new, qe_new, label='e', color='r', marker='*', alpha=0.2)
+            axs[1].scatter(xg, yg, color='k', marker='o')
+            axs[1].scatter(xe, ye, color='k', marker='o')
+            axs[1].set_xlabel('I (a.u.)')
+            axs[1].legend(loc='lower right')
+            axs[1].set_title(f'Rotated Theta:{round(theta, 5)}')
+            axs[1].axis('equal')
+
+            """X and Y ranges for histogram"""
+            ng, binsg, pg = axs[2].hist(ig_new, bins=numbins, range=xlims, color='b', label='g', alpha=0.2)
+            ne, binse, pe = axs[2].hist(ie_new, bins=numbins, range=xlims, color='r', label='e', alpha=0.2)
+
+            axs[2].set_xlabel('I(a.u.)')
+        else:
+            ng, binsg = np.histogram(ig_new, bins=numbins, range=xlims)
+            ne, binse = np.histogram(ie_new, bins=numbins, range=xlims)
+
+        """Compute the fidelity using overlap of the histograms"""
+        contrast = np.abs(((np.cumsum(ng) - np.cumsum(ne)) / (0.5 * ng.sum() + 0.5 * ne.sum())))
+        tind = contrast.argmax()
+        threshold = binsg[tind]
+        fid = contrast[tind]
+
+        if plot == True:
+            self.create_folder_if_not_exists(self.outerFolder)
+            outerFolder_expt = os.path.join(self.outerFolder, "ss_ge_plots")
+            self.create_folder_if_not_exists(outerFolder_expt)
+            outerFolder_expt = os.path.join(outerFolder_expt, "Q" + str(self.QubitIndex + 1))
+            self.create_folder_if_not_exists(outerFolder_expt)
+            now = datetime.datetime.now()
+            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            file_name = os.path.join(outerFolder_expt,
+                                     f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
+
+            axs[2].set_title(f"Q{QubitIndex + 1} Fidelity = {fid * 100:.2f}%")
+            fig.savefig(file_name,  dpi=fig_quality, bbox_inches='tight')
+            plt.close(fig)
+
+        return fid, threshold, theta, ig_new, ie_new
+
 class RPMTempCalcAndPlots:
     def __init__(self, figure_quality, number_of_qubits, save_figs):
         self.save_figs = save_figs
@@ -1190,7 +1287,6 @@ class RPMTempCalcAndPlots:
                             combined_qtemp_data.extend(qtemp_data)
 
         return combined_qtemp_data # Will be empty if get_qtemp_data is set to False
-
 
 class combined_Qtemp_studies:
     def __init__(self, figure_quality, number_of_qubits):

@@ -30,7 +30,7 @@ from system_config import QICK_experiment
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 from analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
-
+from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
@@ -574,6 +574,17 @@ while j < n:
                     if verbose: print(f'Got the following error in ge ssf, continuing: {e}')
                     continue  # skip the rest of this qubit
 
+            #------------- get effective qubit temp via ssf method for the round that was just taken ---------------------
+            try:
+                ssf_qtemp = SSFTempCalcAndPlots(figure_quality, number_of_qubits, False)
+                temp_mk = ssf_qtemp.get_ssf_qtemps_duringRR(QubitIndex, I_g, Q_g, I_e, Q_e, qubit_freq, None)
+                with open(file_path, "a", encoding="utf-8") as f:
+                    f.write(
+                        f"Q{QubitIndex + 1} Effective Temperature via SSF: {temp_mk} mK, using Qfreq: {qubit_freq} MHz\n")
+            except Exception as e:
+                rr_logger.exception(f"SSF Temp calc/log failed for Q{QubitIndex + 1}: {e}")
+            # -------------------------------------------------------------------------------------------------------------
+
         ############################################## res spec ef ####################################################
         if run_flags["ef_res_spec"]:
             ef_res_freqs_samples = []
@@ -602,8 +613,7 @@ while j < n:
             else:
                 rr_logger.error(f"No resonator spectroscopy data collected for qubit {QubitIndex + 1}.")
 
-            experiment.readout_cfg['res_freq_ef'] = ef_res_freqs_samples[
-                -1]  # use the last e-f res spec frequency to update the sys config
+            experiment.readout_cfg['res_freq_ef'] = ef_res_freqs_samples[-1]  # use the last e-f res spec frequency to update the sys config
 
             rr_logger.info(f"Avg. EF resonator frequencies for qubit {QubitIndex + 1}: {avg_ef_res_freqs[QubitIndex]}")
             if verbose:
@@ -696,9 +706,9 @@ while j < n:
                     T_K, T_mK, _, _ = qtemp.Qubit_Temperature_Convert(A_amplitude1, A_amplitude2, qubit_freq)
                     with open(file_path, "a", encoding="utf-8") as f:
                         f.write(
-                            f"Q{QubitIndex + 1} Effective Temperature: {T_mK} mK using A1 = {float(A_amplitude1)}, A2 = {float(A_amplitude2)}, and Qfreq: {qubit_freq} MHz\n")
+                            f"Q{QubitIndex + 1} Effective Temperature via RPM: {T_mK} mK using A1 = {float(A_amplitude1)}, A2 = {float(A_amplitude2)}, and Qfreq: {qubit_freq} MHz\n")
                 except Exception as e:
-                    rr_logger.exception(f"Temp calc/log failed for Q{QubitIndex + 1}: {e}")
+                    rr_logger.exception(f"RPM Temp calc/log failed for Q{QubitIndex + 1}: {e}")
                 # -------------------------------------------------------------------------
 
                 rr_logger.info(
