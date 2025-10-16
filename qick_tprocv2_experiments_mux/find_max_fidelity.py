@@ -14,7 +14,8 @@ import datetime
 #outerFolder1 = os.path.join("/data/QICK_data/6transmon_run6/", '2025-03-02')
 # outerFolder1 = os.path.join("/data/QICK_data/run6/6transmon/ef_studies/Optimization/", str(datetime.date.today())) # for RR folders
 # outerFolder = "/data/QICK_data/run7/6transmon/readout_optimization/unmasking_resgain/2025-07-18_21-34-17/study_data/Data_h5/2D_Gain_Freq_Sweeps"
-outerFolder = "//data/QICK_data/run8/6transmon/readout_optimization/initial_optimization/2025-10-14_15-38-36/study_data/Data_h5/2D_Gain_Freq_Sweeps"
+outerFolder = "/data/QICK_data/run8/6transmon/readout_optimization/readoutopt_w_updatedpunchout_threshs/2025-10-16_12-00-27/study_data/Data_h5/2D_Gain_Freq_Sweeps"
+    #"/data/QICK_data/run8/6transmon/readout_optimization/readoutopt_w_updatedpunchout_threshs/2025-10-16_14-55-29/study_data/Data_h5/2D_Gain_Freq_Sweeps"
 #/data/QICK_data/run7/6transmon/readout_optimization/junkyard/2025-07-28_12-25-16/study_data/Data_h5/2D_Gain_Freq_Sweeps
 print('For files inside: ', outerFolder)
 
@@ -127,7 +128,7 @@ def find_configurations_below_threshold(file_path, threshold):
     return valid_configurations
 
 #Now getting results
-punchout_thresholds =  [1.0, 0.867, 0.867, 0.625, 0.867, 0.867]  # Arianna 10/14
+punchout_thresholds =  [1.0, 0.74, 0.9, 0.6, 0.41,0.85] # [1.0, 0.9, 0.9, 0.6, 0.525,0.85]  # Arianna 10/16
 for qubit_index in range(1, 7):
     file_pattern = os.path.join(outerFolder, f"*_Qubit_{qubit_index}_*.h5")
     file_list = glob.glob(file_pattern)

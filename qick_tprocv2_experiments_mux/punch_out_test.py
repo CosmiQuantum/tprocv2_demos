@@ -13,7 +13,7 @@ number_of_qubits = 6  #currently 4 for NEXUS, 6 for QUIET
 # sweep_DAC_attenuator1 =[] #np.linspace(5,20, 4)
 # sweep_DAC_attenuator2 =[10]#[15,20,25,30] #np.linspace(5,20,4)
 
-substudy = 'initial_punchout'
+substudy = 'Punchout'
 outerFolder = os.path.join(f"/data/QICK_data/run8/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 outerfolder_plots = outerFolder + "/documentation/"
 #outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/", str(datetime.date.today())) # for NEXUS
@@ -38,18 +38,33 @@ ADC_att=17
 
 experiment = QICK_experiment(outerfolder_plots, DAC_attenuator1 = DAC_att_1, DAC_attenuator2 = DAC_att_2, qubit_DAC_attenuator1 = 5 , qubit_DAC_attenuator2 = 4 ,ADC_attenuator = ADC_att, fridge=FRIDGE)
 
-start_gain, stop_gain, num_points =  0.4, 0.7, 5 # for QUIET 0.55, 0.775, 5 #
-
 # To look at only one resonator at a time:
+# start_gain, stop_gain, num_points =  0.4, 0.65, 4 # for QUIET 0.55, 0.775, 5 #
 # Qubit_index= 0 #starts at 0
 # punch_out   = PunchOut(Qubit_index, number_of_qubits, outerfolder_plots, experiment, Unmask)
 # punch_out.run(experiment.soccfg, experiment.soc, start_gain, stop_gain, num_points, DAC_att, ADC_att, plot_Center_shift = False, plot_res_sweeps = True)
 
 # For resonators back to back:
-Qs = [3] #starts at 0
+Qs = [0,1,2,3,4,5] #starts at 0
 for QubitIndex in Qs:
+    if QubitIndex == 0:
+        start_gain, stop_gain, num_points = 0.75, 0.95, 5
+    if QubitIndex == 1:
+        start_gain, stop_gain, num_points = 0.7, 0.85, 4
+    if QubitIndex == 2:
+        start_gain, stop_gain, num_points = 0.7, 0.9, 5
+    if QubitIndex == 3:
+        start_gain, stop_gain, num_points = 0.4, 0.6, 5
+    if QubitIndex == 4:
+        start_gain, stop_gain, num_points = 0.35, 0.55, 5
+    if QubitIndex == 5:
+        start_gain, stop_gain, num_points = 0.7, 0.9, 5
+
     punch_out  = PunchOut(QubitIndex, number_of_qubits, outerfolder_plots, experiment, Unmask)
     punch_out.run(experiment.soccfg, experiment.soc, start_gain, stop_gain, num_points, DAC_att, ADC_att, plot_Center_shift = False, plot_res_sweeps = True)
 
 del punch_out
 del experiment
+
+# res_gain = [0.9250, 0.8375, 0.875, 0.5, 0.5, 0.8375]
+#[1, 0.9, 0.9, 0.6, 0.55,0.85]

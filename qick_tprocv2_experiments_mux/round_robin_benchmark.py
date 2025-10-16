@@ -34,7 +34,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1000
+n = 1
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
@@ -55,32 +55,33 @@ increase_qubit_reps_t2r = False  # if you want to increase the reps for a qubit,
 increase_qubit_reps_t2e = False  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_efrabi = False  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_rpm = False  # if you want to increase the reps for a qubit, set to True
-increase_qubit_reps_qspec = False
+
 qubit_to_increase_reps_for = 4  # only has impact if previous line is True
 multiply_qubit_reps_by = 2  # only has impact if the line above is True. MUST be an integer.
-qspecge_increase_reps_to = 700
+
+qspecge_increase_reps_to = 800
 
 unmask = True  # Do you want to use the unmasking feature to increase resonator gain?
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi ?
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [0,1,2,5]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [1]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
 device_name = '6transmon'
-substudy_txt_notes = ('This is not official AB paper data yet. Still optimizing.\n') # Initial qubit checkouts quiet run 8
+substudy_txt_notes = ('This is not official AB paper data yet.\n') # Initial qubit checkouts quiet run 8
 
 # set which of the following you'd like to run to 'True'
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": True,
-             "rabi_pop_meas": True, "ef_Rabi": False}
+             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": False,
+             "rabi_pop_meas": False, "ef_Rabi": False}
 
 #Updated 10/14:
-res_leng_vals = [6.5, 7.5, 7.5, 7.0, 8.0, 7.0]
-res_gain = [0.95, 0.85, 0.85, 0.55, 0.85, 0.85]
-freq_offsets = [-0.3182, -0.1364, -0.2273, -0.2273, -0.5000, -0.1364]
+res_leng_vals = [6.5, 7.5, 7.5, 7.5, 8.0, 7.0]
+res_gain = [0.8250, 0.7375, 0.775, 0.4, 0.4, 0.7375] # [0.9250, 0.8375, 0.875, 0.5, 0.5, 0.8375]
+freq_offsets = [0.0455, 0.0455, 0.0455, -0.2273, 0.0455, -0.1364]
 
 qubit_freqs_ef = [None] * 6
 increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
@@ -91,7 +92,7 @@ figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin' #qubit_checkouts
-sub_study = 'pre_AB_paper_data_still_optimizing' #pre_AB_paper_data_still_optimizing
+sub_study = 'thomas_roth_ge_and_ef_rspec' #pre_AB_paper_data_still_optimizing
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -310,6 +311,7 @@ if pre_optimize:
         ############ g-e Qubit Spec ##############
         qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
         try:
+            increase_qubit_reps_qspec = False
             q_spec = QubitSpectroscopy(Q, tot_num_of_qubits, optimizationFolder, 0,
                                        signal, plot_fit=False, save_figs=True, increase_reps = increase_qubit_reps_qspec,
                                        increase_reps_to = qspecge_increase_reps_to, experiment=experiment, live_plot=live_plot,
@@ -479,7 +481,8 @@ while j < n:
         ################################################## g-e Qubit spec ##################################################
         if run_flags["q_spec"]:
             try:
-                if QubitIndex == 4: # Qubit 5
+                increase_qubit_reps_qspec = False
+                if QubitIndex == 3 or QubitIndex == 4: # Qubit 4 and 5
                     increase_qubit_reps_qspec = True
 
                 q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
@@ -522,6 +525,7 @@ while j < n:
                     if verbose:
                         print(f"g-e QSpec error on qubit {QubitIndex}: {e}")
                     continue
+
         ###################################################### g-e Rabi ####################################################
         if run_flags["rabi"]:
             try:
