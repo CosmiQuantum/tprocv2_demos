@@ -122,13 +122,13 @@ class HtoresQubitSpectroscopy:
         # Add title, centered on the plot area
         if config is not None:  # then its been passed to this definition, so use that
             fig.text(plot_middle, 0.98,
-                     f"FH Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz")# % largest_amp_curve_mean +
+                     f"Htores Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz")# % largest_amp_curve_mean +
                      # f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
                      # f", {config['reps']}*{config['rounds']} avgs",
                      # fontsize=24, ha='center', va='top')
         else:
             fig.text(plot_middle, 0.98,
-                     f"FH Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz")# % largest_amp_curve_mean +
+                     f"sHtores Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz")# % largest_amp_curve_mean +
                      # f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
                      # f", {self.config['reps']}*{self.config['rounds']} avgs",
                      # fontsize=24, ha='center', va='top')
@@ -264,12 +264,12 @@ class FHPulseProbeSpectroscopyProgram(AveragerProgramV2):
         qubit_ch = cfg['qubit_ch']
 
         self.declare_gen(ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
-                         mux_freqs=cfg['res_freq_ge'],
-                         mux_gains=cfg['res_gain_ge'],
+                         mux_freqs=cfg['res_freq_ef'],
+                         mux_gains=cfg['res_gain_ef'],
                          mux_phases=cfg['res_phase'],
                          mixer_freq=cfg['mixer_freq'])
 
-        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ef'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch)
 
         self.add_pulse(ch=gen_ch, name="res_pulse",
@@ -300,7 +300,6 @@ class FHPulseProbeSpectroscopyProgram(AveragerProgramV2):
                        )
 
         self.add_gauss(ch=qubit_ch, name="fhramp", sigma=cfg['sigma_fh'], length=cfg['sigma_fh'] * 4, even_length=False)
-
         self.add_pulse(ch=qubit_ch, name="fh_pi_pulse",
                        style="arb",
                        envelope="fhramp",
@@ -323,10 +322,10 @@ class FHPulseProbeSpectroscopyProgram(AveragerProgramV2):
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play pulse
         self.delay_auto(0.0)
-        self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # play pulse
-        self.delay_auto(0.0)
-        self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi_pulse", t=0)  # play pulse
-        self.delay_auto(0.0)
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # play pulse
+        # self.delay_auto(0.0)
+        # self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi_pulse", t=0)  # play pulse
+        # self.delay_auto(0.0)
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play f-h pulse
         self.delay_auto(t=0.01, tag='waiting')  # Wait til qubit e-f pulse is done before proceeding
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0) #readout

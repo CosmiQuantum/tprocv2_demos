@@ -8,8 +8,8 @@ if FRIDGE == "QUIET":
     ef_freqs = np.array([4020.48, 3650.81, 3999.01, 4303.08, 4313.19, 4848.81]) # Qubit freqs e/f Transition,Arianna 10/13
     fh_freqs = np.array([3820.97, 3456.15, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition
     eh_freqs = np.array([4020.48, 3650.81+3456.15, 3999.01, 4303.08, 4313.19, 4848.81])  # Qubit freqs e/f Transition,Arianna 10/13
-    htores_freqs = np.array([4020.48, 4650, 3999.01, 4303.08, 4313.19, 4848.81])
-    # Set this for your experiment
+    htores_freqs = np.array([4020.48, 2461, 3999.01, 4303.08, 4313.19, 4848.81])
+    # Set this for your experiment 3828+3650+3456-6289
     tot_num_of_qubits = 6
 
     list_of_all_qubits = list(range(tot_num_of_qubits))
@@ -114,10 +114,10 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
         },
         "qubit_spec_htores": {
-            "reps": 8000,  # 300
+            "reps": 2000,  # 300
             "rounds": 1,  # 10
-            "start": list(htores_freqs - 100),  # [MHz] #-300 #-6
-            "stop": list(htores_freqs + 100),  # [MHz] #6
+            "start": list(htores_freqs - 50),  # [MHz] #-300 #-6
+            "stop": list(htores_freqs + 50),  # [MHz] #6
             "steps": 1000,  # 450,  # 1000 #450
             "relax_delay": 1000,  # 1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
