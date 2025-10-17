@@ -20,52 +20,52 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
         },
 
-        "res_spec": { # For thomas roth data
-            "reps": 3000,
-            "rounds": 1,
-            "start": -1.0,       # MHz, sweep from -1.0 to +1.0 around center
-            "step_size": 0.005,  # MHz (5 kHz)
-            "steps": 401,
-            "relax_delay": 10,  # [us]
-            "list_of_all_qubits": list_of_all_qubits,
-        },
-
-        # "res_spec": {
-        #     "reps": 200,
+        # "res_spec": { # For thomas roth data
+        #     "reps": 3000,
         #     "rounds": 1,
-        #     "start": -2,  # [MHz]
-        #     "step_size": 0.05,  # [MHz]
-        #     "steps": 100,
+        #     "start": -1.0,       # MHz, sweep from -1.0 to +1.0 around center
+        #     "step_size": 0.005,  # MHz (5 kHz)
+        #     "steps": 401,
         #     "relax_delay": 10,  # [us]
         #     "list_of_all_qubits": list_of_all_qubits,
         # },
 
-        "res_spec_ef": { # for thomas roth data
-            "reps": 3000,
+        "res_spec": {
+            "reps": 200,
             "rounds": 1,
-            "start": -1.0,       # MHz, sweep from -1.0 to +1.0 around center
-            "step_size": 0.005,  # MHz (5 kHz)
-            "steps": 401,
-            "relax_delay": 1000,  # [us]
+            "start": -2,  # [MHz]
+            "step_size": 0.05,  # [MHz]
+            "steps": 100,
+            "relax_delay": 10,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
-        # "res_spec_ef": {
-        #     "reps": 250,
+        # "res_spec_ef": { # for thomas roth data
+        #     "reps": 3000,
         #     "rounds": 1,
-        #     "start": -2,  # [MHz]
-        #     "step_size": 0.05,  # [MHz]
-        #     "steps": 100,
+        #     "start": -1.0,       # MHz, sweep from -1.0 to +1.0 around center
+        #     "step_size": 0.005,  # MHz (5 kHz)
+        #     "steps": 401,
         #     "relax_delay": 1000,  # [us]
         #     "list_of_all_qubits": list_of_all_qubits,
         # },
 
+        "res_spec_ef": {
+            "reps": 250,
+            "rounds": 1,
+            "start": -2,  # [MHz]
+            "step_size": 0.05,  # [MHz]
+            "steps": 100,
+            "relax_delay": 1000,  # [us]
+            "list_of_all_qubits": list_of_all_qubits,
+        },
+
         "qubit_spec_ge": {
-            "reps": 600, #300
+            "reps": 500, #300
             "rounds": 1, #10
             "start": list(VNA_qubit-6), # [MHz] #-300 #-15
             "stop": list(VNA_qubit+6), # [MHz] #+15
-            "steps": 220, #100
+            "steps": 300, #100
             "relax_delay":10,#1000 # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -142,11 +142,11 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ge": {
-            "reps": 500,#500,
+            "reps": 150,#500,
             "rounds": 1,  # 5
             "start": [0] * 6,  # [DAC units]
             "stop": [1] * 6,#[1.0] * 6,  # [DAC units]
-            "steps": 150, #50,
+            "steps": 125, #50,
             "relax_delay": 1000,#1000,#1000,#1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },

@@ -59,14 +59,14 @@ increase_qubit_reps_rpm = False  # if you want to increase the reps for a qubit,
 qubit_to_increase_reps_for = 4  # only has impact if previous line is True
 multiply_qubit_reps_by = 2  # only has impact if the line above is True. MUST be an integer.
 
-qspecge_increase_reps_to = 2000
+qspecge_increase_reps_to = 900
 
 unmask = True  # Do you want to use the unmasking feature to increase resonator gain?
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi ?
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [4]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [5]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
@@ -80,12 +80,8 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi":
 
 #Updated 10/16:
 res_leng_vals = [6.5, 7.5, 7.5, 7.5, 8.0, 7.0]
-res_gain = [0.6250, 0.5375, 0.575, 0.2, 0.2, 0.5375]
-freq_offsets = [0.1364, 0.0455, -0.2273, 0.0455, 0.0455, -0.2273]
-
-# res_leng_vals = [6.5, 7.5, 7.5, 7.5, 8.0, 7.0]
-# res_gain = [0.9250, 0.8375, 0.875, 0.5, 0.5, 0.8375]
-# freq_offsets = [0.0455, 0.0455, 0.0455, -0.2273, 0.1364, -0.1364]
+res_gain = [0.9250, 0.8375, 0.875, 0.5, 0.5, 0.8375]
+freq_offsets = [0.0455, 0.0455, 0.0455, -0.2273, 0.1364, -0.1364]
 
 qubit_freqs_ef = [None] * 6
 increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
@@ -96,7 +92,7 @@ figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin' #qubit_checkouts
-sub_study = 'thomas_roth_ge_and_ef_rspec' #pre_AB_paper_data_still_optimizing
+sub_study = 'pre_AB_paper_data_still_optimizing' #pre_AB_paper_data_still_optimizing
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
