@@ -55,7 +55,7 @@ class AmplitudeRabiExperiment:
             if increase_qubit_reps:
                     if self.QubitIndex==qubit_to_increase_reps_for:
                         if self.verbose: print(f"Increasing reps for {self.QubitIndex + 1} by {multiply_qubit_reps_by} times")
-                        self.logger.info(f"Increasing reps for {self.Qubit + 1} by {multiply_qubit_reps_by} times")
+                        self.logger.info(f"Increasing reps for {self.QubitIndex + 1} by {multiply_qubit_reps_by} times")
                         self.config["reps"] *= multiply_qubit_reps_by
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} Rabi configuration: {self.config}')
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} Rabi configuration: ', self.config)

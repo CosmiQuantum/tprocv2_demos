@@ -3,7 +3,7 @@ import numpy as np
 FRIDGE = "QUIET"  # change to "NEXUS" as needed
 
 if FRIDGE == "QUIET":
-    VNA_res = np.array([6227.187, 6289.175, 6348.525, 6419.665, 6485.360, 6552.35])# ge resonator freqs, updated 10/10 during run 8
+    VNA_res = np.array([6227.187, 6289.175, 6348.55, 6419.665, 6485.360, 6552.35])# ge resonator freqs, updated 10/10 during run 8
     VNA_qubit = np.array([4194.77, 3828.69, 4173.69, 4474.23, 4485.38, 5018.12])  # Qubit freqs g/e Transition, updated during run 8 on 10/10
     ef_freqs = np.array([4020.48, 3650.81, 3999.01, 4303.08, 4313.19, 4848.81]) # Qubit freqs e/f Transition,Arianna 10/13
     fh_freqs = np.array([3820.97, 3450.85, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition
@@ -21,11 +21,11 @@ if FRIDGE == "QUIET":
         },
 
         "res_spec": { # For thomas roth data
-            "reps": 600,
+            "reps": 3000,
             "rounds": 1,
-            "start": -0.5,       # MHz, sweep from -0.5 to +0.5 around center
-            "step_size": 0.005,  # MHz (~5 kHz)
-            "steps": 200,        # 200 points total
+            "start": -1.0,       # MHz, sweep from -1.0 to +1.0 around center
+            "step_size": 0.005,  # MHz (5 kHz)
+            "steps": 401,
             "relax_delay": 10,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -41,11 +41,11 @@ if FRIDGE == "QUIET":
         # },
 
         "res_spec_ef": { # for thomas roth data
-            "reps": 600,
+            "reps": 3000,
             "rounds": 1,
-            "start": -0.5,       # MHz, sweep from -0.5 to +0.5 around center
-            "step_size": 0.005,  # MHz (~5 kHz)
-            "steps": 200,        # 200 points total
+            "start": -1.0,       # MHz, sweep from -1.0 to +1.0 around center
+            "step_size": 0.005,  # MHz (5 kHz)
+            "steps": 401,
             "relax_delay": 1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -63,9 +63,9 @@ if FRIDGE == "QUIET":
         "qubit_spec_ge": {
             "reps": 600, #300
             "rounds": 1, #10
-            "start": list(VNA_qubit-8), # [MHz] #-300 #-15
-            "stop": list(VNA_qubit+8), # [MHz] #+15
-            "steps": 200, #100
+            "start": list(VNA_qubit-6), # [MHz] #-300 #-15
+            "stop": list(VNA_qubit+6), # [MHz] #+15
+            "steps": 220, #100
             "relax_delay":10,#1000 # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -142,7 +142,7 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ge": {
-            "reps": 300,#500,
+            "reps": 500,#500,
             "rounds": 1,  # 5
             "start": [0] * 6,  # [DAC units]
             "stop": [1] * 6,#[1.0] * 6,  # [DAC units]

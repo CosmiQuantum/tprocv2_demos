@@ -49,7 +49,7 @@ qick_verbose = True  # qick verbose prints the progress bar for each qick experi
 debug_mode = False  # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 thresholding = False  # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 
-increase_qubit_reps_gerabi = False  # if you want to increase the reps for a qubit, set to True
+increase_qubit_reps_gerabi = True  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_t1 = False  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_t2r = False  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_t2e = False  # if you want to increase the reps for a qubit, set to True
@@ -59,14 +59,14 @@ increase_qubit_reps_rpm = False  # if you want to increase the reps for a qubit,
 qubit_to_increase_reps_for = 4  # only has impact if previous line is True
 multiply_qubit_reps_by = 2  # only has impact if the line above is True. MUST be an integer.
 
-qspecge_increase_reps_to = 800
+qspecge_increase_reps_to = 2000
 
 unmask = True  # Do you want to use the unmasking feature to increase resonator gain?
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi ?
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [1]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [4]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
@@ -78,10 +78,14 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi":
              "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False}
 
-#Updated 10/14:
+#Updated 10/16:
 res_leng_vals = [6.5, 7.5, 7.5, 7.5, 8.0, 7.0]
-res_gain = [0.8250, 0.7375, 0.775, 0.4, 0.4, 0.7375] # [0.9250, 0.8375, 0.875, 0.5, 0.5, 0.8375]
-freq_offsets = [0.0455, 0.0455, 0.0455, -0.2273, 0.0455, -0.1364]
+res_gain = [0.6250, 0.5375, 0.575, 0.2, 0.2, 0.5375]
+freq_offsets = [0.1364, 0.0455, -0.2273, 0.0455, 0.0455, -0.2273]
+
+# res_leng_vals = [6.5, 7.5, 7.5, 7.5, 8.0, 7.0]
+# res_gain = [0.9250, 0.8375, 0.875, 0.5, 0.5, 0.8375]
+# freq_offsets = [0.0455, 0.0455, 0.0455, -0.2273, 0.1364, -0.1364]
 
 qubit_freqs_ef = [None] * 6
 increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
@@ -273,7 +277,7 @@ if pre_optimize:
                 optimizationFolder,
                 DAC_attenuator1=15,
                 DAC_attenuator2=10,
-                ADC_attenuator=17,
+                ADC_attenuator=16,
                 fridge=FRIDGE
             )
             # Set resonator configuration for this qubit
