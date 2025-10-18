@@ -74,8 +74,8 @@ device_name = '6transmon'
 substudy_txt_notes = ('This is not official AB paper data yet.\n') # Initial qubit checkouts quiet run 8
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": True,
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": False, "rabi": False, "ss_gef": False,
+             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False}
 
 #Updated 10/17:
@@ -84,15 +84,14 @@ res_gain = [0.9200, 0.8, 0.76, 0.52, 0.96, 0.92]
 freq_offsets = [-0.3111, -0.1333, -0.3267, 0.0467, -0.4200, -0.0444]
 
 qubit_freqs_ef = [None] * 6
-increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
-increase_steps_to_ef = 400
+increase_reps_to_ef = 4000
 ef_res_sample_number = 1
 number_of_qubits = 6
 figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin' #qubit_checkouts
-sub_study = 'pre_AB_paper_data_still_optimizing' #pre_AB_paper_data_still_optimizing
+sub_study = 'two_photon_peak_search' #pre_AB_paper_data_still_optimizing
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -626,13 +625,14 @@ while j < n:
             ################################################ Qubit Spec EF ################################################
             if run_flags["ef_q_spec"]:
                 try:
-                    # # Qubit 4 usually needs more steps for e-f spec
-                    # if QubitIndex == 1:
-                    #     increase_qubit_steps_ef = True  # if you want to increase the steps for a qubit, set to True
+                    # Qubit 4 usually needs more steps for e-f spec
+                    increase_qubit_reps_ef = False
+                    if QubitIndex == 3:
+                        increase_qubit_reps_ef = True  # if you want to increase the steps for a qubit, set to True
 
                     ef_q_spec = EFQubitSpectroscopy(QubitIndex, number_of_qubits, studyDocumentationFolder, j, signal,
-                                                    save_figs, experiment, live_plot, increase_reps = increase_qubit_steps_ef,
-                                                    increase_reps_to = increase_steps_to_ef, unmasking_resgain=unmask)
+                                                    save_figs, experiment, live_plot, increase_reps = increase_qubit_reps_ef,
+                                                    increase_reps_to = increase_reps_to_ef, unmasking_resgain=unmask)
 
                     efqspec_I, efqspec_Q, efqspec_freqs, sys_config_qspec_ef, efqspec_I_fit, efqspec_Q_fit, efqubit_freq = ef_q_spec.run()
                     qubit_freqs_ef[QubitIndex] = efqubit_freq
