@@ -154,6 +154,7 @@ class QICK_experiment:
                 "pi_fh_amp": [0.563, 0.7311, 0.511, 0.7018, 0.6751, 0.589],
                 "pi_htores_amp": [0.563, 0.7376, 0.511, 0.7018, 0.6751, 0.589],
                 "qubit_mixer_freq": 4300, #4300,  # [MHz]
+                "qubit_mixer_freq2":2200,
 
             }
 

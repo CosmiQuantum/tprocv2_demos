@@ -278,6 +278,53 @@ class FHPulseProbeSpectroscopyProgram(AveragerProgramV2):
                        mask=cfg["list_of_all_qubits"]  # [0, 1, 2, 3, 4, 5],
                        )
 
+        # self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+        #
+        # self.add_gauss(ch=qubit_ch, name="geramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+        #
+        # self.add_pulse(ch=qubit_ch, name="ge_pi_pulse",
+        #                style="arb",
+        #                envelope="geramp",
+        #                freq=cfg['qubit_freq_ge'],
+        #                phase=cfg['qubit_phase'],
+        #                gain=cfg['pi_amp'],
+        #                )
+        # self.add_gauss(ch=qubit_ch, name="eframp", sigma=cfg['sigma_ef'], length=cfg['sigma_ef'] * 4, even_length=False)
+        #
+        # self.add_pulse(ch=qubit_ch, name="ef_pi_pulse",
+        #                style="arb",
+        #                envelope="eframp",
+        #                freq=cfg['qubit_freq_ef'],
+        #                phase=cfg['qubit_phase'],
+        #                gain=cfg['pi_ef_amp'],
+        #                )
+        #
+        # self.add_gauss(ch=qubit_ch, name="fhramp", sigma=cfg['sigma_fh'], length=cfg['sigma_fh'] * 4, even_length=False)
+        # self.add_pulse(ch=qubit_ch, name="fh_pi_pulse",
+        #                style="arb",
+        #                envelope="fhramp",
+        #                freq=cfg['qubit_freq_fh'],
+        #                phase=cfg['qubit_phase'],
+        #                gain=cfg['pi_fh_amp'],
+        #                )
+
+        # print('FH',cfg['qubit_length_ge'], cfg['qubit_freq_fh'],cfg['qubit_gain_fh'])
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq2'])
+        self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_chs[0],
+                       style="const",
+                       length=cfg['qubit_length_ge'],
+                       freq=cfg['qubit_freq_htores'],
+                       phase=0,
+                       gain=cfg['qubit_gain_htores'],
+                       )
+
+        self.add_loop("freqloop", cfg["steps"])
+
+    def _body(self, cfg):
+        ro_chs = cfg['ro_ch']
+        gen_ch = cfg['res_ch']
+        qubit_ch = cfg['qubit_ch']
+
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
 
         self.add_gauss(ch=qubit_ch, name="geramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
@@ -308,8 +355,16 @@ class FHPulseProbeSpectroscopyProgram(AveragerProgramV2):
                        gain=cfg['pi_fh_amp'],
                        )
 
-        # print('FH',cfg['qubit_length_ge'], cfg['qubit_freq_fh'],cfg['qubit_gain_fh'])
-        self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_chs[0],
+
+        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play pulse
+        self.delay_auto(0.0)
+        self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # play pulse
+        self.delay_auto(0.0)
+        self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi_pulse", t=0)  # play pulse
+        self.delay_auto(0.0)
+
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq2'])
+        self.add_pulse(ch=qubit_ch, name="qubit_pulse2", ro_ch=ro_chs[0],
                        style="const",
                        length=cfg['qubit_length_ge'],
                        freq=cfg['qubit_freq_htores'],
@@ -317,16 +372,7 @@ class FHPulseProbeSpectroscopyProgram(AveragerProgramV2):
                        gain=cfg['qubit_gain_htores'],
                        )
 
-        self.add_loop("freqloop", cfg["steps"])
-
-    def _body(self, cfg):
-        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play pulse
-        self.delay_auto(0.0)
-        # self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # play pulse
-        # self.delay_auto(0.0)
-        # self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi_pulse", t=0)  # play pulse
-        # self.delay_auto(0.0)
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play f-h pulse
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse2", t=0)  # play f-h pulse
         self.delay_auto(t=0.01, tag='waiting')  # Wait til qubit e-f pulse is done before proceeding
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0) #readout
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
