@@ -45,20 +45,20 @@ experiment = QICK_experiment(outerfolder_plots, DAC_attenuator1 = DAC_att_1, DAC
 # punch_out.run(experiment.soccfg, experiment.soc, start_gain, stop_gain, num_points, DAC_att, ADC_att, plot_Center_shift = False, plot_res_sweeps = True)
 
 # For resonators back to back:
-Qs = [3] #starts at 0
+Qs = [0,1,2,3,4,5] #starts at 0
 for QubitIndex in Qs:
     if QubitIndex == 0:
-        start_gain, stop_gain, num_points = 0.75, 0.95, 5
+        start_gain, stop_gain, num_points = 0.75, 0.95, 4
     if QubitIndex == 1:
-        start_gain, stop_gain, num_points = 0.7, 0.85, 4
+        start_gain, stop_gain, num_points = 0.65, 0.95, 4
     if QubitIndex == 2:
-        start_gain, stop_gain, num_points = 0.7, 0.9, 5
+        start_gain, stop_gain, num_points = 0.7, 1.0, 5
     if QubitIndex == 3:
-        start_gain, stop_gain, num_points = 0.3, 0.4625, 4
+        start_gain, stop_gain, num_points = 0.5, 0.65, 4
     if QubitIndex == 4:
-        start_gain, stop_gain, num_points = 0.35, 0.55, 5
+        start_gain, stop_gain, num_points = 0.55, 1.0, 5
     if QubitIndex == 5:
-        start_gain, stop_gain, num_points = 0.7, 0.9, 5
+        start_gain, stop_gain, num_points = 0.7, 1.0, 4
 
     punch_out  = PunchOut(QubitIndex, number_of_qubits, outerfolder_plots, experiment, Unmask)
     punch_out.run(experiment.soccfg, experiment.soc, start_gain, stop_gain, num_points, DAC_att, ADC_att, plot_Center_shift = False, plot_res_sweeps = True)

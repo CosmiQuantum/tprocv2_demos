@@ -56,7 +56,7 @@ increase_qubit_reps_t2e = False  # if you want to increase the reps for a qubit,
 increase_qubit_reps_efrabi = False  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_rpm = False  # if you want to increase the reps for a qubit, set to True
 
-qubit_to_increase_reps_for = 4  # only has impact if previous line is True
+qubit_to_increase_reps_for = 3  # only has impact if previous line is True
 multiply_qubit_reps_by = 2  # only has impact if the line above is True. MUST be an integer.
 
 qspecge_increase_reps_to = 900
@@ -66,7 +66,7 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [5]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [2]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
@@ -75,13 +75,13 @@ substudy_txt_notes = ('This is not official AB paper data yet.\n') # Initial qub
 
 # set which of the following you'd like to run to 'True'
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": False,
+             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": True,
              "rabi_pop_meas": False, "ef_Rabi": False}
 
-#Updated 10/16:
-res_leng_vals = [6.5, 7.5, 7.5, 7.5, 8.0, 7.0]
-res_gain = [0.9250, 0.8375, 0.875, 0.5, 0.5, 0.8375]
-freq_offsets = [0.0455, 0.0455, 0.0455, -0.2273, 0.1364, -0.1364]
+#Updated 10/17:
+res_leng_vals = [5.0, 8.5, 8.0, 7.0, 7.0, 8.0]
+res_gain = [0.9200, 0.8, 0.76, 0.52, 0.96, 0.92]
+freq_offsets = [-0.3111, -0.1333, -0.3267, 0.0467, -0.4200, -0.0444]
 
 qubit_freqs_ef = [None] * 6
 increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section

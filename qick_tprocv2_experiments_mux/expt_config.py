@@ -21,17 +21,17 @@ if FRIDGE == "QUIET":
         },
 
         # "res_spec": { # For thomas roth data
-        #     "reps": 3000,
+        #     "reps": 3000, #3000
         #     "rounds": 1,
-        #     "start": -1.0,       # MHz, sweep from -1.0 to +1.0 around center
+        #     "start": -0.5,       # MHz, sweep from -1.0 to +1.0 around center
         #     "step_size": 0.005,  # MHz (5 kHz)
-        #     "steps": 401,
+        #     "steps": 201,
         #     "relax_delay": 10,  # [us]
         #     "list_of_all_qubits": list_of_all_qubits,
         # },
 
         "res_spec": {
-            "reps": 200,
+            "reps": 300,
             "rounds": 1,
             "start": -2,  # [MHz]
             "step_size": 0.05,  # [MHz]
@@ -51,7 +51,7 @@ if FRIDGE == "QUIET":
         # },
 
         "res_spec_ef": {
-            "reps": 250,
+            "reps": 300,
             "rounds": 1,
             "start": -2,  # [MHz]
             "step_size": 0.05,  # [MHz]
@@ -104,7 +104,7 @@ if FRIDGE == "QUIET":
         },
 
         "qubit_spec_ef": {
-            "reps": 4000,  # 300
+            "reps": 3000,  # 300
             "rounds": 1,  # 10
             "start": list(ef_freqs - 1.5),  # [MHz] #-300
             "stop": list(ef_freqs + 1.5),  # [MHz]
