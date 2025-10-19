@@ -34,7 +34,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1
+n = 100000
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
@@ -71,12 +71,16 @@ Qs_to_look_at = [0,1,2,3,4,5]  # only list the qubits you want to do the RR for
 # Data saving info
 run_name = 'run8'
 device_name = '6transmon'
-substudy_txt_notes = ('This is not official AB paper data yet.\n') # Initial qubit checkouts quiet run 8
+substudy_txt_notes = ('Starting AB paper 24hr data run.\n') # Initial qubit checkouts quiet run 8
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": True, "res_spec": False, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
-             "rabi_pop_meas": False, "ef_Rabi": False}
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
+             "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
+             "rabi_pop_meas": True, "ef_Rabi": False}
+
+# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": False, "rabi": True, "ss_gef": False,
+#              "t1": False, "t2r": True, "t2e": False, "ef_res_spec": True, "ef_q_spec": True,
+#              "rabi_pop_meas": False, "ef_Rabi": True}
 
 #Updated 10/17:
 res_leng_vals = [5.0, 8.5, 8.0, 7.0, 7.0, 8.0]
@@ -91,7 +95,7 @@ figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin' #qubit_checkouts
-sub_study = 'pre_AB_paper_data_still_optimizing' #pre_AB_paper_data_still_optimizing, two_photon_peak_search
+sub_study = 'AB_Paper_Data_24hrs' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):

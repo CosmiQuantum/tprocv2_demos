@@ -53,7 +53,7 @@ if FRIDGE == "QUIET":
         # },
 
         "res_spec_ef": {
-            "reps": 300,
+            "reps": 350,
             "rounds": 1,
             "start": -2,  # [MHz]
             "step_size": 0.05,  # [MHz]
@@ -164,11 +164,11 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ge": {
-            "reps": 150,#500,
+            "reps": 100,#500,
             "rounds": 1,  # 5
             "start": [0] * 6,  # [DAC units]
             "stop": [1] * 6,#[1.0] * 6,  # [DAC units]
-            "steps": 125, #50,
+            "steps": 115, #50,
             "relax_delay": 1000,#1000,#1000,#1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -216,7 +216,7 @@ if FRIDGE == "QUIET":
 
         "power_rabi_ef": {
             "reps": 300,
-            "reps2": 850, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
+            "reps2": 900, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
             "stop": [1.0] * 6,  # [DAC units]
