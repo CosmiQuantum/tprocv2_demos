@@ -51,7 +51,7 @@ class T1Program(AveragerProgramV2):
 class T1Measurement:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, signal, save_figs, experiment = None,
                  live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
-                 multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, save_shots=False,
+                 multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, save_shots=True,
                  set_relax_delay=False, relax_delay=1000, unmasking_resgain = False, adjust_reps_to = None):
 
         self.qick_verbose = qick_verbose

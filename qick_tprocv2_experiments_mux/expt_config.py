@@ -7,6 +7,8 @@ if FRIDGE == "QUIET":
     VNA_qubit = np.array([4194.77, 3828.69, 4173.69, 4474.23, 4485.38, 5018.12])  # Qubit freqs g/e Transition, updated during run 8 on 10/10
     ef_freqs = np.array([4020.48, 3650.81, 3999.01, 4302.33, 4313.2, 4848.81]) # Qubit freqs e/f Transition,Arianna 10/13
     fh_freqs = np.array([3820.97, 3450.85, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition
+    two_photon_freqs=np.array([4107.61, 3739.36, 4086.36, 4388.34, 4399.3, 4933.52]) # qubit freqs, two photon peak between ge and ef qubit freqs
+
     # Set this for your experiment
     tot_num_of_qubits = 6
 
@@ -31,7 +33,7 @@ if FRIDGE == "QUIET":
         # },
 
         "res_spec": {
-            "reps": 300,
+            "reps": 200,
             "rounds": 1,
             "start": -2,  # [MHz]
             "step_size": 0.05,  # [MHz]
@@ -60,25 +62,35 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
         },
 
-        "qubit_spec_ge": { # for two-photon peak
-            "reps": 4000,  # 300
-            "rounds": 1,  # 10
-            "start": list(VNA_qubit - 200),  # [MHz] #-300 #-15
-            "stop": list(VNA_qubit + 6),  # [MHz] #+15
-            "steps": 4000,  # 100
-            "relax_delay": 10,  # 1000 # [us]
-            "list_of_all_qubits": list_of_all_qubits,
-        },
-
-        # "qubit_spec_ge": {
-        #     "reps": 500, #300
-        #     "rounds": 1, #10
-        #     "start": list(VNA_qubit-6), # [MHz] #-300 #-15
-        #     "stop": list(VNA_qubit+6), # [MHz] #+15
-        #     "steps": 300, #100
-        #     "relax_delay":10,#1000 # [us]
+        # "qubit_spec_ge": { # broad two-photon peak search
+        #     "reps": 4000,  # 300
+        #     "rounds": 1,  # 10
+        #     "start": list(VNA_qubit - 200),  # [MHz] #-300 #-15
+        #     "stop": list(VNA_qubit + 6),  # [MHz] #+15
+        #     "steps": 4000,  # 100
+        #     "relax_delay": 10,  # 1000 # [us]
         #     "list_of_all_qubits": list_of_all_qubits,
         # },
+
+        # "qubit_spec_ge": { # two-photon peak search
+        #     "reps": 500, #300
+        #     "rounds": 1, #10
+        #     "start": list(two_photon_freqs-6), # [MHz] #-300 #-15
+        #     "stop": list(two_photon_freqs+6), # [MHz] #+15
+        #     "steps": 300, #100
+        #     "relax_delay": 10,  # 1000 # [us]
+        #     "list_of_all_qubits": list_of_all_qubits,
+        # },
+
+        "qubit_spec_ge": {
+            "reps": 500, #300
+            "rounds": 1, #10
+            "start": list(VNA_qubit-6), # [MHz] #-300 #-15
+            "stop": list(VNA_qubit+6), # [MHz] #+15
+            "steps": 300, #100
+            "relax_delay":10,#1000 # [us]
+            "list_of_all_qubits": list_of_all_qubits,
+        },
 
         "qubit_spec_ge_extended": {
             "reps": 500,  # 300

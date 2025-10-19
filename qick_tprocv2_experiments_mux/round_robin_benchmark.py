@@ -66,7 +66,7 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [2]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,3,4,5]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
@@ -74,7 +74,7 @@ device_name = '6transmon'
 substudy_txt_notes = ('This is not official AB paper data yet.\n') # Initial qubit checkouts quiet run 8
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": False, "rabi": False, "ss_gef": False,
+run_flags = {"tof": True, "res_spec": False, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False,
              "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False}
 
@@ -84,14 +84,14 @@ res_gain = [0.9200, 0.8, 0.76, 0.52, 0.96, 0.92]
 freq_offsets = [-0.3111, -0.1333, -0.3267, 0.0467, -0.4200, -0.0444]
 
 qubit_freqs_ef = [None] * 6
-increase_reps_to_ef = 4000
+increase_reps_to_ef = 5000
 ef_res_sample_number = 1
 number_of_qubits = 6
 figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin' #qubit_checkouts
-sub_study = 'two_photon_peak_search' #pre_AB_paper_data_still_optimizing
+sub_study = 'pre_AB_paper_data_still_optimizing' #pre_AB_paper_data_still_optimizing, two_photon_peak_search
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -742,7 +742,7 @@ while j < n:
                                    increase_qubit_reps=increase_qubit_reps_t1,
                                    qubit_to_increase_reps_for=qubit_to_increase_reps_for,
                                    multiply_qubit_reps_by=multiply_qubit_reps_by,
-                                   verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
+                                   verbose=verbose, logger=rr_logger, save_shots = True, unmasking_resgain=unmask)
                 t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential, sys_config_t1 = t1.run(
                     thresholding=thresholding)
                 del t1
