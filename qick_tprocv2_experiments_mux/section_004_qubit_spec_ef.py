@@ -281,11 +281,11 @@ class EFPulseProbeSpectroscopyProgram(AveragerProgramV2):
         qubit_ch = cfg['qubit_ch']
 
         self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
-                         mux_freqs=cfg['res_freq_ef'],
-                         mux_gains=cfg['res_gain_ef'],
+                         mux_freqs=cfg['res_freq_ge'],
+                         mux_gains=cfg['res_gain_ge'],
                          mux_phases=cfg['res_phase'],
                          mixer_freq=cfg['mixer_freq'])
-        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ef'], cfg['ro_phase']):
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])

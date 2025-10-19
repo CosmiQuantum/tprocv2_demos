@@ -54,8 +54,11 @@ class FHQubitSpectroscopy:
             effreqs = efqspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
             #print(effreqs)
         self.plot_results(efI, efQ, effreqs, config=self.config)
+        raw_0 = efqspec.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
+        Ishots = raw_0[self.QubitIndex][:, :, 0, 0]
+        Qshots = raw_0[self.QubitIndex][:, :, 0, 1]
         # largest_amp_curve_mean, efI_fit, efQ_fit = self.plot_results(efI, efQ, effreqs, config = self.config)
-        return efI, efQ, effreqs , self.config # , efI_fit, efQ_fit, largest_amp_curve_mean, self.config
+        return efI, efQ,Ishots, Qshots, effreqs , self.config # , efI_fit, efQ_fit, largest_amp_curve_mean, self.config
 
     def live_plotting(self, qspec, soc):
         I = Q = expt_mags = expt_phases = expt_pop = None
@@ -264,12 +267,12 @@ class FHPulseProbeSpectroscopyProgram(AveragerProgramV2):
         qubit_ch = cfg['qubit_ch']
 
         self.declare_gen(ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
-                         mux_freqs=cfg['res_freq_ef'],
-                         mux_gains=cfg['res_gain_ef'],
+                         mux_freqs=cfg['res_freq_ge'],
+                         mux_gains=cfg['res_gain_ge'],
                          mux_phases=cfg['res_phase'],
                          mixer_freq=cfg['mixer_freq'])
 
-        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ef'], cfg['ro_phase']):
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch)
 
         self.add_pulse(ch=gen_ch, name="res_pulse",

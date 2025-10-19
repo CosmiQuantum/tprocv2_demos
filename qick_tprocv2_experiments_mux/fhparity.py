@@ -146,7 +146,7 @@ class Fit:
 
         return out
 
-class T2R_FHProgram(AveragerProgramV2):
+class Parity_FHProgram(AveragerProgramV2):
     def _initialize(self, cfg):
         ro_ch = cfg['ro_ch']
         res_ch = cfg['res_ch']
@@ -208,7 +208,7 @@ class T2R_FHProgram(AveragerProgramV2):
                        style="arb",
                        envelope="fhramp2",
                        freq=cfg['qubit_freq_fh'],
-                       phase=cfg['qubit_phase'] + cfg['wait_time']*360*cfg['ramsey_freq'],
+                       phase=cfg['qubit_phase'] + cfg['wait_time']*360*cfg['ramsey_freq'] + 90,
                        gain=cfg['pi_fh_amp'] / 2,
                        )
 
@@ -216,7 +216,8 @@ class T2R_FHProgram(AveragerProgramV2):
 
 
 
-        self.add_loop("waitloop", cfg["steps"])
+        # self.add_loop("waitloop", cfg["steps"])
+        self.add_loop("shotloop", cfg["steps"])  # number of total shots
 
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play ge drive pulse
@@ -237,7 +238,7 @@ class T2R_FHProgram(AveragerProgramV2):
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 
-class T2R_FHMeasurement:
+class Parity_FHMeasurement:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_figs, experiment = None,
                  live_plot = None, fit_data = False, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
                  multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, unmasking_resgain = False):
@@ -245,7 +246,7 @@ class T2R_FHMeasurement:
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.fit_data = fit_data
-        self.expt_name = "Ramsey_fh"
+        self.expt_name = "Parity_fh"
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
@@ -270,8 +271,8 @@ class T2R_FHMeasurement:
                         self.logger.info(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
                         self.config["reps"] *=multiply_qubit_reps_by
                         #self.config['ramsey_freq'] = 2 * self.config['ramsey_freq']
-            if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration: ', self.config)
-            self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration:{self.config}')
+            if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} Parity configuration: ', self.config)
+            self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} Parity configuration:{self.config}')
 
     def t2_fit(self, x_data, I, Q, verbose = False, guess=None, plot=False):
         #fitting code adapted from https://github.com/qua-platform/py-qua-tools/blob/37c741ade5a8f91888419c6fd23fd34e14372b06/qualang_tools/plot/fitting.py
@@ -416,7 +417,7 @@ class T2R_FHMeasurement:
 
     def run(self, thresholding=False):
         now = datetime.datetime.now()
-        ramsey = T2R_FHProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
+        ramsey = Parity_FHProgram(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'],
                          cfg=self.config)
 
         # for live plotting open http://localhost:8097/ on firefox
@@ -430,26 +431,22 @@ class T2R_FHMeasurement:
             else:
                 iq_list = ramsey.acquire(self.experiment.soc, soft_avgs=self.config['rounds'], progress=self.qick_verbose)
 
-            I = iq_list[self.QubitIndex][0, :, 0]
-            Q = iq_list[self.QubitIndex][0, :, 1]
-            delay_times = ramsey.get_time_param('wait', "t", as_array=True)
+            # I = iq_list[self.QubitIndex][0, :, 0]
+            # Q = iq_list[self.QubitIndex][0, :, 1]
+            # delay_times = ramsey.get_time_param('wait', "t", as_array=True)
             # print('delay_times', delay_times)
         # gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
 
-        if self.fit_data:
-            fit, t2r_est, t2r_err, plot_sig = self.t2_fit(delay_times, I, Q)
-        else:
-            fit, t2r_est, t2r_err, plot_sig = None, None, None, None
+        # if self.fit_data:
+        #     fit, t2r_est, t2r_err, plot_sig = self.t2_fit(delay_times, I, Q)
+        # else:
+        #     fit, t2r_est, t2r_err, plot_sig = None, None, None, None
 
         if self.save_figs:
-            self.plot_results(I, Q, delay_times, now, fit, t2r_est, t2r_err, plot_sig)
-
-        raw_0 = ramsey.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
-        Ishots = raw_0[self.QubitIndex][:, :, 0, 0]
-        Qshots = raw_0[self.QubitIndex][:, :, 0, 1]
+            self.plot_results(iq_list, self.QubitIndex)#, delay_times, now)#, fit, t2r_est, t2r_err, plot_sig)
 
 
-        return  t2r_est, t2r_err, I, Q, Ishots, Qshots, delay_times, fit, self.config
+        return  iq_list, self.config #t2r_est, t2r_err, I, Q, delay_times, fit, self.config
 
     def live_plotting(self, ramsey, thresholding):
         I = Q = expt_mags = expt_phases = expt_pop = None
@@ -495,52 +492,54 @@ class T2R_FHMeasurement:
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-    def plot_results(self, I, Q, delay_times, now, fit, t2r_est, t2r_err, plot_sig, config = None, fig_quality = 100):
+    def plot_results(self, iq_list, QubitIndex):#delay_times, now, fit, t2r_est, t2r_err, plot_sig, config = None, fig_quality = 100):
+        I = iq_list[QubitIndex][0].T[0]
+        Q = iq_list[QubitIndex][0].T[1]
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
         # Calculate the middle of the plot area
         plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
-        if self.fit_data:
-            if 'I' in plot_sig:
-                ax1.plot(delay_times, fit, '-', color='red', linewidth=3, label="Fit")
-            if 'Q' in plot_sig:
-                ax2.plot(delay_times, fit, '-', color='red', linewidth=3, label="Fit")
+        # if self.fit_data:
+        #     if 'I' in plot_sig:
+        #         ax1.plot(delay_times, fit, '-', color='red', linewidth=3, label="Fit")
+        #     if 'Q' in plot_sig:
+        #         ax2.plot(delay_times, fit, '-', color='red', linewidth=3, label="Fit")
+        #
+        #     # Add title, centered on the plot area
+        #     if config is not None:
+        #         fig.text(plot_middle, 0.98,
+        #                  f"T2 FH Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+        #                  fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
+        #     else:
+        #         fig.text(plot_middle, 0.98,
+        #                  f"T2 FH Q{self.QubitIndex + 1}, T2R %.2f us" % float(
+        #                      t2r_est) + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
+        #                  fontsize=24, ha='center', va='top')
 
-            # Add title, centered on the plot area
-            if config is not None:
-                fig.text(plot_middle, 0.98,
-                         f"T2 FH Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
-                         fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
-            else:
-                fig.text(plot_middle, 0.98,
-                         f"T2 FH Q{self.QubitIndex + 1}, T2R %.2f us" % float(
-                             t2r_est) + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
-                         fontsize=24, ha='center', va='top')
-
+        # else:
+        # Add title, centered on the plot area
+        if self.config is not None:
+            fig.text(plot_middle, 0.98,
+                     f"Parity FH Q{self.QubitIndex + 1}"  ,
+                     fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
         else:
-            # Add title, centered on the plot area
-            if config is not None:
-                fig.text(plot_middle, 0.98,
-                         f"T2 FH Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs," ,
-                         fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
-            else:
-                fig.text(plot_middle, 0.98,
-                         f"T2 FH Q{self.QubitIndex + 1}, pi gain %.2f" % float(self.config[
-                                                                                'pi_amp']) + f", {float(self.config['sigma']) * 1000} ns sigma" + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
-                         fontsize=24, ha='center', va='top')
+            fig.text(plot_middle, 0.98,
+                     f"Parity FH Q{self.QubitIndex + 1}, pi gain %.2f" % float(self.config[
+                                                                            'pi_amp']) + f", {float(self.config['sigma']) * 1000} ns sigma" + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
+                     fontsize=24, ha='center', va='top')
 
         # I subplot
         #
         # _times',delay_times)
-        ax1.plot(delay_times, I, label="Gain (a.u.)", linewidth=2)
+        ax1.plot( I, label="Gain (a.u.)", linewidth=2)
         ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
         ax1.tick_params(axis='both', which='major', labelsize=16)
         # ax1.axvline(freq_q, color='orange', linestyle='--', linewidth=2)
 
         # Q subplot
-        ax2.plot(delay_times, Q, label="Q", linewidth=2)
-        ax2.set_xlabel("Delay time (us)", fontsize=20)
+        ax2.plot( Q, label="Q", linewidth=2)
+        # ax2.set_xlabel("Delay time (us)", fontsize=20)
         ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
         ax2.tick_params(axis='both', which='major', labelsize=16)
         # ax2.axvline(freq_q, color='orange', linestyle='--', linewidth=2)
@@ -549,6 +548,7 @@ class T2R_FHMeasurement:
         plt.tight_layout()
 
         # Adjust the top margin to make room for the title
+        fig_quality=100
         plt.subplots_adjust(top=0.93)
         if self.save_figs:
             outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)

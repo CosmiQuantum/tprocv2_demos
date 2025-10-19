@@ -8,7 +8,7 @@ if FRIDGE == "QUIET":
     ef_freqs = np.array([4020.48, 3650.81, 3999.01, 4303.08, 4313.19, 4848.81]) # Qubit freqs e/f Transition,Arianna 10/13
     fh_freqs = np.array([3820.97, 3456.15, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition
     eh_freqs = np.array([4020.48, 3650.81+3456.15, 3999.01, 4303.08, 4313.19, 4848.81])  # Qubit freqs e/f Transition,Arianna 10/13
-    htores_freqs = np.array([4020.48, 2461, 3999.01, 4303.08, 4313.19, 4848.81])
+    htores_freqs = np.array([4020.48, 3456, 3999.01, 4303.08, 4313.19, 4848.81])
     # Set this for your experiment 3828+3650+3456-6289
     tot_num_of_qubits = 6
 
@@ -110,16 +110,16 @@ if FRIDGE == "QUIET":
             "start": list(fh_freqs - 0.15), # [MHz] #-300 #-6
             "stop": list(fh_freqs +  0.15),  # [MHz] #6
             "steps": 100,#450,  # 1000 #450
-            "relax_delay": 1000,  # 1000,  # [us]
+            "relax_delay": 600,  # 1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
         "qubit_spec_htores": {
-            "reps": 2000,  # 300
+            "reps": 5000,  # 300
             "rounds": 1,  # 10
-            "start": list(htores_freqs - 50),  # [MHz] #-300 #-6
-            "stop": list(htores_freqs + 50),  # [MHz] #6
-            "steps": 1000,  # 450,  # 1000 #450
-            "relax_delay": 1000,  # 1000,  # [us]
+            "start": list(htores_freqs - 2),  # [MHz] #-300 #-6
+            "stop": list(htores_freqs + 2),  # [MHz] #6
+            "steps": 500,  # 450,  # 1000 #450
+            "relax_delay": 2000,  # 1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
         "qubit_spec_ftores": {
@@ -359,22 +359,22 @@ if FRIDGE == "QUIET":
             "reps": 350, #300
             "rounds": 1,#10
             "start": [0.0] * 6, # [us]
-            "stop":  [30] * 6, # [us]
+            "stop":  [10] * 6, # [us]
             "steps": 100,
-            "ramsey_freq": 0.12,  # [MHz]
+            "ramsey_freq": 0.1,  # [MHz]
             "relax_delay": 1000, # [us] the time to wait to let the qubit to relax to gnd again after exciting it (make it way above T1)
             "wait_time": 0.0, # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
         "Ramsey_fh": {
-            "reps": 400,#350,  # 300
+            "reps": 500,#350,  # 300
             "rounds": 1,  # 10
             "start": [0.0] * 6,  # [us]
-            "stop": [25] * 6,  # [us]
+            "stop": [20] * 6,  # [us]
             "steps": 200,#200,
             "ramsey_freq": 0.6,  # [MHz]
-            "relax_delay": 1000,
+            "relax_delay": 600,
             # [us] the time to wait to let the qubit to relax to gnd again after exciting it (make it way above T1)
             "wait_time": 0.0,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
@@ -468,9 +468,24 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
         },
     # #
+        "Parity_fh":{
+            "steps": 100,  # shots
+            "py_avg": 1,
+            "gain_start": [0, 0, 0, 0],
+            "gain_stop": [1, 0, 0, 0],
+            "gain_step": 0.1,
+            "freq_start": [6176.0, 0, 0, 0],
+            "freq_stop": [6178.0, 0, 0, 0],
+            "freq_step": 0.1,
+            "relax_delay": 1000,  # 600, # [us]
+            "list_of_all_qubits": list_of_all_qubits,
+            "wait_time":2.5,  # [us]
+            'ramsey_freq':0.05,
+            'rounds':1,
+        },
 
         "Readout_Optimization":{
-            "steps": 3000, # shots
+            "steps": 1, #3000, # shots
             "py_avg": 1,
             "gain_start" : [0, 0, 0, 0],
             "gain_stop" : [1, 0, 0, 0],
@@ -480,6 +495,7 @@ if FRIDGE == "QUIET":
             "freq_step" : 0.1,
             "relax_delay": 1000,#600, # [us]
             "list_of_all_qubits": list_of_all_qubits,
+
         },
 
     }

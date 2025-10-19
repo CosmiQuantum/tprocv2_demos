@@ -89,6 +89,43 @@ class SingleShotProgram_g(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
         # relax delay ...
+        ################ Active Reset #################################
+        # Wait for readout to be completed
+        self.wait_auto(cfg['res_length']*4 )
+        # self.delay_auto(cfg['res_length'] )
+        self.label("Readout and check conditions")
+        # # n = n + 1
+        # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
+        # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+        #
+        # # # Wait for readout to be completed
+        # self.wait_auto(cfg['res_length']  + 0.2)
+        # self.delay_auto(cfg['res_length'] + 0.2)
+        # #
+        # # # Read from ro_ch buffer???
+        # # # print("cfg['ro_ch'][0])", cfg['ro_ch'][0])
+        self.read_input(ro_ch=cfg['ro_ch'][0])
+        self.write_dmem(addr=0, src='s_port_l')
+        self.write_dmem(addr=1, src='s_port_h')
+        # #
+        # # # if whatever is read from ro_ch is greater or equal to threshold 1, skip to label('skip everything'))
+        # self.read_and_jump(ro_ch=cfg['ro_ch'][0],
+        #                    component='I',
+        #                    threshold=cfg['edge_of_e_state_threshold'],
+        #                    test=">=", label='skip everything')
+        #
+        # # if whatever is read from ro_ch is greater or equal to threshold 2 (between_g_and_e), go back to label("Readout and check conditions")
+        # # self.read_and_jump(ro_ch=cfg['ro_ch'][0],
+        # #                    component='I',
+        # #                    threshold=cfg['edge_of_e_state_threshold'],
+        # #                    test=">=", label="Readout and check conditions")
+        # #
+        # # # print('playing pi in active to move e to g')
+        # # # Play a pi pulse if whatever is read from ro_ch is lesser than both thresholds 1 and 2
+        # self.pulse(ch=self.cfg["qubit_ch"], name="pi_pulse", t=0)  # play pulse pi
+        # # self.delay_auto()#(self.cfg['sigma'] * 4)  # ????
+        # self.jump("Readout and check conditions")
+        self.label('skip everything')
 
 
 class SingleShotProgram_e(AveragerProgramV2):
@@ -249,9 +286,46 @@ class SingleShotProgram_h(AveragerProgramV2):
         self.delay_auto(0.0)
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+        ################ Active Reset #################################
+        # Wait for readout to be completed
+        self.wait_auto(cfg['res_length'] *4 )
+        # self.delay_auto(cfg['res_length'] )
+        self.label("Readout and check conditions")
+        # # n = n + 1
+        # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
+        # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+        #
+        # # # Wait for readout to be completed
+        # self.wait_auto(cfg['res_length']  + 0.2)
+        # self.delay_auto(cfg['res_length'] + 0.2)
+        # #
+        # # # Read from ro_ch buffer???
+        # # # print("cfg['ro_ch'][0])", cfg['ro_ch'][0])
+        self.read_input(ro_ch=cfg['ro_ch'][0])
+        self.write_dmem(addr=0, src='s_port_l')
+        self.write_dmem(addr=1, src='s_port_h')
+        # #
+        # # # if whatever is read from ro_ch is greater or equal to threshold 1, skip to label('skip everything'))
+        # self.read_and_jump(ro_ch=cfg['ro_ch'][0],
+        #                    component='I',
+        #                    threshold=cfg['edge_of_e_state_threshold'],
+        #                    test=">=", label='skip everything')
+        #
+        # # if whatever is read from ro_ch is greater or equal to threshold 2 (between_g_and_e), go back to label("Readout and check conditions")
+        # # self.read_and_jump(ro_ch=cfg['ro_ch'][0],
+        # #                    component='I',
+        # #                    threshold=cfg['edge_of_e_state_threshold'],
+        # #                    test=">=", label="Readout and check conditions")
+        # #
+        # # # print('playing pi in active to move e to g')
+        # # # Play a pi pulse if whatever is read from ro_ch is lesser than both thresholds 1 and 2
+        # self.pulse(ch=self.cfg["qubit_ch"], name="pi_pulse", t=0)  # play pulse pi
+        # # self.delay_auto()#(self.cfg['sigma'] * 4)  # ????
+        # self.jump("Readout and check conditions")
+        self.label('skip everything')
 
 
-class SingleShot_ef:
+class Active_SingleShot_ef:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, save_figs=False, experiment=None,
                  verbose=False, logger=None, qick_verbose=True, unmasking_resgain=False):
         self.qick_verbose = qick_verbose
@@ -314,25 +388,29 @@ class SingleShot_ef:
         ssp_g = SingleShotProgram_g(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'],
                                     cfg=self.config)
         iq_list_g = ssp_g.acquire(self.experiment.soc, soft_avgs=1, progress=True)
+        # print("G feedback readout2:", self.experiment.soc.read_mem(2, 'dmem'))
+        # print("G feedback readout0:", self.experiment.soc.read_mem(0, 'dmem'))
+        # print('iq_list_g[0].sum(axis=0)',iq_list_g[1])#[0].sum(axis=0))
 
-        ssp_e = SingleShotProgram_e(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'],
-                                    cfg=self.config)
-        iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=True)
+        # ssp_e = SingleShotProgram_e(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'],
+        #                             cfg=self.config)
+        # iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=True)
+        #
+        # ssp_f = SingleShotProgram_f(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'],
+        #                             cfg=self.config)
+        # iq_list_f = ssp_f.acquire(self.experiment.soc, soft_avgs=1, progress=True)
+        #
+        # ssp_h = SingleShotProgram_h(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'],
+        #                             cfg=self.config)
+        # iq_list_h = ssp_h.acquire(self.experiment.soc, soft_avgs=1, progress=True)
+        # print("H feedback readout:", self.experiment.soc.read_mem(2, 'dmem'))
 
-        ssp_f = SingleShotProgram_f(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'],
-                                    cfg=self.config)
-        iq_list_f = ssp_f.acquire(self.experiment.soc, soft_avgs=1, progress=True)
-
-        ssp_h = SingleShotProgram_h(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'],
-                                    cfg=self.config)
-        iq_list_h = ssp_h.acquire(self.experiment.soc, soft_avgs=1, progress=True)
-
-        fid, fid_gh, theta_ef, theta_fh, ie_new, qe_new, if_new, qf_new, threshold_ef, ih_new, qh_new, threshold_fh = self.plot_results(self.outerFolder, iq_list_g, iq_list_e,
-                                                                        iq_list_f, iq_list_h, self.QubitIndex)
+        # fid, fid_gh, theta_ef, theta_fh, ie_new, qe_new, if_new, qf_new, threshold_ef, ih_new, qh_new, threshold_fh = self.plot_results(self.outerFolder, iq_list_g, iq_list_e,
+        #                                                                 iq_list_f, iq_list_h, self.QubitIndex)
         # ie_new, qe_new, if_new, qf_new, theta_ef, threshold_ef = self.plot_results( iq_list_e,iq_list_f,self.QubitIndex)
         # return fid, angle, iq_list_g, iq_list_e, iq_list_f
         # iq_list_e, iq_list_f, ie_new, if_new, theta_ef, theta_fh, threshold_ef, threshold_fh, self.config, fid, fid_fh
-        return iq_list_g, iq_list_e, iq_list_f, iq_list_h,  ie_new, if_new, theta_ef, theta_fh,  threshold_ef, threshold_fh , self.config, fid_gh#, fid, fid_fh
+        return #iq_list_g, iq_list_e, iq_list_f, iq_list_h,  ie_new, if_new, theta_ef, theta_fh,  threshold_ef, threshold_fh , self.config, fid_gh#, fid, fid_fh
         #      iq_list_g, iq_list_e, iq_list_f, iq_list_h, ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge,self.config
     def plot_results(self, outerfolder_plots, iq_list_g, iq_list_e, iq_list_f, iq_list_h, QubitIndex, fig_quality=100):
         I_g = iq_list_g[QubitIndex][0].T[0]
@@ -518,122 +596,122 @@ class SingleShot_ef:
             os.makedirs(folder)
 
 
-class GainFrequencySweep:
-    def __init__(self, qubit_index, number_of_qubits, n_loops, list_of_all_qubits, experiment, save_figs=False,
-                 optimal_lengths=None, output_folder="/default/path/", unmasking_resgain=False):
-
-        self.n_loops = n_loops
-        self.num_qubits = number_of_qubits
-        self.n_loops = n_loops
-        self.qubit_index = qubit_index
-        self.list_of_all_qubits = list_of_all_qubits
-        self.output_folder = output_folder
-        self.expt_name = "Readout_Optimization"
-        self.Qubit = 'Q' + str(self.qubit_index)
-        self.optimal_lengths = optimal_lengths
-        self.number_of_qubits = number_of_qubits
-        self.save_figs = save_figs
-        self.experiment = experiment
-        self.exp_cfg = expt_cfg[self.expt_name]
-        self.unmasking_resgain = unmasking_resgain
-
-        if unmasking_resgain:
-            self.exp_cfg["list_of_all_qubits"] = [qubit_index]
-
-        self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
-        self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-
-    def set_res_gain_ge(self, QUBIT_INDEX, set_gain, num_qubits=6):
-        """Sets the gain for the selected qubit to 1, others to 0."""
-        res_gain_ge = [0] * num_qubits  # Initialize all gains to 0
-        if 0 <= QUBIT_INDEX < num_qubits:  # makes sure you are within the range of options
-            res_gain_ge[QUBIT_INDEX] = set_gain  # Set the gain for the selected qubit
-        return res_gain_ge
-
-    def run_sweep(self, outerfolder_plots, freq_range, gain_range, freq_steps, gain_steps, fid_states):
-        print('output [plots folder path from run_Sweep', outerfolder_plots)
-        freq_step_size = (freq_range[1] - freq_range[0]) / freq_steps
-        gain_step_size = (gain_range[1] - gain_range[0]) / gain_steps
-        results = []
-
-        # Use the optimal readout length for the current qubit
-        readout_length = self.optimal_lengths[self.qubit_index]
-        print('readout_length for this qubit: ', readout_length)
-        for freq_step in range(freq_steps):
-            freq = freq_range[0] + freq_step * freq_step_size
-
-            fid_results = []
-            for gain_step in range(gain_steps):
-
-                fresh_experiment = copy.deepcopy(self.experiment)
-                gain = gain_range[0] + gain_step * gain_step_size
-                # print('EF Readout Gain-Freq Optimimization: Running for res_gain: ', gain, '...')
-                print('EF Readout Gain-Freq Optimimization: Running for res_freq: ', freq, 'gain', gain)
-                # Update config with current gain and frequency values
-                fresh_experiment.readout_cfg['res_freq_ef'][self.qubit_index] = freq
-                fresh_experiment.readout_cfg[
-                    'res_length'] = readout_length  # Set the optimal readout length for the qubit
-
-                res_gains = fresh_experiment.mask_gain_res(self.qubit_index, gain, num_qubits=tot_num_of_qubits)
-                fresh_experiment.readout_cfg['res_gain_ef'] = res_gains
-
-                # Initialize SingleShotGE instance for fidelity calculation
-                round_num = 0
-                # save_figs = False
-
-                fids = []
-                for k in range(self.n_loops):  # loops for each read out length
-                    # ------------------------Single Shot-------------------------
-                    # Initialize experiment for each loop iteration
-                    experiment = copy.deepcopy(fresh_experiment)
-                    # Set specific configuration values for each iteration
-
-                    # res_gains = experiment.set_gain_filter_ge(QubitIndex, gain)  # Set gain for current qubit only
-                    res_gains = experiment.mask_gain_res(self.qubit_index, IndexGain=gain)
-                    experiment.readout_cfg['res_gain_ef'] = res_gains
-
-                    if fid_states == 'ge':
-                        single_shot = SingleShot(self.qubit_index, self.number_of_qubits, self.output_folder, round_num,
-                                                 self.save_figs, fresh_experiment,
-                                                 unmasking_resgain=self.unmasking_resgain)
-                        fidelity = single_shot.run(fresh_experiment.soccfg, fresh_experiment.soc)
-                        # ss = SingleShotGE(self.QubitIndex, number_of_qubits, outerFolder, j, self.save_figs, experiment,
-                        #                 unmasking_resgain=unmask)  # updated way
-                        fid, angle, iq_list_g, iq_list_e = ss.run()
-                        fids.append(fid)
-                    elif fid_states == 'ef':
-
-                        ss = SingleShot_ef(self.qubit_index, self.number_of_qubits, self.output_folder, round_num,
-                                           self.save_figs, fresh_experiment, unmasking_resgain=self.unmasking_resgain)
-                        iq_list_e, iq_list_f, ie_new, if_new, theta_ef, threshold_ef, ef_ssf_cfg, fid = ss.run()
-                        fids.append(fid)
-
-                    elif fid_states == 'fh':
-
-                        ss = SingleShot_ef(self.qubit_index, self.number_of_qubits, self.output_folder, round_num,
-                                           self.save_figs, fresh_experiment, unmasking_resgain=self.unmasking_resgain)
-                        fid, fid_fh, theta_ef, theta_fh, ie_new, qe_new, if_new, qf_new, threshold_ef, ih_new, qh_new, threshold_fh = ss.run()
-                        # iq_list_e, iq_list_f, ie_new, if_new,  theta_ef, threshold_ef, self.config, fid
-                        # ss = SingleShot_ef(self.QubitIndex, number_of_qubits, outerFolder, j, self.save_figs, experiment,
-                        #                    unmasking_resgain=unmask)  # updated way
-                        # fid, angle, i_list_e, q_list_e, i_list_f, q_list_f = ss.fidelity_test()
-                        fids.append(fid_fh)
-
-                    elif fid_states == 'gh':
-
-                        ss = SingleShot_ef(self.qubit_index, self.number_of_qubits, self.output_folder, round_num,
-                                           self.save_figs, fresh_experiment, unmasking_resgain=self.unmasking_resgain)
-                        #
-                        # fid, fid_gh, theta_ef, theta_fh, ie_new, qe_new, if_new, qf_new, threshold_ef, ih_new, qh_new, threshold_fh
-                        iq_list_g, iq_list_e, iq_list_f, iq_list_h, ie_new, if_new, theta_ef, theta_fh, threshold_ef, threshold_fh, config, fid_gh = ss.run()
-                        # iq_list_e, iq_list_f, ie_new, if_new,  theta_ef, threshold_ef, self.config, fid
-                        # ss = SingleShot_ef(self.QubitIndex, number_of_qubits, outerFolder, j, self.save_figs, experiment,
-                        #                    unmasking_resgain=unmask)  # updated way
-                        # fid, angle, i_list_e, q_list_e, i_list_f, q_list_f = ss.fidelity_test()
-                        fids.append(fid_gh)
-                fid_results.append(np.mean(fids))
-
-            results.append(fid_results)
-
-
-        return results
+# class GainFrequencySweep:
+#     def __init__(self, qubit_index, number_of_qubits, n_loops, list_of_all_qubits, experiment, save_figs=False,
+#                  optimal_lengths=None, output_folder="/default/path/", unmasking_resgain=False):
+#
+#         self.n_loops = n_loops
+#         self.num_qubits = number_of_qubits
+#         self.n_loops = n_loops
+#         self.qubit_index = qubit_index
+#         self.list_of_all_qubits = list_of_all_qubits
+#         self.output_folder = output_folder
+#         self.expt_name = "Readout_Optimization"
+#         self.Qubit = 'Q' + str(self.qubit_index)
+#         self.optimal_lengths = optimal_lengths
+#         self.number_of_qubits = number_of_qubits
+#         self.save_figs = save_figs
+#         self.experiment = experiment
+#         self.exp_cfg = expt_cfg[self.expt_name]
+#         self.unmasking_resgain = unmasking_resgain
+#
+#         if unmasking_resgain:
+#             self.exp_cfg["list_of_all_qubits"] = [qubit_index]
+#
+#         self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
+#         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+#
+#     def set_res_gain_ge(self, QUBIT_INDEX, set_gain, num_qubits=6):
+#         """Sets the gain for the selected qubit to 1, others to 0."""
+#         res_gain_ge = [0] * num_qubits  # Initialize all gains to 0
+#         if 0 <= QUBIT_INDEX < num_qubits:  # makes sure you are within the range of options
+#             res_gain_ge[QUBIT_INDEX] = set_gain  # Set the gain for the selected qubit
+#         return res_gain_ge
+#
+#     def run_sweep(self, outerfolder_plots, freq_range, gain_range, freq_steps, gain_steps, fid_states):
+#         print('output [plots folder path from run_Sweep', outerfolder_plots)
+#         freq_step_size = (freq_range[1] - freq_range[0]) / freq_steps
+#         gain_step_size = (gain_range[1] - gain_range[0]) / gain_steps
+#         results = []
+#
+#         # Use the optimal readout length for the current qubit
+#         readout_length = self.optimal_lengths[self.qubit_index]
+#         print('readout_length for this qubit: ', readout_length)
+#         for freq_step in range(freq_steps):
+#             freq = freq_range[0] + freq_step * freq_step_size
+#
+#             fid_results = []
+#             for gain_step in range(gain_steps):
+#
+#                 fresh_experiment = copy.deepcopy(self.experiment)
+#                 gain = gain_range[0] + gain_step * gain_step_size
+#                 # print('EF Readout Gain-Freq Optimimization: Running for res_gain: ', gain, '...')
+#                 print('EF Readout Gain-Freq Optimimization: Running for res_freq: ', freq, 'gain', gain)
+#                 # Update config with current gain and frequency values
+#                 fresh_experiment.readout_cfg['res_freq_ef'][self.qubit_index] = freq
+#                 fresh_experiment.readout_cfg[
+#                     'res_length'] = readout_length  # Set the optimal readout length for the qubit
+#
+#                 res_gains = fresh_experiment.mask_gain_res(self.qubit_index, gain, num_qubits=tot_num_of_qubits)
+#                 fresh_experiment.readout_cfg['res_gain_ef'] = res_gains
+#
+#                 # Initialize SingleShotGE instance for fidelity calculation
+#                 round_num = 0
+#                 # save_figs = False
+#
+#                 fids = []
+#                 for k in range(self.n_loops):  # loops for each read out length
+#                     # ------------------------Single Shot-------------------------
+#                     # Initialize experiment for each loop iteration
+#                     experiment = copy.deepcopy(fresh_experiment)
+#                     # Set specific configuration values for each iteration
+#
+#                     # res_gains = experiment.set_gain_filter_ge(QubitIndex, gain)  # Set gain for current qubit only
+#                     res_gains = experiment.mask_gain_res(self.qubit_index, IndexGain=gain)
+#                     experiment.readout_cfg['res_gain_ef'] = res_gains
+#
+#                     if fid_states == 'ge':
+#                         single_shot = SingleShot(self.qubit_index, self.number_of_qubits, self.output_folder, round_num,
+#                                                  self.save_figs, fresh_experiment,
+#                                                  unmasking_resgain=self.unmasking_resgain)
+#                         fidelity = single_shot.run(fresh_experiment.soccfg, fresh_experiment.soc)
+#                         # ss = SingleShotGE(self.QubitIndex, number_of_qubits, outerFolder, j, self.save_figs, experiment,
+#                         #                 unmasking_resgain=unmask)  # updated way
+#                         fid, angle, iq_list_g, iq_list_e = ss.run()
+#                         fids.append(fid)
+#                     elif fid_states == 'ef':
+#
+#                         ss = SingleShot_ef(self.qubit_index, self.number_of_qubits, self.output_folder, round_num,
+#                                            self.save_figs, fresh_experiment, unmasking_resgain=self.unmasking_resgain)
+#                         iq_list_e, iq_list_f, ie_new, if_new, theta_ef, threshold_ef, ef_ssf_cfg, fid = ss.run()
+#                         fids.append(fid)
+#
+#                     elif fid_states == 'fh':
+#
+#                         ss = SingleShot_ef(self.qubit_index, self.number_of_qubits, self.output_folder, round_num,
+#                                            self.save_figs, fresh_experiment, unmasking_resgain=self.unmasking_resgain)
+#                         fid, fid_fh, theta_ef, theta_fh, ie_new, qe_new, if_new, qf_new, threshold_ef, ih_new, qh_new, threshold_fh = ss.run()
+#                         # iq_list_e, iq_list_f, ie_new, if_new,  theta_ef, threshold_ef, self.config, fid
+#                         # ss = SingleShot_ef(self.QubitIndex, number_of_qubits, outerFolder, j, self.save_figs, experiment,
+#                         #                    unmasking_resgain=unmask)  # updated way
+#                         # fid, angle, i_list_e, q_list_e, i_list_f, q_list_f = ss.fidelity_test()
+#                         fids.append(fid_fh)
+#
+#                     elif fid_states == 'gh':
+#
+#                         ss = SingleShot_ef(self.qubit_index, self.number_of_qubits, self.output_folder, round_num,
+#                                            self.save_figs, fresh_experiment, unmasking_resgain=self.unmasking_resgain)
+#                         #
+#                         # fid, fid_gh, theta_ef, theta_fh, ie_new, qe_new, if_new, qf_new, threshold_ef, ih_new, qh_new, threshold_fh
+#                         iq_list_g, iq_list_e, iq_list_f, iq_list_h, ie_new, if_new, theta_ef, theta_fh, threshold_ef, threshold_fh, config, fid_gh = ss.run()
+#                         # iq_list_e, iq_list_f, ie_new, if_new,  theta_ef, threshold_ef, self.config, fid
+#                         # ss = SingleShot_ef(self.QubitIndex, number_of_qubits, outerFolder, j, self.save_figs, experiment,
+#                         #                    unmasking_resgain=unmask)  # updated way
+#                         # fid, angle, i_list_e, q_list_e, i_list_f, q_list_f = ss.fidelity_test()
+#                         fids.append(fid_gh)
+#                 fid_results.append(np.mean(fids))
+#
+#             results.append(fid_results)
+#
+#
+#         return results

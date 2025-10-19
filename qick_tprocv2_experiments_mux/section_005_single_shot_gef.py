@@ -66,12 +66,12 @@ class SingleShotProgram_g(AveragerProgramV2):
         qubit_ch = cfg['qubit_ch']
 
         self.declare_gen(ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
-                         mux_freqs=cfg['res_freq_ef'],
-                         mux_gains=cfg['res_gain_ef'],
+                         mux_freqs=cfg['res_freq_ge'],
+                         mux_gains=cfg['res_gain_ge'],
                          mux_phases=cfg['res_phase'],
                          mixer_freq=cfg['mixer_freq'])
 
-        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ef'], cfg['ro_phase']):
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch)
 
         self.add_pulse(ch=gen_ch, name="res_pulse",
@@ -96,12 +96,12 @@ class SingleShotProgram_e(AveragerProgramV2):
         qubit_ch = cfg['qubit_ch']
 
         self.declare_gen(ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
-                         mux_freqs=cfg['res_freq_ef'],
-                         mux_gains=cfg['res_gain_ef'],
+                         mux_freqs=cfg['res_freq_ge'],
+                         mux_gains=cfg['res_gain_ge'],
                          mux_phases=cfg['res_phase'],
                          mixer_freq=cfg['mixer_freq'])
 
-        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ef'], cfg['ro_phase']):
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch)
 
         self.add_pulse(ch=gen_ch, name="res_pulse",
@@ -137,12 +137,12 @@ class SingleShotProgram_f(AveragerProgramV2):
         qubit_ch = cfg['qubit_ch']
 
         self.declare_gen(ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
-                         mux_freqs=cfg['res_freq_ef'],
-                         mux_gains=cfg['res_gain_ef'],
+                         mux_freqs=cfg['res_freq_ge'],
+                         mux_gains=cfg['res_gain_ge'],
                          mux_phases=cfg['res_phase'],
                          mixer_freq=cfg['mixer_freq'])
 
-        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ef'], cfg['ro_phase']):
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch)
 
         self.add_pulse(ch=gen_ch, name="res_pulse",
@@ -162,7 +162,7 @@ class SingleShotProgram_f(AveragerProgramV2):
                        phase=cfg['qubit_phase'],
                        gain=cfg['pi_amp'],
                        )
-        self.add_gauss(ch=qubit_ch, name="eframp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+        self.add_gauss(ch=qubit_ch, name="eframp", sigma=cfg['sigma_ef'], length=cfg['sigma_ef'] * 4, even_length=False)
 
         self.add_pulse(ch=qubit_ch, name="ef_pi_pulse",
                        style="arb",
@@ -183,6 +183,70 @@ class SingleShotProgram_f(AveragerProgramV2):
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 
+
+class SingleShotProgram_h(AveragerProgramV2):
+    def _initialize(self, cfg):
+        ro_chs = cfg['ro_ch']
+        gen_ch = cfg['res_ch']
+        qubit_ch = cfg['qubit_ch']
+
+        self.declare_gen(ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
+                         mux_freqs=cfg['res_freq_ge'],
+                         mux_gains=cfg['res_gain_ge'],
+                         mux_phases=cfg['res_phase'],
+                         mixer_freq=cfg['mixer_freq'])
+
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
+            self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch)
+
+        self.add_pulse(ch=gen_ch, name="res_pulse",
+                       style="const",
+                       length=cfg["res_length"],
+                       mask=[0, 1, 2, 3, 4, 5],
+                       )
+
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+
+        self.add_gauss(ch=qubit_ch, name="geramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+
+        self.add_pulse(ch=qubit_ch, name="ge_pi_pulse",
+                       style="arb",
+                       envelope="geramp",
+                       freq=cfg['qubit_freq_ge'],
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['pi_amp'],
+                       )
+        self.add_gauss(ch=qubit_ch, name="eframp", sigma=cfg['sigma_ef'], length=cfg['sigma_ef'] * 4, even_length=False)
+
+        self.add_pulse(ch=qubit_ch, name="ef_pi_pulse",
+                       style="arb",
+                       envelope="eframp",
+                       freq=cfg['qubit_freq_ef'],
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['pi_ef_amp'],
+                       )
+
+        self.add_gauss(ch=qubit_ch, name="fhramp", sigma=cfg['sigma_fh'], length=cfg['sigma_fh'] * 4, even_length=False)
+
+        self.add_pulse(ch=qubit_ch, name="fh_pi_pulse",
+                       style="arb",
+                       envelope="fhramp",
+                       freq=cfg['qubit_freq_fh'],
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['pi_fh_amp'],
+                       )
+
+        self.add_loop("shotloop", cfg["steps"])  # number of total shots
+
+    def _body(self, cfg):
+        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play pulse
+        self.delay_auto(0.0)
+        self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # play pulse
+        self.delay_auto(0.0)
+        self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi_pulse", t=0)  # play pulse
+        self.delay_auto(0.0)
+        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
+        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 class SingleShot_ef:
     def __init__(self, QubitIndex, num_qubits, outerFolder, round_num, save_figs=False, experiment = None):
@@ -207,19 +271,23 @@ class SingleShot_ef:
         self.dates = []
 
 
-    def fidelity_test(self, soccfg, soc):
+    def fidelity_test(self):
         # Run the single shot programs (g and e)
-        ssp_g = SingleShotProgram_g(soccfg, reps=1, final_delay=self.config['relax_delay'],
+        ssp_g = SingleShotProgram_g(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'],
                                     cfg=self.config)
-        iq_list_g = ssp_g.acquire(soc, soft_avgs=1, progress=False)
+        iq_list_g = ssp_g.acquire(self.experiment.soc, soft_avgs=1, progress=False)
 
-        ssp_e = SingleShotProgram_e(soccfg, reps=1, final_delay=self.config['relax_delay'],
+        ssp_e = SingleShotProgram_e(self.experiment.soc, reps=1, final_delay=self.config['relax_delay'],
                                     cfg=self.config)
-        iq_list_e = ssp_e.acquire(soc, soft_avgs=1, progress=False)
+        iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=False)
 
-        ssp_f = SingleShotProgram_f(soccfg, reps=1, final_delay=self.config['relax_delay'],
+        ssp_f = SingleShotProgram_f(self.experiment.soc, reps=1, final_delay=self.config['relax_delay'],
                                     cfg=self.config)
-        iq_list_f = ssp_f.acquire(soc, soft_avgs=1, progress=False)
+        iq_list_f = ssp_f.acquire(self.experiment.soc, soft_avgs=1, progress=False)
+
+        ssp_h = SingleShotProgram_h(self.experiment.soc, reps=1, final_delay=self.config['relax_delay'],
+                                    cfg=self.config)
+        iq_list_h = ssp_h.acquire(self.experiment.soc, soft_avgs=1, progress=False)
 
         # Use the fidelity calculation from SingleShotGE
         fidelity, _, _, _,_ = self.hist_ssf(
@@ -230,32 +298,38 @@ class SingleShot_ef:
 
         return fidelity
 
-    def run(self, soccfg, soc):
-        ssp_g = SingleShotProgram_g(soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
-        iq_list_g = ssp_g.acquire(soc, soft_avgs=1, progress=True)
+    def run(self):
+        ssp_g = SingleShotProgram_g(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
+        iq_list_g = ssp_g.acquire(self.experiment.soc, soft_avgs=1, progress=True)
 
-        ssp_e = SingleShotProgram_e(soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
-        iq_list_e = ssp_e.acquire(soc, soft_avgs=1, progress=True)
+        ssp_e = SingleShotProgram_e(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
+        iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=True)
 
-        ssp_f = SingleShotProgram_f(soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
-        iq_list_f = ssp_f.acquire(soc, soft_avgs=1, progress=True)
+        ssp_f = SingleShotProgram_f(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
+        iq_list_f = ssp_f.acquire(self.experiment.soc, soft_avgs=1, progress=True)
+
+        ssp_h = SingleShotProgram_h(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'],
+                                    cfg=self.config)
+        iq_list_h = ssp_h.acquire(self.experiment.soc, soft_avgs=1, progress=True)
 
         # fid, angle = self.plot_results(iq_list_g, iq_list_e, iq_list_f, self.QubitIndex)
-        ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge = self.plot_results(iq_list_g, iq_list_e, iq_list_f, self.QubitIndex)
+        ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge = self.plot_results(iq_list_g, iq_list_e, iq_list_f, iq_list_h, self.QubitIndex)
         # return fid, angle, iq_list_g, iq_list_e, iq_list_f
-        return iq_list_g, iq_list_e, iq_list_f, ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge,self.config
+        return iq_list_g, iq_list_e, iq_list_f, iq_list_h, ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge,self.config
 
-    def plot_results(self, iq_list_g, iq_list_e, iq_list_f, QubitIndex,  fig_quality=100):
+    def plot_results(self, iq_list_g, iq_list_e, iq_list_f, iq_list_h, QubitIndex,  fig_quality=100):
         I_g = iq_list_g[QubitIndex][0].T[0]
         Q_g = iq_list_g[QubitIndex][0].T[1]
         I_e = iq_list_e[QubitIndex][0].T[0]
         Q_e = iq_list_e[QubitIndex][0].T[1]
         I_f = iq_list_f[QubitIndex][0].T[0]
         Q_f = iq_list_f[QubitIndex][0].T[1]
+        I_h = iq_list_h[QubitIndex][0].T[0]
+        Q_h = iq_list_h[QubitIndex][0].T[1]
         print(QubitIndex)
 
         # fid, threshold, angle, ig_new, ie_new = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e, I_f, Q_f], cfg=self.config, plot=self.save_figs,  fig_quality=fig_quality)
-        ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e, I_f, Q_f], cfg=self.config, plot=self.save_figs, fig_quality=fig_quality)
+        ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e, I_f, Q_f, I_h, Q_h], cfg=self.config, plot=self.save_figs, fig_quality=fig_quality)
         # print('Optimal fidelity after rotation = %.3f' % fid)
         # print('Optimal angle after rotation = %f' % angle)
         print(self.config)
@@ -271,12 +345,15 @@ class SingleShot_ef:
         qe = data[3]
         i_f = data[4]
         qf = data[5]
+        ih = data[6]
+        qh = data[7]
 
         numbins = round(math.sqrt(float(cfg["steps"])))
 
         xg, yg = np.median(ig), np.median(qg)
         xe, ye = np.median(ie), np.median(qe)
         xf, yf = np.median(i_f), np.median(qf)
+        xh, yh = np.median(ie), np.median(qh)
 
         if plot == True:
             fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(16, 4))
@@ -285,10 +362,12 @@ class SingleShot_ef:
             axs[0].scatter(ig, qg, label='g', color='b', marker='*')
             axs[0].scatter(ie, qe, label='e', color='r', marker='*')
             axs[0].scatter(i_f, qf, label='f', color='g', marker='*')
+            axs[0].scatter(ih, qh, label='h', color='y', marker='*')
             axs[0].scatter(xg, yg, color='k', marker='o')
             axs[0].scatter(xe, ye, color='k', marker='o')
             axs[0].scatter(xg, yg, color='k', marker='o')
             axs[0].scatter(xf, yf, color='k', marker='o')
+            axs[0].scatter(xh, yh, color='k', marker='o')
             axs[0].set_xlabel('I (a.u.)')
             axs[0].set_ylabel('Q (a.u.)')
             axs[0].legend(loc='upper right')
