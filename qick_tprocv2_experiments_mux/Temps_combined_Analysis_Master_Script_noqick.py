@@ -425,10 +425,11 @@ if qtemp_method_flags["combined_studies_qtemps"]:
                                                   outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data,
                                                   get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps,
                                                   passing_pre_sciencerun_data=False)
-    if pre_sciencerun6_data:
-        all_files_Qtemp_results_RPMs2 = RPM_calcs.run_RPMqtemps(base_dir2, target_dates_qtemps_RPM2, filter_keywords2, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
-                                                      outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, passing_pre_sciencerun_data = True)
-        all_files_Qtemp_results_RPMs += all_files_Qtemp_results_RPMs2
+    if run_num == 6:
+        if pre_sciencerun6_data:
+            all_files_Qtemp_results_RPMs2 = RPM_calcs.run_RPMqtemps(base_dir2, target_dates_qtemps_RPM2, filter_keywords2, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
+                                                          outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, passing_pre_sciencerun_data = True)
+            all_files_Qtemp_results_RPMs += all_files_Qtemp_results_RPMs2
 
     # ----------- Get Qubit temperature results via SSF g-e threshold method and SSF g-state double gaussian threshold method
     SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, run_num, save_figs)
