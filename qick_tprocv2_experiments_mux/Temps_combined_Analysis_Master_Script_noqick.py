@@ -176,16 +176,16 @@ filter_keywords_run7 = ['AB_tests_data']
 
 #-----------------------------------------------------------------------run 8------------------------------------------------------------
 # Base path of where the data is stored up to the Study Name (round_robin_benchmark)
-base_dir_run8 = "/data/QICK_data/run8/6transmon/round_robin"
+base_dir_run8 = "/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/round_robin"
 
 # for 24hr AB data
 target_dates_qtemps_RPM_run8 = ["2025-10-19"]
 
 # To re-make and save RPM RR plots
-outerFolder_qtemps_plots_RR_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/benchmark_analysis_plots/RPM_RR_plots"
+outerFolder_qtemps_plots_RR_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/run8_analysis/benchmark_analysis_plots/RPM_RR_plots"
 #
 # For RPM Analysis
-outerFolder_qtemps_plots_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/benchmark_analysis_plots/Qtemps_RPMmethod" # Inside each analysis function, a subfolder will be defined
+outerFolder_qtemps_plots_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/run8_analysis/benchmark_analysis_plots/Qtemps_RPMmethod" # Inside each analysis function, a subfolder will be defined
 
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name
 filter_keywords_run8 = ['AB_Paper_Data_24hrs']
@@ -283,8 +283,8 @@ paths_SSFmethods_run8 = ["/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Da
                          "/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_19-43-00",
                          "/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_20-25-18"]
 
-path_saveplots_fits_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/benchmark_analysis_plots/Qtemps_SSFmethod/Gaussian_Fits_run8" # where to save ssf plots to check gaussian fits
-path_saveplots_ssf_qtemps_vsT_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/benchmark_analysis_plots/Qtemps_SSFmethod/Qtemps_vs_Time_run8" # to save qubit temps vs time via ssf methods
+path_saveplots_fits_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/run8_analysis/benchmark_analysis_plots/Qtemps_SSFmethod/Gaussian_Fits_run8" # where to save ssf plots to check gaussian fits
+path_saveplots_ssf_qtemps_vsT_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/run8_analysis/benchmark_analysis_plots/Qtemps_SSFmethod/Qtemps_vs_Time_run8" # to save qubit temps vs time via ssf methods
 
 #------------------------------------------------------------------------------ Assign func variables depending on run number ---------------------------------------
 if run_num == 6:  # We have science-run data as well as pre-science-run data available. Note: we already defined Science_Qubits above.
