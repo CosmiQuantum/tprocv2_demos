@@ -728,7 +728,7 @@ class SSFTempCalcAndPlots:
             ax.legend()
             ax.xaxis.set_major_formatter(date_fmt)
             plt.setp(ax.get_xticklabels(), rotation=45, fontsize=10)
-            ax.set_yticks(np.linspace(50, 950, 10))
+            ax.set_yticks(np.linspace(50, 150, 10))
             plt.setp(ax.get_yticklabels(), fontsize=10)
 
         plt.tight_layout()
@@ -781,7 +781,7 @@ class SSFTempCalcAndPlots:
             ax.set_title(f"Qubit {q + 1}  $\mu$: {mu:.2f} mK,  $\sigma$: {std:.2f} mK")
             ax.set_xlabel("Temperature (mK)")
             ax.set_ylabel("Count")
-            ax.set_xlim(left=50, right=600)
+            # ax.set_xlim(left=50, right=600)
             ax.grid(alpha=0.3)
 
         plt.tight_layout()

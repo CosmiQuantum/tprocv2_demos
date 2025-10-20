@@ -337,12 +337,12 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
 
     if analysis_flags["Qtemps_vs_time_viaRPM"]:
         #------------------------------------------------------------------- Qubit temperatures vs time via RPMs ----------------------------------------------------
-        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 40, yaxis_max = 950, rel_err_cutoff = 0.4, restrict_time_xaxis = False,
+        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 40, yaxis_max = 150, rel_err_cutoff = 0.8, restrict_time_xaxis = False,
                                                          plot_extra_event_lines = False, rad_events_plot_lines = False, plot_error_bars = True, fit_to_line=False, average_per_heater_step=False)
 
     if analysis_flags["Qtemps_hists_viaRPM"]:
         #----------------------------------------------------------------- Histograms of Qubit temperatures (via RPMs) -----------------------------------------------
-        RPM_plotter.plot_qubit_temperature_histograms_RPMs(combined_qtemp_data, num_qubits=6, rel_err_cutoff = 0.4)
+        RPM_plotter.plot_qubit_temperature_histograms_RPMs(combined_qtemp_data, num_qubits=6, rel_err_cutoff = 0.8)
 
     if analysis_flags["Pe_vs_time_viaRPM"]:
         #------------------------------------------------------------ Excited state populations (P_e) vs time (via RPMs) ----------------------------------------
@@ -382,10 +382,10 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
     #---------------------------------------------------------------------------- SSF Qubit Temps Analysis -------------------------------------------------------------------------
     #------------------------------------------------------------------ Temperatures vs Time Scatter Plot --------------------------------------------------------------------------
     if analysis_flags["Qtemps_vs_time_viaSSF"]:
-        SSF_calcs_obj.plot_qubit_temperatures_vs_time_ssf(all_qubit_temps, all_qubit_times, all_qubit_temps_errs, path_saveplots_ssf_qtemps_vsT, rel_err_cutoff = 0.4, plot_error_bars = True)
+        SSF_calcs_obj.plot_qubit_temperatures_vs_time_ssf(all_qubit_temps, all_qubit_times, all_qubit_temps_errs, path_saveplots_ssf_qtemps_vsT, rel_err_cutoff = 0.8, plot_error_bars = True)
     #--------------------------------------------------------------------------- SSF Temperature Histograms --------------------------------------------------------------------------------------
     if analysis_flags["Qtemps_hists_viaSSF"]:
-        SSF_calcs_obj.plot_all_qubits_hist_ssf(all_qubit_temps, all_qubit_temps_errs, path_saveplots_ssf_qtemps_vsT, bins=30, rel_err_cutoff = 0.4)
+        SSF_calcs_obj.plot_all_qubits_hist_ssf(all_qubit_temps, all_qubit_temps_errs, path_saveplots_ssf_qtemps_vsT, bins=30, rel_err_cutoff = 0.8)
     #------------------------------------------------------------ Check General SSF Double Gaussian Fits and g-e threshold ---------------------------------------------------------
     if analysis_flags["ge_thresh_check_ssf"]:
         thresh_results = SSF_calcs_obj.plot_ssf_ge_thresh(pairs_info=pairs_info, plotting_path=path_saveplots_fits)
