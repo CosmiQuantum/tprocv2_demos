@@ -278,10 +278,10 @@ path_saveplots_fits_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporar
 path_saveplots_ssf_qtemps_vsT_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/Qtemps_SSFmethod/Qtemps_vs_Time_run7" # to save qubit temps vs time via ssf methods
 
 # ----------------------------------------------------------------------------------------------run 8----------------------------------------------------------------------------------------------------------
-paths_SSFmethods_run8 = ["/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_11-09-32",
-                         "/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_12-05-25",
-                         "/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_19-43-00",
-                         "/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_20-25-18"]
+paths_SSFmethods_run8 = ["/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_11-09-32",
+                         "/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_12-05-25",
+                         "/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_19-43-00",
+                         "/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_20-25-18"]
 
 path_saveplots_fits_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/run8_analysis/benchmark_analysis_plots/Qtemps_SSFmethod/Gaussian_Fits_run8" # where to save ssf plots to check gaussian fits
 path_saveplots_ssf_qtemps_vsT_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/run8_analysis/benchmark_analysis_plots/Qtemps_SSFmethod/Qtemps_vs_Time_run8" # to save qubit temps vs time via ssf methods
