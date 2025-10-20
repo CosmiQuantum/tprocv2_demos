@@ -1116,6 +1116,15 @@ class SSFTempCalcAndPlots:
             datagroup_ssf = 'SS'
             folder_ssf = "study_data"
 
+        elif self.run_num == 8:
+            folder_qspec = "study_data"
+            expt_name_qspec = "qspec_ge"
+            datagroup_qspec = 'QSpec'
+
+            expt_name_ssf = "ss_ge"
+            datagroup_ssf = 'SS'
+            folder_ssf = "study_data"
+
         else:
             raise ValueError("You must choose run_num = 4,5,6 or 7. Otherwise, define a section for your run of interest inside process_ssf_and_qfreq_data_qtemps().")
 

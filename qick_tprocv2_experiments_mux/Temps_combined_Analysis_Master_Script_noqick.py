@@ -226,7 +226,7 @@ elif run_num == 5: # No RPM data for this run, only ssf analysis can be done
     outerFolder_qtemps_plots = ""
     target_dates_qtemps_RPM = ""
 else:
-    raise ValueError("You must choose run_num = 6 or run_num = 7. Otherwise, define a section for your run of interest.")
+    raise ValueError("You must choose run_num = 6, 7 or 8. Otherwise, define a section for your run of interest.")
 
 #-------------------------------------- For qubit temperature calculations via SSF methods (double gaussian over g-state data and double gaussian over g and e-state data ---------------------------------------------
 # Note: you must write paths in this form: "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_03-03-40"
