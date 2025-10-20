@@ -1817,3 +1817,95 @@ class combined_Qtemp_studies:
         fig.savefig(fname, dpi=self.figure_quality)
         plt.close(fig)
         print("Saved P_e plot →", fname)
+
+    def Qtemps_vs_time_comb_2subplts_improved(self, all_qubit_temperatures_ssf_g, all_qubit_timestamps_ssf_g,
+                                              all_qubit_temperatures_ssf_ge, all_qubit_timestamps_ssf_ge,
+                                              out_dir, all_files_Qtemp_results_RPMs, restrict_time_xaxis=False,
+                                              plot_extra_event_lines=False, rad_events_plot_lines=False):
+        """Works for more than 2 qubits and does not plot g-e ssf method, only rpm and regular ground state ssf method"""
+        os.makedirs(out_dir, exist_ok=True)
+
+        # --- Build RPM dicts ---
+        num_qubits = self.number_of_qubits  # expect 6 in your setup
+        times_RPM = {q: [] for q in range(num_qubits)}
+        temps_RPM = {q: [] for q in range(num_qubits)}
+        for rec in all_files_Qtemp_results_RPMs:
+            for q in range(num_qubits):
+                d = rec.get("qubits", {}).get(q)
+                if not d:
+                    continue
+                t = datetime.datetime.fromtimestamp(d["date"])
+                times_RPM[q].append(t)
+                temps_RPM[q].append(d["T_mK"])
+
+        # --- SSF (g-only) dicts ---
+        times_g = all_qubit_timestamps_ssf_g  # {q: [datetime...]}
+        temps_g = all_qubit_temperatures_ssf_g  # {q: [float...]}
+
+        # --- Optional time window ---
+        if restrict_time_xaxis:
+            window_start = datetime.datetime(2025, 4, 18, 0, 0)
+            window_end = datetime.datetime(2025, 5, 4, 23, 59)
+
+        # --- Optional radiation events ---
+        rad_events = []
+        if rad_events_plot_lines:
+            rad_events = [
+                (datetime.datetime(2025, 4, 21, 12, 35), "Co-60"),
+                (datetime.datetime(2025, 4, 23, 12, 53), "Cs-137"),
+                (datetime.datetime(2025, 4, 28, 9, 40), "Cs-137 closer"),
+                (datetime.datetime(2025, 5, 4, 18, 20), "Cs-137 removed"),
+            ]
+
+        # --- Make N rows (one per qubit), 1 column ---
+        qubits_to_plot = list(range(num_qubits))  # [0,1,2,3,4,5]
+        nrows = len(qubits_to_plot)
+        fig, axes = plt.subplots(nrows, 1, figsize=(12, 3.2 * nrows), sharex=True, constrained_layout=True)
+        if nrows == 1:
+            axes = [axes]
+
+        date_fmt = DateFormatter('%m-%d-%H')
+
+        # Only two methods now: RPM + SSF(g-only)
+        methods = [
+            ("RPM Pop. Meas.", times_RPM, temps_RPM, "orange"),
+            ("SSF g-only", times_g, temps_g, "blue"),
+        ]
+
+        for ax, q in zip(axes, qubits_to_plot):
+            for label, tdict, ydict, color in methods:
+                ts = tdict.get(q, [])
+                ys = ydict.get(q, [])
+                if ts and ys:
+                    ax.scatter(ts, ys, s=30, alpha=0.85, edgecolors='k', color=color, label=label)
+
+            ax.set_title(f"Q{q + 1}", loc="left", fontsize=13, fontweight="bold")
+            ax.set_ylabel("Temp (mK)")
+            ax.grid(False)
+
+            ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+            ax.xaxis.set_major_formatter(date_fmt)
+            ax.tick_params(axis='x', rotation=45, labelsize=9)
+
+            if restrict_time_xaxis:
+                ax.set_xlim(window_start, window_end)
+
+            for t_evt, lbl in rad_events:
+                ax.axvline(t_evt, color='gray', linestyle='--', linewidth=1)
+                ax.text(t_evt, ax.get_ylim()[1] * 0.9, lbl, rotation=90, va='top', ha='right', fontsize=8)
+
+            ax.legend(loc="upper left", fontsize=9, frameon=False)
+
+        axes[-1].set_xlabel("Time")
+        fig.suptitle("Qubit Temperatures vs Time (RPM vs SSF g-only)", fontsize=15)
+
+        # Save
+        paramvstime_dir = os.path.join(out_dir, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_path = os.path.join(paramvstime_dir, f"Qtemps_TwoMethods_6qubits_{stamp}.png")
+        fig.savefig(out_path, dpi=self.figure_quality)
+        plt.close(fig)
+        print("Saved combined methods plot: ", out_path)
+        return out_path
+

@@ -449,7 +449,7 @@ if qtemp_method_flags["combined_studies_qtemps"]:
                                                      rad_events_plot_lines = False, plot_error_bars = True)
     if comb_analysis_flags["Qtemps_vs_time_comb_single_plt"]:
         # Plots two rows (one for each qubit) and 1 column (all methods in a single plot)
-        combined_studies.Qtemps_vs_time_comb_2subplts(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_ge, all_qubit_times_ge, outerFolder_qtemps_plots,
+        combined_studies.Qtemps_vs_time_comb_2subplts_improved(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_ge, all_qubit_times_ge, outerFolder_qtemps_plots,
                                                      all_files_Qtemp_results_RPMs, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
 
     #----------- Thermal Populations vs Time using all three methods
