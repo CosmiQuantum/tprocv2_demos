@@ -420,8 +420,11 @@ if non_prebuilt_ana_flags["Qtemps_chi2_hists_viaSSF"]:
 if qtemp_method_flags["combined_studies_qtemps"]:
     # ----------- Get Qubit temperature results via RPMs
     RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits, save_figs)
-    all_files_Qtemp_results_RPMs = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal, run_name, list_of_all_qubits, tot_num_of_qubits,
-                                outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, figure_quality, save_figsRR, passing_pre_sciencerun_data = False)
+    all_files_Qtemp_results_RPMs = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal,
+                                                  run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
+                                                  outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data,
+                                                  get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps,
+                                                  passing_pre_sciencerun_data=False)
     if pre_sciencerun6_data:
         all_files_Qtemp_results_RPMs2 = RPM_calcs.run_RPMqtemps(base_dir2, target_dates_qtemps_RPM2, filter_keywords2, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
                                                       outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, passing_pre_sciencerun_data = True)
