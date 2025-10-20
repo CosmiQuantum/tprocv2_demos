@@ -111,6 +111,44 @@ class T1VsTime:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
+    # --- helpers: robust flatten + per-delay collapse ---
+    def flatten_numeric(self, x): # this is for when you save T1 shots
+        """Flatten arbitrarily nested array-likes into a 1D float array."""
+        arr = np.asarray(x, dtype=object).ravel()
+        if arr.dtype == object:
+            parts = []
+            for v in arr:
+                parts.append(np.asarray(v).ravel())
+            arr = np.concatenate(parts) if len(parts) else np.array([], dtype=float)
+        return np.asarray(arr, dtype=float).ravel()
+
+    def collapse_per_delay(self, y, N, reducer="mean"): # this is for when you save T1 shots
+        """
+        Accepts 1D length N (already per-delay), 1D length N*R (flattened shots),
+        or 2D shaped (N, R) or (R, N). Returns 1D length N.
+        """
+        y = np.asarray(y)
+        # allow 2D directly
+        if y.ndim == 2:
+            if y.shape[0] == N:
+                Y = y
+            elif y.shape[1] == N:
+                Y = y.T
+            else:
+                raise ValueError(f"Unexpected 2D shape {y.shape} for N={N}")
+            return np.median(Y, axis=1) if reducer == "median" else np.mean(Y, axis=1)
+
+        # otherwise coerce to flat and handle N or N*R
+        y = self.flatten_numeric(y)
+        total = y.size
+        if total == N:
+            return y
+        if total % N != 0:
+            raise ValueError(f"signal.size={total} not divisible by N_delays={N}")
+        R = total // N
+        Y = y.reshape(N, R)
+        return np.median(Y, axis=1) if reducer == "median" else np.mean(Y, axis=1)
+
     def run(self, return_errs = False, exp_extension=''):
         import datetime
 
@@ -173,6 +211,27 @@ class T1VsTime:
                         delay_times = self.process_h5_data(load_data[f't1{exp_extension}'][q_key].get('Delay Times', [])[0][dataset].decode())
                         # fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
                         round_num = load_data[f't1{exp_extension}'][q_key].get('Round Num', [])[0][dataset]
+
+                        # --- NEW: make per-shot data compatible with per-delay fitting --------------------------------
+                        delay_times = self.flatten_numeric(delay_times)
+                        N = int(delay_times.size)
+                        if N == 0:
+                            print("Skipping dataset: empty delay_times")
+                            continue
+
+                        # Choose reducer: "mean" (default) or set self.per_delay_reducer="median" upstream
+                        reducer = getattr(self, "per_delay_reducer", "mean")
+
+                        try:
+                            # If I/Q are (N,R) matrices from save_shots=True, this handles them directly.
+                            # If they are flattened (N*R,), it reshapes and reduces to length N.
+                            I = self.collapse_per_delay(I, N, reducer=reducer)
+                            Q = self.collapse_per_delay(Q, N, reducer=reducer)
+                        except ValueError as e:
+                            print(f"Skipping dataset due to shape mismatch: {e}")
+                            continue
+                        #-----------------------------------------------------------------------------------------------
+
                         try:
                             batch_num = load_data[f't1{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
                             syst_config = load_data[f't1{exp_extension}'][q_key].get('Syst Config', [])[0][dataset].decode()
