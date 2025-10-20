@@ -22,7 +22,7 @@ from expt_config import expt_cfg, list_of_all_qubits, FRIDGE
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 7 # first run with qubits was QUIET run 3, second run with qubits was QUIET run 4, and so forth
+run_num = 8 # first run with qubits was QUIET run 3, second run with qubits was QUIET run 4, and so forth
 run_name = f'run{run_num}/6transmon'
 signal = 'None' # Do not change
 
@@ -45,14 +45,14 @@ tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
 qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": True, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_qtemps": False}
+                      "combined_studies_qtemps": True}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False, "Qtemps_hists_viaSSF": True, "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis
-comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
+comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": True, "Pe_vs_time_comb_separate_plts": False,
                        "Pe_vs_time_comb_single_plt": False }
 
 # For London Penetration Depth analysis
@@ -174,6 +174,21 @@ outerFolder_qtemps_plots_run7 = "/data/QICK_data/run7/6transmon/round_robin_benc
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name
 filter_keywords_run7 = ['AB_tests_data']
 
+#-----------------------------------------------------------------------run 8------------------------------------------------------------
+# Base path of where the data is stored up to the Study Name (round_robin_benchmark)
+base_dir_run8 = "/data/QICK_data/run8/6transmon/round_robin"
+
+# for 24hr AB data
+target_dates_qtemps_RPM_run8 = ["2025-10-19"]
+
+# To re-make and save RPM RR plots
+outerFolder_qtemps_plots_RR_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/benchmark_analysis_plots/RPM_RR_plots"
+#
+# For RPM Analysis
+outerFolder_qtemps_plots_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/benchmark_analysis_plots/Qtemps_RPMmethod" # Inside each analysis function, a subfolder will be defined
+
+# Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name
+filter_keywords_run8 = ['AB_Paper_Data_24hrs']
 #-------------------------------------------------------------------------------- Assign func variables depending on run number ---------------------------------------------------------------------------
 
 if run_num == 6: # We have science-run data as well as pre-science-run data available
@@ -194,6 +209,15 @@ elif run_num == 7:
     outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run7
     outerFolder_qtemps_plots = outerFolder_qtemps_plots_run7
     target_dates_qtemps_RPM = target_dates_qtemps_RPM_run7
+
+elif run_num == 8:
+    Science_Qubits = [0, 1, 2, 3, 4, 5]
+    base_dir = base_dir_run8
+    filter_keywords = filter_keywords_run8
+    outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run8
+    outerFolder_qtemps_plots = outerFolder_qtemps_plots_run8
+    target_dates_qtemps_RPM = target_dates_qtemps_RPM_run8
+
 elif run_num == 5: # No RPM data for this run, only ssf analysis can be done
     Science_Qubits = [0, 1, 2, 3, 4, 5]
     base_dir = ""
@@ -253,6 +277,15 @@ paths_SSFmethods_run7 = ["/exp/cosmiq/data/QUIET/QICK_data/run7/6transmon/round_
 path_saveplots_fits_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/Qtemps_SSFmethod/Gaussian_Fits_run7" # where to save ssf plots to check gaussian fits
 path_saveplots_ssf_qtemps_vsT_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/Qtemps_SSFmethod/Qtemps_vs_Time_run7" # to save qubit temps vs time via ssf methods
 
+# ----------------------------------------------------------------------------------------------run 8----------------------------------------------------------------------------------------------------------
+paths_SSFmethods_run8 = ["/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_11-09-32",
+                         "/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_12-05-25",
+                         "/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_19-43-00",
+                         "/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_20-25-18"]
+
+path_saveplots_fits_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/benchmark_analysis_plots/Qtemps_SSFmethod/Gaussian_Fits_run8" # where to save ssf plots to check gaussian fits
+path_saveplots_ssf_qtemps_vsT_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/benchmark_analysis_plots/Qtemps_SSFmethod/Qtemps_vs_Time_run8" # to save qubit temps vs time via ssf methods
+
 #------------------------------------------------------------------------------ Assign func variables depending on run number ---------------------------------------
 if run_num == 6:  # We have science-run data as well as pre-science-run data available. Note: we already defined Science_Qubits above.
     paths_SSFmethods = paths_SSFmethods_SR
@@ -264,6 +297,10 @@ elif run_num == 7: # already defined Science_Qubits above
     paths_SSFmethods = paths_SSFmethods_run7
     path_saveplots_fits = path_saveplots_fits_run7
     path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run7
+elif run_num == 8: # already defined Science_Qubits above
+    paths_SSFmethods = paths_SSFmethods_run8
+    path_saveplots_fits = path_saveplots_fits_run8
+    path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run8
 elif run_num == 4:
     Science_Qubits = [2,3] # we only have ssf data for Q3 and Q4 for this run.
     paths_SSFmethods = paths_SSFmethods_run4
@@ -275,7 +312,7 @@ elif run_num == 5:
     path_saveplots_fits = path_saveplots_fits_run5
     path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run5
 else:
-    raise ValueError("You must choose run_num = 4, 5, 6 or 7. Otherwise, define a section for your run of interest.")
+    raise ValueError("You must choose run_num = 4, 5, 6, 7 or 8. Otherwise, define a section for your run of interest.")
 
 ############################################################################### Qubit temperature calculations via rabi population measurements #####################################################
 if qtemp_method_flags["Qtemps_viaRPM"]:
