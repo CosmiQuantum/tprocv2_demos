@@ -725,10 +725,10 @@ class SSFTempCalcAndPlots:
             ax.set_xlabel("Time")
             ax.set_ylabel("Temperature (mK)")
             # ax.grid(alpha=0.3)
-            ax.legend()
+            # ax.legend()
             ax.xaxis.set_major_formatter(date_fmt)
             plt.setp(ax.get_xticklabels(), rotation=45, fontsize=10)
-            ax.set_yticks(np.linspace(50, 150, 10))
+            ax.set_yticks(np.linspace(20, 160, 10))
             plt.setp(ax.get_yticklabels(), fontsize=10)
 
         plt.tight_layout()
