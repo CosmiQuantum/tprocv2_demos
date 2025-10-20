@@ -1270,8 +1270,10 @@ class RPMTempCalcAndPlots:
                             data_path = os.path.join(full_path, "study_data") # pre-science-run data was stored in study_data folder
                         else:
                             data_path = os.path.join(full_path, "optimization") # science-run data was stored in optimization folder
+                    elif run_num == 8:
+                        data_path = os.path.join(full_path, "study_data")
                     else:
-                        raise ValueError("run_num must be 6 or 7 OR you must add an 'if statement' for the run number you want. Specify if RPM data is in optimization OR study_data folder.")
+                        raise ValueError("run_num must be 6, 7, 8 OR you must add an 'if statement' for the run number you want. Specify if RPM data is in optimization OR study_data folder.")
 
                     if os.path.isdir(data_path):
                         date_string = d[:10]  # Extract 'YYYY-MM-DD'
