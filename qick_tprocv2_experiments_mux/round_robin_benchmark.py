@@ -88,9 +88,9 @@ device_name = '6transmon'
 substudy_txt_notes = ('Testing and debugging') # Initial qubit checkouts quiet run 8
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": False, "ss_gef": True, 'act':True,
+run_flags = {"tof": False, "res_spec": False, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False, 'act':False,
              "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
-             "rabi_pop_meas": False, "ef_Rabi": False, "fh_q_spec":False, "fh_rabi":False, "eh_q_spec":False,
+             "rabi_pop_meas": False, "ef_Rabi": False, "fh_q_spec":False, "fh_rabi":False, "eh_q_spec":True,
              "eh_rabi":False,  "fh_t2r":False, "fh_t2e": False, "htores_q_spec":False, "htores_rabi":False, "FHPar":False}
 
 # run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": True,
@@ -507,24 +507,24 @@ while j < n:
 
         ################################################# g-e Res spec ####################################################
         if run_flags["res_spec"]:
-            try:
-                res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
-                                                 experiment=experiment, verbose=verbose, logger=rr_logger,
-                                                 unmasking_resgain=unmask)
-                res_freqs, freq_pts, freq_center, amps, sys_config_rspec = res_spec.run()
-                offset = freq_offsets[
-                    QubitIndex]  # use optimized offset values or whats set at top of script based on pre_optimize flag
-                offset_res_freqs = [r + offset for r in res_freqs]
-                experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
-                del res_spec
+            # try:
+            res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
+                                             experiment=experiment, verbose=verbose, logger=rr_logger,
+                                             unmasking_resgain=unmask)
+            res_freqs, freq_pts, freq_center, amps, sys_config_rspec = res_spec.run()
+            offset = freq_offsets[
+                QubitIndex]  # use optimized offset values or whats set at top of script based on pre_optimize flag
+            offset_res_freqs = [r + offset for r in res_freqs]
+            experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
+            del res_spec
 
-            except Exception as e:
-                if debug_mode:
-                    raise e  # In debug mode, re-raise the exception immediately
-                else:
-                    rr_logger.exception(f'Got the following error, continuing: {e}')
-                    if verbose: print(f'Got the following error during ge res spec, continuing: {e}')
-                    continue  # skip the rest of this qubit
+            # except Exception as e:
+            #     if debug_mode:
+            #         raise e  # In debug mode, re-raise the exception immediately
+            #     else:
+            #         rr_logger.exception(f'Got the following error, continuing: {e}')
+            #         if verbose: print(f'Got the following error during ge res spec, continuing: {e}')
+            #         continue  # skip the rest of this qubit
 
         # ################### Roll Signal into I (need to configure for recent updates) ################################
         # #get the average theta value, then use that to rotate the signal. Plug that value into system_config res_phase
@@ -1114,6 +1114,7 @@ while j < n:
                                         save_figs, experiment, live_plot, unmasking_resgain=unmask)
 
         ehqspec_I, ehqspec_Q, ehqspec_freqs, sys_config_qspec_eh = eh_q_spec.run()
+        # ehI, ehQ, ehfreqs , self.config, ehI_fit, ehQ_fit , largest_amp_curve_mean
         # fhqspec_I_fit, fhqspec_Q_fit, fhqubit_freq,
         # experiment.soccfg,
         # experiment.soc)

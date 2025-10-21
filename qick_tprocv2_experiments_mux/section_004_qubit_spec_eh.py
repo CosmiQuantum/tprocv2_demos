@@ -72,7 +72,7 @@ class EHQubitSpectroscopy:
             #print(effreqs)
         # self.plot_results(efI, efQ, effreqs, config=self.config)
         largest_amp_curve_mean, ehI_fit, ehQ_fit = self.plot_results(ehI, ehQ, ehfreqs, config = self.config)
-        return ehI, ehQ, ehfreqs , self.config, ehI_fit, ehQ_fit , largest_amp_curve_mean
+        return ehI, ehQ, ehfreqs , self.config#, ehI_fit, ehQ_fit , largest_amp_curve_mean
 
     def live_plotting(self, qspec, soc):
         I = Q = expt_mags = expt_phases = expt_pop = None
@@ -290,6 +290,7 @@ class EHPulseProbeSpectroscopyProgram(AveragerProgramV2):
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
 
+
         self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
         self.add_pulse(ch=qubit_ch, name="pi_ge",
                        style="arb",
@@ -307,7 +308,8 @@ class EHPulseProbeSpectroscopyProgram(AveragerProgramV2):
                        )
 
         # print('FH',cfg['qubit_length_ge'], cfg['qubit_freq_ef'],cfg['qubit_gain_ef'])
-        self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_ch[0],
+        self.declare_gen(ch=cfg['qubit_ampl_ch'], nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq2'])
+        self.add_pulse(ch=cfg['qubit_ampl_ch'], name="qubit_pulse", ro_ch=ro_ch[0],
                        style="const",
                        length=cfg['qubit_length_ge'],
                        freq=cfg['qubit_freq_eh'],
@@ -322,7 +324,7 @@ class EHPulseProbeSpectroscopyProgram(AveragerProgramV2):
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # play ge pi pulse
         self.delay_auto(t=0.0, tag='waiting after pi')  # Wait til qubit pulse is done before proceeding
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play e-f pulse
+        self.pulse(ch=self.cfg['qubit_ampl_ch'], name="qubit_pulse", t=0)  # play e-f pulse
         self.delay_auto(t=0.0, tag='waiting')  # Wait til qubit e-f pulse is done before proceeding
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0) #readout
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])

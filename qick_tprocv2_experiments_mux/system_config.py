@@ -31,8 +31,8 @@ class QICK_experiment:
             print(self.soccfg)
 
             self.FSGEN_CH      = 5 # 0 for "old QICK", 5 for RF board 7/21/2025
-            self.FSGEN_AMPL_CH = 2
-            self.MIXMUXGEN_CH  = 4 # Readout resonator DAC channel
+            self.FSGEN_AMPL_CH = 6
+            self.MIXMUXGEN_CH  =  4 # Readout resonator DAC channel
             self.MUXRO_CH = [2, 3, 4, 5, 6, 7]
 
             ### NEW for the RF board
@@ -59,7 +59,7 @@ class QICK_experiment:
                 "qubit_ampl_ch": [self.FSGEN_AMPL_CH] * 6,
                 "res_ch": [self.MIXMUXGEN_CH] * 6,  # Single Tone Readout Port, MUX DAC
                 "qubit_ch_ef": [self.FSGEN_CH]*6, # Qubit ef Channel, Full-speed DAC
-                "nqz_qubit": 2,
+                "nqz_qubit": 1,
                 "nqz_res": 2,
                 # ADC
                 "ro_ch": [self.MUXRO_CH] * 6,  # MUX readout channel
@@ -75,7 +75,7 @@ class QICK_experiment:
                 #"res_freq_ge": [6217, 6276, 6335, 6407, 6476, 6538],  # MHz, run 5
                 #'res_freq_ge': [6217.011, 6275.7973, 6335.1068, 6407.052, 6476.1091, 6538], # Arianna 3/27/
                 #'res_freq_ge': [6216.811, 6275.9373, 6335, 6407.0338, 6475.8835, 6538], #Joyce 3/11
-                'res_freq_ge': [6227.197, 6289.150, 6348.55, 6419.7, 6485.3, 6552.3], #updated by Arianna 10/10, run 8
+                'res_freq_ge': [6227.187, 6289.175, 6348.55, 6419.665, 6485.315, 6552.35], #updated by Arianna 10/10, run 8
                 #'res_freq_ge': [6223.097, 6284.55, 6343.95, 6414.934, 6481.4, 6547.250],  # run 7
 
                 # "res_freq_ge": [6191.419, 6216.1, 6292.361, 6405.77, 6432.759, 6468.481],  # MHz, run 4a
@@ -86,7 +86,7 @@ class QICK_experiment:
                 # "res_gain_ge": [1,1,0.7,0.7,0.7,1], #[0.4287450656184295, 0.4903077560386716, 0.4903077560386716, 0.3941941738241592, 0.3941941738241592, 0.4903077560386716],  # DAC units
                 # "res_freq_ef": [7149.44, 0, 0, 0, 0, 0], # [MHz]
                 # "res_gain_ef": [0.6, 0, 0, 0, 0, 0], # [DAC units]
-                "res_freq_ef": [6222.923, 6289.064, 6343.882, 6414.8, 6481.282, 6547.128],  # [MHz] updated by arianna for run 8, 10/2
+                "res_freq_ef": [6227.084, 6289.074, 6348.438, 6419.583, 6485.360, 6547.128],  # [MHz] updated by arianna for run 8, 10/2
                 "res_gain_ef": [0.95,0.9,0.95,0.55,0.55,0.95],  # [DAC units]
                 "res_freq_fh": [6223.016, 6284.544, 6343.861, 6414.893, 6414.893, 6546.754],  # [MHz]
                 "res_gain_fh": [0.95,0.9,0.95,0.55,0.55,0.95],  # [DAC units]
@@ -117,44 +117,42 @@ class QICK_experiment:
                 #"qubit_freq_ge": [4184.14, 3821.144, 4156.57, 4459.19, 4471.12, 4997.86], #old
                 #"qubit_freq_ge": [4184.13, 3821.142, 4156.58, 4459.19, 4471.10, 4997.87], #old
                 #"qubit_freq_ge": [4184.15, 3821.156, 4156.88, 4459.12, 4471.18, 4998.04],  # Freqs of Qubit g/e Transition, old
-                "qubit_gain_ge": [0.02, 0.02, 0.02, 0.05, 0.05, 0.11],#[0.04, 0.12, 0.06, 0.04, 0.13, 0.18],#[0.05] * 6, #[1] * 6,
+                "qubit_gain_ge":  [0.04, 0.05, 0.05, 0.08, 0.14, 0.17],
                 "qubit_ampl_gain_ge": [0.025] *6,
                 "qubit_pi_len": 0.11, # Olivia May 17th
                 # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
-                "qubit_length_ge": 15, #15,  # 15 [us] for spec Pulse
-                "qubit_freq_ef": [4020.48, 3650.82, 3999.01, 4303.08, 4313.19, 4848.81], # Arianna 10/13
+                "qubit_length_ge": 15,  # 15 [us] for spec Pulse
+                "qubit_freq_ef": [4020.48, 3650.81, 3999.01, 4302.33, 4313.20, 4848.81], # Arianna 10/13
                 # [MHz] Freqs of Qubit e/f Transition
-                "qubit_freq_fh": [4016.3, 3456.16, 3988.44, 4292.73, 4292.73, 4833.17],
+                "qubit_freq_fh": [4016.3, 3450.8, 3988.44, 4292.73, 4292.73, 4833.17],
+                "qubit_freq_eh" : [4016.3, 3450.8, 3988.44, 4292.73, 4292.73, 4833.17],
                 "qubit_freq_ftores": [4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17],
                 "qubit_freq_htores": [4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17],
-                "qubit_gain_ef":  [0.002, 0.004, 0.0075, 0.0045, 0.008, 0.01],# [0.03, 0.14, 0.04, 0.1, 0.15, 0.08],#
-                'qubit_freq_eh': [4020.48, 3650.81, 3999.01, 4303.08, 4313.19, 4848.81],
-                "qubit_gain_fh": [0.01, 0.015, 0.0075, 0.1, 0.15, 0.005],
-                "qubit_gain_eh": [0.001, 0.015, 0.0075, 0.1, 0.15, 0.005],
-                'qubit_gain_ftores': [0.1]*6,#[0.2, 0.14, 0.04, 0.17, 0.13, 0.08],
-                'qubit_gain_htores': [1] * 6,  # [0.2, 0.14, 0.04, 0.17, 0.13, 0.08],
+                "qubit_gain_ef":  [0.0055, 0.006, 0.0077, 0.0045, 0.0095, 0.02],# [0.004, 0.0075, 0.0045, 0.008, 0.01],#
+                "qubit_gain_fh": [0.001, 0.015, 0.0075, 0.1, 0.15, 0.005],
+                "qubit_gain_eh": [0.001, 1, 0.0075, 0.1, 0.15, 0.005],
+                'qubit_gain_ftores': [1]*6,#[0.2, 0.14, 0.04, 0.17, 0.13, 0.08],
+                'qubit_gain_htores': [0.5] * 6,  # [0.2, 0.14, 0.04, 0.17, 0.13, 0.08],
                 # [0.01, 0.05, 0.05, 0.05, 0.01, 0.5], # [DAC units] Pulse Gain
                 "qubit_length_ef": 22, #22.0,
                 "qubit_length_ftores": [22]*6,  # 25.0,
-                'qubit_length_htores': [15]*6,  # 25.0,
+                "qubit_length_htores": [22] * 6,  # 25.0,
                 "qubit_phase": 0,  # [deg]
                 #"sigma": [0.15]*6,  # [us] for Gaussian Pulse (5+10 DAC atten for qubit)
                 "sigma_ampl": [0.03, 0.03, 0.05, 0.04, 0.05, 0.05], #DAC 0 04/07
-                "sigma": [0.15, 0.25, 0.27, 0.26, 0.25, 0.57],  # DAC 2 04/07 [us] for Gaussian Pulse (5+10 DAC atten for qubit). Updated on 7/17 by Arianna
+                "sigma": [0.15, 0.25, 0.27, 0.26, 0.235, 0.57],  # DAC 2 04/07 [us] for Gaussian Pulse (5+10 DAC atten for qubit). Updated on 7/17 by Arianna
                 #"sigma": [0.05, 0.09, 0.07, 0.065, 0.09, 0.3],  # Goal: cut sigma in half [us] for Gaussian Pulse (5+4 DAC atten for qubit)
                 # "pi_amp": [0.92, 0.87, 0.75, 0.73, 0.77, 0.78], # old RR values
-                "sigma_ef": [0.09, 0.25, 0.21, 0.12, 0.13, 0.27],  # [us] for Gaussian Pulse, #Arianna 3/27
-                "sigma_fh": [0.15, 0.25, 0.25, 0.29, 0.28, 0.5],  # [us] for Gaussian Pulse, #Arianna 3/27
-                "sigma_htores": [0.15, 0.25, 0.25, 0.29, 0.28, 0.5],  # [us] for Gaussian Pulse, #Arianna 3/27
-                "pi_amp": [0.66, 0.541, 0.65, 0.65, 0.66, 0.69], # Arianna 10/10, run 8
+                "sigma_ef": [0.095, 0.255, 0.20, 0.125, 0.2, 0.27],  # [us] for Gaussian Pulse, #Arianna 3/27
+                "sigma_fh": [0.15, 0.21, 0.25, 0.29, 0.28, 0.5],  # [us] for Gaussian Pulse, #Arianna 3/27
+                "pi_amp": [0.66, 0.68, 0.65, 0.65, 0.66, 0.69], # Arianna 10/10, run 8
                 "pi_amp_ampl": [0.5942, 0.634499, 0.76542, 0.7754, 0.55393, 0.9], # Joyce 04/07 DAC 0
                 #"pi_amp": [1.0, 0.93, 0.77, 0.8, 0.81, 0.9], # Eyeballed by Sara today (5+10 DAC atten for qubit)
                 #"pi_amp": [0.7, 0.95, 0.75, 0.78, 0.77, 0.8],  # With shorter sigma (5+4 DAC instead of 5+5 DAC atten for qubit)
-                "pi_ef_amp": [0.563, 0.6341, 0.511, 0.7018, 0.6751, 0.589], # Arianna 3/27
-                "pi_fh_amp": [0.563, 0.7247, 0.511, 0.7018, 0.6751, 0.589],
-                "pi_htores_amp": [0.563, 0.7376, 0.511, 0.7018, 0.6751, 0.589],
-                "qubit_mixer_freq": 4300, #4300,  # [MHz]
-                "qubit_mixer_freq2":4000,
+                "pi_ef_amp": [0.563, 0.673, 0.511, 0.7018, 0.6751, 0.589], # Arianna 3/27
+                "pi_fh_amp": [0.563, 0.8023, 0.511, 0.7018, 0.6751, 0.589],  # Arianna 3/27
+                "qubit_mixer_freq": 4300,  # [MHz]
+                "qubit_mixer_freq2": 7100,  # [MHz]
 
             }
 
@@ -234,7 +232,7 @@ class QICK_experiment:
 
             # Qubit Configuration
             self.qubit_cfg = {
-                "qubit_mixer_freq": 4300, #4300,  # [MHz]
+                "qubit_mixer_freq": 4300,  # [MHz]
                 "qubit_freq_ge": [4909, 4749.4, 4569, 4756],  # Freqs of Qubit g/e Transition
                 "qubit_gain_ge": [0.2] * 4,  # [0.008] * 4,#[0.2, 0.2, 0.2, 0.01], #[0.2] * 4,  #0.07
                 "qubit_length_ge": 20,  # [us] for spec Pulse
