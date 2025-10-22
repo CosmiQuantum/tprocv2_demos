@@ -35,7 +35,7 @@ qspecge_increase_reps_to = 800
 # outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30", str(datetime.date.today())) #change run number in each new run
 
 # For Quiet
-substudy = "readoutopt_w_updatedpunchout_threshs"#unmasking_resgain"
+substudy = "optimizing_readout_post_new_channel_21_andhalf_dBDAC"#unmasking_resgain"
 # outerFolder = os.path.join("/data/QICK_data/6transmon_run6/", str(datetime.date.today()))
 #outerFolder = os.path.join("/data/QICK_data/run6/6transmon/StarkShift/DAC0_check/Optimization/run2/", str(datetime.date.today()))
 #outerFolder = os.path.join(f"/data/QICK_data/run6/6transmon/TLS_Comprehensive_Study/readout_optimization_{datetime.date.today().strftime('%Y-%m-%d')}", datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
@@ -54,10 +54,10 @@ create_folder_if_not_exists(output_folder_length)
 outerfolder_plots = outerFolder + "/documentation/"
 
 n = 1  # Number of rounds
-n_loops = 5# Number of repetitions per length to average
+n_loops = 4# Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [3]
+Qs = [0,1,2,3,4]
 
 #Change for NEXUS vs QUIET
 res_leng_vals = [5.0, 8.5, 8.0, 7.0, 7.0, 8.0]
@@ -71,11 +71,11 @@ res_freq_ge = [None] * 6 # creates list where the script will be storing the fre
 j=0 #round number, from RR code. Not really used here since we just run it once for each qubit
 
 # lengs = np.arange(0.1, 6, 0.5)
-lengs = np.arange(3.0, 10, 0.5)
+lengs = np.arange(6.0, 12, 0.5)
 start=time.time()
 for QubitIndex in Qs:
     # Get the config for this qubit
-    experiment = QICK_experiment(outerFolder, DAC_attenuator1 = 10, DAC_attenuator2 = 15, qubit_DAC_attenuator1 = 5,
+    experiment = QICK_experiment(outerFolder, DAC_attenuator1 = 10, DAC_attenuator2 = 11.5, qubit_DAC_attenuator1 = 5,
                                      qubit_DAC_attenuator2 = 4, ADC_attenuator = 17,
                                  fridge=FRIDGE)
 
