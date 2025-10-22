@@ -66,7 +66,7 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [0,1,2,3,4]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [3]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
