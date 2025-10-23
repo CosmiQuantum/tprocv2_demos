@@ -86,8 +86,8 @@ class QubitSpectroscopy:
         if self.live_plot:
             I, Q, freqs = self.live_plotting(qspec)
         else:
-            print("rounds for this qubit: ", self.exp_cfg["rounds"])
-            print("rounds for this qubit config: ", self.config["rounds"])
+            # print("rounds for this qubit: ", self.exp_cfg["rounds"])
+            # print("rounds for this qubit config: ", self.config["rounds"])
             iq_list = qspec.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=self.qick_verbose)
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
