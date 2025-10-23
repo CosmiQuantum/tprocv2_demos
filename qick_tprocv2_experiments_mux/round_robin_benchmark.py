@@ -260,7 +260,7 @@ while j < n:
         if run_flags["q_spec"]:
             try:
                 increase_qubit_reps_qspec = False
-                increase_qubit_rounds_qspec = False
+                increase_qspec_rounds = False
                 qspecge_increase_reps_to = None
                 increase_qspec_rounds_to = None
 
