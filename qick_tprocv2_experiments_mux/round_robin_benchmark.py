@@ -98,7 +98,7 @@ rpm_any = False
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin' #qubit_checkouts
-sub_study = 'ABpaperdata_21dB_DACatten_Q1to5' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs
+sub_study = 'ABpaperdata3rdbatch_21dB_DACatten_Q1to5' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
