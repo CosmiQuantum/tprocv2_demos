@@ -11,8 +11,8 @@ import logging
 
 class QubitSpectroscopy:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder,  round_num, signal, save_figs, experiment = None,
-                 live_plot = None, verbose = False, logger = None, qick_verbose=True, increase_reps = False,
-                 increase_reps_to = 500, plot_fit=True, zeno_stark=False, zeno_stark_pulse_gain=None,
+                 live_plot = None, verbose = False, logger = None, qick_verbose=True, increase_reps = False, increase_rounds = False,
+                 increase_reps_to = 500, increase_rounds_to = 2, plot_fit=True, zeno_stark=False, zeno_stark_pulse_gain=None,
                  ext_q_spec=False, high_gain_q_spec=False, fit_data=True, unmasking_resgain = False):
 
         self.qick_verbose = qick_verbose
@@ -23,6 +23,8 @@ class QubitSpectroscopy:
         self.zeno_stark_pulse_gain = zeno_stark_pulse_gain
         self.ext_q_spec = ext_q_spec
         self.fit_data = fit_data
+        self.increase_rounds = increase_rounds
+        self.increase_rounds_to = increase_rounds_to
         self.high_gain_q_spec = high_gain_q_spec
         if self.zeno_stark:
             self.expt_name = "qubit_spec_ge_zeno_stark"
@@ -74,12 +76,18 @@ class QubitSpectroscopy:
         if self.increase_reps:
             self.config['reps'] = self.increase_reps_to
 
+        if self.increase_rounds: #config was already built above so i assume we have to modify it too, not just exp config
+            self.exp_cfg["rounds"] = self.increase_rounds_to
+            self.config['rounds'] = self.increase_rounds_to
+
         qspec = PulseProbeSpectroscopyProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=0.5, cfg=self.config)
 
         # iq_lists= []
         if self.live_plot:
             I, Q, freqs = self.live_plotting(qspec)
         else:
+            print("rounds for this qubit: ", self.exp_cfg["rounds"])
+            print("rounds for this qubit config: ", self.config["rounds"])
             iq_list = qspec.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=self.qick_verbose)
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]

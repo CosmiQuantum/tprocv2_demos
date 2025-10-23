@@ -23,7 +23,7 @@ if FRIDGE == "QUIET":
         },
 
         # "res_spec": { # For thomas roth data
-        #     "reps": 3000, #3000
+        #     "reps": 200, #3000
         #     "rounds": 1,
         #     "start": -0.5,       # MHz, sweep from -1.0 to +1.0 around center
         #     "step_size": 0.005,  # MHz (5 kHz)

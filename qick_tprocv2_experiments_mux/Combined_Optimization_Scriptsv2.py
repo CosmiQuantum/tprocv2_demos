@@ -57,12 +57,12 @@ n = 1  # Number of rounds
 n_loops = 5# Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [4,0,1]
+Qs = [3]
 
 #Change for NEXUS vs QUIET
-res_leng_vals = [6.5, 9.0, 9.0, 8.0, 9.5, 8.0]
-res_gain = [0.9, 0.9, 0.8, 0.6, 0.8, 0.92]
-freq_offsets = [-0.3182, -0.1364, -0.5, -0.2273, -0.4091, -0.0444]
+res_leng_vals = [6.5, 9.0, 6.0, 8.5, 8.0, 8.0]
+res_gain = [0.9, 0.9, 0.8, 0.5, 0.8, 0.92]
+freq_offsets = [-0.3182, -0.1364, -0.5, 0.0, -0.4091, -0.0444]
 punch_out_vals = [1.0,0.95,1.0,0.65,0.9,1.0] #updated 10/22/2025
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
@@ -71,7 +71,7 @@ res_freq_ge = [None] * 6 # creates list where the script will be storing the fre
 j=0 #round number, from RR code. Not really used here since we just run it once for each qubit
 
 # lengs = np.arange(0.1, 6, 0.5)
-lengs = np.arange(8.0, 15, 0.5)
+lengs = np.arange(4.0, 12, 0.5)
 start=time.time()
 for QubitIndex in Qs:
     # Get the config for this qubit
@@ -242,7 +242,7 @@ for QubitIndex in Qs:
     # del avg_fids, rms_fids, avg_ground_iq, avg_excited_iq, loop_group, length_group
 
     # ##---------------------Res Gain and Res Freq Sweeps------------------------
-    optimal_lengths = [6.5, 9.0, 9.0, 8.0, 9.5, 8.0] #optional # DAC 2 optimization
+    optimal_lengths = [6.5, 9.0, 9.0, 8.5, 9.5, 8.0] #optional # DAC 2 optimization
     # optimal_lengths = [4.2, 5, 7.0, 6, 6, 7.5] # DAC 0 optimization
     date_str = str(datetime.date.today())
     output_folder = outerFolder + "/study_data/Data_h5/2D_Gain_Freq_Sweeps/"
@@ -254,19 +254,19 @@ for QubitIndex in Qs:
         gain_range = [0.6, 1.0]
         gain_steps = 8
     elif QubitIndex == 4:
-        gain_range = [0.5, 0.9]
+        gain_range = [0.5, 0.7]
         gain_steps = 8
     elif QubitIndex == 3:
         gain_range = [0.3, 0.8]
         gain_steps = 10
 
-    freq_steps = 11
+    freq_steps = 10
 
     print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')
     # Select the reference frequency for the current resonator
     reference_frequency = res_freq_ge[QubitIndex]
 
-    freq_range = [reference_frequency - 0.5, reference_frequency + 0.5]# Frequency range in MHz
+    freq_range = [reference_frequency - 0.6, reference_frequency + 0.6]# Frequency range in MHz
     #freq_range = [reference_frequency -0.2, (reference_frequency + 0.2) + 1]  # Frequency range in MHz
 
     experiment = copy.deepcopy(tuned_experiment)

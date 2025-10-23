@@ -14,7 +14,11 @@ import datetime
 #outerFolder1 = os.path.join("/data/QICK_data/6transmon_run6/", '2025-03-02')
 # outerFolder1 = os.path.join("/data/QICK_data/run6/6transmon/ef_studies/Optimization/", str(datetime.date.today())) # for RR folders
 # outerFolder = "/data/QICK_data/run7/6transmon/readout_optimization/unmasking_resgain/2025-07-18_21-34-17/study_data/Data_h5/2D_Gain_Freq_Sweeps"
-outerFolder = "/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_21_dBDAC/2025-10-22_22-32-21/study_data/Data_h5/2D_Gain_Freq_Sweeps"
+outerFolder = "/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_21_dBDAC/2025-10-23_12-36-40/study_data/Data_h5/2D_Gain_Freq_Sweeps"
+
+    #"/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_21_dBDAC/2025-10-23_11-31-42/study_data/Data_h5/2D_Gain_Freq_Sweeps"
+
+    #"/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_21_dBDAC/2025-10-22_22-32-21/study_data/Data_h5/2D_Gain_Freq_Sweeps"
 
     #"/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_21_dBDAC/2025-10-22_22-32-21/study_data/Data_h5/2D_Gain_Freq_Sweeps"
 
