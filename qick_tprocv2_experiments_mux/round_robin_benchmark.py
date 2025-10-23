@@ -43,7 +43,7 @@ signal = 'None'  # 'I', or 'Q' depending on where the signal is (after optimizat
 save_figs = True  # save plots for everything as you go along the RR script?
 live_plot = False  # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
 fit_data = True  # fit the data here and save or plot the fits?
-save_data_h5 = False  # save all of the data to h5 files?
+save_data_h5 = True  # save all of the data to h5 files?
 verbose = True  # print everything to the console in real time, good for debugging, bad for memory
 qick_verbose = True  # qick verbose prints the progress bar for each qick experiment as it is happening (the red bar that fills out as more experiment rounds/reps are being done)
 debug_mode = False  # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
@@ -66,7 +66,7 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [3]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,3,4]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
@@ -75,23 +75,23 @@ substudy_txt_notes = ('Re-optimizing post adding new channel on the qick box.\n'
 
 # set which of the following you'd like to run to 'True'
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
+             "t1": True, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False}
 
-#Updated 10/17:
-res_leng_vals = [5.0, 8.5, 8.0, 7.0, 7.0, 8.0]
-res_gain = [0.9200, 0.8, 0.76, 0.52, 0.96, 0.92]
-freq_offsets = [-0.3111, -0.1333, -0.3267, 0.0467, -0.4200, -0.0444]
+#Updated 10/22:
+res_leng_vals = [6.5, 9.0, 9.0, 8.0, 9.5, 8.0]
+res_gain = [0.9, 0.9, 0.9, 0.6, 0.9, 0.92]
+freq_offsets = [-0.0467, 0.1400, 0.2333, 0.0467, 0.1400, -0.0444]
 
 qubit_freqs_ef = [None] * 6
-increase_reps_to_ef = 5000
+increase_reps_to_ef = 5100
 ef_res_sample_number = 1
 number_of_qubits = 6
 figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin' #qubit_checkouts
-sub_study = 'optimizing_post_new_channel_21_half_dBDAC' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs
+sub_study = 'optimizing_2ndABbatch_21halfdB_DACatten' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
