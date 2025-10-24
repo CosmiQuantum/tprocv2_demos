@@ -253,10 +253,10 @@ class T1VsTime:
                             if T1_est > 1000:
                                 print("The value is above 1000 us, this is a bad fit, continuing...")
                                 continue
-                            # if T1_err >= 0.8 * T1_est:
-                            #     print(
-                            #         f"Skipping T1 = {T1_est:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
-                            #     continue
+                            if T1_err >= 0.8 * T1_est:
+                                print(
+                                    f"Skipping T1 = {T1_est:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
+                                continue
 
                             t1_vals[q_key].extend([T1_est])
                             t1_errs[q_key].extend([T1_err])

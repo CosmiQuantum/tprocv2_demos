@@ -42,12 +42,16 @@ signal = 'None'
 run_number = 5 #starting from first run with qubits. Run 1 = run4a at quiet, run 2 = run5a at quiet, etc
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
+
 run_name = 'run8/6transmon/round_robin/AB_Paper_Data_24hrs'
+#run_name = 'run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots'
 
 FRIDGE = "QUIET"
 run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB attenuator ') #please make it brief for the plot
 
-top_folder_dates = ["2025-10-19_11-09-32", "2025-10-19_12-05-25", "2025-10-19_19-43-00", "2025-10-19_20-25-18", "2025-10-20_12-10-19"]
+top_folder_dates = ["2025-10-19_11-09-32", "2025-10-19_12-05-25", "2025-10-19_19-43-00", "2025-10-19_20-25-18", "2025-10-20_12-10-19"] # first batch
+
+#top_folder_dates = {"2025-10-24_01-41-30"}
 
 # ################################################ 01: Get all data ######################################################
 # res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
@@ -80,9 +84,11 @@ top_folder_dates = ["2025-10-19_11-09-32", "2025-10-19_12-05-25", "2025-10-19_19
 # print(soccfg)
 
 date = '2025-10-19_19-43-00'  #only plot all of the data for one date at a time because there is a lot
+#date = '2025-10-24_01-41-30'
 #outerFolder = f"/data/QICK_data/{run_name}/" + date + "/"
 unique_folder_path = "" # only used when plot_rabis_Qtemps = True
 outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/{date}/study_data"
+#outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/{date}/study_data"
 outerFolder_save_plots = f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/"
 saved_shots_t1 = True
 plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, run_number, tot_num_of_qubits, outerFolder,
