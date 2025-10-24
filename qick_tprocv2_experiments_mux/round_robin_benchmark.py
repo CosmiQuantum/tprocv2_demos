@@ -98,7 +98,7 @@ rpm_any = False
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin' #qubit_checkouts
-sub_study = 'ABpaperdata3rdbatch_21dB_DACatten_Q1to5' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs
+sub_study = 'ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -158,7 +158,7 @@ qspec_keys = ['Dates', 'I', 'Q', 'Frequencies', 'I Fit', 'Q Fit', 'Round Num', '
 rabi_keys = ['Dates', 'I', 'Q', 'Gains', 'Fit', 'Round Num', 'Batch Num', 'Exp Config', 'Syst Config']
 ss_keys = ['Fidelity', 'Angle', 'Dates', 'I_g', 'Q_g', 'I_e', 'Q_e', 'Round Num', 'Batch Num', 'Exp Config',
            'Syst Config']
-t1_keys = ['T1', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num', 'Batch Num', 'Exp Config',
+t1_keys = ['T1', 'Errors', 'Dates', 'I', 'Q', 'Ishots', 'Qshots', 'Delay Times', 'Fit', 'Round Num', 'Batch Num', 'Exp Config',
            'Syst Config']
 t2r_keys = ['T2', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num', 'Batch Num', 'Exp Config',
             'Syst Config']
@@ -538,8 +538,8 @@ while j < n:
                                    increase_qubit_reps=increase_qubit_reps_t1,
                                    qubit_to_increase_reps_for=qubit_to_increase_reps_for,
                                    multiply_qubit_reps_by=multiply_qubit_reps_by,
-                                   verbose=verbose, logger=rr_logger, save_shots = True, unmasking_resgain=unmask)
-                t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential, sys_config_t1 = t1.run(
+                                   verbose=verbose, logger=rr_logger, save_shots = False, unmasking_resgain=unmask)
+                t1_est, t1_err, t1_I, t1_Q, t1_Ishots, t1_Qshots, t1_delay_times, q1_fit_exponential, sys_config_t1 = t1.run(
                     thresholding=thresholding)
                 del t1
 
@@ -747,6 +747,8 @@ while j < n:
                     time.mktime(datetime.datetime.now().timetuple()))
                 t1_data[QubitIndex]['I'][j - batch_num * save_r - 1] = t1_I
                 t1_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = t1_Q
+                t1_data[QubitIndex]['Ishots'][j - batch_num * save_r - 1] = t1_Ishots
+                t1_data[QubitIndex]['Qshots'][j - batch_num * save_r - 1] = t1_Qshots
                 t1_data[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = t1_delay_times
                 t1_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = q1_fit_exponential
                 t1_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j

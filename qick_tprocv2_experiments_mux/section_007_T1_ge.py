@@ -123,10 +123,10 @@ class T1Measurement:
             raw_0 = t1.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
             Ishots = raw_0[self.QubitIndex][:, :, 0, 0]
             Qshots = raw_0[self.QubitIndex][:, :, 0, 1]
-            return T1_est, T1_err, Ishots, Qshots, delay_times, q1_fit_exponential, self.config
+            return T1_est, T1_err, I, Q, Ishots, Qshots, delay_times, q1_fit_exponential, self.config
 
         else:
-            return  T1_est, T1_err, I, Q, delay_times, q1_fit_exponential, self.config
+            return  T1_est, T1_err, I, Q, None, None, delay_times, q1_fit_exponential, self.config
 
     def live_plotting(self, t1, thresholding):
         I = Q = expt_mags = expt_phases = expt_pop = None
