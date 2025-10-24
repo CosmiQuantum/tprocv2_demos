@@ -205,7 +205,7 @@ class T1Measurement:
 
         return q1_fit_exponential, T1_err, T1_est, plot_sig
 
-    def plot_results(self, I, Q, delay_times, now, config = None, fig_quality =100):
+    def plot_results(self, I, Q, delay_times, date, config = None, fig_quality =100):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
@@ -272,5 +272,3 @@ class T1Measurement:
             file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
             fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
-
-

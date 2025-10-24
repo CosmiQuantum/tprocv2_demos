@@ -1,3 +1,4 @@
+from tprocv2_demos.qick_tprocv2_experiments_mux_nexus.socProxy import makeProxy
 import numpy as np
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_004_qubit_spec_ge import QubitSpectroscopy
@@ -14,6 +15,7 @@ from typing import List
 from matplotlib.axes import Axes
 #from expt_config import *
 import glob
+from tqdm import tqdm
 import re
 import datetime
 import ast
@@ -30,7 +32,7 @@ sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/
 
 class PlotAllRR:
     def __init__(self,  date, figure_quality, save_figs, fit_saved, signal, run_name, run_num, number_of_qubits, outerFolder,
-                 outerFolder_save_plots, unique_folder_path):
+                 outerFolder_save_plots, unique_folder_path, saved_shots):
         self.date = date
         self.figure_quality = figure_quality
         self.save_figs = save_figs
@@ -42,6 +44,7 @@ class PlotAllRR:
         self.outerFolder = outerFolder
         self.outerFolder_save_plots = outerFolder_save_plots
         self.unique_folder_path = unique_folder_path # use this when you need to use a different path for anything
+        self.saved_shots = saved_shots
 
     def process_string_of_nested_lists(self, data):
         # Remove extra whitespace and non-numeric characters.
@@ -115,7 +118,7 @@ class PlotAllRR:
         if ss_plot_gef:
             self.load_plot_save_ss_gef(plot_ssf_gef = ss_plot_gef)
         if plot_t1:
-            self.load_plot_save_t1()
+            self.load_plot_save_t1(saved_shots = self.saved_shots)
         if plot_t2r:
             self.load_plot_save_t2r()
         if plot_t2e:
@@ -428,21 +431,23 @@ class PlotAllRR:
                                     verbose = False, logger = None, qick_verbose=False)
             ss_class.plot_results(iq_list_g, iq_list_e, QubitIndex,  fig_quality=200)
 
-    def load_plot_save_t1(self):
+
+    def load_plot_save_t1(self, saved_shots = False):
         # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
-        outerFolder_expt = self.outerFolder + "/Data_h5/T1_ge/"
+        outerFolder_expt = self.outerFolder + "/Data_h5/t1_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
-        
+        soc, soccfg = makeProxy()
+
         for h5_file in h5_files:
         
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
             H5_class_instance = Data_H5(h5_file)
-            load_data = H5_class_instance.load_from_h5(data_type=  'T1', save_r = int(save_round))
+            load_data = H5_class_instance.load_from_h5(data_type=  't1_ge', save_r = int(save_round))
         
             populated_keys = []
-            for q_key in load_data['T1']:
+            for q_key in load_data['t1_ge']:
                 # Access 'Dates' for the current q_key
-                dates_list = load_data['T1'][q_key].get('Dates', [[]])
+                dates_list = load_data['t1_ge'][q_key].get('Dates', [[]])
         
                 # Check if any entry in 'Dates' is not NaN
                 if any(
@@ -452,18 +457,39 @@ class PlotAllRR:
                     populated_keys.append(q_key)
         
             for q_key in populated_keys:
-                for dataset in range(len(load_data['T1'][q_key].get('Dates', [])[0])):
+                for dataset in range(len(load_data['t1_ge'][q_key].get('Dates', [])[0])):
                     #T1 = load_data['T1'][q_key].get('T1', [])[0][dataset]
                     #errors = load_data['T1'][q_key].get('Errors', [])[0][dataset]
-                    date= datetime.datetime.fromtimestamp(load_data['T1'][q_key].get('Dates', [])[0][dataset])
-                    I = self.process_h5_data(load_data['T1'][q_key].get('I', [])[0][dataset].decode())
-                    Q = self.process_h5_data(load_data['T1'][q_key].get('Q', [])[0][dataset].decode())
-                    delay_times = self.process_h5_data(load_data['T1'][q_key].get('Delay Times', [])[0][dataset].decode())
-                    #fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
-                    round_num = load_data['T1'][q_key].get('Round Num', [])[0][dataset]
-                    batch_num = load_data['T1'][q_key].get('Batch Num', [])[0][dataset]
+                    date= datetime.datetime.fromtimestamp(load_data['t1_ge'][q_key].get('Dates', [])[0][dataset])
 
-                    exp_config = load_data['T1'][q_key].get('Exp Config', [])[0][dataset].decode()
+                    # --- NEW: make per-shot data compatible with per-delay fitting --------------------------------
+                    if saved_shots:
+                        exp_config_str = load_data['t1_ge'][q_key]['Exp Config'][0][dataset].decode()
+                        syst_config_str = load_data['t1_ge'][q_key]['Syst Config'][0][dataset].decode()
+
+                        Ishots = self.process_h5_data(load_data['t1_ge'][q_key]['I'][0][dataset].decode())
+                        Qshots = self.process_h5_data(load_data['t1_ge'][q_key]['Q'][0][dataset].decode())
+
+                        replica = OfflineAcquireReplica(remove_offset=True, length_norm=True)
+
+                        I, Q, N = replica.run_from_config_strings(
+                            exp_config_str,
+                            syst_config_str,
+                            Ishots, Qshots,
+                            soccfg=soccfg,
+                            qubit_index=q_key
+                        )
+                    # -----------------------------------------------------------------------------------------------
+                    else:
+                        I = self.process_h5_data(load_data['t1_ge'][q_key].get('I', [])[0][dataset].decode())
+                        Q = self.process_h5_data(load_data['t1_ge'][q_key].get('Q', [])[0][dataset].decode())
+
+                    delay_times = self.process_h5_data(load_data['t1_ge'][q_key].get('Delay Times', [])[0][dataset].decode())
+                    #fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
+                    round_num = load_data['t1_ge'][q_key].get('Round Num', [])[0][dataset]
+                    batch_num = load_data['t1_ge'][q_key].get('Batch Num', [])[0][dataset]
+
+                    exp_config = load_data['t1_ge'][q_key].get('Exp Config', [])[0][dataset].decode()
                     safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
 
                     exp_config = eval(exp_config, safe_globals)
@@ -1205,3 +1231,169 @@ class PlotAllRR:
         print("Combined plot saved to:", save_path)
         plt.savefig(save_path, dpi=self.figure_quality)
         plt.close(fig)
+
+class OfflineAcquireReplica:
+    """
+    Offline twin of QICK acquire():
+      - Reshapes saved shots to (rounds, N, reps)
+      - Sums over rounds, divides by soft_avgs (rounds)
+      - Length-normalizes by readout window *in decimated samples*
+      - Subtracts the hardware IQ offset (not a per-delay mean)
+      - Averages over reps per delay
+    """
+
+    def __init__(self, remove_offset=True, length_norm=True, progress=True):
+        self.remove_offset = remove_offset
+        self.length_norm = length_norm
+        self.progress = progress
+
+    # ---------- helpers to safely eval your stored config strings ----------
+    def _safe_eval_cfg(self, cfg_str):
+        # Replace QickParam reprs and np.float64(...) wrappers
+        s = re.sub(r"<qick\.asm_v2\.QickParam object at 0x[0-9a-fA-F]+>", "None", cfg_str)
+        s = re.sub(r"np\.float64\(\s*([^)]+)\s*\)", r"float(\1)", s)
+        safe_globals = {"np": np, "array": np.array, "float": float, "__builtins__": {}}
+        return eval(s, safe_globals)
+
+    # ---------- shape normalization ----------
+    def _ensure_rounds_axis(self, A, *, N=None, rounds=None, reps=None):
+        """
+        Returns array with shape (rounds, N, reps).
+        Accepts A with shapes:
+          1D: (N*reps*rounds,)
+          2D: (N, reps) or (N, reps*rounds)
+          3D: (rounds, N, reps)
+        """
+        A = np.asarray(A)
+        if A.ndim == 3:
+            return A
+        if A.ndim == 2:
+            N2, R2 = A.shape
+            if N is None:
+                N = N2
+            if N2 != N:
+                raise ValueError(f"2D shots first dim {N2} != provided N {N}")
+            if rounds is not None and reps is None:
+                if R2 % rounds != 0:
+                    raise ValueError(f"Cannot split {R2} into reps with rounds={rounds}.")
+                reps = R2 // rounds
+            elif reps is not None and rounds is None:
+                if R2 % reps != 0:
+                    raise ValueError(f"Cannot split {R2} into rounds with reps={reps}.")
+                rounds = R2 // reps
+            elif reps is None and rounds is None:
+                rounds, reps = 1, R2
+            return A.reshape(N, rounds, reps).swapaxes(0, 1)
+        if A.ndim == 1:
+            total = A.size
+            if N is None:
+                raise ValueError("For 1D shots you must provide N.")
+            if rounds is not None and reps is None:
+                if total % (N*rounds) != 0:
+                    raise ValueError(f"Size {total} not divisible by N*rounds={N*rounds}.")
+                reps = total // (N*rounds)
+            elif reps is not None and rounds is None:
+                if total % (N*reps) != 0:
+                    raise ValueError(f"Size {total} not divisible by N*reps={N*reps}.")
+                rounds = total // (N*reps)
+            else:
+                if total % N != 0:
+                    raise ValueError(f"Size {total} not divisible by N={N}. Provide rounds or reps.")
+                rounds, reps = 1, total // N
+            return A.reshape(rounds, N, reps)
+        raise ValueError(f"Expected 1D/2D/3D array, got {A.ndim}D with shape {A.shape}")
+
+    # ---------- pull hardware normalization constants from soccfg ----------
+    @staticmethod
+    def _extract_hw_norm(soccfg, syst_cfg, *, qubit_index: int):
+        """
+        Returns (ro_idx, f_output_MHz, iq_offset, ro_length_samples)
+
+        - ro_idx: which readout channel was triggered for this qubit
+        - f_output_MHz: decimated sample rate of that readout (MHz)
+        - iq_offset: hardware IQ DC offset used by acquire(remove_offset=True)
+        - ro_length_samples: integer number of decimated samples in the window
+        """
+        # pick the readout index used for this qubit
+        ro_ch = syst_cfg.get('ro_ch')
+        if isinstance(ro_ch, (list, tuple)):
+            ro_idx = ro_ch[qubit_index]
+        else:
+            ro_idx = int(ro_ch)
+
+        f_output_MHz = soccfg['readouts'][ro_idx]['f_output']      # e.g., 38.4
+        iq_offset    = soccfg['readouts'][ro_idx]['iq_offset']     # constant offset per decimated sample
+
+        # readout window in us lives alongside the other readout settings you saved
+        # (in your saved dicts this is top-level as 'res_length')
+        res_length_us = float(syst_cfg['res_length'])
+        ro_length_samples = int(round(res_length_us * f_output_MHz))
+
+        return ro_idx, f_output_MHz, iq_offset, ro_length_samples
+
+    # ---------- core averaging (QICK-faithful order) ----------
+    def run(self, Ishots, Qshots, *, soft_avgs, ro_length_samples, iq_offset,
+            reps=None, rounds=None, N=None):
+        """
+        Ishots/Qshots: raw sums (no length normalization, no offset removed), from get_raw()
+        soft_avgs:     rounds used at run time (cfg['rounds'])
+        ro_length_samples: integer number of decimated samples in the window
+        iq_offset:     hardware DC IQ offset to subtract AFTER length normalization
+        """
+        I = self._ensure_rounds_axis(Ishots, N=N, rounds=rounds, reps=reps)
+        Q = self._ensure_rounds_axis(Qshots, N=N, rounds=rounds, reps=reps)
+
+        # 1) sum over rounds actually present
+        I_sum = I.sum(axis=0)  # (N, reps)
+        Q_sum = Q.sum(axis=0)
+
+        # 2) divide by 'soft_avgs' (what you passed to acquire())
+        I_roundavg = I_sum / float(soft_avgs)
+        Q_roundavg = Q_sum / float(soft_avgs)
+
+        # 3) normalize by readout window length (in SAMPLES)
+        if self.length_norm:
+            I_roundavg = I_roundavg / ro_length_samples
+            Q_roundavg = Q_roundavg / ro_length_samples
+
+        # 4) subtract hardware IQ offset (constant), like acquire(remove_offset=True)
+        if self.remove_offset:
+            I_roundavg = I_roundavg - iq_offset
+            Q_roundavg = Q_roundavg - iq_offset
+
+        # 5) average over reps per delay -> (N,)
+        I_final = I_roundavg.mean(axis=1)
+        Q_final = Q_roundavg.mean(axis=1)
+        return I_final, Q_final
+
+    # ---------- convenience: run directly from your saved config strings ----------
+    def run_from_config_strings(self, exp_config_str, syst_config_str, Ishots, Qshots,
+                                *, soccfg, qubit_index: int):
+        """
+        Parse saved configs, fetch f_output & iq_offset from the live soccfg,
+        compute ro_length in samples, then run QICK-faithful averaging.
+        Returns (I, Q, N).
+        """
+        exp_cfg  = self._safe_eval_cfg(exp_config_str)
+        syst_cfg = self._safe_eval_cfg(syst_config_str)
+
+        T1_cfg = exp_cfg['T1_ge']
+        N      = int(T1_cfg['steps'])
+        reps   = int(T1_cfg['reps'])
+        rounds = int(T1_cfg['rounds'])
+
+        _, f_out, iq_off, ro_len_samps = self._extract_hw_norm(
+            soccfg, syst_cfg, qubit_index=qubit_index
+        )
+
+        # run with hardware-faithful normalization/subtraction
+        I, Q = self.run(
+            Ishots, Qshots,
+            soft_avgs=rounds,
+            ro_length_samples=ro_len_samps,
+            iq_offset=iq_off,
+            reps=reps,
+            rounds=rounds,
+            N=N
+        )
+        return I, Q, N

@@ -212,7 +212,7 @@ class T1VsTime:
                         # fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
                         round_num = load_data[f't1{exp_extension}'][q_key].get('Round Num', [])[0][dataset]
 
-                        # --- NEW: make per-shot data compatible with per-delay fitting --------------------------------
+                        # --- NEW: makes per-shot data compatible with per-delay fitting --------------------------------
                         delay_times = self.flatten_numeric(delay_times)
                         N = int(delay_times.size)
                         if N == 0:
@@ -253,10 +253,10 @@ class T1VsTime:
                             if T1_est > 1000:
                                 print("The value is above 1000 us, this is a bad fit, continuing...")
                                 continue
-                            if T1_err >= 0.8 * T1_est:
-                                print(
-                                    f"Skipping T1 = {T1_est:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
-                                continue
+                            # if T1_err >= 0.8 * T1_est:
+                            #     print(
+                            #         f"Skipping T1 = {T1_est:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
+                            #     continue
 
                             t1_vals[q_key].extend([T1_est])
                             t1_errs[q_key].extend([T1_err])
