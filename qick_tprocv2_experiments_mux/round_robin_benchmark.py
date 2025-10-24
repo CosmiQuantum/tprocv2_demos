@@ -69,7 +69,7 @@ Qs_to_look_at = [0,1,2,3,4]  # only list the qubits you want to do the RR for
 # Data saving info
 run_name = 'run8'
 device_name = '6transmon'
-substudy_txt_notes = ('This data is post adding new channel on the qick box.\n') # Initial qubit checkouts quiet run 8
+substudy_txt_notes = ('This data is post adding new channel on the qick box. T1 shots saved as well as averaged IQ data.\n') # Initial qubit checkouts quiet run 8
 
 # set which of the following you'd like to run to 'True'
 
@@ -538,7 +538,7 @@ while j < n:
                                    increase_qubit_reps=increase_qubit_reps_t1,
                                    qubit_to_increase_reps_for=qubit_to_increase_reps_for,
                                    multiply_qubit_reps_by=multiply_qubit_reps_by,
-                                   verbose=verbose, logger=rr_logger, save_shots = False, unmasking_resgain=unmask)
+                                   verbose=verbose, logger=rr_logger, save_shots = True, unmasking_resgain=unmask)
                 t1_est, t1_err, t1_I, t1_Q, t1_Ishots, t1_Qshots, t1_delay_times, q1_fit_exponential, sys_config_t1 = t1.run(
                     thresholding=thresholding)
                 del t1
