@@ -89,6 +89,10 @@ class SingleShotProgram_g(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
         # relax delay ...
+        # self.wait_auto(cfg['res_length'] + 0.2)
+        # self.read_input(ro_ch=cfg['ro_ch'][0])
+        # self.write_dmem(addr=0, src='s_port_l')
+        # self.write_dmem(addr=1, src='s_port_h')
 
 
 class SingleShotProgram_e(AveragerProgramV2):
@@ -250,6 +254,45 @@ class SingleShotProgram_h(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
+        # self.wait_auto(cfg['res_length']  + 0.2)
+        # self.read_input(ro_ch=cfg['ro_ch'][0])
+        # self.write_dmem(addr=0, src='s_port_l')
+        # self.write_dmem(addr=1, src='s_port_h')
+        # self.delay_auto(cfg['res_length'] + 0.2)
+        # self.label("Readout and check conditions")
+        # # n = n + 1
+        # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
+        # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+        #
+        # # # Wait for readout to be completed
+        # self.wait_auto(cfg['res_length']  + 0.2)
+        # self.delay_auto(cfg['res_length'] + 0.2)
+        # #
+        # # # Read from ro_ch buffer???
+        # # # print("cfg['ro_ch'][0])", cfg['ro_ch'][0])
+        # self.read_input(ro_ch=cfg['ro_ch'][0])
+        # self.write_dmem(addr=0, src='s_port_l')
+        # self.write_dmem(addr=1, src='s_port_h')
+        # #
+        # # # if whatever is read from ro_ch is greater or equal to threshold 1, skip to label('skip everything'))
+        # self.read_and_jump(ro_ch=cfg['ro_ch'][0],
+        #                    component='I',
+        #                    threshold=cfg['edge_of_e_state_threshold'],
+        #                    test=">=", label='skip everything')
+        #
+        # # if whatever is read from ro_ch is greater or equal to threshold 2 (between_g_and_e), go back to label("Readout and check conditions")
+        # # self.read_and_jump(ro_ch=cfg['ro_ch'][0],
+        # #                    component='I',
+        # #                    threshold=cfg['edge_of_e_state_threshold'],
+        # #                    test=">=", label="Readout and check conditions")
+        # #
+        # # # print('playing pi in active to move e to g')
+        # # # Play a pi pulse if whatever is read from ro_ch is lesser than both thresholds 1 and 2
+        # self.pulse(ch=self.cfg["qubit_ch"], name="pi_pulse", t=0)  # play pulse pi
+        # # self.delay_auto()#(self.cfg['sigma'] * 4)  # ????
+        # self.jump("Readout and check conditions")
+        # self.label('skip everything')
+
 
 class SingleShot_ef:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, save_figs=False, experiment=None,
@@ -314,6 +357,9 @@ class SingleShot_ef:
         ssp_g = SingleShotProgram_g(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'],
                                     cfg=self.config)
         iq_list_g = ssp_g.acquire(self.experiment.soc, soft_avgs=1, progress=True)
+        # print("G feedback readout:", self.experiment.soc.read_mem(2, 'dmem'))
+        # print("G feedback readout/mum of clocks:",
+        #       self.experiment.soc.read_mem(2, 'dmem') / (self.config['res_length'] / 0.026))
 
         ssp_e = SingleShotProgram_e(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'],
                                     cfg=self.config)
@@ -326,6 +372,8 @@ class SingleShot_ef:
         ssp_h = SingleShotProgram_h(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'],
                                     cfg=self.config)
         iq_list_h = ssp_h.acquire(self.experiment.soc, soft_avgs=1, progress=True)
+        # print("H feedback readout:", self.experiment.soc.read_mem(2, 'dmem'))
+        # print("H feedback readout/mum of clocks:", self.experiment.soc.read_mem(2, 'dmem')/ (self.config['res_length']/0.026))
 
         fid, fid_gh, theta_ef, theta_fh, ie_new, qe_new, if_new, qf_new, threshold_ef, ih_new, qh_new, threshold_fh = self.plot_results(self.outerFolder, iq_list_g, iq_list_e,
                                                                         iq_list_f, iq_list_h, self.QubitIndex)

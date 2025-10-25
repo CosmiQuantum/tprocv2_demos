@@ -485,7 +485,7 @@ if FRIDGE == "QUIET":
         },
 
         "Readout_Optimization":{
-            "steps": 1, #3000, # shots
+            "steps": 3000, #3000, # shots
             "py_avg": 1,
             "gain_start" : [0, 0, 0, 0],
             "gain_stop" : [1, 0, 0, 0],

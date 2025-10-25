@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from build_state import *
 from expt_config import *
 from system_config import *
+import numpy as np
 
 class TOFExperiment:
     def __init__(self, QubitIndex,  outerFolder, experiment, round_num = 1, save_figs = True, title = False, qick_verbose=True, unmasking_resgain = False):
@@ -85,6 +86,9 @@ class TOFExperiment:
         for i, ch in enumerate(self.config['ro_ch']):
             plot = axes[i]
             plot.plot(t, iq_list[i][:, 0], label="I value")
+            print('res_length',self.config['res_length'], 'len(iq_list[i][:, 0])', len(iq_list[i][:, 0]))
+            print('sum', sum(iq_list[i][:,0]))
+            print('avg', np.mean(iq_list[i][:, 0]))
             plot.plot(t, iq_list[i][:, 1], label="Q value")
             magnitude = np.abs(iq_list[i].dot([1, 1j]))
             plot.plot(t, magnitude, label="magnitude")
