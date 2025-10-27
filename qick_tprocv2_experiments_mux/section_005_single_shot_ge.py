@@ -78,6 +78,17 @@ class SingleShotProgram_g(AveragerProgramV2):
                        length=cfg["res_length"],
                        mask=cfg["list_of_all_qubits"],
                        )
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+
+        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+
+        self.add_pulse(ch=qubit_ch, name="ge_pi_pulse",
+                       style="arb",
+                       envelope="ramp",
+                       freq=cfg['qubit_freq_ge'],
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['pi_amp'],
+                       )
 
         self.add_loop("shotloop", cfg["steps"])  # number of total shots
 
@@ -86,6 +97,42 @@ class SingleShotProgram_g(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
         # relax delay ...
+        # ################ Active Reset #################################
+        self.wait_auto(cfg['res_length'])
+        self.delay_auto(cfg['res_length'] + 0.2)
+
+        self.read_and_jump(ro_ch=cfg['ro_ch'][1],
+                           component='I',
+                           threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
+                           test="<", label='skip everything')
+
+        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
+        self.label('skip everything')
+        #########################################################################################
+        #########################################################################################
+        # self.wait_auto(cfg['res_length'])
+        # self.delay_auto(cfg['res_length'] + 0.2)
+        #
+        # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
+        #                    component='I',
+        #                    threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
+        #                    test="<", label='skip everything')
+        #
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
+        # self.delay_auto(t=0)
+        # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
+        # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+        #
+        # self.wait_auto(cfg['res_length'])
+        # self.delay_auto(cfg['res_length'] + 0.2)
+        #
+        # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
+        #                    component='I',
+        #                    threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
+        #                    test="<", label='skip everything')
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
+        # self.label('skip everything')
+        ##########################################################################################
 
 
 class SingleShotProgram_e(AveragerProgramV2):
@@ -113,7 +160,7 @@ class SingleShotProgram_e(AveragerProgramV2):
 
         self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
 
-        self.add_pulse(ch=qubit_ch, name="qubit_pulse",
+        self.add_pulse(ch=qubit_ch, name="ge_pi_pulse",
                        style="arb",
                        envelope="ramp",
                        freq=cfg['qubit_freq_ge'],
@@ -124,10 +171,46 @@ class SingleShotProgram_e(AveragerProgramV2):
         self.add_loop("shotloop", cfg["steps"])  # number of total shots
 
     def _body(self, cfg):
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play pulse
+        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play pulse
         self.delay_auto(0.0)
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+        ###########
+        ################ Active Reset #################################
+        self.wait_auto(cfg['res_length'])
+        self.delay_auto(cfg['res_length'] + 0.2)
+
+        self.read_and_jump(ro_ch=cfg['ro_ch'][1],
+                           component='I',
+                           threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
+                           test="<", label='skip everything')
+
+        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
+        self.label('skip everything')
+        #########################################################################################
+        # self.wait_auto(cfg['res_length'])
+        # self.delay_auto(cfg['res_length'] + 0.2)
+        #
+        # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
+        #                    component='I',
+        #                    threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
+        #                    test="<", label='skip everything')
+        #
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
+        # self.delay_auto(t=0)
+        # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
+        # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+        #
+        # self.wait_auto(cfg['res_length'])
+        # self.delay_auto(cfg['res_length'] + 0.2)
+        #
+        # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
+        #                    component='I',
+        #                    threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
+        #                    test="<", label='skip everything')
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
+        # self.label('skip everything')
+        ##########################################################################################
 
 class SingleShot:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, save_figs=False, experiment = None,
@@ -182,10 +265,18 @@ class SingleShot:
         ssp_g = SingleShotProgram_g(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
         iq_list_g = ssp_g.acquire(self.experiment.soc, soft_avgs=1, progress=True)
         g_shots= ssp_g.get_raw()
+        # print('iq_list_g', iq_list_g)
+        # print("G feedback readout:", self.experiment.soc.read_mem(2, 'dmem'))
+        # print("G feedback readout/mum of clocks:",
+        #       self.experiment.soc.read_mem(2, 'dmem') / (self.config['res_length'] / 0.026))
 
         ssp_e = SingleShotProgram_e(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
         iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=True)
         e_shots= ssp_e.get_raw()
+        # print('iq_list_e', iq_list_e)
+        # print("E feedback readout:", self.experiment.soc.read_mem(2, 'dmem'))
+        # print("E feedback readout/mum of clocks:",
+        #       self.experiment.soc.read_mem(2, 'dmem') / (self.config['res_length'] / 0.026))
 
         fid, angle = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
         # fid, angle = self.plot_results(g_shots, e_shots, self.QubitIndex)
@@ -208,7 +299,7 @@ class SingleShot:
         self.logger.info('Optimal angle after rotation = %f' % angle)
         return fid, angle
 
-    def hist_ssf(self, QubitIndex, data=None, cfg=None, plot=True,  fig_quality = 100):
+    def hist_ssf(self, QubitIndex, data=None, cfg=None, plot=True,  fig_quality = 500):
 
         ig = data[0]
         qg = data[1]
@@ -221,7 +312,7 @@ class SingleShot:
         xe, ye = np.median(ie), np.median(qe)
 
         if plot == True:
-            fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(16, 4))
+            fig, axs = plt.subplots(nrows=1, ncols=4, figsize=(16, 5), dpi=fig_quality)
             fig.tight_layout()
 
             axs[0].scatter(ig, qg, label='g', color='b', marker='*', alpha=0.2)
@@ -284,8 +375,23 @@ class SingleShot:
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
             file_name = os.path.join(outerFolder_expt,
                                      f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
+            Ie_above=[]
+            Ie_below=[]
+            for i in range(len(ie)):
+                if ie[i] > 400:
+                    Ie_above.append(ie[i])
+                elif ie[i] < 400:
+                    Ie_below.append(ie[i])
 
             axs[2].set_title(f"Q{QubitIndex + 1} Fidelity = {fid * 100:.2f}%")
+            axs[3].plot(ie, '.', label='Ie', color='r')
+            # axs[3].plot(Ie_above, '.', label=f'ie_above:{round(100*len(Ie_above)/len(ie))}%', color='r')
+            # axs[3].plot(Ie_below, '.', label=f'ie_below:{round(100*len(Ie_below)/len(ie))}%', color='pink')
+            axs[3].axhline(y=400, color='k', linestyle='--', label=f'Ithres_actres={400}')
+            axs[3].set_xlabel('index')
+            axs[3].set_ylabel('Ie')
+            axs[3].legend(loc='upper right')
+            axs[3].set_title(f'Ie:'+f'\nie_above:{round(100*len(Ie_above)/len(ie))}%'+f'\nie_below:{round(100*len(Ie_below)/len(ie))}%')
             fig.savefig(file_name,  dpi=fig_quality, bbox_inches='tight')
             plt.close(fig)
 
@@ -407,12 +513,13 @@ class GainFrequencySweep:
         freq_step_size = (freq_range[1] - freq_range[0]) / freq_steps
         gain_step_size = (gain_range[1] - gain_range[0]) / gain_steps
         results = []
+        iters=5
 
         # Use the optimal readout length for the current qubit
         readout_length = self.optimal_lengths[self.qubit_index]
         for freq_step in range(freq_steps):
             freq = freq_range[0] + freq_step * freq_step_size
-            #print('Running for res_freq: ', freq, '...')
+
             fid_results = []
             for gain_step in range(gain_steps):
                 #experiment = QICK_experiment(self.output_folder)
@@ -420,20 +527,26 @@ class GainFrequencySweep:
                 fresh_experiment = copy.deepcopy(self.experiment)
                 gain = gain_range[0] + gain_step * gain_step_size
 
+                rep_fids=[]
+                for i in range(iters):
+                    # Update config with current gain and frequency values
+                    fresh_experiment.readout_cfg['res_freq_ge'][self.qubit_index]= freq
+                    fresh_experiment.readout_cfg['res_length'] = readout_length  # Set the optimal readout length for the qubit
 
-                # Update config with current gain and frequency values
-                fresh_experiment.readout_cfg['res_freq_ge'][self.qubit_index]= freq
-                fresh_experiment.readout_cfg['res_length'] = readout_length  # Set the optimal readout length for the qubit
+                    res_gains = fresh_experiment.mask_gain_res(self.qubit_index, gain, num_qubits=tot_num_of_qubits)
+                    fresh_experiment.readout_cfg['res_gain_ge'] = res_gains
 
-                res_gains = fresh_experiment.mask_gain_res(self.qubit_index, gain, num_qubits=tot_num_of_qubits)
-                fresh_experiment.readout_cfg['res_gain_ge'] = res_gains
 
-                # Initialize SingleShotGE instance for fidelity calculation
-                round_num = 0
-                save_figs = False
-                single_shot = SingleShot(self.qubit_index, self.number_of_qubits,  self.output_folder, round_num, save_figs, fresh_experiment, unmasking_resgain = self.unmasking_resgain)
-                fidelity = single_shot.fidelity_test(fresh_experiment.soccfg, fresh_experiment.soc)
-                fid_results.append(fidelity)
+                    # Initialize SingleShotGE instance for fidelity calculation
+                    round_num = 0
+                    save_figs = False
+                    single_shot = SingleShot(self.qubit_index, self.number_of_qubits,  self.output_folder, round_num, save_figs, fresh_experiment, unmasking_resgain = self.unmasking_resgain)
+                    fidelity = single_shot.fidelity_test(fresh_experiment.soccfg, fresh_experiment.soc)
+                    rep_fids.append(fidelity)
+
+                print('Running for res_freq: ', freq, 'gain', gain, 'fidelity: ', np.mean(rep_fids))
+
+                fid_results.append(np.mean(rep_fids))
                 del fresh_experiment
                 del single_shot
 

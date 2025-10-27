@@ -31,7 +31,7 @@ class T1Program(AveragerProgramV2):
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
         self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
-        self.add_pulse(ch=qubit_ch, name="qubit_pulse",
+        self.add_pulse(ch=qubit_ch, name="ge_pi_pulse",
                        style="arb",
                        envelope="ramp",
                        freq=cfg['qubit_freq_ge'],
@@ -42,10 +42,22 @@ class T1Program(AveragerProgramV2):
         self.add_loop("waitloop", cfg["steps"])
 
     def _body(self, cfg):
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play probe pulse
+        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play probe pulse
         self.delay_auto(cfg['wait_time'] + 0.01, tag='wait')  # wait_time after last pulse
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+        ################ Active Reset #################################
+        self.wait_auto(cfg['res_length'])
+        self.delay_auto(cfg['res_length'] + 0.2)
+
+        self.read_and_jump(ro_ch=cfg['ro_ch'][1],
+                           component='I',
+                           threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
+                           test="<", label='skip everything')
+
+        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
+        self.label('skip everything')
+        #########################################################################################
 
 
 class T1Measurement:

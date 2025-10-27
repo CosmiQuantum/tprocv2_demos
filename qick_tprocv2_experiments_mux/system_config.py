@@ -12,8 +12,8 @@ import numpy as np
 #DAC_attenuator1 and 2 are for the resonators
 #qubit_DAC_attenuator1 and 2 are for the qubits
 class QICK_experiment:
-    def __init__(self, folder, DAC_attenuator1 = 10, DAC_attenuator2 = 15, qubit_DAC_attenuator1 = 5,
-                                     qubit_DAC_attenuator2 = 4, ADC_attenuator = 17, fridge = None):
+    def __init__(self, folder, DAC_attenuator1 = 10, DAC_attenuator2 = 11, qubit_DAC_attenuator1 = 2,
+                                     qubit_DAC_attenuator2 = 2, ADC_attenuator = 17, fridge = None):
         if fridge == "QUIET":
             # Where do you want to save data
             self.outerFolder = folder
@@ -91,7 +91,7 @@ class QICK_experiment:
                 "res_freq_fh": [6223.016, 6284.544, 6343.861, 6414.893, 6414.893, 6546.754],  # [MHz]
                 "res_gain_fh": [0.95,0.9,0.95,0.55,0.55,0.95],  # [DAC units]
                 "res_length": 2.0,  # [us] (1.0 for res spec)
-                "res_phase": [0,0,0,0,0,0],#[ -180+((1.281174-2.6703) * 180/np.pi), -10, 85,
+                "res_phase": [0,180+(-1.37/np.pi)*180,0,0,0,0],#[ -180+((1.281174-2.6703) * 180/np.pi), -10, 85,
                             #   0, 150,
                             # -90], #Joyce 3/11
                 #"res_phase": [(0.19-0.38) * 180/np.pi, (2.07-3.12-1.16) * 180/np.pi, (-0.35+2.28) * 180/np.pi,
@@ -102,8 +102,10 @@ class QICK_experiment:
                 "threshold": [-5.84, 1, -5, -3, -1, 4], #Joyce 3/11
                 #"threshold": [7.3961, -12.5812, 4.8613, -7.5323, 7.0689, 4.6805], # Threshold for Distinguish g/e, from QICK Function
                 "res_ring_up_time": 4,  # Olivia May 17th
-                "qubit_is_in_g_threshold": 100000, #100000,#-8837,
-                "edge_of_e_state_threshold": -26046,
+                "qubit_is_in_g_threshold": 300, #100000,#-8837,
+                "edge_of_e_state_threshold": 400,
+                "mid_threshold": -370,
+                "edge_of_h_state_threshold": -430,
             }
 
             # Qubit Configuration
@@ -122,9 +124,9 @@ class QICK_experiment:
                 "qubit_pi_len": 0.11, # Olivia May 17th
                 # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
                 "qubit_length_ge": 15,  # 15 [us] for spec Pulse
-                "qubit_freq_ef": [4020.48, 3650.81, 3999.01, 4302.33, 4313.20, 4848.81], # Arianna 10/13
+                "qubit_freq_ef": [4020.48, 3650.79, 3999.01, 4302.33, 4313.20, 4848.81], # Arianna 10/13
                 # [MHz] Freqs of Qubit e/f Transition
-                "qubit_freq_fh": [4016.3, 3450.8, 3988.44, 4292.73, 4292.73, 4833.17],
+                "qubit_freq_fh": [4016.3, 3456.135, 3988.44, 4292.73, 4292.73, 4833.17],
                 "qubit_freq_eh" : [4016.3, 3450.8, 3988.44, 4292.73, 4292.73, 4833.17],
                 "qubit_freq_ftores": [4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17],
                 "qubit_freq_htores": [4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17],
@@ -140,19 +142,19 @@ class QICK_experiment:
                 "qubit_phase": 0,  # [deg]
                 #"sigma": [0.15]*6,  # [us] for Gaussian Pulse (5+10 DAC atten for qubit)
                 "sigma_ampl": [0.03, 0.03, 0.05, 0.04, 0.05, 0.05], #DAC 0 04/07
-                "sigma": [0.15, 0.25, 0.27, 0.26, 0.235, 0.57],  # DAC 2 04/07 [us] for Gaussian Pulse (5+10 DAC atten for qubit). Updated on 7/17 by Arianna
+                "sigma": [0.15, 0.3, 0.27, 0.26, 0.235, 0.57],  # DAC 2 04/07 [us] for Gaussian Pulse (5+10 DAC atten for qubit). Updated on 7/17 by Arianna
                 #"sigma": [0.05, 0.09, 0.07, 0.065, 0.09, 0.3],  # Goal: cut sigma in half [us] for Gaussian Pulse (5+4 DAC atten for qubit)
                 # "pi_amp": [0.92, 0.87, 0.75, 0.73, 0.77, 0.78], # old RR values
-                "sigma_ef": [0.095, 0.255, 0.20, 0.125, 0.2, 0.27],  # [us] for Gaussian Pulse, #Arianna 3/27
-                "sigma_fh": [0.15, 0.21, 0.25, 0.29, 0.28, 0.5],  # [us] for Gaussian Pulse, #Arianna 3/27
-                "pi_amp": [0.66, 0.68, 0.65, 0.65, 0.66, 0.69], # Arianna 10/10, run 8
+                "sigma_ef": [0.095, 0.3, 0.20, 0.125, 0.2, 0.27],  # [us] for Gaussian Pulse, #Arianna 3/27
+                "sigma_fh": [0.15, 0.3, 0.25, 0.29, 0.28, 0.5],  # [us] for Gaussian Pulse, #Arianna 3/27
+                "pi_amp": [0.66, 0.595, 0.65, 0.65, 0.66, 0.69], # Arianna 10/10, run 8
                 "pi_amp_ampl": [0.5942, 0.634499, 0.76542, 0.7754, 0.55393, 0.9], # Joyce 04/07 DAC 0
                 #"pi_amp": [1.0, 0.93, 0.77, 0.8, 0.81, 0.9], # Eyeballed by Sara today (5+10 DAC atten for qubit)
                 #"pi_amp": [0.7, 0.95, 0.75, 0.78, 0.77, 0.8],  # With shorter sigma (5+4 DAC instead of 5+5 DAC atten for qubit)
-                "pi_ef_amp": [0.563, 0.673, 0.511, 0.7018, 0.6751, 0.589], # Arianna 3/27
-                "pi_fh_amp": [0.563, 0.8023, 0.511, 0.7018, 0.6751, 0.589],  # Arianna 3/27
+                "pi_ef_amp": [0.563, 0.6405, 0.511, 0.7018, 0.6751, 0.589], # Arianna 3/27
+                "pi_fh_amp": [0.563, 0.6535, 0.511, 0.7018, 0.6751, 0.589],  # Arianna 3/27
                 "qubit_mixer_freq": 4300,  # [MHz]
-                "qubit_mixer_freq2": 7100,  # [MHz]
+                "qubit_mixer_freq2": 1200,  # [MHz]
 
             }
 

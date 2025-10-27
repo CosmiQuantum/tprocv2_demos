@@ -254,7 +254,17 @@ class SingleShotProgram_h(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
-        # self.wait_auto(cfg['res_length']  + 0.2)
+        self.wait_auto(cfg['res_length']  + 0.2)
+        self.read_and_jump(ro_ch=cfg['ro_ch'][0],
+                           component='I',
+                           threshold=cfg['edge_of_e_state_threshold'],
+                           test=">=", label='skip everything')
+        self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi_pulse", t=0)  # play pulse
+        self.delay_auto(0.0)
+        self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # play pulse
+        self.delay_auto(0.0)
+        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play pulse
+        self.label('skip everything')
         # self.read_input(ro_ch=cfg['ro_ch'][0])
         # self.write_dmem(addr=0, src='s_port_l')
         # self.write_dmem(addr=1, src='s_port_h')

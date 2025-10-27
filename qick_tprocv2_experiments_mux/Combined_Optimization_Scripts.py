@@ -75,7 +75,10 @@ for QubitIndex in Qs:
                 # ------------------------Single Shot-------------------------
                 # Initialize experiment for each loop iteration
                 #experiment = QICK_experiment(output_folder)
-                experiment = QICK_experiment(output_folder, DAC_attenuator1=10, DAC_attenuator2=5, ADC_attenuator=10, fridge=FRIDGE)
+                experiment = QICK_experiment(output_folder, DAC_attenuator1=8, DAC_attenuator2=8,
+                                     qubit_DAC_attenuator1=2,
+                                     qubit_DAC_attenuator2=2, ADC_attenuator=17,
+                                     fridge=FRIDGE)  # ADC_attenuator MUST be above 16dB  #QICK_experiment(output_folder, DAC_attenuator1=8, DAC_attenuator2=8, ADC_attenuator=17, fridge=FRIDGE)
                 # Set specific configuration values for each iteration
                 experiment.readout_cfg['res_length'] = leng  # Set the current readout pulse length
 

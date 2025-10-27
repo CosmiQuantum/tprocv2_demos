@@ -97,6 +97,10 @@ class AmplitudeRabiExperiment:
 
                 I = iq_list[self.QubitIndex][0][ :, 0]
                 Q = iq_list[self.QubitIndex][0][ :, 1]
+                print('I', I)
+                print("E feedback readout:", self.experiment.soc.read_mem(2, 'dmem'))
+                print("E feedback readout/mum of clocks:",
+                      self.experiment.soc.read_mem(2, 'dmem') / (self.config['res_length'] / 0.026))
 
             #get the gains that were used so you can use to plot on the x axis
             gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
@@ -1496,9 +1500,11 @@ class AmplitudeRabiProgram(AveragerProgramV2):
                        phase=cfg['qubit_phase'],
                        gain=cfg['qubit_gain_ge'],
                        )
-        self.add_pulse(ch=qubit_ch, name="pi_pulse",
+        self.add_gauss(ch=qubit_ch, name="ge_ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+
+        self.add_pulse(ch=qubit_ch, name="ge_pi_pulse",
                        style="arb",
-                       envelope="ramp",
+                       envelope="ge_ramp",
                        freq=cfg['qubit_freq_ge'],
                        phase=cfg['qubit_phase'],
                        gain=cfg['pi_amp'],
@@ -1507,53 +1513,56 @@ class AmplitudeRabiProgram(AveragerProgramV2):
         self.add_loop("gainloop", cfg["steps"])
 
     def _body(self, cfg):
+
         # Here we define a sequence of operations that we will use for each iteration of the loop
         # Drive the qubit:
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
+
+
         # Delay
         self.delay_auto(t=0.0, tag='waiting')
         # Readout pulse to look at qubit state
+        self.label('readout')
+
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         # Trigger the readout channels to start collecting the data
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
         ################ Active Reset #################################
-        # Wait for readout to be completed
-        # self.wait_auto(cfg['res_length']  + 0.2)
+        # self.wait_auto(cfg['res_length'])
         # self.delay_auto(cfg['res_length'] + 0.2)
-        # self.label("Readout and check conditions")
-        # # n = n + 1
-        # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
-        # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
         #
-        # # # Wait for readout to be completed
-        # self.wait_auto(cfg['res_length']  + 0.2)
-        # self.delay_auto(cfg['res_length'] + 0.2)
-        # #
-        # # # Read from ro_ch buffer???
-        # # # print("cfg['ro_ch'][0])", cfg['ro_ch'][0])
-        # # self.read_input(ro_ch=cfg['ro_ch'][0])
-        # # self.write_dmem(addr=0, src='s_port_l')
-        # # self.write_dmem(addr=1, src='s_port_h')
-        # #
-        # # # if whatever is read from ro_ch is greater or equal to threshold 1, skip to label('skip everything'))
-        # self.read_and_jump(ro_ch=cfg['ro_ch'][0],
+        # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
         #                    component='I',
-        #                    threshold=cfg['edge_of_e_state_threshold'],
-        #                    test=">=", label='skip everything')
+        #                    threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
+        #                    test="<", label='skip everything')
         #
-        # # if whatever is read from ro_ch is greater or equal to threshold 2 (between_g_and_e), go back to label("Readout and check conditions")
-        # # self.read_and_jump(ro_ch=cfg['ro_ch'][0],
-        # #                    component='I',
-        # #                    threshold=cfg['edge_of_e_state_threshold'],
-        # #                    test=">=", label="Readout and check conditions")
-        # #
-        # # # print('playing pi in active to move e to g')
-        # # # Play a pi pulse if whatever is read from ro_ch is lesser than both thresholds 1 and 2
-        # self.pulse(ch=self.cfg["qubit_ch"], name="pi_pulse", t=0)  # play pulse pi
-        # # self.delay_auto()#(self.cfg['sigma'] * 4)  # ????
-        # self.jump("Readout and check conditions")
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
         # self.label('skip everything')
+        #########################################################################################
+        # self.wait_auto(cfg['res_length'])
+        # self.delay_auto(cfg['res_length'] + 0.2)
+        #
+        # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
+        #                    component='I',
+        #                    threshold=int(cfg["qubit_is_in_g_threshold"] * (cfg['res_length'] / 0.026)),
+        #                    test="<", label='skip everything')
+        #
+        # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
+        #                    component='I',
+        #                    threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
+        #                    test="<", label='readout')
+        #
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
+        # self.jump('readout')
+        #
+        # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        # # Trigger the readout channels to start collecting the data
+        # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+        # self.label('skip everything')
+
+
+        ##########################################################################################
 
 class AmplitudeRabi_QZE_Program(AveragerProgramV2):
     def __init__(self, soccfg, reps, final_delay, final_wait=0, initial_delay=1.0,
