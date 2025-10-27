@@ -216,8 +216,8 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ef": {
-            "reps": 300,
-            "reps2": 900, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
+            "reps": 400,
+            "reps2": 1000, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
             "stop": [1.0] * 6,  # [DAC units]
