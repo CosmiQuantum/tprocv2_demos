@@ -34,7 +34,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 10000
+n = 55
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
@@ -64,7 +64,7 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [0,1,2,3,4]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [5]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
@@ -73,18 +73,18 @@ substudy_txt_notes = ('This data is post adding new channel on the qick box. T1 
 
 # set which of the following you'd like to run to 'True'
 
-# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
-#              "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
-#              "rabi_pop_meas": False, "ef_Rabi": False}
+# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": False, "rabi": True, "ss_gef": False,
+#              "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": True,
+#              "rabi_pop_meas": False, "ef_Rabi": True}
 
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
              "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
              "rabi_pop_meas": True, "ef_Rabi": False}
 
-#Updated 10/23, except for Q6 due to R6 double peak problem
-res_leng_vals = [6.5, 9.0, 6.0, 8.5, 8.0, 8.0]
-res_gain = [0.9, 0.9, 0.8, 0.5, 0.8, 0.92]
-freq_offsets = [-0.3182, -0.1364, -0.5, 0.0, -0.4091, -0.0444]
+#Updated 10/27
+res_leng_vals = [6.5, 9.0, 6.0, 8.5, 8.0, 10.0]
+res_gain = [0.9, 0.9, 0.8, 0.5, 0.8, 0.8]
+freq_offsets = [-0.3182, -0.1364, -0.5, 0.0, -0.4091, -0.1333]
 
 qubit_freqs_ef = [None] * 6
 increase_reps_to_ef = 5100
@@ -98,7 +98,7 @@ rpm_any = False
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin' #qubit_checkouts
-sub_study = 'ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs
+sub_study = 'ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):

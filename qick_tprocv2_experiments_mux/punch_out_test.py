@@ -48,7 +48,7 @@ experiment = QICK_experiment(outerfolder_plots, DAC_attenuator1 = DAC_att_1, DAC
 # [1.0, 0.9, 1.0, 0.65, 0.95, 1.0]  from 10/22/2025
 
 # For resonators back to back:
-Qs = [3] #starts at 0
+Qs = [5] #starts at 0
 for QubitIndex in Qs:
     if QubitIndex == 0:
         start_gain, stop_gain, num_points = 0.80, 1.0, 5
@@ -61,7 +61,7 @@ for QubitIndex in Qs:
     if QubitIndex == 4:
         start_gain, stop_gain, num_points = 0.5, 1.0, 6
     if QubitIndex == 5:
-        start_gain, stop_gain, num_points = 0.85, 1.0, 4
+        start_gain, stop_gain, num_points = 0.6, 1.0, 5
 
     punch_out  = PunchOut(QubitIndex, number_of_qubits, outerfolder_plots, experiment, Unmask)
     punch_out.run(experiment.soccfg, experiment.soc, start_gain, stop_gain, num_points, DAC_att, ADC_att, plot_Center_shift = False, plot_res_sweeps = True)

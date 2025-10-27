@@ -57,13 +57,13 @@ n = 1  # Number of rounds
 n_loops = 5# Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [3]
+Qs = [5]
 
 #Change for NEXUS vs QUIET
-res_leng_vals = [6.5, 9.0, 6.0, 8.5, 8.0, 8.0]
-res_gain = [0.9, 0.9, 0.8, 0.5, 0.8, 0.92]
-freq_offsets = [-0.3182, -0.1364, -0.5, 0.0, -0.4091, -0.0444]
-punch_out_vals = [1.0,0.95,1.0,0.65,0.9,1.0] #updated 10/22/2025
+res_leng_vals = [6.5, 9.0, 6.0, 8.5, 8.0, 10.0]
+res_gain = [0.9, 0.9, 0.8, 0.5, 0.8, 0.8]
+freq_offsets = [-0.3182, -0.1364, -0.5, 0.0, -0.4091, 0.24]
+punch_out_vals = [1.0,0.95,1.0,0.65,0.9,0.8] #updated 10/27/2025
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_freq_ge = [None] * 6 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
@@ -242,7 +242,7 @@ for QubitIndex in Qs:
     # del avg_fids, rms_fids, avg_ground_iq, avg_excited_iq, loop_group, length_group
 
     # ##---------------------Res Gain and Res Freq Sweeps------------------------
-    optimal_lengths = [6.5, 9.0, 9.0, 8.5, 9.5, 8.0] #optional # DAC 2 optimization
+    optimal_lengths = [6.5, 9.0, 9.0, 8.5, 9.5, 10.0] #optional # DAC 2 optimization
     # optimal_lengths = [4.2, 5, 7.0, 6, 6, 7.5] # DAC 0 optimization
     date_str = str(datetime.date.today())
     output_folder = outerFolder + "/study_data/Data_h5/2D_Gain_Freq_Sweeps/"
@@ -260,13 +260,13 @@ for QubitIndex in Qs:
         gain_range = [0.3, 0.8]
         gain_steps = 10
 
-    freq_steps = 10
+    freq_steps = 9
 
     print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')
     # Select the reference frequency for the current resonator
     reference_frequency = res_freq_ge[QubitIndex]
 
-    freq_range = [reference_frequency - 0.6, reference_frequency + 0.6]# Frequency range in MHz
+    freq_range = [reference_frequency - 0.4, reference_frequency + 0.4] # Frequency range in MHz
     #freq_range = [reference_frequency -0.2, (reference_frequency + 0.2) + 1]  # Frequency range in MHz
 
     experiment = copy.deepcopy(tuned_experiment)
