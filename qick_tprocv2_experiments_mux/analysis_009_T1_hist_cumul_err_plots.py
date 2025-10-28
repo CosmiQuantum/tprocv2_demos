@@ -191,6 +191,12 @@ class T1HistCumulErrPlots:
                                 print(
                                     f"Skipping T1 = {T1:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
                                 continue
+
+                            if T1 < 25:
+                                print(
+                                    f"Skipping T1 = {T1:.3f} µs because it is presumed to have been a bad fit. Check these files.")
+                                continue
+
                             t1_vals[q_key].extend([T1])  # Store T1 values
                             t1_errs[q_key].extend([T1_err])  # Store T1 error values
                             dates[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])  # Decode bytes to string

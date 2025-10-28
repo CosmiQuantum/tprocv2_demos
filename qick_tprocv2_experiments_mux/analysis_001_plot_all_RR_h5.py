@@ -468,8 +468,8 @@ class PlotAllRR:
                         exp_config_str = load_data['t1_ge'][q_key]['Exp Config'][0][dataset].decode()
                         syst_config_str = load_data['t1_ge'][q_key]['Syst Config'][0][dataset].decode()
 
-                        Ishots = self.process_h5_data(load_data['t1_ge'][q_key]['I'][0][dataset].decode())
-                        Qshots = self.process_h5_data(load_data['t1_ge'][q_key]['Q'][0][dataset].decode())
+                        Ishots = self.process_h5_data(load_data['t1_ge'][q_key]['Ishots'][0][dataset].decode())
+                        Qshots = self.process_h5_data(load_data['t1_ge'][q_key]['Qshots'][0][dataset].decode())
 
                         replica = OfflineAcquireReplica(remove_offset=True, length_norm=True)
                         replica.setup_offline_from_strings(exp_config_str, syst_config_str, soccfg,

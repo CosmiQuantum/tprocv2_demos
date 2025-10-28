@@ -1707,7 +1707,10 @@ class PlotRR_noQick:
         time_str = "_".join(os.path.basename(filename).split('_')[:2])
         return datetime.strptime(time_str, "%Y-%m-%d_%H-%M-%S")
 
-    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, run_num, save_figs = False, get_qtemp_data = False):
+    def relerr(self, val, err, eps=1e-12): # calculates relative error of a value and its associated error
+        return float(abs(err) / max(abs(val), eps)) # eps=1e-12 is to avoidthis blowing up if err is too close to zero
+
+    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, run_num, save_figs = False, get_qtemp_data = False, filter_out_bad_amp_fits = False):
         """
         Note: this code assumes that a single h5 file contains ONE dataset for EACH qubit inside.
 
@@ -1765,6 +1768,7 @@ class PlotRR_noQick:
             for q_key in populated_keys:
                 # print(f"Extracting data for QubitIndex: {q_key}")
                 for dataset in range(len(load_data['q_temperatures'][q_key].get('Dates', [])[0])):
+                    flagged = False
                     date = datetime.datetime.fromtimestamp(load_data['q_temperatures'][q_key].get('Dates', [])[0][dataset])
                     round_num = load_data['q_temperatures'][q_key].get('Round Num', [])[0][dataset]
                     batch_num = load_data['q_temperatures'][q_key].get('Batch Num', [])[0][dataset]
@@ -1855,8 +1859,44 @@ class PlotRR_noQick:
                         best_signal_fit2, pi_amp2, A_amplitude2, A_amplitude_err2, amp_fit2 = rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality)
                         del rabi_class_instance
 
-                    if not get_qtemp_data:
-                        continue  # Skip the rest of this block if not returning data
+                    if filter_out_bad_amp_fits:
+                        MAX_REL_ERR_A = 0.80  # e.g. reject if amplitude std > 80% of fitted amp
+
+                        # Check if this pair is FLAGGED as having a really high err associated with its Amplitude param
+                        flag1 = (A_amplitude1 is None) or (A_amplitude_err1 is None) or (
+                                    self.relerr(A_amplitude1, A_amplitude_err1) > MAX_REL_ERR_A)
+                        flag2 = (A_amplitude2 is None) or (A_amplitude_err2 is None) or (
+                                    self.relerr(A_amplitude2, A_amplitude_err2) > MAX_REL_ERR_A)
+                        flagged = flag1 or flag2
+
+                        # where these plots will get dumped
+                        today_date = datetime.datetime.now().strftime("%Y-%m-%d")
+                        dated_folder_name = f"made_on_{today_date}"
+                        base_out = os.path.join(self.outerFolder_save_plots, "q_temperatures", dated_folder_name)
+                        out_dir = os.path.join(base_out, "FLAGGED") if flagged else base_out
+                        os.makedirs(out_dir, exist_ok=True)
+
+                        if len(I1) > 0:
+                            saver1 = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits,
+                                                              list_of_all_qubits,
+                                                              out_dir,
+                                                              round_num, self.signal, save_figs=True)
+                            saver1.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality)
+                            del saver1
+
+                        if len(I2) > 0:
+                            saver2 = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits,
+                                                              list_of_all_qubits,
+                                                              out_dir,  # < save here
+                                                              round_num, self.signal, save_figs=True)
+                            saver2.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality)
+                            del saver2
+
+                    if flagged or (not get_qtemp_data):
+                        if flagged:
+                            print(f"[FLAGGED] Q{q_key + 1}: rel_err A1={self.relerr(A_amplitude1, A_amplitude_err1):.2f}, "
+                                  f"A2={self.relerr(A_amplitude2, A_amplitude_err2):.2f}. Skipping temperature calc.")
+                        continue # Skip the rest of this block
 
                     if (A_amplitude1 is not None and A_amplitude2 is not None and
                         A_amplitude_err1 is not None and A_amplitude_err2 is not None):

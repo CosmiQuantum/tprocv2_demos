@@ -258,6 +258,11 @@ class T1VsTime:
                                     f"Skipping T1 = {T1_est:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
                                 continue
 
+                            if T1_est < 25:
+                                print(
+                                    f"Skipping T1 = {T1_est:.3f} µs because it is presumed to have been a bad fit. Check these files.")
+                                continue
+
                             t1_vals[q_key].extend([T1_est])
                             t1_errs[q_key].extend([T1_err])
                             date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
@@ -420,7 +425,7 @@ class T1VsTime:
             sorted_x = np.array(sorted_x)
 
             #ax.set_xlim(start_time, end_time)
-            # ax.set_ylim(5, 90)
+            # ax.set_ylim(25, 150)
 
             ax.errorbar(
                 sorted_x, sorted_y, yerr=sorted_err,

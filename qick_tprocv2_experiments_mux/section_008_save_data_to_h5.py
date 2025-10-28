@@ -222,8 +222,9 @@ class Data_H5:
                     elif data_type == 'SS_gef' or data_type == 'ss_gef':
                         target_keys = {'Fidelity': 'Fidelity', 'Angle_ge': 'Angle_ge', 'Dates': 'Dates', 'I_g': 'I_g', 'Q_g': 'Q_g', 'I_e': 'I_e', 'Q_e': 'Q_e', 'I_f': 'I_f', 'Q_f': 'Q_f', 'Round Num': 'Round Num', 'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
                                         'Syst Config': 'Syst Config'}
-                    elif data_type == 'T1' or data_type == 'T1_ge' or data_type == 't1_ge' or  data_type == 'T1_fe' or  data_type == 'T1_fg' or data_type == 't1':
+                    elif data_type == 'T1' or data_type == 'T1_ge' or data_type == 't1_ge' or data_type == 'T1_fe' or data_type == 'T1_fg':
                         target_keys = {'T1': 'T1', 'Errors': 'Errors', 'Dates': 'Dates', 'I': 'I', 'Q': 'Q',
+                                       'Ishots': 'Ishots', 'Qshots': 'Qshots',
                                        'Delay Times': 'Delay Times', 'Fit': 'Fit', 'Round Num': 'Round Num',
                                        'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
                                        'Syst Config': 'Syst Config'}
