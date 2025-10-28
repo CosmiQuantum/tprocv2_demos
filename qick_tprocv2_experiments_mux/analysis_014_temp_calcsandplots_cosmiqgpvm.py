@@ -8,8 +8,8 @@ from sklearn.mixture import GaussianMixture
 import os
 from scipy.stats import norm
 sys.path.insert(0, os.path.abspath("/home/quietuser/Documents/GitHub/QICK_Qubit_LabSuite/src"))
-from qicklab.analysis.qspec import AnaQSpec
-from qicklab.analysis.ssf import AnaSSF
+# from qicklab.analysis.qspec import AnaQSpec
+# from qicklab.analysis.ssf import AnaSSF
 
 from matplotlib.ticker import MaxNLocator
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
@@ -1243,7 +1243,8 @@ class RPMTempCalcAndPlots:
         self.number_of_qubits = number_of_qubits
 
     def run_RPMqtemps(self, base_dir, target_dates, filter_keywords, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
-                     outerFolder_RR_plots, replot_RPMs = False, get_qtemp_data = False, get_london_data = False, figure_quality = 200, save_figsRR = False, exclude_temp_sweeps = False, passing_pre_sciencerun_data = False):
+                     outerFolder_RR_plots, replot_RPMs = False, get_qtemp_data = False, get_london_data = False, figure_quality = 200, save_figsRR = False, exclude_temp_sweeps = False, passing_pre_sciencerun_data = False,
+                      filter_out_bad_amp_fits = False):
 
         combined_qtemp_data = []  # list of results from different .h5 files
 
@@ -1288,7 +1289,7 @@ class RPMTempCalcAndPlots:
 
                         # ---------------------------------------- Initialize the PlotRR_noQick class ------------------------------------------------
                         plotter = PlotRR_noQick(date_string, figure_quality, save_figsRR, fit_saved, signal, run_name,
-                                                tot_num_of_qubits, outerFolder, outerFolder_RR_plots, outerFolder_qtemps_data)
+                                                tot_num_of_qubits, outerFolder, outerFolder_RR_plots, outerFolder_qtemps_data, run_num)
 
                         if replot_RPMs:
                             # ------------------------------------To re-plot the RPM plots, or any other data from the selected date-----------------------------------------------------
@@ -1297,7 +1298,7 @@ class RPMTempCalcAndPlots:
 
                         if get_qtemp_data: # returns RPM qubit temperature data (and qfreqs that were used for the calculations)
                             # ---------------------------------------- Load data and append to list spanning multiple dates --------------------------------------------------
-                            qtemp_data = plotter.load_plot_save_rabis_Qtemps(list_of_all_qubits, run_num, save_figs = False, get_qtemp_data = get_qtemp_data)
+                            qtemp_data = plotter.load_plot_save_rabis_Qtemps(list_of_all_qubits, run_num, save_figs = False, get_qtemp_data = get_qtemp_data, filter_out_bad_amp_fits = filter_out_bad_amp_fits)
                             combined_qtemp_data.extend(qtemp_data)
 
                         if get_london_data: # returns RPM qubit temperature data, qfreqs that were used to calculate the temps, and resonator freqs

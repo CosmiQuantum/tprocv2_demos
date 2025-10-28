@@ -1407,12 +1407,13 @@ class QubitFreqsVsTime:
 
 class PlotRR_noQick:
     def __init__(self,  date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
-                 outerFolder_save_plots, unique_folder_path):
+                 outerFolder_save_plots, unique_folder_path, run_num):
         self.date = date
         self.figure_quality = figure_quality
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
+        self.run_num = run_num
         self.run_name = run_name
         self.number_of_qubits = number_of_qubits
         self.outerFolder = outerFolder
@@ -1477,7 +1478,7 @@ class PlotRR_noQick:
         #     self.load_plot_save_q_spec()
         if plot_rabis_Qtemps:
             list_of_all_qubits = [i for i in range(self.number_of_qubits + 1)]
-            self.load_plot_save_rabis_Qtemps(list_of_all_qubits, save_figs = True, get_qtemp_data = False)
+            self.load_plot_save_rabis_Qtemps(list_of_all_qubits, run_num = self.run_num, save_figs = False, get_qtemp_data = False, filter_out_bad_amp_fits = True)
         # if plot_rabi:
         #     if rabi_rolling_avg:
         #         self.load_plot_save_rabi(rabi_rolling_avg=True)
@@ -1729,7 +1730,7 @@ class PlotRR_noQick:
         # Index QSpec results by timestamp and q_key
         qspec_by_qkey_and_time = defaultdict(list)
         for entry in extracted_qspec_results:
-            timestamp = self.extract_timestamp_from_filename(entry['h5_file']).timestamp()
+            timestamp = self.extract_timestamp_from_filename(entry['filename']).timestamp()
             q_key = entry['q_key']
             qspec_by_qkey_and_time[q_key].append((timestamp, entry))
 
@@ -1859,44 +1860,51 @@ class PlotRR_noQick:
                         best_signal_fit2, pi_amp2, A_amplitude2, A_amplitude_err2, amp_fit2 = rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality)
                         del rabi_class_instance
 
+                    #-------------------------------------------- New to inspect bad fits --------------------------------------------
                     if filter_out_bad_amp_fits:
+                        print('inside filter_out_bad_amp_fits block')
                         MAX_REL_ERR_A = 0.80  # e.g. reject if amplitude std > 80% of fitted amp
 
-                        # Check if this pair is FLAGGED as having a really high err associated with its Amplitude param
+                        # Determine if either fit is bad
                         flag1 = (A_amplitude1 is None) or (A_amplitude_err1 is None) or (
-                                    self.relerr(A_amplitude1, A_amplitude_err1) > MAX_REL_ERR_A)
+                                self.relerr(A_amplitude1, A_amplitude_err1) > MAX_REL_ERR_A)
                         flag2 = (A_amplitude2 is None) or (A_amplitude_err2 is None) or (
-                                    self.relerr(A_amplitude2, A_amplitude_err2) > MAX_REL_ERR_A)
+                                self.relerr(A_amplitude2, A_amplitude_err2) > MAX_REL_ERR_A)
                         flagged = flag1 or flag2
 
-                        # where these plots will get dumped
-                        today_date = datetime.datetime.now().strftime("%Y-%m-%d")
-                        dated_folder_name = f"made_on_{today_date}"
-                        base_out = os.path.join(self.outerFolder_save_plots, "q_temperatures", dated_folder_name)
-                        out_dir = os.path.join(base_out, "FLAGGED") if flagged else base_out
-                        os.makedirs(out_dir, exist_ok=True)
-
-                        if len(I1) > 0:
-                            saver1 = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits,
-                                                              list_of_all_qubits,
-                                                              out_dir,
-                                                              round_num, self.signal, save_figs=True)
-                            saver1.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality)
-                            del saver1
-
-                        if len(I2) > 0:
-                            saver2 = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits,
-                                                              list_of_all_qubits,
-                                                              out_dir,  # < save here
-                                                              round_num, self.signal, save_figs=True)
-                            saver2.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality)
-                            del saver2
-
-                    if flagged or (not get_qtemp_data):
                         if flagged:
-                            print(f"[FLAGGED] Q{q_key + 1}: rel_err A1={self.relerr(A_amplitude1, A_amplitude_err1):.2f}, "
-                                  f"A2={self.relerr(A_amplitude2, A_amplitude_err2):.2f}. Skipping temperature calc.")
-                        continue # Skip the rest of this block
+                            print(
+                                f"[FLAGGED] Q{q_key + 1}: rel_err A1={self.relerr(A_amplitude1, A_amplitude_err1):.2f}, "
+                                f"A2={self.relerr(A_amplitude2, A_amplitude_err2):.2f}. Saving bad fit plots and skipping temperature calc.")
+
+                            # Create folder only for flagged fits
+                            today_date = datetime.datetime.now().strftime("%Y-%m-%d")
+                            dated_folder_name = f"made_on_{today_date}"
+                            out_dir = os.path.join(self.outerFolder_save_plots, "q_temperatures", dated_folder_name,
+                                                   "FLAGGED")
+                            os.makedirs(out_dir, exist_ok=True)
+
+                            # Save only the flagged ones
+                            if len(I1) > 0:
+                                saver1 = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits,
+                                                                   list_of_all_qubits,
+                                                                   out_dir, round_num, self.signal, save_figs=True)
+                                saver1.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality)
+                                del saver1
+                            if len(I2) > 0:
+                                saver2 = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits,
+                                                                   list_of_all_qubits,
+                                                                   out_dir, round_num, self.signal, save_figs=True)
+                                saver2.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality)
+                                del saver2
+
+                            # Skip the rest of the loop for flagged data
+                            continue
+                    #-----------------------------------------------------------------------------------------------------------------
+
+                    # Skip temperature calculation if not requested
+                    if not get_qtemp_data:
+                        continue
 
                     if (A_amplitude1 is not None and A_amplitude2 is not None and
                         A_amplitude_err1 is not None and A_amplitude_err2 is not None):
