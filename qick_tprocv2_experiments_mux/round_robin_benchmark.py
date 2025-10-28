@@ -34,7 +34,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 55
+n = 100000
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
@@ -54,7 +54,6 @@ increase_qubit_reps_t1 = False  # if you want to increase the reps for a qubit, 
 increase_qubit_reps_t2r = False  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_t2e = False  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_efrabi = False  # if you want to increase the reps for a qubit, set to True
-increase_qubit_reps_rpm = False  # if you want to increase the reps for a qubit, set to True
 
 qubit_to_increase_reps_for = 3  # only has impact if previous line is True
 multiply_qubit_reps_by = 2  # only has impact if the line above is True. MUST be an integer.
@@ -64,7 +63,7 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [5]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,3,4,5]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
@@ -87,18 +86,19 @@ res_gain = [0.9, 0.9, 0.8, 0.5, 0.8, 0.8]
 freq_offsets = [-0.3182, -0.1364, -0.5, 0.0, -0.4091, -0.1333]
 
 qubit_freqs_ef = [None] * 6
-increase_reps_to_ef = 5100
+increase_reps_to_ef = 5100 # for ef qspec
 ef_res_sample_number = 1
 number_of_qubits = 6
 figure_quality = 200
 
+#DO NOT CHANGE THESE:
 ef_res_any = False
 ef_qspec_any = False
 rpm_any = False
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin' #qubit_checkouts
-sub_study = 'ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
+sub_study = 'ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -477,13 +477,25 @@ while j < n:
             if ef_qspec_survived and ef_res_spec_survived:
                 t0 = time.perf_counter()
                 try:
+                    increase_qubit_reps_rpm = False
+                    increase_qubit_reps2_rpm = False
+                    increase_qubit_reps_rpm_to = None
+                    increase_qubit_reps2_rpm_to = None
+
+                    if QubitIndex == 5:
+                        increase_qubit_reps_rpm = True
+                        increase_qubit_reps_rpm_to = 400
+                        increase_qubit_reps2_rpm = True
+                        increase_qubit_reps2_rpm_to = 1000
+
                     efAmprabi_Qtemps = Temps_EFAmpRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits,
                                                                  studyDocumentationFolder,
                                                                  j,
                                                                  signal, save_figs,
                                                                  experiment, live_plot,
-                                                                 increase_qubit_reps_rpm, qubit_to_increase_reps_for,
-                                                                 multiply_qubit_reps_by, unmasking_resgain=unmask)
+                                                                 increase_qubit_reps = increase_qubit_reps_rpm, increase_qubit_reps_to = increase_qubit_reps_rpm_to,
+                                                                 increase_qubit_reps2 = increase_qubit_reps2_rpm, increase_qubit_reps2_to = increase_qubit_reps2_rpm_to,
+                                                                 unmasking_resgain=unmask)
                     (I1_qtemp, Q1_qtemp, gains1_qtemp, fit_cosine1_qtemp, pi_amp1_qtemp, A_amplitude1, amp_fit1,
                      I2_qtemp, Q2_qtemp, gains2_qtemp, fit_cosine2_qtemp, pi_amp2_qtemp, A_amplitude2, amp_fit2,
                      sysconfig_efrabi_Qtemps) = efAmprabi_Qtemps.run(experiment.soccfg, experiment.soc)

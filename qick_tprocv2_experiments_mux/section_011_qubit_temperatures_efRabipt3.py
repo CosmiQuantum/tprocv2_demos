@@ -13,7 +13,9 @@ from scipy.signal import argrelextrema
 
 class Temps_EFAmpRabiExperiment:
     def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits,  outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
-                 increase_qubit_reps = False, qubit_to_increase_reps_for = None, multiply_qubit_reps_by = 0, unmasking_resgain = False):
+                 increase_qubit_reps = False, increase_qubit_reps_to = 400, increase_qubit_reps2 = False,
+                 increase_qubit_reps2_to = 1000, unmasking_resgain = False):
+
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
         self.outerFolder = outerFolder
@@ -35,9 +37,11 @@ class Temps_EFAmpRabiExperiment:
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
             if increase_qubit_reps:
-                    if self.QubitIndex==qubit_to_increase_reps_for:
-                        print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
-                        self.config["reps"] *= multiply_qubit_reps_by
+                    print(f"Increasing reps for {self.QubitIndex + 1} to {increase_qubit_reps_to}")
+                    self.config["reps"] = increase_qubit_reps_to
+            if increase_qubit_reps2:
+                    print(f"Increasing reps for {self.QubitIndex + 1} to {increase_qubit_reps2_to}.")
+                    self.config["reps2"] = increase_qubit_reps2_to
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} EF Rabi configuration: ', self.config)
 
 
