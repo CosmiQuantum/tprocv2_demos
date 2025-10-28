@@ -150,6 +150,10 @@ class SingleShotProgram_e(AveragerProgramV2):
         for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch)
 
+        size = self.us2cycles(cfg['res_length'], gen_ch=gen_ch, ro_ch=ro_chs, as_float=False)
+        idata=np.zeros(size)
+        for i in range(size):
+            idata[i]=
         self.add_pulse(ch=gen_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
