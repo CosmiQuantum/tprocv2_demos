@@ -147,6 +147,11 @@ class Temps_EFAmpRabiExperiment:
             A_amplitude_err = amp_perr[0]
             #print('Amplitude error (std): ', A_amplitude_err)
 
+            # --- Compute R-squared to evaluate goodness of amplitude fit ---
+            ss_res = np.sum((amplitude_data - amplitude_fit) ** 2) #Residual sum of squares
+            ss_tot = np.sum((amplitude_data - np.mean(amplitude_data)) ** 2) # Total sum of squares (tot variance, how much the raw data varies around its mean)
+            R2 = 1 - ss_res / ss_tot if ss_tot != 0 else 0
+
             # --- Plot amplitude data and its cosine fit on the third subplot ---
             ax3.plot(gains, amplitude_data, '-', label="Amplitude Data", linewidth=2)
             ax3.plot(gains, amplitude_fit, '-', color='green', linewidth=3, label="Amplitude Fit")
@@ -165,8 +170,8 @@ class Temps_EFAmpRabiExperiment:
 
             #------------------------------------------------------------------------------------------------
 
-            plt.tight_layout()
-            plt.subplots_adjust(top=0.93)
+            # plt.tight_layout()
+            # plt.subplots_adjust(top=0.93)
 
             if self.save_figs:
                 today_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -179,12 +184,12 @@ class Temps_EFAmpRabiExperiment:
                 fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
                 print('Plots saved to this folder:',outerFolder_expt)
             plt.close(fig)
-            return best_signal_fit, pi_amp, A_amplitude, A_amplitude_err, amplitude_fit
+            return best_signal_fit, pi_amp, A_amplitude, A_amplitude_err, amplitude_fit, R2
 
         except Exception as e:
             print("Error fitting cosine:", e)
             # Return None if the fit didn't work
-            return None, None, None, None, None
+            return None, None, None, None, None, None
 
 
     def get_results(self, I, Q, gains, grab_depths = False):

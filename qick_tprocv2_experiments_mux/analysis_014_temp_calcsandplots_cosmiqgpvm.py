@@ -1237,14 +1237,13 @@ class SSFTempCalcAndPlots:
         return pairs_info
 
 class RPMTempCalcAndPlots:
-    def __init__(self, figure_quality, number_of_qubits, save_figs):
-        self.save_figs = save_figs
+    def __init__(self, figure_quality, number_of_qubits):
         self.figure_quality = figure_quality
         self.number_of_qubits = number_of_qubits
 
     def run_RPMqtemps(self, base_dir, target_dates, filter_keywords, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
-                     outerFolder_RR_plots, replot_RPMs = False, get_qtemp_data = False, get_london_data = False, figure_quality = 200, save_figsRR = False, exclude_temp_sweeps = False, passing_pre_sciencerun_data = False,
-                      filter_out_bad_amp_fits = False):
+                     outerFolder_RR_plots, replot_RPMs = False, get_qtemp_data = False, get_london_data = False, figure_quality = 200, save_figsRR = False,
+                      exclude_temp_sweeps = False, passing_pre_sciencerun_data = False, filter_out_bad_amp_fits = False):
 
         combined_qtemp_data = []  # list of results from different .h5 files
 
@@ -1253,7 +1252,7 @@ class RPMTempCalcAndPlots:
         #------------------------------------------ Looping through data folders and files -------------------------------------------------------
         # Note: this is tailored for how files are organized by ryan for QUIET
         for root, dirs, _ in os.walk(base_dir): # root = substudy, dirs = date folder
-            dirs.sort()  # alphabetical → chronological for YYYY-MM-DD_HH-MM-SS
+            dirs.sort()  # alphabetical to chronological for YYYY-MM-DD_HH-MM-SS
             for d in dirs:
                 full_path = os.path.join(root, d)
                 # Match folders like '2025-04-16_11-47-09' based on prefix date
