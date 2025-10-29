@@ -57,13 +57,13 @@ n = 1  # Number of rounds
 n_loops = 5# Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [5]
+Qs = [3]
 
 #Change for NEXUS vs QUIET
-res_leng_vals = [6.5, 9.0, 6.0, 8.5, 8.0, 10.0]
-res_gain = [0.9, 0.9, 0.8, 0.5, 0.8, 0.8]
-freq_offsets = [-0.3182, -0.1364, -0.5, 0.0, -0.4091, 0.24]
-punch_out_vals = [1.0,0.95,1.0,0.65,0.9,0.8] #updated 10/27/2025
+res_leng_vals = [6.5, 9.5, 6.0, 9.0, 9.5, 9.5]
+res_gain = [0.9, 0.85, 0.8, 0.52, 0.6667, 0.75]
+freq_offsets = [-0.3182, 0.1385, -0.5, -0.0462, -0.4154, -0.1385]
+punch_out_vals = [1.0,0.9,1.0,0.56,0.75,0.8] #updated 10/28/2025
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_freq_ge = [None] * 6 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
@@ -104,14 +104,27 @@ for QubitIndex in Qs:
 
     ################################################## Qubit spec ##################################################
     increase_qubit_reps_qspec = False
-    if QubitIndex == 3 :  # Qubit 4
-        increase_qubit_reps_qspec = True
+    increase_qspec_rounds = False
+    qspecge_increase_reps_to = None
+    increase_qspec_rounds_to = None
 
-    q_spec = QubitSpectroscopy(QubitIndex, number_of_qubits, outerfolder_plots, j,
+    if QubitIndex == 4:
+        increase_qubit_reps_qspec = True
+        qspecge_increase_reps_to = 675
+        increase_qspec_rounds = True
+        increase_qspec_rounds_to = 3
+
+    if QubitIndex == 3:
+        # increase_qubit_reps_qspec = True
+        # qspecge_increase_reps_to = 500
+        increase_qspec_rounds = True
+        increase_qspec_rounds_to = 3
+
+    q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, outerfolder_plots, j,
                                signal, True, increase_reps=increase_qubit_reps_qspec,
-                               increase_reps_to=qspecge_increase_reps_to,
-                               plot_fit=True, experiment=experiment, live_plot=live_plot,
-                               unmasking_resgain=unmask)
+                               increase_rounds=increase_qspec_rounds,
+                               increase_reps_to=qspecge_increase_reps_to, increase_rounds_to=increase_qspec_rounds_to,
+                               plot_fit=True, experiment=experiment, live_plot=live_plot, unmasking_resgain=unmask)
     qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq, qubit_spec_config = q_spec.run()
 
     # if these are None, fit didnt work
@@ -124,13 +137,19 @@ for QubitIndex in Qs:
     del q_spec
 
     ###################################################### Rabi ####################################################
-    increase_qubit_reps = False  # if you want to increase the reps for a qubit, set to True
-    qubit_to_increase_reps_for = 0  # only has impact if previous line is True
-    multiply_qubit_reps_by = 2  # only has impact if the line two above is True
+    increase_qubit_reps_gerabi = False  # if you want to increase the reps for a qubit, set to True
+    qubit_to_increase_reps_for = None  # only has impact if previous line is True
+    multiply_qubit_reps_by = 2 #must be integer
+    if QubitIndex == 3:
+        increase_qubit_reps_gerabi = True
+        qubit_to_increase_reps_for = QubitIndex
+    if QubitIndex == 4:
+        increase_qubit_reps_gerabi = True
+        qubit_to_increase_reps_for = QubitIndex
     print('ge Rabi')
     rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, outerfolder_plots, j, signal,
                                    False, experiment=experiment, live_plot=live_plot,
-                                   increase_qubit_reps=increase_qubit_reps, qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                   increase_qubit_reps=increase_qubit_reps_gerabi, qubit_to_increase_reps_for=qubit_to_increase_reps_for,
                                    multiply_qubit_reps_by=multiply_qubit_reps_by, unmasking_resgain = unmask)
     rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save = rabi.run()
 
@@ -242,7 +261,7 @@ for QubitIndex in Qs:
     # del avg_fids, rms_fids, avg_ground_iq, avg_excited_iq, loop_group, length_group
 
     # ##---------------------Res Gain and Res Freq Sweeps------------------------
-    optimal_lengths = [6.5, 9.0, 9.0, 8.5, 9.5, 10.0] #optional # DAC 2 optimization
+    optimal_lengths = [6.5, 9.5, 6.0, 9.0, 9.5, 9.5] #optional # DAC 2 optimization
     # optimal_lengths = [4.2, 5, 7.0, 6, 6, 7.5] # DAC 0 optimization
     date_str = str(datetime.date.today())
     output_folder = outerFolder + "/study_data/Data_h5/2D_Gain_Freq_Sweeps/"
@@ -255,18 +274,18 @@ for QubitIndex in Qs:
         gain_steps = 8
     elif QubitIndex == 4:
         gain_range = [0.5, 0.7]
-        gain_steps = 8
+        gain_steps = 6
     elif QubitIndex == 3:
-        gain_range = [0.3, 0.8]
+        gain_range = [0.4, 0.8]
         gain_steps = 10
 
-    freq_steps = 9
+    freq_steps = 13
 
     print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')
     # Select the reference frequency for the current resonator
     reference_frequency = res_freq_ge[QubitIndex]
 
-    freq_range = [reference_frequency - 0.4, reference_frequency + 0.4] # Frequency range in MHz
+    freq_range = [reference_frequency - 0.6, reference_frequency + 0.6] # Frequency range in MHz
     #freq_range = [reference_frequency -0.2, (reference_frequency + 0.2) + 1]  # Frequency range in MHz
 
     experiment = copy.deepcopy(tuned_experiment)

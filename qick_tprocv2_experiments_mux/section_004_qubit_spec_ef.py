@@ -13,7 +13,7 @@ import visdom
 class EFQubitSpectroscopy:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder,  round_num, signal, save_figs, experiment = None,
                  live_plot = None, verbose = False, logger = None, qick_verbose=True, increase_reps = False,
-                 increase_reps_to = 500, plot_fit=True, zeno_stark=False, zeno_stark_pulse_gain=None,
+                 increase_reps_to = 500, increase_ef_qspec_rounds = False, increase_ef_qspec_rounds_to = 2, plot_fit=True, zeno_stark=False, zeno_stark_pulse_gain=None,
                  ext_q_spec=False, high_gain_q_spec=False, fit_data=True, unmasking_resgain = False):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
@@ -39,6 +39,8 @@ class EFQubitSpectroscopy:
         self.exp_cfg = expt_cfg[self.expt_name]
         self.round_num = round_num
         self.number_of_qubits = number_of_qubits
+        self.increase_ef_qspec_rounds = increase_ef_qspec_rounds
+        self.increase_ef_qspec_rounds_to = increase_ef_qspec_rounds_to
         self.verbose = verbose
         self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
         self.increase_reps = increase_reps
@@ -58,6 +60,8 @@ class EFQubitSpectroscopy:
     def run(self, return_fwhm=False):
         if self.increase_reps:
             self.config['reps'] = self.increase_reps_to
+        if self.increase_ef_qspec_rounds:
+            self.config['rounds'] = self.increase_ef_qspec_rounds_to
 
         efqspec = EFPulseProbeSpectroscopyProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=0.5, cfg=self.config)
 

@@ -34,7 +34,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 100000
+n = 10000
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
@@ -49,13 +49,11 @@ qick_verbose = True  # qick verbose prints the progress bar for each qick experi
 debug_mode = False  # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 thresholding = False  # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 
-increase_qubit_reps_gerabi = True  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_t1 = False  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_t2r = False  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_t2e = False  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_efrabi = False  # if you want to increase the reps for a qubit, set to True
 
-qubit_to_increase_reps_for = 3  # only has impact if previous line is True
 multiply_qubit_reps_by = 2  # only has impact if the line above is True. MUST be an integer.
 
 unmask = True  # Do you want to use the unmasking feature to increase resonator gain?
@@ -72,7 +70,7 @@ substudy_txt_notes = ('This data is post adding new channel on the qick box. T1 
 
 # set which of the following you'd like to run to 'True'
 
-# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": False, "rabi": True, "ss_gef": False,
+# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
 #              "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": True,
 #              "rabi_pop_meas": False, "ef_Rabi": True}
 
@@ -80,13 +78,12 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi":
              "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
              "rabi_pop_meas": True, "ef_Rabi": False}
 
-#Updated 10/27
-res_leng_vals = [6.5, 9.0, 6.0, 8.5, 8.0, 10.0]
-res_gain = [0.9, 0.9, 0.8, 0.5, 0.8, 0.8]
-freq_offsets = [-0.3182, -0.1364, -0.5, 0.0, -0.4091, -0.1333]
+#Updated 10/28
+res_leng_vals = [6.5, 9.5, 6.0, 9.0, 9.5, 9.5]
+res_gain = [0.9, 0.85, 0.8, 0.4800, 0.6667, 0.75]
+freq_offsets = [-0.3182, 0.1385, -0.5, -0.2308, -0.4154, -0.1385]
 
 qubit_freqs_ef = [None] * 6
-increase_reps_to_ef = 5100 # for ef qspec
 ef_res_sample_number = 1
 number_of_qubits = 6
 figure_quality = 200
@@ -98,7 +95,8 @@ rpm_any = False
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin' #qubit_checkouts
-sub_study = 'ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
+sub_study = 'ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
+#ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -264,12 +262,19 @@ while j < n:
                 qspecge_increase_reps_to = None
                 increase_qspec_rounds_to = None
 
-                # if QubitIndex == 3: # Qubit 4 and 5
-                #     increase_qubit_reps_qspec = True
-                #     qspecge_increase_reps_to = 900
-                if QubitIndex == 4 or QubitIndex == 3:
+                if QubitIndex == 4:
                     increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 450
+                    qspecge_increase_reps_to = 600
+                    increase_qspec_rounds = True
+                    increase_qspec_rounds_to = 3
+
+                if QubitIndex == 2:
+                    increase_qubit_reps_qspec = True
+                    qspecge_increase_reps_to = 550
+
+                if QubitIndex == 3:
+                    # increase_qubit_reps_qspec = True
+                    # qspecge_increase_reps_to = 500
                     increase_qspec_rounds = True
                     increase_qspec_rounds_to = 3
 
@@ -318,6 +323,15 @@ while j < n:
         ###################################################### g-e Rabi ####################################################
         if run_flags["rabi"]:
             try:
+                increase_qubit_reps_gerabi = False  # if you want to increase the reps for a qubit, set to True
+                qubit_to_increase_reps_for = None  # only has impact if previous line is True
+                if QubitIndex == 3:
+                    increase_qubit_reps_gerabi = True
+                    qubit_to_increase_reps_for = QubitIndex
+                if QubitIndex == 4:
+                    increase_qubit_reps_gerabi = True
+                    qubit_to_increase_reps_for = QubitIndex
+
                 rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
                                                save_figs=save_figs, save_shots=save_shots_gerabi,
                                                experiment=experiment, live_plot=live_plot,
@@ -418,14 +432,22 @@ while j < n:
             if run_flags["ef_q_spec"]:
                 if ef_res_spec_survived:
                     try:
-                        # Qubit 4 usually needs more steps for e-f spec
+                        # Qubit 4 usually needs more reps for e-f spec
                         increase_qubit_reps_ef = False
+                        increase_ef_qspec_rounds = False
+                        increase_ef_qspec_rounds_to = None
+                        increase_reps_to_ef = None
+
                         if QubitIndex == 3:
-                            increase_qubit_reps_ef = True  # if you want to increase the steps for a qubit, set to True
+                            increase_qubit_reps_ef = True  # if you want to increase the reps for a qubit, set to True
+                            increase_reps_to_ef = 4200  # for ef qspec
+                            increase_ef_qspec_rounds = True
+                            increase_ef_qspec_rounds_to = 2
 
                         ef_q_spec = EFQubitSpectroscopy(QubitIndex, number_of_qubits, studyDocumentationFolder, j, signal,
                                                         save_figs, experiment, live_plot, increase_reps = increase_qubit_reps_ef,
-                                                        increase_reps_to = increase_reps_to_ef, unmasking_resgain=unmask)
+                                                        increase_reps_to = increase_reps_to_ef, increase_ef_qspec_rounds = increase_ef_qspec_rounds,
+                                                        increase_ef_qspec_rounds_to = increase_ef_qspec_rounds_to, unmasking_resgain=unmask)
 
                         efqspec_I, efqspec_Q, efqspec_freqs, sys_config_qspec_ef, efqspec_I_fit, efqspec_Q_fit, efqubit_freq = ef_q_spec.run()
                         qubit_freqs_ef[QubitIndex] = efqubit_freq
@@ -487,6 +509,10 @@ while j < n:
                         increase_qubit_reps_rpm_to = 400
                         increase_qubit_reps2_rpm = True
                         increase_qubit_reps2_rpm_to = 1000
+
+                    if QubitIndex == 3:
+                        increase_qubit_reps_rpm = True
+                        increase_qubit_reps_rpm_to = 500
 
                     efAmprabi_Qtemps = Temps_EFAmpRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits,
                                                                  studyDocumentationFolder,
