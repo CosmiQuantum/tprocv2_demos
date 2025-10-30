@@ -1,4 +1,4 @@
-from tprocv2_demos.qick_tprocv2_experiments_mux_nexus.socProxy import makeProxy
+from tprocv2_demos.qick_tprocv2_experiments_mux.socProxy import makeProxy
 import numpy as np
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_004_qubit_spec_ge import QubitSpectroscopy
@@ -484,7 +484,7 @@ class PlotAllRR:
                         Ishots = replica.coerce_to_rounds_N_reps(Ishots_raw, steps, reps)
                         Qshots = replica.coerce_to_rounds_N_reps(Qshots_raw, steps, reps)
 
-                        # We only provided ONE rounds worth of raw shots from H5 -> tell the replica that
+                        # We only provided ONE rounds worth of raw shots from H5 -> tell the replica that
                         I, Q = replica.acquire_offline(Ishots, Qshots, soft_avgs=1)
                     # -----------------------------------------------------------------------------------------------
                     else:
