@@ -468,18 +468,24 @@ class PlotAllRR:
                         exp_config_str = load_data['t1_ge'][q_key]['Exp Config'][0][dataset].decode()
                         syst_config_str = load_data['t1_ge'][q_key]['Syst Config'][0][dataset].decode()
 
-                        Ishots = self.process_h5_data(load_data['t1_ge'][q_key]['Ishots'][0][dataset].decode())
-                        Qshots = self.process_h5_data(load_data['t1_ge'][q_key]['Qshots'][0][dataset].decode())
+                        Ishots_raw = self.process_h5_data(load_data['t1_ge'][q_key]['I'][0][dataset].decode())
+                        Qshots_raw = self.process_h5_data(load_data['t1_ge'][q_key]['Q'][0][dataset].decode())
 
                         replica = OfflineAcquireReplica(remove_offset=True, length_norm=True)
                         replica.setup_offline_from_strings(exp_config_str, syst_config_str, soccfg,
                                                            qubit_index=int(q_key))
 
-                        # use rounds from EXP config unless you explicitly want to override
+                        # Authoritative dims from EXP config
                         exp_cfg = replica._safe_eval_cfg(exp_config_str)
-                        soft_avgs_cfg = int(exp_cfg['T1_ge']['rounds'])
+                        steps = int(exp_cfg['T1_ge']['steps'])
+                        reps = int(exp_cfg['T1_ge']['reps'])
+                        # rounds  = int(exp_cfg['T1_ge']['rounds'])   # not used here; H5 holds one round
 
-                        I, Q = replica.acquire_offline(Ishots, Qshots, soft_avgs=soft_avgs_cfg)
+                        Ishots = replica.coerce_to_rounds_N_reps(Ishots_raw, steps, reps)
+                        Qshots = replica.coerce_to_rounds_N_reps(Qshots_raw, steps, reps)
+
+                        # We only provided ONE rounds worth of raw shots from H5 -> tell the replica that
+                        I, Q = replica.acquire_offline(Ishots, Qshots, soft_avgs=1)
                     # -----------------------------------------------------------------------------------------------
                     else:
                         I = self.process_h5_data(load_data['t1_ge'][q_key].get('I', [])[0][dataset].decode())
@@ -1235,129 +1241,104 @@ class PlotAllRR:
 
 class OfflineAcquireReplica:
     """
-    Minimal-offline replica of QICK AveragerProgramV2 acquire() math:
-       average over 'avg_level' (reps) exactly like QICK
-       divide by ro['length'] cycles (length_norm)
-       subtract IQ offset with PFB-doubling rule
-       sum over rounds; divide by soft_avgs at the end
-
-    You feed it the same kinds of things the online program knew:
-      - soccfg (QickConfig)
-      - system config & experiment config strings saved in your H5
-      - raw shots I/Q shaped like (rounds, N, reps) or (N, reps*rounds), etc.
+    Offline mirror of QICK Averager acquire() math WITHOUT thresholding:
+      avg over reps -> divide by ro length -> subtract IQ offset -> sum over rounds -> /soft_avgs
+    Returns (I_final, Q_final) each shape (N_steps,).
     """
 
-    # --------------------- init ---------------------
     def __init__(self, remove_offset=True, length_norm=True, progress=True):
         self.remove_offset = bool(remove_offset)
         self.length_norm   = bool(length_norm)
         self.progress      = bool(progress)
 
-        # QICK-like fields the helpers below will fill
+        # QICK-like fields
         self.soccfg = None
-        self.ro_chs = OrderedDict()     # {ro_ch: cfg dict with 'length', 'trigs', 'edge_counting', 'ro_config'}
-        self.gen_chs = OrderedDict()    # not needed for math, kept for parity
-        self.loop_dims = None           # e.g. [reps, steps]
-        self.avg_level = None           # 0 means average over reps (outermost)
-        self.reads_per_shot = None      # list per ro_ch (usually [1])
-        self.counter_addr = None        # not used offline
+        self.ro_chs = OrderedDict()
+        self.gen_chs = OrderedDict()
+        self.loop_dims = None
+        self.avg_level = None
+        self.reads_per_shot = None
+        self.counter_addr = None
 
-        # cached pieces from config
+        # cached dims/params
         self._N_steps   = None
         self._reps      = None
         self._rounds    = None
-        self._soft_avgs = None
         self._ro_cycles = None
         self._iq_offset = None
-        self._ro_index  = None  # which ro_ch corresponds to this qubit
+        self._ro_index  = None  # readout channel index for this qubit
 
-    # --------------------- config parsing ---------------------
+    # ---------- helpers ----------
     def _safe_eval_cfg(self, cfg_str):
-        """
-        Safely eval the saved dict-like strings, stripping QickParam reprs
-        and np.float64 wrappers. Only 'np' and 'float' are exposed.
-        """
         s = re.sub(r"<qick\.asm_v2\.QickParam object at 0x[0-9a-fA-F]+>", "None", cfg_str)
         s = re.sub(r"np\.float64\(\s*([^)]+)\s*\)", r"float(\1)", s)
         safe_globals = {"np": np, "array": np.array, "float": float, "__builtins__": {}}
         return eval(s, safe_globals)
 
-    def _ensure_rounds_axis(self, A, *, N=None, rounds=None, reps=None):
+    def _ensure_rounds_axis(self, A, *, N, rounds, reps):
         """
-        Return A shaped as (rounds, N, reps). Accepts 1D/2D/3D and infers the rest.
+        Return A shaped as (rounds, N, reps). Accepts 1D/2D/3D.
         """
         A = np.asarray(A)
         if A.ndim == 3:
             return A
         if A.ndim == 2:
             N2, R2 = A.shape
-            if N is None: N = N2
             if N2 != N:
                 raise ValueError(f"2D shots first dim {N2} != provided N {N}")
-            if rounds is not None and reps is None:
-                if R2 % rounds: raise ValueError(f"Cannot split {R2} with rounds={rounds}.")
-                reps = R2 // rounds
-            elif reps is not None and rounds is None:
-                if R2 % reps: raise ValueError(f"Cannot split {R2} with reps={reps}.")
-                rounds = R2 // reps
-            else:
-                rounds, reps = 1, R2
+            if R2 % rounds != 0:
+                raise ValueError(f"cannot split {R2} into rounds={rounds}")
+            if (R2 // rounds) != reps:
+                raise ValueError(f"2D shots second dim implies reps={R2//rounds}, expected {reps}")
             return A.reshape(N, rounds, reps).swapaxes(0, 1)
         if A.ndim == 1:
             total = A.size
-            if N is None: raise ValueError("For 1D shots you must provide N (steps).")
-            if rounds is not None and reps is None:
-                if total % (N*rounds): raise ValueError("total not divisible by N*rounds.")
-                reps = total // (N*rounds)
-            elif reps is not None and rounds is None:
-                if total % (N*reps): raise ValueError("total not divisible by N*reps.")
-                rounds = total // (N*reps)
-            else:
-                if total % N: raise ValueError("total not divisible by N.")
-                rounds, reps = 1, total // N
+            if total != N*rounds*reps:
+                raise ValueError(f"1D shots size {total} != N*rounds*reps={N*rounds*reps}")
             return A.reshape(rounds, N, reps)
         raise ValueError(f"Expected 1D/2D/3D, got {A.ndim}D {A.shape}")
 
-    # --------------------- exact offset & ro length ---------------------
+    def _extract_t1_dims(self, exp_cfg):
+        def _as_int(x):
+            try: return int(x)
+            except Exception: return int(float(str(x)))
+        T1 = exp_cfg['T1_ge']
+        steps  = (T1.get('steps') or T1.get('n_steps') or T1.get('n_expts'))
+        reps   = (T1.get('reps')  or T1.get('nreps'))
+        rounds = (T1.get('rounds') or T1.get('soft_avgs'))
+        if steps is None or reps is None or rounds is None:
+            raise ValueError("Experiment config missing steps/reps/rounds for T1_ge.")
+        return _as_int(steps), _as_int(reps), _as_int(rounds)
+
     def _compute_ro_norm_and_offset(self, *, soccfg, syst_cfg, qubit_index):
-        """
-        Mirror AveragerProgramV2 logic to get:
-          ro_cycles := ro['length'] (in decimated cycles)
-          iq_offset := _ro_offset(ch, ro.get('ro_config')), with PFB doubling rule
-        """
-        ro_ch_list = syst_cfg['ro_ch']            # list of ro channels per qubit
-        res_ch     = syst_cfg['res_ch']           # generator used for RO
+        ro_ch_list = syst_cfg['ro_ch']
+        res_ch     = syst_cfg['res_ch']
         mixer_freq = float(syst_cfg['mixer_freq'])
         nqz_res    = int(syst_cfg['nqz_res'])
         res_len_us = float(syst_cfg['res_length'])
-        res_freqs  = syst_cfg['res_freq_ge']      # list per qubit
+        res_freqs  = syst_cfg['res_freq_ge']
         ro_phases  = syst_cfg.get('ro_phase', [0]*len(res_freqs))
 
         ro_ch_for_q = int(ro_ch_list[int(qubit_index)])
         f_q         = float(res_freqs[int(qubit_index)])
         ph_q        = float(ro_phases[int(qubit_index)])
 
-        # RO length in decimated cycles (what QICK divides by)
-        ro_cycles = int(soccfg.us2cycles(us=res_len_us, ro_ch=ro_ch_for_q))
+        ro_cycles = int(soccfg.us2cycles(us=res_len_us, ro_ch=ro_ch_for_q))  # length for normalization
 
-        # Build the same ro_config the program creates
+        # build ro regs like QICK does to evaluate the PFB doubling condition
         rocfg   = soccfg['readouts'][ro_ch_for_q]
         ro_regs = soccfg.calc_ro_regs(rocfg, phase=ph_q, sel='product')
 
-        # Recreate rounded mixer frequency exactly like declare_gen/config_readouts
-        ro_ch0_for_rounding = int(ro_ch_list[0])  # how their code rounded mixer
+        ro_ch0_for_rounding = int(ro_ch_list[0])
         mixer_info    = soccfg.calc_mixer_freq(res_ch, mixer_freq, nqz_res, ro_ch0_for_rounding)
         mixer_rounded = mixer_info['rounded']
 
-        # Fill RO frequency regs (handles PFB fields + f_int)
         ro_pars = {'gen_ch': res_ch, 'freq': f_q}
         soccfg.calc_ro_freq(rocfg, ro_pars, ro_regs,
                             absolute_freqs=False,
                             mixer_freq=mixer_rounded,
                             flip_freq=False)
 
-        # QICK's _ro_offset rule, including PFB doubling when
-        # channelizer DC also lands at output DC
         offset = float(rocfg['iq_offset'])
         if 'pfb_ch' in ro_regs:
             fs_int = 2**rocfg['b_dds']
@@ -1366,74 +1347,63 @@ class OfflineAcquireReplica:
 
         return ro_cycles, offset, ro_ch_for_q, ro_regs
 
-    # --------------------- public setup helpers ---------------------
-    def _extract_t1_dims(self, exp_cfg):
-        """
-        Pull T1 'steps', 'reps', 'rounds' from the experiment config,
-        handling common alias keys and non-int wrappers.
-        """
-
-        def _as_int(x):
-            # unwrap numpy/float-like and QickParam reprs that might sneak in
-            try:
-                return int(x)
-            except Exception:
-                return int(float(str(x)))
-
-        T1 = exp_cfg['T1_ge']
-        # tolerate alternate spellings if your H5s vary
-        steps = (T1.get('steps') or T1.get('n_steps') or T1.get('n_expts') or None)
-        reps = (T1.get('reps') or T1.get('nreps') or None)
-        rounds = (T1.get('rounds') or T1.get('soft_avgs') or None)
-
-        if steps is None:
-            raise ValueError("Experiment config is missing 'steps' (number of delay points).")
-        if reps is None:
-            raise ValueError("Experiment config is missing 'reps' (shots per step).")
-        if rounds is None:
-            raise ValueError("Experiment config is missing 'rounds' (soft averages).")
-
-        return _as_int(steps), _as_int(reps), _as_int(rounds)
-
+    # ---------- setup ----------
     def setup_offline_from_strings(self, exp_config_str, syst_config_str, soccfg, qubit_index):
-        """
-        Parse configs, compute exact readout normalization and offset,
-        and set loop/averaging metadata to match QICK acquire().
-        """
-        exp_cfg = self._safe_eval_cfg(exp_config_str)
+        exp_cfg  = self._safe_eval_cfg(exp_config_str)
         syst_cfg = self._safe_eval_cfg(syst_config_str)
         self.soccfg = soccfg
 
-        # --- T1 dims from EXPERIMENT CONFIG (authoritative) ---
         steps, reps, rounds = self._extract_t1_dims(exp_cfg)
         self._N_steps = steps
-        self._reps = reps
-        self._rounds = rounds
+        self._reps    = reps
+        self._rounds  = rounds
 
-        # --- RO length (cycles) and effective IQ offset exactly like acquire() ---
-        ro_cycles, iq_offset, _, _ = self._compute_ro_norm_and_offset(
+        ro_cycles, iq_offset, ro_ch_for_q, _ = self._compute_ro_norm_and_offset(
             soccfg=soccfg, syst_cfg=syst_cfg, qubit_index=qubit_index
         )
         self._ro_cycles = ro_cycles
         self._iq_offset = iq_offset
+        self._ro_index  = ro_ch_for_q
 
-        # --- mirror QICKs bookkeeping used by _average_buf() ---
-        # one read per shot for T1; avg over reps, NOT over steps
-        self.ro_chs = OrderedDict({int(syst_cfg['ro_ch'][int(qubit_index)]): {
-            'length': int(ro_cycles),
-            'trigs': 1,
-            'edge_counting': False,
-            'ro_config': self.soccfg['readouts'][int(syst_cfg['ro_ch'][int(qubit_index)])]  # harmless placeholder
-        }})
-        self.loop_dims = [self._N_steps, self._reps]  # outer = steps, inner = reps
-        self.avg_level = 1  # average across reps (axis 1)
+        # Mirror QICK bookkeeping: loop_dims = [reps, steps], avg_level = 0 (avg over reps)
+        self.ro_chs = OrderedDict({
+            ro_ch_for_q: {
+                'length': int(ro_cycles),
+                'trigs': 1,
+                'edge_counting': False,
+                'ro_config': self.soccfg['readouts'][ro_ch_for_q]
+            }
+        })
+        self.loop_dims      = [self._reps, self._N_steps]
+        self.avg_level      = 0
         self.reads_per_shot = [1]
 
-    # --------------------- QICK-faithful internals ---------------------
+    def coerce_to_rounds_N_reps(self, A, steps, reps):
+        A = np.asarray(A)
+        if A.ndim == 3:
+            # assume already (rounds, N, reps)
+            return A
+        if A.ndim == 2:
+            r0, r1 = A.shape
+            # common cases: (reps, N) or (N, reps)
+            if r0 == reps and r1 == steps:
+                return A.T[None, ...]  # -> (1, N, reps)
+            if r0 == steps and r1 == reps:
+                return A[None, ...]  # -> (1, N, reps)
+            raise ValueError(
+                f"Unexpected 2D shape {A.shape}; expected (reps,N)=({reps},{steps}) or (N,reps)=({steps},{reps}).")
+        if A.ndim == 1:
+            total = A.size
+            if total == steps * reps:
+                return A.reshape(steps, reps)[None, ...]
+            if total == steps:
+                return A.reshape(1, steps, 1)
+            raise ValueError(f"Unexpected 1D length {total}; cannot infer (N,reps) from steps={steps}, reps={reps}.")
+        raise ValueError(f"Shots must be 1D/2D/3D, got {A.ndim}D {A.shape}")
+
+
+    # ---------- QICK-faithful averaging ----------
     def _ro_offset_qick(self, ro_ch, chcfg):
-        """
-        Same as AcquireMixin._ro_offset (duplicated for offline use).
-        """
         rocfg = self.soccfg['readouts'][ro_ch]
         offset = rocfg['iq_offset']
         if chcfg is not None and 'pfb_ch' in chcfg:
@@ -1443,90 +1413,61 @@ class OfflineAcquireReplica:
         return float(offset)
 
     def _average_buf_qick(self, d_reps, reads_per_shot, *, length_norm=True, remove_offset=True):
-        """
-        Byte-for-byte of QICKs _average_buf structure for avg over reps.
-        Returns: list with one array of shape (n_reads, n_expts, 2) = (1, N, 2).
-        """
         avg_d = []
         for i_ch, (ch, ro) in enumerate(self.ro_chs.items()):
-            # average over avg_level (reps)
+            # average over avg_level (==0) i.e. over reps
             avg = d_reps[i_ch].sum(axis=self.avg_level) / self.loop_dims[self.avg_level]
-
             if length_norm and not ro['edge_counting']:
                 avg = avg / ro['length']
                 if remove_offset:
                     avg -= self._ro_offset_qick(ch, ro.get('ro_config'))
-
-            # reads_per_shot axis should be first (we have only 1)
-            avg_d.append(np.moveaxis(avg, -2, 0))
+            # move reads_per_shot axis to front (we have 1 read)
+            avg_d.append(np.moveaxis(avg, -2, 0))  # -> (1, steps, 2)
         return avg_d
 
-    def _pack_acc_buf_like_qick(self, I_round, Q_round):
-        """
-        Pack one-round shots into QICK's acc_buf shape:
-          input shapes: (N, reps) for this round
-          output per-channel array: (*loop_dims, reads_per_shot, 2) = (reps, N, 1, 2)
-        The numbers are the raw accumulated I/Q (no /length, no /reps).
-        """
-        N, reps = I_round.shape[0], I_round.shape[1]
-        assert N == self._N_steps and reps == self._reps
-
-        # allocate (reps, N, 1, 2) to match loop_dims=[reps, N]
-        packed = np.zeros((reps, N, 1, 2), dtype=np.int64)
-        packed[..., 0, 0] = I_round.T  # transpose to (reps, N)
-        packed[..., 0, 1] = Q_round.T
-        # QICK keeps a list per ro_ch; we have one readout here
-        return [packed]
-
-    # --------------------- public offline acquire ---------------------
+    # ---------- public: acquire offline (no thresholding) ----------
     def acquire_offline(self, Ishots, Qshots, *, soft_avgs=None):
         """
-        Offline reimplementation of QICK acquire() averaging order:
-          avg over reps -> (optional) /length & subtract offset -> sum over rounds -> /soft_avgs.
+        Inputs:
+          Ishots, Qshots shaped like (rounds, N, reps) or flattenable to that.
+        Output:
+          (I_final, Q_final) each shape (N,)
         """
-        if self._N_steps is None or self._reps is None or self._rounds is None:
-            raise RuntimeError("Call setup_offline_from_strings(...) before acquire_offline().")
+        if any(x is None for x in (self._N_steps, self._reps, self._rounds, self._ro_cycles)):
+            raise RuntimeError("Call setup_offline_from_strings(...) first.")
 
-        # soft_avgs can be overridden, otherwise honor the config rounds
         if soft_avgs is None:
             soft_avgs = self._rounds
+        if int(soft_avgs) != self._rounds:
+            # we sum 'soft_avgs' rounds; this mirrors QICK's software averaging
+            pass
 
-        # shape to (rounds, N, reps)
         I3 = self._ensure_rounds_axis(Ishots, N=self._N_steps, rounds=self._rounds, reps=self._reps)
         Q3 = self._ensure_rounds_axis(Qshots, N=self._N_steps, rounds=self._rounds, reps=self._reps)
 
-        # (A) average over reps (hardware avg_level)
-        I_repavg = I3.sum(axis=2) / float(self._reps)  # (rounds, N)
-        Q_repavg = Q3.sum(axis=2) / float(self._reps)
+        # accumulate per-round like QICK does, using the same averaging kernel
+        summed = None
+        for r in range(self._rounds):
+            # pack this round like acc_buf: (reps, steps, 1, 2)
+            I_round = I3[r]  # (N, reps)
+            Q_round = Q3[r]
+            packed = np.zeros((self._reps, self._N_steps, 1, 2), dtype=np.int64)
+            packed[..., 0, 0] = I_round.T  # (reps, steps)
+            packed[..., 0, 1] = Q_round.T
 
-        # (B) normalize by readout length in cycles (exactly what acquire() returns)
-        if self.length_norm and self._ro_cycles is not None:
-            I_repavg = I_repavg / float(self._ro_cycles)
-            Q_repavg = Q_repavg / float(self._ro_cycles)
+            round_avg_list = self._average_buf_qick([packed], self.reads_per_shot,
+                                                    length_norm=self.length_norm,
+                                                    remove_offset=self.remove_offset)
+            # round_avg_list[0] has shape (1, steps, 2)
+            round_avg = round_avg_list[0][0]  # (steps, 2)
 
-        # (C) subtract readout IQ offset (same rule as _ro_offset)
-        if self.remove_offset and self._iq_offset is not None:
-            I_repavg = I_repavg - self._iq_offset
-            Q_repavg = Q_repavg - self._iq_offset
+            if summed is None:
+                summed = round_avg.copy()
+            else:
+                summed += round_avg
 
-        # (D) sum over rounds, then divide by soft_avgs (software average)
-        I_sum = I_repavg.sum(axis=0)  # (N,)
-        Q_sum = Q_repavg.sum(axis=0)
-        I_final = I_sum / float(soft_avgs)
-        Q_final = Q_sum / float(soft_avgs)
+        summed /= float(soft_avgs)  # software average, like QICK
 
+        I_final = summed[:, 0]  # (N,)
+        Q_final = summed[:, 1]
         return I_final, Q_final
-
-    # Convenience: match your original usage pattern
-    def acquire_offline_from_strings(self, exp_config_str, syst_config_str, soccfg, qubit_index,
-                                     Ishots, Qshots, *, t1_key='T1_ge', soft_avgs=None):
-        """
-        One-shot helper: set up from strings, then acquire.
-        Returns (I_final, Q_final, N)
-        """
-        self.setup_offline_from_strings(exp_config_str, syst_config_str, soccfg, qubit_index, t1_key=t1_key)
-        out = self.acquire_offline(Ishots, Qshots, soft_avgs=soft_avgs)
-        # out[0] has shape (1, N, 2)
-        I_final = out[0][0, :, 0]
-        Q_final = out[0][0, :, 1]
-        return I_final, Q_final, self._
