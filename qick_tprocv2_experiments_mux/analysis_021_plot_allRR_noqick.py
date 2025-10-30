@@ -1585,8 +1585,7 @@ class PlotRR_noQick:
 
                     if len(I) > 0:
                         qspec_class_instance = QubitSpectroscopy(q_key, self.number_of_qubits,
-                                                                 self.outerFolder_save_plots, round_num, self.signal,
-                                                                 self.save_figs)
+                                                                 self.outerFolder_save_plots, round_num, self.signal, save_figs = False)
                         q_spec_cfg = exp_config['qubit_spec_ge']
                         # print('q_spec_cfg: ', q_spec_cfg)
                         qubit_freq, _, _, qspec_fit_err = qspec_class_instance.plot_results(I, Q, freqs, q_spec_cfg,
@@ -1813,7 +1812,7 @@ class PlotRR_noQick:
                         print(f'\n inside filter_out_bad_amp_fits block for {q_key + 1}')
 
                         # R-squared filtering (tells you what fraction of the data's variation is explained by your fit.) -------------------
-                        MIN_R2 = 0.09  # reject if R-squared < 0.80 (1 = perfect fit)
+                        MIN_R2 = 0.12  # reject if R-squared < 0.80 (1 = perfect fit)
                         # Determine if either fit is bad based on R²
                         flag1 = (R2_Pe is None) or (R2_Pe < MIN_R2)
                         flag2 = (R2_Pg is None) or (R2_Pg < MIN_R2)
@@ -2213,9 +2212,9 @@ class PlotRR_noQick:
                     T_err = qubit_data['T_mK_err']
                     T_mK = qubit_data['T_mK']
 
-                    # Skip if relative error is ≥ rel_err_cutoff
-                    if T_err / T_mK >= rel_err_cutoff: # rel_err_cutoff is a decimal (0.8 = a relative error of 80% and so forth)
-                        continue
+                    # # Skip if relative error is ≥ rel_err_cutoff
+                    # if T_err / T_mK >= rel_err_cutoff: # rel_err_cutoff is a decimal (0.8 = a relative error of 80% and so forth)
+                    #     continue
 
                     # if T_err > 150:  # skip if error is too large (for example, larger than 300mK)
                     #     continue
@@ -2506,6 +2505,9 @@ class PlotRR_noQick:
         - num_qubits: total number of qubits to plot (default is 6)
 
         # Note: All datetime objects are naive and assumed to be in Central Time (local system time).
+
+        The Gaussians center and width are determined by the weighted statistics (so smaller-error points pull harder).
+        The histogram shows true counts of samples. The curve is scaled so it aligns visually with the histogram height (counts per bin).
         """
         # Set up the subplots grid (2 rows x 3 columns for 6 qubits)
         ncols = min(num_qubits, 3)
@@ -2546,8 +2548,8 @@ class PlotRR_noQick:
                 # skip if either is missing or relative error is larger than threshold
                 if T_mK is None or T_err is None:
                     continue
-                if T_err / T_mK >= rel_err_cutoff: # rel_err_cutoff is a decimal (0.8 = a relative error of 80% and so forth)
-                    continue
+                # if T_err / T_mK >= rel_err_cutoff: # rel_err_cutoff is a decimal (0.8 = a relative error of 80% and so forth)
+                #     continue
 
                 temp_vals.append(T_mK)
                 temp_errs.append(T_err)
@@ -2560,47 +2562,54 @@ class PlotRR_noQick:
             # Choose a fixed number of bins (you can adjust this number)
             optimal_bin_num = 20
 
-            # Fit a Gaussian to the temperature data
-            mu, std = norm.fit(temp_vals)
-            mean_values[f"Qubit {i + 1}"] = mu
-            std_values[f"Qubit {i + 1}"] = std
+            # Fit a Gaussian to the temperature data (this is unweighted)
+            # mu, std = norm.fit(temp_vals)
+            # mean_values[f"Qubit {i + 1}"] = mu
+            # std_values[f"Qubit {i + 1}"] = std
 
             # Inverse-variance weighted average ---------------------------------------------
+            # Weighted Gaussian fit (using inverse-variance weights)
             temps = np.asarray(temp_vals)
             errs = np.asarray(temp_errs)
-            weights = 1.0 / errs ** 2  # w_i = 1/σ_i²
+            weights = 1.0 / errs ** 2
 
-            w_mean = np.sum(weights * temps) / np.sum(weights) # inverse-variance weighted average
-            w_err = np.sqrt(1.0 / np.sum(weights))  # 1-σ error (uncertainty) on the mean; this tells you how precisely you've determined the weighted average itself.
+            # Weighted mean and variance maximum-likelihood estimate assuming Gaussian noise
+            mu = np.sum(weights * temps) / np.sum(weights)
+            var = np.sum(weights * (temps - mu) ** 2) / np.sum(weights)
+            std = np.sqrt(var)
 
-            w_mean_values[f"Qubit {i + 1}"] = w_mean  # weighted mean
-            w_std_values[f"Qubit {i + 1}"] = w_err  # its uncertainty
+            mean_values[f"Qubit {i + 1}"] = mu
+            std_values[f"Qubit {i + 1}"] = std
             # -------------------------------------------------------------------------------
 
-            # Generate x values for plotting the Gaussian curve
-            x_vals = np.linspace(min(temp_vals), max(temp_vals), optimal_bin_num)
-            # Compute the probability density function for the fitted Gaussian
-            pdf_vals = norm.pdf(x_vals, mu, std)
-
-            # Compute histogram data to determine scaling (so the Gaussian curve overlays properly)
+            # --- Histogram in raw counts ---
+            optimal_bin_num = 20
             hist_data, bins = np.histogram(temp_vals, bins=optimal_bin_num)
             bin_width = np.diff(bins)[0]
-            scale_factor = hist_data.sum() * bin_width
-            # Scale the PDF accordingly
+            bin_centers = bins[:-1] + bin_width / 2
+
+            # --- Weighted Gaussian curve ---
+            x_vals = np.linspace(min(temp_vals), max(temp_vals), 400)
+            pdf_vals = norm.pdf(x_vals, mu, std)
+
+            # Scale the Gaussian so its peak matches the histogram's maximum height
+            scale_factor = np.max(hist_data) / np.max(pdf_vals)
             scaled_pdf = pdf_vals * scale_factor
 
-            # Plot the Gaussian fit (dashed line) and the histogram
-            ax.plot(x_vals, scaled_pdf, linestyle='--', linewidth=2, color=colors[i % len(colors)], label='Gaussian fit')
-            ax.hist(temp_vals, bins=optimal_bin_num, alpha=0.7, color=colors[i % len(colors)], edgecolor='black')
-            # ax.axvline(w_mean, color='k', lw=2, label=f'Weighted μ = {w_mean:.2f}±{w_err:.2f} mK')
-            # print(f"Qubit {i + 1} | Weighted Mean: {w_mean:.2f}, Gaussian μ: {mu:.2f}")
-            # print(f"Weights: {weights}")
-            # print(f"Sum(weights): {np.sum(weights):.2f}, Max weight: {np.max(weights):.2f}")
+            # # area-match scaling (robust to sparse/noisy peaks)
+            # scale_factor = len(temp_vals) * bin_width  # total expected counts
+            # scaled_pdf = pdf_vals * scale_factor
 
-            # Set subplot title and labels including the Gaussian parameters
-            ax.set_title(f"{titles[i]}  $\mu$: {mu:.2f} mK,  $\sigma$: {std:.2f} mK", fontsize=font)
+            # --- Plot ---
+            ax.hist(temp_vals, bins=optimal_bin_num, alpha=0.7,
+                    color=colors[i % len(colors)], edgecolor='black', label="Counts")
+            ax.plot(x_vals, scaled_pdf, linestyle='--', linewidth=2,
+                    color='black', label=f"Weighted Gaussian fit")
+
+            ax.set_title(f"{titles[i]}  µ={mu:.2f} mK,  s={std:.2f} mK", fontsize=font)
             ax.set_xlabel("Temperature (mK)", fontsize=font)
-            ax.set_ylabel("Frequency", fontsize=font)
+            ax.set_ylabel("Counts", fontsize=font)
+            # ax.legend(fontsize=font - 2)
             ax.tick_params(axis='both', which='major', labelsize=font)
 
         plt.tight_layout()
