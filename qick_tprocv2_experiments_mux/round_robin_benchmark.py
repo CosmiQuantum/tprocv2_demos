@@ -508,7 +508,7 @@ while j < n:
                         increase_qubit_reps_rpm = True
                         increase_qubit_reps_rpm_to = 400
                         increase_qubit_reps2_rpm = True
-                        increase_qubit_reps2_rpm_to = 1000
+                        increase_qubit_reps2_rpm_to = 1500
 
                     if QubitIndex == 3:
                         increase_qubit_reps_rpm = True
