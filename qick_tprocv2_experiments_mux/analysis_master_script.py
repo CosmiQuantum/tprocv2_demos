@@ -42,7 +42,7 @@ signal = 'None'
 run_number = 5 #starting from first run with qubits. Run 1 = run4a at quiet, run 2 = run5a at quiet, etc
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
-saved_shots_t1ge = False
+saved_shots_t1ge = True
 
 # run_name = 'run8/6transmon/round_robin/AB_Paper_Data_24hrs'
 #run_name = 'run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots'
