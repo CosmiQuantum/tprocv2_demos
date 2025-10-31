@@ -40,7 +40,7 @@ from analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
 ################################################ Run Configurations ####################################################
 st = time.time()
 #
-n= 3
+n= 2
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
@@ -59,28 +59,28 @@ unmask = True                          # Do you want to use the unmasking featur
 qubit_to_increase_reps_for = 0       # only has impact if previous line is True
 multiply_qubit_reps_by = 2           # only has impact if the line two above is True
 
-Qs_to_look_at = [0,1,2,3] #[0,1,2,5]#,1,2,3,4,5]       # only list the qubits you want to do the RR for
+Qs_to_look_at = [0] #[0,1,2,3]#,1,2,3,4,5]       # only list the qubits you want to do the RR for
 
 
 #debug
 print(FRIDGE)
 
 #Data saving info
-run_name = 'run33'
+run_name = 'run34'
 device_name = '4charge'
-substudy_txt_notes = ('Res spec at gain pt')#('Active Reset Test')##('round robin with relax delays of 1000us for T1 and T2 measurements.')#('Active Reset Test')#('Normal Round Robin during cooldown, now everything works properly, set debug to false to run '
+substudy_txt_notes = ('Q1, with rounds now')#('Active Reset Test')##('round robin with relax delays of 1000us for T1 and T2 measurements.')#('Active Reset Test')#('Normal Round Robin during cooldown, now everything works properly, set debug to false to run '
                       # 'overFalsenight and running in terminal with repeater script')
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": True, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False, "test_act":False, "fh_rabi":False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": False, "fh_q_spec":False, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False, "test_act":False, "fh_rabi":False,
+             "t1": True, "t2r": True, "t2e": True, "ef_res_spec":False, "ef_q_spec": False, "fh_q_spec":False, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 # run_flags = {"tof": False, "res_spec": False, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False, "test_act":False,
 #              "t1": False, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": True, "fh_q_spec":True, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 
 # optimization outputs from qick board, unmasking set to true
-res_leng_vals = [6.0, 6.0, 5.0, 5.0] #Q1, Q2 optimized, pre-TWPA
-res_gain = [0.7, 0.85, 0.7, 0.8] #[1, 1, 1, 1] #Q1, Q2 optimized, pre-TWPA
-freq_offsets = [-0.4286, -0.1429, 0, 0] #Q1, Q2 optimized, pre-TWPA
+res_leng_vals = [9.25, 5.5, 6.25, 7.5] #Q1,Q2,Q4 opt r1
+res_gain = [0.75, 0.7, 0.8, 0.75] #[1, 1, 1, 1] #Q1,Q2,Q4 optimized r1
+freq_offsets = [-0.1429, -0.1429, 0, -0.1429] #Q1,Q2,Q4 optimized r1
 
 qubit_freqs_ef = [None]*4
 # increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
@@ -91,7 +91,7 @@ figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 #Folders
 study = 'Initial Checkout'
-sub_study = 'ResSpec' #'SSF_PostRabi'
+sub_study = 'RR_Q1' #'SSF_PostRabi'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/home/nexusadmin/Documents/Data/{run_name}/"):
@@ -485,7 +485,8 @@ while j < n:
                 if qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None:
                     if stored_qspec_list[QubitIndex] is not None:
                         experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = stored_qspec_list[QubitIndex]
-                        rr_logger.warning(f"Using previous stored value: {stored_qspec_list[QubitIndex]}")
+                        rr_logger.warning(f"U"
+                                          f"=sing previous stored value: {stored_qspec_list[QubitIndex]}")
                         recycled_qfreq = True
                         qubit_freq = stored_qspec_list[QubitIndex]
                         experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)

@@ -8,17 +8,18 @@ import datetime
 
 # #For NEXUS
 #outerFolder1 = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/2025-02-08")
-outerFolder = "/home/nexusadmin/Documents/Data/run33/4charge/readout_optimization/optimization_Q1/2025-09-08_20-55-09/study_data/Data_h5/2D_Gain_Freq_Sweeps"
+outerFolder_RO = ("/home/nexusadmin/Documents/Data/run34/4charge/readout_optimization/optimization_Q4/2025-10-28_16-11-31/study_data/Data_h5/2D_Gain_Freq_Sweeps")
+               #"2025-09-08_20-55-09/study_data/Data_h5/2D_Gain_Freq_Sweeps")
+outerFolder_TWPA = ("/home/nexusadmin/Documents/Data/run34/4charge/TWPA_optimization/TWPA_opt_Q4/2025-10-22/2025-10-22_14-01-14/study_data/Data_h5/2D_Power_Freq_Sweeps")
 
 #For QUIET
-# #outerFolder1 = os.path.join("/data/QICK_data/6transmon_run6/", '2025-03-02')
+# #outerFolder1 = os.path.join("/data/QICK_data/6transmon_run6/", '2025-03-02'
 # # outerFolder1 = os.path.join("/data/QICK_data/run6/6transmon/ef_studies/Optimization/", str(datetime.date.today())) # for RR folders
 # # outerFolder = "/data/QICK_data/run7/6transmon/readout_optimization/unmasking_resgain/2025-07-18_21-34-17/study_data/Data_h5/2D_Gain_Freq_Sweeps"
 # outerFolder = "/data/QICK_data/run7/6transmon/readout_optimization/qick_box_optimization/2025-07-29_22-13-25/study_data/Data_h5/2D_Gain_Freq_Sweeps"
 # #/data/QICK_data/run7/6transmon/readout_optimization/junkyard/2025-07-28_12-25-16/study_data/Data_h5/2D_Gain_Freq_Sweeps
-print('For files inside: ', outerFolder)
 
-def find_max_fidelity(file_path):
+def find_max_fidelity_ROopt(file_path):
     with h5py.File(file_path, "r") as f:
         # Load the results dataset and metadata
         results = np.array(f["results"])
@@ -46,6 +47,29 @@ def find_max_fidelity(file_path):
             gain = gain_range[0] + gain_idx * gain_step_size
             freq_offset = (freq_range[0] - reference_frequency) + freq_idx * freq_step_size #this is doing freq - reference_frequency
             configurations.append((max_fidelity, gain, freq_offset, optimal_length))
+
+        return max_fidelity, configurations
+
+def find_max_fidelity_TWPAopt(file_path):
+    with h5py.File(file_path, "r") as f:
+        # Load the results dataset and metadata
+        results = np.array(f["results"])
+        gain_arr = f.attrs["gain_arr"]
+        freq_arr = f.attrs["freq_arr"]
+
+        # Find the maximum fidelity value
+        max_fidelity = np.max(results)
+
+        # Find all indices where the maximum fidelity occurs
+        max_indices = np.argwhere(results == max_fidelity)
+
+        # Collect all configurations with the highest fidelity
+        configurations = []
+        for index in max_indices:
+            freq_idx, gain_idx = index
+            gain = gain_arr[gain_idx]
+            freq = freq_arr[freq_idx]
+            configurations.append((max_fidelity, gain, freq))
 
         return max_fidelity, configurations
 
@@ -127,31 +151,73 @@ def find_configurations_below_threshold(file_path, threshold):
     return valid_configurations
 
 #Now getting results
-punchout_thresholds =  [0.9, 0.9, 0.8, 0.9] #from punchout test on 9/4/2025
-for qubit_index in range(1, 2):
-    file_pattern = os.path.join(outerFolder, f"*_Qubit_{qubit_index}_*.h5")
-    file_list = glob.glob(file_pattern)
+TWPA = False #change to True for TWPA opt, False for RO
+if TWPA:
+    print('For files inside: ', outerFolder_TWPA)
+else:
+    print('For files inside: ', outerFolder_RO)
+punchout_thresholds =  [0.85, 0.8, 0.8, 0.8] #from punchout test on 10//2025
 
-    if not file_list:
-        print(f"File(s) for Qubit {qubit_index} not found.")
-        continue
+if TWPA:
+    for qubit_index in range(4, 5):
+        file_pattern = os.path.join(outerFolder_TWPA, f"*_Qubit_{qubit_index}_*.h5")
+        file_list = glob.glob(file_pattern)
+        print(f'hi, {qubit_index}')
+        print(outerFolder_TWPA)
+        if not file_list:
+            print(f"File(s) for Qubit {qubit_index} not found.")
+            continue
+        if file_list:
+            #Initialize variables to track the maximum fidelity and configurations
+            overall_max_fidelity = -np.inf
+            all_configurations = []
 
-    all_configs = []
-    threshold = punchout_thresholds[qubit_index - 1]
-    for file_path in file_list:
-        valid_points = find_configurations_below_threshold(file_path, threshold)
-        all_configs.extend(valid_points)
+            for file_path in file_list:
+                max_fidelity, configurations = find_max_fidelity_TWPAopt(file_path)
+                #If this file's max fidelity is higher, reset the list of configurations
+                if max_fidelity > overall_max_fidelity:
+                    overall_max_fidelity = max_fidelity
+                    all_configurations = configurations
+                # If it matches the current max, add these configurations as well
+                elif max_fidelity == overall_max_fidelity:
+                    all_configurations.extend(configurations)
 
-    if not all_configs:
-        print(f"Qubit {qubit_index}: No valid points below threshold {threshold}.")
-    else:
-        # Find the maximum fidelity among the valid configs for this qubit
-        best_fidelity = max(cfg[0] for cfg in all_configs)
-        best_cfgs = [cfg for cfg in all_configs if cfg[0] == best_fidelity]
+            # Print all configurations with the highest fidelity
+            print(f"Qubit {qubit_index}:")
+            for max_fidelity, max_gain, max_freq in all_configurations:
+                print(f"  Max Fidelity: {overall_max_fidelity:.4f}")
+                print(f"  Optimal Pump Power: {max_gain:.4f} a.u.")
+                print(f"  Optimal Pump Frequency: {max_freq/1e9:.4f} GHz\n")
+        else:
+            print(f"File for Qubit {qubit_index} not found.")
+else:
+    for qubit_index in range(4, 5):
+        file_pattern = os.path.join(outerFolder_RO, f"*_Qubit_{qubit_index}_*.h5")
+        file_list = glob.glob(file_pattern)
+        print(f'hi, {qubit_index}')
+        print(outerFolder_RO)
+        print(file_list)
 
-        print(f"Qubit {qubit_index} (Gain threshold: {threshold}):")
-        for fidelity, gain, freq_offset, optimal_length in best_cfgs:
-            print(f"  Fidelity: {fidelity:.4f}")
-            print(f"  Gain: {gain:.4f}")
-            print(f"  Freq Offset: {freq_offset:.4f}")
-            print(f"  Opt Length: {optimal_length:.4f}\n")
+        if not file_list:
+            print(f"File(s) for Qubit {qubit_index} not found.")
+            continue
+
+        all_configs = []
+        threshold = punchout_thresholds[qubit_index - 1]
+        for file_path in file_list:
+            valid_points = find_configurations_below_threshold(file_path, threshold)
+            all_configs.extend(valid_points)
+
+        if not all_configs:
+            print(f"Qubit {qubit_index}: No valid points below threshold {threshold}.")
+        else:
+            # Find the maximum fidelity among the valid configs for this qubit
+            best_fidelity = max(cfg[0] for cfg in all_configs)
+            best_cfgs = [cfg for cfg in all_configs if cfg[0] == best_fidelity]
+
+            print(f"Qubit {qubit_index} (Gain threshold: {threshold}):")
+            for fidelity, gain, freq_offset, optimal_length in best_cfgs:
+                print(f"  Fidelity: {fidelity:.4f}")
+                print(f"  Gain: {gain:.4f}")
+                print(f"  Freq Offset: {freq_offset:.4f}")
+                print(f"  Opt Length: {optimal_length:.4f}\n")

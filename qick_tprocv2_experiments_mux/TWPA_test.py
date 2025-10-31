@@ -23,23 +23,23 @@ experiment = QICK_experiment(outerFolder, fridge=FRIDGE)
 # del experiment
 
 
-#### If Running TWPA Freq Sweep #####
-# TWPA_sweep   = TWPASweep(outerFolder, experiment)
-# pump_power = -12.5
-# start_freq, stop_freq, freq_num_points = 7.81e9, 7.83e9, 16 ##Don't go above 7.9159 GHz #7.811, 7.844
-# #7.82 and 7.84 for -12.5
-# # 7.82ish, 7.815, 7.83, for -12.0
-# TWPA_sweep.run(experiment.soccfg, experiment.soc, start_freq, stop_freq, pump_power, freq_num_points,
-#                power_sweep = False, plot_res_sweeps = True, plot_gains = True)
-# del TWPA_sweep
-# del experiment
-
-
-# #### If Running TWPA Consistency Check #####
-TWPA_cons = TWPAConsistency(outerFolder, experiment)
+### If Running TWPA Freq Sweep #####
+TWPA_sweep   = TWPASweep(outerFolder, experiment)
 pump_power = -12.5
-pump_freq = 7.829e9
-num_reps = 7
-TWPA_cons.run(experiment.soccfg, experiment.soc, pump_power, pump_freq, num_reps, plot_res_sweeps=True, plot_gains=True)
-del TWPA_cons
+start_freq, stop_freq, freq_num_points = 7.81e9, 7.83e9, 16 ##Don't go above 7.9159 GHz #7.811, 7.844
+#7.82 and 7.84 for -12.5
+# 7.82ish, 7.815, 7.83, for -12.0
+TWPA_sweep.run(experiment.soccfg, experiment.soc, start_freq, stop_freq, pump_power, freq_num_points,
+               power_sweep = False, plot_res_sweeps = True, plot_gains = True)
+del TWPA_sweep
 del experiment
+
+
+# # #### If Running TWPA Consistency Check #####
+# TWPA_cons = TWPAConsistency(outerFolder, experiment)
+# pump_power = -12.5
+# pump_freq = 7.829e9
+# num_reps = 7
+# TWPA_cons.run(experiment.soccfg, experiment.soc, pump_power, pump_freq, num_reps, plot_res_sweeps=True, plot_gains=True)
+# del TWPA_cons
+# del experiment

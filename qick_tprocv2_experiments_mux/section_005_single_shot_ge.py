@@ -14,6 +14,7 @@ from expt_config import *
 from system_config import QICK_experiment
 import copy
 import os
+from windfreak import SynthHD
 
 # Both g and e during the same experiment.
 class SingleShotProgram(AveragerProgramV2):
@@ -444,3 +445,47 @@ class GainFrequencySweep:
 
         return results
 
+class TWPAGainFrequencySweep:
+    def __init__(self, qubit_index, number_of_qubits, list_of_all_qubits, experiment, optimal_lengths=None,
+                     output_folder="/default/path/", unmasking_resgain=False):
+        self.qubit_index = qubit_index
+        self.list_of_all_qubits = list_of_all_qubits
+        self.output_folder = output_folder
+        self.expt_name = "TWPA_Optimization"
+        self.Qubit = 'Q' + str(self.qubit_index)
+        self.optimal_lengths = optimal_lengths
+        self.number_of_qubits = number_of_qubits
+
+        self.experiment = experiment
+        self.exp_cfg = expt_cfg[self.expt_name]
+        self.unmasking_resgain = unmasking_resgain
+
+        if unmasking_resgain:
+            self.exp_cfg["list_of_all_qubits"] = [qubit_index]
+
+        self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
+        self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+
+    def run_sweep(self, freqs, gains):
+        results = []
+        synth = SynthHD('/dev/ttyACM0')
+        for f in freqs:
+            synth[0].frequency = f
+            fid_results = []
+            for g in gains:
+                synth[0].power = g
+                synth[0].enable = True
+                time.sleep(5)
+
+                # Initialize SingleShotGE instance for fidelity calculation
+                round_num = 0
+                save_figs = False
+                single_shot = SingleShot(self.qubit_index, self.number_of_qubits, self.output_folder, round_num,
+                                         save_figs, experiment= self.experiment, unmasking_resgain=self.unmasking_resgain)
+                fidelity = single_shot.fidelity_test(self.experiment.soccfg, self.experiment.soc)
+                fid_results.append(fidelity)
+                del single_shot
+
+            results.append(fid_results)
+
+        return results

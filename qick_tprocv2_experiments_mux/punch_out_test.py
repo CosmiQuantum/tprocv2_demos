@@ -13,7 +13,7 @@ number_of_qubits = 4  #currently 4 for NEXUS, 6 for QUIET
 # sweep_DAC_attenuator2 =[10]#[15,20,25,30] #np.linspace(5,20,4)
 
 substudy = 'Punchout'
-outerFolder = os.path.join(f"/home/nexusadmin/Documents/Data/run33/4charge/Initial Checkout/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
+outerFolder = os.path.join(f"/home/nexusadmin/Documents/Data/run34/4charge/Initial Checkout/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 outerfolder_plots = outerFolder + "/documentation/"
 #outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/", str(datetime.date.today())) # for NEXUS
 # for att_1 in sweep_DAC_attenuator1:
@@ -37,7 +37,7 @@ ADC_att=17
 from expt_config import FRIDGE
 experiment = QICK_experiment(outerfolder_plots, DAC_attenuator1 = DAC_att_1, DAC_attenuator2 = DAC_att_2, qubit_DAC_attenuator1 = 5 , qubit_DAC_attenuator2 = 4 ,ADC_attenuator = ADC_att, fridge=FRIDGE)
 #Qubit_index= 3 #starts at
-qubits = [0, 1, 2, 3]
+qubits = [0] #[0, 1, 2, 3]
 Unmask = True
 for Q in qubits:
     punch_out   = PunchOut(Q, number_of_qubits, outerfolder_plots, experiment, Unmask)

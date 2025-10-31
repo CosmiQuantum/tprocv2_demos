@@ -10,6 +10,31 @@ import time
 
 from NetDrivers import E36300
 
+class AllQubitTomographyMeasurement:
+    def __init__(self, outerFolder, experiment):
+        self.outerFolder = outerFolder
+        self.Q13_BiasPS = E36300('192.168.0.44', server_port=5025)
+        self.Q4_BiasPS = E36300('192.168.0.41', server_port = 5025)
+        self.q1_expt_name = 'tomography_ge_q1'
+        self.q2_expt_name = 'tomography_ge_q2'
+        self.q3_expt_name = 'tomography_ge_q3'
+        self.q4_expt_name = 'tomography_ge_q4'
+        self.experiment = experiment
+        self.q1_exp_cfg = expt_cfg[self.q1_expt_name]
+        self.q2_exp_cfg = expt_cfg[self.q2_expt_name]
+        self.q3_exp_cfg = expt_cfg[self.q3_expt_name]
+        self.q4_exp_cfg = expt_cfg[self.q4_expt_name]
+        self.q_config = all_qubit_state(self.experiment)
+        self.q1_exp_cfg = add_qubit_experiment(expt_cfg, self.q1_expt_name, 0)
+        self.q1_config = {**self.q_config['Q0'], **self.q1_exp_cfg}
+        self.q2_exp_cfg = add_qubit_experiment(expt_cfg, self.q1_expt_name, 1)
+        self.q2_config = {**self.q_config['Q1'], **self.q2_exp_cfg}
+        self.q3_exp_cfg = add_qubit_experiment(expt_cfg, self.q1_expt_name, 2)
+        self.q3_config = {**self.q_config['Q2'], **self.q3_exp_cfg}
+        self.q4_exp_cfg = add_qubit_experiment(expt_cfg, self.q1_expt_name, 3)
+        self.q4_config = {**self.q_config['Q3'], **self.q4_exp_cfg}
+
+
 
 class TomographyMeasurement:
     def __init__(self, QubitIndex, outerFolder, experiment):
@@ -67,7 +92,8 @@ class TomographyMeasurement:
             I_arr.append(I)
             Q_arr.append(Q)
             amps_arr.append(amps)
-        BiasPS.disable(Bias_ch[qubit_index])
+        #BiasPS.disable(Bias_ch[qubit_index])
+        BiasPS.setVoltage(0, Bias_ch[qubit_index])
         print(I_arr)
 
         return I_arr, Q_arr, amps_arr

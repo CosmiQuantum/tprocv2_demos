@@ -88,7 +88,7 @@ class BiasQubitSpectroscopy:
             Q_arr.append(Q)
             amps_arr.append(amps)
             freq_arrs.append(freqs)
-        BiasPS.disable(Bias_ch[qubit_index])
+        #BiasPS.disable(Bias_ch[qubit_index])
         BiasPS.setVoltage(0, Bias_ch[qubit_index])
 
         freq_arr = freq_arrs[0]

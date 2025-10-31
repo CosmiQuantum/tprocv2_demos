@@ -115,7 +115,7 @@ if FRIDGE == "QUIET":
         },
 
         "bias_qubit_spec_ge": {
-            "reps": 700,  # 100
+            "reps": 1000,  # 100
             "rounds": 1,  # 10
             "start": list(VNA_qubit - 70),  # [MHz]
             "stop": list(VNA_qubit + 70),  # [MHz]
@@ -434,8 +434,8 @@ if FRIDGE == "QUIET":
     }
 
 elif FRIDGE == "NEXUS":
-    VNA_res = np.array([6187.9, 5828.5, 6074.6, 5959.3]) #Run 33 VNA low power   # Old [6187.8, 5828.3, 6074.6, 5959.3])
-    VNA_qubit = np.array([4921.5, 4761.8, 4575.8, 4784.6]) #Found with QICK, 9/3
+    VNA_res = np.array([6187.9, 5828.47, 6074.59, 5959.3]) #Run 34 #[6187.9, 5828.5, 6074.6, 5959.3]) #Run 33 VNA low power   # Old [6187.8, 5828.3, 6074.6, 5959.3])
+    VNA_qubit = np.array([4923.9, 4764.5, 4577.1, 4782.3]) #Run 34 start pt #[4921.5, 4761.8, 4575.8, 4784.6]) #Found with QICK, run 33
     # #np.array([4909, 4749.4, 4569, 4759])  # Found on NR25 with the QICK
 
     tot_num_of_qubits = 4
@@ -444,14 +444,14 @@ elif FRIDGE == "NEXUS":
     expt_cfg = {
         "tof": {
             "reps": 1,  # reps doesnt make a difference here, leave it at 1
-            "soft_avgs": 1000, #500,
+            "soft_avgs": 500, #500,
             "relax_delay": 0,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
         "res_spec": {
-            "reps": 1500, #500,
-            "rounds": 1,
+            "reps": 150, #500,
+            "rounds": 10,
             "start": -0.3, #-0.5, #-3.5,  # [MHz]
             "step_size": 0.006, #0.12,  # [MHz]
             "steps": 101, #101,
@@ -480,8 +480,8 @@ elif FRIDGE == "NEXUS":
         # },
 
         "qubit_spec_ge": {
-            "reps": 700,  # 100
-            "rounds": 1,  # 10
+            "reps": 140,  # 100
+            "rounds": 5,  # 10
             "start": list(VNA_qubit - 15), #70),  # [MHz]
             "stop": list(VNA_qubit + 15), #70),  # [MHz]
             "steps": 300,
@@ -490,18 +490,18 @@ elif FRIDGE == "NEXUS":
         },
 
         "bias_qubit_spec_ge": {
-            "reps": 800,  # 100
-            "rounds": 1,  # 10
-            "start": list(VNA_qubit - 5),  # [MHz]
-            "stop": list(VNA_qubit + 5),  # [MHz]
-            "steps": 150,
+            "reps": 400,  # 100
+            "rounds": 2,  # 10
+            "start": list(VNA_qubit - 3),  # [MHz]
+            "stop": list(VNA_qubit + 3),  # [MHz]
+            "steps": 100,
             "relax_delay": 0.5,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
         "power_rabi_ge": {
-            "reps": 1000,  # 100
-            "rounds": 1,  # 5
+            "reps": 100,  # 100
+            "rounds": 10,  # 5
             "start": [0.0] * 4,  # [DAC units]
             "stop": [1.0] * 4,  # [DAC units]
             "steps": 100,
@@ -522,9 +522,22 @@ elif FRIDGE == "NEXUS":
             "list_of_all_qubits": list_of_all_qubits,
         },
 
+        "TWPA_Optimization": {
+            "steps": 1000,  # shots
+            "py_avg": 1,
+            "gain_start": [-20]*4,
+            "gain_stop": [-10]*4,
+            "gain_step": 1,
+            "freq_start": [7.81e9]*4,
+            "freq_stop": [7.83e9]*4,
+            "freq_step": 0.01e9,
+            "relax_delay": 500,  # [us]
+            "list_of_all_qubits": list_of_all_qubits,
+        },
+
         "T1_ge": {
-            "reps": 1000,  # 300
-            "rounds": 1,  # 1
+            "reps": 100,  # 300
+            "rounds": 10,  # 1
             "start": [0.0] * 4,  # [us]
             "stop": [150] * 4,  # [250.0] * 4,  # [us] ### Should be ~10x T1! Should change this per qubit.
             "steps": 80,
@@ -534,8 +547,8 @@ elif FRIDGE == "NEXUS":
         },
 
         "Ramsey_ge": {
-            "reps": 2000,  # 300
-            "rounds": 1,  # 10
+            "reps": 400,  # 300
+            "rounds": 5,  # 10
             "start": [0.0] * 4,  # [us]
             "stop": [8.0] * 4,  # [us]
             "steps": 100,
@@ -547,8 +560,8 @@ elif FRIDGE == "NEXUS":
         },
 
         "SpinEcho_ge": {
-            "reps": 2000,
-            "rounds": 1,
+            "reps": 400,
+            "rounds": 5,
             "start": [0.0] * 4,  # [us]
             "stop": [15] * 4,  # [us]
             "steps": 100,
@@ -566,10 +579,45 @@ elif FRIDGE == "NEXUS":
 
         "tomography_ge": {
             "steps": 1,
-            "reps": 300,
+            "reps": 2000,
             "rounds": 1,
             "relax_delay": 500,  # [us]
-            "wait_time": 1 / (4 * (2.5)),  # [us]
+            "wait_time": 1 / (2.4*4),  # [us]
+        },
+
+
+        ##originally 1/sep/4
+
+        "tomography_ge_q1": {
+            "steps": 1,
+            "reps": 1000, #1000,
+            "rounds": 1,
+            "relax_delay": 500,  # [us]
+            "wait_time": 1 / (4*2),  # [us]   # 2  [2, 2.85, 4, 2.7]
+        },
+
+        "tomography_ge_q2": {
+            "steps": 1,
+            "reps": 2000, #1000,
+            "rounds": 1,
+            "relax_delay": 500,  # [us]
+            "wait_time": 1 / (4*2.5),  # [us]  #2.85  [2, 2.85, 4, 2.7]
+        },
+
+        "tomography_ge_q3": {
+            "steps": 1,
+            "reps": 1000, #1000,
+            "rounds": 1,
+            "relax_delay": 500,  # [us]
+            "wait_time": 1 / (4*3.7),  # [us]   #4 [2, 2.85, 4, 2.7]
+        },
+
+        "tomography_ge_q4": {
+            "steps": 1,
+            "reps": 3000, #1000,
+            "rounds": 1,
+            "relax_delay": 500,  # [us]
+            "wait_time": np.pi / (2.4/2),  # [us]  #2.7  [2, 2.85, 4, 2.7]
         }
         #
 
