@@ -23,7 +23,7 @@ if FRIDGE == "QUIET":
         },
 
         # "res_spec": { # For thomas roth data
-        #     "reps": 200, #3000
+        #     "reps": 300, #3000
         #     "rounds": 1,
         #     "start": -0.5,       # MHz, sweep from -1.0 to +1.0 around center
         #     "step_size": 0.005,  # MHz (5 kHz)
@@ -54,7 +54,7 @@ if FRIDGE == "QUIET":
         # },
 
         "res_spec_ef": {
-            "reps": 300,
+            "reps": 400,
             "rounds": 1,
             "start": -2,  # [MHz]
             "step_size": 0.05,  # [MHz]
@@ -84,7 +84,7 @@ if FRIDGE == "QUIET":
         # },
 
         "qubit_spec_ge": {
-            "reps": 500, #300
+            "reps": 600, #300
             "rounds": 1, #10
             "start": list(VNA_qubit-6), # [MHz] #-300 #-15
             "stop": list(VNA_qubit+6), # [MHz] #+15

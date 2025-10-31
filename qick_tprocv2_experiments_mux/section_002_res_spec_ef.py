@@ -47,7 +47,8 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
 
 
 class ResonanceSpectroscopyEF:
-    def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, save_figs, experiment=None,
+    def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, save_figs, increase_res_reps, increase_res_reps_to,
+                 experiment=None,
                  verbose=False, logger=None, qick_verbose=True, unmasking_resgain = False):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
@@ -56,11 +57,16 @@ class ResonanceSpectroscopyEF:
         self.expt_name = "res_spec_ef"
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.round_num = round_num
+        self.increase_res_reps = increase_res_reps
+        self.increase_res_reps_to = increase_res_reps_to
         self.save_figs = save_figs
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
         self.verbose = verbose
         self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
+
+        if self.increase_res_reps:
+            self.exp_cfg['reps'] = self.increase_res_reps_to
 
         if unmasking_resgain:
             self.exp_cfg["list_of_all_qubits"] = [QubitIndex]

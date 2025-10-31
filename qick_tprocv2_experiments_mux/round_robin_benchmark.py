@@ -34,7 +34,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 10000
+n = 100000
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
@@ -49,19 +49,22 @@ qick_verbose = True  # qick verbose prints the progress bar for each qick experi
 debug_mode = False  # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 thresholding = False  # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 
-increase_qubit_reps_t1 = False  # if you want to increase the reps for a qubit, set to True
+increase_qubit_reps_t1 = True  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_t2r = False  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_t2e = False  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_efrabi = False  # if you want to increase the reps for a qubit, set to True
 
 multiply_qubit_reps_by = 2  # only has impact if the line above is True. MUST be an integer.
 
+t1_qubit_to_increase_reps_for = 3
+t1_multiply_qubit_reps_by =  2
+
 unmask = True  # Do you want to use the unmasking feature to increase resonator gain?
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi ?
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [0,1,2,3,4,5]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,4,5]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
@@ -70,7 +73,7 @@ substudy_txt_notes = ('This data is post adding new channel on the qick box. T1 
 
 # set which of the following you'd like to run to 'True'
 
-# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
+# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": False, "rabi": True, "ss_gef": False,
 #              "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": True,
 #              "rabi_pop_meas": False, "ef_Rabi": True}
 
@@ -78,10 +81,16 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi":
              "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
              "rabi_pop_meas": True, "ef_Rabi": False}
 
-#Updated 10/28
-res_leng_vals = [6.5, 9.5, 6.0, 9.0, 9.5, 9.5]
-res_gain = [0.9, 0.85, 0.8, 0.4800, 0.6667, 0.75]
-freq_offsets = [-0.3182, 0.1385, -0.5, -0.2308, -0.4154, -0.1385]
+
+# For 21dB DAC
+# res_leng_vals = [6.5, 9.0, 6.0, 8.0, 8.0, 8.0]
+# res_gain = [0.9, 0.75, 0.95, 0.5091, 0.6667, 0.7]
+# freq_offsets = [-0.3182, -0.1385, 0.1385, -0.0462, 0.2308, 0.2308]
+
+# For 18dB DAC
+res_leng_vals = [6.5, 9.0, 7.5, 7.0, 8.0, 7.5]
+res_gain = [0.85, 0.7750, 0.85, 0.3375, 0.5875, 0.7375] #[ new punchout threshs 1.0, 0.78, 1.0, 0.31, 0.6, 0.74]
+freq_offsets = [-0.0462, 0.1385, -0.5077, -0.2308, -0.4154, -0.2308]
 
 qubit_freqs_ef = [None] * 6
 ef_res_sample_number = 1
@@ -95,8 +104,8 @@ rpm_any = False
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin' #qubit_checkouts
-sub_study = 'ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
-#ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional
+sub_study = '18dB_DAC_testdata_allQs_exceptQ4' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
+#ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional, ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -202,7 +211,7 @@ while j < n:
         ef_qspec_survived = False
 
         # Get the config for this qubit
-        DAC_attenuator1 = 11
+        DAC_attenuator1 = 8
         DAC_attenuator2 = 10
         experiment = QICK_experiment(optimizationFolder, DAC_attenuator1=DAC_attenuator1, DAC_attenuator2=DAC_attenuator2,
                                      qubit_DAC_attenuator1=5,
@@ -226,9 +235,14 @@ while j < n:
         ################################################# g-e Res spec ####################################################
         if run_flags["res_spec"]:
             try:
-                res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
-                                                 experiment=experiment, verbose=verbose, logger=rr_logger,
-                                                 unmasking_resgain=unmask)
+                increase_geres_reps = False
+                increase_geres_reps_to = None
+                if QubitIndex == 5:
+                    increase_geres_reps = True
+                    increase_geres_reps_to = 400
+
+                res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs, increase_geres_reps,
+                                                 increase_geres_reps_to, experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
                 res_freqs, freq_pts, freq_center, amps, sys_config_rspec = res_spec.run()
                 offset = freq_offsets[
                     QubitIndex]  # use optimized offset values or whats set at top of script based on pre_optimize flag
@@ -262,19 +276,21 @@ while j < n:
                 qspecge_increase_reps_to = None
                 increase_qspec_rounds_to = None
 
+                if QubitIndex == 5:
+                    increase_qubit_reps_qspec = True
+                    qspecge_increase_reps_to = 1600
+                    # increase_qspec_rounds = True
+                    # increase_qspec_rounds_to = 2
+
                 if QubitIndex == 4:
                     increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 600
+                    qspecge_increase_reps_to = 750
                     increase_qspec_rounds = True
-                    increase_qspec_rounds_to = 3
-
-                if QubitIndex == 2:
-                    increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 550
+                    increase_qspec_rounds_to = 2
 
                 if QubitIndex == 3:
-                    # increase_qubit_reps_qspec = True
-                    # qspecge_increase_reps_to = 500
+                    increase_qubit_reps_qspec = True
+                    qspecge_increase_reps_to = 700
                     increase_qspec_rounds = True
                     increase_qspec_rounds_to = 3
 
@@ -329,6 +345,9 @@ while j < n:
                     increase_qubit_reps_gerabi = True
                     qubit_to_increase_reps_for = QubitIndex
                 if QubitIndex == 4:
+                    increase_qubit_reps_gerabi = True
+                    qubit_to_increase_reps_for = QubitIndex
+                if QubitIndex == 5:
                     increase_qubit_reps_gerabi = True
                     qubit_to_increase_reps_for = QubitIndex
 
@@ -397,9 +416,16 @@ while j < n:
             ef_res_freqs_samples = []
             for sample in range(ef_res_sample_number):
                 try:
+                    increase_efres_reps = False
+                    increase_efres_reps_to = None
+                    # if QubitIndex == 5:
+                    #     increase_efres_reps = True
+                    #     increase_efres_reps_to = 400
+
                     ef_res_spec = ResonanceSpectroscopyEF(QubitIndex, tot_num_of_qubits, studyDocumentationFolder,
                                                           sample,
-                                                          save_figs, experiment=experiment, verbose=verbose,
+                                                          save_figs, increase_efres_reps, increase_efres_reps_to,
+                                                          experiment=experiment, verbose=verbose,
                                                           logger=rr_logger, qick_verbose=qick_verbose,
                                                           unmasking_resgain=unmask)
                     ef_res_freqs, ef_freq_pts, ef_freq_center, ef_amps, sys_config_rspec_ef = ef_res_spec.run()
@@ -440,7 +466,7 @@ while j < n:
 
                         if QubitIndex == 3:
                             increase_qubit_reps_ef = True  # if you want to increase the reps for a qubit, set to True
-                            increase_reps_to_ef = 4200  # for ef qspec
+                            increase_reps_to_ef = 4500  # for ef qspec
                             increase_ef_qspec_rounds = True
                             increase_ef_qspec_rounds_to = 2
 
@@ -574,8 +600,8 @@ while j < n:
                                    experiment=experiment,
                                    live_plot=live_plot, fit_data=fit_data,
                                    increase_qubit_reps=increase_qubit_reps_t1,
-                                   qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                                   multiply_qubit_reps_by=multiply_qubit_reps_by,
+                                   qubit_to_increase_reps_for=t1_qubit_to_increase_reps_for,
+                                   multiply_qubit_reps_by=t1_multiply_qubit_reps_by,
                                    verbose=verbose, logger=rr_logger, save_shots = True, unmasking_resgain=unmask)
                 t1_est, t1_err, t1_I, t1_Q, t1_Ishots, t1_Qshots, t1_delay_times, q1_fit_exponential, sys_config_t1 = t1.run(
                     thresholding=thresholding)

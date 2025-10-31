@@ -34,8 +34,9 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
 class ResonanceSpectroscopy:
-    def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, save_figs, experiment = None,
-                 verbose = False, logger = None, qick_verbose=True, unmasking_resgain = False):
+    def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, save_figs, increase_res_reps = False,
+                 increase_res_reps_to = None, experiment = None, verbose = False, logger = None, qick_verbose=True,
+                 unmasking_resgain = False):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
@@ -44,9 +45,15 @@ class ResonanceSpectroscopy:
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.round_num = round_num
         self.save_figs = save_figs
+        self.increase_res_reps = increase_res_reps
+        self.increase_res_reps_to = increase_res_reps_to
         self.experiment = experiment
 
         self.exp_cfg = expt_cfg[self.expt_name]
+
+        if self.increase_res_reps:
+            self.exp_cfg['reps'] = self.increase_res_reps_to
+
         if unmasking_resgain:
             self.exp_cfg["list_of_all_qubits"] = [QubitIndex]
 

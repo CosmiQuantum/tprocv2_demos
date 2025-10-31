@@ -14,7 +14,25 @@ import datetime
 #outerFolder1 = os.path.join("/data/QICK_data/6transmon_run6/", '2025-03-02')
 # outerFolder1 = os.path.join("/data/QICK_data/run6/6transmon/ef_studies/Optimization/", str(datetime.date.today())) # for RR folders
 # outerFolder = "/data/QICK_data/run7/6transmon/readout_optimization/unmasking_resgain/2025-07-18_21-34-17/study_data/Data_h5/2D_Gain_Freq_Sweeps"
-outerFolder = "/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_21_dBDAC/2025-10-28_19-41-04/study_data/Data_h5/2D_Gain_Freq_Sweeps"
+outerFolder = "/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_18_dBDAC/2025-10-30_16-49-20/study_data/Data_h5/2D_Gain_Freq_Sweeps"
+
+    #'/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_18_dBDAC/2025-10-30_21-02-39/study_data/Data_h5/2D_Gain_Freq_Sweeps'
+
+    #"/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_18_dBDAC/2025-10-30_19-46-09/study_data/Data_h5/2D_Gain_Freq_Sweeps"
+
+    #'/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_18_dBDAC/2025-10-30_19-28-14/study_data/Data_h5/2D_Gain_Freq_Sweeps'
+
+    #'/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_18_dBDAC/2025-10-30_19-13-10/study_data/Data_h5/2D_Gain_Freq_Sweeps'
+
+    #"/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_18_dBDAC/2025-10-30_18-43-09/study_data/Data_h5/2D_Gain_Freq_Sweeps"
+
+    #"/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_18_dBDAC/2025-10-30_16-49-20/study_data/Data_h5/2D_Gain_Freq_Sweeps"
+
+    #"/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_21_dBDAC/2025-10-30_13-43-22/study_data/Data_h5/2D_Gain_Freq_Sweeps"
+
+    #"/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_21_dBDAC/2025-10-30_11-21-41/study_data/Data_h5/2D_Gain_Freq_Sweeps"
+
+    #"/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_21_dBDAC/2025-10-28_19-41-04/study_data/Data_h5/2D_Gain_Freq_Sweeps"
 
     #"/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_21_dBDAC/2025-10-28_18-30-04/study_data/Data_h5/2D_Gain_Freq_Sweeps"
 
@@ -22,19 +40,6 @@ outerFolder = "/data/QICK_data/run8/6transmon/readout_optimization/optimizing_re
 
     #"/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_21_dBDAC/2025-10-28_11-43-55/study_data/Data_h5/2D_Gain_Freq_Sweeps"
 
-    #"/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_21_dBDAC/2025-10-27_13-50-27/study_data/Data_h5/2D_Gain_Freq_Sweeps"
-
-    #"/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_21_dBDAC/2025-10-27_12-17-33/study_data/Data_h5/2D_Gain_Freq_Sweeps"
-
-    #"/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_21_dBDAC/2025-10-23_12-36-40/study_data/Data_h5/2D_Gain_Freq_Sweeps"
-
-    #"/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_21_dBDAC/2025-10-23_11-31-42/study_data/Data_h5/2D_Gain_Freq_Sweeps"
-
-    #"/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_21_dBDAC/2025-10-22_22-32-21/study_data/Data_h5/2D_Gain_Freq_Sweeps"
-
-    #"/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_21_dBDAC/2025-10-22_22-32-21/study_data/Data_h5/2D_Gain_Freq_Sweeps"
-
-    #"/data/QICK_data/run8/6transmon/readout_optimization/optimizing_readout_post_new_channel_21_dBDAC/2025-10-22_22-07-17/study_data/Data_h5/2D_Gain_Freq_Sweeps"
 
 print('For files inside: ', outerFolder)
 
@@ -147,7 +152,7 @@ def find_configurations_below_threshold(file_path, threshold):
     return valid_configurations
 
 #Now getting results
-punchout_thresholds =  [1.0,0.9,1.0,0.56,0.75,0.8]
+punchout_thresholds =  [0.95, 0.78, 1.0, 0.31, 0.6, 0.74] # old: [1.0,0.85,1.0,0.6,0.7,0.8]
 for qubit_index in range(1, 7):
     file_pattern = os.path.join(outerFolder, f"*_Qubit_{qubit_index}_*.h5")
     file_list = glob.glob(file_pattern)
