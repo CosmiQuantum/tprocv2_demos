@@ -35,7 +35,7 @@ qspecge_increase_reps_to = 900
 # outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30", str(datetime.date.today())) #change run number in each new run
 
 # For Quiet
-substudy = "optimizing_readout_post_new_channel_18_dBDAC"#unmasking_resgain"
+substudy = "optimizing_readout_post_new_channel_19_dBDAC"#unmasking_resgain"
 # outerFolder = os.path.join("/data/QICK_data/6transmon_run6/", str(datetime.date.today()))
 #outerFolder = os.path.join("/data/QICK_data/run6/6transmon/StarkShift/DAC0_check/Optimization/run2/", str(datetime.date.today()))
 #outerFolder = os.path.join(f"/data/QICK_data/run6/6transmon/TLS_Comprehensive_Study/readout_optimization_{datetime.date.today().strftime('%Y-%m-%d')}", datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
@@ -57,13 +57,12 @@ n = 1  # Number of rounds
 n_loops = 6# Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [3]
+Qs = [3,4]
 
-# For 18dB DAC
-res_leng_vals = [6.5, 9.0, 7.5, 7.0, 8.0, 7.5]
-res_gain = [0.85, 0.7750, 0.85, 0.3375, 0.5875, 0.7375] #[ new punchout threshs 1.0, 0.78, 1.0, 0.31, 0.6, 0.74]
-freq_offsets = [-0.0462, 0.1385, -0.5077, -0.2308, -0.4154, -0.2308]
-
+# For 19dB DAC
+res_leng_vals = [6.5, 9.0, 7.5, 8.5, 8.0, 7.5]
+res_gain = [0.8, 0.7375, 0.9250, 0.3705, 0.4405, 0.8250]
+freq_offsets = [-0.3231, -0.1385, 0.3231, 0.0471, -0.3294, 0.4154]
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_freq_ge = [None] * 6 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
@@ -71,11 +70,11 @@ res_freq_ge = [None] * 6 # creates list where the script will be storing the fre
 j=0 #round number, from RR code. Not really used here since we just run it once for each qubit
 
 # lengs = np.arange(0.1, 6, 0.5)
-lengs = np.arange(4.5, 8.5, 0.5)
+lengs = np.arange(4.5, 9.5, 0.5)
 start=time.time()
 for QubitIndex in Qs:
     # Get the config for this qubit
-    experiment = QICK_experiment(outerFolder, DAC_attenuator1 = 8, DAC_attenuator2 = 11, qubit_DAC_attenuator1 = 5,
+    experiment = QICK_experiment(outerFolder, DAC_attenuator1 = 9, DAC_attenuator2 = 10, qubit_DAC_attenuator1 = 5,
                                      qubit_DAC_attenuator2 = 4, ADC_attenuator = 17,
                                  fridge=FRIDGE)
 
@@ -86,7 +85,19 @@ for QubitIndex in Qs:
 
     ################################################## Res spec ####################################################
 
-    res_spec = ResonanceSpectroscopy(QubitIndex, number_of_qubits, outerfolder_plots, j, True,
+    increase_geres_reps = False
+    increase_geres_reps_to = None
+    if QubitIndex == 5 or QubitIndex == 4:
+        increase_geres_reps = True
+        increase_geres_reps_to = 400
+    if QubitIndex == 3:
+        increase_geres_reps = True
+        increase_geres_reps_to = 600
+    if QubitIndex == 4:
+        increase_geres_reps = True
+        increase_geres_reps_to = 600
+
+    res_spec = ResonanceSpectroscopy(QubitIndex, number_of_qubits, outerfolder_plots, j, True, increase_geres_reps, increase_geres_reps_to,
                                      experiment = experiment, unmasking_resgain = unmask)
     res_freqs, freq_pts, freq_center, amps, res_spec_config = res_spec.run()
     experiment.readout_cfg['res_freq_ge'] = res_freqs
@@ -110,7 +121,7 @@ for QubitIndex in Qs:
 
     if QubitIndex == 5:
         increase_qubit_reps_qspec = True
-        qspecge_increase_reps_to = 1500
+        qspecge_increase_reps_to = 1600
         # increase_qspec_rounds = True
         # increase_qspec_rounds_to = 2
 
@@ -125,6 +136,10 @@ for QubitIndex in Qs:
         qspecge_increase_reps_to = 700
         increase_qspec_rounds = True
         increase_qspec_rounds_to = 3
+
+    if QubitIndex == 2:
+        increase_qubit_reps_qspec = True
+        qspecge_increase_reps_to = 800
 
     q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, outerfolder_plots, j,
                                signal, True, increase_reps=increase_qubit_reps_qspec,
@@ -268,32 +283,54 @@ for QubitIndex in Qs:
     # plt.close()
     #
     # del avg_fids, rms_fids, avg_ground_iq, avg_excited_iq, loop_group, length_group
-
-    # ##---------------------Res Gain and Res Freq Sweeps------------------------
-    optimal_lengths = [6.5, 9.0, 7.0, 7.0, 8.5, 7.5] #optional # DAC 2 optimization
+    #
+    # # ##---------------------Res Gain and Res Freq Sweeps------------------------
+    optimal_lengths = [6.5, 9.0, 7.5, 8.5, 8.0, 7.5] #optional # DAC 2 optimization
     date_str = str(datetime.date.today())
     output_folder = outerFolder + "/study_data/Data_h5/2D_Gain_Freq_Sweeps/"
     # Ensure the output folder exists
     os.makedirs(output_folder, exist_ok=True)
-
+    # [0.8, 0.7375, 0.9250, 0.37, 0.44, 0.8250]
     # Define sweeping parameters
-    if QubitIndex == 0 or QubitIndex == 2:
-        gain_range = [0.7, 1.0]
-        gain_steps = 8
-    elif QubitIndex == 1 or  QubitIndex == 4 or QubitIndex == 5:
-        gain_range = [0.55, 0.85]
-        gain_steps = 8
-    elif QubitIndex == 3:
-        gain_range = [0.3, 0.6]
-        gain_steps = 8
+    # if QubitIndex == 0 or QubitIndex == 2:
+    #     gain_range = [0.7, 1.0]
+    #     gain_steps = 8
+    # elif QubitIndex == 1 or  QubitIndex == 4:
+    #     gain_range = [0.55, 0.85]
+    #     gain_steps = 8
+    # elif QubitIndex == 3:
+    #     gain_range = [0.3, 0.6]
+    #     gain_steps = 8
+    # elif QubitIndex == 5:
+    #     gain_range = [0.6, 0.9]
+    #     gain_steps = 8
 
-    freq_steps = 13
+    if QubitIndex == 0:
+        gain_range = [0.8,0.801]
+        gain_steps = 2
+    elif QubitIndex == 1:
+        gain_range = [0.7375, 0.7376]
+        gain_steps = 2
+    elif QubitIndex == 2:
+        gain_range = [0.9250, 0.9251]
+        gain_steps = 2
+    elif QubitIndex == 3:
+        gain_range = [0.37, 0.371]
+        gain_steps = 2
+    elif QubitIndex == 4:
+        gain_range = [0.44, 0.441]
+        gain_steps = 2
+    elif QubitIndex == 5:
+        gain_range = [0.8250, 0.8251]
+        gain_steps = 2
+
+    freq_steps = 17
 
     print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')
     # Select the reference frequency for the current resonator
     reference_frequency = res_freq_ge[QubitIndex]
 
-    freq_range = [reference_frequency - 0.6, reference_frequency + 0.6] # Frequency range in MHz
+    freq_range = [reference_frequency - 0.8, reference_frequency + 0.8] # Frequency range in MHz
     #freq_range = [reference_frequency -0.2, (reference_frequency + 0.2) + 1]  # Frequency range in MHz
 
     experiment = copy.deepcopy(tuned_experiment)

@@ -13,7 +13,7 @@ number_of_qubits = 6  #currently 4 for NEXUS, 6 for QUIET
 # sweep_DAC_attenuator1 =[] #np.linspace(5,20, 4)
 # sweep_DAC_attenuator2 =[10]#[15,20,25,30] #np.linspace(5,20,4)
 
-substudy = 'punchout_post_new_channel_18_dBDAC'
+substudy = 'punchout_post_new_channel_19_dBDAC'
 outerFolder = os.path.join(f"/data/QICK_data/run8/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 outerfolder_plots = outerFolder + "/documentation/"
 #outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/", str(datetime.date.today())) # for NEXUS
@@ -31,7 +31,7 @@ outerfolder_plots = outerFolder + "/documentation/"
 #         del experiment
 #
 Unmask = True
-DAC_att_1=8
+DAC_att_1=9
 DAC_att_2=10
 DAC_att=DAC_att_1+DAC_att_2
 ADC_att=17
@@ -48,20 +48,20 @@ experiment = QICK_experiment(outerfolder_plots, DAC_attenuator1 = DAC_att_1, DAC
 # [1.0, 0.9, 1.0, 0.65, 0.95, 1.0]  from 10/22/2025
 
 # For resonators back to back:
-Qs = [3] #starts at 0
+Qs = [4] #starts at 0
 for QubitIndex in Qs:
     if QubitIndex == 0:
-        start_gain, stop_gain, num_points = 0.9, 1.0, 3
+        start_gain, stop_gain, num_points = 0.7, 1.0, 4
     if QubitIndex == 1:
-        start_gain, stop_gain, num_points = 0.7, 0.8, 5
+        start_gain, stop_gain, num_points = 0.74, 0.79, 5
     if QubitIndex == 2:
-        start_gain, stop_gain, num_points = 0.85, 1.0, 4
+        start_gain, stop_gain, num_points = 0.95, 0.99, 4
     if QubitIndex == 3:
-        start_gain, stop_gain, num_points = 0.33, 0.4, 4  #0.3, 0.38, 4
+        start_gain, stop_gain, num_points = 0.45, 0.47, 3  #0.3, 0.38, 4
     if QubitIndex == 4:
-        start_gain, stop_gain, num_points = 0.5, 0.65, 4
+        start_gain, stop_gain, num_points = 0.4, 0.5, 5
     if QubitIndex == 5:
-        start_gain, stop_gain, num_points = 0.71, 0.74, 4
+        start_gain, stop_gain, num_points = 0.85,0.88, 4
 
     punch_out  = PunchOut(QubitIndex, number_of_qubits, outerfolder_plots, experiment, Unmask)
     punch_out.run(experiment.soccfg, experiment.soc, start_gain, stop_gain, num_points, DAC_att, ADC_att, plot_Center_shift = False, plot_res_sweeps = True)

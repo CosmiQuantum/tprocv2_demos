@@ -64,7 +64,7 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [3]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [0]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
@@ -73,9 +73,9 @@ substudy_txt_notes = ('This data is post adding new channel on the qick box. T1 
 
 # set which of the following you'd like to run to 'True'
 
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": False, "rabi": True, "ss_gef": False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": True,
-             "rabi_pop_meas": False, "ef_Rabi": True}
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
+             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": False,
+             "rabi_pop_meas": False, "ef_Rabi": False}
 
 # run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
 #              "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
@@ -88,9 +88,14 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": False, "rabi"
 # freq_offsets = [-0.3182, -0.1385, 0.1385, -0.0462, 0.2308, 0.2308]
 
 # For 18dB DAC
-res_leng_vals = [6.5, 9.0, 7.5, 7.0, 8.0, 7.5]
-res_gain = [0.85, 0.7750, 0.85, 0.3375, 0.5875, 0.7375] #[ new punchout threshs 1.0, 0.78, 1.0, 0.31, 0.6, 0.74]
-freq_offsets = [-0.0462, 0.1385, -0.5077, -0.2308, -0.4154, -0.2308]
+# res_leng_vals = [6.5, 9.0, 7.5, 7.0, 8.0, 7.5]
+# res_gain = [0.85, 0.76, 0.85, 0.3375, 0.5875, 0.7375] #[ new punchout threshs 1.0, 0.78, 1.0, 0.31, 0.6, 0.74]
+# freq_offsets = [-0.0462, 0.1385, -0.5077, -0.2308, -0.4154, -0.2308]
+
+# For 19dB DAC
+res_leng_vals = [6.5, 9.0, 7.5, 8.5, 8.0, 7.5]
+res_gain = [0.8, 0.7375, 0.9250, 0.3705, 0.4405, 0.8250]
+freq_offsets = [-0.3231, -0.1385, 0.3231, 0.0471, -0.3294, 0.4154]
 
 qubit_freqs_ef = [None] * 6
 ef_res_sample_number = 1
@@ -104,7 +109,7 @@ rpm_any = False
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin' #qubit_checkouts
-sub_study = 'optimizing_with_18dB_DAC_atten' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
+sub_study = 'optimizing_with_19dB_DAC_atten' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
 #ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional, ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt, 18dB_DAC_testdata_allQs_exceptQ4
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -211,7 +216,7 @@ while j < n:
         ef_qspec_survived = False
 
         # Get the config for this qubit
-        DAC_attenuator1 = 8
+        DAC_attenuator1 = 9
         DAC_attenuator2 = 10
         experiment = QICK_experiment(optimizationFolder, DAC_attenuator1=DAC_attenuator1, DAC_attenuator2=DAC_attenuator2,
                                      qubit_DAC_attenuator1=5,
@@ -237,9 +242,15 @@ while j < n:
             try:
                 increase_geres_reps = False
                 increase_geres_reps_to = None
-                if QubitIndex == 5:
+                if QubitIndex == 5 or QubitIndex == 4:
                     increase_geres_reps = True
                     increase_geres_reps_to = 400
+                if QubitIndex == 3:
+                    increase_geres_reps = True
+                    increase_geres_reps_to = 600
+                if QubitIndex == 4:
+                    increase_geres_reps = True
+                    increase_geres_reps_to = 600
 
                 res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs, increase_geres_reps,
                                                  increase_geres_reps_to, experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
@@ -284,7 +295,7 @@ while j < n:
 
                 if QubitIndex == 4:
                     increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 750
+                    qspecge_increase_reps_to = 800
                     increase_qspec_rounds = True
                     increase_qspec_rounds_to = 2
 
@@ -293,6 +304,10 @@ while j < n:
                     qspecge_increase_reps_to = 700
                     increase_qspec_rounds = True
                     increase_qspec_rounds_to = 3
+
+                if QubitIndex == 2:
+                    increase_qubit_reps_qspec = True
+                    qspecge_increase_reps_to = 800
 
                 q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
                                            signal, save_figs, increase_reps = increase_qubit_reps_qspec, increase_rounds =increase_qspec_rounds,
@@ -344,12 +359,12 @@ while j < n:
                 if QubitIndex == 3:
                     increase_qubit_reps_gerabi = True
                     qubit_to_increase_reps_for = QubitIndex
-                if QubitIndex == 4:
-                    increase_qubit_reps_gerabi = True
-                    qubit_to_increase_reps_for = QubitIndex
-                if QubitIndex == 5:
-                    increase_qubit_reps_gerabi = True
-                    qubit_to_increase_reps_for = QubitIndex
+                # if QubitIndex == 4:
+                #     increase_qubit_reps_gerabi = True
+                #     qubit_to_increase_reps_for = QubitIndex
+                # if QubitIndex == 5:
+                #     increase_qubit_reps_gerabi = True
+                #     qubit_to_increase_reps_for = QubitIndex
 
                 rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
                                                save_figs=save_figs, save_shots=save_shots_gerabi,
@@ -418,9 +433,13 @@ while j < n:
                 try:
                     increase_efres_reps = False
                     increase_efres_reps_to = None
-                    # if QubitIndex == 5:
-                    #     increase_efres_reps = True
-                    #     increase_efres_reps_to = 400
+                    if QubitIndex == 3:
+                        increase_efres_reps = True
+                        increase_efres_reps_to = 600
+
+                    if QubitIndex == 4:
+                        increase_efres_reps = True
+                        increase_efres_reps_to = 600
 
                     ef_res_spec = ResonanceSpectroscopyEF(QubitIndex, tot_num_of_qubits, studyDocumentationFolder,
                                                           sample,
@@ -466,7 +485,7 @@ while j < n:
 
                         if QubitIndex == 3:
                             increase_qubit_reps_ef = True  # if you want to increase the reps for a qubit, set to True
-                            increase_reps_to_ef = 4500  # for ef qspec
+                            increase_reps_to_ef = 5200  # for ef qspec
                             increase_ef_qspec_rounds = True
                             increase_ef_qspec_rounds_to = 2
 
@@ -536,7 +555,7 @@ while j < n:
 
                     if QubitIndex == 3:
                         increase_qubit_reps_rpm = True
-                        increase_qubit_reps_rpm_to = 500
+                        increase_qubit_reps_rpm_to = 600
 
                     if QubitIndex == 1:
                         increase_qubit_reps_rpm = True
