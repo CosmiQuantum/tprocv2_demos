@@ -21,13 +21,14 @@ from scipy.optimize import curve_fit
 
 class T2rHistCumulErrPlots:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, base_data_path, run_name, fridge):
+                 signal, base_data_path, plots_path, run_name, fridge):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
         self.figure_quality = figure_quality
         self.base_data_path = base_data_path
         self.run_name = run_name
+        self.plots_path = plots_path
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
@@ -189,9 +190,10 @@ class T2rHistCumulErrPlots:
 
     def plot(self, dates, t2r_vals, t2r_errs, show_legends):
         #---------------------------------plot-----------------------------------------------------
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+        analysis_folder = os.path.join(self.plots_path, "benchmark_analysis_plots")
         self.create_folder_if_not_exists(analysis_folder)
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/t2_ge/"
+
+        analysis_folder = os.path.join(self.plots_path, "benchmark_analysis_plots", "t2_ge")
         self.create_folder_if_not_exists(analysis_folder)
 
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
