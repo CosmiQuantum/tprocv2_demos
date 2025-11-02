@@ -215,14 +215,14 @@ class T1HistCumulErrPlots:
                             if T1 > 1000:
                                 print("The value is above 1000 us, this is a bad fit, continuing...")
                                 continue
-                            if T1_err >= 0.8 * T1:
-                                print(
-                                    f"Skipping T1 = {T1:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
-                                continue
+                            # if T1_err >= 0.8 * T1:
+                            #     print(
+                            #         f"Skipping T1 = {T1:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
+                            #     continue
 
-                            if T1 < 25:
+                            if (self.run_number == 8) and (q_key != 5) and (T1 <= 22): # # QUIET run 8 patch while fitting is fixed
                                 print(
-                                    f"Skipping T1 = {T1:.3f} µs because it is presumed to have been a bad fit. Check these files.")
+                                    f"Skipping T1 = {T1:.3f} µs for Q{q_key + 1} because it is presumed to be a bad fit (Run 8 patch).")
                                 continue
 
                             t1_vals[q_key].extend([T1])  # Store T1 values
@@ -283,7 +283,24 @@ class T1HistCumulErrPlots:
 
                 # Fit a Gaussian to the raw data instead of the histogram
                 # get the mean and standard deviation of the data
-                mu_1, std_1 = norm.fit(t1_vals[i])
+                # mu_1, std_1 = norm.fit(t1_vals[i])
+
+                # NEW: WEIGHTED MEANS -------------------------------------------------
+                # Weighted Gaussian fit (using inverse-variance weights), per-qubit i
+                t1s = np.asarray(t1_vals[i], dtype=float)
+                errs = np.asarray(t1_errs[i], dtype=float)
+
+                # avoiding infinite weights and NaN pollution
+                err_floor = 1e-12
+                safe_errs = np.clip(errs, err_floor, np.inf)
+                weights = 1.0 / (safe_errs ** 2)
+
+                w_sum = np.nansum(weights)
+                mu_1 = float(np.nansum(weights * t1s) / w_sum)
+                var = float(np.nansum(weights * (t1s - mu_1) ** 2) / w_sum)
+                std_1 = float(np.sqrt(max(var, 0.0)))
+                # ---------------------------------------------------------------------
+
                 mean_values[f"Qubit {i + 1}"] = mu_1  # Store the mean value for each qubit
                 std_values[f"Qubit {i + 1}"] = std_1  # Store the standard deviation value for each qubit
 
@@ -303,7 +320,21 @@ class T1HistCumulErrPlots:
                 # then multiply by the total count to scale the probability to match the overall number of datapoints
                 # https://mathematica.stackexchange.com/questions/262314/fit-function-to-histogram
                 # https://stackoverflow.com/questions/23447262/fitting-a-gaussian-to-a-histogram-with-matplotlib-and-numpy-wrong-y-scaling
-                ax.plot(x_1, p_1 * (np.diff(bins_1) * hist_data_1.sum()), 'b--', linewidth=2, color=colors[i])
+                # ax.plot(x_1, p_1 * (np.diff(bins_1) * hist_data_1.sum()), 'b--', linewidth=2, color='black') old way
+
+                bin_width_1 = np.diff(bins_1)[0]  # scalar: average width of each bin
+                N_counts = hist_data_1.sum()  # total number of points
+                scaled_pdf = p_1 * (bin_width_1 * N_counts)
+
+                ax.plot(x_1, scaled_pdf, 'b--', linewidth=2, color='black')
+
+                # additional scaling option----------------------------------------------------
+                # Curve is peak-matched to the histogram's tallest bin:
+                # peak_hist = np.max(hist_data_1) if hist_data_1.size else 0.0
+                # peak_pdf = np.max(p_1) if p_1.size else 0.0
+                # scale_factor = (peak_hist / peak_pdf) if peak_pdf > 0 else 1.0
+                # scaled_pdf = p_1 * scale_factor
+                # --------------------------------------------------------------------------------------------
 
                 # Plot histogram and Gaussian fit for t1_vals[i]
                 ax.hist(t1_vals[i], bins=optimal_bin_num, alpha=0.7,color=colors[i], edgecolor='black', label=date_label)
@@ -325,7 +356,7 @@ class T1HistCumulErrPlots:
 
                 if show_legends:
                     ax.legend()
-                ax.set_title(titles[i] + f" $\mu$: {mu_1:.2f} $\sigma$:{std_1:.2f}",fontsize = font)
+                ax.set_title(titles[i] + f" Weighted $\mu$: {mu_1:.2f} $\sigma$:{std_1:.2f}",fontsize = font)
                 ax.set_xlabel('T1 (µs)',fontsize = font)
                 ax.set_ylabel('Frequency',fontsize = font)
                 ax.tick_params(axis='both', which='major', labelsize=font)

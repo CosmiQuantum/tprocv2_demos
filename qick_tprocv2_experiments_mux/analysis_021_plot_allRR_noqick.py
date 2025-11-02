@@ -2592,13 +2592,13 @@ class PlotRR_noQick:
             x_vals = np.linspace(min(temp_vals), max(temp_vals), 400)
             pdf_vals = norm.pdf(x_vals, mu, std)
 
-            # Scale the Gaussian so its peak matches the histogram's maximum height
-            scale_factor = np.max(hist_data) / np.max(pdf_vals)
-            scaled_pdf = pdf_vals * scale_factor
-
-            # # area-match scaling (robust to sparse/noisy peaks)
-            # scale_factor = len(temp_vals) * bin_width  # total expected counts
+            # # Scale the Gaussian so its peak matches the histogram's maximum height
+            # scale_factor = np.max(hist_data) / np.max(pdf_vals)
             # scaled_pdf = pdf_vals * scale_factor
+
+            # area-match scaling (robust to sparse/noisy peaks)
+            scale_factor = len(temp_vals) * bin_width  # total expected counts
+            scaled_pdf = pdf_vals * scale_factor
 
             # --- Plot ---
             ax.hist(temp_vals, bins=optimal_bin_num, alpha=0.7,

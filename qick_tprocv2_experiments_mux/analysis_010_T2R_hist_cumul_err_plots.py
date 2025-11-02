@@ -213,7 +213,24 @@ class T2rHistCumulErrPlots:
 
                 # Fit a Gaussian to the raw data instead of the histogram
                 # get the mean and standard deviation of the data
-                mu_1, std_1 = norm.fit(t2r_vals[i])
+                # mu_1, std_1 = norm.fit(t2r_vals[i])
+
+                # NEW: WEIGHTED MEANS -------------------------------------------------
+                # Weighted Gaussian fit (using inverse-variance weights), per-qubit i
+                t2rs = np.asarray(t2r_vals[i], dtype=float)
+                errs = np.asarray(t2r_errs[i], dtype=float)
+
+                # avoiding infinite weights and NaN pollution
+                err_floor = 1e-12
+                safe_errs = np.clip(errs, err_floor, np.inf)
+                weights = 1.0 / (safe_errs ** 2)
+
+                w_sum = np.nansum(weights)
+                mu_1 = float(np.nansum(weights * t2rs) / w_sum)
+                var = float(np.nansum(weights * (t2rs - mu_1) ** 2) / w_sum)
+                std_1 = float(np.sqrt(max(var, 0.0)))
+                # ---------------------------------------------------------------------
+
                 mean_values[f"Qubit {i + 1}"] = mu_1  # Store the mean value for each qubit
                 std_values[f"Qubit {i + 1}"] = std_1
 
@@ -233,7 +250,21 @@ class T2rHistCumulErrPlots:
                 # then multiply by the total count to scale the probability to match the overall number of datapoints
                 # https://mathematica.stackexchange.com/questions/262314/fit-function-to-histogram
                 # https://stackoverflow.com/questions/23447262/fitting-a-gaussian-to-a-histogram-with-matplotlib-and-numpy-wrong-y-scaling
-                ax.plot(x_1, p_1 * (np.diff(bins_1) * hist_data_1.sum()), 'b--', linewidth=2, color=colors[i])
+                #ax.plot(x_1, p_1 * (np.diff(bins_1) * hist_data_1.sum()), 'b--', linewidth=2, color='black') # old way
+
+                bin_width_1 = np.diff(bins_1)[0]  # scalar: average width of each bin
+                N_counts = hist_data_1.sum()  # total number of points
+                scaled_pdf = p_1 * (bin_width_1 * N_counts)
+
+                ax.plot(x_1, scaled_pdf, 'b--', linewidth=2, color='black')
+
+                # additional scaling option----------------------------------------------------
+                # Curve is peak-matched to the histogram's tallest bin:
+                # peak_hist = np.max(hist_data_1) if hist_data_1.size else 0.0
+                # peak_pdf = np.max(p_1) if p_1.size else 0.0
+                # scale_factor = (peak_hist / peak_pdf) if peak_pdf > 0 else 1.0
+                # scaled_pdf = p_1 * scale_factor
+                #--------------------------------------------------------------------------------------------
 
                 # Plot histogram and Gaussian fit for t1_vals[i]
                 ax.hist(t2r_vals[i], bins=optimal_bin_num, alpha=0.7, color=colors[i], edgecolor='black', label=date_label)
