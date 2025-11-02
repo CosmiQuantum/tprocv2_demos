@@ -21,11 +21,12 @@ from scipy.optimize import curve_fit
 
 class T2rHistCumulErrPlots:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, fridge):
+                 signal, base_data_path, run_name, fridge):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
         self.figure_quality = figure_quality
+        self.base_data_path = base_data_path
         self.run_name = run_name
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
@@ -118,9 +119,12 @@ class T2rHistCumulErrPlots:
 
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
-                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
+                # Build full paths using the provided base_path and folder_date
+                outerFolder = os.path.join(self.base_data_path, folder_date, "study_data")
                 self.create_folder_if_not_exists(outerFolder)
-                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/{folder_date}_RRplots/"
+
+                outerFolder_save_plots = os.path.join(self.base_data_path, "benchmark_analysis_plots",
+                                                      f"{folder_date}_RRplots")
                 self.create_folder_if_not_exists(outerFolder_save_plots)
             elif self.fridge.upper() == 'NEXUS':
                 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"

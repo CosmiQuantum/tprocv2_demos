@@ -39,47 +39,53 @@ save_figs = True
 fit_saved = True
 show_legends = False
 signal = 'None'
-run_number = 8
+run_number = 7
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 saved_shots_t1ge = False
 
-# run_name = 'run8/6transmon/round_robin/AB_Paper_Data_24hrs'
-#run_name = 'run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots'
-run_name = 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis'
+if run_number == 8:
+    run_name = 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis'
+    data_path = f'/data/QICK_data/{run_name}'
+
+    # all of run 8 thus far
+    # top_folder_dates = [
+    #     "2025-10-19_11-09-32",
+    #     "2025-10-19_12-05-25",
+    #     "2025-10-19_19-43-00",
+    #     "2025-10-19_20-25-18",
+    #     "2025-10-20_12-10-19", # First batch finishes here
+    #     "2025-10-23_00-49-28",
+    #     "2025-10-23_14-47-22",
+    #     "2025-10-24_01-41-30", # saving T1 avg iq data starts here. previous ones are just shots
+    #     "2025-10-24_13-58-37",
+    #     "2025-10-27_14-15-40",
+    #     "2025-10-27_14-24-29",
+    #     "2025-10-27_22-04-57"
+    # ]
+
+    # when saving t1 shots + avg IQ data started
+    top_folder_dates = [
+                        "2025-10-24_13-58-37",
+                        "2025-10-27_14-15-40",
+                        "2025-10-27_14-24-29",
+                        "2025-10-27_22-04-57"]
+
+elif run_number == 7:
+    run_name = 'run7/6transmon/round_robin_benchmark/AB_paper_data'
+    data_path = '/exp/cosmiq/data/QUIET/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data'
+
+    # all dates:
+    top_folder_dates = ["2025-07-19_08-34-39",
+                        "2025-07-19_16-16-14",
+                        "2025-07-19_16-56-45",
+                        "2025-07-19_23-11-39",
+                        "2025-07-20_06-33-03" ]
 
 FRIDGE = "QUIET"
 run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB attenuator ') #please make it brief for the plot
 
-# top_folder_dates = ["2025-10-19_11-09-32", "2025-10-19_12-05-25", "2025-10-19_19-43-00", "2025-10-19_20-25-18", "2025-10-20_12-10-19"] # first batch
 
-#top_folder_dates = {"2025-10-24_01-41-30"}
-
-# top_folder_dates = ["2025-10-24_13-58-37"] # optional shots vs avg IQ data
-
-# all of run 8
-# top_folder_dates = [
-#     "2025-10-19_11-09-32",
-#     "2025-10-19_12-05-25",
-#     "2025-10-19_19-43-00",
-#     "2025-10-19_20-25-18",
-#     "2025-10-20_12-10-19", # First batch finishes here
-#     "2025-10-23_00-49-28",
-#     "2025-10-23_14-47-22",
-#     "2025-10-24_01-41-30", # saving T1 avg iq data starts here. previous ones are just shots
-#     "2025-10-24_13-58-37",
-#     "2025-10-27_14-15-40",
-#     "2025-10-27_14-24-29",
-#     "2025-10-27_22-04-57"
-# ]
-
-#when saving t1 shots + avg IQ data started
-top_folder_dates = [
-    "2025-10-24_13-58-37",
-    "2025-10-27_14-15-40",
-    "2025-10-27_14-24-29",
-    "2025-10-27_22-04-57"
-]
 # ################################################ 01: Get all data ######################################################
 # res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
 #                                        save_figs, fit_saved, signal, run_name, FRIDGE)
@@ -178,19 +184,19 @@ top_folder_dates = [
 #
 # ############################################## 09: T1 hist/cumul/err Plots #############################################
 t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, run_name, run_notes, run_number, fridge=FRIDGE)
+                                            save_figs, fit_saved, signal, data_path, run_name, run_notes, run_number, fridge=FRIDGE)
 dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", saved_shots = saved_shots_t1ge)
 t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
 #
 # ############################################## 10: T2R hist/cumul/err Plots ############################################
 t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, run_name, fridge=FRIDGE)
+                                            save_figs, fit_saved, signal, data_path, run_name, fridge=FRIDGE)
 dates, t2r_vals, t2r_errs = t2r_distribution_plots.run(t1_vals)
 t2r_std_values, t2r_mean_values = t2r_distribution_plots.plot(dates, t2r_vals, t2r_errs, show_legends)
 #
 # ############################################## 11: T2E hist/cumul/err Plots ############################################
 t2e_distribution_plots = T2eHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, run_name, fridge=FRIDGE)
+                                            save_figs, fit_saved, signal, data_path, run_name, fridge=FRIDGE)
 dates, t2e_vals, t2e_errs = t2e_distribution_plots.run(t1_vals)
 t2e_std_values, t2e_mean_values = t2e_distribution_plots.plot(dates, t2e_vals, t2e_errs, show_legends)
 
