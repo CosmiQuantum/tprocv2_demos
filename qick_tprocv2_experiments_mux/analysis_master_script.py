@@ -1,4 +1,7 @@
 # from syspurpose.files import three_way_merge
+import sys
+import os
+sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_008_save_data_to_h5 import Data_H5
 from analysis_000_load_configs import LoadConfigs
 from analysis_001_plot_all_RR_h5 import PlotAllRR
