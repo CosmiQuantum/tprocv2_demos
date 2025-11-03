@@ -39,7 +39,7 @@ save_figs = True
 fit_saved = True
 show_legends = False
 signal = 'None'
-run_number = 7
+run_number = 5
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 saved_shots_t1ge = False
@@ -83,6 +83,25 @@ elif run_number == 7:
                         "2025-07-19_16-56-45",
                         "2025-07-19_23-11-39",
                         "2025-07-20_06-33-03" ]
+elif run_number == 5:
+    run_name = 'run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20'
+    data_path = '/exp/cosmiq/data/QUIET/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20'
+    plots_path = '/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/run_5_analysis'
+
+    # all dates:
+    top_folder_dates = [
+                        "2024-12-09",
+                        "2024-12-10",
+                        "2024-12-11",
+                        "2024-12-12",
+                        "2024-12-13",
+                        "2024-12-14",
+                        "2024-12-15",
+                        "2024-12-16",
+                        "2024-12-17",
+                        "2024-12-18",
+                        "2024-12-19",
+                        "2024-12-20"]
 
 FRIDGE = "QUIET"
 run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB attenuator ') #please make it brief for the plot
