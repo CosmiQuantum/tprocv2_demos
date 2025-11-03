@@ -22,7 +22,7 @@ from expt_config import expt_cfg, list_of_all_qubits, FRIDGE
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 8 # first run with qubits was QUIET run 3, second run with qubits was QUIET run 4, and so forth
+run_num = 7 # first run with qubits was QUIET run 3, second run with qubits was QUIET run 4, and so forth
 run_name = f'run{run_num}/6transmon'
 signal = 'None' # Do not change
 
@@ -48,7 +48,7 @@ qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "
                       "combined_studies_qtemps": False}
 
 # What analysis plots do you want to make?
-analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
+analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": True, "Qtemps_hists_viaSSF": False, "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis
@@ -160,19 +160,19 @@ filter_keywords_presciencerun = ['q_temperatures_efRabi'] # no source was presen
 
 #-----------------------------------------------------------------------run 7------------------------------------------------------------
 # Base path of where the data is stored up to the Study Name (round_robin_benchmark)
-base_dir_run7 = "/exp/cosmiq/data/QUIET/QICK_data/run7/6transmon/round_robin_benchmark"
+base_dir_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark"
 
 # for 24hr AB data
 target_dates_qtemps_RPM_run7 = ["2025-07-19", "2025-07-20"]
 
 # To re-make and save RPM RR plots
-outerFolder_qtemps_plots_RR_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_tests_data/benchmark_analysis_plots/RPM_RR_plots"
+outerFolder_qtemps_plots_RR_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/benchmark_analysis_plots/RPM_RR_plots"
 #
 # For RPM Analysis
-outerFolder_qtemps_plots_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_tests_data/benchmark_analysis_plots/q_temperatures_plots" # Inside each analysis function, a subfolder will be defined
+outerFolder_qtemps_plots_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/benchmark_analysis_plots/q_temperatures_plots" # Inside each analysis function, a subfolder will be defined
 
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name
-filter_keywords_run7 = ['AB_tests_data']
+filter_keywords_run7 = ['AB_paper_data']
 
 #-----------------------------------------------------------------------run 8------------------------------------------------------------
 # Base path of where the data is stored up to the Study Name (round_robin_benchmark)

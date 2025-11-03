@@ -2528,10 +2528,6 @@ class PlotRR_noQick:
         mean_values = {}
         std_values = {}
 
-        # From weighted average method
-        w_mean_values = {}
-        w_std_values = {}
-
         # Loop over each qubit / subplot
         for i, ax in enumerate(axes):
             # Gather all temperature data for qubit i across all files.
@@ -2559,9 +2555,6 @@ class PlotRR_noQick:
                 plt.setp(ax, visible=False)
                 continue
 
-            # Choose a fixed number of bins (you can adjust this number)
-            optimal_bin_num = 20
-
             # Fit a Gaussian to the temperature data (this is unweighted)
             # mu, std = norm.fit(temp_vals)
             # mean_values[f"Qubit {i + 1}"] = mu
@@ -2571,7 +2564,17 @@ class PlotRR_noQick:
             # Weighted Gaussian fit (using inverse-variance weights)
             temps = np.asarray(temp_vals)
             errs = np.asarray(temp_errs)
-            weights = 1.0 / errs ** 2
+
+            # avoiding infinite weights and NaN pollution
+            err_floor = 1e-12
+            safe_errs = np.clip(errs, err_floor, np.inf)
+
+            # Further clip extremely small errors (e.g. below the 1st percentile)
+            low_clip_percentile = 1.0  # adjust if needed
+            clip_threshold = np.nanpercentile(safe_errs, low_clip_percentile)
+            safe_errs = np.maximum(safe_errs, clip_threshold)
+
+            weights = 1.0 / (safe_errs ** 2)
 
             # Weighted mean and variance maximum-likelihood estimate assuming Gaussian noise
             mu = np.sum(weights * temps) / np.sum(weights)
@@ -2583,7 +2586,7 @@ class PlotRR_noQick:
             # -------------------------------------------------------------------------------
 
             # --- Histogram in raw counts ---
-            optimal_bin_num = 20
+            optimal_bin_num = 45
             hist_data, bins = np.histogram(temp_vals, bins=optimal_bin_num)
             bin_width = np.diff(bins)[0]
             bin_centers = bins[:-1] + bin_width / 2
