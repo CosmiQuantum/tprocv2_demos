@@ -2,7 +2,7 @@ import datetime
 import numpy as np
 import h5py
 import os
-np.set_printoptions(threshold=1000000000000000)
+# np.set_printoptions(threshold=1000000000000000)
 import numbers
 import json
 import datetime as date
