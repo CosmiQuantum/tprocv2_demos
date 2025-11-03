@@ -466,34 +466,37 @@ class PlotAllRR:
                     # --- NEW: make per-shot data compatible with per-delay fitting --------------------------------
                     if saved_shots:
                         print("Processing shots...")
+
+                        # --- load cfg strings from H5 ---
                         exp_config_str = load_data['t1_ge'][q_key]['Exp Config'][0][dataset].decode()
                         syst_config_str = load_data['t1_ge'][q_key]['Syst Config'][0][dataset].decode()
 
+                        # --- raw shots from H5  ---
                         Ishots_raw = self.process_h5_data(load_data['t1_ge'][q_key]['I'][0][dataset].decode())
                         Qshots_raw = self.process_h5_data(load_data['t1_ge'][q_key]['Q'][0][dataset].decode())
 
-                        if self.run_num == 6: # this is the run where we started saving shots sometimes
-                            # For run 6 (v1.2 avg buffer with edge counter):
-                            replica = OfflineAcquireReplica(run_num = 6, remove_offset=True, length_norm=True,
-                                                            edge_counting_override=True)
-                        else:
-                            # For run 8 (v1.0, no edge counter), either omit the arg or set False:
-                            replica = OfflineAcquireReplica(remove_offset=True, length_norm=True,
-                                                            edge_counting_override=False)
+                        # --- path to the soccfg dump (txt file made with save_run_soccfg_params.py) ---
+                        soccfg_dump_path = "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-03_14-16-17.txt"
 
-                        replica.setup_offline_from_strings(exp_config_str, syst_config_str, soccfg,
-                                                           qubit_index=int(q_key))
+                        # --- init offline replica (no live soccfg) and set it up from strings + dump ---
+                        replica = OfflineAcquireReplica(remove_offset=True, length_norm=True)
+                        replica.setup_offline_from_strings(
+                            exp_config_str,
+                            syst_config_str,
+                            soccfg_dump_path,
+                            qubit_index=int(q_key))
 
-                        # Authoritative dims from EXP config
+                        # --- authoritative dims from EXP config (use the replica's safe eval) ---
                         exp_cfg = replica._safe_eval_cfg(exp_config_str)
                         steps = int(exp_cfg['T1_ge']['steps'])
                         reps = int(exp_cfg['T1_ge']['reps'])
-                        # rounds  = int(exp_cfg['T1_ge']['rounds'])   # not used here; H5 holds one round
+                        # rounds not needed here; H5 holds one round
 
+                        # --- coerce raw shots to (rounds, N, reps) before averaging ---
                         Ishots = replica.coerce_to_rounds_N_reps(Ishots_raw, steps, reps)
                         Qshots = replica.coerce_to_rounds_N_reps(Qshots_raw, steps, reps)
 
-                        # We only provided ONE rounds worth of raw shots from H5 -> tell the replica that
+                        # --- acquire (software average over a single round) ---
                         I, Q = replica.acquire_offline(Ishots, Qshots, soft_avgs=1)
                     # -----------------------------------------------------------------------------------------------
                     else:
@@ -1248,28 +1251,31 @@ class PlotAllRR:
         plt.savefig(save_path, dpi=self.figure_quality)
         plt.close(fig)
 
+
+import re
+import numpy as np
+from collections import OrderedDict
+
 class OfflineAcquireReplica:
     """
     Offline mirror of QICK Averager acquire() math WITHOUT thresholding:
       avg over reps -> divide by ro length -> subtract IQ offset -> sum over rounds -> /soft_avgs
     Returns (I_final, Q_final) each shape (N_steps,).
+
+    This version reads necessary per-readout info (decimated MHz, iq_offset_effective)
+    from a saved soccfg text dump created by your helper script.
     """
 
-    def __init__(self, run_num = None, run_registry=None, remove_offset=True, length_norm=True, progress=True, edge_counting_override=None):
-        self.run_num = run_num
-        self.run_registry = run_registry
+    # -------------------- init --------------------
+    def __init__(self, remove_offset=True, length_norm=True, progress=True):
         self.remove_offset = bool(remove_offset)
         self.length_norm   = bool(length_norm)
         self.progress      = bool(progress)
 
-        # NEW: if not None, forces the hardware edge_counting behavior.
-        # True  => act like avg_buffer v1.2 (has edge counter): SKIP divide-by-length
-        # False => act like v1.0 (no edge counter): DO divide-by-length
-        # None  => fall back to old default (no edge counting)
-        self.edge_counting_override = edge_counting_override
+        # No live soccfg used anymore; store a parsed dump instead
+        self._dump_readouts = {}   # ro_ch -> {"decimated_MHz": float, "iq_offset_effective": float}
 
-        # QICK-like fields
-        self.soccfg = None
+        # QICK-like fields (kept for downstream logic)
         self.ro_chs = OrderedDict()
         self.gen_chs = OrderedDict()
         self.loop_dims = None
@@ -1282,21 +1288,15 @@ class OfflineAcquireReplica:
         self._reps      = None
         self._rounds    = None
         self._ro_cycles = None
-        self._iq_offset = None
-        self._ro_index  = None  # readout channel index for this qubit
+        self._iq_offset = None     # effective offset
+        self._ro_index  = None     # readout channel index for this qubit
 
-    # ---------- helpers ----------
+    # -------------------- helpers --------------------
     def _safe_eval_cfg(self, cfg_str):
         s = re.sub(r"<qick\.asm_v2\.QickParam object at 0x[0-9a-fA-F]+>", "None", cfg_str)
         s = re.sub(r"np\.float64\(\s*([^)]+)\s*\)", r"float(\1)", s)
         safe_globals = {"np": np, "array": np.array, "float": float, "__builtins__": {}}
         return eval(s, safe_globals)
-
-    def _registry_get(self, key, default=None):
-        """Fetch a per-run value from the registry, if present."""
-        if self.run_num in self.run_registry:
-            return self.run_registry[self.run_num].get(key, default)
-        return default
 
     def _ensure_rounds_axis(self, A, *, N, rounds, reps):
         """
@@ -1333,84 +1333,168 @@ class OfflineAcquireReplica:
             raise ValueError("Experiment config missing steps/reps/rounds for T1_ge.")
         return _as_int(steps), _as_int(reps), _as_int(rounds)
 
-    def _compute_ro_norm_and_offset(self, *, soccfg, syst_cfg, qubit_index):
+    # -------------------- dump parsing --------------------
+    def _parse_soccfg_dump(self, text):
+        """
+        Parse the soccfg dump text to fill self._dump_readouts with:
+          ro_ch -> {"decimated_MHz": float, "iq_offset_effective": float}
+        We parse from two places:
+          1) [FULL PRINT OUTPUT OF SOCCFG] block: lines like
+             "<ch>: ... decimated=38.400 MHz"
+          2) [READOUT CHANNEL DIAGNOSTICS] block: lines like
+             "--- Readout Channel <ch> ---" + "iq_offset_effective: <val>"
+        """
+        self._dump_readouts = {}
+
+        # 1) decimated MHz lines from full print
+        #    e.g.: "2:  axis_pfb_readout_v4 - ... decimated=38.400 MHz"
+        for m in re.finditer(r"^\s*(\d+):\s*axis_.*readout.*?decimated\s*=\s*([0-9.]+)\s*MHz",
+                             text, flags=re.MULTILINE):
+            ch = int(m.group(1))
+            dec = float(m.group(2))
+            self._dump_readouts.setdefault(ch, {})["decimated_MHz"] = dec
+
+        # 2) diagnostics block for effective offset per channel
+        #    look for channel headers then the field lines
+        diag_blocks = re.split(r"\n\s*\[READOUT CHANNEL DIAGNOSTICS\]\s*\n", text, maxsplit=1)
+        if len(diag_blocks) == 2:
+            diagnostics_text = diag_blocks[1]
+            # Each channel chunk begins with: "--- Readout Channel X ---"
+            for blk in re.split(r"\n\s*--- Readout Channel\s+(\d+)\s+---\s*\n", diagnostics_text):
+                # The split produces alternating chunks; handle via regex finditer instead:
+                pass
+            # Use an iterator to capture channel + body:
+            for m in re.finditer(r"--- Readout Channel\s+(\d+)\s+---\s*([\s\S]*?)(?=(?:--- Readout Channel|\Z))",
+                                 diagnostics_text):
+                ch = int(m.group(1))
+                body = m.group(2)
+                eff = None
+                mm = re.search(r"iq_offset_effective:\s*([\-0-9.]+)", body)
+                if mm:
+                    try:
+                        eff = float(mm.group(1))
+                    except Exception:
+                        eff = None
+                if eff is not None:
+                    self._dump_readouts.setdefault(ch, {})["iq_offset_effective"] = eff
+
+        # Defaults if fields missing
+        for ch, d in list(self._dump_readouts.items()):
+            if "decimated_MHz" not in d:
+                d["decimated_MHz"] = 307.2  # safe default
+            if "iq_offset_effective" not in d:
+                d["iq_offset_effective"] = 0.0
+
+    # -------------------- compute norm & offset (from dump only) --------------------
+    def _compute_ro_norm_and_offset_from_dump(self, *, syst_cfg, qubit_index):
+        """
+        Use parsed dump for:
+          - decimated MHz -> ro_cycles
+          - iq_offset_effective -> offset
+        """
         ro_ch_list = syst_cfg['ro_ch']
-        res_ch     = syst_cfg['res_ch']
-        mixer_freq = float(syst_cfg['mixer_freq'])
-        nqz_res    = int(syst_cfg['nqz_res'])
         res_len_us = float(syst_cfg['res_length'])
-        res_freqs  = syst_cfg['res_freq_ge']
-        ro_phases  = syst_cfg.get('ro_phase', [0]*len(res_freqs))
+        qidx = int(qubit_index)
 
-        ro_ch_for_q = int(ro_ch_list[int(qubit_index)])
-        f_q         = float(res_freqs[int(qubit_index)])
-        ph_q        = float(ro_phases[int(qubit_index)])
+        # ro_ch_list might be a list per-qubit or a scalar; support both
+        if isinstance(ro_ch_list, (list, tuple)):
+            ro_ch_for_q = int(ro_ch_list[qidx])
+        else:
+            ro_ch_for_q = int(ro_ch_list)
 
-        ro_cycles = int(soccfg.us2cycles(us=res_len_us, ro_ch=ro_ch_for_q))  # length for normalization
+        info = self._dump_readouts.get(ro_ch_for_q, {})
+        dec_mhz = float(info.get("decimated_MHz", 307.2))
+        offset_eff = float(info.get("iq_offset_effective", 0.0))
 
-        # build ro regs like QICK does to evaluate the PFB doubling condition
-        rocfg   = soccfg['readouts'][ro_ch_for_q]
-        ro_regs = soccfg.calc_ro_regs(rocfg, phase=ph_q, sel='product')
+        ro_cycles = self.to_int(res_len_us, dec_mhz, parname="length")  # MHz * us = samples
+        return ro_cycles, offset_eff, ro_ch_for_q
 
-        ro_ch0_for_rounding = int(ro_ch_list[0])
-        mixer_info    = soccfg.calc_mixer_freq(res_ch, mixer_freq, nqz_res, ro_ch0_for_rounding)
-        mixer_rounded = mixer_info['rounded']
+    def to_int(self, val, scale, quantize=1, parname=None, trunc=False):
+        """Convert a parameter value from user units to ASM units.
+        Normally this means converting from float to int.
+        For the v2 tProcessor this can also convert QickParam to QickRawParam.
+        To avoid overflow, values are rounded towards zero using np.trunc().
 
-        ro_pars = {'gen_ch': res_ch, 'freq': f_q}
-        soccfg.calc_ro_freq(rocfg, ro_pars, ro_regs,
-                            absolute_freqs=False,
-                            mixer_freq=mixer_rounded,
-                            flip_freq=False)
+        Parameters
+        ----------
+        val : float or QickParam
+            parameter value or sweep range
+        scale : float
+            conversion factor
+        quantize : int
+            rounding step for ASM value
+        parname : str
+            parameter type - only for sweeps
+        trunc : bool
+            round towards zero using np.trunc(), instead of to closest integer using np.round()
 
-        offset = float(rocfg['iq_offset'])
-        if 'pfb_ch' in ro_regs:
-            fs_int = 2**rocfg['b_dds']
-            if ro_regs['f_int'] == (ro_regs['pfb_ch'] % 2) * (fs_int//2):
-                offset *= 2.0
+        Returns
+        -------
+        int or QickRawParam
+            ASM value
+        """
+        if hasattr(val, 'to_int'):
+            return val.to_int(scale, quantize=quantize, parname=parname, trunc=trunc)
+        else:
+            if trunc:
+                return int(quantize * np.trunc(val * scale / quantize))
+            else:
+                return int(quantize * np.round(val * scale / quantize))
 
-        return ro_cycles, offset, ro_ch_for_q, ro_regs
-
-    # ---------- setup ----------
-    def setup_offline_from_strings(self, exp_config_str, syst_config_str, soccfg, qubit_index):
+    # -------------------- setup --------------------
+    def setup_offline_from_strings(self, exp_config_str, syst_config_str, soccfg_dump_path, qubit_index):
+        """
+        exp_config_str: repr(string) of exp cfg
+        syst_config_str: repr(string) of system cfg
+        soccfg_dump_path: path to the saved dump .txt
+        qubit_index: int
+        """
         exp_cfg  = self._safe_eval_cfg(exp_config_str)
         syst_cfg = self._safe_eval_cfg(syst_config_str)
-        self.soccfg = soccfg
 
+        # Parse dump once
+        with open(soccfg_dump_path, "r") as f:
+            dump_text = f.read()
+        self._parse_soccfg_dump(dump_text)
+
+        # Dimensions
         steps, reps, rounds = self._extract_t1_dims(exp_cfg)
-        self._N_steps, self._reps, self._rounds = steps, reps, rounds
+        self._N_steps = steps
+        self._reps    = reps
+        self._rounds  = rounds
 
-        ro_cycles, iq_offset, ro_ch_for_q, _ = self._compute_ro_norm_and_offset(
-            soccfg=soccfg, syst_cfg=syst_cfg, qubit_index=qubit_index
+        # Norm + offset from dump only
+        ro_cycles, iq_offset, ro_ch_for_q = self._compute_ro_norm_and_offset_from_dump(
+            syst_cfg=syst_cfg, qubit_index=qubit_index
         )
-        self._ro_cycles, self._iq_offset, self._ro_index = ro_cycles, iq_offset, ro_ch_for_q
+        self._ro_cycles = ro_cycles
+        self._iq_offset = iq_offset
+        self._ro_index  = ro_ch_for_q
 
-        # --- Use override if provided; otherwise default to no edge counter (old behavior) ---
-        edge_counting_flag = bool(self.edge_counting_override) if self.edge_counting_override is not None else False
-
+        # Mirror QICK bookkeeping (edge_counting=False like your run-8 baseline)
         self.ro_chs = OrderedDict({
             ro_ch_for_q: {
                 'length': int(ro_cycles),
                 'trigs': 1,
-                'edge_counting': edge_counting_flag,   # <-- key line for run 6
-                'ro_config': self._get_ro_config(ro_ch_for_q)
+                'edge_counting': False,
+                # minimal "ro_config" that carries effective offset (so _ro_offset_qick can use it)
+                'ro_config': {'iq_offset_effective': float(iq_offset)}
             }
         })
-        self.loop_dims  = [self._reps, self._N_steps]
-        self.avg_level  = 0
+        self.loop_dims      = [self._reps, self._N_steps]
+        self.avg_level      = 0
         self.reads_per_shot = [1]
 
     def coerce_to_rounds_N_reps(self, A, steps, reps):
         A = np.asarray(A)
         if A.ndim == 3:
-            # assume already (rounds, N, reps)
             return A
         if A.ndim == 2:
             r0, r1 = A.shape
-            # common cases: (reps, N) or (N, reps)
             if r0 == reps and r1 == steps:
                 return A.T[None, ...]  # -> (1, N, reps)
             if r0 == steps and r1 == reps:
-                return A[None, ...]  # -> (1, N, reps)
+                return A[None, ...]    # -> (1, N, reps)
             raise ValueError(
                 f"Unexpected 2D shape {A.shape}; expected (reps,N)=({reps},{steps}) or (N,reps)=({steps},{reps}).")
         if A.ndim == 1:
@@ -1419,19 +1503,22 @@ class OfflineAcquireReplica:
                 return A.reshape(steps, reps)[None, ...]
             if total == steps:
                 return A.reshape(1, steps, 1)
-            raise ValueError(f"Unexpected 1D length {total}; cannot infer (N,reps) from steps={steps}, reps={reps}.")
+            raise ValueError(
+                f"Unexpected 1D length {total}; cannot infer (N,reps) from steps={steps}, reps={reps}.")
         raise ValueError(f"Shots must be 1D/2D/3D, got {A.ndim}D {A.shape}")
 
-
-    # ---------- QICK-faithful averaging ----------
+    # -------------------- averaging kernel --------------------
     def _ro_offset_qick(self, ro_ch, chcfg):
-        rocfg = self.soccfg['readouts'][ro_ch]
-        offset = rocfg['iq_offset']
-        if chcfg is not None and 'pfb_ch' in chcfg:
-            fs_int = 2**rocfg['b_dds']
-            if chcfg['f_int'] == (chcfg['pfb_ch'] % 2) * (fs_int//2):
-                offset *= 2
-        return float(offset)
+        """
+        Use the effective offset we stored in ro_config.
+        No doubling logic here (already done when generating the dump).
+        """
+        try:
+            if chcfg and 'iq_offset_effective' in chcfg:
+                return float(chcfg['iq_offset_effective'])
+        except Exception:
+            pass
+        return 0.0
 
     def _average_buf_qick(self, d_reps, reads_per_shot, *, length_norm=True, remove_offset=True):
         avg_d = []
@@ -1446,7 +1533,7 @@ class OfflineAcquireReplica:
             avg_d.append(np.moveaxis(avg, -2, 0))  # -> (1, steps, 2)
         return avg_d
 
-    # ---------- public: acquire offline (no thresholding) ----------
+    # -------------------- public: acquire offline --------------------
     def acquire_offline(self, Ishots, Qshots, *, soft_avgs=None):
         """
         Inputs:
@@ -1459,9 +1546,6 @@ class OfflineAcquireReplica:
 
         if soft_avgs is None:
             soft_avgs = self._rounds
-        if int(soft_avgs) != self._rounds:
-            # we sum 'soft_avgs' rounds; this mirrors QICK's software averaging
-            pass
 
         I3 = self._ensure_rounds_axis(Ishots, N=self._N_steps, rounds=self._rounds, reps=self._reps)
         Q3 = self._ensure_rounds_axis(Qshots, N=self._N_steps, rounds=self._rounds, reps=self._reps)
@@ -1492,27 +1576,3 @@ class OfflineAcquireReplica:
         I_final = summed[:, 0]  # (N,)
         Q_final = summed[:, 1]
         return I_final, Q_final
-
-    def _get_ro_config(self, ro_ch: int):
-        # 1) Try soccfg
-        try:
-            sc = self.soccfg
-            if sc is not None:
-                if isinstance(sc, dict):
-                    rd = sc.get("readouts", None)
-                    if isinstance(rd, dict) and ro_ch in rd: return rd[ro_ch]
-                    if isinstance(rd, (list, tuple)) and 0 <= ro_ch < len(rd): return rd[ro_ch]
-                else:
-                    rd = getattr(sc, "readouts", None)
-                    if isinstance(rd, dict) and ro_ch in rd: return rd[ro_ch]
-                    if isinstance(rd, (list, tuple)) and 0 <= ro_ch < len(rd): return rd[ro_ch]
-        except Exception:
-            pass
-
-        # 2) Registry patch (e.g., run 6)
-        patch = self._registry_get("readouts_patch")
-        if patch and ro_ch in patch:
-            return patch[ro_ch]
-
-        # 3) Nothing available
-        return None

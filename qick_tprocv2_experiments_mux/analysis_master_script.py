@@ -229,25 +229,25 @@ run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB
 # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
 
 # # # ####################################### 02: Plot All Individual Data Plots ###########################################
-from tprocv2_demos.qick_tprocv2_experiments_mux.socProxy import makeProxy
-soc, soccfg = makeProxy()
-print(soccfg)
+# from tprocv2_demos.qick_tprocv2_experiments_mux.socProxy import makeProxy
+# soc, soccfg = makeProxy()
+# print(soccfg)
 
-# date = "2025-05-04_20-56-05"  #only plot all of the data for one date at a time because there is a lot
-# #date = '2025-10-24_01-41-30'
-# #outerFolder = f"/data/QICK_data/{run_name}/" + date + "/"
-# unique_folder_path = "" # only used when plot_rabis_Qtemps = True
-# # outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/{date}/study_data"
-# outerFolder = f"/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/{date}/study_data"
-# #outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/{date}/study_data"
-# outerFolder_save_plots = f"/data/QICK_data/run6/6transmon/replotted_RR_data/{date}/"
-# saved_shots_t1 = True
-# plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, run_number, tot_num_of_qubits, outerFolder,
-#                   outerFolder_save_plots, unique_folder_path, saved_shots = saved_shots_t1)
-# plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, rabi_rolling_avg=False, plot_ss = False,
-#             plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = True,
-#             plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = False)
-# #
+date = "2025-10-27_22-04-57"  #only plot all of the data for one date at a time because there is a lot
+#date = '2025-10-24_01-41-30'
+#outerFolder = f"/data/QICK_data/{run_name}/" + date + "/"
+unique_folder_path = "" # only used when plot_rabis_Qtemps = True
+# outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/{date}/study_data"
+outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/{date}/study_data"
+#outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/{date}/study_data"
+outerFolder_save_plots = f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/"
+saved_shots_t1 = True
+plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, run_number, tot_num_of_qubits, outerFolder,
+                  outerFolder_save_plots, unique_folder_path, saved_shots = saved_shots_t1)
+plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, rabi_rolling_avg=False, plot_ss = False,
+            plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = True,
+            plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = False)
+#
 # # ########################################## 03: Resonator Freqs vs Time Plots ###########################################
 # res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
 #
@@ -382,7 +382,7 @@ print(soccfg)
 #                  signal, run_name)
 # date_times, t1_vals = t1_vs_temp.run()
 # t1_vs_temp.plot(date_times, t1_vals, mcp2_dates, mcp2_temps, show_legends)
-#
+
 # t2r_vs_temp = T2rVsTemp(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name)
 # date_times, t2r_vals = t2r_vs_temp.run()
