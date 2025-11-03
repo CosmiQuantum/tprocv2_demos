@@ -323,7 +323,7 @@ class T2eHistCumulErrPlots:
                 #ax.errorbar(bin_centers, counts, yerr=bin_errors, fmt='o', color='red', ecolor='black', capsize=3, linestyle='None')
                 if show_legends:
                     ax.legend()
-                ax.set_title(titles[i] + f" $\mu$: {mu_1:.2f} $\sigma$:{std_1:.2f}",fontsize = font)
+                ax.set_title(titles[i] + f"Weighted $\mu$: {mu_1:.2f} $\sigma$:{std_1:.2f}",fontsize = font)
                 ax.set_xlabel('T2E (µs)',fontsize = font)
                 ax.set_ylabel('Frequency',fontsize = font)
                 ax.tick_params(axis='both', which='major', labelsize=font)

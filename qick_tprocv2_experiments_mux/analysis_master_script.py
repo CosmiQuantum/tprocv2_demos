@@ -42,7 +42,7 @@ save_figs = True
 fit_saved = True
 show_legends = False
 signal = 'None'
-run_number = 5
+run_number = 4
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 saved_shots_t1ge = False
@@ -77,8 +77,8 @@ if run_number == 8:
 
 elif run_number == 7:
     run_name = 'run7/6transmon/round_robin_benchmark/AB_paper_data'
-    data_path = '/exp/cosmiq/data/QUIET/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data'
-    plots_path = '/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/run_7_analysis'
+    data_path = f'/data/QICK_data/{run_name}'
+    plots_path = data_path
 
     # all dates:
     top_folder_dates = ["2025-07-19_08-34-39",
@@ -88,8 +88,8 @@ elif run_number == 7:
                         "2025-07-20_06-33-03" ]
 elif run_number == 5:
     run_name = 'run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20'
-    data_path = '/exp/cosmiq/data/QUIET/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20'
-    plots_path = '/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/run_5_analysis'
+    data_path = f'/data/QICK_data/{run_name}'
+    plots_path = data_path
 
     # all dates:
     top_folder_dates = [
@@ -105,6 +105,19 @@ elif run_number == 5:
                         "2024-12-18",
                         "2024-12-19",
                         "2024-12-20"]
+elif run_number == 4:
+    run_name = 'run4/6transmon/Official_run4_RR_Data_which_started_Nov21'
+    data_path = f'/data/QICK_data/{run_name}'
+    plots_path = data_path
+
+    # all dates:
+    top_folder_dates = [
+                        "2024-11-21",
+                        "2024-11-23",
+                        "2024-11-24",
+                        "2024-11-25",
+                        "2024-12-09",
+                        "2024-12-10"]
 
 FRIDGE = "QUIET"
 run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB attenuator ') #please make it brief for the plot
