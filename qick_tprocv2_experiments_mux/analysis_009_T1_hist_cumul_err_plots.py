@@ -187,7 +187,7 @@ class T1HistCumulErrPlots:
                             Qshots = replica.coerce_to_rounds_N_reps(Qshots_raw, steps, reps)
 
                             # We only provided ONE rounds worth of raw shots from H5 -> tell the replica that
-                            I, Q = replica.acquire_offline(Ishots, Qshots, soft_avgs=1)
+                            I, Q = replica.acquire_offline(Ishots, Qshots, soft_avgs=1) # we have only done 1 round and a bunch of reps
                         # -----------------------------------------------------------------------------------------------
                         else:
                             I = self.process_h5_data(load_data['t1_ge'][q_key].get('I', [])[0][dataset].decode())

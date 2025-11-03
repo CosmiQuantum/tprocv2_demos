@@ -42,10 +42,10 @@ save_figs = True
 fit_saved = True
 show_legends = False
 signal = 'None'
-run_number = 4
+run_number = 6
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
-saved_shots_t1ge = False
+saved_shots_t1ge = True
 
 if run_number == 8:
     run_name = 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis'
@@ -86,6 +86,86 @@ elif run_number == 7:
                         "2025-07-19_16-56-45",
                         "2025-07-19_23-11-39",
                         "2025-07-20_06-33-03" ]
+
+elif run_number == 6:
+    run_name = 'run6/6transmon/TLS_Comprehensive_Study'
+    data_path = f'/exp/cosmiq/data/QUIET/QICK_data/{run_name}'
+    plots_path = data_path
+
+    # all dates:
+    top_folder_dates = [
+    "source_off_detuning_17MHz_Q1_substudy1/2025-05-15_14-47-38",
+    "source_off_detuning_17MHz_Q1_substudy1/2025-05-15_18-08-15",
+    "source_off_detuning_17MHz_Q1_substudy1/2025-05-15_22-02-12",
+    "source_off_detuning_17MHz_Q1_substudy1/2025-05-16_01-28-20",
+    "source_off_detuning_17MHz_Q1_substudy1/2025-05-16_04-49-59",
+    "source_off_detuning_17MHz_Q1_substudy1/2025-05-16_08-13-47",
+
+    "source_off_detuning_24MHz_Q1_substudy1/2025-05-15_11-19-50",
+    "source_off_detuning_24MHz_Q1_substudy1/2025-05-15_18-35-56",
+
+    "source_off_post_temperature_sweep_substudy1/2025-05-14_19-25-55",
+    "source_off_post_temperature_sweep_substudy1/2025-05-14_22-50-51",
+    "source_off_post_temperature_sweep_substudy1/2025-05-15_02-29-34",
+    "source_off_post_temperature_sweep_substudy1/2025-05-15_05-50-12",
+    "source_off_post_temperature_sweep_substudy1/2025-05-15_09-13-30",
+
+    "source_off_substudy1/2025-04-15_21-24-46",
+
+    "source_off_substudy2/2025-04-16_11-47-09",
+    "source_off_substudy2/2025-04-16_12-51-09",
+    "source_off_substudy2/2025-04-16_17-50-00",
+    "source_off_substudy2/2025-04-16_22-47-49",
+    "source_off_substudy2/2025-04-17_03-42-36",
+    "source_off_substudy2/2025-04-17_08-42-24",
+
+    "source_off_substudy3/2025-04-17_12-28-37",
+    "source_off_substudy3/2025-04-17_17-22-46",
+    "source_off_substudy3/2025-04-17_22-16-39",
+    "source_off_substudy3/2025-04-18_01-45-53",
+    "source_off_substudy3/2025-04-18_06-40-55",
+
+    "source_off_substudy4/2025-04-18_11-59-33",
+    "source_off_substudy4/2025-04-18_16-56-58",
+    "source_off_substudy4/2025-04-18_21-51-13",
+    "source_off_substudy4/2025-04-19_02-45-41",
+    "source_off_substudy4/2025-04-19_07-39-57",
+    "source_off_substudy4/2025-04-19_12-34-26",
+    "source_off_substudy4/2025-04-19_17-48-44",
+    "source_off_substudy4/2025-04-19_22-43-02",
+    "source_off_substudy4/2025-04-20_03-37-50",
+    "source_off_substudy4/2025-04-20_08-32-36",
+    "source_off_substudy4/2025-04-20_13-26-47",
+    "source_off_substudy4/2025-04-20_18-25-13",
+    "source_off_substudy4/2025-04-20_23-25-04",
+    "source_off_substudy4/2025-04-21_04-23-31",
+
+    "source_off_substudy5/2025-05-04_20-56-05",
+    "source_off_substudy5/2025-05-04_23-28-05",
+    "source_off_substudy5/2025-05-05_03-03-40",
+    "source_off_substudy5/2025-05-05_06-40-15",
+    "source_off_substudy5/2025-05-05_10-18-53",
+    "source_off_substudy5/2025-05-05_13-57-22",
+    "source_off_substudy5/2025-05-05_17-34-21",
+    "source_off_substudy5/2025-05-05_21-18-14",
+    "source_off_substudy5/2025-05-06_02-18-57",
+
+    "source_off_substudy6/2025-05-06_11-30-17",
+    "source_off_substudy6/2025-05-06_14-50-55",
+    "source_off_substudy6/2025-05-06_18-14-29",
+    "source_off_substudy6/2025-05-06_21-35-26",
+    "source_off_substudy6/2025-05-07_01-00-14",
+    "source_off_substudy6/2025-05-07_04-23-45",
+    "source_off_substudy6/2025-05-07_07-46-44",
+    "source_off_substudy6/2025-05-07_11-09-17",
+    "source_off_substudy6/2025-05-07_14-30-29",
+    "source_off_substudy6/2025-05-07_17-50-59",
+    "source_off_substudy6/2025-05-07_21-13-50",
+    "source_off_substudy6/2025-05-08_00-36-15",
+    "source_off_substudy6/2025-05-08_03-56-41",
+    "source_off_substudy6/2025-05-08_07-19-10",
+    "source_off_substudy6/2025-05-08_11-53-46"]
+
 elif run_number == 5:
     run_name = 'run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20'
     data_path = f'/data/QICK_data/{run_name}'
@@ -149,18 +229,18 @@ run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB
 # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
 
 # # # ####################################### 02: Plot All Individual Data Plots ###########################################
-# from tprocv2_demos.qick_tprocv2_experiments_mux_nexus.socProxy import makeProxy
-# soc, soccfg = makeProxy()
-# print(soccfg)
+from tprocv2_demos.qick_tprocv2_experiments_mux.socProxy import makeProxy
+soc, soccfg = makeProxy()
+print(soccfg)
 
-# date = "2025-10-24_13-58-37"  #only plot all of the data for one date at a time because there is a lot
+# date = "2025-05-04_20-56-05"  #only plot all of the data for one date at a time because there is a lot
 # #date = '2025-10-24_01-41-30'
 # #outerFolder = f"/data/QICK_data/{run_name}/" + date + "/"
 # unique_folder_path = "" # only used when plot_rabis_Qtemps = True
 # # outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/{date}/study_data"
-# outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional/{date}/study_data"
+# outerFolder = f"/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/{date}/study_data"
 # #outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/{date}/study_data"
-# outerFolder_save_plots = f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/"
+# outerFolder_save_plots = f"/data/QICK_data/run6/6transmon/replotted_RR_data/{date}/"
 # saved_shots_t1 = True
 # plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, run_number, tot_num_of_qubits, outerFolder,
 #                   outerFolder_save_plots, unique_folder_path, saved_shots = saved_shots_t1)
@@ -220,22 +300,22 @@ run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB
 # t2e_vs_time.plot_with_errs_single_plot(date_times_t2e, t2e_vals, t2e_fit_err, show_legends=True)
 #
 # ############################################## 09: T1 hist/cumul/err Plots #############################################
-t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, data_path, plots_path, run_name, run_notes, run_number, fridge=FRIDGE)
-dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", saved_shots = saved_shots_t1ge)
-t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
-#
+# t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, run_notes, run_number, fridge=FRIDGE)
+# dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", saved_shots = saved_shots_t1ge)
+# t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
+# #
 # ############################################## 10: T2R hist/cumul/err Plots ############################################
-t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
-dates, t2r_vals, t2r_errs = t2r_distribution_plots.run(t1_vals)
-t2r_std_values, t2r_mean_values = t2r_distribution_plots.plot(dates, t2r_vals, t2r_errs, show_legends)
-#
+# t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
+# dates, t2r_vals, t2r_errs = t2r_distribution_plots.run(t1_vals)
+# t2r_std_values, t2r_mean_values = t2r_distribution_plots.plot(dates, t2r_vals, t2r_errs, show_legends)
+# #
 # ############################################## 11: T2E hist/cumul/err Plots ############################################
-t2e_distribution_plots = T2eHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
-dates, t2e_vals, t2e_errs = t2e_distribution_plots.run(t1_vals)
-t2e_std_values, t2e_mean_values = t2e_distribution_plots.plot(dates, t2e_vals, t2e_errs, show_legends)
+# t2e_distribution_plots = T2eHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
+# dates, t2e_vals, t2e_errs = t2e_distribution_plots.run(t1_vals)
+# t2e_std_values, t2e_mean_values = t2e_distribution_plots.plot(dates, t2e_vals, t2e_errs, show_legends)
 
 # ############################ 12: Save the Key Statistics for This Run to Compare Later #################################
 #need to run 00,01, and 08-10 before this to get all of the variables

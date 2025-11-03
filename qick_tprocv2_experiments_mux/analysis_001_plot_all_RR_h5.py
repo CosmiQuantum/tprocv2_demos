@@ -465,13 +465,22 @@ class PlotAllRR:
 
                     # --- NEW: make per-shot data compatible with per-delay fitting --------------------------------
                     if saved_shots:
+                        print("Processing shots...")
                         exp_config_str = load_data['t1_ge'][q_key]['Exp Config'][0][dataset].decode()
                         syst_config_str = load_data['t1_ge'][q_key]['Syst Config'][0][dataset].decode()
 
                         Ishots_raw = self.process_h5_data(load_data['t1_ge'][q_key]['I'][0][dataset].decode())
                         Qshots_raw = self.process_h5_data(load_data['t1_ge'][q_key]['Q'][0][dataset].decode())
 
-                        replica = OfflineAcquireReplica(remove_offset=True, length_norm=True)
+                        if self.run_num == 6: # this is the run where we started saving shots sometimes
+                            # For run 6 (v1.2 avg buffer with edge counter):
+                            replica = OfflineAcquireReplica(run_num = 6, remove_offset=True, length_norm=True,
+                                                            edge_counting_override=True)
+                        else:
+                            # For run 8 (v1.0, no edge counter), either omit the arg or set False:
+                            replica = OfflineAcquireReplica(remove_offset=True, length_norm=True,
+                                                            edge_counting_override=False)
+
                         replica.setup_offline_from_strings(exp_config_str, syst_config_str, soccfg,
                                                            qubit_index=int(q_key))
 
@@ -1246,10 +1255,18 @@ class OfflineAcquireReplica:
     Returns (I_final, Q_final) each shape (N_steps,).
     """
 
-    def __init__(self, remove_offset=True, length_norm=True, progress=True):
+    def __init__(self, run_num = None, run_registry=None, remove_offset=True, length_norm=True, progress=True, edge_counting_override=None):
+        self.run_num = run_num
+        self.run_registry = run_registry
         self.remove_offset = bool(remove_offset)
         self.length_norm   = bool(length_norm)
         self.progress      = bool(progress)
+
+        # NEW: if not None, forces the hardware edge_counting behavior.
+        # True  => act like avg_buffer v1.2 (has edge counter): SKIP divide-by-length
+        # False => act like v1.0 (no edge counter): DO divide-by-length
+        # None  => fall back to old default (no edge counting)
+        self.edge_counting_override = edge_counting_override
 
         # QICK-like fields
         self.soccfg = None
@@ -1274,6 +1291,12 @@ class OfflineAcquireReplica:
         s = re.sub(r"np\.float64\(\s*([^)]+)\s*\)", r"float(\1)", s)
         safe_globals = {"np": np, "array": np.array, "float": float, "__builtins__": {}}
         return eval(s, safe_globals)
+
+    def _registry_get(self, key, default=None):
+        """Fetch a per-run value from the registry, if present."""
+        if self.run_num in self.run_registry:
+            return self.run_registry[self.run_num].get(key, default)
+        return default
 
     def _ensure_rounds_axis(self, A, *, N, rounds, reps):
         """
@@ -1354,28 +1377,26 @@ class OfflineAcquireReplica:
         self.soccfg = soccfg
 
         steps, reps, rounds = self._extract_t1_dims(exp_cfg)
-        self._N_steps = steps
-        self._reps    = reps
-        self._rounds  = rounds
+        self._N_steps, self._reps, self._rounds = steps, reps, rounds
 
         ro_cycles, iq_offset, ro_ch_for_q, _ = self._compute_ro_norm_and_offset(
             soccfg=soccfg, syst_cfg=syst_cfg, qubit_index=qubit_index
         )
-        self._ro_cycles = ro_cycles
-        self._iq_offset = iq_offset
-        self._ro_index  = ro_ch_for_q
+        self._ro_cycles, self._iq_offset, self._ro_index = ro_cycles, iq_offset, ro_ch_for_q
 
-        # Mirror QICK bookkeeping: loop_dims = [reps, steps], avg_level = 0 (avg over reps)
+        # --- Use override if provided; otherwise default to no edge counter (old behavior) ---
+        edge_counting_flag = bool(self.edge_counting_override) if self.edge_counting_override is not None else False
+
         self.ro_chs = OrderedDict({
             ro_ch_for_q: {
                 'length': int(ro_cycles),
                 'trigs': 1,
-                'edge_counting': False,
-                'ro_config': self.soccfg['readouts'][ro_ch_for_q]
+                'edge_counting': edge_counting_flag,   # <-- key line for run 6
+                'ro_config': self._get_ro_config(ro_ch_for_q)
             }
         })
-        self.loop_dims      = [self._reps, self._N_steps]
-        self.avg_level      = 0
+        self.loop_dims  = [self._reps, self._N_steps]
+        self.avg_level  = 0
         self.reads_per_shot = [1]
 
     def coerce_to_rounds_N_reps(self, A, steps, reps):
@@ -1471,3 +1492,27 @@ class OfflineAcquireReplica:
         I_final = summed[:, 0]  # (N,)
         Q_final = summed[:, 1]
         return I_final, Q_final
+
+    def _get_ro_config(self, ro_ch: int):
+        # 1) Try soccfg
+        try:
+            sc = self.soccfg
+            if sc is not None:
+                if isinstance(sc, dict):
+                    rd = sc.get("readouts", None)
+                    if isinstance(rd, dict) and ro_ch in rd: return rd[ro_ch]
+                    if isinstance(rd, (list, tuple)) and 0 <= ro_ch < len(rd): return rd[ro_ch]
+                else:
+                    rd = getattr(sc, "readouts", None)
+                    if isinstance(rd, dict) and ro_ch in rd: return rd[ro_ch]
+                    if isinstance(rd, (list, tuple)) and 0 <= ro_ch < len(rd): return rd[ro_ch]
+        except Exception:
+            pass
+
+        # 2) Registry patch (e.g., run 6)
+        patch = self._registry_get("readouts_patch")
+        if patch and ro_ch in patch:
+            return patch[ro_ch]
+
+        # 3) Nothing available
+        return None
