@@ -2121,7 +2121,7 @@ class PlotRR_noQick:
             label=f"{label_prefix}: slope={m:.1f} mK/h, R²={r2:.2f}",
             zorder=10)
 
-    def plot_qubit_temperatures_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6, yaxis_min = 10, yaxis_max = 950, rel_err_cutoff = 1, restrict_time_xaxis = False,
+    def plot_qubit_temperatures_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6, yaxis_min = 10, yaxis_max = 950, rel_err_cutoff = None, restrict_time_xaxis = False,
                                              plot_extra_event_lines = False, rad_events_plot_lines = True, plot_error_bars=False, fit_to_line=False, average_per_heater_step=False):
         """
         Plots qubit temperatures vs. time for each qubit in a separate subplot (max 3 columns).
@@ -2218,6 +2218,10 @@ class PlotRR_noQick:
 
                     # if T_err > 150:  # skip if error is too large (for example, larger than 300mK)
                     #     continue
+
+                    if T_mK > 1000:  # huge outliers that ruin plots and are not accurate
+                        continue
+
                     errs.append(T_err)
                     temps.append(T_mK)
 
@@ -2496,7 +2500,7 @@ class PlotRR_noQick:
         plt.savefig(save_path, dpi=self.figure_quality)
         plt.close(fig)
 
-    def plot_qubit_temperature_histograms_RPMs(self, all_files_Qtemp_results, num_qubits, rel_err_cutoff = 1):
+    def plot_qubit_temperature_histograms_RPMs(self, all_files_Qtemp_results, num_qubits, rel_err_cutoff = None):
         """
         Plots histograms for the temperature (T_mK) data of each qubit.
 
@@ -2506,7 +2510,7 @@ class PlotRR_noQick:
 
         # Note: All datetime objects are naive and assumed to be in Central Time (local system time).
 
-        The Gaussians center and width are determined by the weighted statistics (so smaller-error points pull harder).
+        The Gaussian's center and width are determined by the weighted statistics (so smaller-error points pull harder).
         The histogram shows true counts of samples. The curve is scaled so it aligns visually with the histogram height (counts per bin).
         """
         # Set up the subplots grid (2 rows x 3 columns for 6 qubits)
@@ -2543,6 +2547,8 @@ class PlotRR_noQick:
 
                 # skip if either is missing or relative error is larger than threshold
                 if T_mK is None or T_err is None:
+                    continue
+                if T_mK > 1000: # huge outliers that ruin plots and are not accurate
                     continue
                 # if T_err / T_mK >= rel_err_cutoff: # rel_err_cutoff is a decimal (0.8 = a relative error of 80% and so forth)
                 #     continue

@@ -693,7 +693,7 @@ class SSFTempCalcAndPlots:
             # Filter out temperature data with error > 300 mK
             filtered = [(t, T, e)
                 for t, T, e in zip(times, temps, errs)
-                if T > 0 and e / T < rel_err_cutoff] # rel_err_cutoff is the relative error, it should be a decimal (aka 0.4 = 40% relative error and so forth)
+                if T > 0 and T < 1000] # and e / T < rel_err_cutoff. rel_err_cutoff is the relative error, it should be a decimal (aka 0.4 = 40% relative error and so forth)
             if not filtered:
                 continue
 
@@ -740,57 +740,99 @@ class SSFTempCalcAndPlots:
         print("Saved all-dates scatter →", fname)
 
     # Histograms – temperature distributions  (all dates, each qubit subplot)
-    def plot_all_qubits_hist_ssf(self, all_qubit_temperatures, all_qubit_temperatures_errs, out_dir, bins=20, rel_err_cutoff = 1):
-        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+    def plot_all_qubits_hist_ssf(self, all_qubit_temperatures, all_qubit_temperatures_errs, out_dir, bins=20, rel_err_cutoff = None):
+        """
+            Make per-qubit temperature histograms (SSF), with an overlaid
+            inverse-variance-weighted Gaussian (same approach as your RPMs plot).
 
+            all_qubit_temperatures: dict {qindex: [T_mK, ...]}
+            all_qubit_temperatures_errs: dict {qindex: [T_err_mK, ...]}
+            """
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
         os.makedirs(out_dir, exist_ok=True)
 
-        plt.figure(figsize=(15, 10))
+        # make a 2x3 grid like before (assumes up to 6 qubits)
+        fig = plt.figure(figsize=(15, 10))
 
-        for q in all_qubit_temperatures.keys():
-            temps = all_qubit_temperatures[q]
-            errs = all_qubit_temperatures_errs[q]
-            if not temps:
+        # iterate in sorted order so subplot indices are stable
+        for q in sorted(all_qubit_temperatures.keys()):
+            temps_list = all_qubit_temperatures.get(q, [])
+            errs_list = all_qubit_temperatures_errs.get(q, [])
+
+            if not temps_list or not errs_list:
                 continue
 
-            # Apply relative error cutoff
-            filtered = [T for T, e in zip(temps, errs) if T > 0 and e / T < rel_err_cutoff]
-            if not filtered:
+            # --- continue-style filtering (skip on any bad condition) ---
+            temp_vals = []
+            temp_errs = []
+            for T, e in zip(temps_list, errs_list):
+                # try coercion
+                try:
+                    T = float(T)
+                    e = float(e)
+                except (TypeError, ValueError):
+                    continue
+                # hard bounds / invalids
+                if T <= 0 or T > 1000:
+                    continue
+                if e <= 0:
+                    continue
+                # optional relative error cutoff
+                if rel_err_cutoff is not None and (e / T) > rel_err_cutoff:
+                    continue
+                temp_vals.append(T)
+                temp_errs.append(e)
+
+            if len(temp_vals) == 0:
                 continue
 
-            # Fit Gaussian to filtered temps
-            mu, std = norm.fit(filtered)
+            temps = np.asarray(temp_vals, dtype=float)
+            errs = np.asarray(temp_errs, dtype=float)
 
-            # Prepare x-axis for Gaussian overlay
-            x_vals = np.linspace(min(filtered), max(filtered), 100)
-            pdf_vals = norm.pdf(x_vals, mu, std)
+            # --- Weighted mean/std (same recipe as RPMs) ---
+            err_floor = 1e-12
+            safe_errs = np.clip(errs, err_floor, np.inf)
+            # clip tiny errors (robustness)
+            low_clip_percentile = 1.0
+            clip_threshold = np.nanpercentile(safe_errs, low_clip_percentile)
+            safe_errs = np.maximum(safe_errs, clip_threshold)
+            weights = 1.0 / (safe_errs ** 2)
 
-            # Scale to match histogram height
-            hist_data, bins = np.histogram(filtered, bins=bins)
-            bin_width = np.diff(bins)[0]
-            scale_factor = hist_data.sum() * bin_width
-            scaled_pdf = pdf_vals * scale_factor
+            mu = np.sum(weights * temps) / np.sum(weights)
+            var = np.sum(weights * (temps - mu) ** 2) / np.sum(weights)
+            std = np.sqrt(var)
 
-            # Plot the Gaussian fit
+            # --- Histogram (raw counts) ---
             ax = plt.subplot(2, 3, q + 1)
-            ax.plot(x_vals, scaled_pdf, linestyle='--', linewidth=2, color=colors[q], label='Gaussian fit')
+            hist_data, edges = np.histogram(temps, bins=bins)
+            bin_width = np.diff(edges)[0]
 
-            #Plot the histograms
-            ax.hist(temps, bins=bins,
-                    color=colors[q], alpha=0.7, edgecolor='black')
-            ax.set_title(f"Qubit {q + 1}  $\mu$: {mu:.2f} mK,  $\sigma$: {std:.2f} mK")
+            ax.hist(temps,
+                    bins=bins,
+                    alpha=0.7,
+                    color=colors[q % len(colors)],
+                    edgecolor='black',
+                    label="Counts")
+
+            # --- Weighted Gaussian overlay, area-matched to histogram ---
+            x_vals = np.linspace(temps.min(), temps.max(), 400)
+            pdf_vals = norm.pdf(x_vals, mu, std)
+            scale_factor = len(temps) * bin_width  # area-match
+            scaled_pdf = pdf_vals * scale_factor
+            ax.plot(x_vals, scaled_pdf, linestyle='--', linewidth=2,
+                    color='black', label='Weighted Gaussian fit')
+
+            ax.set_title(f"Qubit {q + 1}  µ={mu:.2f} mK,  s={std:.2f} mK")
             ax.set_xlabel("Temperature (mK)")
             ax.set_ylabel("Count")
-            # ax.set_xlim(left=50, right=600)
             ax.grid(alpha=0.3)
+            # ax.legend()
 
         plt.tight_layout()
-        fname = os.path.join(
-            out_dir,
-            f"AllQubits_Temp_Hist_{datetime.datetime.now():%Y%m%d%H%M%S}.png")
+        fname = os.path.join(out_dir, f"AllQubits_SSFTemps_Hist_{datetime.datetime.now():%Y%m%d%H%M%S}.png")
         plt.savefig(fname, dpi=300)
-        plt.close()
-        print("Saved all-dates histogram →", fname)
+        plt.close(fig)
+        print("Saved all-dates histogram to:", fname)
 
     # def plot_temp_histograms(self, qubit_temperatures, out_dir, bins=20):
     #     """
