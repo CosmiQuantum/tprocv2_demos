@@ -479,7 +479,7 @@ class PlotAllRR:
                         soccfg_dump_path = "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-03_14-16-17.txt"
 
                         # --- init offline replica (no live soccfg) and set it up from strings + dump ---
-                        replica = OfflineAcquireReplica(remove_offset=True, length_norm=True)
+                        replica = OfflineAcquireReplica(remove_offset=True, length_norm=True, edge_counting= False)
                         replica.setup_offline_from_strings(
                             exp_config_str,
                             syst_config_str,
@@ -1267,10 +1267,11 @@ class OfflineAcquireReplica:
     """
 
     # -------------------- init --------------------
-    def __init__(self, remove_offset=True, length_norm=True, progress=True):
+    def __init__(self, remove_offset=True, length_norm=True, progress=True, edge_counting = False):
         self.remove_offset = bool(remove_offset)
         self.length_norm   = bool(length_norm)
         self.progress      = bool(progress)
+        self.edge_counting = bool(edge_counting)
 
         # No live soccfg used anymore; store a parsed dump instead
         self._dump_readouts = {}   # ro_ch -> {"decimated_MHz": float, "iq_offset_effective": float}
@@ -1476,7 +1477,7 @@ class OfflineAcquireReplica:
             ro_ch_for_q: {
                 'length': int(ro_cycles),
                 'trigs': 1,
-                'edge_counting': False,
+                'edge_counting': self.edge_counting,
                 # minimal "ro_config" that carries effective offset (so _ro_offset_qick can use it)
                 'ro_config': {'iq_offset_effective': float(iq_offset)}
             }

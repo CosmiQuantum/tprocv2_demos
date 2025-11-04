@@ -156,8 +156,8 @@ class T1HistCumulErrPlots:
                     for dataset in range(len(load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0])):
                         if 'nan' in str(load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
                             continue
-                        #T1 = load_data['T1'][q_key].get('T1', [])[0][dataset]
-                        #errors = load_data['T1'][q_key].get('Errors', [])[0][dataset]
+                        T1_est_from_h5s= load_data['T1'][q_key].get('T1', [])[0][dataset]
+                        errors_from_h5s = load_data['T1'][q_key].get('Errors', [])[0][dataset]
                         date= datetime.datetime.fromtimestamp(load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0][dataset])
 
                         # Skip processing if the date (as a date object) is in the excluded set

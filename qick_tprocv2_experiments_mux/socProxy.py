@@ -1,6 +1,7 @@
 import Pyro4
 from qick import QickConfig
 
+# run 6
 # def makeProxy():
 #     Pyro4.config.SERIALIZER = "pickle"
 #     Pyro4.config.PICKLE_PROTOCOL_VERSION = 4
