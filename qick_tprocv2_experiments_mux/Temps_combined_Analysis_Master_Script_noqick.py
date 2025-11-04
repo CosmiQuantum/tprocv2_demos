@@ -5,9 +5,9 @@ import os
 #sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 
 from analysis_021_plot_allRR_noqick import QubitSpectroscopy
-# from qicklab.analysis.qspec import AnaQSpec
-# from qicklab.analysis.ssf import AnaSSF
-from Arianna_non_prebuilt_SSF_doublegauss_funcs import non_prebuilt_ssf_analysis_class
+from qicklab.analysis.qspec import AnaQSpec
+from qicklab.analysis.ssf import AnaSSF
+#from Arianna_non_prebuilt_SSF_doublegauss_funcs import non_prebuilt_ssf_analysis_class
 from section_008_save_data_to_h5 import Data_H5
 from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots, combined_Qtemp_studies, RPMTempCalcAndPlots
 import glob
