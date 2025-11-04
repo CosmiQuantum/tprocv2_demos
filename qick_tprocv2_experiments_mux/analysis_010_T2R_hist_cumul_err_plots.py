@@ -10,6 +10,7 @@ from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
 import glob
 import re
+from scipy.signal import find_peaks
 import datetime
 import ast
 import os
@@ -107,7 +108,7 @@ class T2rHistCumulErrPlots:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run(self, t1_vals):
+    def run(self, t1_vals = None):
         import datetime
         # ----------Load/get data from T2R------------------------
         t2r_vals = {i: [] for i in range(self.number_of_qubits)}
@@ -171,11 +172,45 @@ class T2rHistCumulErrPlots:
                             except Exception as e:
                                 print('Fit didnt work due to error: ', e)
                                 continue
-                            #T2_cfg = exp_config['Ramsey_ge']
+
+                            # --------- simple peak-count gate on the fitted curve ----------
+                            try:
+                                min_peaks = 3
+                                y_fit = np.asarray(fitted, float)
+                                if y_fit.size < 3:
+                                    continue
+
+                                # ignore micro-wiggles: require peaks be at least ~10% of the record apart
+                                min_dist = max(3, y_fit.size // 10)
+
+                                pks, _ = find_peaks(y_fit, distance=min_dist)
+                                trs, _ = find_peaks(-y_fit, distance=min_dist)
+                                n_osc = min(len(pks), len(trs))  # need alternating ups/downs
+
+                                if n_osc < min_peaks:
+                                    print(f'Rejected a T2R scan for Q{q_key + 1}. Failed ramsey shape, less than 3 oscillations.')
+                                    continue
+                            except Exception:
+                                # if peak counting fails for any reason, be conservative and skip
+                                continue
+                            # ----------------------------------------------------------------
+                            # goodness of fit check---------------------------------------------
+                            y = I if plot_sig == "I" else Q
+
+                            # Compute R-squared goodness-of-fit
+                            ss_res = np.sum((y - fitted) ** 2)
+                            ss_tot = np.sum((y - np.mean(y)) ** 2)
+                            r2 = 1 - ss_res / ss_tot
+
+                            if r2 < 0.15:  # adjust threshold if needed
+                                print(f"Bad T2R fit for Q{int(q_key) + 1}, R² = {r2:.2f}")
+                                continue
+                            # --------------------------------------------------------------------------------
+
                             if T2 < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            max_t1 = max(t1_vals[q_key])
+                            max_t1 = 150 #max(t1_vals[q_key]) all out T1s are less than this rn
                             if T2 > 2*max_t1:
                                 print(f"The value is above 2*{max_t1} us, this is a bad fit, continuing...")
                                 continue
@@ -229,6 +264,7 @@ class T2rHistCumulErrPlots:
                 # avoiding infinite weights and NaN pollution
                 err_floor = 1e-12
                 safe_errs = np.clip(errs, err_floor, np.inf)
+                # weights = 1.0 / (safe_errs ** 2)
                 weights = 1.0 / (safe_errs ** 2)
 
                 w_sum = np.nansum(weights)

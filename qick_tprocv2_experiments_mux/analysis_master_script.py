@@ -42,7 +42,7 @@ save_figs = True
 fit_saved = True
 show_legends = False
 signal = 'None'
-run_number = 6
+run_number = 8
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 saved_shots_t1ge = False
@@ -229,24 +229,24 @@ run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB
 # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
 
 # # # ####################################### 02: Plot All Individual Data Plots ###########################################
-# from tprocv2_demos.qick_tprocv2_experiments_mux.socProxy import makeProxy
-# soc, soccfg = makeProxy()
-# print(soccfg)
+# #from tprocv2_demos.qick_tprocv2_experiments_mux.socProxy import makeProxy
+# #soc, soccfg = makeProxy()
+# #print(soccfg)
 
-# date = "2025-10-27_22-04-57"  #only plot all of the data for one date at a time because there is a lot
+# date = "2025-10-31_20-40-11"  #only plot all of the data for one date at a time because there is a lot
 # #date = '2025-10-24_01-41-30'
 # #outerFolder = f"/data/QICK_data/{run_name}/" + date + "/"
 # unique_folder_path = "" # only used when plot_rabis_Qtemps = True
 # # outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/{date}/study_data"
-# outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/{date}/study_data"
+# outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/19dB_DAC_testdata_allQs/{date}/study_data"
 # #outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/{date}/study_data"
 # outerFolder_save_plots = f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/"
 # saved_shots_t1 = True
 # plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, run_number, tot_num_of_qubits, outerFolder,
 #                   outerFolder_save_plots, unique_folder_path, saved_shots = saved_shots_t1)
 # plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, rabi_rolling_avg=False, plot_ss = False,
-#             plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = True,
-#             plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = False)
+#             plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = False,
+#             plot_t2r = True, plot_t2e = False, plot_rabis_Qtemps = False)
 #
 # # ########################################## 03: Resonator Freqs vs Time Plots ###########################################
 # res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
@@ -300,16 +300,16 @@ run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB
 # t2e_vs_time.plot_with_errs_single_plot(date_times_t2e, t2e_vals, t2e_fit_err, show_legends=True)
 #
 # ############################################## 09: T1 hist/cumul/err Plots #############################################
-t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, data_path, plots_path, run_name, run_notes, run_number, fridge=FRIDGE)
-dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", saved_shots = saved_shots_t1ge)
-t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
+# t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, run_notes, run_number, fridge=FRIDGE)
+# dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", saved_shots = saved_shots_t1ge)
+# t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
 #
 # # ############################################## 10: T2R hist/cumul/err Plots ############################################
-# t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-#                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
-# dates, t2r_vals, t2r_errs = t2r_distribution_plots.run(t1_vals)
-# t2r_std_values, t2r_mean_values = t2r_distribution_plots.plot(dates, t2r_vals, t2r_errs, show_legends)
+t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+                                            save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
+dates, t2r_vals, t2r_errs = t2r_distribution_plots.run()
+t2r_std_values, t2r_mean_values = t2r_distribution_plots.plot(dates, t2r_vals, t2r_errs, show_legends)
 # #
 # ############################################## 11: T2E hist/cumul/err Plots ############################################
 # t2e_distribution_plots = T2eHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,

@@ -19,6 +19,7 @@ from collections import OrderedDict
 from tqdm import tqdm
 import re
 import datetime
+from scipy.signal import find_peaks
 import ast
 import os
 import sys
@@ -523,18 +524,18 @@ class PlotAllRR:
 
     def load_plot_save_t2r(self):
         # -------------------------------------------------------Load/Plot/Save T2R------------------------------------------
-        outerFolder_expt = self.outerFolder + "/Data_h5/T2_ge/"
+        outerFolder_expt = self.outerFolder + "/Data_h5/t2_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
         
         for h5_file in h5_files:
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
             H5_class_instance = Data_H5(h5_file)
-            load_data = H5_class_instance.load_from_h5(data_type=  'T2', save_r = int(save_round))
+            load_data = H5_class_instance.load_from_h5(data_type=  't2_ge', save_r = int(save_round))
         
             populated_keys = []
-            for q_key in load_data['T2']:
+            for q_key in load_data['t2_ge']:
                 # Access 'Dates' for the current q_key
-                dates_list = load_data['T2'][q_key].get('Dates', [[]])
+                dates_list = load_data['t2_ge'][q_key].get('Dates', [[]])
         
                 # Check if any entry in 'Dates' is not NaN
                 if any(
@@ -544,18 +545,18 @@ class PlotAllRR:
                     populated_keys.append(q_key)
         
             for q_key in populated_keys:
-                for dataset in range(len(load_data['T2'][q_key].get('Dates', [])[0])):
+                for dataset in range(len(load_data['t2_ge'][q_key].get('Dates', [])[0])):
                     #T2 = load_data['T2'][q_key].get('T2', [])[0][dataset]
                     #errors = load_data['T2'][q_key].get('Errors', [])[0][dataset]
-                    date = datetime.datetime.fromtimestamp(load_data['T2'][q_key].get('Dates', [])[0][dataset])
-                    I = self.process_h5_data(load_data['T2'][q_key].get('I', [])[0][dataset].decode())
-                    Q = self.process_h5_data(load_data['T2'][q_key].get('Q', [])[0][dataset].decode())
-                    delay_times = self.process_h5_data(load_data['T2'][q_key].get('Delay Times', [])[0][dataset].decode())
+                    date = datetime.datetime.fromtimestamp(load_data['t2_ge'][q_key].get('Dates', [])[0][dataset])
+                    I = self.process_h5_data(load_data['t2_ge'][q_key].get('I', [])[0][dataset].decode())
+                    Q = self.process_h5_data(load_data['t2_ge'][q_key].get('Q', [])[0][dataset].decode())
+                    delay_times = self.process_h5_data(load_data['t2_ge'][q_key].get('Delay Times', [])[0][dataset].decode())
                     #fit = load_data['T2'][q_key].get('Fit', [])[0][dataset]
-                    round_num = load_data['T2'][q_key].get('Round Num', [])[0][dataset]
-                    batch_num = load_data['T2'][q_key].get('Batch Num', [])[0][dataset]
+                    round_num = load_data['t2_ge'][q_key].get('Round Num', [])[0][dataset]
+                    batch_num = load_data['t2_ge'][q_key].get('Batch Num', [])[0][dataset]
 
-                    exp_config = load_data['T2'][q_key].get('Exp Config', [])[0][dataset].decode()
+                    exp_config = load_data['t2_ge'][q_key].get('Exp Config', [])[0][dataset].decode()
                     safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
 
                     exp_config = eval(exp_config, safe_globals)
@@ -567,8 +568,51 @@ class PlotAllRR:
                         except Exception as e:
                             print('Fit didnt work due to error: ', e)
                             continue
-                        T2_cfg = exp_config['Ramsey_ge']
-                        T2_class_instance.plot_results(I, Q, delay_times, date, fitted, t2r_est, t2r_err, plot_sig, config = T2_cfg, fig_quality=self.figure_quality)
+                        # T2_cfg = exp_config['Ramsey_ge']
+
+                        # --------- simple peak-count gate on the fitted curve ----------
+                        try:
+                            min_peaks = 3
+                            y_fit = np.asarray(fitted, float)
+                            if y_fit.size < 3:
+                                continue
+
+                            # ignore micro-wiggles: require peaks be at least ~10% of the record apart
+                            min_dist = max(3, y_fit.size // 10)
+
+                            pks, _ = find_peaks(y_fit, distance=min_dist)
+                            trs, _ = find_peaks(-y_fit, distance=min_dist)
+                            n_osc = min(len(pks), len(trs))  # need alternating ups/downs
+
+                            if n_osc < min_peaks:
+                                print('Rejected a T2R scan. Failed ramsey shape, less than 3 oscillations.')
+                                continue
+                        except Exception:
+                            # if peak counting fails for any reason, be conservative and skip
+                            continue
+                        # ----------------------------------------------------------------
+                        # goodness of fit check---------------------------------------------
+                        y = I if plot_sig == "I" else Q
+
+                        # Compute R-squared goodness-of-fit
+                        ss_res = np.sum((y - fitted) ** 2)
+                        ss_tot = np.sum((y - np.mean(y)) ** 2)
+                        r2 = 1 - ss_res / ss_tot
+
+                        if r2 < 0.15:  # adjust threshold if needed
+                            print(f"Bad T2R fit for Q{int(q_key) + 1}, R² = {r2:.2f}")
+                            continue
+                        #--------------------------------------------------------------------------------
+
+                        if t2r_est < 0:
+                            print("The value is negative, continuing...")
+                            continue
+                        max_t1 = 150 # max(t1_vals[q_key]) # our T1s are below this rn
+                        if t2r_est > 2 * max_t1:
+                            print(f"The value is above 2*{max_t1} us, this is a bad fit, continuing...")
+                            continue
+
+                        T2_class_instance.plot_results(I, Q, delay_times, date, fitted, t2r_est, t2r_err, plot_sig, fig_quality=self.figure_quality)
                         del T2_class_instance
         
             del H5_class_instance

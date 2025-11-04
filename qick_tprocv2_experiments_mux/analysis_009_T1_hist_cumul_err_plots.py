@@ -156,8 +156,8 @@ class T1HistCumulErrPlots:
                     for dataset in range(len(load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0])):
                         if 'nan' in str(load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
                             continue
-                        T1_est_from_h5s= load_data['T1'][q_key].get('T1', [])[0][dataset]
-                        errors_from_h5s = load_data['T1'][q_key].get('Errors', [])[0][dataset]
+                        # T1_est_from_h5s= load_data['T1'][q_key].get('T1', [])[0][dataset]
+                        # errors_from_h5s = load_data['T1'][q_key].get('Errors', [])[0][dataset]
                         date= datetime.datetime.fromtimestamp(load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0][dataset])
 
                         # Skip processing if the date (as a date object) is in the excluded set
@@ -300,7 +300,8 @@ class T1HistCumulErrPlots:
                 # avoiding infinite weights and NaN pollution
                 err_floor = 1e-12
                 safe_errs = np.clip(errs, err_floor, np.inf)
-                weights = 1.0 / (safe_errs ** 2)
+                # weights = 1.0 / (safe_errs ** 2)
+                weights = 1.0 / (safe_errs)
 
                 w_sum = np.nansum(weights)
                 mu_1 = float(np.nansum(weights * t1s) / w_sum)
