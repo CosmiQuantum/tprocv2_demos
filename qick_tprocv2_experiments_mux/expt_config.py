@@ -88,9 +88,9 @@ if FRIDGE == "QUIET":
         "qubit_spec_ef": {
             "reps": 4000,  # 300
             "rounds": 1,  # 10
-            "start": list(ef_freqs - 1.5),  # [MHz] #-300
-            "stop": list(ef_freqs + 1.5),  # [MHz]
-            "steps": 300,
+            "start": list(ef_freqs - 0.4),  # [MHz] #-300
+            "stop": list(ef_freqs + 0.4),  # [MHz]
+            "steps": 120,
             "relax_delay": 1000, #1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -143,11 +143,11 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ge": {
-            "reps": 500,
+            "reps": 500,#500,
             "rounds": 1,  # 5
             "start": [0] * 6,  # [DAC units]
             "stop": [1] * 6,#[1.0] * 6,  # [DAC units]
-            "steps": 150, #50,
+            "steps": 150,#150, #50,
             "relax_delay": 1000,#1000,#1000,#1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -194,7 +194,7 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ef": {
-            "reps": 200,
+            "reps": 500,
             "reps2": 850, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
@@ -203,7 +203,7 @@ if FRIDGE == "QUIET":
             "relax_delay": 1000,  # [us]
         },
         "power_rabi_fh": {
-            "reps": 200,
+            "reps": 500,
             "reps2": 850,  # this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
@@ -485,7 +485,7 @@ if FRIDGE == "QUIET":
         },
 
         "Readout_Optimization":{
-            "steps": 3000, #3000, # shots
+            "steps": 5000, #3000, # shots
             "py_avg": 1,
             "gain_start" : [0, 0, 0, 0],
             "gain_stop" : [1, 0, 0, 0],
@@ -493,7 +493,7 @@ if FRIDGE == "QUIET":
             "freq_start" : [6176.0, 0, 0, 0],
             "freq_stop" : [6178.0, 0, 0, 0],
             "freq_step" : 0.1,
-            "relax_delay": 100, #1000,#600, # [us]
+            "relax_delay": 0, #1000,#600, # [us]
             "list_of_all_qubits": list_of_all_qubits,
 
         },

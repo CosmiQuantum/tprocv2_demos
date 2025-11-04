@@ -62,8 +62,8 @@ Qs = [1]#[0,1,2,3,4,5]
 #Change for NEXUS vs QUIET
 res_leng_vals = [5.0, 5.0, 8.0, 7.0, 9.0, 7.5]#[6.5, 5.5, 7.0, 9.0, 8.5, 9.0]
 # res_gain = [0.95, 0.85, 0.85, 0.55, 0.85, 0.85]
-res_gain = [0.95, 0.915, 0.85, 0.55, 0.85, 0.85]
-freq_offsets = [-0.3182, -0.0455, -0.2273, -0.2273, -0.5000, -0.1364] # # all updated on 7/29/2025 except R5, we need to debug res spec for that resonator
+res_gain = [0.95, 0.85, 0.85, 0.55, 0.85, 0.85]
+freq_offsets = [-0.3182, 0, -0.2273, -0.2273, -0.5000, -0.1364] # # all updated on 7/29/2025 except R5, we need to debug res spec for that resonator
 punch_out_vals = [1.0, 0.867, 0.867, 0.625, 0.867, 0.867] #updated 10/14/2025
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
@@ -240,70 +240,72 @@ for QubitIndex in Qs:
     del avg_fids, rms_fids, avg_ground_iq, avg_excited_iq, loop_group, length_group
 
     # ##---------------------Res Gain and Res Freq Sweeps------------------------
-#     optimal_lengths = [6.5, 5.5, 7.0, 9.0, 8.5, 9.0] #optional # DAC 2 optimization
-#     # optimal_lengths = [4.2, 5, 7.0, 6, 6, 7.5] # DAC 0 optimization
-#     date_str = str(datetime.date.today())
-#     output_folder = outerFolder + "/study_data/Data_h5/2D_Gain_Freq_Sweeps/"
-#     # Ensure the output folder exists
-#     os.makedirs(output_folder, exist_ok=True)
-#
-#     # Define sweeping parameters
-#     if QubitIndex == 0 :
-#         gain_range = [0.6, 0.95]
-#     elif QubitIndex == 1 or QubitIndex == 2  or QubitIndex == 4  or QubitIndex == 5:
-#         gain_range = [0.6, 0.95]
-#     elif QubitIndex == 3:
-#         gain_range = [0.3,0.7]  # Gain range in a.u.
-#     # elif QubitIndex == 3:
-#     #     gain_range = [0.3, 0.7]
-#
-#     freq_steps = 11
-#     gain_steps = 10
-#
-#     print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')
-#     # Select the reference frequency for the current resonator
-#     reference_frequency = res_freq_ge[QubitIndex]
-#
-#     freq_range = [reference_frequency - 0.5, reference_frequency + 0.5]# Frequency range in MHz
-#     #freq_range = [reference_frequency -0.2, (reference_frequency + 0.2) + 1]  # Frequency range in MHz
-#
-#     experiment = copy.deepcopy(tuned_experiment)
-#     sweep = GainFrequencySweep(QubitIndex, number_of_qubits, list_of_all_qubits, experiment, optimal_lengths=optimal_lengths, output_folder=output_folder, unmasking_resgain = unmask)
-#     results = sweep.run_sweep(freq_range, gain_range, freq_steps, gain_steps)
-#     results = np.array(results)
-#
-#     timestamp = time.strftime("%H%M%S")
-#     h5_file = os.path.join(output_folder, f"Gain_Freq_Sweep_Qubit_{QubitIndex + 1}_{timestamp}.h5")
-#
-#     with h5py.File(h5_file, "w") as f:
-#         # Store the data
-#         f.create_dataset("results", data=results)
-#         # Store metadata
-#         f.attrs["gain_range"] = gain_range
-#         f.attrs["freq_range"] = freq_range
-#         f.attrs["reference_frequency"] = reference_frequency
-#         f.attrs["freq_steps"] = freq_steps
-#         f.attrs["gain_steps"] = gain_steps
-#         f.attrs["optimal_length"] = optimal_lengths[QubitIndex]
-#
-#     #print(f"Saved data for Qubit {QubitIndex + 1} to {h5_file}")
-#
-#     plt.imshow(results, aspect='auto',
-#                extent=[gain_range[0], gain_range[1], freq_range[0] - reference_frequency,
-#                        freq_range[1] - reference_frequency],
-#                origin='lower')
-#     plt.colorbar(label="Fidelity")
-#     plt.xlabel("Readout pulse gain (a.u.)")  # Gain on x-axis
-#     plt.ylabel("Readout frequency offset (MHz)")  # Frequency on y-axis
-#     plt.title(f"Gain-Frequency Sweep for Qubit {QubitIndex + 1}")
-#     # plt.show()
-#     path = os.path.join(outerfolder_plots, '2D_GainFreq_Sweep')
-#     create_folder_if_not_exists(path)
-#     file_nm = os.path.join(path, f'ge_gain_freqoffset_2Dsweep_Q{QubitIndex + 1}_{timestamp}.png')
-#     plt.savefig(file_nm, dpi=600, bbox_inches='tight')
-#
-#     plt.close()  # Close the plot to free up memory
-#     del results, sweep
-#     #
+    # optimal_lengths = [6.5, 5.5, 7.0, 9.0, 8.5, 9.0] #optional # DAC 2 optimization
+    # # optimal_lengths = [4.2, 5, 7.0, 6, 6, 7.5] # DAC 0 optimization
+    # date_str = str(datetime.date.today())
+    # output_folder = outerFolder + "/study_data/Data_h5/2D_Gain_Freq_Sweeps/"
+    # # Ensure the output folder exists
+    # os.makedirs(output_folder, exist_ok=True)
+    #
+    # # Define sweeping parameters
+    # if QubitIndex == 0 :
+    #     gain_range = [0.6, 0.95]
+    # elif QubitIndex == 1 or QubitIndex == 2  or QubitIndex == 4  or QubitIndex == 5:
+    #     gain_range = [0.6, 0.85]
+    # elif QubitIndex == 3:
+    #     gain_range = [0.3,0.7]  # Gain range in a.u.
+    # # elif QubitIndex == 3:
+    # #     gain_range = [0.3, 0.7]
+    # reference_frequency = res_freq_ge[QubitIndex]
+    # freq_range = [reference_frequency - 0.5, reference_frequency + 0.5]  # Frequency range in MHz
+    #
+    # freq_steps = int((freq_range[1] - freq_range[0])/0.1)
+    # gain_steps = int((gain_range[-1] - gain_range[0]) / 0.05)
+    #
+    # print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')
+    # # Select the reference frequency for the current resonator
+    #
+    #
+    #
+    # #freq_range = [reference_frequency -0.2, (reference_frequency + 0.2) + 1]  # Frequency range in MHz
+    #
+    # experiment = copy.deepcopy(tuned_experiment)
+    # sweep = GainFrequencySweep(QubitIndex, number_of_qubits, list_of_all_qubits, experiment, optimal_lengths=optimal_lengths, output_folder=output_folder, unmasking_resgain = unmask)
+    # results = sweep.run_sweep(freq_range, gain_range, freq_steps, gain_steps)
+    # results = np.array(results)
+    #
+    # timestamp = time.strftime("%H%M%S")
+    # h5_file = os.path.join(output_folder, f"Gain_Freq_Sweep_Qubit_{QubitIndex + 1}_{timestamp}.h5")
+    #
+    # with h5py.File(h5_file, "w") as f:
+    #     # Store the data
+    #     f.create_dataset("results", data=results)
+    #     # Store metadata
+    #     f.attrs["gain_range"] = gain_range
+    #     f.attrs["freq_range"] = freq_range
+    #     f.attrs["reference_frequency"] = reference_frequency
+    #     f.attrs["freq_steps"] = freq_steps
+    #     f.attrs["gain_steps"] = gain_steps
+    #     f.attrs["optimal_length"] = optimal_lengths[QubitIndex]
+    #
+    # #print(f"Saved data for Qubit {QubitIndex + 1} to {h5_file}")
+    #
+    # plt.imshow(results, aspect='auto',
+    #            extent=[gain_range[0], gain_range[1], freq_range[0] - reference_frequency,
+    #                    freq_range[1] - reference_frequency],
+    #            origin='lower')
+    # plt.colorbar(label="Fidelity")
+    # plt.xlabel("Readout pulse gain (a.u.)")  # Gain on x-axis
+    # plt.ylabel("Readout frequency offset (MHz)")  # Frequency on y-axis
+    # plt.title(f"Gain-Frequency Sweep for Qubit {QubitIndex + 1}")
+    # # plt.show()
+    # path = os.path.join(outerfolder_plots, '2D_GainFreq_Sweep')
+    # create_folder_if_not_exists(path)
+    # file_nm = os.path.join(path, f'ge_gain_freqoffset_2Dsweep_Q{QubitIndex + 1}_{timestamp}.png')
+    # plt.savefig(file_nm, dpi=600, bbox_inches='tight')
+    #
+    # plt.close()  # Close the plot to free up memory
+    # del results, sweep
+    # #
 # end=time.time()
 # print('timetaken=',end-start)

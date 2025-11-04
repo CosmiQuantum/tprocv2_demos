@@ -49,7 +49,7 @@ from analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 5#10000
+n = 1#10000
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
@@ -88,10 +88,10 @@ device_name = '6transmon'
 substudy_txt_notes = ('Testing and debugging') # Initial qubit checkouts quiet run 8
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": False, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False, 'act':False,
+run_flags = {"tof": False, "res_spec": False, "q_spec": False, "ss": False, "rabi": False, "ss_gef": True, 'act':False,
              "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False, "fh_q_spec":False, "fh_rabi":False, "eh_q_spec":False,
-             "eh_rabi":False,  "fh_t2r":False, "fh_t2e": False, "htores_q_spec":True, "htores_rabi":False, "FHPar":False}
+             "eh_rabi":False,  "fh_t2r":False, "fh_t2e": False, "htores_q_spec":False, "htores_rabi":False, "FHPar":False}
 
 # run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False, 'act':False,
 #              "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": True,
@@ -99,9 +99,9 @@ run_flags = {"tof": False, "res_spec": False, "q_spec": False, "ss": False, "rab
 #              "eh_rabi":False,  "fh_t2r":False, "fh_t2e": False, "htores_q_spec":False, "htores_rabi":False, "FHPar":False}
 
 #Updated 10/14:
-res_leng_vals = [6.5, 8, 7.5, 7.0, 7.5, 7.5]
-res_gain = [0.95, 0.915, 0.85, 0.55, 0.85, 0.85]
-freq_offsets = [-0.3182, -0.0455, -0.2273, -0.2273, -0.5000, -0.1364]
+res_leng_vals = [6.5, 5.5, 7.5, 7.0, 7.5, 7.5]
+res_gain = [0.95, 0.8, 0.85, 0.55, 0.85, 0.85]
+freq_offsets = [-0.3182, 0, -0.2273, -0.2273, -0.5000, -0.1364]
 
 qubit_freqs_ef = [None] * 6
 increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
@@ -859,7 +859,9 @@ while j < n:
 
         ########################################### g-e-f Single Shot Measurements ############################################
         if run_flags["ss_gef"]:
-            ssgefh = SingleShot_ef(QubitIndex, number_of_qubits, studyDocumentationFolder, j, save_figs, experiment)
+            ssgefh = SingleShot_ef(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
+                                experiment=experiment,
+                                verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
 
             # iq_list_e, iq_list_f, ie_new, if_new,  theta_ef, threshold_ef, self.config
 
@@ -1617,6 +1619,7 @@ while j < n:
     ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
     ef_res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
     ef_qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
+    ef_rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
     fh_qspec_data = create_data_dict(fhqspec_keys, save_r, list_of_all_qubits)
     fh_rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
     htores_qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)

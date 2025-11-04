@@ -97,10 +97,10 @@ class AmplitudeRabiExperiment:
 
                 I = iq_list[self.QubitIndex][0][ :, 0]
                 Q = iq_list[self.QubitIndex][0][ :, 1]
-                print('I', I)
-                print("E feedback readout:", self.experiment.soc.read_mem(2, 'dmem'))
-                print("E feedback readout/mum of clocks:",
-                      self.experiment.soc.read_mem(2, 'dmem') / (self.config['res_length'] / 0.026))
+                # print('I', I)
+                # print("E feedback readout:", self.experiment.soc.read_mem(2, 'dmem'))
+                # print("E feedback readout/mum of clocks:",
+                #       self.experiment.soc.read_mem(2, 'dmem') / (self.config['res_length'] / 0.026))
 
             #get the gains that were used so you can use to plot on the x axis
             gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
@@ -149,10 +149,11 @@ class AmplitudeRabiExperiment:
         return a * np.cos(2. * np.pi * b * x - c * 2 * np.pi) + d
 
     def plot_results(self, I, Q, gains, config = None, fig_quality = 100):
+
         try:
             fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
             plt.rcParams.update({'font.size': 18})
-
+            #
             plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
 
             q1_a_guess_I = (np.max(I) - np.min(I)) / 2
@@ -1486,6 +1487,11 @@ class AmplitudeRabiProgram(AveragerProgramV2):
                        length=cfg["res_length"],
                        mask=cfg["list_of_all_qubits"],
                        )
+        # self.add_pulse(ch=res_ch, name="res_pulse2",
+        #                style="const",
+        #                length=cfg["res_length"],
+        #                mask=3,#cfg["list_of_all_qubits"],
+        #                )
         # Tell the system via another generator how to set up the qubit drive pulse
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
         # Add a gaussian envolope for the pulse shape with wdith sigma and total length 4sigma
@@ -1522,7 +1528,10 @@ class AmplitudeRabiProgram(AveragerProgramV2):
         # Delay
         self.delay_auto(t=0.0, tag='waiting')
         # Readout pulse to look at qubit state
-        self.label('readout')
+        # self.label('readout')
+        # self.read_input(ro_ch=cfg['ro_ch'][1])
+        # self.write_dmem(addr=0, src='s_port_l')
+        # self.write_dmem(addr=1, src='s_port_h')
 
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         # Trigger the readout channels to start collecting the data
@@ -1548,17 +1557,19 @@ class AmplitudeRabiProgram(AveragerProgramV2):
         #                    threshold=int(cfg["qubit_is_in_g_threshold"] * (cfg['res_length'] / 0.026)),
         #                    test="<", label='skip everything')
         #
-        # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
-        #                    component='I',
-        #                    threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
-        #                    test="<", label='readout')
         #
-        # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
-        # self.jump('readout')
         #
-        # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
-        # # Trigger the readout channels to start collecting the data
-        # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+        # # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
+        # #                    component='I',
+        # #                    threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
+        # #                    test="<", label='readout')
+        # #
+        # # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
+        # # self.jump('readout')
+        # #
+        # # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        # # # Trigger the readout channels to start collecting the data
+        # # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
         # self.label('skip everything')
 
 

@@ -46,7 +46,7 @@ start_gain, stop_gain, num_points =  0.8, 1, 5  # for QUIET 0.55, 0.775, 5 #
 # punch_out.run(experiment.soccfg, experiment.soc, start_gain, stop_gain, num_points, DAC_att, ADC_att, plot_Center_shift = False, plot_res_sweeps = True)
 
 # For resonators back to back:
-Qs = [0,1,2,3,4,5] #starts at 0
+Qs = [1]#[0,1,2,3,4,5] #starts at 0
 for QubitIndex in Qs:
     punch_out  = PunchOut(QubitIndex, number_of_qubits, outerfolder_plots, experiment, Unmask)
     punch_out.run(experiment.soccfg, experiment.soc, start_gain, stop_gain, num_points, DAC_att, ADC_att, plot_Center_shift = False, plot_res_sweeps = True)
