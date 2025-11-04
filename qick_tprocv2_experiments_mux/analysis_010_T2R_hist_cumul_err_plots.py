@@ -193,7 +193,7 @@ class T2rHistCumulErrPlots:
                             except Exception:
                                 # if peak counting fails for any reason, be conservative and skip
                                 continue
-                            # ----------------------------------------------------------------
+                            #----------------------------------------------------------------
                             # goodness of fit check---------------------------------------------
                             y = I if plot_sig == "I" else Q
 
@@ -202,7 +202,7 @@ class T2rHistCumulErrPlots:
                             ss_tot = np.sum((y - np.mean(y)) ** 2)
                             r2 = 1 - ss_res / ss_tot
 
-                            if r2 < 0.15:  # adjust threshold if needed
+                            if r2 < 0.10:  # adjust threshold if needed
                                 print(f"Bad T2R fit for Q{int(q_key) + 1}, R² = {r2:.2f}")
                                 continue
                             # --------------------------------------------------------------------------------
@@ -256,22 +256,10 @@ class T2rHistCumulErrPlots:
                 # get the mean and standard deviation of the data
                 # mu_1, std_1 = norm.fit(t2r_vals[i])
 
-                # NEW: WEIGHTED MEANS -------------------------------------------------
-                # Weighted Gaussian fit (using inverse-variance weights), per-qubit i
-                t2rs = np.asarray(t2r_vals[i], dtype=float)
-                errs = np.asarray(t2r_errs[i], dtype=float)
-
-                # avoiding infinite weights and NaN pollution
-                err_floor = 1e-12
-                safe_errs = np.clip(errs, err_floor, np.inf)
-                # weights = 1.0 / (safe_errs ** 2)
-                weights = 1.0 / (safe_errs ** 2)
-
-                w_sum = np.nansum(weights)
-                mu_1 = float(np.nansum(weights * t2rs) / w_sum)
-                var = float(np.nansum(weights * (t2rs - mu_1) ** 2) / w_sum)
-                std_1 = float(np.sqrt(max(var, 0.0)))
-                # ---------------------------------------------------------------------
+                #------------------------
+                # Compute robust mean and std
+                mu_1, std_1 = self.huber_mean_std(t2r_vals[i], t2r_errs[i])
+                #-----------------------------
 
                 mean_values[f"Qubit {i + 1}"] = mu_1  # Store the mean value for each qubit
                 std_values[f"Qubit {i + 1}"] = std_1
@@ -388,3 +376,49 @@ class T2rHistCumulErrPlots:
         print('Plots saved to: ', analysis_folder)
 
         return std_values, mean_values
+
+    def huber_mean_std(self, x, err=None, max_iter=20, tol=1e-6, c=1.5):
+        """
+        Robust Huber mean and standard deviation estimate.
+        Returns (mu, robust_std)
+
+        x (array-like): your data values (for example, all T2R values for one qubit).
+        err (optional array-like): corresponding uncertainties for each data point.
+        max_iter (int, default = 20): maximum number of iterations for convergence of the robust
+        Huber weighting loop. You rarely need to change it.
+        tol (float, default = 1e-6): relative tolerance for stopping criterion.
+        c (float, default = 1.345): the Huber tuning constant; smaller is more robust (less influence of outliers),
+        larger is closer to a normal mean.
+        """
+        x = np.asarray(x, float)
+        mask = np.isfinite(x)
+        x = x[mask]
+        if len(x) < 3:
+            return np.nan, np.nan
+
+        if err is None:
+            w0 = np.ones_like(x, float)
+        else:
+            e = np.asarray(err, float)[mask]
+            e = np.clip(e, 1e-12, np.inf)
+            w0 = 1.0 / (e ** 2)
+
+        med = np.median(x)
+        s = 1.4826 * np.median(np.abs(x - med))
+        if not np.isfinite(s) or s <= 0:
+            s = np.std(x) if np.std(x) > 0 else 1.0
+
+        mu = np.average(x, weights=w0)
+        for _ in range(max_iter):
+            r = (x - mu) / s
+            w = np.where(np.abs(r) <= c, 1.0, c / np.abs(r))
+            w = w * w0
+            mu_new = np.sum(w * x) / np.sum(w)
+            if np.abs(mu_new - mu) < tol * max(1.0, np.abs(mu)):
+                mu = mu_new
+                break
+            mu = mu_new
+
+        # robust scale estimate (similar to weighted MAD)
+        robust_std = 1.4826 * np.median(np.abs(x - mu))
+        return mu, robust_std

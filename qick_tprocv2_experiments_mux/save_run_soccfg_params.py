@@ -8,7 +8,7 @@ import sys
 save_dir = "/data/QICK_data/run6/6transmon/loud2_soccfg_params"   # <--- change to where you want it
 os.makedirs(save_dir, exist_ok=True)
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-save_path = os.path.join(save_dir, f"soccfg_full_dump_{timestamp}.txt")
+save_path = os.path.join(save_dir, f"soccfg_full_dump_{timestamp}_firmware_during_run6.txt")
 
 # --- Connect to QICK ---
 soc, soccfg = makeProxy()

@@ -477,7 +477,10 @@ class PlotAllRR:
                         Qshots_raw = self.process_h5_data(load_data['t1_ge'][q_key]['Q'][0][dataset].decode())
 
                         # --- path to the soccfg dump (txt file made with save_run_soccfg_params.py) ---
-                        soccfg_dump_path = "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-03_14-16-17.txt"
+                        if self.run_num == 8:
+                            soccfg_dump_path = "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-03_14-16-17.txt"
+                        elif self.run_num == 6:
+                            soccfg_dump_path = "/data/QICK_data/run6/6transmon/loud2_soccfg_params/soccfg_full_dump_2025-11-04_16-30-54_firmware_during_run6.txt"
 
                         # --- init offline replica (no live soccfg) and set it up from strings + dump ---
                         replica = OfflineAcquireReplica(remove_offset=True, length_norm=True, edge_counting= False)
