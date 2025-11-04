@@ -179,7 +179,7 @@ filter_keywords_run7 = ['AB_paper_data']
 base_dir_run8 = "/data/QICK_data/run8/6transmon/round_robin" # up to study name
 
 # for 24hr AB data
-target_dates_qtemps_RPM_run8 = ["2025-10-19", "2025-10-20", "2025-10-23", "2025-10-24", "2025-10-27", ]
+target_dates_qtemps_RPM_run8 = ["2025-10-19", "2025-10-20", "2025-10-23", "2025-10-24", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-31", "2025-11-01"]
 
 # To re-make and save RPM RR plots
 outerFolder_qtemps_plots_RR_run8 = f"/data/QICK_data/run8/6transmon/replotted_RR_data/rabi_pop_meas/"
@@ -192,7 +192,9 @@ outerFolder_qtemps_plots_run8 = f"/data/QICK_data/run8/6transmon/rabi_pop_meas_a
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name. THese are substudies.
 filter_keywords_run8 = ["AB_Paper_Data_24hrs", "ABpaperdata2ndbatch_21dB_DACatten_Q1to5", "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots",
                         "ABpaperdata3rdbatch_21dB_DACatten_Q1to5", "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional",
-                        "ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional", "ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional"]
+                        "ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional", "ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional",
+                        "ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt", "19dB_DAC_testdata_allQs"]
+
 #-------------------------------------------------------------------------------- Assign func variables depending on run number ---------------------------------------------------------------------------
 
 if run_num == 6: # We have science-run data as well as pre-science-run data available
