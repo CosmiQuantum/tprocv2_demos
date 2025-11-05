@@ -314,13 +314,13 @@ class T1HistCumulErrPlots:
 
                 n_counts = len(t1s)
 
-                # 0) keep only finite pairs
+                # keep only finite pairs
                 finite = np.isfinite(t1s) & np.isfinite(errs)
                 t1s, errs = t1s[finite], errs[finite]
                 if t1s.size == 0:
                     mu_1, std_1 = np.nan, np.nan
                 else:
-                    # 1) robust outlier clip around the median (tune k if you like)
+                    # robust outlier clip around the median (tune k if you like)
                     k = 2.0  # 2-4 is typical. 2 is stricter
                     med = np.median(t1s)
                     mad = np.median(np.abs(t1s - med))
@@ -334,17 +334,17 @@ class T1HistCumulErrPlots:
                     if t1s.size == 0:
                         mu_1, std_1 = np.nan, np.nan
                     else:
-                        # 2) compute weights and weighted mean/std
+                        # compute weights and weighted mean/std
                         err_floor = 1e-12
                         safe_errs = np.clip(errs, err_floor, np.inf)
 
-                        # your choice: 1/s
+                        # can also try 1/s^2
                         weights = 1.0 / safe_errs
 
                         w_sum = np.nansum(weights)
                         mu_1 = float(np.nansum(weights * t1s) / w_sum)
 
-                        # weighted variance (with your weights convention)
+                        # weighted variance (with chosen weights convention)
                         var = float(np.nansum(weights * (t1s - mu_1) ** 2) / w_sum)
                         std_1 = float(np.sqrt(max(var, 0.0)))
                 # --------------------------------------------------------------------------

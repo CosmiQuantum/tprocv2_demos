@@ -2587,18 +2587,18 @@ class PlotRR_noQick:
             # var = np.sum(weights * (temps - mu) ** 2) / np.sum(weights)
             # std = np.sqrt(var)
             #------------------------------------------------------------------------------------------------
-            # === Robust weighted summary (match your t1s/errs pattern) ===
+            # === Weighted mean with robust median-MAD clipping===
             temps = np.asarray(temp_vals, dtype=float)
             errs = np.asarray(temp_errs, dtype=float)
             n_counts = len(temps)
 
-            # 0) keep only finite pairs
+            # keep only finite pairs
             finite = np.isfinite(temps) & np.isfinite(errs)
             temps, errs = temps[finite], errs[finite]
             if temps.size == 0:
                 mu_1, std_1 = np.nan, np.nan
             else:
-                # 1) robust outlier clip around the median
+                # robust outlier clip around the median
                 k = 2.0  # 2-4  is typical; lower = stricter
                 med = np.median(temps)
                 mad = np.median(np.abs(temps - med))
@@ -2610,7 +2610,7 @@ class PlotRR_noQick:
                 if temps.size == 0:
                     mu_1, std_1 = np.nan, np.nan
                 else:
-                    # 2) compute weights and weighted mean/std (using 1/err)
+                    # compute weights and weighted mean/std (using 1/err)
                     err_floor = 1e-12
                     safe_errs = np.clip(errs, err_floor, np.inf)
                     weights = 1.0 / safe_errs

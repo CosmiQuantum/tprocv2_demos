@@ -278,13 +278,13 @@ class T2eHistCumulErrPlots:
                 errs = np.asarray(t2e_errs[i], dtype=float)
                 n_counts = len(t2es)
 
-                # 0) keep only finite pairs
+                # keep only finite pairs
                 finite = np.isfinite(t2es) & np.isfinite(errs)
                 t2es, errs = t2es[finite], errs[finite]
                 if t2es.size == 0:
                     mu_1, std_1 = np.nan, np.nan
                 else:
-                    # 1) robust outlier clip around the median (tune k if you like)
+                    # robust outlier clip around the median (tune k if you like)
                     k = 2.0  # 2-4 is typical. 2 is stricter
                     med = np.median(t2es)
                     mad = np.median(np.abs(t2es - med))
@@ -298,17 +298,17 @@ class T2eHistCumulErrPlots:
                     if t2es.size == 0:
                         mu_1, std_1 = np.nan, np.nan
                     else:
-                        # 2) compute weights and weighted mean/std
+                        # compute weights and weighted mean/std
                         err_floor = 1e-12
                         safe_errs = np.clip(errs, err_floor, np.inf)
 
-                        # your choice: 1/s
+                        # can also do 1/s^2
                         weights = 1.0 / safe_errs
 
                         w_sum = np.nansum(weights)
                         mu_1 = float(np.nansum(weights * t2es) / w_sum)
 
-                        # weighted variance (with your weights convention)
+                        # weighted variance (with chosen weights convention)
                         var = float(np.nansum(weights * (t2es - mu_1) ** 2) / w_sum)
                         std_1 = float(np.sqrt(max(var, 0.0)))
                 # --------------------------------------------------------------------------

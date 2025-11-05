@@ -5,14 +5,14 @@ import numpy as np
 # Run 3 with qubits (QUIET run 6), and Run 4 with qubits (QUIET run 7).
 
 qubit_temps = [
-    [192.58, 186.2, 111.01],  # Qubit 1
-    [289.7, 98.36, 117.45],  # Qubit 2
-    [177.1, 131.18, 111.01],  # Qubit 3, 110
-    [346.95, 144.01, 123.55],  # Qubit 4, 195
-    [181.27, 114.04, 121.76],  # Qubit 5
-    [227.82, 120.45, 103.69]   # Qubit 6
+    [200.97, 137.11, 107.33, 86.23],  # Qubit 1
+    [284.57, 98.12, 116.47, 85.74],  # Qubit 2
+    [172.77, 128.65, 106.75, 100.94],  # Qubit 3, 110
+    [337.99, 139.40, 118.88, 114.25],  # Qubit 4, 195
+    [176.2, 105.74, 106.84, 76.57],  # Qubit 5
+    [227.27, 111.6, 97.86, 83.16]   # Qubit 6
 ]
-runs = np.array([5, 6, 7])
+runs = np.array([5, 6, 7, 8])
 
 num_qubits = len(qubit_temps)
 num_runs =  len(qubit_temps[0])
@@ -49,7 +49,7 @@ for qubit_index, temps in enumerate(qubit_temps):
 plt.xlabel("Run Number")
 plt.ylabel("Average Effective Qubit Temperature (mK)")
 plt.title("Average Effective Qubit Temperature vs Run Number")
-plt.xticks(runs, ['Run 5\n(SSF Meas.)', 'Run 6\n(Rabi Pop. Meas.)', 'Run 7\n(Rabi Pop. Meas.)'])
+plt.xticks(runs, ['Run 5\n(SSF Meas.)', 'Run 6\n(Rabi Pop. Meas.)', 'Run 7\n(Rabi Pop. Meas.)', 'Run 8\n(Rabi Pop. Meas.)'])
 plt.yticks(np.arange(100, 351, 25))
 plt.legend()
 plt.grid(True)

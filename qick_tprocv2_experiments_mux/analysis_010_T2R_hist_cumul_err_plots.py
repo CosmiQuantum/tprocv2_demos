@@ -210,9 +210,9 @@ class T2rHistCumulErrPlots:
                             if T2 < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            if T2 > 100:
-                                print("The value is above 750us, bad fit, continuing...")
-                                continue
+                            # if T2 > 100:
+                            #     print("The value is above 750us, bad fit, continuing...")
+                            #     continue
                             #max_t1 = max(t1_vals[q_key]) all out T1s are less than this rn
                             # if T2 > 2*max_t1:
                             #     print(f"The value is above 2*{max_t1} us, this is a bad fit, continuing...")
@@ -280,13 +280,13 @@ class T2rHistCumulErrPlots:
                 errs = np.asarray(t2r_errs[i], dtype=float)
                 n_counts = len(t2rs)
 
-                # 0) keep only finite pairs
+                # keep only finite pairs
                 finite = np.isfinite(t2rs) & np.isfinite(errs)
                 t2rs, errs = t2rs[finite], errs[finite]
                 if t2rs.size == 0:
                     mu_1, std_1 = np.nan, np.nan
                 else:
-                    # 1) robust outlier clip around the median (tune k if you like)
+                    # robust outlier clip around the median (tune k if you like)
                     k = 2.0  # 2-4 is typical. 2 is stricter
                     med = np.median(t2rs)
                     mad = np.median(np.abs(t2rs - med))
@@ -300,17 +300,17 @@ class T2rHistCumulErrPlots:
                     if t2rs.size == 0:
                         mu_1, std_1 = np.nan, np.nan
                     else:
-                        # 2) compute weights and weighted mean/std
+                        # compute weights and weighted mean/std
                         err_floor = 1e-12
                         safe_errs = np.clip(errs, err_floor, np.inf)
 
-                        # your choice: 1/s
+                        # can also do 1/sigma^2
                         weights = 1.0 / safe_errs
 
                         w_sum = np.nansum(weights)
                         mu_1 = float(np.nansum(weights * t2rs) / w_sum)
 
-                        # weighted variance (with your weights convention)
+                        # weighted variance (with chosen weights convention)
                         var = float(np.nansum(weights * (t2rs - mu_1) ** 2) / w_sum)
                         std_1 = float(np.sqrt(max(var, 0.0)))
                 # --------------------------------------------------------------------------
