@@ -1,17 +1,27 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Each sublist corresponds to a qubit, and contains temperatures from Run 2 with qubits (QUIET run 5), Run 3 with qubits (QUIET run 6),
-# Run 3 with qubits (QUIET run 6), and Run 4 with qubits (QUIET run 7).
+show_text = False
+colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
 
 qubit_temps = [
     [200.97, 137.11, 107.33, 86.23],  # Qubit 1
     [284.57, 98.12, 116.47, 85.74],  # Qubit 2
-    [172.77, 128.65, 106.75, 100.94],  # Qubit 3, 110
-    [337.99, 139.40, 118.88, 114.25],  # Qubit 4, 195
+    [172.77, 128.65, 106.75, 100.94],  # Qubit 3,
+    [337.99, 139.40, 118.88, 114.25],  # Qubit 4,
     [176.2, 105.74, 106.84, 76.57],  # Qubit 5
     [227.27, 111.6, 97.86, 83.16]   # Qubit 6
 ]
+
+qtemp_errs = [
+    [10.27, 16.91, 5.57, 2.33],  # Qubit 1
+    [15.14, 6.64, 5.56, 3.01],  # Qubit 2
+    [7.46, 11.59, 3.47, 7.50],  # Qubit 3,
+    [19.08, 13.49, 5.45, 23.50],  # Qubit 4,
+    [6.14, 15.12, 10.05, 3.96],  # Qubit 5
+    [8.23, 11.83, 9.31, 14.49]   # Qubit 6
+]
+
 runs = np.array([5, 6, 7, 8])
 
 num_qubits = len(qubit_temps)
@@ -20,26 +30,34 @@ num_runs =  len(qubit_temps[0])
 plt.figure(figsize=(8, 6))
 
 # Add "Preliminary" text in the background
-plt.text(
-    0.5, 0.5, 'Preliminary',
-    fontsize=70,
-    color='lightgray',
-    ha='center',
-    va='center',
-    alpha=0.3,
-    rotation=45,
-    transform=plt.gca().transAxes,
-    zorder=0
-)
+if show_text:
+    plt.text(
+        0.5, 0.5, 'Preliminary',
+        fontsize=70,
+        color='lightgray',
+        ha='center',
+        va='center',
+        alpha=0.3,
+        rotation=45,
+        transform=plt.gca().transAxes,
+        zorder=0
+    )
 
-# Use a colormap to assign a unique color to each qubit
-colors = plt.get_cmap('tab10')  # or 'Set1', 'tab20', etc.
-show_text = False
 for qubit_index, temps in enumerate(qubit_temps):
     temps_array = np.array(temps, dtype=np.float64)
-    color = colors(qubit_index % 10)  # wrap around if >10 qubits
+    errs_array = np.array(qtemp_errs[qubit_index], dtype=np.float64)
+    color = colors[qubit_index % len(colors)]
 
-    plt.plot(runs, temps_array, marker='o', label=f"Qubit {qubit_index + 1}", color=color)
+    plt.errorbar(
+        runs, temps_array,
+        yerr=errs_array,
+        fmt='-o',
+        color=color,
+        capsize=3,
+        elinewidth=1,
+        label=f"Qubit {qubit_index + 1}",
+        zorder=2
+    )
 
     if show_text:
         for x, y in zip(runs, temps_array):
