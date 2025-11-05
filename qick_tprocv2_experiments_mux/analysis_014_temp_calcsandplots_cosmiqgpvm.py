@@ -8,8 +8,8 @@ from sklearn.mixture import GaussianMixture
 import os
 from scipy.stats import norm
 sys.path.insert(0, os.path.abspath("/home/quietuser/Documents/GitHub/QICK_Qubit_LabSuite/src"))
-# from qicklab.analysis.qspec import AnaQSpec
-# from qicklab.analysis.ssf import AnaSSF
+from qicklab.analysis.qspec import AnaQSpec
+from qicklab.analysis.ssf import AnaSSF
 
 from matplotlib.ticker import MaxNLocator
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
@@ -789,18 +789,50 @@ class SSFTempCalcAndPlots:
             temps = np.asarray(temp_vals, dtype=float)
             errs = np.asarray(temp_errs, dtype=float)
 
-            # --- Weighted mean/std (same recipe as RPMs) ---
-            err_floor = 1e-12
-            safe_errs = np.clip(errs, err_floor, np.inf)
-            # clip tiny errors (robustness)
-            low_clip_percentile = 1.0
-            clip_threshold = np.nanpercentile(safe_errs, low_clip_percentile)
-            safe_errs = np.maximum(safe_errs, clip_threshold)
-            weights = 1.0 / (safe_errs ** 2)
+            # # --- Weighted mean/std (same recipe as RPMs) ---
+            # err_floor = 1e-12
+            # safe_errs = np.clip(errs, err_floor, np.inf)
+            # # clip tiny errors (robustness)
+            # low_clip_percentile = 1.0
+            # clip_threshold = np.nanpercentile(safe_errs, low_clip_percentile)
+            # safe_errs = np.maximum(safe_errs, clip_threshold)
+            # weights = 1.0 / (safe_errs ** 2)
+            #
+            # mu = np.sum(weights * temps) / np.sum(weights)
+            # var = np.sum(weights * (temps - mu) ** 2) / np.sum(weights)
+            # std = np.sqrt(var)
 
-            mu = np.sum(weights * temps) / np.sum(weights)
-            var = np.sum(weights * (temps - mu) ** 2) / np.sum(weights)
-            std = np.sqrt(var)
+            # === Robust weighted summary (match your t1s/errs pattern) ===
+            n_counts = len(temps)
+
+            # 0) keep only finite pairs
+            finite = np.isfinite(temps) & np.isfinite(errs)
+            temps, errs = temps[finite], errs[finite]
+            if temps.size == 0:
+                mu_1, std_1 = np.nan, np.nan
+            else:
+                # 1) robust outlier clip around the median
+                k = 2.0  # 2-4  is typical; lower = stricter
+                med = np.median(temps)
+                mad = np.median(np.abs(temps - med))
+                if mad == 0:
+                    mad = max(np.std(temps), 1e-12)
+                keep = np.abs(temps - med) < k * mad
+                temps, errs = temps[keep], errs[keep]
+
+                if temps.size == 0:
+                    mu_1, std_1 = np.nan, np.nan
+                else:
+                    # 2) compute weights and weighted mean/std (using 1/err)
+                    err_floor = 1e-12
+                    safe_errs = np.clip(errs, err_floor, np.inf)
+                    weights = 1.0 / safe_errs
+
+                    w_sum = np.nansum(weights)
+                    mu_1 = float(np.nansum(weights * temps) / w_sum)
+
+                    var = float(np.nansum(weights * (temps - mu_1) ** 2) / w_sum)
+                    std_1 = float(np.sqrt(max(var, 0.0)))
 
             # --- Histogram (raw counts) ---
             ax = plt.subplot(2, 3, q + 1)
@@ -816,13 +848,13 @@ class SSFTempCalcAndPlots:
 
             # --- Weighted Gaussian overlay, area-matched to histogram ---
             x_vals = np.linspace(temps.min(), temps.max(), 400)
-            pdf_vals = norm.pdf(x_vals, mu, std)
+            pdf_vals = norm.pdf(x_vals, mu_1, std_1)
             scale_factor = len(temps) * bin_width  # area-match
             scaled_pdf = pdf_vals * scale_factor
             ax.plot(x_vals, scaled_pdf, linestyle='--', linewidth=2,
                     color='black', label='Weighted Gaussian fit')
 
-            ax.set_title(f"Qubit {q + 1}  µ={mu:.2f} mK,  s={std:.2f} mK")
+            ax.set_title(f"Q{q + 1}  µ={mu_1:.2f} mK,  s={std_1:.2f} mK, c: {n_counts}")
             ax.set_xlabel("Temperature (mK)")
             ax.set_ylabel("Count")
             ax.grid(alpha=0.3)

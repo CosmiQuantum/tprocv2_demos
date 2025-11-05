@@ -216,9 +216,9 @@ class T1HistCumulErrPlots:
                             if T1 < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            # if T1 > 400:
-                            #     print("The value is above 750us us, this is a bad fit, continuing...")
-                            #     continue
+                            if T1 > 1000:
+                                print("The value is above 750us us, this is a bad fit, continuing...")
+                                continue
                             # if T1_err >= 0.8 * T1:
                             #     print(
                             #         f"Skipping T1 = {T1:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
@@ -410,7 +410,7 @@ class T1HistCumulErrPlots:
                 ax.tick_params(axis='both', which='major', labelsize=font)
 
         plt.tight_layout()
-        plt.savefig( analysis_folder + f'hists{exp_extension}.png', transparent=False, dpi=self.final_figure_quality)
+        plt.savefig( analysis_folder + f'hists{exp_extension}.pdf', transparent=False, dpi=self.final_figure_quality)
 
 
         fig, ax = plt.subplots(1, 1, figsize=(12, 8))
@@ -439,7 +439,7 @@ class T1HistCumulErrPlots:
         #ax.set_xlim(10**0, 10**3)
         #ax.set_ylim(10 ** -7, 10 ** 0) #to compare to johns plot, need to adjust a little
         plt.tight_layout()
-        plt.savefig(analysis_folder + f'cumulative{exp_extension}.png', transparent=False, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + f'cumulative{exp_extension}.pdf', transparent=False, dpi=self.final_figure_quality)
 
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
         plt.title(f'{ext} Fit Error vs T1 Time',fontsize = font)
@@ -464,7 +464,7 @@ class T1HistCumulErrPlots:
             ax.set_ylabel('Fit error (us)', fontsize = font)
             ax.tick_params(axis='both', which='major', labelsize=font)
         plt.tight_layout()
-        plt.savefig(analysis_folder + f'errs{exp_extension}.png', transparent=False, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + f'errs{exp_extension}.pdf', transparent=False, dpi=self.final_figure_quality)
 
         #plt.show()
         print('Plots saved to: ', analysis_folder)

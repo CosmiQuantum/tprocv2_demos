@@ -188,9 +188,9 @@ class T2eHistCumulErrPlots:
                             if T2E < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            # if T2E > 400:
-                            #     print("The value is above 750us, bad fit, continuing...")
-                            #     continue
+                            if T2E > 100:
+                                print("The value is above 750us, bad fit, continuing...")
+                                continue
                             # max_t1 = max(t1_vals[q_key])
                             # if T2E > 2 * max_t1:
                             #     print(f"The value is above 2*{max_t1} us, this is a bad fit, continuing...")

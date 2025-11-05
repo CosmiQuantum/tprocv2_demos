@@ -42,7 +42,7 @@ save_figs = True
 fit_saved = True
 show_legends = False
 signal = 'None'
-run_number = 5
+run_number = 4
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 saved_shots_t1ge = False
@@ -183,7 +183,7 @@ elif run_number == 5:
     plots_path = data_path
 
     # all dates:
-    top_folder_dates = [
+    top_folder_dates = [ # Condensing started 12/8/2024
                         "2024-12-09",
                         "2024-12-10",
                         "2024-12-11",
