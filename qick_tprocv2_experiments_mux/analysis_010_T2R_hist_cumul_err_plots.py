@@ -211,9 +211,9 @@ class T2rHistCumulErrPlots:
                                 print("The value is negative, continuing...")
                                 continue
                             max_t1 = 150 #max(t1_vals[q_key]) all out T1s are less than this rn
-                            if T2 > 2*max_t1:
-                                print(f"The value is above 2*{max_t1} us, this is a bad fit, continuing...")
-                                continue
+                            # if T2 > 2*max_t1:
+                            #     print(f"The value is above 2*{max_t1} us, this is a bad fit, continuing...")
+                            #     continue
                             t2r_vals[q_key].extend([T2])  # Store T1 values
                             t2r_errs[q_key].extend([T2_err])  # Store T1 error values
                             dates[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])  # Decode bytes to string
@@ -234,7 +234,7 @@ class T2rHistCumulErrPlots:
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
         axes = axes.flatten()
         font = 14
-        titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
+        titles = [f"Q{i+1}" for i in range(self.number_of_qubits)]
         gaussian_xvals =  {i: [] for i in range(0, self.number_of_qubits)}
         gaussian_yvals =  {i: [] for i in range(0, self.number_of_qubits)}
         gaussian_colors = {i: [] for i in range(0, self.number_of_qubits)}
@@ -256,10 +256,61 @@ class T2rHistCumulErrPlots:
                 # get the mean and standard deviation of the data
                 # mu_1, std_1 = norm.fit(t2r_vals[i])
 
-                #------------------------
-                # Compute robust mean and std
-                mu_1, std_1 = self.huber_mean_std(t2r_vals[i], t2r_errs[i])
-                #-----------------------------
+                # # NEW: WEIGHTED MEANS -------------------------------------------------
+                # # Weighted Gaussian fit (using inverse-variance weights), per-qubit i
+                # t2s = np.asarray(t2r_vals[i], dtype=float)
+                # errs = np.asarray(t2r_errs[i], dtype=float)
+                #
+                # # avoiding infinite weights and NaN pollution
+                # err_floor = 1e-12
+                # safe_errs = np.clip(errs, err_floor, np.inf)
+                # # weights = 1.0 / (safe_errs ** 2)
+                # weights = 1.0 / (safe_errs)
+                #
+                # w_sum = np.nansum(weights)
+                # mu_1 = float(np.nansum(weights * t2s) / w_sum)
+                # var = float(np.nansum(weights * (t2s - mu_1) ** 2) / w_sum)
+                # std_1 = float(np.sqrt(max(var, 0.0)))
+                # # ---------------------------------------------------------------------
+                # --- Weighted mean with robust median-MAD clipping ------------------------
+                t2rs = np.asarray(t2r_vals[i], dtype=float)
+                errs = np.asarray(t2r_errs[i], dtype=float)
+                n_counts = len(t2rs)
+
+                # 0) keep only finite pairs
+                finite = np.isfinite(t2rs) & np.isfinite(errs)
+                t2rs, errs = t2rs[finite], errs[finite]
+                if t2rs.size == 0:
+                    mu_1, std_1 = np.nan, np.nan
+                else:
+                    # 1) robust outlier clip around the median (tune k if you like)
+                    k = 2.0  # 2-4 is typical. 2 is stricter
+                    med = np.median(t2rs)
+                    mad = np.median(np.abs(t2rs - med))
+                    # fallback if MAD is zero (all equal or super-tight); use small epsilon
+                    if mad == 0:
+                        mad = max(np.std(t2rs), 1e-12)
+                    keep = np.abs(t2rs - med) < k * mad
+
+                    t2rs, errs = t2rs[keep], errs[keep]
+
+                    if t2rs.size == 0:
+                        mu_1, std_1 = np.nan, np.nan
+                    else:
+                        # 2) compute weights and weighted mean/std
+                        err_floor = 1e-12
+                        safe_errs = np.clip(errs, err_floor, np.inf)
+
+                        # your choice: 1/s
+                        weights = 1.0 / safe_errs
+
+                        w_sum = np.nansum(weights)
+                        mu_1 = float(np.nansum(weights * t2rs) / w_sum)
+
+                        # weighted variance (with your weights convention)
+                        var = float(np.nansum(weights * (t2rs - mu_1) ** 2) / w_sum)
+                        std_1 = float(np.sqrt(max(var, 0.0)))
+                # --------------------------------------------------------------------------
 
                 mean_values[f"Qubit {i + 1}"] = mu_1  # Store the mean value for each qubit
                 std_values[f"Qubit {i + 1}"] = std_1
@@ -315,7 +366,7 @@ class T2rHistCumulErrPlots:
                 #ax.errorbar(bin_centers, counts, yerr=bin_errors, fmt='o', color='red', ecolor='black', capsize=3, linestyle='None')
                 if show_legends:
                     ax.legend()
-                ax.set_title(titles[i] + f"Weighted $\mu$: {mu_1:.2f} $\sigma$:{std_1:.2f}",fontsize = font)
+                ax.set_title(titles[i] + f"Weighted $\mu$: {mu_1:.2f} $\sigma$:{std_1:.2f}, c: {n_counts}",fontsize = font)
                 ax.set_xlabel('T2R (µs)',fontsize = font)
                 ax.set_ylabel('Frequency',fontsize = font)
                 ax.tick_params(axis='both', which='major', labelsize=font)
@@ -351,8 +402,6 @@ class T2rHistCumulErrPlots:
         plt.tight_layout()
         plt.savefig(analysis_folder + 'cumulative.pdf', transparent=True, dpi=self.final_figure_quality)
 
-
-
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
         plt.title('Fit Error vs T2R Time',fontsize = font)
         axes = axes.flatten()
@@ -377,48 +426,3 @@ class T2rHistCumulErrPlots:
 
         return std_values, mean_values
 
-    def huber_mean_std(self, x, err=None, max_iter=20, tol=1e-6, c=1.5):
-        """
-        Robust Huber mean and standard deviation estimate.
-        Returns (mu, robust_std)
-
-        x (array-like): your data values (for example, all T2R values for one qubit).
-        err (optional array-like): corresponding uncertainties for each data point.
-        max_iter (int, default = 20): maximum number of iterations for convergence of the robust
-        Huber weighting loop. You rarely need to change it.
-        tol (float, default = 1e-6): relative tolerance for stopping criterion.
-        c (float, default = 1.345): the Huber tuning constant; smaller is more robust (less influence of outliers),
-        larger is closer to a normal mean.
-        """
-        x = np.asarray(x, float)
-        mask = np.isfinite(x)
-        x = x[mask]
-        if len(x) < 3:
-            return np.nan, np.nan
-
-        if err is None:
-            w0 = np.ones_like(x, float)
-        else:
-            e = np.asarray(err, float)[mask]
-            e = np.clip(e, 1e-12, np.inf)
-            w0 = 1.0 / (e ** 2)
-
-        med = np.median(x)
-        s = 1.4826 * np.median(np.abs(x - med))
-        if not np.isfinite(s) or s <= 0:
-            s = np.std(x) if np.std(x) > 0 else 1.0
-
-        mu = np.average(x, weights=w0)
-        for _ in range(max_iter):
-            r = (x - mu) / s
-            w = np.where(np.abs(r) <= c, 1.0, c / np.abs(r))
-            w = w * w0
-            mu_new = np.sum(w * x) / np.sum(w)
-            if np.abs(mu_new - mu) < tol * max(1.0, np.abs(mu)):
-                mu = mu_new
-                break
-            mu = mu_new
-
-        # robust scale estimate (similar to weighted MAD)
-        robust_std = 1.4826 * np.median(np.abs(x - mu))
-        return mu, robust_std

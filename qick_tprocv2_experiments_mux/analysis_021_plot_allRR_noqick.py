@@ -2526,7 +2526,7 @@ class PlotRR_noQick:
         plt.suptitle("Qubit Temperature Histograms", fontsize=font)
 
         # Titles for each subplot
-        titles = [f"Qubit {i + 1}" for i in range(num_qubits)]
+        titles = [f"Q{i + 1}" for i in range(num_qubits)]
 
         # From Gaussian fit
         mean_values = {}
@@ -2548,7 +2548,7 @@ class PlotRR_noQick:
                 # skip if either is missing or relative error is larger than threshold
                 if T_mK is None or T_err is None:
                     continue
-                if T_mK > 1000: # huge outliers that ruin plots and are not accurate
+                if T_mK > 750: # huge outliers that ruin plots and are not accurate
                     continue
                 # if T_err / T_mK >= rel_err_cutoff: # rel_err_cutoff is a decimal (0.8 = a relative error of 80% and so forth)
                 #     continue
@@ -2566,30 +2566,64 @@ class PlotRR_noQick:
             # mean_values[f"Qubit {i + 1}"] = mu
             # std_values[f"Qubit {i + 1}"] = std
 
-            # Inverse-variance weighted average ---------------------------------------------
-            # Weighted Gaussian fit (using inverse-variance weights)
-            temps = np.asarray(temp_vals)
-            errs = np.asarray(temp_errs)
+            # # Inverse-variance weighted average ---------------------------------------------
+            # # Weighted Gaussian fit (using inverse-variance weights)
+            # temps = np.asarray(temp_vals)
+            # errs = np.asarray(temp_errs)
+            #
+            # # avoiding infinite weights and NaN pollution
+            # err_floor = 1e-12
+            # safe_errs = np.clip(errs, err_floor, np.inf)
+            #
+            # # Further clip extremely small errors (e.g. below the 1st percentile)
+            # low_clip_percentile = 1.0  # adjust if needed
+            # clip_threshold = np.nanpercentile(safe_errs, low_clip_percentile)
+            # safe_errs = np.maximum(safe_errs, clip_threshold)
+            #
+            # weights = 1.0 / (safe_errs ** 2)
+            #
+            # # Weighted mean and variance maximum-likelihood estimate assuming Gaussian noise
+            # mu = np.sum(weights * temps) / np.sum(weights)
+            # var = np.sum(weights * (temps - mu) ** 2) / np.sum(weights)
+            # std = np.sqrt(var)
+            #------------------------------------------------------------------------------------------------
+            # === Robust weighted summary (match your t1s/errs pattern) ===
+            temps = np.asarray(temp_vals, dtype=float)
+            errs = np.asarray(temp_errs, dtype=float)
+            n_counts = len(temps)
 
-            # avoiding infinite weights and NaN pollution
-            err_floor = 1e-12
-            safe_errs = np.clip(errs, err_floor, np.inf)
+            # 0) keep only finite pairs
+            finite = np.isfinite(temps) & np.isfinite(errs)
+            temps, errs = temps[finite], errs[finite]
+            if temps.size == 0:
+                mu_1, std_1 = np.nan, np.nan
+            else:
+                # 1) robust outlier clip around the median
+                k = 2.0  # 2-4  is typical; lower = stricter
+                med = np.median(temps)
+                mad = np.median(np.abs(temps - med))
+                if mad == 0:
+                    mad = max(np.std(temps), 1e-12)
+                keep = np.abs(temps - med) < k * mad
+                temps, errs = temps[keep], errs[keep]
 
-            # Further clip extremely small errors (e.g. below the 1st percentile)
-            low_clip_percentile = 1.0  # adjust if needed
-            clip_threshold = np.nanpercentile(safe_errs, low_clip_percentile)
-            safe_errs = np.maximum(safe_errs, clip_threshold)
+                if temps.size == 0:
+                    mu_1, std_1 = np.nan, np.nan
+                else:
+                    # 2) compute weights and weighted mean/std (using 1/err)
+                    err_floor = 1e-12
+                    safe_errs = np.clip(errs, err_floor, np.inf)
+                    weights = 1.0 / safe_errs
 
-            weights = 1.0 / (safe_errs ** 2)
+                    w_sum = np.nansum(weights)
+                    mu_1 = float(np.nansum(weights * temps) / w_sum)
 
-            # Weighted mean and variance maximum-likelihood estimate assuming Gaussian noise
-            mu = np.sum(weights * temps) / np.sum(weights)
-            var = np.sum(weights * (temps - mu) ** 2) / np.sum(weights)
-            std = np.sqrt(var)
+                    var = float(np.nansum(weights * (temps - mu_1) ** 2) / w_sum)
+                    std_1 = float(np.sqrt(max(var, 0.0)))
 
-            mean_values[f"Qubit {i + 1}"] = mu
-            std_values[f"Qubit {i + 1}"] = std
-            # -------------------------------------------------------------------------------
+
+                mean_values[f"Qubit {i + 1}"] = mu_1
+                std_values[f"Qubit {i + 1}"] = std_1
 
             # --- Histogram in raw counts ---
             optimal_bin_num = 45
@@ -2599,7 +2633,7 @@ class PlotRR_noQick:
 
             # --- Weighted Gaussian curve ---
             x_vals = np.linspace(min(temp_vals), max(temp_vals), 400)
-            pdf_vals = norm.pdf(x_vals, mu, std)
+            pdf_vals = norm.pdf(x_vals, mu_1, std_1)
 
             # # Scale the Gaussian so its peak matches the histogram's maximum height
             # scale_factor = np.max(hist_data) / np.max(pdf_vals)
@@ -2615,7 +2649,7 @@ class PlotRR_noQick:
             ax.plot(x_vals, scaled_pdf, linestyle='--', linewidth=2,
                     color='black', label=f"Weighted Gaussian fit")
 
-            ax.set_title(f"{titles[i]}  µ={mu:.2f} mK,  s={std:.2f} mK", fontsize=font)
+            ax.set_title(f"{titles[i]}  µ={mu_1:.2f} mK,  s={std_1:.2f} mK, c: {n_counts}", fontsize=font)
             ax.set_xlabel("Temperature (mK)", fontsize=font)
             ax.set_ylabel("Counts", fontsize=font)
             # ax.legend(fontsize=font - 2)

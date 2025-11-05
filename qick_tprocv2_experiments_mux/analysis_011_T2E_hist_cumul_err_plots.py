@@ -1,3 +1,5 @@
+
+
 import numpy as np
 import os
 import sys
@@ -107,7 +109,7 @@ class T2eHistCumulErrPlots:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run(self, t1_vals):
+    def run(self, t1_vals = None):
         # ----------Load/get data from T2E------------------------
         t2e_vals = {i: [] for i in range(self.number_of_qubits)}
         t2e_errs = {i: [] for i in range(self.number_of_qubits)}
@@ -186,10 +188,10 @@ class T2eHistCumulErrPlots:
                             if T2E < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            max_t1 = max(t1_vals[q_key])
-                            if T2E > 2 * max_t1:
-                                print(f"The value is above 2*{max_t1} us, this is a bad fit, continuing...")
-                                continue
+                            # max_t1 = max(t1_vals[q_key])
+                            # if T2E > 2 * max_t1:
+                            #     print(f"The value is above 2*{max_t1} us, this is a bad fit, continuing...")
+                            #     continue
 
                             t2e_vals[q_key].extend([T2E])  # Store T1 values
                             t2e_errs[q_key].extend([T2E_err])  # Store T1 error values
@@ -218,7 +220,7 @@ class T2eHistCumulErrPlots:
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
         axes = axes.flatten()
         font = 14
-        titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
+        titles = [f"Q{i+1}" for i in range(self.number_of_qubits)]
         gaussian_xvals =  {i: [] for i in range(0, self.number_of_qubits)}
         gaussian_yvals =  {i: [] for i in range(0, self.number_of_qubits)}
         gaussian_colors = {i: [] for i in range(0, self.number_of_qubits)}
@@ -253,21 +255,60 @@ class T2eHistCumulErrPlots:
                 # get the mean and standard deviation of the data
                 # mu_1, std_1 = norm.fit(t2e_vals[i])
 
-                # NEW: WEIGHTED MEANS -------------------------------------------------
-                # Weighted Gaussian fit (using inverse-variance weights), per-qubit i
+                # # NEW: WEIGHTED MEANS -------------------------------------------------
+                # # Weighted Gaussian fit (using inverse-variance weights), per-qubit i
+                # t2es = np.asarray(t2e_vals[i], dtype=float)
+                # errs = np.asarray(t2e_errs[i], dtype=float)
+                #
+                # # avoiding infinite weights and NaN pollution
+                # err_floor = 1e-12
+                # safe_errs = np.clip(errs, err_floor, np.inf)
+                # weights = 1.0 / (safe_errs ** 2)
+                #
+                # w_sum = np.nansum(weights)
+                # mu_1 = float(np.nansum(weights * t2es) / w_sum)
+                # var = float(np.nansum(weights * (t2es - mu_1) ** 2) / w_sum)
+                # std_1 = float(np.sqrt(max(var, 0.0)))
+                # # ---------------------------------------------------------------------
+                # --- Weighted mean with robust median-MAD clipping ------------------------
                 t2es = np.asarray(t2e_vals[i], dtype=float)
                 errs = np.asarray(t2e_errs[i], dtype=float)
+                n_counts = len(t2es)
 
-                # avoiding infinite weights and NaN pollution
-                err_floor = 1e-12
-                safe_errs = np.clip(errs, err_floor, np.inf)
-                weights = 1.0 / (safe_errs ** 2)
+                # 0) keep only finite pairs
+                finite = np.isfinite(t2es) & np.isfinite(errs)
+                t2es, errs = t2es[finite], errs[finite]
+                if t2es.size == 0:
+                    mu_1, std_1 = np.nan, np.nan
+                else:
+                    # 1) robust outlier clip around the median (tune k if you like)
+                    k = 2.0  # 2-4 is typical. 2 is stricter
+                    med = np.median(t2es)
+                    mad = np.median(np.abs(t2es - med))
+                    # fallback if MAD is zero (all equal or super-tight); use small epsilon
+                    if mad == 0:
+                        mad = max(np.std(t2es), 1e-12)
+                    keep = np.abs(t2es - med) < k * mad
 
-                w_sum = np.nansum(weights)
-                mu_1 = float(np.nansum(weights * t2es) / w_sum)
-                var = float(np.nansum(weights * (t2es - mu_1) ** 2) / w_sum)
-                std_1 = float(np.sqrt(max(var, 0.0)))
-                # ---------------------------------------------------------------------
+                    t2es, errs = t2es[keep], errs[keep]
+
+                    if t2es.size == 0:
+                        mu_1, std_1 = np.nan, np.nan
+                    else:
+                        # 2) compute weights and weighted mean/std
+                        err_floor = 1e-12
+                        safe_errs = np.clip(errs, err_floor, np.inf)
+
+                        # your choice: 1/s
+                        weights = 1.0 / safe_errs
+
+                        w_sum = np.nansum(weights)
+                        mu_1 = float(np.nansum(weights * t2es) / w_sum)
+
+                        # weighted variance (with your weights convention)
+                        var = float(np.nansum(weights * (t2es - mu_1) ** 2) / w_sum)
+                        std_1 = float(np.sqrt(max(var, 0.0)))
+                # --------------------------------------------------------------------------
 
                 mean_values[f"Qubit {i + 1}"] = mu_1  # Store the mean value for each qubit
                 std_values[f"Qubit {i + 1}"] = std_1
@@ -323,7 +364,7 @@ class T2eHistCumulErrPlots:
                 #ax.errorbar(bin_centers, counts, yerr=bin_errors, fmt='o', color='red', ecolor='black', capsize=3, linestyle='None')
                 if show_legends:
                     ax.legend()
-                ax.set_title(titles[i] + f"Weighted $\mu$: {mu_1:.2f} $\sigma$:{std_1:.2f}",fontsize = font)
+                ax.set_title(titles[i] + f"Weighted $\mu$: {mu_1:.2f} $\sigma$:{std_1:.2f}, c: {n_counts}",fontsize = font)
                 ax.set_xlabel('T2E (µs)',fontsize = font)
                 ax.set_ylabel('Frequency',fontsize = font)
                 ax.tick_params(axis='both', which='major', labelsize=font)

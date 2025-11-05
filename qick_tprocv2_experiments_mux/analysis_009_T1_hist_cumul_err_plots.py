@@ -216,9 +216,9 @@ class T1HistCumulErrPlots:
                             if T1 < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            if T1 > 1000:
-                                print("The value is above 1000 us, this is a bad fit, continuing...")
-                                continue
+                            # if T1 > 1000:
+                            #     print("The value is above 1000 us, this is a bad fit, continuing...")
+                            #     continue
                             # if T1_err >= 0.8 * T1:
                             #     print(
                             #         f"Skipping T1 = {T1:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
@@ -261,7 +261,7 @@ class T1HistCumulErrPlots:
         ext = exp_extension.replace('_', '')
         font = 14
         plt.suptitle(f'{ext} T1 Values Binned', fontsize=font)
-        titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
+        titles = [f"Q{i+1}" for i in range(self.number_of_qubits)]
         gaussian_xvals =  {i: [] for i in range(self.number_of_qubits)}
         gaussian_yvals =  {i: [] for i in range(self.number_of_qubits)}
         gaussian_colors = {i: [] for i in range(self.number_of_qubits)}
@@ -292,22 +292,62 @@ class T1HistCumulErrPlots:
                 # get the mean and standard deviation of the data
                 # mu_1, std_1 = norm.fit(t1_vals[i])
 
-                # NEW: WEIGHTED MEANS -------------------------------------------------
-                # Weighted Gaussian fit (using inverse-variance weights), per-qubit i
+                # # NEW: WEIGHTED MEANS -------------------------------------------------
+                # # Weighted Gaussian fit (using inverse-variance weights), per-qubit i
+                # t1s = np.asarray(t1_vals[i], dtype=float)
+                # errs = np.asarray(t1_errs[i], dtype=float)
+                #
+                # # avoiding infinite weights and NaN pollution
+                # err_floor = 1e-12
+                # safe_errs = np.clip(errs, err_floor, np.inf)
+                # # weights = 1.0 / (safe_errs ** 2)
+                # weights = 1.0 / (safe_errs)
+                #
+                # w_sum = np.nansum(weights)
+                # mu_1 = float(np.nansum(weights * t1s) / w_sum)
+                # var = float(np.nansum(weights * (t1s - mu_1) ** 2) / w_sum)
+                # std_1 = float(np.sqrt(max(var, 0.0)))
+                # # ---------------------------------------------------------------------
+                # --- Weighted mean with robust median-MAD clipping ------------------------
                 t1s = np.asarray(t1_vals[i], dtype=float)
                 errs = np.asarray(t1_errs[i], dtype=float)
 
-                # avoiding infinite weights and NaN pollution
-                err_floor = 1e-12
-                safe_errs = np.clip(errs, err_floor, np.inf)
-                # weights = 1.0 / (safe_errs ** 2)
-                weights = 1.0 / (safe_errs)
+                n_counts = len(t1s)
 
-                w_sum = np.nansum(weights)
-                mu_1 = float(np.nansum(weights * t1s) / w_sum)
-                var = float(np.nansum(weights * (t1s - mu_1) ** 2) / w_sum)
-                std_1 = float(np.sqrt(max(var, 0.0)))
-                # ---------------------------------------------------------------------
+                # 0) keep only finite pairs
+                finite = np.isfinite(t1s) & np.isfinite(errs)
+                t1s, errs = t1s[finite], errs[finite]
+                if t1s.size == 0:
+                    mu_1, std_1 = np.nan, np.nan
+                else:
+                    # 1) robust outlier clip around the median (tune k if you like)
+                    k = 2.0  # 2-4 is typical. 2 is stricter
+                    med = np.median(t1s)
+                    mad = np.median(np.abs(t1s - med))
+                    # fallback if MAD is zero (all equal or super-tight); use small epsilon
+                    if mad == 0:
+                        mad = max(np.std(t1s), 1e-12)
+                    keep = np.abs(t1s - med) < k * mad
+
+                    t1s, errs = t1s[keep], errs[keep]
+
+                    if t1s.size == 0:
+                        mu_1, std_1 = np.nan, np.nan
+                    else:
+                        # 2) compute weights and weighted mean/std
+                        err_floor = 1e-12
+                        safe_errs = np.clip(errs, err_floor, np.inf)
+
+                        # your choice: 1/s
+                        weights = 1.0 / safe_errs
+
+                        w_sum = np.nansum(weights)
+                        mu_1 = float(np.nansum(weights * t1s) / w_sum)
+
+                        # weighted variance (with your weights convention)
+                        var = float(np.nansum(weights * (t1s - mu_1) ** 2) / w_sum)
+                        std_1 = float(np.sqrt(max(var, 0.0)))
+                # --------------------------------------------------------------------------
 
                 mean_values[f"Qubit {i + 1}"] = mu_1  # Store the mean value for each qubit
                 std_values[f"Qubit {i + 1}"] = std_1  # Store the standard deviation value for each qubit
@@ -364,7 +404,7 @@ class T1HistCumulErrPlots:
 
                 if show_legends:
                     ax.legend()
-                ax.set_title(titles[i] + f" Weighted $\mu$: {mu_1:.2f} $\sigma$:{std_1:.2f}",fontsize = font)
+                ax.set_title(titles[i] + f" Weighted $\mu$: {mu_1:.2f} $\sigma$:{std_1:.2f}, c: {n_counts}",fontsize = font)
                 ax.set_xlabel('T1 (µs)',fontsize = font)
                 ax.set_ylabel('Frequency',fontsize = font)
                 ax.tick_params(axis='both', which='major', labelsize=font)
