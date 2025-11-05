@@ -62,6 +62,8 @@ class GEF_SingleShotProgram(AveragerProgramV2):
 
 # Separate g and e per each experiment defined.
 class SingleShotProgram_g(AveragerProgramV2):
+
+
     def _initialize(self, cfg):
         ro_chs = cfg['ro_ch']
         gen_ch = cfg['res_ch']
@@ -76,43 +78,44 @@ class SingleShotProgram_g(AveragerProgramV2):
         for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch)
 
+        # t = np.linspace(0, cfg['res_length'], int((cfg['res_length'])/0.026))
+        # QubitIndex = int(1)
+        # L_total = cfg['res_length']#[QubitIndex]
+        # res_sigma = cfg['res_length']/4#[QubitIndex] / 4
+        # alpha = 1.0
+        # Ltwo = 0.050
+        # print('before')
+        # idata = self.two_step_pulse(t, L_total, res_sigma, alpha, Ltwo)
+        # # print('after')
+        # qdata = np.zeros(len(idata))
+        # self.add_envelope(ch=qubit_ch, name="res_envelope", idata=idata, qdata=qdata)
+
+
         self.add_pulse(ch=gen_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
-                       mask=cfg["list_of_all_qubits"]  # [0, 1, 2, 3, 4, 5],
+                       mask=cfg["list_of_all_qubits"],
                        )
 
+        # self.add_pulse(ch=gen_ch, name="res_pulse",
+        #                style="arb",
+        #                envelope="res_envelope",
+        #                freq=cfg['res_freq_ge'],#[QubitIndex],
+        #                phase=cfg['res_phase'],#[QubitIndex],
+        #                gain=cfg['res_gain_ge'],#[QubitIndex],
+        #                )
+        # print('after')
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
 
-        self.add_gauss(ch=qubit_ch, name="geramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
 
         self.add_pulse(ch=qubit_ch, name="ge_pi_pulse",
                        style="arb",
-                       envelope="geramp",
+                       envelope="ramp",
                        freq=cfg['qubit_freq_ge'],
                        phase=cfg['qubit_phase'],
                        gain=cfg['pi_amp'],
                        )
-        self.add_gauss(ch=qubit_ch, name="eframp", sigma=cfg['sigma_ef'], length=cfg['sigma_ef'] * 4, even_length=False)
-
-        self.add_pulse(ch=qubit_ch, name="ef_pi_pulse",
-                       style="arb",
-                       envelope="eframp",
-                       freq=cfg['qubit_freq_ef'],
-                       phase=cfg['qubit_phase'],
-                       gain=cfg['pi_ef_amp'],
-                       )
-
-        self.add_gauss(ch=qubit_ch, name="fhramp", sigma=cfg['sigma_fh'], length=cfg['sigma_fh'] * 4, even_length=False)
-
-        self.add_pulse(ch=qubit_ch, name="fh_pi_pulse",
-                       style="arb",
-                       envelope="fhramp",
-                       freq=cfg['qubit_freq_fh'],
-                       phase=cfg['qubit_phase'],
-                       gain=cfg['pi_fh_amp'],
-                       )
-
 
         self.add_loop("shotloop", cfg["steps"])  # number of total shots
 
@@ -120,6 +123,7 @@ class SingleShotProgram_g(AveragerProgramV2):
         self.delay_auto(0.01)
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+        # self.delay_auto(1000.0)
         # relax delay ...
         # self.wait_auto(cfg['res_length'] + 0.2)
         # self.read_input(ro_ch=cfg['ro_ch'][0])
@@ -131,27 +135,31 @@ class SingleShotProgram_g(AveragerProgramV2):
         #
         # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
         #                    component='I',
-        #                    threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
+        #                    threshold=int(cfg['qubit_is_in_g_threshold'] * (cfg['res_length'] / 0.026)),
         #                    test=">=", label='skip everything')
         #
-        # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
-        #                    component='I',
-        #                    threshold=int(cfg['edge_of_f_state_threshold'] * (cfg['res_length'] / 0.026)),
-        #                    test=">=", label='ge pi')
+        # # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
+        # #                    component='I',
+        # #                    threshold=int(cfg['edge_of_f_state_threshold'] * (cfg['res_length'] / 0.026)),
+        # #                    test=">=", label='ge pi')
         #
+        # self.delay_auto(0)
         # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
         #                    component='I',
         #                    threshold=int(cfg['edge_of_h_state_threshold'] * (cfg['res_length'] / 0.026)),
-        #                    test=">=", label='ef pi')
-        #
+        #                    test="<", label='h to g')
+        # #
+        # # self.label('wait for relax')
+        # # self.delay_auto(1000.0)
+        # # #
+        # self.label('h to g')
+        # self.delay_auto(0)
         # self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi_pulse", t=0)
-        #
-        # self.label('ef pi')
+        # self.delay_auto(0)
         # self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)
-        # # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
-        #
-        # self.label('ge pi')
+        # self.delay_auto(0)
         # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
+        # self.delay_auto(0)
         # self.label('skip everything')
 
         #########################################################################################
@@ -216,36 +224,41 @@ class SingleShotProgram_e(AveragerProgramV2):
         self.delay_auto(0.0)
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+        # self.delay_auto(1000.0)
         ################ Active Reset #################################
-        self.wait_auto(cfg['res_length'])
-        self.delay_auto(cfg['res_length'] + 0.2)
-
-        self.read_and_jump(ro_ch=cfg['ro_ch'][1],
-                           component='I',
-                           threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
-                           test=">=", label='skip everything')
-
+        # self.wait_auto(cfg['res_length'])
+        # self.delay_auto(cfg['res_length'] + 0.2)
+        #
         # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
         #                    component='I',
-        #                    threshold=int(cfg['edge_of_f_state_threshold'] * (cfg['res_length'] / 0.026)),
-        #                    test=">=", label='ge pi')
+        #                    threshold=int(cfg['qubit_is_in_g_threshold'] * (cfg['res_length'] / 0.026)),
+        #                    test=">=", label='skip everything')
         #
+        # # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
+        # #                    component='I',
+        # #                    threshold=int(cfg['edge_of_f_state_threshold'] * (cfg['res_length'] / 0.026)),
+        # #                    test=">=", label='ge pi')
+        #
+        # self.delay_auto(0)
         # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
         #                    component='I',
         #                    threshold=int(cfg['edge_of_h_state_threshold'] * (cfg['res_length'] / 0.026)),
-        #                    test=">=", label='ef pi')
-
+        #                    test="<", label='h to g')
+        # #
+        # # self.label('wait for relax')
+        # # self.delay_auto(1000.0)
+        # # #
+        # self.label('h to g')
+        # self.delay_auto(0)
         # self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi_pulse", t=0)
-        #
-        # self.label('ef pi')
+        # self.delay_auto(0)
         # self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)
-        # # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
-        #
-        # self.label('ge pi')
-        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
-        self.label('skip everything')
+        # self.delay_auto(0)
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
+        # self.delay_auto(0)
+        # self.label('skip everything')
 
-        #########################################################################################
+    #########################################################################################
 
 
 class SingleShotProgram_f(AveragerProgramV2):
@@ -307,39 +320,73 @@ class SingleShotProgram_f(AveragerProgramV2):
         self.delay_auto(0.0)
         self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # play pulse
         self.delay_auto(0.0)
+
+        # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
+        # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+
+        # self.delay_auto(cfg['res_length'] * 1.25)
+
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
         ################ Active Reset #################################
-        self.wait_auto(cfg['res_length'])
-        self.delay_auto(cfg['res_length'] + 0.2)
+        # self.wait_auto(cfg['res_length'] * 1.25)
+        # self.delay_auto(cfg['res_length'] * 1.25)
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # play pulse
+        # self.delay_auto(0.0)
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play pulse
+        # self.delay_auto(0.0)
+        #
+        # self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi_pulse", t=0)  # play pulse
+        # self.delay_auto(0.0)
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # play pulse
+        # self.delay_auto(0.0)
+        #
+        #
+        # # self.delay_auto(cfg['res_length'] + 0.2)
+        # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
+        #                    component='I',
+        #                    threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
+        #                    test=">=", label='skip everything')
+        # self.delay_auto(0.0)
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
+        # self.label('skip everything')
 
-        self.read_and_jump(ro_ch=cfg['ro_ch'][1],
-                           component='I',
-                           threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
-                           test=">=", label='skip everything')
-
-        self.read_and_jump(ro_ch=cfg['ro_ch'][1],
-                           component='I',
-                           threshold=int(cfg['edge_of_h_state_threshold'] * (cfg['res_length'] / 0.026)),
-                           test=">=", label='ge pi')
+        ##############################################################
+        # self.wait_auto(cfg['res_length'])
+        # self.delay_auto(cfg['res_length'] + 0.2)
         #
         # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
         #                    component='I',
+        #                    threshold=int(cfg['qubit_is_in_g_threshold'] * (cfg['res_length'] / 0.026)),
+        #                    test=">=", label='skip everything')
+        #
+        # # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
+        # #                    component='I',
+        # #                    threshold=int(cfg['edge_of_f_state_threshold'] * (cfg['res_length'] / 0.026)),
+        # #                    test=">=", label='ge pi')
+        #
+        # self.delay_auto(0)
+        # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
+        #                    component='I',
         #                    threshold=int(cfg['edge_of_h_state_threshold'] * (cfg['res_length'] / 0.026)),
-        #                    test=">=", label='ef pi')
-
+        #                    test="<", label='h to g')
+        # #
+        # # self.label('wait for relax')
+        # # self.delay_auto(1000.0)
+        # # #
+        # self.label('h to g')
+        # self.delay_auto(0)
         # self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi_pulse", t=0)
-
-        # self.label('ef pi')
+        # self.delay_auto(0)
         # self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)
+        # self.delay_auto(0)
         # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
+        # self.delay_auto(0)
+        # self.label('skip everything')
 
-        self.label('ge pi')
-        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
-        self.label('skip everything')
 
-        #########################################################################################
+#########################################################################################
 
 
 class SingleShotProgram_h(AveragerProgramV2):
@@ -403,87 +450,65 @@ class SingleShotProgram_h(AveragerProgramV2):
         self.delay_auto(0.0)
         self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi_pulse", t=0)  # play pulse
         self.delay_auto(0.0)
+
+        # self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi_pulse", t=0)  # play pulse
+        # self.delay_auto(0.0)
+        # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
+        # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+
+        # self.delay_auto(cfg['res_length'] * 1.25)
+
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
         ################ Active Reset #################################
-        self.wait_auto(cfg['res_length'])
-        self.delay_auto(cfg['res_length'] + 0.2)
-
-        self.read_and_jump(ro_ch=cfg['ro_ch'][1],
-                           component='I',
-                           threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
-                           test=">=", label='skip everything')
-
-        # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
-        #                    component='I',
-        #                    threshold=int(cfg['edge_of_f_state_threshold'] * (cfg['res_length'] / 0.026)),
-        #                    test=">=", label='ge pi')
-
-        self.read_and_jump(ro_ch=cfg['ro_ch'][1],
-                           component='I',
-                           threshold=int(cfg['edge_of_h_state_threshold'] * (cfg['res_length'] / 0.026)),
-                           test="<", label='hf pi')
-        self.label('hf pi')
-        self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi_pulse", t=0)
-
-        # self.label('ef pi')
-        self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)
-        # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
-
-        # self.label('ge pi')
-        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
-        self.label('skip everything')
-
-        #########################################################################################
-
-        # self.wait_auto(cfg['res_length']  + 0.2)
-        # self.read_and_jump(ro_ch=cfg['ro_ch'][0],
-        #                    component='I',
-        #                    threshold=cfg['edge_of_e_state_threshold'],
-        #                    test=">=", label='skip everything')
+        # self.wait_auto(cfg['res_length'] * 1.25)
+        # self.delay_auto(cfg['res_length'] * 1.25)
+        #
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # play pulse
+        # self.delay_auto(0.0)
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play pulse
+        # self.delay_auto(0.0)
+        #
         # self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi_pulse", t=0)  # play pulse
         # self.delay_auto(0.0)
         # self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # play pulse
         # self.delay_auto(0.0)
-        # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play pulse
-        # self.label('skip everything')
-        # self.read_input(ro_ch=cfg['ro_ch'][0])
-        # self.write_dmem(addr=0, src='s_port_l')
-        # self.write_dmem(addr=1, src='s_port_h')
-        # self.delay_auto(cfg['res_length'] + 0.2)
-        # self.label("Readout and check conditions")
-        # # n = n + 1
-        # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
-        # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
         #
-        # # # Wait for readout to be completed
-        # self.wait_auto(cfg['res_length']  + 0.2)
-        # self.delay_auto(cfg['res_length'] + 0.2)
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play pulse
+        # self.delay_auto(0.0)
         # #
-        # # # Read from ro_ch buffer???
-        # # # print("cfg['ro_ch'][0])", cfg['ro_ch'][0])
-        # self.read_input(ro_ch=cfg['ro_ch'][0])
-        # self.write_dmem(addr=0, src='s_port_l')
-        # self.write_dmem(addr=1, src='s_port_h')
-        # #
-        # # # if whatever is read from ro_ch is greater or equal to threshold 1, skip to label('skip everything'))
-        # self.read_and_jump(ro_ch=cfg['ro_ch'][0],
+        # # self.wait_auto(cfg['res_length']*1.25)
+        # # self.delay_auto(cfg['res_length'] + 0.2)
+        # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
         #                    component='I',
-        #                    threshold=cfg['edge_of_e_state_threshold'],
+        #                    threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
+        #                    test=">=", label='skip everything')
+        # self.delay_auto(0.0)
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
+        # self.label('skip everything')
+        ################ Active Reset #################################
+        # self.wait_auto(cfg['res_length'])
+        # self.delay_auto(cfg['res_length'] + 0.2)
+        #
+        # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
+        #                    component='I',
+        #                    threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
         #                    test=">=", label='skip everything')
         #
-        # # if whatever is read from ro_ch is greater or equal to threshold 2 (between_g_and_e), go back to label("Readout and check conditions")
-        # # self.read_and_jump(ro_ch=cfg['ro_ch'][0],
+        # # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
         # #                    component='I',
-        # #                    threshold=cfg['edge_of_e_state_threshold'],
-        # #                    test=">=", label="Readout and check conditions")
-        # #
-        # # # print('playing pi in active to move e to g')
-        # # # Play a pi pulse if whatever is read from ro_ch is lesser than both thresholds 1 and 2
-        # self.pulse(ch=self.cfg["qubit_ch"], name="pi_pulse", t=0)  # play pulse pi
-        # # self.delay_auto()#(self.cfg['sigma'] * 4)  # ????
-        # self.jump("Readout and check conditions")
+        # #                    threshold=int(cfg['edge_of_h_state_threshold'] * (cfg['res_length'] / 0.026)),
+        # #                    test="<", label='hg')
+        # # self.delay_auto(1000.0)
+        # # self.label('hg')
+        # self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi_pulse", t=0)
+        # self.delay_auto(0.0)
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)
+        # self.delay_auto(0.0)
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
         # self.label('skip everything')
+
+        #########################################################################################
 
 
 class SingleShot_ef:
@@ -627,8 +652,8 @@ class SingleShot_ef:
             fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(16, 4))
             fig.tight_layout()
 
-            axs[0].scatter(ig, qg, label='g', color='b', marker='*', alpha=0.2)
-            axs[0].scatter(ie, qe, label='e', color='r', marker='*', alpha=0.2)
+            # axs[0].scatter(ig, qg, label='g', color='b', marker='*', alpha=0.2)
+            # axs[0].scatter(ie, qe, label='e', color='r', marker='*', alpha=0.2)
             axs[0].scatter(i_f, qf, label='f', color='g', marker='*', alpha=0.2)
             axs[0].scatter(ih, qh, label='h', color='y', marker='*', alpha=0.2)
 
@@ -645,9 +670,9 @@ class SingleShot_ef:
             axs[0].set_xlabel('I (a.u.)')
             axs[0].set_ylabel('Q (a.u.)')
             axs[0].legend(loc='upper right')
-            axs[0].axvline(x=-360)
-            axs[0].axvline(x=-430)
-            axs[0].axvline(x=-480)
+            # axs[0].axvline(x=-400)
+            # axs[0].axvline(x=-430)
+            # axs[0].axvline(x=-550)
 
 
         """Compute the rotation angle"""
@@ -659,16 +684,16 @@ class SingleShot_ef:
         theta_gh = -np.arctan2((yh - yg), (xh - xg))
 
         """Rotate the IQ data"""
-        ig_new = ig * np.cos(theta_gh) - qg * np.sin(theta_gh)
-        qg_new = ig * np.sin(theta_gh) + qg * np.cos(theta_gh)
-        ie_new = ie * np.cos(theta_ef) - qe * np.sin(theta_ef)
-        qe_new = ie * np.sin(theta_ef) + qe * np.cos(theta_ef)
+        ig_new = ig * np.cos(theta_fh) - qg * np.sin(theta_fh)
+        qg_new = ig * np.sin(theta_fh) + qg * np.cos(theta_fh)
+        ie_new = ie * np.cos(theta_fh) - qe * np.sin(theta_fh)
+        qe_new = ie * np.sin(theta_fh) + qe * np.cos(theta_fh)
 
-        if_new = i_f * np.cos(theta_ef) - qf * np.sin(theta_ef)
-        qf_new = i_f * np.sin(theta_ef) + qf * np.cos(theta_ef)
+        if_new = i_f * np.cos(theta_fh) - qf * np.sin(theta_fh)
+        qf_new = i_f * np.sin(theta_fh) + qf * np.cos(theta_fh)
 
-        ih_new = ih * np.cos(theta_gh) - qh * np.sin(theta_gh)
-        qh_new = ih * np.sin(theta_gh) + qh * np.cos(theta_gh)
+        ih_new = ih * np.cos(theta_fh) - qh * np.sin(theta_fh)
+        qh_new = ih * np.sin(theta_fh) + qh * np.cos(theta_fh)
 
         """New means of each blob"""
         xg, yg = np.median(ig_new), np.median(qg_new)
@@ -681,8 +706,8 @@ class SingleShot_ef:
         xlims = [np.min(ig_new), np.max(ih_new)]
 
         if plot == True:
-            axs[1].scatter(ig_new, qg_new, label='g', color='b', marker='*', alpha=0.2)
-            axs[1].scatter(ie_new, qe_new, label='e', color='r', marker='*', alpha=0.2)
+            # axs[1].scatter(ig_new, qg_new, label='g', color='b', marker='*', alpha=0.2)
+            # axs[1].scatter(ie_new, qe_new, label='e', color='r', marker='*', alpha=0.2)
             axs[1].scatter(if_new, qf_new, label='f', color='g', marker='*', alpha=0.2)
             axs[1].scatter(ih_new, qh_new, label='h', color='y', marker='*', alpha=0.2)
             axs[1].scatter(xg, yg, color='k', marker='o')

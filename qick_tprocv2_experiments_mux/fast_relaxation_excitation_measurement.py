@@ -90,7 +90,9 @@ forego_excitation_measurement = False
 fastrelex_keys = ['Dates', 'I', 'Q', 'Round Num', 'Batch Num', 'Exp Config', 'Syst Config']
 
 
-
+log_file = os.path.join(studyDocumentationFolder, "RR_script.log")
+rr_logger = logging.getLogger("custom_logger_for_rr_only")
+rr_logger.setLevel(logging.DEBUG)
 
 
 #---------------------------------------------------------------

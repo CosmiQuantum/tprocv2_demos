@@ -310,7 +310,7 @@ class FHPulseProbeSpectroscopyProgram(AveragerProgramV2):
         #                )
 
         # print('FH',cfg['qubit_length_ge'], cfg['qubit_freq_fh'],cfg['qubit_gain_fh'])
-        self.declare_gen(ch=qubit_ampl_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq2'])
+        self.declare_gen(ch=qubit_ampl_ch, nqz=1, mixer_freq=cfg['qubit_mixer_freq2'])
         self.add_pulse(ch=qubit_ampl_ch, name="qubit_pulse", ro_ch=ro_chs[0],
                        style="const",
                        length=cfg['qubit_length_ge'],

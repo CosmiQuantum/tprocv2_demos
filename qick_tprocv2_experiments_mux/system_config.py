@@ -40,6 +40,7 @@ class QICK_experiment:
             self.res_center_freq   = 6330  # To be in the middle of the res freqs. 3000-5000 see nothing,6000 and 7000 see something, 8000+ see nothing
             self.soc.rfb_set_gen_filter(self.MIXMUXGEN_CH, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0)
             self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.7) # 4225 + 1650/2 = 5050 MHz, so freqs above that get filtered out
+            # self.soc.rfb_set_gen_filter(self.FSGEN_AMPL_CH, fc=1190 / 1000, ftype='bandpass', bw=0.2)
             self.soc.rfb_set_ro_filter(self.MUXRO_CH[0], fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0) #readout ADC
             # Set attenuator on DAC.
             self.soc.rfb_set_gen_rf(self.MIXMUXGEN_CH, self.DAC_attenuator1, self.DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
@@ -58,6 +59,7 @@ class QICK_experiment:
                 "qubit_ch": [self.FSGEN_CH] * 6,  # Qubit Channel Port, Full-speed DAC
                 "qubit_ampl_ch": [self.FSGEN_AMPL_CH] * 6,
                 "res_ch": [self.MIXMUXGEN_CH] * 6,  # Single Tone Readout Port, MUX DAC
+                "res_ch2": [self.FSGEN_AMPL_CH] * 6,  # Single Tone Readout Port, DAC
                 "qubit_ch_ef": [self.FSGEN_CH]*6, # Qubit ef Channel, Full-speed DAC
                 "nqz_qubit": 1,
                 "nqz_res": 2,
@@ -72,10 +74,11 @@ class QICK_experiment:
 
                 # Changes related to the resonator output channel
                 "mixer_freq": 6000,  # [MHz]
+                "mixer_freqs": np.array([6000]*6),  # [MHz]
                 #"res_freq_ge": [6217, 6276, 6335, 6407, 6476, 6538],  # MHz, run 5
                 #'res_freq_ge': [6217.011, 6275.7973, 6335.1068, 6407.052, 6476.1091, 6538], # Arianna 3/27/
                 #'res_freq_ge': [6216.811, 6275.9373, 6335, 6407.0338, 6475.8835, 6538], #Joyce 3/11
-                'res_freq_ge': [6227.187, 6289.175, 6348.55, 6419.665, 6485.315, 6552.35], #updated by Arianna 10/10, run 8
+                'res_freq_ge': np.array([6227.187, 6289.175, 6348.55, 6419.665, 6485.315, 6552.35]), #updated by Arianna 10/10, run 8
                 #'res_freq_ge': [6223.097, 6284.55, 6343.95, 6414.934, 6481.4, 6547.250],  # run 7
 
                 # "res_freq_ge": [6191.419, 6216.1, 6292.361, 6405.77, 6432.759, 6468.481],  # MHz, run 4a
@@ -91,7 +94,8 @@ class QICK_experiment:
                 "res_freq_fh": [6223.016, 6284.544, 6343.861, 6414.893, 6414.893, 6546.754],  # [MHz]
                 "res_gain_fh": [0.95,0.9,0.95,0.55,0.55,0.95],  # [DAC units]
                 "res_length": 2.0,  # [us] (1.0 for res spec)
-                "res_phase": [0,180+((2.5)/np.pi)*180,0,0,0,0],#[ -180+((1.281174-2.6703) * 180/np.pi), -10, 85,
+                "res_lengths": [2.0]*6,  # [us] (1.0 for res spec)
+                "res_phase": [0,180+((2.8)/np.pi)*180,0,0,0,0],#[ -180+((1.281174-2.6703) * 180/np.pi), -10, 85,
                             #   0, 150,
                             # -90], #Joyce 3/11
                 #"res_phase": [(0.19-0.38) * 180/np.pi, (2.07-3.12-1.16) * 180/np.pi, (-0.35+2.28) * 180/np.pi,
@@ -103,9 +107,9 @@ class QICK_experiment:
                 #"threshold": [7.3961, -12.5812, 4.8613, -7.5323, 7.0689, 4.6805], # Threshold for Distinguish g/e, from QICK Function
                 "res_ring_up_time": 4,  # Olivia May 17th
                 "qubit_is_in_g_threshold": -300, #100000,#-8837,
-                "edge_of_e_state_threshold": -380,
+                "edge_of_e_state_threshold": -300,
                 "mid_threshold": -370,
-                "edge_of_h_state_threshold": -480,
+                "edge_of_h_state_threshold": -450,
                 "edge_of_f_state_threshold": -420,
             }
 
@@ -155,7 +159,7 @@ class QICK_experiment:
                 "pi_ef_amp": [0.563, 0.6341, 0.511, 0.7018, 0.6751, 0.589], # Arianna 3/27
                 "pi_fh_amp": [0.563, 0.6535, 0.511, 0.7018, 0.6751, 0.589],  # Arianna 3/27
                 "qubit_mixer_freq": 4300,  # [MHz]
-                "qubit_mixer_freq2": 1200,  # [MHz]
+                "qubit_mixer_freq2": 1190,  # [MHz]
 
             }
 

@@ -33,32 +33,133 @@ class TOFExperiment:
 
     def run(self):
         class MuxProgram(AveragerProgramV2):
+            # def _initialize(self, cfg):
+            #     ro_chs = cfg['ro_ch']
+            #     gen_ch = cfg['res_ch']
+            #     stark_ch = cfg['res_ch2']
+            #
+            #     self.declare_gen(
+            #         ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
+            #         mux_freqs=[f+1 for f in cfg['res_freq_ge']],
+            #         mux_gains= cfg['res_gain_ge'], #[1,0,0,0,0,0],#cfg['res_gain_ge'], #[1,0,0,0,0,0]
+            #         mux_phases=cfg['res_phase'],
+            #         mixer_freq=cfg['mixer_freq']
+            #     )
+            #     print('before')
+            #     self.declare_gen(ch=stark_ch, nqz=cfg['nqz_res'], mixer_freq=cfg['mixer_freq'])
+            #     self.add_pulse(ch=stark_ch, name="res_tone", ro_ch=ro_chs[0],
+            #                    style="const",
+            #                    length=cfg['res_length'],
+            #                    freq=cfg['res_freq_ge'] ,
+            #                    phase=cfg['res_phase'],
+            #                    gain=cfg["res_gain_ge"],
+            #                    )
+            #     print('before')
+            #
+            #     for ch, f, ph in zip(cfg['ro_ch'], [f+1 for f in cfg['res_freq_ge']], cfg['ro_phase']):
+            #         self.declare_readout(
+            #             ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch
+            #         )
+            #     print('after')
+            #
+            #     # self.add_pulse(
+            #     #     ch=gen_ch, name="mymux",
+            #     #     style="const",
+            #     #
+            #     #     freq=cfg["res_freq_ge"],
+            #     #     phase=cfg["res_phase"],
+            #     #     gain=cfg["res_gain_ge"],
+            #     #     length=cfg["res_lengths"],
+            #     #     # mask=cfg["list_of_all_qubits"],
+            #     # )
+            #     print('after2')
+            #     # self.add_pulse(ch=gen_ch, name="mymux", ro_ch=ro_chs[0],
+            #     #                style="const",
+            #     #                freq=cfg['res_freq_ge'],
+            #     #                length=cfg['res_length'],
+            #     #                phase=0,
+            #     #                gain=cfg['res_gain_ge'],
+            #     #                )
+            #
+            #     # self.add_pulse(ch=gen_ch, name="res_pulse", ro_ch=ro_chs,
+            #     #                style="const",
+            #     #                length=cfg['res_length'],
+            #     #                freq=cfg['res_freq_ge'],
+            #     #                phase=cfg['res_phase'],
+            #     #                gain=cfg['res_gain_ge'],
+            #     #                )
+            #
+            #
+            #
+            # def _body(self, cfg):
+            #     self.trigger(ros=self.ro_chs, pins=[0], t=0, ddr4=True)
+            #     self.pulse(ch=self.stark_ch, name="mymux", t=0)
+            # class StarkShift2DProgram(AveragerProgramV2):
             def _initialize(self, cfg):
-                ro_chs = cfg['ro_ch']
-                gen_ch = cfg['res_ch']
+                ro_ch = cfg['ro_ch']
+                res_ch = cfg['res_ch']
+                qubit_ch = cfg['qubit_ch']
+                stark_ch = cfg['qubit_ampl_ch']
 
-                self.declare_gen(
-                    ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
-                    mux_freqs=[f+1 for f in cfg['res_freq_ge']],
-                    mux_gains= cfg['res_gain_ge'], #[1,0,0,0,0,0],#cfg['res_gain_ge'], #[1,0,0,0,0,0]
-                    mux_phases=cfg['res_phase'],
-                    mixer_freq=cfg['mixer_freq']
-                )
-                for ch, f, ph in zip(cfg['ro_ch'], [f+1 for f in cfg['res_freq_ge']], cfg['ro_phase']):
-                    self.declare_readout(
-                        ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch
-                    )
+                self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
+                                 mux_freqs=cfg['res_freq_ge'],  # res of interest frequency at QubitIndex and 7
+                                 mux_gains=cfg['res_gain_ge'],  # readout gain, stark gain
+                                 mux_phases=cfg['res_phase'],  # res of interest phase repeated at QubitIndex and 7
+                                 mixer_freq=cfg['mixer_freq'])
+                for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
+                    self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
 
-                self.add_pulse(
-                    ch=gen_ch, name="mymux",
-                    style="const",
-                    length=cfg["res_length"],
-                    mask=cfg["list_of_all_qubits"],
-                )
+                # self.add_pulse(ch=res_ch, name="stark_tone",
+                #                style="const",
+                #                length=cfg['stark_length'],
+                #                mask=cfg['stark_mask'], #only play stark tone
+                #                )
+
+                self.add_pulse(ch=res_ch, name="readout_pulse",
+                               style="const",
+                               length=cfg['res_length'],
+                               mask=cfg['list_of_all_qubits'],  # only play readout tone
+                               )
+
+                self.declare_gen(ch=stark_ch, nqz=cfg['nqz_res'], mixer_freq=cfg['mixer_freq'])
+                self.add_pulse(ch=stark_ch, name="stark_tone", ro_ch=ro_ch[0],
+                               style="const",
+                               length=cfg['res_length'],
+                               freq=cfg['res_freq_ge'][1],# + cfg['detuning'],
+                               phase=cfg['res_phase'][1],
+                               gain=cfg['res_gain_ge'][1],
+                               )
+
+                # self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+                # self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+                # self.add_pulse(ch=qubit_ch, name="qubit_pulse",
+                #                style="arb",
+                #                envelope="ramp",
+                #                freq=QickSweep1D("qubit_pulse_loop", cfg["qubit_freq_ge"] + cfg["start_freq"], cfg["qubit_freq_ge"] + cfg["end_freq"]),
+                #                phase=cfg['qubit_phase'],
+                #                gain=cfg['pi_amp'],
+                #                )
+
+                # self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_ch[0],
+                #                style="const",
+                #                length=cfg['qubit_length_ge'],
+                #                freq=QickSweep1D("qubit_pulse_loop", cfg["qubit_freq_ge"] + cfg["start_freq"],
+                #                                 cfg["qubit_freq_ge"] + cfg["end_freq"]),
+                #                phase=0,
+                #                gain=cfg['qubit_gain_ge'],
+                #                )
+
+                # self.add_loop("gain_loop", cfg["gain_steps"])
+                # self.add_loop("qubit_pulse_loop", cfg["qubit_pulse_steps"])  # inner loop
 
             def _body(self, cfg):
-                self.trigger(ros=cfg['ro_ch'], pins=[0], t=0, ddr4=True)
-                self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
+                # self.pulse(ch=self.cfg['qubit_ampl_ch'], name="stark_tone", t=0)  # play stark tone
+                # self.pulse(ch=cfg['qubit_ch'], name="qubit_pulse",
+                #            t=cfg['qubit_pulse_delay'])  # play qubit pulse with delay
+                # self.delay(t=cfg['stark_length'] + cfg[
+                #     'readout_pulse_delay'])  # wait for stark tone to finish and for resonator to reach vacuum
+                self.pulse(ch=self.cfg['qubit_ampl_ch'], name="stark_tone", t=0)
+                self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
         prog = MuxProgram(self.experiment.soccfg, reps=1, final_delay=0.5, cfg=self.config)
         iq_list = prog.acquire_decimated(self.experiment.soc, soft_avgs=self.config['soft_avgs'])
@@ -86,7 +187,7 @@ class TOFExperiment:
         for i, ch in enumerate(self.config['ro_ch']):
             plot = axes[i]
             plot.plot(t, iq_list[i][:, 0], label="I value")
-            print('res_length',self.config['res_length'], 'len(iq_list[i][:, 0])', len(iq_list[i][:, 0]))
+            print(f'channel {i+1} res_length',self.config['res_length'], 'len(iq_list[i][:, 0])', len(iq_list[i][:, 0]))
             print('sum', sum(iq_list[i][:,0]))
             print('avg', np.mean(iq_list[i][:, 0]))
             plot.plot(t, iq_list[i][:, 1], label="Q value")

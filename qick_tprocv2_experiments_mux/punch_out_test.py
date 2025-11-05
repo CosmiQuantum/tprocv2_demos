@@ -38,7 +38,7 @@ ADC_att=17
 
 experiment = QICK_experiment(outerfolder_plots, DAC_attenuator1 = DAC_att_1, DAC_attenuator2 = DAC_att_2, qubit_DAC_attenuator1 = 5 , qubit_DAC_attenuator2 = 4 ,ADC_attenuator = ADC_att, fridge=FRIDGE)
 
-start_gain, stop_gain, num_points =  0.8, 1, 5  # for QUIET 0.55, 0.775, 5 #
+start_gain, stop_gain, num_points =  0.4, 1, 10  # for QUIET 0.55, 0.775, 5 #
 
 # To look at only one resonator at a time:
 # Qubit_index= 0 #starts at 0

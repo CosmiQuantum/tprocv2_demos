@@ -6,9 +6,9 @@ if FRIDGE == "QUIET":
     VNA_res = np.array([6227.25, 6289.12, 6348.5, 6419.6, 6485, 6552])# ge resonator freqs, updated 10/10 during run 8
     VNA_qubit = np.array([4194.77, 3828.69, 4173.69, 4474.23, 4485.38, 5018.12])  # Qubit freqs g/e Transition, updated during run 8 on 10/10
     ef_freqs = np.array([4020.48, 3650.81, 3999.01, 4303.08, 4313.19, 4848.81]) # Qubit freqs e/f Transition,Arianna 10/13
-    fh_freqs = np.array([3820.97, 3456.15, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition
-    eh_freqs = np.array([4020.48, 3650.81+3456, 3999.01, 4303.08, 4313.19, 4848.81])  # Qubit freqs e/f Transition,Arianna 10/13
-    htores_freqs = np.array([4020.48, 1191, 3999.01, 4303.08, 4313.19, 4848.81])
+    fh_freqs = np.array([3820.97, 3456.114, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition
+    eh_freqs = np.array([4020.48, 7100, 3999.01, 4303.08, 4313.19, 4848.81])  # Qubit freqs e/f Transition,Arianna 10/13
+    htores_freqs = np.array([4020.48, 1190, 3999.01, 4303.08, 4313.19, 4848.81])
     # Set this for your experiment 3828+3650+3456-6289
     tot_num_of_qubits = 6
 
@@ -96,10 +96,10 @@ if FRIDGE == "QUIET":
         },
 
         "qubit_spec_eh": {
-            "reps": 4000,  # 300
+            "reps": 2000,  # 300
             "rounds": 1,  # 10
-            "start": list(eh_freqs - 500),  # [MHz] #-300
-            "stop": list(eh_freqs + 500),  # [MHz]
+            "start": list(eh_freqs - 100),  # [MHz] #-300
+            "stop": list(eh_freqs + 100),  # [MHz]
             "steps": 1000,
             "relax_delay": 1000,  # 1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
@@ -114,12 +114,12 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
         },
         "qubit_spec_htores": {
-            "reps": 5000,  # 300
+            "reps": 2000,  # 300
             "rounds": 1,  # 10
             "start": list(htores_freqs - 100),  # [MHz] #-300 #-6
             "stop": list(htores_freqs + 100),  # [MHz] #6
-            "steps": 2000,  # 450,  # 1000 #450
-            "relax_delay": 2000,  # 1000,  # [us]
+            "steps": 1000,  # 450,  # 1000 #450
+            "relax_delay": 1000,  # 1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
         "qubit_spec_ftores": {
@@ -493,7 +493,7 @@ if FRIDGE == "QUIET":
             "freq_start" : [6176.0, 0, 0, 0],
             "freq_stop" : [6178.0, 0, 0, 0],
             "freq_step" : 0.1,
-            "relax_delay": 0, #1000,#600, # [us]
+            "relax_delay": 1000, #1000,#600, # [us]
             "list_of_all_qubits": list_of_all_qubits,
 
         },
