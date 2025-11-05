@@ -22,7 +22,7 @@ from expt_config import expt_cfg, list_of_all_qubits, FRIDGE
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 7 # first run with qubits was QUIET run 3, second run with qubits was QUIET run 4, and so forth
+run_num = 6 # first run with qubits was QUIET run 3, second run with qubits was QUIET run 4, and so forth
 run_name = f'run{run_num}/6transmon'
 signal = 'None' # Do not change
 

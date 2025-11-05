@@ -42,7 +42,7 @@ save_figs = True
 fit_saved = True
 show_legends = False
 signal = 'None'
-run_number = 7
+run_number = 5
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 saved_shots_t1ge = False
@@ -88,83 +88,94 @@ elif run_number == 7:
                         "2025-07-20_06-33-03" ]
 
 elif run_number == 6:
-    run_name = 'run6/6transmon/TLS_Comprehensive_Study'
+    run_name = 'run6/6transmon'
     data_path = f'/exp/cosmiq/data/QUIET/QICK_data/{run_name}'
     plots_path = data_path
 
     # all dates:
     top_folder_dates = [
-    "source_off_detuning_17MHz_Q1_substudy1/2025-05-15_14-47-38",
-    "source_off_detuning_17MHz_Q1_substudy1/2025-05-15_18-08-15",
-    "source_off_detuning_17MHz_Q1_substudy1/2025-05-15_22-02-12",
-    "source_off_detuning_17MHz_Q1_substudy1/2025-05-16_01-28-20",
-    "source_off_detuning_17MHz_Q1_substudy1/2025-05-16_04-49-59",
-    "source_off_detuning_17MHz_Q1_substudy1/2025-05-16_08-13-47",
+    "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-21",
+    "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-22",
+    "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-23",
+    "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-24",
+    "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-26",
+    "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-28",
+    "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-01",
+    "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-02"]
 
-    "source_off_detuning_24MHz_Q1_substudy1/2025-05-15_11-19-50",
-    "source_off_detuning_24MHz_Q1_substudy1/2025-05-15_18-35-56",
 
-    "source_off_post_temperature_sweep_substudy1/2025-05-14_19-25-55",
-    "source_off_post_temperature_sweep_substudy1/2025-05-14_22-50-51",
-    "source_off_post_temperature_sweep_substudy1/2025-05-15_02-29-34",
-    "source_off_post_temperature_sweep_substudy1/2025-05-15_05-50-12",
-    "source_off_post_temperature_sweep_substudy1/2025-05-15_09-13-30",
-
-    "source_off_substudy1/2025-04-15_21-24-46",
-
-    "source_off_substudy2/2025-04-16_11-47-09",
-    "source_off_substudy2/2025-04-16_12-51-09",
-    "source_off_substudy2/2025-04-16_17-50-00",
-    "source_off_substudy2/2025-04-16_22-47-49",
-    "source_off_substudy2/2025-04-17_03-42-36",
-    "source_off_substudy2/2025-04-17_08-42-24",
-
-    "source_off_substudy3/2025-04-17_12-28-37",
-    "source_off_substudy3/2025-04-17_17-22-46",
-    "source_off_substudy3/2025-04-17_22-16-39",
-    "source_off_substudy3/2025-04-18_01-45-53",
-    "source_off_substudy3/2025-04-18_06-40-55",
-
-    "source_off_substudy4/2025-04-18_11-59-33",
-    "source_off_substudy4/2025-04-18_16-56-58",
-    "source_off_substudy4/2025-04-18_21-51-13",
-    "source_off_substudy4/2025-04-19_02-45-41",
-    "source_off_substudy4/2025-04-19_07-39-57",
-    "source_off_substudy4/2025-04-19_12-34-26",
-    "source_off_substudy4/2025-04-19_17-48-44",
-    "source_off_substudy4/2025-04-19_22-43-02",
-    "source_off_substudy4/2025-04-20_03-37-50",
-    "source_off_substudy4/2025-04-20_08-32-36",
-    "source_off_substudy4/2025-04-20_13-26-47",
-    "source_off_substudy4/2025-04-20_18-25-13",
-    "source_off_substudy4/2025-04-20_23-25-04",
-    "source_off_substudy4/2025-04-21_04-23-31",
-
-    "source_off_substudy5/2025-05-04_20-56-05",
-    "source_off_substudy5/2025-05-04_23-28-05",
-    "source_off_substudy5/2025-05-05_03-03-40",
-    "source_off_substudy5/2025-05-05_06-40-15",
-    "source_off_substudy5/2025-05-05_10-18-53",
-    "source_off_substudy5/2025-05-05_13-57-22",
-    "source_off_substudy5/2025-05-05_17-34-21",
-    "source_off_substudy5/2025-05-05_21-18-14",
-    "source_off_substudy5/2025-05-06_02-18-57",
-
-    "source_off_substudy6/2025-05-06_11-30-17",
-    "source_off_substudy6/2025-05-06_14-50-55",
-    "source_off_substudy6/2025-05-06_18-14-29",
-    "source_off_substudy6/2025-05-06_21-35-26",
-    "source_off_substudy6/2025-05-07_01-00-14",
-    "source_off_substudy6/2025-05-07_04-23-45",
-    "source_off_substudy6/2025-05-07_07-46-44",
-    "source_off_substudy6/2025-05-07_11-09-17",
-    "source_off_substudy6/2025-05-07_14-30-29",
-    "source_off_substudy6/2025-05-07_17-50-59",
-    "source_off_substudy6/2025-05-07_21-13-50",
-    "source_off_substudy6/2025-05-08_00-36-15",
-    "source_off_substudy6/2025-05-08_03-56-41",
-    "source_off_substudy6/2025-05-08_07-19-10",
-    "source_off_substudy6/2025-05-08_11-53-46"]
+    # add TLS_Comprehensive_Study/ before each of the ones below
+    # "source_off_detuning_17MHz_Q1_substudy1/2025-05-15_14-47-38",
+    # "source_off_detuning_17MHz_Q1_substudy1/2025-05-15_18-08-15",
+    # "source_off_detuning_17MHz_Q1_substudy1/2025-05-15_22-02-12",
+    # "source_off_detuning_17MHz_Q1_substudy1/2025-05-16_01-28-20",
+    # "source_off_detuning_17MHz_Q1_substudy1/2025-05-16_04-49-59",
+    # "source_off_detuning_17MHz_Q1_substudy1/2025-05-16_08-13-47",
+    #
+    # "source_off_detuning_24MHz_Q1_substudy1/2025-05-15_11-19-50",
+    # "source_off_detuning_24MHz_Q1_substudy1/2025-05-15_18-35-56",
+    #
+    # "source_off_post_temperature_sweep_substudy1/2025-05-14_19-25-55",
+    # "source_off_post_temperature_sweep_substudy1/2025-05-14_22-50-51",
+    # "source_off_post_temperature_sweep_substudy1/2025-05-15_02-29-34",
+    # "source_off_post_temperature_sweep_substudy1/2025-05-15_05-50-12",
+    # "source_off_post_temperature_sweep_substudy1/2025-05-15_09-13-30",
+    #
+    # "source_off_substudy1/2025-04-15_21-24-46",
+    #
+    # "source_off_substudy2/2025-04-16_11-47-09",
+    # "source_off_substudy2/2025-04-16_12-51-09",
+    # "source_off_substudy2/2025-04-16_17-50-00",
+    # "source_off_substudy2/2025-04-16_22-47-49",
+    # "source_off_substudy2/2025-04-17_03-42-36",
+    # "source_off_substudy2/2025-04-17_08-42-24",
+    #
+    # "source_off_substudy3/2025-04-17_12-28-37",
+    # "source_off_substudy3/2025-04-17_17-22-46",
+    # "source_off_substudy3/2025-04-17_22-16-39",
+    # "source_off_substudy3/2025-04-18_01-45-53",
+    # "source_off_substudy3/2025-04-18_06-40-55",
+    #
+    # "source_off_substudy4/2025-04-18_11-59-33",
+    # "source_off_substudy4/2025-04-18_16-56-58",
+    # "source_off_substudy4/2025-04-18_21-51-13",
+    # "source_off_substudy4/2025-04-19_02-45-41",
+    # "source_off_substudy4/2025-04-19_07-39-57",
+    # "source_off_substudy4/2025-04-19_12-34-26",
+    # "source_off_substudy4/2025-04-19_17-48-44",
+    # "source_off_substudy4/2025-04-19_22-43-02",
+    # "source_off_substudy4/2025-04-20_03-37-50",
+    # "source_off_substudy4/2025-04-20_08-32-36",
+    # "source_off_substudy4/2025-04-20_13-26-47",
+    # "source_off_substudy4/2025-04-20_18-25-13",
+    # "source_off_substudy4/2025-04-20_23-25-04",
+    # "source_off_substudy4/2025-04-21_04-23-31",
+    #
+    # "source_off_substudy5/2025-05-04_20-56-05",
+    # "source_off_substudy5/2025-05-04_23-28-05",
+    # "source_off_substudy5/2025-05-05_03-03-40",
+    # "source_off_substudy5/2025-05-05_06-40-15",
+    # "source_off_substudy5/2025-05-05_10-18-53",
+    # "source_off_substudy5/2025-05-05_13-57-22",
+    # "source_off_substudy5/2025-05-05_17-34-21",
+    # "source_off_substudy5/2025-05-05_21-18-14",
+    # "source_off_substudy5/2025-05-06_02-18-57",
+    #
+    # "source_off_substudy6/2025-05-06_11-30-17",
+    # "source_off_substudy6/2025-05-06_14-50-55",
+    # "source_off_substudy6/2025-05-06_18-14-29",
+    # "source_off_substudy6/2025-05-06_21-35-26",
+    # "source_off_substudy6/2025-05-07_01-00-14",
+    # "source_off_substudy6/2025-05-07_04-23-45",
+    # "source_off_substudy6/2025-05-07_07-46-44",
+    # "source_off_substudy6/2025-05-07_11-09-17",
+    # "source_off_substudy6/2025-05-07_14-30-29",
+    # "source_off_substudy6/2025-05-07_17-50-59",
+    # "source_off_substudy6/2025-05-07_21-13-50",
+    # "source_off_substudy6/2025-05-08_00-36-15",
+    # "source_off_substudy6/2025-05-08_03-56-41",
+    # "source_off_substudy6/2025-05-08_07-19-10",
+    # "source_off_substudy6/2025-05-08_11-53-46"]
 
 elif run_number == 5:
     run_name = 'run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20'

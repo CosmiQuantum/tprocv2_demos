@@ -210,7 +210,10 @@ class T2rHistCumulErrPlots:
                             if T2 < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            max_t1 = 150 #max(t1_vals[q_key]) all out T1s are less than this rn
+                            # if T2 > 100:
+                            #     print("The value is above 750us, bad fit, continuing...")
+                            #     continue
+                            #max_t1 = max(t1_vals[q_key]) all out T1s are less than this rn
                             # if T2 > 2*max_t1:
                             #     print(f"The value is above 2*{max_t1} us, this is a bad fit, continuing...")
                             #     continue
