@@ -52,7 +52,7 @@ increase_qubit_reps = False #if you want to increase the reps for a qubit, set t
 qubit_to_increase_reps_for = 0 #only has impact if previous line is True
 multiply_qubit_reps_by = 2 #only has impact if the line two above is True
 
-outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/", str(datetime.date.today()))
+outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run33/", str(datetime.date.today()))
 # outerFolder = os.path.join("/data/QICK_data/", str(datetime.date.today()))
 
 ################################################ optimization outputs ##################################################
@@ -362,14 +362,14 @@ while j < n:
         #
         # ############################################### Collect Results ################################################
         if save_data_h5:
-            # ---------------------Collect Res Spec Results----------------
-            # res_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
-            # res_data[QubitIndex]['freq_pts'][j - batch_num * save_r - 1] = freq_pts
-            # res_data[QubitIndex]['freq_center'][j - batch_num * save_r - 1] = freq_center
-            # res_data[QubitIndex]['Amps'][j - batch_num * save_r - 1] = amps
-            # res_data[QubitIndex]['Found Freqs'][j - batch_num * save_r - 1] = res_freqs
-            # res_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-            # res_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+            ---------------------Collect Res Spec Results----------------
+            res_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
+            res_data[QubitIndex]['freq_pts'][j - batch_num * save_r - 1] = freq_pts
+            res_data[QubitIndex]['freq_center'][j - batch_num * save_r - 1] = freq_center
+            res_data[QubitIndex]['Amps'][j - batch_num * save_r - 1] = amps
+            res_data[QubitIndex]['Found Freqs'][j - batch_num * save_r - 1] = res_freqs
+            res_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+            res_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
 
             # # ---------------------Collect QSpec Results----------------
             # qspec_data[QubitIndex]['Dates'][j - batch_num * save_r - 1]=time.mktime(datetime.datetime.now().timetuple())

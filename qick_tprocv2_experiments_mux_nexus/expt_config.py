@@ -1,7 +1,7 @@
 from qick import *
 import numpy as np
 
-VNA_res = np.array([6187.8, 5828.3, 6074.6, 5959.3])
+VNA_res = np.array([6187.9, 5828.47, 6074.59, 5959.3]) #[6187.8, 5828.3, 6074.6, 5959.3])
 VNA_qubit = np.array([4909, 4749.4, 4569, 4759]) # Found on NR25 with the QICK
 bias_spec_centers = np.array([4902.8, 4736.8, 4574.8, 4756.1])
 bias_spec_centers_ef = np.array([4443.75, 4272.5, 4103.5, 4292.5])

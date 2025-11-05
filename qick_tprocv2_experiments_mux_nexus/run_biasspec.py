@@ -6,7 +6,7 @@ from bias_qubit_spec import BiasQubitSpectroscopy
 
 import datetime
 import numpy as np
-outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30", str(datetime.date.today()))
+outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run33", str(datetime.date.today()))
 
 
 

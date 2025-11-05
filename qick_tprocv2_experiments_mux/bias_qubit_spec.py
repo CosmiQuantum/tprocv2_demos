@@ -1,6 +1,6 @@
 from build_task import *
 from build_state import *
-from expt_config import *
+from expt_config_nexus import *
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np

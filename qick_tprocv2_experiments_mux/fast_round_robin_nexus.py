@@ -26,6 +26,7 @@ save_figs = True    # save plots for everything as you go along the RR script?
 live_plot = False      # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
 fit_data = True      # fit the data here and save or plot the fits?
 save_data_h5 = True   # save all of the data to h5 files?
+unmask = True
 
 number_of_qubits = 4 # currently 4 for NEXUS, 6 for QUIET
 Qs_to_look_at = [0,1,2,3] #only list the qubits you want to do the RR for
@@ -39,32 +40,32 @@ def create_folder_if_not_exists(folder_path):
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
 
-outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/Fast_RR/", str(datetime.date.today()))
+outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run33/Fast_RR/", str(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")))
 
 create_folder_if_not_exists(outerFolder)
 ################################################ optimizated parameters ##################################################
 # For NEXUS
-res_leng_vals = [5.8, 3.8, 4, 4.6] #[6.15, 5.85, 6.45, 5.7] # from 2/19/2025 optimization, after punchout test
-res_gain = [0.38, 0.26, 0.28, 0.31]#[0.3143, 0.1857, 0.1429, 0.1857] # from 2/19/2025 optimization, after punchout test
+res_leng_vals = [5]*4 #[5.8, 3.8, 4, 4.6] #[6.15, 5.85, 6.45, 5.7] # from 2/19/2025 optimization, after punchout test
+res_gain = [0.4]*4 #[0.38, 0.26, 0.28, 0.31]#[0.3143, 0.1857, 0.1429, 0.1857] # from 2/19/2025 optimization, after punchout test
 freq_offsets = [0, 0, 0, 0] #[0.0, -0.0667, -0.2667, -0.400] # from 2/19/2025 optimization, after punchout test
 
-#TWPA
-synth = SynthHD('/dev/ttyACM1')
-synth[0].power =     -12.85
-synth[0].frequency = 7.826e9
-synth[0].enable = True
-time.sleep(5)
-
-#Turning off HEMT power supply channels for bias lines
-start_voltage = 0
-Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44',
-                  '192.168.0.41']  # IP address of bias PS (qubits 1-3 are the same PS)
-Bias_ch = [1, 2, 3, 1]  # Channel number of qubit 1-4 on associated PS
-for Q in range(4):
-    BiasPS = E36300(Bias_PS_ip[Q], server_port=5025)
-
-    BiasPS.setVoltage(start_voltage, Bias_ch[Q])
-    BiasPS.enable(Bias_ch[Q])
+# #TWPA
+# synth = SynthHD('/dev/ttyACM1')
+# synth[0].power =     -12.85
+# synth[0].frequency = 7.826e9
+# synth[0].enable = True
+# time.sleep(5)
+#
+# #Turning off HEMT power supply channels for bias lines
+# start_voltage = 0
+# Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44',
+#                   '192.168.0.41']  # IP address of bias PS (qubits 1-3 are the same PS)
+# Bias_ch = [1, 2, 3, 1]  # Channel number of qubit 1-4 on associated PS
+# for Q in range(4):
+#     BiasPS = E36300(Bias_PS_ip[Q], server_port=5025)
+#
+#     BiasPS.setVoltage(start_voltage, Bias_ch[Q])
+#     BiasPS.enable(Bias_ch[Q])
 ####################################################### RR #############################################################
 
 def create_data_dict(keys, save_r, qs):
@@ -151,24 +152,24 @@ while time.time() - start_total < total_runtime:
                     print(f"Qubit spectroscopy failed for qubit {QubitIndex + 1}: {e}. Retrying...")
 
             #------------------------Amplitude Rabi Experiment-----------------------------------------------------------
-            while True:
-                try:
-                    rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, 0, signal,
-                                                   save_figs, experiment, live_plot,
-                                                   increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
-                    rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save = rabi.run(experiment.soccfg,
-                                                                                                experiment.soc)
-                    if float(pi_amp) < 0.2:
-                        print(f"Rabi amplitude {pi_amp} for qubit {QubitIndex + 1} is below threshold. Retrying...")
-                        del rabi
-                        continue
-
-                    experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
-                    print('Hourly update - Pi amplitude for qubit', QubitIndex + 1, 'is:', float(pi_amp))
-                    del rabi
-                    break
-                except Exception as e:
-                    print(f"Rabi measurement failed for qubit {QubitIndex + 1}: {e}. Retrying...")
+            # while True:
+            #     try:
+            #         rabi = AmplitudeRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits, outerFolder, 0, signal,
+            #                                        save_figs, experiment, live_plot,
+            #                                        increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
+            #         rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save = rabi.run(experiment.soccfg,
+            #                                                                                     experiment.soc)
+            #         if float(pi_amp) < 0.2:
+            #             print(f"Rabi amplitude {pi_amp} for qubit {QubitIndex + 1} is below threshold. Retrying...")
+            #             del rabi
+            #             continue
+            #
+            #         experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
+            #         print('Hourly update - Pi amplitude for qubit', QubitIndex + 1, 'is:', float(pi_amp))
+            #         del rabi
+            #         break
+            #     except Exception as e:
+            #         print(f"Rabi measurement failed for qubit {QubitIndex + 1}: {e}. Retrying...")
 
             if save_data_h5:
                 hourly_idx = hourly_j - hourly_batch_num * hourly_save_r - 1
@@ -191,14 +192,14 @@ while time.time() - start_total < total_runtime:
                 qspec_data[QubitIndex]['Round Num'][hourly_idx] = hourly_j
                 qspec_data[QubitIndex]['Batch Num'][hourly_idx] = hourly_batch_num
 
-                # ---------------------Collect Rabi Results----------------
-                rabi_data[QubitIndex]['Dates'][hourly_idx] = time.mktime(datetime.datetime.now().timetuple())
-                rabi_data[QubitIndex]['I'][hourly_idx] = rabi_I
-                rabi_data[QubitIndex]['Q'][hourly_idx] = rabi_Q
-                rabi_data[QubitIndex]['Gains'][hourly_idx] = rabi_gains
-                rabi_data[QubitIndex]['Fit'][hourly_idx] = rabi_fit
-                rabi_data[QubitIndex]['Round Num'][hourly_idx] = hourly_j
-                rabi_data[QubitIndex]['Batch Num'][hourly_idx] = hourly_batch_num
+                # # ---------------------Collect Rabi Results----------------
+                # rabi_data[QubitIndex]['Dates'][hourly_idx] = time.mktime(datetime.datetime.now().timetuple())
+                # rabi_data[QubitIndex]['I'][hourly_idx] = rabi_I
+                # rabi_data[QubitIndex]['Q'][hourly_idx] = rabi_Q
+                # rabi_data[QubitIndex]['Gains'][hourly_idx] = rabi_gains
+                # rabi_data[QubitIndex]['Fit'][hourly_idx] = rabi_fit
+                # rabi_data[QubitIndex]['Round Num'][hourly_idx] = hourly_j
+                # rabi_data[QubitIndex]['Batch Num'][hourly_idx] = hourly_batch_num
 
         #------------------------Save data------------------------------------------------------------------
         if hourly_j % hourly_save_r == 0:
@@ -216,16 +217,16 @@ while time.time() - start_total < total_runtime:
             del saver_qspec
             del qspec_data
 
-            # --------------------------save Rabi-----------------------
-            saver_rabi = Data_H5(outerFolder, rabi_data, hourly_batch_num, hourly_save_r)
-            saver_rabi.save_to_h5('Rabi')
-            del saver_rabi
-            del rabi_data
-
-            # reset all dictionaries to none for safety
-            res_data = create_data_dict(res_keys, hourly_save_r, list_of_all_qubits)
-            qspec_data = create_data_dict(qspec_keys, hourly_save_r, list_of_all_qubits)
-            rabi_data = create_data_dict(rabi_keys, hourly_save_r, list_of_all_qubits)
+            # # --------------------------save Rabi-----------------------
+            # saver_rabi = Data_H5(outerFolder, rabi_data, hourly_batch_num, hourly_save_r)
+            # saver_rabi.save_to_h5('Rabi')
+            # del saver_rabi
+            # del rabi_data
+            #
+            # # reset all dictionaries to none for safety
+            # res_data = create_data_dict(res_keys, hourly_save_r, list_of_all_qubits)
+            # qspec_data = create_data_dict(qspec_keys, hourly_save_r, list_of_all_qubits)
+            # rabi_data = create_data_dict(rabi_keys, hourly_save_r, list_of_all_qubits)
 
 
         last_hourly_update = current_time

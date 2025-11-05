@@ -1,8 +1,8 @@
 from qick import *
 import numpy as np
 
-VNA_res = np.array([6187.8, 5828.3, 6074.6, 5959.3])
-VNA_qubit = np.array([4909, 4749.4, 4569, 4759]) # Found on NR25 with the QICK
+VNA_res = np.array( [6187.9, 5828.47, 6074.59, 5959.3]) #[6187.8, 5828.3, 6074.6, 5959.3])
+VNA_qubit = np.array([4923.9, 4764.5, 4577.1, 4782.3])  # [4909, 4749.4, 4569, 4759]) # Found on NR25 with the QICK
 
 tot_num_of_qubits = 4
 list_of_all_qubits = list(range(tot_num_of_qubits))
@@ -21,7 +21,7 @@ expt_cfg = {
         "start": -3.5, # [MHz]
         "step_size": 0.12,  # [MHz]
         "steps": 58,#101,
-        "relax_delay": 20,  # [us]
+        "relax_delay": 5, #20,  # [us]
         "list_of_all_qubits": list_of_all_qubits,
     },
 
@@ -38,8 +38,8 @@ expt_cfg = {
     "qubit_spec_ge": {
         "reps": 700, #100
         "rounds": 1, #10
-        "start": list(VNA_qubit-35),#70), # [MHz]
-        "stop":  list(VNA_qubit+35),#70), # [MHz]
+        "start": list(VNA_qubit-15),#70), # [MHz]
+        "stop":  list(VNA_qubit+15),#70), # [MHz]
         "steps": 300,
         "relax_delay": 0.5, # [us]
         "list_of_all_qubits": list_of_all_qubits,

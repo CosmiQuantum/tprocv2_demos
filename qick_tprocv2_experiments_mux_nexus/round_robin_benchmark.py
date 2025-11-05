@@ -20,7 +20,7 @@ from section_003_punch_out_ge_mux import PunchOut
 from expt_config import expt_cfg
 from NetDrivers import E36300
 
-n= 1000
+n= 1
 save_r = 1            # how many rounds to save after
 signal = 'None'       #'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization has happened
 save_figs = True    # save plots for everything as you go along the RR script?
@@ -32,7 +32,7 @@ increase_qubit_reps = False #if you want to increase the reps for a qubit, set t
 qubit_to_increase_reps_for = 0 #only has impact if previous line is True
 multiply_qubit_reps_by = 2 #only has impact if the line two above is True
 
-outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/", str(datetime.date.today())) #Change run number in each new run
+outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run33/", str(datetime.date.today())) #Change run number in each new run
 custom_Ramsey=False
 
 dictionary_qs = [0, 1, 2, 3] #needs to be the total number of qubits that you have
@@ -83,9 +83,9 @@ while j < n:
         experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
 
         ###################################################### TOF #####################################################
-        #tof        = TOFExperiment(QubitIndex, outerFolder, experiment, j, save_figs)
-        #tof.run(experiment.soccfg, experiment.soc)
-        #del tof
+        # tof        = TOFExperiment(QubitIndex, outerFolder, experiment, j, save_figs)
+        # tof.run(experiment.soccfg, experiment.soc)
+        # del tof
 
         ################################################## Res spec ####################################################
         try:
