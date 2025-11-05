@@ -14,7 +14,7 @@ import time
 from NetDrivers import E36300
 
 class AllQubitTomographyMeasurement:
-    def __init__(self, outerFolder, experiment, num_qubits, unmasking_resgain = False):
+    def __init__(self, outerFolder, experiment, num_qubits, res_len, unmasking_resgain = False):
         self.outerFolder = outerFolder
         self.Q13_BiasPS = E36300('192.168.0.44', server_port=5025)
         self.Q4_BiasPS = E36300('192.168.0.41', server_port=5025)
@@ -49,12 +49,22 @@ class AllQubitTomographyMeasurement:
         print(f'Q3 Tomography configuration: ', self.q3_config)
         print(f'Q4 Tomography configuration: ', self.q4_config)
 
-    def allq_run_tomography(self, soccfg, soc, start_volt, stop_volt, volt_pts, rounds, plot=True, save=True):
+        self.q1_config['res_length'] = res_len[0]
+        self.q2_config['res_length'] = res_len[1]
+        self.q3_config['res_length'] = res_len[2]
+        self.q4_config['res_length'] = res_len[3]
+
+        print(f'Q1 Tomography good configuration: ', self.q1_config)
+        print(f'Q2 Tomography good configuration: ', self.q2_config)
+        print(f'Q3 Tomography good configuration: ', self.q3_config)
+        print(f'Q4 Tomography good configuration: ', self.q4_config)
+
+    def allq_run_tomography(self, soccfg, soc, qs, start_volt, stop_volt, volt_pts, rounds, plot=True, save=True):
 
         vsweep = np.linspace(start_volt, stop_volt, volt_pts, endpoint=True)
         self.set_up_PS()
         self.save_metadata(vsweep, rounds)
-        self.bias_sweep(soccfg, soc, vsweep, rounds, plot_data = plot, save_data = save)
+        self.bias_sweep(soccfg, soc, qs, vsweep, rounds, plot_data = plot, save_data = save)
 
         return
 
@@ -72,7 +82,7 @@ class AllQubitTomographyMeasurement:
         self.Q4_BiasPS.enable(1)
         return
 
-    def bias_sweep(self, soccfg, soc, vsweep, total_rounds, plot_data=False, save_data=True):
+    def bias_sweep(self, soccfg, soc, qs, vsweep, total_rounds, plot_data=False, save_data=True):
         #overall for loop for total # of rounds:
         #for r in total_rounds:
         r = 0
@@ -93,47 +103,55 @@ class AllQubitTomographyMeasurement:
 
             ## sweep voltage and take data on all 4 qubits
             for index, v in enumerate(vsweep):
-                self.Q13_BiasPS.setVoltage(v, 1)
-                self.Q13_BiasPS.setVoltage(v, 2)
-                self.Q13_BiasPS.setVoltage(v, 3)
-                self.Q4_BiasPS.setVoltage(v, 1)
+                if 0 in qs:
+                    self.Q13_BiasPS.setVoltage(v, 1)
+                if 1 in qs:
+                    self.Q13_BiasPS.setVoltage(v, 2)
+                if 2 in qs:
+                    self.Q13_BiasPS.setVoltage(v, 3)
+                if 3 in qs:
+                    self.Q4_BiasPS.setVoltage(v, 1)
 
                 ## Q1
-                q1_tomography = TomographyProgram(soccfg, reps=self.q1_config['reps'], final_delay=self.q1_config['relax_delay'],
-                                                  cfg=self.q1_config)
-                q1_iq_list = q1_tomography.acquire(soc, soft_avgs=self.q1_config['rounds'], progress=True)
-                q1I = q1_iq_list[0][0, 0]
-                q1Q = q1_iq_list[0][0, 1]
-                Q1_Iarr.append(q1I)
-                Q1_Qarr.append(q1Q)
+                if 0 in qs:
+                    q1_tomography = TomographyProgram(soccfg, reps=self.q1_config['reps'], final_delay=self.q1_config['relax_delay'],
+                                                      cfg=self.q1_config)
+                    q1_iq_list = q1_tomography.acquire(soc, soft_avgs=self.q1_config['rounds'], progress=True)
+                    q1I = q1_iq_list[0][0, 0]
+                    q1Q = q1_iq_list[0][0, 1]
+                    Q1_Iarr.append(q1I)
+                    Q1_Qarr.append(q1Q)
 
                 ## Q2
-                q2_tomography = TomographyProgram(soccfg, reps=self.q2_config['reps'], final_delay=self.q2_config['relax_delay'],
-                                                  cfg=self.q2_config)
-                q2_iq_list = q2_tomography.acquire(soc, soft_avgs=self.q2_config['rounds'], progress=True)
-                q2I = q2_iq_list[1][0, 0]
-                q2Q = q2_iq_list[1][0, 1]
-                Q2_Iarr.append(q2I)
-                Q2_Qarr.append(q2Q)
+                if 1 in qs:
+                    q2_tomography = TomographyProgram(soccfg, reps=self.q2_config['reps'], final_delay=self.q2_config['relax_delay'],
+                                                      cfg=self.q2_config)
+                    q2_iq_list = q2_tomography.acquire(soc, soft_avgs=self.q2_config['rounds'], progress=True)
+                    q2I = q2_iq_list[1][0, 0]
+                    q2Q = q2_iq_list[1][0, 1]
+                    Q2_Iarr.append(q2I)
+                    Q2_Qarr.append(q2Q)
 
                 ## Q3
-                q3_tomography = TomographyProgram(soccfg, reps=self.q3_config['reps'], final_delay=self.q3_config['relax_delay'],
-                                                  cfg=self.q3_config)
-                q3_iq_list = q3_tomography.acquire(soc, soft_avgs=self.q3_config['rounds'], progress=True)
-                # print(np.shape(iq_list))
-                q3I = q3_iq_list[2][0, 0]
-                q3Q = q3_iq_list[2][0, 1]
-                Q3_Iarr.append(q3I)
-                Q3_Qarr.append(q3Q)
+                if 2 in qs:
+                    q3_tomography = TomographyProgram(soccfg, reps=self.q3_config['reps'], final_delay=self.q3_config['relax_delay'],
+                                                      cfg=self.q3_config)
+                    q3_iq_list = q3_tomography.acquire(soc, soft_avgs=self.q3_config['rounds'], progress=True)
+                    # print(np.shape(iq_list))
+                    q3I = q3_iq_list[2][0, 0]
+                    q3Q = q3_iq_list[2][0, 1]
+                    Q3_Iarr.append(q3I)
+                    Q3_Qarr.append(q3Q)
 
                 ## Q4
-                q4_tomography = TomographyProgram(soccfg, reps=self.q4_config['reps'], final_delay=self.q4_config['relax_delay'],
-                                                  cfg=self.q4_config)
-                q4_iq_list = q4_tomography.acquire(soc, soft_avgs=self.q4_config['rounds'], progress=True)
-                q4I = q4_iq_list[3][0, 0]
-                q4Q = q4_iq_list[3][0, 1]
-                Q4_Iarr.append(q4I)
-                Q4_Qarr.append(q4Q)
+                if 3 in qs:
+                    q4_tomography = TomographyProgram(soccfg, reps=self.q4_config['reps'], final_delay=self.q4_config['relax_delay'],
+                                                      cfg=self.q4_config)
+                    q4_iq_list = q4_tomography.acquire(soc, soft_avgs=self.q4_config['rounds'], progress=True)
+                    q4I = q4_iq_list[3][0, 0]
+                    q4Q = q4_iq_list[3][0, 1]
+                    Q4_Iarr.append(q4I)
+                    Q4_Qarr.append(q4Q)
 
             self.Q13_BiasPS.setVoltage(0, 1)
             self.Q13_BiasPS.setVoltage(0, 2)
@@ -151,7 +169,7 @@ class AllQubitTomographyMeasurement:
             if save_data:
                 self.save_all_tomography(all_data, round_num, formatted_datetime)
             if plot_data:
-                self.plot_all_tomography(vsweep, all_data, round_num, formatted_datetime)
+                self.plot_all_tomography(qs, vsweep, all_data, round_num, formatted_datetime)
 
         return
 
@@ -183,7 +201,7 @@ class AllQubitTomographyMeasurement:
 
         return
 
-    def plot_all_tomography(self, vsweep, alldata, round_num, formatted_datetime):
+    def plot_all_tomography(self, qs,  vsweep, alldata, round_num, formatted_datetime):
         plt.rcParams.update({
             'font.size': 14,  # Base font size
             'axes.titlesize': 18,  # Title font size
@@ -193,7 +211,7 @@ class AllQubitTomographyMeasurement:
             'legend.fontsize': 14,  # Legend font size
         })
 
-        for q in range(0, 4):
+        for q in qs:
             fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex='all')
             ax1.set_ylabel("I Amplitude (a.u.)", fontsize=16)
             ax1.tick_params(axis='both', which='major', labelsize=14)

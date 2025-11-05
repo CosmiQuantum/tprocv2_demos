@@ -79,6 +79,8 @@ del experiment
 # if not os.path.exists(data_setFolder):
 #     os.makedirs(data_setFolder)
 #
+# qs_to_look_at = [0, 1, 2, 3]
+# res_len = [0.3, 0.2, 0.2, 0.3]
 # start_voltage = 0 #V
 # stop_voltage = 0.1 #V
 # voltage_pts = 30
@@ -94,8 +96,9 @@ del experiment
 #
 # #experiment = QICK_experiment(outerFolder)
 # experiment = QICK_experiment(data_setFolder, fridge=FRIDGE)
-# qs_tomography = AllQubitTomographyMeasurement(data_setFolder, experiment, tot_num_of_qubits, unmask)
-# qs_tomography.allq_run_tomography(experiment.soccfg, experiment.soc, start_voltage, stop_voltage, voltage_pts, rounds, plot=True, save=True)
+# qs_tomography = AllQubitTomographyMeasurement(data_setFolder, experiment, tot_num_of_qubits, res_len, unmask)
+# qs_tomography.allq_run_tomography(experiment.soccfg, experiment.soc, qs_to_look_at,
+#                                   start_voltage, stop_voltage, voltage_pts, rounds, plot=True, save=True)
 #
 # del qs_tomography
 # del experiment
