@@ -2213,13 +2213,13 @@ class PlotRR_noQick:
                     T_mK = qubit_data['T_mK']
 
                     # # Skip if relative error is ≥ rel_err_cutoff
-                    # if T_err / T_mK >= rel_err_cutoff: # rel_err_cutoff is a decimal (0.8 = a relative error of 80% and so forth)
-                    #     continue
+                    if T_err / T_mK >= rel_err_cutoff: # rel_err_cutoff is a decimal (0.8 = a relative error of 80% and so forth)
+                        continue
 
-                    # if T_err > 150:  # skip if error is too large (for example, larger than 300mK)
-                    #     continue
+                    if T_err > 150:  # skip if error is too large (for example, larger than 300mK)
+                        continue
 
-                    if T_mK > 1000:  # huge outliers that ruin plots and are not accurate
+                    if T_mK > 750:  # huge outliers that ruin plots and are not accurate
                         continue
 
                     errs.append(T_err)
@@ -2321,8 +2321,8 @@ class PlotRR_noQick:
             ax.grid(False)
 
             # Format the x-axis to show dates in a nice format
-            ax.set_ylim(yaxis_min, yaxis_max)
-            ax.set_yticks(np.linspace(yaxis_min, yaxis_max, 10))
+            # ax.set_ylim(yaxis_min, yaxis_max)
+            # ax.set_yticks(np.linspace(yaxis_min, yaxis_max, 10))
 
             # start_time = datetime.datetime(2025, 4, 11, 12, 30)
             # ax.set_xlim(left=start_time)

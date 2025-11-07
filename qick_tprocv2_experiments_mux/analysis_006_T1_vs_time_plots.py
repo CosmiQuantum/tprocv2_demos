@@ -26,9 +26,10 @@ from matplotlib.ticker import StrMethodFormatter
 
 class T1VsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, fridge, exp_name = 'ge'):
+                 signal, run_name, fridge, run_number, exp_name = 'ge'):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
+        self.run_number = run_number
         self.signal = signal
         self.figure_quality = figure_quality
         self.run_name = run_name
@@ -218,7 +219,8 @@ class T1VsTime:
                             Qshots_raw = self.process_h5_data(load_data['t1_ge'][q_key]['Q'][0][dataset].decode())
 
                             replica = OfflineAcquireReplica(remove_offset=True, length_norm=True)
-                            replica.setup_offline_from_strings(exp_config_str, syst_config_str, soccfg,qubit_index=int(q_key))
+                            replica.setup_offline_from_strings(exp_config_str, syst_config_str, soccfg,
+                                                               qubit_index=int(q_key))
 
                             # Authoritative dims from EXP config
                             exp_cfg = replica._safe_eval_cfg(exp_config_str)
@@ -230,7 +232,7 @@ class T1VsTime:
                             Qshots = replica.coerce_to_rounds_N_reps(Qshots_raw, steps, reps)
 
                             # We only provided ONE rounds worth of raw shots from H5 -> tell the replica that
-                            I, Q = replica.acquire_offline(Ishots, Qshots, soft_avgs=1)
+                            I, Q = replica.acquire_offline(Ishots, Qshots,soft_avgs=1)  # we have only done 1 round and a bunch of reps
                         # -----------------------------------------------------------------------------------------------
                         else:
                             I = self.process_h5_data(load_data['t1_ge'][q_key].get('I', [])[0][dataset].decode())
@@ -285,9 +287,9 @@ class T1VsTime:
                                     f"Skipping T1 = {T1_est:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
                                 continue
 
-                            if T1_est < 25:
+                            if (self.run_number == 8) and (q_key != 5) and (T1_est <= 22):  # # QUIET run 8 patch while fitting is fixed
                                 print(
-                                    f"Skipping T1 = {T1_est:.3f} µs because it is presumed to have been a bad fit. Check these files.")
+                                    f"Skipping T1 = {T1_est:.3f} µs for Q{q_key + 1} because it is presumed to be a bad fit (Run 8 patch).")
                                 continue
 
                             t1_vals[q_key].extend([T1_est])
@@ -859,3 +861,4 @@ class OfflineAcquireReplica:
         I_final = summed[:, 0]  # (N,)
         Q_final = summed[:, 1]
         return I_final, Q_final
+
