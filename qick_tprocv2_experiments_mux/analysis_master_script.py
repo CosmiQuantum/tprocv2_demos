@@ -251,7 +251,7 @@ date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extens
 # date = "2025-10-27_22-04-57"  #only plot all of the data for one date at a time because there is a lot
 # #date = '2025-10-24_01-41-30'
 # #outerFolder = f"/data/QICK_data/{run_name}/" + date + "/"
-# unique_folder_path = "" # only used when plot_rabis_Qtemps = True
+# unique_folder_path = "" # only used when plot_rabis_Qtemps = True or for load_t1_shots_vs_avgIQ_arrays()
 # # outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/{date}/study_data"
 # outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/{date}/study_data"
 # #outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/{date}/study_data"

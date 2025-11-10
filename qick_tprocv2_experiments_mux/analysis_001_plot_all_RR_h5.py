@@ -98,7 +98,7 @@ class PlotAllRR:
     
     def run(self, plot_res_spec = True, plot_q_spec = True, plot_rabi = True, rabi_rolling_avg=False, plot_ss = True,
             plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = True, plot_t1 = True,
-            plot_t2r = True, plot_t2e = True, plot_rabis_Qtemps = False):
+            plot_t2r = True, plot_t2e = True, plot_rabis_Qtemps = False, plot_t1_shots_analysis = False):
 
         if plot_res_spec:
             self.load_plot_save_res_spec()
@@ -121,6 +121,8 @@ class PlotAllRR:
             self.load_plot_save_ss_gef(plot_ssf_gef = ss_plot_gef)
         if plot_t1:
             self.load_plot_save_t1(saved_shots = self.saved_shots)
+        if plot_t1_shots_analysis:
+            self.load_t1_shots_vs_avgIQ_arrays()
         if plot_t2r:
             self.load_plot_save_t2r()
         if plot_t2e:
@@ -477,9 +479,9 @@ class PlotAllRR:
                         Qshots_raw = self.process_h5_data(load_data['t1_ge'][q_key]['Q'][0][dataset].decode())
 
                         # --- path to the soccfg dump (txt file made with save_run_soccfg_params.py) ---
-                        if self.run_num == 8:
-                            soccfg_dump_path = "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-03_14-16-17.txt"
-                        elif self.run_num == 6:
+                        if self.run_num == 8: # this does work
+                            soccfg_dump_path = "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
+                        elif self.run_num == 6: # this doesn't work yet (shots need to be processed diff for run 6) but the skeleton is set up
                             soccfg_dump_path = "/data/QICK_data/run6/6transmon/loud2_soccfg_params/soccfg_full_dump_2025-11-04_16-30-54_firmware_during_run6.txt"
 
                         # --- init offline replica (no live soccfg) and set it up from strings + dump ---
@@ -490,7 +492,6 @@ class PlotAllRR:
                             soccfg_dump_path,
                             qubit_index=int(q_key))
 
-                        # --- authoritative dims from EXP config (use the replica's safe eval) ---
                         exp_cfg = replica._safe_eval_cfg(exp_config_str)
                         steps = int(exp_cfg['T1_ge']['steps'])
                         reps = int(exp_cfg['T1_ge']['reps'])
@@ -524,6 +525,216 @@ class PlotAllRR:
                         del T1_class_instance
         
             del H5_class_instance
+
+    def load_t1_shots_vs_avgIQ_arrays(self):
+        # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
+        outerFolder_expt = self.outerFolder + "/Data_h5/t1_ge/"
+        h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+
+        for h5_file in h5_files:
+
+            save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
+            H5_class_instance = Data_H5(h5_file)
+            load_data = H5_class_instance.load_from_h5(data_type='t1_ge', save_r=int(save_round))
+
+            populated_keys = []
+            for q_key in load_data['t1_ge']:
+                # Access 'Dates' for the current q_key
+                dates_list = load_data['t1_ge'][q_key].get('Dates', [[]])
+
+                # Check if any entry in 'Dates' is not NaN
+                if any(
+                        not np.isnan(date)
+                        for date in dates_list[0]  # Iterate over the first batch of dates
+                ):
+                    populated_keys.append(q_key)
+
+            for q_key in populated_keys:
+                for dataset in range(len(load_data['t1_ge'][q_key].get('Dates', [])[0])):
+
+                    # -------- load t1 vals and errs saved into the h5 files during RR -------------------------------
+                    # T1 = load_data['T1'][q_key].get('T1', [])[0][dataset]
+                    # errors = load_data['T1'][q_key].get('Errors', [])[0][dataset]
+                    date = datetime.datetime.fromtimestamp(load_data['t1_ge'][q_key].get('Dates', [])[0][dataset])
+
+                    # --- process IQ shots and turn them into IQ arrays (using Arianna's func, not QICK) --------------------------------
+                    print("Processing shots...")
+
+                    # --- load cfg strings from H5 ---
+                    exp_config_str = load_data['t1_ge'][q_key]['Exp Config'][0][dataset].decode()
+                    syst_config_str = load_data['t1_ge'][q_key]['Syst Config'][0][dataset].decode()
+
+                    # --- raw shots from H5  ---
+                    Ishots_raw = self.process_h5_data(load_data['t1_ge'][q_key]['I'][0][dataset].decode())
+                    Qshots_raw = self.process_h5_data(load_data['t1_ge'][q_key]['Q'][0][dataset].decode())
+
+                    # --- path to the soccfg dump (txt file made with save_run_soccfg_params.py) ---
+                    if self.run_num == 8:  # this does work
+                        soccfg_dump_path = "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
+                    elif self.run_num == 6:  # this doesn't work yet (shots need to be processed diff for run 6) but the skeleton is set up
+                        soccfg_dump_path = "/data/QICK_data/run6/6transmon/loud2_soccfg_params/soccfg_full_dump_2025-11-04_16-30-54_firmware_during_run6.txt"
+
+                    # --- init offline replica (no live soccfg) and set it up from strings + dump ---
+                    replica = OfflineAcquireReplica(remove_offset=True, length_norm=False, edge_counting=False)
+                    replica.setup_offline_from_strings(
+                        exp_config_str,
+                        syst_config_str,
+                        soccfg_dump_path,
+                        qubit_index=int(q_key))
+
+                    exp_cfg = replica._safe_eval_cfg(exp_config_str)
+                    steps = int(exp_cfg['T1_ge']['steps'])
+                    reps = int(exp_cfg['T1_ge']['reps'])
+                    # rounds not needed here; H5 holds one round
+
+                    # --- coerce raw shots to (rounds, N, reps) before averaging ---
+                    Ishots = replica.coerce_to_rounds_N_reps(Ishots_raw, steps, reps)
+                    Qshots = replica.coerce_to_rounds_N_reps(Qshots_raw, steps, reps)
+
+                    # --- acquire (software average over a single round) ---
+                    I_viashots, Q_viashots = replica.acquire_offline(Ishots, Qshots, soft_avgs=1)
+
+                    # -------------------------- Extract avg IQ arrays from h5 files (these were made by QICK) --------------------------------------------
+                    I = self.process_h5_data(load_data['t1_ge'][q_key].get('I', [])[0][dataset].decode())
+                    Q = self.process_h5_data(load_data['t1_ge'][q_key].get('Q', [])[0][dataset].decode())
+
+                    delay_times = self.process_h5_data(load_data['t1_ge'][q_key].get('Delay Times', [])[0][dataset].decode())
+                    # fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
+                    round_num = load_data['t1_ge'][q_key].get('Round Num', [])[0][dataset]
+                    batch_num = load_data['t1_ge'][q_key].get('Batch Num', [])[0][dataset]
+                    exp_config = load_data['t1_ge'][q_key].get('Exp Config', [])[0][dataset].decode()
+                    safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                    exp_config = eval(exp_config, safe_globals)
+
+                    if len(I) > 0:
+                        T1_spec_cfg = exp_config['T1_ge']
+                        # ------------------------------- plot a la avg IQ arrays ------------------------------
+                        T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.outerFolder_save_plots,
+                                                          round_num, self.signal, self.save_figs, fit_data=True)
+                        I_avg, Q_avg, t, fit_avg, T1_err_avg, T1_est_avg, plot_sig_avg = T1_class_instance.plot_results(I, Q, delay_times, date, T1_spec_cfg,
+                                                                                                                                                     self.figure_quality)
+                        del T1_class_instance
+
+                        # ----------------------------------- plot a la shots ------------------------------
+                        T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.unique_folder_path,
+                                                          round_num, self.signal, self.save_figs, fit_data=True)
+                        I_sh,  Q_sh,  t, fit_sh,  T1_err_sh,  T1_est_sh,  plot_sig_sh = T1_class_instance.plot_results(I_viashots, Q_viashots, delay_times, date, T1_spec_cfg,
+                                                                                                                         self.figure_quality)
+                        del T1_class_instance
+
+                        avg_tuple = (I_avg, Q_avg, t, fit_avg, T1_err_avg, T1_est_avg, plot_sig_avg)
+                        shots_tuple = (I_sh, Q_sh, t, fit_sh, T1_err_sh, T1_est_sh, plot_sig_sh)
+
+                        self.plot_t1_overlay(
+                            avg_tuple, shots_tuple,
+                            labels=("Avg-IQ", "Shots-Offline"),
+                            title_prefix="T1 Overlay",
+                            qubit_index=q_key,
+                            out_dir=f"/data/QICK_data/run8/6transmon/replotted_RR_data/2025-10-27_22-04-57/avgIQ_andshots_plotted_tog",
+                            dpi=140)
+
+            del H5_class_instance
+
+    def plot_t1_overlay(self,
+            avg_res,  # (I, Q, delay_times, fit, T1_err, T1_est, plot_sig) from method A
+            shots_res,  # (I, Q, delay_times, fit, T1_err, T1_est, plot_sig) from method B
+            *,
+            labels=("Avg-IQ", "Shots?Offline"),
+            title_prefix="T1 Overlay",
+            qubit_index=None,
+            out_dir=None,
+            dpi=120,
+            fig_size=(10, 8)
+    ):
+        """
+        Overlay T1 data & fits from two pipelines on the same figure.
+
+        Parameters
+        ----------
+        avg_res : tuple
+            (I, Q, delay_times, fit, T1_err, T1_est, plot_sig) for pipeline A.
+        shots_res : tuple
+            (I, Q, delay_times, fit, T1_err, T1_est, plot_sig) for pipeline B.
+        labels : (str, str)
+            Legend labels for A and B.
+        title_prefix : str
+            Prefix for the figure title.
+        qubit_index : int or None
+            If provided, included in the title.
+        out_dir : str or None
+            If provided, the plot is saved there (PNG). Folder is created if needed.
+        dpi : int
+            Figure DPI when saving.
+        fig_size : (float, float)
+            Matplotlib figure size.
+        """
+        (I_a, Q_a, t_a, fit_a, err_a, T1_a, sig_a) = avg_res
+        (I_b, Q_b, t_b, fit_b, err_b, T1_b, sig_b) = shots_res
+
+        # Sanity: time axes must match to overlay meaningfully
+        if not np.allclose(np.asarray(t_a), np.asarray(t_b)):
+            # If different, we still plot both, but warn in the title.
+            time_mismatch = True
+            t = t_a  # use A's axis for x labels
+        else:
+            time_mismatch = False
+            t = t_a
+
+        fig, (axI, axQ) = plt.subplots(2, 1, figsize=fig_size, sharex=True)
+        plt.rcParams.update({'font.size': 16})
+
+        # Title
+        qtxt = f" Q{qubit_index + 1}" if qubit_index is not None else ""
+        warn = " [time axes differ]" if time_mismatch else ""
+        fig.suptitle(f"{title_prefix}{qtxt}{warn}", y=0.98, fontsize=20)
+
+        # --- I panel ---
+        axI.plot(t, I_a, lw=2, label=f"{labels[0]}: I")
+        axI.plot(t, I_b, lw=2, linestyle="--", label=f"{labels[1]}: I")
+
+        # if fits exist and were done on I, overlay them
+        if fit_a is not None and (sig_a == 'I'):
+            lab = f"{labels[0]} fit (T1={T1_a:.2f} µs±{(err_a or np.nan):.2g})"
+            axI.plot(t, fit_a, lw=3, alpha=0.9, label=lab)
+        if fit_b is not None and (sig_b == 'I'):
+            lab = f"{labels[1]} fit (T1={T1_b:.2f} µs±{(err_b or np.nan):.2g})"
+            axI.plot(t, fit_b, lw=3, alpha=0.9, linestyle="--", label=lab)
+
+        axI.set_ylabel("I amplitude (a.u.)")
+        axI.legend(loc="best")
+        axI.grid(True, alpha=0.25)
+
+        # --- Q panel ---
+        axQ.plot(t, Q_a, lw=2, label=f"{labels[0]}: Q")
+        axQ.plot(t, Q_b, lw=2, linestyle="--", label=f"{labels[1]}: Q")
+
+        # if fits exist and were done on Q, overlay them
+        if fit_a is not None and (sig_a == 'Q'):
+            lab = f"{labels[0]} fit (T1={T1_a:.2f} µs±{(err_a or np.nan):.2g})"
+            axQ.plot(t, fit_a, lw=3, alpha=0.9, label=lab)
+        if fit_b is not None and (sig_b == 'Q'):
+            lab = f"{labels[1]} fit (T1={T1_b:.2f} µs±{(err_b or np.nan):.2g})"
+            axQ.plot(t, fit_b, lw=3, alpha=0.9, linestyle="--", label=lab)
+
+        axQ.set_xlabel("Delay time (µs)")
+        axQ.set_ylabel("Q amplitude (a.u.)")
+        axQ.legend(loc="best")
+        axQ.grid(True, alpha=0.25)
+
+        plt.tight_layout(rect=(0, 0, 1, 0.96))
+
+        # Save if requested
+        if out_dir:
+            os.makedirs(out_dir, exist_ok=True)
+            now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            qb = f"_Q{qubit_index + 1}" if qubit_index is not None else ""
+            fname = f"T1_overlay{qb}_{now}.png"
+            path = os.path.join(out_dir, fname)
+            fig.savefig(path, dpi=dpi, bbox_inches="tight")
+            # Return fig, axes, and saved path for logging
+            return fig, (axI, axQ), path
+
+        return fig, (axI, axQ), None
 
     def load_plot_save_t2r(self):
         # -------------------------------------------------------Load/Plot/Save T2R------------------------------------------
@@ -1436,25 +1647,35 @@ class OfflineAcquireReplica:
     # -------------------- compute norm & offset (from dump only) --------------------
     def _compute_ro_norm_and_offset_from_dump(self, *, syst_cfg, qubit_index):
         """
-        Use parsed dump for:
-          - decimated MHz -> ro_cycles
-          - iq_offset_effective -> offset
+        Use parsed dump + per-qubit res_length from syst_cfg to reproduce QICK math:
+          ro_length_cycles = trunc(res_length_us * decimated_MHz)
+          iq_offset_effective from diagnostics
         """
-        ro_ch_list = syst_cfg['ro_ch']
-        res_len_us = float(syst_cfg['res_length'])
         qidx = int(qubit_index)
 
-        # ro_ch_list might be a list per-qubit or a scalar; support both
-        if isinstance(ro_ch_list, (list, tuple)):
-            ro_ch_for_q = int(ro_ch_list[qidx])
-        else:
-            ro_ch_for_q = int(ro_ch_list)
+        # ro_ch can be scalar or list
+        ro_ch_field = syst_cfg['ro_ch']
+        ro_ch_for_q = int(ro_ch_field[qidx]) if isinstance(ro_ch_field, (list, tuple)) else int(ro_ch_field)
 
+        # res_length can be scalar or list (some setups vary per qubit)
+        res_len_field = (syst_cfg.get('res_length') or syst_cfg.get('res_len') or syst_cfg.get('read_length'))
+        if res_len_field is None:
+            raise KeyError("System config missing 'res_length' (or alias).")
+        res_len_us = float(res_len_field[qidx] if isinstance(res_len_field, (list, tuple)) else res_len_field)
+
+        # decimated rate & effective IQ offset from the soccfg dump you already parse
         info = self._dump_readouts.get(ro_ch_for_q, {})
-        dec_mhz = float(info.get("decimated_MHz", 307.2))
+
+        # Prefer decimated_MHz_exact (new format), fall back to decimated_MHz (old dump)
+        if "decimated_MHz_exact" in info:
+            dec_mhz = float(info["decimated_MHz_exact"])
+        else:
+            dec_mhz = float(info.get("decimated_MHz", 307.2))
+
         offset_eff = float(info.get("iq_offset_effective", 0.0))
 
-        ro_cycles = self.to_int(res_len_us, dec_mhz, parname="length")  # MHz * us = samples
+        # EXACTLY how QICK derives buffer length: trunc(us * MHz)
+        ro_cycles = int(np.trunc(res_len_us * dec_mhz))
         return ro_cycles, offset_eff, ro_ch_for_q
 
     def to_int(self, val, scale, quantize=1, parname=None, trunc=False):
@@ -1601,7 +1822,10 @@ class OfflineAcquireReplica:
         # accumulate per-round like QICK does, using the same averaging kernel
         summed = None
         for r in range(self._rounds):
-            # pack this round like acc_buf: (reps, steps, 1, 2)
+            # pack this round like acc_buf: (reps, steps, 1, 2)# Normalize raw ADC counts to QICK's floating-point "a.u." scale
+            # scale = 2**15
+            # I3 = I3 / scale
+            # Q3 = Q3 / scale
             I_round = I3[r]  # (N, reps)
             Q_round = Q3[r]
             packed = np.zeros((self._reps, self._N_steps, 1, 2), dtype=np.int64)
@@ -1623,4 +1847,5 @@ class OfflineAcquireReplica:
 
         I_final = summed[:, 0]  # (N,)
         Q_final = summed[:, 1]
+
         return I_final, Q_final

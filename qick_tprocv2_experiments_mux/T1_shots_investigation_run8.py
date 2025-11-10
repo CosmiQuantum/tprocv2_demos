@@ -7,7 +7,7 @@ from analysis_001_plot_all_RR_h5 import PlotAllRR
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 
 ###################################################### Set These #######################################################
-save_figs = True
+save_figs = False
 fit_saved = True
 show_legends = False
 signal = 'None'
@@ -16,7 +16,7 @@ figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 saved_shots_t1ge = True
 
-t1_analysis_flags = {"load_t1_data": False, "plot_RR_data": False, "t1_vs_time_plots": False, "t1_hists": False}
+t1_analysis_flags = {"load_t1_data": True, "plot_RR_data": True, "t1_vs_time_plots": False, "t1_hists": False}
 
 if run_number == 8:
     run_name = 'run8/6transmon/round_robin/AB_paper_datadump_T1_Analysis'
@@ -205,15 +205,16 @@ if t1_analysis_flags["load_t1_data"]:
 
 if t1_analysis_flags["plot_RR_data"]:
     date = "2025-10-27_22-04-57"  #only plot all of the data for one date at a time because there is a lot
-    unique_folder_path = "" # only used when plot_rabis_Qtemps = True
+    unique_folder_path = f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/shots_method/" # only used when plot_rabis_Qtemps = True or for load_t1_shots_vs_avgIQ_arrays()
     outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/{date}/study_data"
-    outerFolder_save_plots = f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/"
+    # outerFolder_save_plots = f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/"
+    outerFolder_save_plots = f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/avg_IQ_method/"
     saved_shots_t1 = False
     plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, run_number, tot_num_of_qubits, outerFolder,
                       outerFolder_save_plots, unique_folder_path, saved_shots = saved_shots_t1)
     plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, rabi_rolling_avg=False, plot_ss = False,
-                plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = True,
-                plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = False)
+                plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = False,
+                plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = False, plot_t1_shots_analysis = True)
 
 ################################################# T1 vs Time Plots #################################################
 if t1_analysis_flags["t1_vs_time_plots"]:
