@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 show_text = False
-colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
 
 qubit_temps = [
     [200.97, 137.11, 107.33, 86.23],  # Qubit 1

@@ -2,10 +2,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 do_T1 = False
-do_T2R = False
-do_T2E = True
+do_T2R = True
+do_T2E = False
 
 show_text = False
+colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
 
 if do_T1:
     t1_vals = [
@@ -48,11 +49,10 @@ if do_T1:
         )
 
     # Use a colormap to assign a unique color to each qubit
-    colors = plt.get_cmap('tab10')  # or 'Set1', 'tab20', etc.
     for qubit_index, vals in enumerate(t1_vals):
         vals_array = np.array(vals, dtype=np.float64)
         errs_array = np.array(t1_errs[qubit_index], dtype=np.float64)
-        color = colors(qubit_index % 10)  # wrap around if >10 qubits
+        color = colors[qubit_index % len(colors)]
 
         plt.errorbar(
             runs, vals_array,
@@ -121,13 +121,11 @@ if do_T2R:
             zorder=0
         )
 
-    # Use a colormap to assign a unique color to each qubit
-    colors = plt.get_cmap('tab10')  # or 'Set1', 'tab20', etc.
 
     for qubit_index, vals in enumerate(t2r_vals):
         vals_array = np.array(vals, dtype=np.float64)
         errs_array = np.array(t2r_errs[qubit_index], dtype=np.float64)
-        color = colors(qubit_index % 10)  # wrap around if >10 qubits
+        color = colors[qubit_index % len(colors)]
 
         plt.errorbar(
             runs, vals_array,
@@ -196,13 +194,10 @@ if do_T2E:
             zorder=0
         )
 
-    # Use a colormap to assign a unique color to each qubit
-    colors = plt.get_cmap('tab10')  # or 'Set1', 'tab20', etc.
-
     for qubit_index, vals in enumerate(t2e_vals):
         vals_array = np.array(vals, dtype=np.float64)
         errs_array = np.array(t2e_errs[qubit_index], dtype=np.float64)
-        color = colors(qubit_index % 10)  # wrap around if >10 qubits
+        color = colors[qubit_index % len(colors)]
 
         plt.errorbar(
             runs, vals_array,
