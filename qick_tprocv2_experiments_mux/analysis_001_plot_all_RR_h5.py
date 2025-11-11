@@ -526,7 +526,7 @@ class PlotAllRR:
         
             del H5_class_instance
 
-    def load_t1_shots_vs_avgIQ_arrays(self):
+    def load_t1_shots_vs_avgIQ_arrays(self, plot_both_methods_tog = True):
         # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
         outerFolder_expt = self.outerFolder + "/Data_h5/t1_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -625,13 +625,14 @@ class PlotAllRR:
                         avg_tuple = (I_avg, Q_avg, t, fit_avg, T1_err_avg, T1_est_avg, plot_sig_avg)
                         shots_tuple = (I_sh, Q_sh, t, fit_sh, T1_err_sh, T1_est_sh, plot_sig_sh)
 
-                        self.plot_t1_overlay(
-                            avg_tuple, shots_tuple,
-                            labels=("Avg-IQ", "Shots-Offline"),
-                            title_prefix="T1 Overlay",
-                            qubit_index=q_key,
-                            out_dir=f"/data/QICK_data/run8/6transmon/replotted_RR_data/2025-10-27_22-04-57/avgIQ_andshots_plotted_tog",
-                            dpi=140)
+                        if plot_both_methods_tog:
+                            self.plot_t1_overlay(
+                                avg_tuple, shots_tuple,
+                                labels=("Avg-IQ", "Shots-Offline"),
+                                title_prefix="T1 Overlay",
+                                qubit_index=q_key,
+                                out_dir=f"/data/QICK_data/run8/6transmon/replotted_RR_data/2025-10-27_22-04-57/avgIQ_andshots_plotted_tog",
+                                dpi=140)
 
             del H5_class_instance
 
@@ -1793,9 +1794,12 @@ class OfflineAcquireReplica:
         avg_d = []
         for i_ch, (ch, ro) in enumerate(self.ro_chs.items()):
             # average over avg_level (==0) i.e. over reps
-            avg = d_reps[i_ch].sum(axis=self.avg_level) / self.loop_dims[self.avg_level]
+            # avg = d_reps[i_ch].sum(axis=self.avg_level) / self.loop_dims[self.avg_level]
+            summed_int = np.add.reduce(d_reps[i_ch], axis=self.avg_level, dtype=np.int64)
+            avg = summed_int.astype(np.float64) / float(self.loop_dims[self.avg_level])
+
             if length_norm and not ro['edge_counting']:
-                avg = avg / ro['length']
+                avg = avg / float(ro['length'])
                 if remove_offset:
                     avg -= self._ro_offset_qick(ch, ro.get('ro_config'))
             # move reads_per_shot axis to front (we have 1 read)
@@ -1823,9 +1827,6 @@ class OfflineAcquireReplica:
         summed = None
         for r in range(self._rounds):
             # pack this round like acc_buf: (reps, steps, 1, 2)# Normalize raw ADC counts to QICK's floating-point "a.u." scale
-            # scale = 2**15
-            # I3 = I3 / scale
-            # Q3 = Q3 / scale
             I_round = I3[r]  # (N, reps)
             Q_round = Q3[r]
             packed = np.zeros((self._reps, self._N_steps, 1, 2), dtype=np.int64)
