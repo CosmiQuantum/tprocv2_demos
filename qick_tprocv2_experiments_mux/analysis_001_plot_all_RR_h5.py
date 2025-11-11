@@ -575,7 +575,7 @@ class PlotAllRR:
                         soccfg_dump_path = "/data/QICK_data/run6/6transmon/loud2_soccfg_params/soccfg_full_dump_2025-11-04_16-30-54_firmware_during_run6.txt"
 
                     # --- init offline replica (no live soccfg) and set it up from strings + dump ---
-                    replica = OfflineAcquireReplica(remove_offset=True, length_norm=False, edge_counting=False)
+                    replica = OfflineAcquireReplica(remove_offset=True, length_norm=True, edge_counting=False)
                     replica.setup_offline_from_strings(
                         exp_config_str,
                         syst_config_str,
@@ -1805,6 +1805,8 @@ class OfflineAcquireReplica:
             # move reads_per_shot axis to front (we have 1 read)
             avg_d.append(np.moveaxis(avg, -2, 0))  # -> (1, steps, 2)
         return avg_d
+
+
 
     # -------------------- public: acquire offline --------------------
     def acquire_offline(self, Ishots, Qshots, *, soft_avgs=None):
