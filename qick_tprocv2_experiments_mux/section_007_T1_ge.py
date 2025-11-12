@@ -229,7 +229,7 @@ class T1Measurement:
                          va='top')  # , pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
                 fig.text(plot_middle, 0.98,
-                         f"T1 Q{self.QubitIndex + 1}, T1 %.2f us" % T1_est + f", {self.config['reps']}*{self.config['rounds']} avgs,",
+                         f"T1 Q{self.QubitIndex + 1}, T1={T1_est:.2f} us",
                          fontsize=24, ha='center', va='top')
 
         else:

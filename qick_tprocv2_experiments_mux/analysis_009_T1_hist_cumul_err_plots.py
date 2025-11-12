@@ -211,9 +211,13 @@ class T1HistCumulErrPlots:
                                 qubit_index=int(q_key))
 
                             exp_cfg = replica._safe_eval_cfg(exp_config_str)
-                            steps = int(exp_cfg['T1_ge']['steps'])
-                            reps = int(exp_cfg['T1_ge']['reps'])
-                            # rounds not needed here; H5 holds one round
+                            syst_cfg = replica._safe_eval_cfg(syst_config_str)
+
+                            # Pull steps/reps from Syst Config first; fall back to Exp Config only if missing
+                            steps = int(syst_cfg.get('steps', exp_cfg['T1_ge']['steps']))
+                            reps = int(syst_cfg.get('reps', exp_cfg['T1_ge']['reps']))
+
+                            # rounds not needed here; T1 H5 holds one round
 
                             # --- coerce raw shots to (rounds, N, reps) before averaging ---
                             Ishots = replica.coerce_to_rounds_N_reps(Ishots_raw, steps, reps)
@@ -229,13 +233,13 @@ class T1HistCumulErrPlots:
                         delay_times = self.process_h5_data(load_data[f't1{exp_extension}'][q_key].get('Delay Times', [])[0][dataset].decode())
                         #fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
                         round_num = load_data[f't1{exp_extension}'][q_key].get('Round Num', [])[0][dataset]
-                        batch_num = load_data[f't1{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
-                        try:
-                            exp_config = load_data[f't1{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
-                            safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-                            exp_config = eval(exp_config, safe_globals)
-                        except:
-                            exp_config =None
+                        # batch_num = load_data[f't1{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
+                        # try:
+                        #     exp_config = load_data[f't1{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
+                        #     safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                        #     exp_config = eval(exp_config, safe_globals)
+                        # except:
+                        #     exp_config =None
 
                         if len(I)>0:
                             T1_class_instance = T1Measurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal,

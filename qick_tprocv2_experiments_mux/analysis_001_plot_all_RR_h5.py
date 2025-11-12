@@ -505,8 +505,11 @@ class PlotAllRR:
                             qubit_index=int(q_key))
 
                         exp_cfg = replica._safe_eval_cfg(exp_config_str)
-                        steps = int(exp_cfg['T1_ge']['steps'])
-                        reps = int(exp_cfg['T1_ge']['reps'])
+                        syst_cfg = replica._safe_eval_cfg(syst_config_str)
+
+                        # Pull steps/reps from Syst Config first; fall back to Exp Config only if missing
+                        steps = int(syst_cfg.get('steps', exp_cfg['T1_ge']['steps']))
+                        reps = int(syst_cfg.get('reps', exp_cfg['T1_ge']['reps']))
                         # rounds not needed here; H5 holds one round
 
                         # --- coerce raw shots to (rounds, N, reps) before averaging ---
@@ -525,15 +528,15 @@ class PlotAllRR:
                     round_num = load_data['t1_ge'][q_key].get('Round Num', [])[0][dataset]
                     batch_num = load_data['t1_ge'][q_key].get('Batch Num', [])[0][dataset]
 
-                    exp_config = load_data['t1_ge'][q_key].get('Exp Config', [])[0][dataset].decode()
-                    safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-
-                    exp_config = eval(exp_config, safe_globals)
+                    # exp_config = load_data['t1_ge'][q_key].get('Exp Config', [])[0][dataset].decode()
+                    # safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                    #
+                    # exp_config = eval(exp_config, safe_globals)
         
                     if len(I)>0:
                         T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
-                        T1_spec_cfg = exp_config['T1_ge']
-                        T1_class_instance.plot_results(I, Q, delay_times, date, T1_spec_cfg, self.figure_quality)
+                        # T1_spec_cfg = exp_config['T1_ge'] # not using it for now, found out the one that should be used is the syst config one. that one gets updated during meas but expt doesn't
+                        T1_class_instance.plot_results(I, Q, delay_times, date, self.figure_quality)
                         del T1_class_instance
         
             del H5_class_instance

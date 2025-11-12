@@ -249,8 +249,11 @@ class T1VsTime:
                                 qubit_index=int(q_key))
 
                             exp_cfg = replica._safe_eval_cfg(exp_config_str)
-                            steps = int(exp_cfg['T1_ge']['steps'])
-                            reps = int(exp_cfg['T1_ge']['reps'])
+                            syst_cfg = replica._safe_eval_cfg(syst_config_str)
+
+                            # Pull steps/reps from Syst Config first; fall back to Exp Config only if missing
+                            steps = int(syst_cfg.get('steps', exp_cfg['T1_ge']['steps']))
+                            reps = int(syst_cfg.get('reps', exp_cfg['T1_ge']['reps']))
                             # rounds not needed here; H5 holds one round
 
                             # --- coerce raw shots to (rounds, N, reps) before averaging ---
@@ -263,38 +266,19 @@ class T1VsTime:
                         else:
                             I = self.process_h5_data(load_data['t1_ge'][q_key].get('I', [])[0][dataset].decode())
                             Q = self.process_h5_data(load_data['t1_ge'][q_key].get('Q', [])[0][dataset].decode())
+
                         delay_times = self.process_h5_data(load_data[f't1{exp_extension}'][q_key].get('Delay Times', [])[0][dataset].decode())
                         # fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
                         round_num = load_data[f't1{exp_extension}'][q_key].get('Round Num', [])[0][dataset]
 
-                        # --- NEW: makes per-shot data compatible with per-delay fitting --------------------------------
-                        delay_times = self.flatten_numeric(delay_times)
-                        N = int(delay_times.size)
-                        if N == 0:
-                            print("Skipping dataset: empty delay_times")
-                            continue
-
-                        # Choose reducer: "mean" (default) or set self.per_delay_reducer="median" upstream
-                        reducer = getattr(self, "per_delay_reducer", "mean")
-
-                        try:
-                            # If I/Q are (N,R) matrices from save_shots=True, this handles them directly.
-                            # If they are flattened (N*R,), it reshapes and reduces to length N.
-                            I = self.collapse_per_delay(I, N, reducer=reducer)
-                            Q = self.collapse_per_delay(Q, N, reducer=reducer)
-                        except ValueError as e:
-                            print(f"Skipping dataset due to shape mismatch: {e}")
-                            continue
-                        #-----------------------------------------------------------------------------------------------
-
-                        try:
-                            batch_num = load_data[f't1{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
-                            syst_config = load_data[f't1{exp_extension}'][q_key].get('Syst Config', [])[0][dataset].decode()
-                            exp_config = load_data[f't1{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
-                            safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-                            exp_config = eval(exp_config, safe_globals)
-                        except:
-                            exp_config =None
+                        # try:
+                        #     batch_num = load_data[f't1{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
+                        #     syst_config = load_data[f't1{exp_extension}'][q_key].get('Syst Config', [])[0][dataset].decode()
+                        #     exp_config = load_data[f't1{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
+                        #     safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                        #     exp_config = eval(exp_config, safe_globals)
+                        # except:
+                        #     exp_config =None
 
                         if len(I) > 0:
 
@@ -527,14 +511,14 @@ class T1VsTime:
         else:
             raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
         from datetime import datetime
-        year = 2025
-        month = 1
-        day1 = 22
-        day2 = 23
-        hour_start = 0
-        hour_end = 23
-        start_time = datetime(year, month, day1, hour_start, 0)
-        end_time = datetime(year, month, day2, hour_end, 59)
+        # year = 2025
+        # month = 1
+        # day1 = 22
+        # day2 = 23
+        # hour_start = 0
+        # hour_end = 23
+        # start_time = datetime(year, month, day1, hour_start, 0)
+        # end_time = datetime(year, month, day2, hour_end, 59)
         font = 14
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
