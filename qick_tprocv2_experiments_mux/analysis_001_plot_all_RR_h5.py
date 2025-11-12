@@ -466,6 +466,9 @@ class PlotAllRR:
                     #errors = load_data['T1'][q_key].get('Errors', [])[0][dataset]
                     date= datetime.datetime.fromtimestamp(load_data['t1_ge'][q_key].get('Dates', [])[0][dataset])
 
+                    # cutoff when we switched to saving both averaged arrays *and* shots under Ishots/Qshots
+                    cutoff_dt = datetime.datetime(2025, 10, 24, 13, 58, 37)
+
                     # --- NEW: make per-shot data compatible with per-delay fitting --------------------------------
                     if saved_shots:
                         # --- process IQ shots and turn them into IQ arrays (using Arianna's func, not QICK) --------------------------------
@@ -475,11 +478,13 @@ class PlotAllRR:
                         exp_config_str = load_data['t1_ge'][q_key]['Exp Config'][0][dataset].decode()
                         syst_config_str = load_data['t1_ge'][q_key]['Syst Config'][0][dataset].decode()
 
-                        # --- raw shots from H5  ---
-                        I_key, Q_key = 'Ishots', 'Qshots'
-                        if I_key not in load_data['t1_ge'][q_key] or Q_key not in load_data['t1_ge'][q_key]:
-                            raise KeyError(f"{q_key}: HDF5 missing '{I_key}'/'{Q_key}'. "
-                                           f"Found keys: {list(load_data['t1_ge'][q_key].keys())}")
+                        # --- choose which datasets hold the *shots* based on date ---
+                        if date < cutoff_dt:
+                            # before 2025-10-24_13-58-37: shots were saved under 'I' and 'Q'
+                            I_key, Q_key = 'I', 'Q'
+                        else:
+                            # on/after the cutoff: shots were saved under 'Ishots' and 'Qshots'
+                            I_key, Q_key = 'Ishots', 'Qshots'
 
                         # --- raw shots from H5 ---
                         Ishots_raw = self.process_h5_data(load_data['t1_ge'][q_key][I_key][0][dataset].decode())

@@ -16,36 +16,35 @@ figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 saved_shots_t1ge = True
 
-t1_analysis_flags = {"load_t1_data": True, "plot_RR_data": True, "t1_vs_time_plots": False, "t1_hists": False}
+t1_analysis_flags = {"load_t1_data": False, "plot_RR_data": False, "t1_vs_time_plots": False, "t1_hists": True}
 
 if run_number == 8:
-    run_name = 'run8/6transmon/round_robin/AB_paper_datadump_T1_Analysis'
+    run_name = 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis' # AB_paper_datadump_T1_Analysis
     data_path = f'/data/QICK_data/{run_name}'
     plots_path = data_path
 
-    top_folder_dates = ["2025-10-24_13-58-37"]
+    # top_folder_dates = ["2025-10-24_13-58-37"]
 
     # all of run 8 thus far, located in AB_paper_datadump_for_analysis
-    # top_folder_dates = [
-    #     "2025-10-19_11-09-32",
-    #     "2025-10-19_12-05-25",
-    #     "2025-10-19_19-43-00",
-    #     "2025-10-19_20-25-18",
-    #     "2025-10-20_12-10-19",
-    #     "2025-10-23_00-49-28",
-    #     "2025-10-23_14-47-22",
-    #     "2025-10-24_01-41-30",
-    #     "2025-10-24_13-58-37",
-    #     "2025-10-27_14-15-40",
-    #     "2025-10-27_14-24-29",
-    #     "2025-10-27_22-04-57",
-    #     "2025-10-28_21-57-47",
-    #     "2025-10-29_18-38-25",
-    #     "2025-10-29_23-48-45",
-    #     "2025-10-31_01-54-57",
-    #     "2025-10-31_20-40-11",
-    #     "2025-11-01_12-54-55"
-    # ]
+    top_folder_dates = [
+        "2025-10-19_11-09-32",
+        "2025-10-19_12-05-25",
+        "2025-10-19_19-43-00",
+        "2025-10-19_20-25-18",
+        "2025-10-20_12-10-19",
+        "2025-10-23_00-49-28",
+        "2025-10-23_14-47-22",
+        "2025-10-24_13-58-37",
+        "2025-10-27_14-15-40",
+        "2025-10-27_14-24-29",
+        "2025-10-27_22-04-57",
+        "2025-10-28_21-57-47",
+        "2025-10-29_18-38-25",
+        "2025-10-29_23-48-45",
+        "2025-10-31_01-54-57",
+        "2025-10-31_20-40-11",
+        "2025-11-01_12-54-55"
+    ]
 
     # # when saving t1 shots + avg IQ data started
     # top_folder_dates = [
