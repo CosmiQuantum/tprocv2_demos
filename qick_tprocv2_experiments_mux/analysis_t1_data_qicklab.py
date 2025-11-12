@@ -11,22 +11,18 @@ np.random.seed(1001)
 ############### set values here ###################
 study_dir = "/data/QICK_data/run8/6transmon/round_robin"
 
-substudy = 'ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional'
+substudy = 'AB_paper_datadump_T1_Analysis'
 data_dir = os.path.join(study_dir, substudy)
 dataset = '2025-10-27_22-04-57'
 
 QubitIndex = 0  # zero indexed
-analysis_flags = {"get_threshold": False, "load_all_data": True, "timestream": False}
+analysis_flags = {"get_threshold": False, "load_all_data": True, "timestream": False, "plot_RR_t1": True}
 selected_round = [0]
 threshold = 0  # overwritten when get_threshold flag is set to True
 theta = 0  # overwritten when get_threshold flag is set to True
 sz = 10  # fontsize for plots
 
 ############### experimental constants ###############
-res_stark_constant = [-17, 0, 0, 0, -25, 0]  # from calibration resonator stark shift data
-duffing_constant = [220, 1, 1, 1, 100, 1]  # from calibration stark shift data, depends on detuning
-anharmonicity = [-173.65, -177.3, -173.74, -171.45, -155.9, -165.9]  # from run6 hamiltonian spreadsheet
-detuning = [20, 10, 10, 10, 10, 10]  # can be pulled from stark shift expt config
 res_phase = [1.748, 0, 0, 0, 2.61,0]  # can be pulled from system config of optimization rspec or qspec (any measurement before SSF overwrites it)
 ro_length = [249, 345, 230, 326, 307, 384] # from QICK us2cycles conversion. Depends on the qubit's readout length
 
@@ -119,6 +115,9 @@ if analysis_flags["load_all_data"]:
     print('done')
 
     # t1_ge.cleanup()
+if analysis_flags["plot_RR_t1"]:
+    fig, ax = plt.subplots(3, 2, layout='constrained')
+
 
 if analysis_flags["timestream"]:
     fig, ax = plt.subplots(3, 2, layout='constrained')

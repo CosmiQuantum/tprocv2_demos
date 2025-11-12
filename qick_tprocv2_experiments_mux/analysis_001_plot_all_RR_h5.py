@@ -468,6 +468,7 @@ class PlotAllRR:
 
                     # --- NEW: make per-shot data compatible with per-delay fitting --------------------------------
                     if saved_shots:
+                        # --- process IQ shots and turn them into IQ arrays (using Arianna's func, not QICK) --------------------------------
                         print("Processing shots...")
 
                         # --- load cfg strings from H5 ---
@@ -475,17 +476,23 @@ class PlotAllRR:
                         syst_config_str = load_data['t1_ge'][q_key]['Syst Config'][0][dataset].decode()
 
                         # --- raw shots from H5  ---
-                        Ishots_raw = self.process_h5_data(load_data['t1_ge'][q_key]['I'][0][dataset].decode())
-                        Qshots_raw = self.process_h5_data(load_data['t1_ge'][q_key]['Q'][0][dataset].decode())
+                        I_key, Q_key = 'Ishots', 'Qshots'
+                        if I_key not in load_data['t1_ge'][q_key] or Q_key not in load_data['t1_ge'][q_key]:
+                            raise KeyError(f"{q_key}: HDF5 missing '{I_key}'/'{Q_key}'. "
+                                           f"Found keys: {list(load_data['t1_ge'][q_key].keys())}")
+
+                        # --- raw shots from H5 ---
+                        Ishots_raw = self.process_h5_data(load_data['t1_ge'][q_key][I_key][0][dataset].decode())
+                        Qshots_raw = self.process_h5_data(load_data['t1_ge'][q_key][Q_key][0][dataset].decode())
 
                         # --- path to the soccfg dump (txt file made with save_run_soccfg_params.py) ---
-                        if self.run_num == 8: # this does work
+                        if self.run_num == 8:  # this does work
                             soccfg_dump_path = "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
-                        elif self.run_num == 6: # this doesn't work yet (shots need to be processed diff for run 6) but the skeleton is set up
+                        elif self.run_num == 6:  # this doesn't work yet (shots need to be processed diff for run 6) but the skeleton is set up
                             soccfg_dump_path = "/data/QICK_data/run6/6transmon/loud2_soccfg_params/soccfg_full_dump_2025-11-04_16-30-54_firmware_during_run6.txt"
 
                         # --- init offline replica (no live soccfg) and set it up from strings + dump ---
-                        replica = OfflineAcquireReplica(remove_offset=True, length_norm=True, edge_counting= False)
+                        replica = OfflineAcquireReplica(remove_offset=True, length_norm=True, edge_counting=False)
                         replica.setup_offline_from_strings(
                             exp_config_str,
                             syst_config_str,
@@ -565,8 +572,14 @@ class PlotAllRR:
                     syst_config_str = load_data['t1_ge'][q_key]['Syst Config'][0][dataset].decode()
 
                     # --- raw shots from H5  ---
-                    Ishots_raw = self.process_h5_data(load_data['t1_ge'][q_key]['I'][0][dataset].decode())
-                    Qshots_raw = self.process_h5_data(load_data['t1_ge'][q_key]['Q'][0][dataset].decode())
+                    I_key, Q_key = 'Ishots', 'Qshots'
+                    if I_key not in load_data['t1_ge'][q_key] or Q_key not in load_data['t1_ge'][q_key]:
+                        raise KeyError(f"{q_key}: HDF5 missing '{I_key}'/'{Q_key}'. "
+                                       f"Found keys: {list(load_data['t1_ge'][q_key].keys())}")
+
+                    # --- raw shots from H5 ---
+                    Ishots_raw = self.process_h5_data(load_data['t1_ge'][q_key][I_key][0][dataset].decode())
+                    Qshots_raw = self.process_h5_data(load_data['t1_ge'][q_key][Q_key][0][dataset].decode())
 
                     # --- path to the soccfg dump (txt file made with save_run_soccfg_params.py) ---
                     if self.run_num == 8:  # this does work
@@ -1560,26 +1573,51 @@ class OfflineAcquireReplica:
 
     def _ensure_rounds_axis(self, A, *, N, rounds, reps):
         """
-        Return A shaped as (rounds, N, reps). Accepts 1D/2D/3D.
+        Return A shaped as (rounds, N, reps). Accepts many 1D/2D/3D variants.
         """
         A = np.asarray(A)
+
         if A.ndim == 3:
+            r, n, rr = A.shape
+            if n != N:
+                raise ValueError(f"3D shots second dim {n} != N {N}")
+            if rr != reps:
+                print(f"[warn] 3D shots reps={rr} != cfg reps={reps}; using shots value.")
+                self._reps = rr
+            if r != rounds:
+                print(f"[warn] 3D shots rounds={r} != cfg rounds={rounds}; using shots value.")
+                self._rounds = r
             return A
+
         if A.ndim == 2:
-            N2, R2 = A.shape
-            if N2 != N:
-                raise ValueError(f"2D shots first dim {N2} != provided N {N}")
-            if R2 % rounds != 0:
-                raise ValueError(f"cannot split {R2} into rounds={rounds}")
-            if (R2 // rounds) != reps:
-                raise ValueError(f"2D shots second dim implies reps={R2//rounds}, expected {reps}")
-            return A.reshape(N, rounds, reps).swapaxes(0, 1)
+            r0, r1 = A.shape
+            # (N, reps)
+            if r0 == N and r1 == reps:
+                return A[None, ...]  # (1, N, reps)
+            # (reps, N)
+            if r0 == reps and r1 == N:
+                return A.T[None, ...]  # (1, N, reps)
+            # (rounds*N, reps)
+            if (r0 % N) == 0 and r1 == reps:
+                rcalc = r0 // N
+                return A.reshape(rcalc, N, reps)
+            # (N, rounds*reps)
+            if (r1 % reps) == 0 and r0 == N:
+                rcalc = r1 // reps
+                return A.reshape(1, N, reps) if rcalc == 1 else A.reshape(rcalc, N, reps)
+
+            raise ValueError(f"Unexpected 2D shape {A.shape} for N={N}, reps={reps}, rounds={rounds}")
+
         if A.ndim == 1:
             total = A.size
-            if total != N*rounds*reps:
-                raise ValueError(f"1D shots size {total} != N*rounds*reps={N*rounds*reps}")
-            return A.reshape(rounds, N, reps)
-        raise ValueError(f"Expected 1D/2D/3D, got {A.ndim}D {A.shape}")
+            if total == N * reps:
+                return A.reshape(1, N, reps)
+            if total == N:
+                # already per-step averaged; treat as reps=1, rounds=1
+                return A.reshape(1, N, 1)
+            raise ValueError(f"1D shots length {total} not compatible with N={N}, reps={reps}")
+
+        raise ValueError(f"Shots must be 1D/2D/3D, got {A.ndim}D {A.shape}")
 
     def _extract_t1_dims(self, exp_cfg):
         def _as_int(x):
@@ -1615,36 +1653,42 @@ class OfflineAcquireReplica:
             self._dump_readouts.setdefault(ch, {})["decimated_MHz"] = dec
 
         # 2) diagnostics block for effective offset per channel
-        #    look for channel headers then the field lines
         diag_blocks = re.split(r"\n\s*\[READOUT CHANNEL DIAGNOSTICS\]\s*\n", text, maxsplit=1)
         if len(diag_blocks) == 2:
             diagnostics_text = diag_blocks[1]
-            # Each channel chunk begins with: "--- Readout Channel X ---"
-            for blk in re.split(r"\n\s*--- Readout Channel\s+(\d+)\s+---\s*\n", diagnostics_text):
-                # The split produces alternating chunks; handle via regex finditer instead:
-                pass
-            # Use an iterator to capture channel + body:
-            for m in re.finditer(r"--- Readout Channel\s+(\d+)\s+---\s*([\s\S]*?)(?=(?:--- Readout Channel|\Z))",
+
+            # iterate per-channel block
+            for m in re.finditer(r"---\s*Readout Channel\s+(\d+)\s*---\s*([\s\S]*?)(?=(?:---\s*Readout Channel|\Z))",
                                  diagnostics_text):
                 ch = int(m.group(1))
                 body = m.group(2)
-                eff = None
+
+                # decimated_MHz_exact
+                mm = re.search(r"decimated_MHz_exact:\s*([0-9.]+)", body)
+                if mm:
+                    self._dump_readouts.setdefault(ch, {})["decimated_MHz_exact"] = float(mm.group(1))
+
+                # iq_offset_effective
                 mm = re.search(r"iq_offset_effective:\s*([\-0-9.]+)", body)
                 if mm:
-                    try:
-                        eff = float(mm.group(1))
-                    except Exception:
-                        eff = None
-                if eff is not None:
-                    self._dump_readouts.setdefault(ch, {})["iq_offset_effective"] = eff
+                    self._dump_readouts.setdefault(ch, {})["iq_offset_effective"] = float(mm.group(1))
 
         # Defaults if fields missing
         for ch, d in list(self._dump_readouts.items()):
-            if "decimated_MHz" not in d:
-                d["decimated_MHz"] = 307.2  # safe default
+            if "decimated_MHz_exact" not in d and "decimated_MHz" not in d:
+                d["decimated_MHz"] = 307.2  # fallback for old dumps
+                print(f"[warn] no decimated_MHz(_exact) found for ro_ch {ch}; defaulting to 307.2")
             if "iq_offset_effective" not in d:
                 d["iq_offset_effective"] = 0.0
 
+    def _to_float(self,val):
+        # handles numbers or strings like "38.4", "38.4 MHz", etc.
+        s = str(val)
+        import re
+        m = re.search(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", s)
+        if not m:
+            raise ValueError(f"Cannot parse float from {val!r}")
+        return float(m.group(0))
     # -------------------- compute norm & offset (from dump only) --------------------
     def _compute_ro_norm_and_offset_from_dump(self, *, syst_cfg, qubit_index):
         """
@@ -1667,11 +1711,16 @@ class OfflineAcquireReplica:
         # decimated rate & effective IQ offset from the soccfg dump you already parse
         info = self._dump_readouts.get(ro_ch_for_q, {})
 
-        # Prefer decimated_MHz_exact (new format), fall back to decimated_MHz (old dump)
+        # Prefer exact if present; otherwise fall back to decimated_MHz.
         if "decimated_MHz_exact" in info:
-            dec_mhz = float(info["decimated_MHz_exact"])
+            dec_mhz = self._to_float(info["decimated_MHz_exact"])
         else:
-            dec_mhz = float(info.get("decimated_MHz", 307.2))
+            if "decimated_MHz" not in info:
+                raise KeyError(
+                    f"Neither 'decimated_MHz_exact' nor 'decimated_MHz' found for ro_ch={ro_ch_for_q}. "
+                    f"Available keys: {list(info.keys())}"
+                )
+            dec_mhz = self._to_float(info["decimated_MHz"])
 
         offset_eff = float(info.get("iq_offset_effective", 0.0))
 
@@ -1755,26 +1804,44 @@ class OfflineAcquireReplica:
         self.avg_level      = 0
         self.reads_per_shot = [1]
 
+    def _choose_steps_reps(self, flat, steps, reps):
+        # Candidate A: assume saved as (steps, reps)
+        A = flat.reshape(steps, reps)
+        # Candidate B: assume saved as (reps, steps) -> transpose to (steps, reps)
+        B = flat.reshape(reps, steps).T
+        # Heuristic: the correct orientation should have larger variation across steps
+        sA = A.mean(axis=1).std()
+        sB = B.mean(axis=1).std()
+        return A if sA >= sB else B
+
     def coerce_to_rounds_N_reps(self, A, steps, reps):
         A = np.asarray(A)
+
         if A.ndim == 3:
             return A
+
         if A.ndim == 2:
             r0, r1 = A.shape
-            if r0 == reps and r1 == steps:
-                return A.T[None, ...]  # -> (1, N, reps)
+            # exact matches
             if r0 == steps and r1 == reps:
-                return A[None, ...]    # -> (1, N, reps)
-            raise ValueError(
-                f"Unexpected 2D shape {A.shape}; expected (reps,N)=({reps},{steps}) or (N,reps)=({steps},{reps}).")
+                return A[None, ...]  # (1, steps, reps)
+            if r0 == reps and r1 == steps:
+                return A.T[None, ...]  # (1, steps, reps)
+            # ambiguous: try to infer (flatten and choose)
+            if r0 * r1 == steps * reps:
+                C = self._choose_steps_reps(A.ravel(), steps, reps)
+                return C[None, ...]
+            raise ValueError(f"Unexpected 2D shape {A.shape} for steps={steps}, reps={reps}")
+
         if A.ndim == 1:
             total = A.size
             if total == steps * reps:
-                return A.reshape(steps, reps)[None, ...]
+                C = self._choose_steps_reps(A, steps, reps)
+                return C[None, ...]  # (1, steps, reps)
             if total == steps:
-                return A.reshape(1, steps, 1)
-            raise ValueError(
-                f"Unexpected 1D length {total}; cannot infer (N,reps) from steps={steps}, reps={reps}.")
+                return A.reshape(1, steps, 1)  # already per-step mean
+            raise ValueError(f"1D shots length {total} not compatible with steps={steps}, reps={reps}")
+
         raise ValueError(f"Shots must be 1D/2D/3D, got {A.ndim}D {A.shape}")
 
     # -------------------- averaging kernel --------------------
@@ -1793,20 +1860,19 @@ class OfflineAcquireReplica:
     def _average_buf_qick(self, d_reps, reads_per_shot, *, length_norm=True, remove_offset=True):
         avg_d = []
         for i_ch, (ch, ro) in enumerate(self.ro_chs.items()):
-            # average over avg_level (==0) i.e. over reps
-            # avg = d_reps[i_ch].sum(axis=self.avg_level) / self.loop_dims[self.avg_level]
             summed_int = np.add.reduce(d_reps[i_ch], axis=self.avg_level, dtype=np.int64)
             avg = summed_int.astype(np.float64) / float(self.loop_dims[self.avg_level])
 
             if length_norm and not ro['edge_counting']:
                 avg = avg / float(ro['length'])
-                if remove_offset:
-                    avg -= self._ro_offset_qick(ch, ro.get('ro_config'))
-            # move reads_per_shot axis to front (we have 1 read)
+
+            if remove_offset:
+                off = self._ro_offset_qick(ch, ro.get('ro_config'))
+                avg[..., 0] -= off  # I
+                avg[..., 1] -= off  # Q
+
             avg_d.append(np.moveaxis(avg, -2, 0))  # -> (1, steps, 2)
         return avg_d
-
-
 
     # -------------------- public: acquire offline --------------------
     def acquire_offline(self, Ishots, Qshots, *, soft_avgs=None):
