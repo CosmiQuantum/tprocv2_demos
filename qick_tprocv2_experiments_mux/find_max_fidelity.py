@@ -8,9 +8,9 @@ import datetime
 
 # #For NEXUS
 #outerFolder1 = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/2025-02-08")
-outerFolder_RO = ("/home/nexusadmin/Documents/Data/run34/4charge/readout_optimization/optimization_Q4/2025-10-28_16-11-31/study_data/Data_h5/2D_Gain_Freq_Sweeps")
+outerFolder_RO = ("/home/nexusadmin/Documents/Data/run33d/4charge/readout_optimization/optimization_Q4/2025-11-10_14-15-15/study_data/Data_h5/2D_Gain_Freq_Sweeps")
                #"2025-09-08_20-55-09/study_data/Data_h5/2D_Gain_Freq_Sweeps")
-outerFolder_TWPA = ("/home/nexusadmin/Documents/Data/run34/4charge/TWPA_optimization/TWPA_opt_Q4/2025-10-22/2025-10-22_14-01-14/study_data/Data_h5/2D_Power_Freq_Sweeps")
+outerFolder_TWPA = ("/home/nexusadmin/Documents/Data/run33d/4charge/TWPA_optimization/TWPA_opt_Q4/2025-11-10/2025-11-10_22-04-32/study_data/Data_h5/2D_Power_Freq_Sweeps")
 
 #For QUIET
 # #outerFolder1 = os.path.join("/data/QICK_data/6transmon_run6/", '2025-03-02'
@@ -151,18 +151,18 @@ def find_configurations_below_threshold(file_path, threshold):
     return valid_configurations
 
 #Now getting results
-TWPA = False #change to True for TWPA opt, False for RO
+TWPA = True #change to True for TWPA opt, False for RO
+Q = 4 #1, 2, 3, 4
 if TWPA:
     print('For files inside: ', outerFolder_TWPA)
 else:
     print('For files inside: ', outerFolder_RO)
-punchout_thresholds =  [0.85, 0.8, 0.8, 0.8] #from punchout test on 10//2025
+punchout_thresholds =  [0.12, 0.09, 0.13, 0.2] #[0.85, 0.8, 0.8, 0.8] #from punchout test on 10//2025
 
 if TWPA:
-    for qubit_index in range(4, 5):
+    for qubit_index in range(Q, Q+1):
         file_pattern = os.path.join(outerFolder_TWPA, f"*_Qubit_{qubit_index}_*.h5")
         file_list = glob.glob(file_pattern)
-        print(f'hi, {qubit_index}')
         print(outerFolder_TWPA)
         if not file_list:
             print(f"File(s) for Qubit {qubit_index} not found.")
@@ -191,7 +191,7 @@ if TWPA:
         else:
             print(f"File for Qubit {qubit_index} not found.")
 else:
-    for qubit_index in range(4, 5):
+    for qubit_index in range(Q, Q+1):
         file_pattern = os.path.join(outerFolder_RO, f"*_Qubit_{qubit_index}_*.h5")
         file_list = glob.glob(file_pattern)
         print(f'hi, {qubit_index}')

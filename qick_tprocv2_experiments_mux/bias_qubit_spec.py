@@ -74,7 +74,7 @@ class BiasQubitSpectroscopy:
             voltage = round(v,3)
             print(f"Setting bias to {voltage}V")
             BiasPS.setVoltage(voltage, Bias_ch[qubit_index])
-            time.sleep(5)
+            time.sleep(8)
 
 
             qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'], final_delay = self.exp_cfg['relax_delay'], cfg=self.config)

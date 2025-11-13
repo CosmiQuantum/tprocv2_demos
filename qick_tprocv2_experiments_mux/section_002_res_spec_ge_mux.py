@@ -6,6 +6,7 @@ from expt_config import *
 import copy
 import datetime
 import logging
+from scipy.signal import savgol_filter
 
 
 class SingleToneSpectroscopyProgram(AveragerProgramV2):
@@ -63,6 +64,7 @@ class ResonanceSpectroscopy:
         fpts = self.exp_cfg["start"] + self.exp_cfg["step_size"] * np.arange(self.exp_cfg["steps"])
         fcenter = self.config['res_freq_ge']
         amps = np.zeros((len(fcenter), len(fpts)))
+        filtered_amps = np.zeros((len(fcenter), len(fpts)))
 
         for index, f in enumerate(tqdm(fpts)):
             self.config["res_freq_ge"] = fcenter + f
@@ -72,11 +74,12 @@ class ResonanceSpectroscopy:
                 #amps[i][index]= iq_list[i][:,0]
                 amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])
         amps = np.array(amps)
-        res_freqs = self.plot_results(fpts, fcenter, amps) #return freqs from plotting loop so we can use to update experiment
+        filtered_amps = np.array(savgol_filter(amps, window_length=21, polyorder=3))
+        res_freqs = self.plot_results(fpts, fcenter, amps, filtered_amps) #return freqs from plotting loop so we can use to update experiment
 
         return res_freqs, fpts, fcenter, amps, self.config
 
-    def plot_results(self, fpts, fcenter, amps, reloaded_config = None, fig_quality = 100):
+    def plot_results(self, fpts, fcenter, amps, filtered_amps, reloaded_config = None, fig_quality = 100):
         res_freqs = []
         plt.figure(figsize=(12, 8))
         plt.rcParams.update({
@@ -92,7 +95,8 @@ class ResonanceSpectroscopy:
             plt.subplot(2, 3, i + 1)
             #plt.plot(fpts + fcenter[i], amps[i], '-', linewidth=1.5)
             plt.plot([f + fcenter[i] for f in fpts], amps[i], '-', linewidth=1.5)
-            freq_r = fpts[np.argmin(amps[i])] + fcenter[i]
+            plt.plot([f + fcenter[i] for f in fpts], filtered_amps[i], '-', linewidth=1.5, alpha = 0.7)
+            freq_r = fpts[np.argmin(filtered_amps[i])] + fcenter[i]
             res_freqs.append(freq_r)
             if i == self.QubitIndex:
                 plt.axvline(freq_r, linestyle='--', color='orange', linewidth=1.5)

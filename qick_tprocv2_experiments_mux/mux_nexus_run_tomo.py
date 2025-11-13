@@ -9,7 +9,7 @@ from expt_config import tot_num_of_qubits, FRIDGE
 import datetime
 #outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30", str(datetime.date.today()))
 
-run_name = 'run34'
+run_name = 'run33d'
 device_name = '4charge'
 study = 'Tomography'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -40,7 +40,7 @@ if not os.path.exists(data_setFolder):
     os.makedirs(data_setFolder)
 print(data_setFolder)
 
-qubit = 3  #Qubit to Run [0, 1, 2, 3]
+qubit = 0  #Qubit to Run [0, 1, 2, 3]
 start_voltage = 0 #V
 stop_voltage = 0.1 #V
 voltage_pts = 60
@@ -81,6 +81,7 @@ del experiment
 #
 # qs_to_look_at = [0, 1, 2, 3]
 # res_len = [0.3, 0.2, 0.2, 0.3]
+#
 # start_voltage = 0 #V
 # stop_voltage = 0.1 #V
 # voltage_pts = 30

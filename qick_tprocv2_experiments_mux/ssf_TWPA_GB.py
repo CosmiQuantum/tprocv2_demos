@@ -24,9 +24,9 @@ FRIDGE = 'NEXUS'
 number_of_qubits = 4
 list_of_all_qubits = [0, 1, 2, 3]
 
-run_name = 'run34'
+run_name = 'run33d'
 device_name = '4charge'
-substudy = 'TWPA_opt_Q2'
+substudy = 'TWPA_opt_Q4'
 
 outerFolder = os.path.join(f"/home/nexusadmin/Documents/Data/{run_name}/{device_name}/TWPA_optimization/{substudy}/{datetime.date.today()}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 
@@ -42,16 +42,16 @@ n = 1  # Number of rounds
 n_loops = 4  # Number of ssf repetitions - currently unused
 
 # List of qubits to measure
-Qs = [1] #0, 1, 2, 3
+Qs = [3] #0, 1, 2, 3
 
 # optimization outputs for NEXUS
-res_leng_vals = [9.5, 5.5, 6.25, 7.5] # Q1, Q2, Q4 opt r1
-res_gain = [0.75, 0.7, 0.8, 0.75] # Q1, Q2, Q4 opt r1
-freq_offsets = [-0.1429, -0.1429, 0, -0.1429] # Q1, Q2, Q4 opt r1
+res_leng_vals = [5.1, 4, 4, 3.6] #[9.5, 5.5, 6.25, 7.0] # Q1, Q4 reopt
+res_gain = [0.115, 0.1, 0.15, 0.19] #[0.9, 0.7, 0.8, 0.8] # Q1, Q4 reopt
+freq_offsets = [0.1364, 0, 0, -0.1364] #[-0.1429, -0.1429, 0, -0.04] # Q1, Q4 reopt
 
 # Define sweeping parameters
-gain_arr = np.linspace(-13, -11.75, 8)
-freq_arr = np.linspace(7.75e9, 7.9e9, 20)  # Don't go above 7.9159 GHz
+gain_arr = np.linspace(-13.5, -11, 10)
+freq_arr = np.linspace(7.80e9, 7.83e9, 10)  # Don't go above 7.9159 GHz
 
 prev_TWPA_gain = -12.69
 prev_TWPA_freq = 7.826e9

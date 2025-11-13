@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 from qick.asm_v2 import AveragerProgramV2
 from tqdm import tqdm
 from build_state import *
@@ -6,6 +7,7 @@ from expt_config import *
 import copy
 import datetime
 import time
+from scipy.signal import savgol_filter
 from windfreak import SynthHD
 
 class SingleToneSpectroscopyProgram(AveragerProgramV2):
@@ -50,20 +52,20 @@ class PunchOut:
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
         print(f'Punch Out configuration: ', self.config)
 
-    def run(self, soccfg, soc, start_gain, stop_gain, num_points, DAC_att, ADC_att, plot_Center_shift = True, plot_res_sweeps = True, plot_2d = True):
+    def run(self, soccfg, soc, start_gain, stop_gain, num_points, DAC_att, ADC_att, plot_Center_shift = True, plot_res_sweeps = True, plot_2d = True, filtered_sweeps = True, filtered_2d = True):
         fpts = self.exp_cfg["start"] + self.exp_cfg["step_size"] * np.arange(self.exp_cfg["steps"])
         fcenter = self.config['res_freq_ge']
 
-        resonance_vals, power_sweep, frequency_sweeps = self.sweep_power(soccfg, soc, fpts, fcenter, start_gain, stop_gain, num_points)
+        resonance_vals, power_sweep, frequency_sweeps, filter_freq_sweeps = self.sweep_power(soccfg, soc, fpts, fcenter, start_gain, stop_gain, num_points)
 
         if plot_Center_shift:
             self.plot_center_shift(resonance_vals, power_sweep, DAC_att, ADC_att)
 
         if plot_res_sweeps:
-            self.plot_res_sweeps(fpts, fcenter, frequency_sweeps, power_sweep, DAC_att, ADC_att,)
+            self.plot_res_sweeps(fpts, fcenter, frequency_sweeps, filter_freq_sweeps, power_sweep, DAC_att, ADC_att, show_filtered = filtered_sweeps)
 
         if plot_2d:
-            self.plot_2d_sweeps(fpts, fcenter, frequency_sweeps, resonance_vals, power_sweep, DAC_att, ADC_att)
+            self.plot_2d_sweeps(fpts, fcenter, frequency_sweeps, filter_freq_sweeps, resonance_vals, power_sweep, DAC_att, ADC_att, show_filtered = filtered_2d)
 
         return
 
@@ -72,10 +74,13 @@ class PunchOut:
 
         resonance_vals = []
         frequency_sweeps = []
+        filter_freq_sweeps = []
+
         for p in power_sweep:
             power = round(p, 3)
             self.config['res_gain_ge'] = [power for i in range(0, self.number_of_qubits)]
             amps = np.zeros((len(fcenter), len(fpts)))
+            filtered_amps = np.zeros((len(fcenter), len(fpts)))
             for index, f in enumerate(tqdm(fpts)):
                 self.config["res_freq_ge"] = fcenter + f
                 prog = SingleToneSpectroscopyProgram(soccfg, reps=self.exp_cfg["reps"], final_delay=0.5,
@@ -84,13 +89,15 @@ class PunchOut:
                 for i in range(len(self.config['res_freq_ge'])):
                     amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])
             amps = np.array(amps)
+            filtered_amps = np.array(savgol_filter(amps, window_length=21, polyorder=3))
             frequency_sweeps.append(amps)
+            filter_freq_sweeps.append(filtered_amps)
 
             freq_res = []
             for i in range(self.number_of_qubits):
-                freq_res.append(round(float(fpts[np.argmin(amps[i])] + fcenter[i]), 3))
+                freq_res.append(round(float(fpts[np.argmin(filtered_amps[i])] + fcenter[i]), 3))
             resonance_vals.append(freq_res)
-        return resonance_vals, power_sweep, frequency_sweeps
+        return resonance_vals, power_sweep, frequency_sweeps, filter_freq_sweeps
 
     def plot_center_shift(self, resonance_vals, power_sweep,DAC_att, ADC_att ):
         plt.figure(figsize=(12, 8))
@@ -130,7 +137,7 @@ class PunchOut:
         plt.close()
         return
 
-    def plot_2d_sweeps(self, fpts, fcenter, frequency_sweeps, resonance_vals, power_sweep, DAC_att, ADC_att):
+    def plot_2d_sweeps(self, fpts, fcenter, frequency_sweeps, filter_freq_sweeps, resonance_vals, power_sweep, DAC_att, ADC_att, show_filtered = True):
         plt.figure(figsize=(12, 8))
 
         # Set larger font sizes
@@ -143,7 +150,11 @@ class PunchOut:
             'legend.fontsize': 14,  # Legend font size
         })
         q = self.QubitIndex
-        amps_qubit = np.array([amps[q,:] for amps in frequency_sweeps]) #get amps for one qubit, shape: (len(power_sweep), len(fpts))
+        if show_filtered:
+            amps_qubit = np.array([amps[q, :] for amps in filter_freq_sweeps])  # get amps for one qubit, shape: (len(power_sweep), len(fpts))
+        else:
+            amps_qubit = np.array([amps[q, :] for amps in frequency_sweeps])  # get amps for one qubit, shape: (len(power_sweep), len(fpts))
+
         mesh = plt.pcolormesh(fpts + fcenter[q], power_sweep, amps_qubit, shading='auto')
         plt.xlabel("Frequency (MHz)", fontweight='normal')
         plt.ylabel("Gain", fontweight='normal')
@@ -158,14 +169,18 @@ class PunchOut:
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
         # file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_punch_out_res_sweep_DAC_Att_{DAC_att}_ADC_ATT_{ADC_att}.png")
-        file_name = os.path.join(outerFolder_expt,
-                                 f"{formatted_datetime}_punch_out_2d_res_sweep_Q{self.QubitIndex + 1}.png")
+        if show_filtered:
+            file_name = os.path.join(outerFolder_expt,
+                                 f"{formatted_datetime}_filtered_punch_out_2d_res_sweep_Q{self.QubitIndex + 1}.png")
+        else:
+            file_name = os.path.join(outerFolder_expt,
+                                     f"{formatted_datetime}_punch_out_2d_res_sweep_Q{self.QubitIndex + 1}.png")
         plt.savefig(file_name, dpi=300)
         plt.close()
         return
 
 
-    def plot_res_sweeps(self, fpts, fcenter, frequency_sweeps, power_sweep, DAC_att, ADC_att):
+    def plot_res_sweeps(self, fpts, fcenter, frequency_sweeps, filter_freq_sweeps, power_sweep, DAC_att, ADC_att, show_filtered = True):
         plt.figure(figsize=(12, 8))
 
         # Set larger font sizes
@@ -181,8 +196,12 @@ class PunchOut:
             for i in range(self.number_of_qubits):
                 offset = (max(frequency_sweeps[0][i])-min(frequency_sweeps[0][i]))/2
                 plt.subplot(2, 3, i + 1)
-                plt.plot(fpts + fcenter[i], frequency_sweeps[power_index][i] + offset*power_index, '-', linewidth=1.5,
-                         label=round(power_sweep[power_index], 3))
+                if show_filtered:
+                    plt.plot(fpts + fcenter[i], filter_freq_sweeps[power_index][i] + offset * power_index, '-',
+                             linewidth=1.5, alpha=0.7, label= round(power_sweep[power_index], 3))
+                else:
+                    plt.plot(fpts + fcenter[i], frequency_sweeps[power_index][i] + offset*power_index, '-', linewidth=1.5,
+                            label=round(power_sweep[power_index], 3))
 
                 plt.xlabel("Frequency (MHz)", fontweight='normal')
                 plt.ylabel("Amplitude (a.u)", fontweight='normal')
@@ -199,7 +218,10 @@ class PunchOut:
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
         #file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_punch_out_res_sweep_DAC_Att_{DAC_att}_ADC_ATT_{ADC_att}.png")
-        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_punch_out_res_sweep_Q{self.QubitIndex+1}.png")
+        if show_filtered:
+            file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_filter_punch_out_res_sweep_Q{self.QubitIndex + 1}.png")
+        else:
+            file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_punch_out_res_sweep_Q{self.QubitIndex+1}.png")
         plt.savefig(file_name, dpi=300)
         plt.close()
         return
