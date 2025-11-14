@@ -7,6 +7,7 @@ from system_config import *
 import copy
 import visdom
 import logging
+from iminuit import Minuit
 
 class T1Program(AveragerProgramV2):
     def _initialize(self, cfg):
@@ -205,7 +206,142 @@ class T1Measurement:
 
         return q1_fit_exponential, T1_err, T1_est, plot_sig
 
-    def plot_results(self, I, Q, delay_times, date, config = None, fig_quality =100):
+    def t1_fit_iminuit(self, I, Q, delay_times, y_err=None):
+        """
+        Fits T1 curve using a 4-parameter exponential with a chi^2 or least-squares minimizer depending on whether you provide
+        the errs of each point in the curve or not (iminuit).
+
+        Model: self.exponential(t, a, b, c, d)
+            a: amplitude
+            b: time shift
+            c: T1 (>0)
+            d: baseline
+
+        Migrad gives you best-fit parameters.
+        Hesse tells you how uncertain they are.
+        """
+
+        # ---------------- choose signal (same logic we were using before) ----------------
+        I = np.asarray(I, float)
+        Q = np.asarray(Q, float)
+        t = np.asarray(delay_times, float)
+
+        if 'I' in self.signal:
+            signal = I
+            plot_sig = 'I'
+        elif 'Q' in self.signal:
+            signal = Q
+            plot_sig = 'Q'
+        else:
+            # auto-pick whichever moves more
+            if abs(I[-1] - I[0]) > abs(Q[-1] - Q[0]):
+                signal = I
+                plot_sig = 'I'
+            else:
+                signal = Q
+                plot_sig = 'Q'
+
+        # sort by time
+        order = np.argsort(t)
+        t = t[order]
+        signal = signal[order]
+        if y_err is not None:
+            y_err = np.asarray(y_err, float)[order]
+
+        # ---------------- initial guesses ----------------
+        sig_min = float(np.min(signal))
+        sig_max = float(np.max(signal))
+
+        a_guess = sig_max - sig_min  # amplitude
+        d_guess = sig_min  # baseline
+        b_guess = float(t[0])  # time shift
+        c_guess = max((t[-1] - t[0]) / 5.0, 1e-3)  # T1 ~ span/5, positive. Chooses max between those two options. Avoids dividing by zero later.
+
+        # ---------------- chi^2 function ----------------
+        if y_err is not None:
+            sigma = np.asarray(y_err, float)
+            # avoid zeros
+            sigma = np.where(sigma <= 0, np.median(sigma[sigma > 0]), sigma) # If sigma <= 0, replace it with the median of all positive sigmas
+
+            def chi2(a, b, c, d):
+                model = self.exponential(t, a, b, c, d)
+                r = (signal - model) / sigma
+                return np.sum(r * r)
+
+            minimizer_func = chi2
+        else:
+            def lsquares(a, b, c, d):
+                model = self.exponential(t, a, b, c, d)
+                r = signal - model
+                return np.sum(r * r)
+
+            minimizer_func = lsquares
+
+        # ---------------- run Minuit ----------------
+        m = Minuit(
+            minimizer_func,
+            a=a_guess,
+            b=b_guess,
+            c=c_guess,
+            d=d_guess,
+        )
+
+        m.errordef = Minuit.LEAST_SQUARES # In Minuit errordef = 1 or Minuit.LEAST_SQUARES (they're equivalent) for chi^2
+
+        # limits: we enforce T1>0 and keep the rest free but finite
+        m.limits["c"] = (1e-3, None)  # T1 positive
+        t_min, t_max = float(t[0]), float(t[-1])
+
+        margin = 0.2 * (t_max - t_min) if t_max > t_min else 1.0 # margin = 0.2 * (span) gives ~20% buffer on either side.
+        m.limits["b"] = (t_min - margin, t_max + margin)
+
+        # running minimization
+        m.migrad()
+
+        # check covariance
+        if not m.valid: # If not valid, we try again with a slightly perturbed starting value for T1
+            m.values["c"] = c_guess * 0.5
+            m.migrad()
+
+        m.hesse()  # computes the covariance matrix after minimization
+
+        # ---------------- extract the results ----------------
+        a_fit = m.values["a"]
+        b_fit = m.values["b"]
+        c_fit = m.values["c"]  # T1
+        d_fit = m.values["d"]
+
+        # ---------------------- T1 uncertainty from covariance (if available). If Minuit fails, m.covariance might be None. -----------------
+        cov = m.covariance
+        T1_err = np.nan  # default if covariance missing or invalid
+
+        if cov is not None:
+            try:
+                var_c = cov["c", "c"] # Does the covariance exist AND does it contain a variance for c? Var(c) = cov[c,c]
+            except Exception:
+                # Fallback: in case covariance degenerates to a NumPy array, we can use parameter indexing
+                params = list(m.parameters)  # e.g. ["a", "b", "c", "d"]
+                if "c" in params:
+                    idx_c = params.index("c")
+                    var_c = cov[idx_c, idx_c]
+                else:
+                    var_c = None
+
+            # We only accept a valid non-negative variance
+            if var_c is not None and var_c >= 0:
+                T1_err = float(np.sqrt(var_c)) #  this gives us the 1-sigma uncertainty on the T1 estimate.
+
+        # T1 result
+        T1_est = float(c_fit)
+
+        fit_sorted = self.exponential(t, a_fit, b_fit, c_fit, d_fit) # since we sorted the data at the beginning just in case it was out of order
+        # putting it back to the original order (should be sorted nonetheless, but this is done for safety)
+        inv_order = np.argsort(order)
+        fit_curve = fit_sorted[inv_order]
+
+        return fit_curve, T1_err, T1_est, plot_sig
+
+    def plot_results(self, I, Q, delay_times, date, config = None, fig_quality =100, iminuit_fit_instead = False):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
@@ -214,7 +350,10 @@ class T1Measurement:
 
 
         if self.fit_data:
-            q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit(I, Q, delay_times)
+            if iminuit_fit_instead:
+                q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit_iminuit(I, Q, delay_times)
+            else:
+                q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit(I, Q, delay_times)
 
             if 'I' in plot_sig:
                 ax1.plot(delay_times, q1_fit_exponential, '-', color='red', linewidth=3, label="Fit")

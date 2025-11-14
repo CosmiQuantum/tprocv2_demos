@@ -541,10 +541,13 @@ class PlotAllRR:
         
             del H5_class_instance
 
-    def load_t1_shots_vs_avgIQ_arrays(self, plot_both_methods_tog = True):
+    def load_t1_shots_vs_avgIQ_arrays(self, plot_both_methods_tog = False, plot_both_methods_diff = False, plot_T1res_method_comp = False):
         # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
         outerFolder_expt = self.outerFolder + "/Data_h5/t1_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+
+        # store post-processed T1 results from both methods, per qubit
+        t1_results_by_qubit = {}  # q_index -> {"qick_avg": [...], "shots_avg": [...]}
 
         for h5_file in h5_files:
 
@@ -604,8 +607,11 @@ class PlotAllRR:
                         qubit_index=int(q_key))
 
                     exp_cfg = replica._safe_eval_cfg(exp_config_str)
-                    steps = int(exp_cfg['T1_ge']['steps'])
-                    reps = int(exp_cfg['T1_ge']['reps'])
+                    syst_cfg = replica._safe_eval_cfg(syst_config_str)
+
+                    # Pull steps/reps from Syst Config first; fall back to Exp Config only if missing. Sys config is the updated one in each measurement during RR
+                    steps = int(syst_cfg.get('steps', exp_cfg['T1_ge']['steps']))
+                    reps = int(syst_cfg.get('reps', exp_cfg['T1_ge']['reps']))
                     # rounds not needed here; H5 holds one round
 
                     # --- coerce raw shots to (rounds, N, reps) before averaging ---
@@ -633,35 +639,229 @@ class PlotAllRR:
                         T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.outerFolder_save_plots,
                                                           round_num, self.signal, self.save_figs, fit_data=True)
                         I_avg, Q_avg, t, fit_avg, T1_err_avg, T1_est_avg, plot_sig_avg = T1_class_instance.plot_results(I, Q, delay_times, date, T1_spec_cfg,
-                                                                                                                                                     self.figure_quality)
+                                                                                           self.figure_quality, iminuit_fit_instead = True)
                         del T1_class_instance
 
                         # ----------------------------------- plot a la shots ------------------------------
                         T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.unique_folder_path,
                                                           round_num, self.signal, self.save_figs, fit_data=True)
                         I_sh,  Q_sh,  t, fit_sh,  T1_err_sh,  T1_est_sh,  plot_sig_sh = T1_class_instance.plot_results(I_viashots, Q_viashots, delay_times, date, T1_spec_cfg,
-                                                                                                                         self.figure_quality)
+                                                                                            self.figure_quality, iminuit_fit_instead = True)
                         del T1_class_instance
 
                         avg_tuple = (I_avg, Q_avg, t, fit_avg, T1_err_avg, T1_est_avg, plot_sig_avg)
                         shots_tuple = (I_sh, Q_sh, t, fit_sh, T1_err_sh, T1_est_sh, plot_sig_sh)
 
+                        # NEW: store post-processed T1 results for this dataset
+                        q_int = int(q_key)
+                        if q_int not in t1_results_by_qubit:
+                            t1_results_by_qubit[q_int] = {"qick_avg": [], "shots_avg": []}
+                        t1_results_by_qubit[q_int]["qick_avg"].append(T1_est_avg)
+                        t1_results_by_qubit[q_int]["shots_avg"].append(T1_est_sh)
+
+                        # --- plot both methods in the same plot (offline shots averaged and QICK-averaged IQ arrays) ---
                         if plot_both_methods_tog:
                             self.plot_t1_overlay(
                                 avg_tuple, shots_tuple,
                                 labels=("Avg-IQ", "Shots-Offline"),
                                 title_prefix="T1 Overlay",
                                 qubit_index=q_key,
-                                out_dir=f"/data/QICK_data/run8/6transmon/replotted_RR_data/2025-10-27_22-04-57/avgIQ_andshots_plotted_tog",
+                                out_dir=f"/data/QICK_data/run8/6transmon/replotted_RR_data/{self.date}/avgIQ_andshots_plotted_tog",
                                 dpi=140)
 
+                        # --- difference plot (offline shots-averaged minus QICK-averaged IQ arrays) ---
+                        if plot_both_methods_diff:
+                            self.plot_t1_array_difference(
+                                I_qick=I,  # QICK-averaged IQ from H5
+                                Q_qick=Q,
+                                I_fromshots=I_viashots,  # Your offline-averaged-from-shots IQ
+                                Q_fromshots=Q_viashots,
+                                delay_times=delay_times,
+                                title_prefix="T1 AvgIQ vs Shots Diff",
+                                qubit_index=q_key,
+                                out_dir=f"/data/QICK_data/run8/6transmon/replotted_RR_data/{self.date}/avgIQ_minus_shots_diff",
+                                dpi=140
+                            )
+
             del H5_class_instance
+
+        # after processing all datasets, plot T1 from both methods for all qubits
+        if plot_T1res_method_comp:
+            self.plot_t1_methods_comparison_all_qubits(
+                t1_results_by_qubit,
+                out_dir=f"/data/QICK_data/run8/6transmon/replotted_RR_data/{self.date}/T1_results_method_comparison_all_qubits"
+            )
+
+    def plot_t1_methods_comparison_all_qubits(
+            self,
+            t1_results_by_qubit,
+            out_dir,
+            title_prefix="T1: Qick Avg IQ vs Offline Avg IQ Shots",
+            dpi=140,
+    ):
+        """
+        Plot T1 estimates from both averaging methods for all qubits. Default qick way vs offline way.
+
+        t1_results_by_qubit:
+            dict[q_index] = {
+                "qick_avg":   [T1_est_avg_0,   T1_est_avg_1,   ...],
+                "shots_avg": [T1_est_shots_0, T1_est_shots_1, ...],
+            }
+            (Lists are in the order datasets were processed.)
+        """
+        os.makedirs(out_dir, exist_ok=True)
+
+        qubit_indices = sorted(t1_results_by_qubit.keys())
+        n_qubits = len(qubit_indices)
+        if n_qubits == 0:
+            print("[T1 summary] No T1 results to plot.")
+            return
+
+        # simple grid layout: up to 3 columns
+        ncols = min(3, n_qubits)
+        nrows = int(np.ceil(n_qubits / ncols))
+
+        fig, axes = plt.subplots(nrows, ncols, figsize=(4 * ncols, 3.5 * nrows), sharey=True)
+        axes = np.atleast_1d(axes).ravel()
+
+        for ax, qidx in zip(axes, qubit_indices):
+            data = t1_results_by_qubit[qidx]
+            t1_avg = np.asarray(data["qick_avg"], dtype=float)
+            t1_sh = np.asarray(data["shots_avg"], dtype=float)
+
+            n_pts = max(len(t1_avg), len(t1_sh))
+            x = np.arange(n_pts)
+
+            # protect against unequal lengths (shouldn't normally happen)
+            if len(t1_avg) != n_pts:
+                t1_avg = np.pad(
+                    t1_avg,
+                    (0, n_pts - len(t1_avg)),
+                    mode="constant",
+                    constant_values=np.nan
+                )
+            if len(t1_sh) != n_pts:
+                t1_sh = np.pad(
+                    t1_sh,
+                    (0, n_pts - len(t1_sh)),
+                    mode="constant",
+                    constant_values=np.nan
+                )
+
+            ax.plot(x, t1_avg, "o-", label="Qick T1", linewidth=1)
+            ax.plot(x, t1_sh, "s--", label="Offline Shots T1", linewidth=1)
+
+            # per-qubit title
+            ax.set_title(f"Q{qidx + 1} (N={n_pts})")
+            ax.set_xlabel("Dataset index")
+            ax.grid(alpha=0.3)
+
+        # Common y-label and global title
+        for ax in axes:
+            ax.set_ylabel(r"$T_1$ (µs)")
+
+        # Remove any unused axes if n_qubits < nrows*ncols
+        for j in range(len(qubit_indices), len(axes)):
+            fig.delaxes(axes[j])
+
+        fig.suptitle(title_prefix, fontsize=14)
+        fig.tight_layout(rect=[0, 0.02, 1, 0.95])
+
+        fname = os.path.join(out_dir, "T1_Comparison_All_Qubits.png")
+        fig.savefig(fname, dpi=dpi)
+        plt.close(fig)
+
+        print(f"[T1 summary] Saved comparison plot to: {fname}")
+
+    def plot_t1_array_difference(self,
+                                 I_qick, Q_qick,
+                                 I_fromshots, Q_fromshots,
+                                 delay_times,
+                                 title_prefix,
+                                 qubit_index,
+                                 out_dir,
+                                 dpi=140):
+        """
+        Plot the point-by-point difference between the QICK-averaged IQ arrays
+        and the arrays obtained by averaging shots offline.
+
+        delta I = I_fromshots - I_qick
+        delta Q = Q_fromshots - Q_qick
+        """
+        os.makedirs(out_dir, exist_ok=True)
+
+        I_qick = np.asarray(I_qick, dtype=float)
+        Q_qick = np.asarray(Q_qick, dtype=float)
+        I_fromshots = np.asarray(I_fromshots, dtype=float)
+        Q_fromshots = np.asarray(Q_fromshots, dtype=float)
+        delay_times = np.asarray(delay_times, dtype=float)
+
+        # Basic shape sanity checks
+        if I_qick.shape != I_fromshots.shape:
+            raise ValueError(
+                f"I array shape mismatch: QICK {I_qick.shape} vs shots {I_fromshots.shape}"
+            )
+        if Q_qick.shape != Q_fromshots.shape:
+            raise ValueError(
+                f"Q array shape mismatch: QICK {Q_qick.shape} vs shots {Q_fromshots.shape}"
+            )
+        if delay_times.shape[0] != I_qick.shape[0]:
+            raise ValueError(
+                f"delay_times length {delay_times.shape[0]} does not match IQ length {I_qick.shape[0]}"
+            )
+
+        dI = I_fromshots - I_qick
+        dQ = Q_fromshots - Q_qick
+        dIQ_mag = np.sqrt(dI ** 2 + dQ ** 2)
+
+        max_abs_dI = np.max(np.abs(dI))
+        max_abs_dQ = np.max(np.abs(dQ))
+        max_abs_dIQ = np.max(dIQ_mag)
+
+        try:
+            qb_str = f"Q{int(qubit_index) + 1}"
+        except (TypeError, ValueError):
+            qb_str = f"Q{qubit_index}"
+
+        fig, axes = plt.subplots(2, 1, sharex=True, figsize=(8, 8))
+
+        # diff I
+        axes[0].plot(delay_times, dI, marker='o')
+        axes[0].axhline(0.0, linestyle='--', linewidth=0.8)
+        axes[0].set_ylabel(r'$\Delta I$ (shots - QICK)')
+        axes[0].set_title(
+            f"{title_prefix} {qb_str}\n"
+            f"max |delta I| = {max_abs_dI:.3g}, |delta Q| = {max_abs_dQ:.3g}")
+
+        # diff Q
+        axes[1].plot(delay_times, dQ, marker='o')
+        axes[1].axhline(0.0, linestyle='--', linewidth=0.8)
+        axes[1].set_ylabel(r'$\Delta Q$ (shots - QICK)')
+
+        fig.tight_layout()
+
+        now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        fname = os.path.join(
+            out_dir,
+            f"{title_prefix.replace(' ', '_')}_{qb_str}_diff_{now}.png"
+        )
+        fig.savefig(fname, dpi=dpi)
+        plt.close(fig)
+
+        # Optional: print summary to log / stdout
+        msg = (f"[T1 diff] {qb_str}: max |delta I| = {max_abs_dI:.3g}, "
+               f"max |delta Q| = {max_abs_dQ:.3g}")
+        if hasattr(self, "logger"):
+            self.logger.info(msg)
+        else:
+            print(msg)
+
 
     def plot_t1_overlay(self,
             avg_res,  # (I, Q, delay_times, fit, T1_err, T1_est, plot_sig) from method A
             shots_res,  # (I, Q, delay_times, fit, T1_err, T1_est, plot_sig) from method B
             *,
-            labels=("Avg-IQ", "Shots?Offline"),
+            labels=("QICK Avg-IQ", "Shots-Offline"),
             title_prefix="T1 Overlay",
             qubit_index=None,
             out_dir=None,
@@ -711,8 +911,8 @@ class PlotAllRR:
         fig.suptitle(f"{title_prefix}{qtxt}{warn}", y=0.98, fontsize=20)
 
         # --- I panel ---
-        axI.plot(t, I_a, lw=2, label=f"{labels[0]}: I")
-        axI.plot(t, I_b, lw=2, linestyle="--", label=f"{labels[1]}: I")
+        axI.plot(t, I_a, marker = "o", label=f"{labels[0]}: I") # lw=2
+        axI.plot(t, I_b, marker = "o", linestyle="--", label=f"{labels[1]}: I") # lw=2
 
         # if fits exist and were done on I, overlay them
         if fit_a is not None and (sig_a == 'I'):
@@ -727,8 +927,8 @@ class PlotAllRR:
         axI.grid(True, alpha=0.25)
 
         # --- Q panel ---
-        axQ.plot(t, Q_a, lw=2, label=f"{labels[0]}: Q")
-        axQ.plot(t, Q_b, lw=2, linestyle="--", label=f"{labels[1]}: Q")
+        axQ.plot(t, Q_a, marker = "o" , label=f"{labels[0]}: Q") # lw=2
+        axQ.plot(t, Q_b, marker = "o", linestyle="--", label=f"{labels[1]}: Q") # lw=2
 
         # if fits exist and were done on Q, overlay them
         if fit_a is not None and (sig_a == 'Q'):
@@ -1627,17 +1827,25 @@ class OfflineAcquireReplica:
 
         raise ValueError(f"Shots must be 1D/2D/3D, got {A.ndim}D {A.shape}")
 
-    def _extract_t1_dims(self, exp_cfg):
-        def _as_int(x):
-            try: return int(x)
-            except Exception: return int(float(str(x)))
-        T1 = exp_cfg['T1_ge']
-        steps  = (T1.get('steps') or T1.get('n_steps') or T1.get('n_expts'))
-        reps   = (T1.get('reps')  or T1.get('nreps'))
-        rounds = (T1.get('rounds') or T1.get('soft_avgs'))
-        if steps is None or reps is None or rounds is None:
-            raise ValueError("Experiment config missing steps/reps/rounds for T1_ge.")
-        return _as_int(steps), _as_int(reps), _as_int(rounds)
+    def _extract_t1_dims_from_syst(self, syst_cfg, qubit_index):
+        """
+        Pull steps, reps, and rounds for T1 from the top-level system config.
+
+        This syst_cfg is already experiment- and qubit-specific,
+        so all three are just scalars.
+        """
+
+        def pick_required(name, *aliases):
+            for key in (name,) + aliases:
+                if key in syst_cfg:
+                    return syst_cfg[key]
+            raise ValueError(f"System config missing required key '{name}' (or aliases {aliases}).")
+
+        steps = pick_required('steps', 'n_steps', 'n_expts')
+        reps = pick_required('reps', 'nreps')
+        rounds = pick_required('rounds', 'soft_avgs')
+
+        return int(steps), int(reps), int(rounds)
 
     # -------------------- dump parsing --------------------
     def _parse_soccfg_dump(self, text):
@@ -1784,11 +1992,11 @@ class OfflineAcquireReplica:
             dump_text = f.read()
         self._parse_soccfg_dump(dump_text)
 
-        # Dimensions
-        steps, reps, rounds = self._extract_t1_dims(exp_cfg)
+        # Dimensions: now from system config, not experiment config
+        steps, reps, rounds = self._extract_t1_dims_from_syst(syst_cfg, qubit_index)
         self._N_steps = steps
-        self._reps    = reps
-        self._rounds  = rounds
+        self._reps = reps
+        self._rounds = rounds
 
         # Norm + offset from dump only
         ro_cycles, iq_offset, ro_ch_for_q = self._compute_ro_norm_and_offset_from_dump(
@@ -1797,6 +2005,8 @@ class OfflineAcquireReplica:
         self._ro_cycles = ro_cycles
         self._iq_offset = iq_offset
         self._ro_index  = ro_ch_for_q
+
+        # self.debug_print_params("offline_setup", qubit_index) # optional, print params
 
         # Mirror QICK bookkeeping (edge_counting=False like your run-8 baseline)
         self.ro_chs = OrderedDict({
@@ -1821,6 +2031,13 @@ class OfflineAcquireReplica:
         sA = A.mean(axis=1).std()
         sB = B.mean(axis=1).std()
         return A if sA >= sB else B
+
+    def debug_print_params(self, label, qubit_index):
+        print(
+            f"[{label}] Q{int(qubit_index) + 1}: "
+            f"steps={self._N_steps}, reps={self._reps}, rounds={self._rounds}, "
+            f"ro_cycles={self._ro_cycles}, iq_offset={self._iq_offset}"
+        )
 
     def coerce_to_rounds_N_reps(self, A, steps, reps):
         A = np.asarray(A)

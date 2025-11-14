@@ -213,7 +213,7 @@ class T1HistCumulErrPlots:
                             exp_cfg = replica._safe_eval_cfg(exp_config_str)
                             syst_cfg = replica._safe_eval_cfg(syst_config_str)
 
-                            # Pull steps/reps from Syst Config first; fall back to Exp Config only if missing
+                            # Pull steps/reps from Syst Config first; fall back to Exp Config only if missing. Sys config is the updated one in each measurement during RR
                             steps = int(syst_cfg.get('steps', exp_cfg['T1_ge']['steps']))
                             reps = int(syst_cfg.get('reps', exp_cfg['T1_ge']['reps']))
 
