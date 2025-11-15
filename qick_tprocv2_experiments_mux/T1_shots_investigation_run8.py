@@ -7,7 +7,7 @@ from analysis_001_plot_all_RR_h5 import PlotAllRR
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 
 ###################################################### Set These #######################################################
-save_figs = True
+save_figs = False
 fit_saved = True
 show_legends = False
 signal = 'None'

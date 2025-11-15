@@ -208,12 +208,13 @@ class T1Measurement:
 
     def t1_fit_iminuit(self, I, Q, delay_times, y_err=None):
         """
-        Fits T1 curve using a 4-parameter exponential with a chi^2 or least-squares minimizer depending on whether you provide
+        Fits T1 curve using a 3-parameter exponential with a chi^2 or least-squares minimizer depending on whether you provide
         the errs of each point in the curve or not (iminuit).
 
-        Model: self.exponential(t, a, b, c, d)
-            a: amplitude
-            b: time shift
+        (3 parameters, no time shift):
+            y(t) = d + a * (1 - exp(-t / c))
+
+            a: amplitude (positive or negative)
             c: T1 (>0)
             d: baseline
 
@@ -233,7 +234,7 @@ class T1Measurement:
             signal = Q
             plot_sig = 'Q'
         else:
-            # auto-pick whichever moves more
+            # auto-pick whichever has bigger diff
             if abs(I[-1] - I[0]) > abs(Q[-1] - Q[0]):
                 signal = I
                 plot_sig = 'I'
@@ -241,37 +242,50 @@ class T1Measurement:
                 signal = Q
                 plot_sig = 'Q'
 
-        # sort by time
+        # sort by time just in case
         order = np.argsort(t)
         t = t[order]
         signal = signal[order]
         if y_err is not None:
             y_err = np.asarray(y_err, float)[order]
 
+        # ---------------- new, simpler 3-parameter model ----------------
+        def t1_model(tvals, a, c, d):
+            return d + a * (1.0 - np.exp(-tvals / c))
+
         # ---------------- initial guesses ----------------
         sig_min = float(np.min(signal))
         sig_max = float(np.max(signal))
 
-        a_guess = sig_max - sig_min  # amplitude
-        d_guess = sig_min  # baseline
-        b_guess = float(t[0])  # time shift
-        c_guess = max((t[-1] - t[0]) / 5.0, 1e-3)  # T1 ~ span/5, positive. Chooses max between those two options. Avoids dividing by zero later.
+        d_guess = float(signal[0])  # value at t=0. Based on the new function we are using (t1_model above), d is just the starting value
+        a_guess = float(sig_max - sig_min)  # amplitude (can be +/-), this sign decides if the data rises or decays
+        if a_guess == 0.0: # if the signal is extremely flat or constant
+            a_guess = float(np.ptp(signal) or 1.0) # peak-to-peak amplitude. If that number is zero, uses 1 instead.
+
+        span = max(float(t[-1] - t[0]), 1e-3)
+        c_guess = max(span / 3.0, 1e-3)  # T1 ~ span/3, and we set a floor of 1e-3 to make sure T>0
 
         # ---------------- chi^2 function ----------------
         if y_err is not None:
             sigma = np.asarray(y_err, float)
-            # avoid zeros
-            sigma = np.where(sigma <= 0, np.median(sigma[sigma > 0]), sigma) # If sigma <= 0, replace it with the median of all positive sigmas
 
-            def chi2(a, b, c, d):
-                model = self.exponential(t, a, b, c, d)
+            # Handle zero or negative uncertainties
+            if np.any(sigma > 0): # Look at only the positive sigmas, and use their median.
+                med_pos = np.median(sigma[sigma > 0])
+                sigma = np.where(sigma <= 0, med_pos, sigma) # replaces zeros, negative sigmas, NaNs
+            else:
+                raise ValueError("y_err must contain at least one positive value is y_err is not set to None.")
+
+            def chi2(a, c, d):
+                model = t1_model(t, a, c, d)
                 r = (signal - model) / sigma
                 return np.sum(r * r)
 
             minimizer_func = chi2
+
         else:
-            def lsquares(a, b, c, d):
-                model = self.exponential(t, a, b, c, d)
+            def lsquares(a, c, d):
+                model = t1_model(t, a, c, d)
                 r = signal - model
                 return np.sum(r * r)
 
@@ -281,63 +295,58 @@ class T1Measurement:
         m = Minuit(
             minimizer_func,
             a=a_guess,
-            b=b_guess,
             c=c_guess,
             d=d_guess,
         )
 
-        m.errordef = Minuit.LEAST_SQUARES # In Minuit errordef = 1 or Minuit.LEAST_SQUARES (they're equivalent) for chi^2
+        m.errordef = Minuit.LEAST_SQUARES # used for chi^2 or least squares method, which we are using
 
-        # limits: we enforce T1>0 and keep the rest free but finite
-        m.limits["c"] = (1e-3, None)  # T1 positive
-        t_min, t_max = float(t[0]), float(t[-1])
+        # limits: we enforce c>0 (for a positive T1 value) and limit it to reasonable values relative to the time window
+        T1_min = max(span / 50.0, 1e-3)
+        T1_max = span * 20.0
 
-        margin = 0.2 * (t_max - t_min) if t_max > t_min else 1.0 # margin = 0.2 * (span) gives ~20% buffer on either side.
-        m.limits["b"] = (t_min - margin, t_max + margin)
+        m.limits["c"] = (T1_min, T1_max)
 
-        # running minimization
+        # run minimization
         m.migrad()
 
-        # check covariance
-        if not m.valid: # If not valid, we try again with a slightly perturbed starting value for T1
-            m.values["c"] = c_guess * 0.5
+        # try one more time if we get invalid results
+        if not m.valid: # If not valid, we try again with opposite a
+            m.values["a"] = -a_guess
             m.migrad()
 
-        m.hesse()  # computes the covariance matrix after minimization
+        m.hesse() # computes the covariance matrix after minimization
 
-        # ---------------- extract the results ----------------
+        # ---------------- we extract the results ----------------
         a_fit = m.values["a"]
-        b_fit = m.values["b"]
         c_fit = m.values["c"]  # T1
         d_fit = m.values["d"]
 
-        # ---------------------- T1 uncertainty from covariance (if available). If Minuit fails, m.covariance might be None. -----------------
+        # ---------------------- T1 uncertainty from covariance matrix ----------------------
         cov = m.covariance
-        T1_err = np.nan  # default if covariance missing or invalid
+        T1_err = np.nan
 
         if cov is not None:
             try:
-                var_c = cov["c", "c"] # Does the covariance exist AND does it contain a variance for c? Var(c) = cov[c,c]
-            except Exception:
-                # Fallback: in case covariance degenerates to a NumPy array, we can use parameter indexing
-                params = list(m.parameters)  # e.g. ["a", "b", "c", "d"]
+                var_c = cov["c", "c"] # Does the covariance exist AND does it contain a variance for T1? Var(T1) = cov[T1,T1]
+            except Exception: # Fallback: in case covariance degenerates to a NumPy array, we can use parameter indexing
+                params = list(m.parameters)
                 if "c" in params:
                     idx_c = params.index("c")
                     var_c = cov[idx_c, idx_c]
-                else:
+                else: # nothing worked
                     var_c = None
 
             # We only accept a valid non-negative variance
             if var_c is not None and var_c >= 0:
-                T1_err = float(np.sqrt(var_c)) #  this gives us the 1-sigma uncertainty on the T1 estimate.
+                T1_err = float(np.sqrt(var_c))
 
-        # T1 result
-        T1_est = float(c_fit)
+        T1_est = float(c_fit) # out T1 result
 
-        fit_sorted = self.exponential(t, a_fit, b_fit, c_fit, d_fit) # since we sorted the data at the beginning just in case it was out of order
-        # putting it back to the original order (should be sorted nonetheless, but this is done for safety)
+        # compute fit and unsort back
+        fit_sorted = t1_model(t, a_fit, c_fit, d_fit) # since we sorted the data at the beginning just in case it was out of order, the fit is based on sorted data
         inv_order = np.argsort(order)
-        fit_curve = fit_sorted[inv_order]
+        fit_curve = fit_sorted[inv_order] # putting it back to the original order (should be sorted nonetheless, but this is done to be 100% consistent w original order)
 
         return fit_curve, T1_err, T1_est, plot_sig
 

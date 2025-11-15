@@ -541,7 +541,7 @@ class PlotAllRR:
         
             del H5_class_instance
 
-    def load_t1_shots_vs_avgIQ_arrays(self, plot_both_methods_tog = False, plot_both_methods_diff = False, plot_T1res_method_comp = False):
+    def load_t1_shots_vs_avgIQ_arrays(self, plot_both_methods_tog = False, plot_both_methods_diff = False, plot_T1res_method_comp = True):
         # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
         outerFolder_expt = self.outerFolder + "/Data_h5/t1_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -729,6 +729,14 @@ class PlotAllRR:
             t1_avg = np.asarray(data["qick_avg"], dtype=float)
             t1_sh = np.asarray(data["shots_avg"], dtype=float)
 
+            # --- max |delta T1| on overlapping points (ignore any extra failed entries) ---
+            min_len = min(len(t1_avg), len(t1_sh))
+            if min_len > 0:
+                diffs = np.abs(t1_avg[:min_len] - t1_sh[:min_len])
+                max_diff = float(np.nanmax(diffs))
+            else:
+                max_diff = np.nan
+
             n_pts = max(len(t1_avg), len(t1_sh))
             x = np.arange(n_pts)
 
@@ -752,7 +760,11 @@ class PlotAllRR:
             ax.plot(x, t1_sh, "s--", label="Offline Shots T1", linewidth=1)
 
             # per-qubit title
-            ax.set_title(f"Q{qidx + 1} (N={n_pts})")
+            if np.isfinite(max_diff):
+                ax.set_title(f"Q{qidx + 1}, max T1 diff = {max_diff:.3g} us", fontsize=9 )
+            else:
+                ax.set_title(f"Q{qidx + 1}, max delta T1 = n/a", fontsize=9 )
+
             ax.set_xlabel("Dataset index")
             ax.grid(alpha=0.3)
 
