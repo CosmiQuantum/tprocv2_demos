@@ -34,12 +34,12 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 100000
-pre_optimize = False
-freq_offset_steps = 10
-ssf_avgs_per_opt_pt = 5
+n = 1 # number of rounds
+pre_optimize = False # ignore
+freq_offset_steps = 10 # ignore
+ssf_avgs_per_opt_pt = 5 # ignore
 save_r = 1  # how many rounds to save after
-signal = 'None'  # 'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization
+signal = 'None'  # 'I', or 'Q' depending on where the signal is (after optimization). Keep as None
 save_figs = True  # save plots for everything as you go along the RR script?
 live_plot = False  # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
 fit_data = True  # fit the data here and save or plot the fits?
@@ -59,12 +59,12 @@ multiply_qubit_reps_by = 2  # only has impact if the line above is True. MUST be
 t1_qubit_to_increase_reps_for = 3
 t1_multiply_qubit_reps_by =  2
 
-unmask = True  # Do you want to use the unmasking feature to increase resonator gain?
+unmask = True  # Do you want to use the unmasking feature to increase resonator gain? This may not apply to LOUD
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi ?
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [4,0]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [1]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
@@ -78,7 +78,7 @@ substudy_txt_notes = ('This data was taken after reverting back to only 1 channe
 #              "rabi_pop_meas": False, "ef_Rabi": False}
 
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": True,
+             "t1": True, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False}
 
 
@@ -99,22 +99,22 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi":
 
 # For 25dB DAC
 res_leng_vals = [5.0, 5, 7.5, 7.0, 7.5, 7.5]
-res_gain = [0.9056, 1, 0.85, 0.55, 0.7278, 0.85]
+res_gain = [0.91, 1, 0.85, 0.55, 0.7278, 0.85]
 freq_offsets = [0.0467, 0, -0.2273, -0.2273, -0.0467, -0.1364]
 
 qubit_freqs_ef = [None] * 6
-ef_res_sample_number = 1
-number_of_qubits = 6
+ef_res_sample_number = 1 # keep this as one
+number_of_qubits = 6 # total
 figure_quality = 200
 
 #DO NOT CHANGE THESE:
-ef_res_any = False
-ef_qspec_any = False
-rpm_any = False
+ef_res_any = False # did ef res spec run succesfully for any of the qubits?
+ef_qspec_any = False # what about ef qspec?
+rpm_any = False # and rabi population measurements?
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin' #qubit_checkouts
-sub_study = 'pre_temp_sweep_25dBDAC_optimization' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
+sub_study = 'source_on_25dBDAC' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
 #ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional, ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt, 18dB_DAC_testdata_allQs_exceptQ4, cooldown_run8b_19dB_DAC_allQs
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -159,7 +159,6 @@ file_handler.setFormatter(formatter)
 
 rr_logger.addHandler(file_handler)
 rr_logger.propagate = False  # dont propagate logs from underlying qick package
-
 
 ####################################################### RR #############################################################
 
@@ -210,13 +209,15 @@ ef_rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
 rabi_data_ef_Qtemps = create_data_dict(rabi_keys_ef_Qtemps, save_r, list_of_all_qubits)
 ss_data_gef = create_data_dict(ss_keys_gef, save_r, list_of_all_qubits)
 
-batch_num = 0
-j = 0
+batch_num = 0 # keep as zero
+j = 0 # keep as zero
 angles = []
 while j < n:
     j += 1
     for QubitIndex in Qs_to_look_at:
-        recycled_qfreq = False
+        recycled_qfreq = False # don't change
+
+        # keep these as False
         ef_res_spec_survived = False
         ef_qspec_survived = False
 
@@ -229,6 +230,7 @@ while j < n:
                                      fridge=FRIDGE)  # ADC_attenuator MUST be above 16dB
         experiment.create_folder_if_not_exists(optimizationFolder)
         print("DAC atten: ", DAC_attenuator1 + DAC_attenuator2)
+
         # Mask out all other resonators except this one
         res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=res_gain[QubitIndex], num_qubits=tot_num_of_qubits)
         experiment.readout_cfg['res_gain_ge'] = res_gains
@@ -556,7 +558,7 @@ while j < n:
 
                     if QubitIndex == 5:
                         increase_qubit_reps2_rpm = True
-                        increase_qubit_reps2_rpm_to = 2000
+                        increase_qubit_reps2_rpm_to = 3500
 
                     if QubitIndex == 3:
                         increase_qubit_reps_rpm = True
