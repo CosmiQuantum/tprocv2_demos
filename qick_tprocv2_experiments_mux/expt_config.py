@@ -5,7 +5,7 @@ FRIDGE = "QUIET"  # change to "NEXUS" as needed
 if FRIDGE == "QUIET":
     VNA_res = np.array([6227.187, 6289.175, 6348.55, 6419.665, 6485.360, 6552.35])# ge resonator freqs, updated 10/10 during run 8
     VNA_qubit = np.array([4194.77, 3828.69, 4173.69, 4474.04, 4485.38, 5018.12])  # Qubit freqs g/e Transition, updated during run 8 on 10/10
-    ef_freqs = np.array([4020.48, 3650.81, 3999.01, 4302.33, 4313.2, 4848.81]) # Qubit freqs e/f Transition,Arianna 10/13
+    ef_freqs = np.array([4020.48, 3650.81, 3999.01, 4302.33, 4313.06, 4848.81]) # Qubit freqs e/f Transition,Arianna 10/13
     fh_freqs = np.array([3820.97, 3450.85, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition
     two_photon_freqs=np.array([4107.61, 3739.36, 4086.36, 4388.34, 4399.3, 4933.52]) # qubit freqs, two photon peak between ge and ef qubit freqs
 
@@ -216,7 +216,7 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ef": {
-            "reps": 500,#400, # for Pg pulse sequence during rpm, or regular ef rabi
+            "reps": 550,#400, # for Pg pulse sequence during rpm, or regular ef rabi
             "reps2": 1500, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures (rpm). Pe pulse sequence
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
