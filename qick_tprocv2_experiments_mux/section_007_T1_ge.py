@@ -47,16 +47,16 @@ class T1Program(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
         ################ Active Reset #################################
-        self.wait_auto(cfg['res_length'])
-        self.delay_auto(cfg['res_length'] + 0.2)
-
-        self.read_and_jump(ro_ch=cfg['ro_ch'][1],
-                           component='I',
-                           threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
-                           test="<", label='skip everything')
-
-        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
-        self.label('skip everything')
+        # self.wait_auto(cfg['res_length'])
+        # self.delay_auto(cfg['res_length'] + 0.2)
+        #
+        # self.read_and_jump(ro_ch=cfg['ro_ch'][1],
+        #                    component='I',
+        #                    threshold=int(cfg['edge_of_e_state_threshold'] * (cfg['res_length'] / 0.026)),
+        #                    test="<", label='skip everything')
+        #
+        # self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)
+        # self.label('skip everything')
         #########################################################################################
 
 
@@ -121,13 +121,14 @@ class T1Measurement:
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
             delay_times = t1.get_time_param('wait', "t", as_array=True)
+            print('delay_times', delay_times)
 
 
         if self.fit_data:
             q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit(I, Q, delay_times)
         else:
             q1_fit_exponential, T1_est, T1_err = None, None, None
-
+        self.plot_results=False
         if self.plot_results:
             self.plot_results( I, Q, delay_times)
 
@@ -135,6 +136,26 @@ class T1Measurement:
             raw_0 = t1.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
             Ishots = raw_0[self.QubitIndex][:, :, 0, 0]
             Qshots = raw_0[self.QubitIndex][:, :, 0, 1]
+            # Ishots = []
+            # Qshots = []
+
+
+            # for m in range(len(delay_times)):
+            #     shots_i = []
+            #     shots_q = []
+            #
+            #
+            #     for l in range(self.config['reps']):
+            #         # for k in range(self.config['steps']):
+            #         shots_i.append(float(raw_0[self.QubitIndex][l][m][0][0]))
+            #         shots_q.append(float(raw_0[self.QubitIndex][l][m][0][1]))
+            #
+            #
+            #
+            #     Ishots.append(shots_i)
+            #     Qshots.append(shots_q)
+
+
             return T1_est, T1_err, Ishots, Qshots, delay_times, q1_fit_exponential, self.config
 
         else:

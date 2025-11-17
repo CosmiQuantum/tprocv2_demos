@@ -190,7 +190,17 @@ class T2R_FHProgram(AveragerProgramV2):
                        phase=cfg['qubit_phase'],
                        gain=cfg['pi_ef_amp'],
                        )
+        ##############################
+        self.add_gauss(ch=qubit_ch, name="fhramp", sigma=cfg['sigma_fh'], length=cfg['sigma_fh'] * 4, even_length=False)
 
+        self.add_pulse(ch=qubit_ch, name="fh_pi_pulse",
+                       style="arb",
+                       envelope="fhramp",
+                       freq=cfg['qubit_freq_fh'],
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['pi_fh_amp'],
+                       )
+        ################################################
         # normal wfh pulse
         self.add_gauss(ch=qubit_ch, name="fhramp1", sigma=cfg['sigma_fh'], length=cfg['sigma_fh'] * 4, even_length=False)
 
@@ -220,21 +230,26 @@ class T2R_FHProgram(AveragerProgramV2):
 
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play ge drive pulse
-        self.delay_auto(t=0.01, tag='waiting after ge drive')  # Wait a small time after ge drive pulse is complete
+        self.delay_auto(t=0.0, tag='waiting after ge drive')  # Wait a small time after ge drive pulse is complete
         self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # f-e drive pulse
-        self.delay_auto(t=0.01, tag='waiting after ef drive')  # Wait a small time after ge drive pulse is complete
+        self.delay_auto(t=0.0, tag='waiting after ef drive')  # Wait a small time after ge drive pulse is complete
         self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi2_pulse1", t=0)  # play fh pi/2 drive pulse
-        self.delay_auto(cfg['wait_time'] + 0.01, tag='wait')  # wait_time after last pi/2 pulse
+
+        self.delay_auto(cfg['wait_time'] , tag='wait')  # wait_time after last pi/2 pulse
+
         self.pulse(ch=self.cfg["qubit_ch"], name="fh_pi2_pulse2", t=0)  # play fh pi/2 drive pulse
-        self.delay_auto(0.01)  # wait_time after last pulse
+        self.delay_auto(0.0)  # wait_time after last pulse
 
         self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # f-e drive pulse
-        self.delay_auto(t=0.01, tag='waiting after final ef drive')  # Wait a small time after ge drive pulse is complete
+        self.delay_auto(t=0.0, tag='waiting after final ef drive')  # Wait a small time after ge drive pulse is complete
         self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play ge drive pulse
 
-        self.delay_auto(t=0.01, tag='waiting after final ge drive')  # Wait a small time after ge drive pulse is complete
+
+        self.delay_auto(t=0.0, tag='waiting after final ge drive')  # Wait a small time after ge drive pulse is complete
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+
+        #########################################################################################
 
 
 class T2R_FHMeasurement:
@@ -434,6 +449,9 @@ class T2R_FHMeasurement:
             Q = iq_list[self.QubitIndex][0, :, 1]
             delay_times = ramsey.get_time_param('wait', "t", as_array=True)
             # print('delay_times', delay_times)
+            # delay_times1 = ramsey.get_time_param('wait1', "t", as_array=True)
+            # delay_times2 = ramsey.get_time_param('wait2', "t", as_array=True)
+            # delay_times = delay_times1 + delay_times2
         # gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
 
         if self.fit_data:
@@ -445,8 +463,26 @@ class T2R_FHMeasurement:
             self.plot_results(I, Q, delay_times, now, fit, t2r_est, t2r_err, plot_sig)
 
         raw_0 = ramsey.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
-        Ishots = raw_0[self.QubitIndex][:, :, 0, 0]
-        Qshots = raw_0[self.QubitIndex][:, :, 0, 1]
+        # Ishots = raw_0[self.QubitIndex][:, :, 0, 0]
+        # Qshots = raw_0[self.QubitIndex][:, :, 0, 1]
+        # print('raw_0[self.QubitIndex][0][0][0][0]', raw_0[self.QubitIndex][0][0][0][0])
+        # print('len(raw_0[self.QubitIndex][0][0][0])', len(raw_0[self.QubitIndex][0][0][0]))
+        # print('len(raw_0[self.QubitIndex][0][0])', len(raw_0[self.QubitIndex][0][0]))
+        # print('len(raw_0[self.QubitIndex][0])', len(raw_0[self.QubitIndex][0]))
+        # print('len(raw_0[self.QubitIndex])', len(raw_0[self.QubitIndex]))
+        Ishots = []
+        Qshots = []
+        # print('raw_0',raw_0)
+        for m in range(len(delay_times)):
+            shots_i = []
+            shots_q = []
+            for l in range(self.config['reps']):
+                # for k in range(self.config['steps']):
+                shots_i.append(float(raw_0[self.QubitIndex][l][m][0][0]))
+                shots_q.append(float(raw_0[self.QubitIndex][l][m][0][1]))
+
+            Ishots.append(shots_i)
+            Qshots.append(shots_q)
 
 
         return  t2r_est, t2r_err, I, Q, Ishots, Qshots, delay_times, fit, self.config

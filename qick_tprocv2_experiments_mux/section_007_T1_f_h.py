@@ -156,7 +156,8 @@ class F_T1Program(AveragerProgramV2):
 class FH_T1Measurement:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, signal, save_figs, experiment = None,
                  live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
-                 multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, expt_name='fh_T1'):
+                 multiply_qubit_reps_by = 0, verbose = False, logger = None,  save_shots=True,
+                               unmasking_resgain=True, qick_verbose=True, expt_name='fh_T1'):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
@@ -170,6 +171,7 @@ class FH_T1Measurement:
         self.live_plot = live_plot
         self.signal = signal
         self.save_figs = save_figs
+        self.save_shots = save_shots
         self.verbose = verbose
         self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
 
@@ -219,17 +221,18 @@ class FH_T1Measurement:
                 hiq_list = ht1.acquire(self.experiment.soc, soft_avgs=self.config['rounds'], progress=True)
             fI = fiq_list[self.QubitIndex][0, :, 0]
             fQ = fiq_list[self.QubitIndex][0, :, 1]
-            hI = fiq_list[self.QubitIndex][0, :, 0]
-            hQ = fiq_list[self.QubitIndex][0, :, 1]
+            hI = hiq_list[self.QubitIndex][0, :, 0]
+            hQ = hiq_list[self.QubitIndex][0, :, 1]
             delay_times = ft1.get_time_param('wait', "t", as_array=True)
+            print('delay_times', delay_times)
 
         if self.fit_data:
-            fq1_fit_exponential, fT1_err, fT1_est, fplot_sig = self.t1_fit(I, Q, delay_times)
+            fq1_fit_exponential, fT1_err, fT1_est, fplot_sig = self.t1_fit(fI, fQ, delay_times)
         else:
             fq1_fit_exponential, fT1_est, fT1_err = None, None, None
 
         if self.fit_data:
-            hq1_fit_exponential, hT1_err, hT1_est, hplot_sig = self.t1_fit(I, Q, delay_times)
+            hq1_fit_exponential, hT1_err, hT1_est, hplot_sig = self.t1_fit(hI, hQ, delay_times)
         else:
             hq1_fit_exponential, hT1_est, hT1_err = None, None, None
 
@@ -239,12 +242,33 @@ class FH_T1Measurement:
 
         if self.save_shots:
             fraw_0 =  ft1.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
-            fIshots = fraw_0[self.QubitIndex][:, :, 0, 0]
-            fQshots = fraw_0[self.QubitIndex][:, :, 0, 1]
+            # fIshots = fraw_0[self.QubitIndex][:, :, 0, 0]
+            # fQshots = fraw_0[self.QubitIndex][:, :, 0, 1]
 
             hraw_0 =  ht1.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
-            hIshots = hraw_0[self.QubitIndex][:, :, 0, 0]
-            hQshots = hraw_0[self.QubitIndex][:, :, 0, 1]
+            # hIshots = hraw_0[self.QubitIndex][:, :, 0, 0]
+            # hQshots = hraw_0[self.QubitIndex][:, :, 0, 1]
+
+            fIshots = []
+            fQshots = []
+            hIshots = []
+            hQshots = []
+            for m in range(len(delay_times)):
+                fshots_i = []
+                fshots_q = []
+                hshots_i = []
+                hshots_q = []
+                for l in range(self.config['reps']):
+                    # for k in range(self.config['steps']):
+                    fshots_i.append(float(fraw_0[self.QubitIndex][l][m][0][0]))
+                    fshots_q.append(float(fraw_0[self.QubitIndex][l][m][0][1]))
+                    hshots_i.append(float(hraw_0[self.QubitIndex][l][m][0][0]))
+                    hshots_q.append(float(hraw_0[self.QubitIndex][l][m][0][1]))
+
+                fIshots.append(fshots_i)
+                fQshots.append(fshots_q)
+                hIshots.append(hshots_i)
+                hQshots.append(hshots_q)
             return fT1_est, fT1_err, fI, fQ, hT1_est, hT1_err, hI, hQ, delay_times, fq1_fit_exponential, hq1_fit_exponential, fIshots, fQshots, hIshots, hQshots,  self.config
 
         else:
@@ -360,12 +384,12 @@ class FH_T1Measurement:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"Q{self.QubitIndex + 1} " + f"f_T1={fT1_est:.2f} us" + f"h_T1={hT1_est:.2f} us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         f"Q{self.QubitIndex + 1} " + f" f_T1={fT1_est:.2f} us" + f" h_T1={hT1_est:.2f} us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
                          fontsize=24, ha='center',
                          va='top')  # , pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
                 fig.text(plot_middle, 0.98,
-                         f"T1 Q{self.QubitIndex + 1}, T1 %.2f us" f"f_T1={fT1_est:.2f} us" + f"h_T1={hT1_est:.2f} us" +  f", {self.config['reps']}*{self.config['rounds']} avgs,",
+                         f"T1 Q{self.QubitIndex + 1}," + f" f_T1={fT1_est:.2f} us" + f" h_T1={hT1_est:.2f} us" +  f", {self.config['reps']}*{self.config['rounds']} avgs,",
                          fontsize=24, ha='center', va='top')
 
         else:
@@ -383,27 +407,31 @@ class FH_T1Measurement:
             T1_err = None
 
         # I subplot
-        ax1.plot(delay_times, fI, label="Gain (a.u.)", linewidth=2)
-        ax1.set_ylabel("fI Amplitude (a.u.)", fontsize=20)
+        ax1.plot(delay_times, fI, label="fI (a.u.)", linewidth=2, alpha=0.3)
+        ax1.plot(delay_times, hI, label="hI (a.u.)", linewidth=2)
+        ax1.set_ylabel("Amplitude (a.u.)", fontsize=20)
         ax1.tick_params(axis='both', which='major', labelsize=16)
+        ax1.legend(fontsize=16)
         # ax1.axvline(freq_q, color='orange', linestyle='--', linewidth=2)
 
         # Q subplot
-        ax2.plot(delay_times, fQ, label="Q", linewidth=2)
+        ax2.plot(delay_times, fQ, label="fQ", linewidth=2)
+        ax2.plot(delay_times, hQ, label="hQ", linewidth=2, alpha=0.3)
         ax2.set_xlabel("Delay time (us)", fontsize=20)
-        ax2.set_ylabel("fQ Amplitude (a.u.)", fontsize=20)
+        ax2.set_ylabel("Amplitude (a.u.)", fontsize=20)
         ax2.tick_params(axis='both', which='major', labelsize=16)
+        ax1.legend(fontsize=16)
 
-        ax1.plot(delay_times, hI, label="Gain (a.u.)", linewidth=2)
-        ax1.set_ylabel("hI Amplitude (a.u.)", fontsize=20)
-        ax1.tick_params(axis='both', which='major', labelsize=16)
-        # ax1.axvline(freq_q, color='orange', linestyle='--', linewidth=2)
-
-        # Q subplot
-        ax2.plot(delay_times, hQ, label="Q", linewidth=2)
-        ax2.set_xlabel("Delay time (us)", fontsize=20)
-        ax2.set_ylabel("hQ Amplitude (a.u.)", fontsize=20)
-        ax2.tick_params(axis='both', which='major', labelsize=16)
+        # ax1.plot(delay_times, hI, label="Gain (a.u.)", linewidth=2)
+        # ax1.set_ylabel("hI Amplitude (a.u.)", fontsize=20)
+        # ax1.tick_params(axis='both', which='major', labelsize=16)
+        # # ax1.axvline(freq_q, color='orange', linestyle='--', linewidth=2)
+        #
+        # # Q subplot
+        # ax2.plot(delay_times, hQ, label="Q", linewidth=2)
+        # ax2.set_xlabel("Delay time (us)", fontsize=20)
+        # ax2.set_ylabel("hQ Amplitude (a.u.)", fontsize=20)
+        # ax2.tick_params(axis='both', which='major', labelsize=16)
         # ax2.axvline(freq_q, color='orange', linestyle='--', linewidth=2)
 
         # Adjust spacing

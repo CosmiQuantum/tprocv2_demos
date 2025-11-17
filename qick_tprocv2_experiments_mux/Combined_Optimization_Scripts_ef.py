@@ -88,7 +88,7 @@ lengs = np.arange(2, 5, 1)
 
 for QubitIndex in Qs:
     # Get the config for this qubit
-    experiment = QICK_experiment(outerFolder, DAC_attenuator1=10, DAC_attenuator2=15, qubit_DAC_attenuator1=5,
+    experiment = QICK_experiment(outerFolder, DAC_attenuator1=10, DAC_attenuator2=14, qubit_DAC_attenuator1=4,
                                  qubit_DAC_attenuator2=4, ADC_attenuator=17,
                                  fridge=FRIDGE)
 
