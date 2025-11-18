@@ -23,22 +23,23 @@ from section_008_save_data_to_h5 import Data_H5
 # Run Configurations and Optimization Params
 ################################################
 
-temperature = 0.011 #default to 11 mK base temp of fridge run 7
+temperature = 0.014 #default to 11 mK base temp of fridge run 7
 
 save_r = 1  # how many rounds to save after
-save_figs = False  # whether to save plots
-fit_data = False  # fit data during the run?
+save_figs = True  # whether to save plots
+fit_data = True  # fit data during the run?
 save_data_h5 = True  # save data to h5 files?
 verbose = True  # verbose output
 debug_mode = True  # if True, errors will stop the run immediately
 use_prev_freq = True
 num_rounds = 1
+dac = 'mux' #'fsgen'
 
-run = "run8"
-study = 'debugging'
-sub_study = 'checkout_15mK'
-substudy_txt_notes = 'checkout of eight resonators'
-resonator_list = [0]  # list of resonators to process
+run = "run8b"
+study = 'qick_checkout' #'qick_checkout'
+sub_study = 'checkout_muxdac_8bstart'
+substudy_txt_notes = 'checkout of R0-R7 resonator at start of run8b, after adding FSGEN + MUXDAC > splitter. with 2x warm amps off. Loud0 board'
+resonator_list = [0,1,2,3,4,5,6,7]  # list of resonators to process
 
 # Set which experiments to run
 run_flags = {"rspec":True}
@@ -104,13 +105,16 @@ for ResonatorIndex in resonator_list:
         timestamp_rspec = time.mktime(datetime.datetime.now().timetuple())
         r_spec = ResonanceSpectroscopy(ResonatorIndex, len(resonator_list), studyDocumentationFolder, 0,
                                save_figs=save_figs, experiment=experiment,
-                               verbose=verbose, logger=rr_logger)
+                               verbose=verbose, logger=rr_logger, dac=dac)
         freq_sweep, I, Q, gain_sweep, sys_config = r_spec.run()
         r_spec.plot_raw(freq_sweep, I, Q)
-        plt.show()
         if fit_data is True:
             try:
                 fR, Ql, Qi, Qc = r_spec.DCM_fit(freq_sweep, I, Q, gain_sweep)
+                print(f"R{ResonatorIndex} frequency: {fR} MHz")
+                print(f"R{ResonatorIndex} Ql: {Ql}")
+                print(f"R{ResonatorIndex} Qi: {Qi}")
+                print(f"R{ResonatorIndex} Qc: {Qc}")
                 plt.show()
                 experiment.readout_cfg["res_freq"][ResonatorIndex] = fR[len(gain_sweep)-1]
                 print(f"R{ResonatorIndex} fR = {experiment.readout_cfg['res_freq'][ResonatorIndex]} MHz")

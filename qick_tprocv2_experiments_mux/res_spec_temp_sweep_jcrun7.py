@@ -26,7 +26,7 @@ from tprocv2_demos.qick_tprocv2_experiments_mux.socProxy import device
 
 ##check if temp was provided from shell script
 if len(sys.argv) < 2:
-    temperature = 1.1 #0.011 #default to 11 mK base temp of fridge run 7
+    temperature = 0.015 #0.011 #default to 11 mK base temp of fridge run 8
     print(f"QUIET at base temperature: {temperature} K")
 else:
     temperature = float(sys.argv[1])

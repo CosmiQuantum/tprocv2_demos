@@ -25,39 +25,49 @@ if FRIDGE == "QUIET":
         "res_spec_jcrun7": {
             "reps": 300,
             "rounds": 1,
-            "span": 3, #span of scan in MHz
-            "steps": 1000,#5000, #number of steps in frequency sweep
+            "span": 1, #1 #span of scan in MHz
+            "steps": 500,#500, #number of steps in frequency sweep
             "relax_delay": 0.0, #relax delay in us. can be 0 for res spec
             "pulse_length": 2.0, #mux pulse length in us.
             "this_res_freq": [0],
-            "gain_start": 1.0,
+            "gain_start": 0.5,
             "gain_steps": 1,
+            "gain": 1.0,
         },
 
         "single_res_timestream": {
             "reps": 1, #cycles through sending pulse/triggering one dynro channel
             "relax_delay": 0.00,  # relax delay in us. can be 0? for res spec
-            "pulse_length": 3400000, #3400000,  # mux pulse length in us.
-            #"period": 0.0040690104, #time to acquire one I,Q data point in us.
+            "pulse_length": 200,#3400000,  # mux pulse length in us.
+            "period": 0.0032549, #time to acquire one I,Q data point in us.
             "this_res_freq": [0], #frequency of selected resonator, gets populated in code
-            "num_transfers": 500000, #num transfers from DDR4 buffer. set to ___ in code.
+            "num_transfers": 200,#500000, #num transfers from DDR4 buffer. set to ___ in code.
             "offset": 0.0, #offset from fR in MHz
-            #"chunk_size": 50, #can I think of this equivalent to 100 reps?
+            "chunk_size": 50, #can I think of this equivalent to 100 reps?
             #"trim_buffer": 250.0, #trim first few us from front of dataset
-            #"sigma_factor": 5.0, #threshold i x*sigma for peak finding algorithm
+            "sigma_factor": 1.0, #threshold i x*sigma for peak finding algorithm
             #"window": 10.0, #length of window to cut around each pulse for data-saving
         },
 
         "single_res_timestream_drive": {
-            "reps": 1,  # cycles through sending pulse/triggering one dynro channel
-            "relax_delay": 0.00,  # relax delay in us. can be 0? for res spec
-            "pulse_length": 3400000,  # 3400000,  # mux pulse length in us.
-            "drive_length": 20, # drive pulse length in us.
-            "this_res_freq": [0],  # frequency of selected resonator, gets populated in code
+            "reps": 300,  # cycles through sending pulse/triggering one dynro channel
+            "rounds": 1,
+            "relax_delay": 50,  # relax delay in us. can be 0? for res spec
+            "period": 0.0032552083333333335,  # time to acquire one I,Q data point in us.
+            "chunk_size": 100,
+            "buffer_length": 200, #cut off dead time from DDR4 buffer
+            "DDR4": True,
+            #"pulse_length": 3400000,  # 3400000,  # mux pulse length in us.
+            "drive_length": 50, # drive pulse length in us.
+            "drive_reps": 1,
+            "sensor_res_freq": [0],  # frequency of sensor resonator, gets populated in code
             "drive_res_freq": [0], # frequency of drive resonator, gets populated in code
-            "num_transfers": 500000,  # num transfers from DDR4 buffer. set to ___ in code.
+            "pre_drive_delay": 100, # [us] delay before playing drive tone, should be longer than sensor ringup
+            "post_drive_delay": 100, # [us] delay after playing drive tone
+            "num_transfers": 500,  # num transfers per batch from DDR4 buffer. set to ___ in code.
             "offset": 0.0,  # offset from fR in MHz
-            "drive_gain": 1.0, #gain of drive resonator pulse
+            "drive_gain": 0.1, #gain of drive resonator pulse
+            "sensor_gain": [1.0], #gain of sensor resonator pulse
         },
 
         "multi_res_timestream": {

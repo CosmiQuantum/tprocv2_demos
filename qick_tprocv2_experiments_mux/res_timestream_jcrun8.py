@@ -212,15 +212,16 @@ class ResonatorTimestream:
 
             if multi_file is False:
                 ## create one file and append batches of data
-                file_path = os.join(data_path, f"timestream_{self.round_num}_{formatted_datetime}.h5")
+                file_path = os.path.join(data_path, f"timestream_R{self.ResonatorIndex}_r{self.round_num}_{formatted_datetime}.h5")
+                print(f"saving batch {idx} to {file_path}")
 
-                series_I.to_hdf(file_path, key="I",mode='a',format='fixed')
+                series_I.to_hdf(file_path, key="I", mode='a',format='fixed')
                 series_Q.to_hdf(file_path, key="Q",mode='a',format='fixed')
 
             else:
                 ### save batches of data in individual files labeled with their index
-                file_path = os.join(data_path, f"timestream_{self.round_num}_{formatted_datetime}_{idx}.h5")
-
+                file_path = os.path.join(data_path, f"timestream_R{self.ResonatorIndex}_r{self.round_num}_i{idx}_{formatted_datetime}.h5")
+                print(f"saving batch {idx} to {file_path}")
                 series_I.to_hdf(file_path, key="I", mode='w', format='fixed')
                 series_Q.to_hdf(file_path, key="Q", mode='w', format='fixed')
 
@@ -231,19 +232,24 @@ class ResonatorTimestream:
 
         ## set up data saving path
         formatted_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        data_path = os.join(self.dataSetFolder, "Data_h5", "timestream_run8")
+        data_path = os.path.join(self.dataSetFolder,"study_data", "Data_h5", "timestream_data")
+        self.experiment.create_folder_if_not_exists(data_path)
 
         ### transfer a few samples from the buffer to find the timestep and record
         iq_ddr4 = self.experiment.soc.get_ddr4(nt=10,start=int(401 + 128))
         t = prog.get_time_axis_ddr4(self.config['dynro_ch'][0], iq_ddr4)
         timestep = t[1] - t[0]
-
         start_time = time.time() ## marker to calculate data saving time
         if threading is False:
             ## save data without multi-processing
             for idx in np.arange(0, int(np.floor(total_transfers / self.config['num_transfers']))):
                 iq_ddr4 = self.experiment.soc.get_ddr4(nt=int(self.config['num_transfers']),
                                                        start=int(401 + 128 * idx * self.config['num_transfers']))
+                ##
+                t = prog.get_time_axis_ddr4(self.config['dynro_ch'][0], iq_ddr4)
+                self.plot_timestream(iq_ddr4, t)
+                plt.show()
+                ##
 
                 save_pandas(iq_ddr4, data_path, idx, multi_file=multi_file)
 
@@ -259,7 +265,7 @@ class ResonatorTimestream:
                 iq_ddr4 = self.experiment.soc.get_ddr4(nt=int(self.config['num_transfers']),
                                                        start=int(401 + 128 * idx * self.config['num_transfers']))
 
-                p = Process(target=multi_save, args=(queue, iq_ddr4, idx))
+                p = Process(target=multi_save, args=(queue, iq_ddr4, data_path, idx))
                 processes.append(p)
 
                 while len(multiprocessing.active_children()) > num_process:
@@ -271,6 +277,9 @@ class ResonatorTimestream:
             for p in processes:
                 p.join()
             print("all processes complete")
+
+        end_time = time.time()
+        print(f"total data saving time: {end_time - start_time}")
 
         return timestep, self.config
 

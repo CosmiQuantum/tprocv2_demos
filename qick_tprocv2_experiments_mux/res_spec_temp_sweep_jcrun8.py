@@ -26,7 +26,7 @@ from tprocv2_demos.qick_tprocv2_experiments_mux.socProxy import device
 
 ##check if temp was provided from shell script
 if len(sys.argv) < 2:
-    temperature = 0.011 #0.011 #default to 11 mK base temp of fridge run 7
+    temperature = 0.014 #0.011 #default to 11 mK base temp of fridge run 7
     print(f"QUIET at base temperature: {temperature} K")
 else:
     temperature = float(sys.argv[1])
@@ -49,10 +49,10 @@ verbose = True  # verbose output
 debug_mode = True  # if True, errors will stop the run immediately
 use_prev_freq = False
 
-study = 'Debugging'
+study = 'debugging'
 sub_study = f'{temperature}_K'
 substudy_txt_notes = 'temperature sweep. collecting S21 data at 3 powers.'
-resonator_list = [0,1,2,3,4,5]  # list of resonators to process
+resonator_list = [0]  # list of resonators to process
 
 # Set which experiments to run
 run_flags = {"rspec":True}
@@ -122,6 +122,7 @@ for ResonatorIndex in resonator_list:
                                save_figs=save_figs, experiment=experiment,
                                verbose=verbose, logger=rr_logger)
     freq_sweep, I, Q, gain_sweep, sys_config = r_spec.run()
+    r_spec.plot_raw(freq_sweep, I, Q)
     if fit_data is True:
         try:
             fR, Ql, Qi, Qc = r_spec.DCM_fit(freq_sweep, I, Q, gain_sweep)

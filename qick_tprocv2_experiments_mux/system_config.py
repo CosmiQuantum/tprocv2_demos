@@ -26,7 +26,8 @@ class QICK_experiment:
             self.soc, self.soccfg = makeProxy()
 
             self.MIXMUXGEN_CH = 4 # Readout resonator DAC channel
-            self.DYNRO_CH = 1 # dynamic readout channel
+            self.FSGEN_CH = 0 #full speed DAC channel
+            self.DYNRO_CH = 0 # dynamic readout channel
 
             #self.FSGEN_CH =  2 # 0 for "old QICK", 6 for RF board
             #self.FSGEN_AMPL_CH = 0
@@ -41,6 +42,7 @@ class QICK_experiment:
             self.hw_cfg = {
                 # DAC
                 "gen_ch": [self.MIXMUXGEN_CH] * 8,  # MUX DAC
+                "drive_ch": self.FSGEN_CH, #fullspeed DAC
                 "nqz_res": 2,
                 # ADC
                 #"ro_ch": [self.MUXRO_CH] * 6,  # MUX readout channel
@@ -51,9 +53,10 @@ class QICK_experiment:
             # Readout Configuration
 
             if device == "hBN_resonator":
-                freqs = [4630.0, 5012.575, 5379.6512,5730.438, 6105.8585, 6831.0991]
+                freqs = [4261.3689, 4629.7395, 5011.9289, 5378.9594,5729.6791, 6105.06988, 6479.018, 6830.208] #hBN run8
+                #[4630.36741, 5012.575, 5379.6512, 5730.438, 6105.8585, 6831.0991] #hBN run7
             elif device == "control_resonator":
-                freqs = [4265, 4630.36741, 5012.575, 5379.6512,5730.438, 6105.8585, 6831.0991]
+                freqs = [4264.9869, 4603.472, 4913.8772, 5105.3864, 5509.4261, 5986.2807, 6433.3078, 6835.0163] #control run8
 
             self.readout_cfg = {
                 "trig_time": 0.75,  # [Clock ticks] - get this value from TOF experiment

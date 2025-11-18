@@ -23,7 +23,7 @@ from section_008_save_data_to_h5 import Data_H5
 # Run Configurations and Optimization Params
 ################################################
 
-temperature = 0.011 #default to 11 mK base temp of fridge run 7
+temperature = 0.013 #default to 11 mK base temp of fridge run 7
 
 save_r = 1  # how many rounds to save after
 save_figs = False  # whether to save plots
@@ -35,10 +35,10 @@ use_prev_freq = True
 num_rounds = 10000
 
 run = "run8"
-study = 'PSD'
-sub_study = 'psd_source_off'
-substudy_txt_notes = 'Running PSD on six resonators. power 3 spacing, 400 pts, 0.2 us pulse'
-resonator_list = [0]  # list of resonators to process
+study = 'TLS_PSD'
+sub_study = 'psd_source_off_v2'
+substudy_txt_notes = 'Running PSD on eight resonators. power 3 spacing, 500 pts, 1MHz span 2 us pulse'
+resonator_list = [0,1,2,3,4,5,6,7]  # list of resonators to process
 
 # Set which experiments to run
 run_flags = {"rspec":True}

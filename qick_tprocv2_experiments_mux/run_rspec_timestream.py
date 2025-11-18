@@ -29,10 +29,11 @@ save_data_h5 = True  # save data to h5 files?
 verbose = True  # verbose output
 debug_mode = True  # if True, errors will stop the run immediately
 temperature = 0.011, #0.011 #base temp in kelvin for record-keeping
-num_rounds = 3
+num_rounds = 1
+threading=False
 
 run = "run8"
-study = 'source_off'
+study = 'debugging'
 sub_study = 'timestream'
 substudy_txt_notes = 'collecting timestream data'
 resonator_list = [0]  # list of resonators to process
@@ -159,7 +160,7 @@ for resonator in resonator_list:
         stream = ResonatorTimestream(resonator_list[0], len(resonator_list), studyDocumentationFolder, dataSetFolder, m,
                                save_figs=save_figs, experiment=experiment,
                                verbose=verbose, logger=rr_logger)
-        timestep, expt_cfg = stream.run()
+        timestep, expt_cfg = stream.run(threading=threading)
 
         ## save data
         ResonatorIndex = resonator_list[0]

@@ -6,6 +6,7 @@ from build_state import *
 from expt_config import *
 import datetime
 import logging
+from scipy.optimize import curve_fit
 
 import jcresonators.resonator as jcresonator
 
@@ -40,10 +41,82 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.pulse(ch=cfg['gen_ch'], name="mux_pulse", t=0.0)
         self.trigger(ros=cfg['dynro_ch'], pins=[0], t=cfg['trig_time'],ddr4=True)
 
+class SingleToneSpectroscopyFSGENoverlayProgram(AveragerProgramV2):
+    def _initialize(self, cfg):
+        ro_ch = cfg['dynro_ch'][0]
+        gen_ch = cfg['gen_ch']
+        drive_ch = cfg['drive_ch']
+
+        # play individual resonator pulse from MUX DAC
+        self.declare_gen(ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch,
+                         mux_freqs=cfg['this_res_freq'],
+                         mux_gains=[0.5],#cfg['res_gain'],
+                         mux_phases=cfg['res_phase'],
+                         mixer_freq=cfg['mixer_freq'])
+
+        self.add_pulse(ch=gen_ch, name="mux_pulse",
+                       style="const",
+                       length=cfg["pulse_length"],
+                       mask=cfg["res_mask"],
+                       )
+
+        self.declare_gen(ch=drive_ch, nqz=cfg['nqz_res'])
+
+        self.add_pulse(ch=drive_ch, name="fsgen_pulse",
+                       style="const",
+                       freq=cfg['this_res_freq'][0],
+                       phase=cfg['res_phase'][0],
+                       gain=cfg['res_gain'][0],
+                       length=cfg["pulse_length"],
+                       )
+
+        # dynamic readout
+        self.declare_readout(ch=ro_ch, length=cfg['ro_length'])
+        self.add_readoutconfig(ch=ro_ch, name="ro",
+                               freq=cfg['this_res_freq'][0], #entry res_freq
+                               gen_ch=gen_ch,
+                               outsel='product')
+        self.send_readoutconfig(ch=ro_ch, name="ro", t=0)
+
+    def _body(self, cfg):
+        self.delay_auto()
+        self.pulse(ch=cfg['gen_ch'], name="mux_pulse", t=0.0)
+        self.pulse(ch=cfg['drive_ch'], name="fsgen_pulse", t=0.0)
+        self.trigger(ros=cfg['dynro_ch'], pins=[0], t=cfg['trig_time'],ddr4=True)
+
+class SingleToneSpectroscopyFSGENProgram(AveragerProgramV2):
+    def _initialize(self, cfg):
+        ro_ch = cfg['dynro_ch'][0]
+        gen_ch = cfg['drive_ch']
+
+        # play individual resonator pulse from FSGEN
+        self.declare_gen(ch=gen_ch, nqz=cfg['nqz_res'])
+
+        self.add_pulse(ch=gen_ch, name="fsgen_pulse",
+                       style="const",
+                       freq = cfg['this_res_freq'][0],
+                       phase = cfg['res_phase'][0],
+                       gain = cfg['res_gain'][0],
+                       length=cfg["pulse_length"],
+                       )
+
+        # dynamic readout
+        self.declare_readout(ch=ro_ch, length=cfg['ro_length'])
+        self.add_readoutconfig(ch=ro_ch, name="ro",
+                               freq=cfg['this_res_freq'][0], #entry res_freq
+                               gen_ch=gen_ch,
+                               outsel='product')
+        self.send_readoutconfig(ch=ro_ch, name="ro", t=0)
+
+    def _body(self, cfg):
+        self.delay_auto()
+        self.pulse(ch=cfg['drive_ch'], name="fsgen_pulse", t=0.0)
+        self.trigger(ros=cfg['dynro_ch'], pins=[0], t=cfg['trig_time'],ddr4=True)
+
 
 class ResonanceSpectroscopy:
     def __init__(self, ResonatorIndex, number_of_resonators, studyDocumentationFolder, round_num, save_figs=False, experiment=None,
-                 verbose=False, logger=None):
+                 verbose=False, logger=None, dac='mux', gain=None):
         self.ResonatorIndex = ResonatorIndex
         self.Resonator = "R0" #+ str(self.ResonatorIndex)
         self.number_of_resonators = number_of_resonators
@@ -52,6 +125,7 @@ class ResonanceSpectroscopy:
         self.round_num = round_num
         self.save_figs = save_figs
         self.experiment = experiment
+        self.dac = dac
         self.exp_cfg = expt_cfg[self.expt_name]
         self.verbose = verbose
         self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
@@ -62,19 +136,22 @@ class ResonanceSpectroscopy:
             self.logger.info(f'R {self.ResonatorIndex} Round {self.round_num} Res Spec configuration: {self.config}')
             if self.verbose: print(f'R {self.ResonatorIndex} Round {self.round_num} Res Spec configuration: ',
                                    self.config)
+            if gain is not None:
+                self.config['gain'] = gain
 
     def run(self):
         self.config["this_res_freq"] = [self.config["res_freq"][self.ResonatorIndex]]
         self.config["res_mask"] = [0]
         self.config["mixer_freq"] = self.config["this_res_freq"][0] + 300
 
-        #half_fpts = np.power(np.array(np.linspace(0, np.power(self.config['span']/2,1/3), num=int(np.floor(self.config['steps']/2)))),3)
-        #fpts = np.concatenate((-1*np.flip(half_fpts), half_fpts))
-        fpts = np.linspace(-self.config['span'] / 2, self.config['span'] / 2, num=self.config['steps'])
+        half_fpts = np.power(np.array(np.linspace(0, np.power(self.config['span']/2,1/3), num=int(np.floor(self.config['steps']/2)))),3)
+        fpts = np.concatenate((-1*np.flip(half_fpts), half_fpts))
+        #fpts = np.linspace(-self.config['span'] / 2, self.config['span'] / 2, num=self.config['steps'])
         freq_sweep = self.config['this_res_freq'] + fpts
+        #gain_sweep = [self.config["gain"]]
         #gain_sweep = np.linspace(self.config["gain_start"], 1.0, num=self.config["gain_steps"])
-        gain_sweep = [1.0]
-        #gain_sweep = [0.1, 0.3, 1.0] #hard coded in for now.
+
+        gain_sweep = [0.1, 0.25, 0.4, 0.55, 0.7, 0.85, 1.0] #hard coded in for now.
 
         I = np.zeros((len(gain_sweep),len(fpts)))
         Q = np.zeros((len(gain_sweep),len(fpts)))
@@ -85,8 +162,14 @@ class ResonanceSpectroscopy:
             for i, f in enumerate(tqdm(freq_sweep)):
                 # updates all multiplexed resonator frequency sweeps
                 self.config["this_res_freq"]= [f]
-                prog = SingleToneSpectroscopyProgram(self.experiment.soccfg, reps=self.config["reps"], final_delay=self.config["relax_delay"],
+                if self.dac == 'mux':
+                    prog = SingleToneSpectroscopyProgram(self.experiment.soccfg, reps=self.config["reps"], final_delay=self.config["relax_delay"],
                                                  cfg=self.config)
+
+                elif self.dac == 'fsgen':
+                    prog = SingleToneSpectroscopyFSGENProgram(self.experiment.soccfg, reps=self.config["reps"], final_delay=self.config["relax_delay"],
+                                                 cfg=self.config)
+
                 iq_list = prog.acquire(self.experiment.soc, soft_avgs=self.config["rounds"],progress=False)
                 I[j][i] = iq_list[0][:,0]
                 Q[j][i] = iq_list[0][:,1]
@@ -198,6 +281,80 @@ class ResonanceSpectroscopy:
                 filename = os.path.join(self.studyDocumentationFolder,
                                         f"R{self.ResonatorIndex}_{self.expt_name}_{formatted_datetime}_raw")
                 plt.savefig(f"{filename}.png")
+
+    def plot_fsgen(self, freq_sweep, I, Q, plot=False):
+        print(np.shape(I))
+        amp = np.sqrt(np.square(I[0]) + np.square(Q[0]))
+        print(np.shape(amp))
+        freq_r = freq_sweep[np.argmin(amp)]
+        amp_fit, fit_freq, fwhm, fit_err = self.fit_lorenzian(-1*amp, freq_sweep, freq_r, 0.1)
+
+        if plot:
+            fig = plt.figure()
+            plt.scatter(freq_sweep, amp, color='k', label='data')
+            plt.plot(freq_sweep, -1*amp_fit, color='b',label='Lorentzian fit')
+            plt.plot([fit_freq, fit_freq], [np.min(amp)*0.9, np.max(amp)*1.1], 'r--',label='fit frequency')
+            plt.xlabel('Probe Frequency [MHz]')
+            plt.ylabel('Amplitude [a.u.]')
+            plt.legend()
+            plt.title(f'Drive Resonator R{self.ResonatorIndex} from FSGEN channel')
+
+        return amp_fit, fit_freq, fwhm, fit_err
+
+    def lorentzian(self, f, f0, gamma, A, B):
+
+        return A * gamma ** 2 / ((f - f0) ** 2 + gamma ** 2) + B
+
+    def max_offset_difference_with_x(self, x_values, y_values, offset):
+        max_average_difference = -1
+        corresponding_x = None
+
+        # average all 3 to avoid noise spikes
+        for i in range(len(y_values) - 2):
+            # group 3 vals
+            y_triplet = y_values[i:i + 3]
+
+            # avg differences for these 3 vals
+            average_difference = sum(abs(y - offset) for y in y_triplet) / 3
+
+            # see if this is the highest difference yet
+            if average_difference > max_average_difference:
+                max_average_difference = average_difference
+                # x value for the middle y value in the 3 vals
+                corresponding_x = x_values[i + 1]
+
+        return corresponding_x, max_average_difference
+
+    def fit_lorenzian(self, amp, freqs, freq_q, sigma_guess = 0.1):
+            initial_guess = [freq_q, sigma_guess, np.max(amp), np.min(amp)]
+
+            # First round of fits (to get rough estimates)
+            params, _ = curve_fit(self.lorentzian, freqs, amp, p0=initial_guess)
+
+            # Use these fits to refine guesses
+            x_max_diff, max_diff = self.max_offset_difference_with_x(freqs, amp, params[3])
+            initial_guess = [x_max_diff, sigma_guess, np.max(amp), np.min(amp)]
+
+            # Second (refined) round of fits, this time capturing the covariance matrices
+            params, cov = curve_fit(self.lorentzian, freqs, amp, p0=initial_guess)
+
+            # Create the fitted curves
+            amp_fit = self.lorentzian(freqs, *params)
+
+
+            # Calculate errors from the covariance matrices
+            fit_err = np.sqrt(np.diag(cov))
+
+
+            # Extract fitted means and FWHM (assuming params[0] is the mean and params[1] relates to the width)
+            mean = params[0]
+            fwhm = 2 * params[1]
+
+
+            # Return all desired results including the error on the Q fit
+            return amp_fit, mean, fwhm, fit_err
+
+
 
 
 
