@@ -379,7 +379,7 @@ if FRIDGE == "QUIET":
         },
 
         "Ramsey_fh": {
-            "reps": 350,#350,  # 300
+            "reps": 400,#350,  # 300
             "rounds": 1,  # 10
             "start":[0.0] * 6,  # [us]
             "stop": [45] * 6,  # [us]
