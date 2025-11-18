@@ -160,7 +160,7 @@ def find_configurations_below_threshold(file_path, threshold):
     return valid_configurations
 
 #Now getting results
-punchout_thresholds =  [0.925, 0.73751, 0.92501, 0.371, 0.8, 0.82501] # 18dB: [0.95, 0.78, 1.0, 0.31, 0.6, 0.74] # old: [1.0,0.85,1.0,0.6,0.7,0.8]
+punchout_thresholds =  [0.95, 0.73751, 0.92501, 0.371, 0.8, 0.82501] # 18dB: [0.95, 0.78, 1.0, 0.31, 0.6, 0.74] # old: [1.0,0.85,1.0,0.6,0.7,0.8]
 for qubit_index in range(1, 7):
     file_pattern = os.path.join(outerFolder, f"*_Qubit_{qubit_index}_*.h5")
     file_list = glob.glob(file_pattern)

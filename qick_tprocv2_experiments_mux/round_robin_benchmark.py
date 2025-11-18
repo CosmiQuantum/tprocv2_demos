@@ -34,7 +34,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1 # number of rounds
+n = 10000000 # number of rounds
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
 ssf_avgs_per_opt_pt = 5 # ignore
@@ -54,7 +54,7 @@ increase_qubit_reps_t2r = False  # if you want to increase the reps for a qubit,
 increase_qubit_reps_t2e = False  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_efrabi = False  # if you want to increase the reps for a qubit, set to True
 
-multiply_qubit_reps_by = 2  # only has impact if the line above is True. MUST be an integer.
+multiply_qubit_reps_by = 3  # only has impact if the line above is True. MUST be an integer.
 
 t1_qubit_to_increase_reps_for = 3
 t1_multiply_qubit_reps_by =  2
@@ -64,12 +64,12 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [1]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,4]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
 device_name = '6transmon'
-substudy_txt_notes = ('This data was taken after reverting back to only 1 channel on the qick box. T1 shots saved as well as averaged IQ data.\n') # Initial qubit checkouts quiet run 8
+substudy_txt_notes = ('Temperature Sweep data. This data was taken after reverting back to only 1 channel on the qick box. T1 shots saved as well as averaged IQ data.\n') # Initial qubit checkouts quiet run 8
 
 # set which of the following you'd like to run to 'True'
 
@@ -78,8 +78,8 @@ substudy_txt_notes = ('This data was taken after reverting back to only 1 channe
 #              "rabi_pop_meas": False, "ef_Rabi": False}
 
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
-             "t1": True, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
-             "rabi_pop_meas": False, "ef_Rabi": False}
+             "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
+             "rabi_pop_meas": True, "ef_Rabi": False}
 
 
 # For 21dB DAC
@@ -99,9 +99,9 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi":
 
 # For 25dB DAC
 res_leng_vals = [5.0, 5, 7.5, 7.0, 7.5, 7.5]
-res_gain = [0.91, 1, 0.85, 0.55, 0.7278, 0.85]
-freq_offsets = [0.0467, 0, -0.2273, -0.2273, -0.0467, -0.1364]
-
+res_gain = [0.95, 1, 0.85, 0.55, 0.85, 0.85]
+freq_offsets = [0, 0, -0.2273, -0.2273, 0, -0.1364]
+# 0.0467, -0.0467,
 qubit_freqs_ef = [None] * 6
 ef_res_sample_number = 1 # keep this as one
 number_of_qubits = 6 # total
@@ -114,7 +114,7 @@ rpm_any = False # and rabi population measurements?
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin' #qubit_checkouts
-sub_study = 'source_on_25dBDAC' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
+sub_study = 'temperature_sweep_run8_25dBDAC_onechan' #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
 #ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional, ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt, 18dB_DAC_testdata_allQs_exceptQ4, cooldown_run8b_19dB_DAC_allQs
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -302,9 +302,9 @@ while j < n:
 
                 if QubitIndex == 4:
                     increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 2600
-                    # increase_qspec_rounds = True
-                    # increase_qspec_rounds_to = 1
+                    qspecge_increase_reps_to = 5000
+                    increase_qspec_rounds = True
+                    increase_qspec_rounds_to = 2
 
                 if QubitIndex == 3:
                     increase_qubit_reps_qspec = True
