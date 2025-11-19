@@ -231,9 +231,9 @@ run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB
 #                               fit_saved,signal, run_name)
 # date_times_pi_amps, pi_amps = pi_amps_vs_time.run(plot_depths=False)
 #
-t1_vs_time = T1VsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, FRIDGE, run_number)
-date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge', saved_shots = saved_shots_t1ge)
+# t1_vs_time = T1VsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
+#                  signal, run_name, FRIDGE, run_number)
+# date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge', saved_shots = saved_shots_t1ge)
 
 # t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, FRIDGE)
@@ -301,7 +301,7 @@ date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extens
 #
 # ################################################ 06: T1 vs Time Plots #################################################
 # t1_vs_time.plot_without_errs(date_times_t1, t1_vals, show_legends)
-t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends)
+# t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends)
 # t1_vs_time.plot_with_errs_single_plot(date_times_t1, t1_vals, t1_fit_err, show_legends=True)
 #
 # ################################################# 07: T2R vs Time Plots ################################################
@@ -314,11 +314,11 @@ t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends)
 # t2e_vs_time.plot_with_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
 # t2e_vs_time.plot_with_errs_single_plot(date_times_t2e, t2e_vals, t2e_fit_err, show_legends=True)
 #
-# ############################################## 09: T1 hist/cumul/err Plots #############################################
-t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, data_path, plots_path, run_name, run_notes, run_number, fridge=FRIDGE)
-dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", saved_shots = saved_shots_t1ge)
-t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
+# # ############################################## 09: T1 hist/cumul/err Plots #############################################
+# t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, run_notes, run_number, fridge=FRIDGE)
+# dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", saved_shots = saved_shots_t1ge)
+# t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
 
 # # # # ############################################## 10: T2R hist/cumul/err Plots ############################################
 # t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
@@ -493,18 +493,13 @@ t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_er
 #              metric_2_label = 'Q Freq Fit Err (MHz)')
 
 # plot SSF historgrams nicely
-#
-# outerFolder = '/data/QICK_data/run6/6transmon/Round_Robin_Benchmark/Data/2025-03-15/'
-# outerFolder_save_plots = f"/data/QICK_data/{run_name}/Round_Robin_Benchmark/Data/run3_ss_hist_plots/"
-# plotter = PlotAllRR('2025-03-15', figure_quality, save_figs, fit_saved, signal, run_name, tot_num_of_qubits, outerFolder,
-#                   outerFolder_save_plots)
-# plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_ss = True, plot_ss_hist_only=True,
-#             ss_plot_title='Run 3', plot_t1 = False,
-#             plot_t2r = False, plot_t2e = False)
-# outerFolder = '/home/quietuser/Downloads/2024-12-17-20250316T015414Z-001/2024-12-17/'
-# outerFolder_save_plots = f"/data/QICK_data/{run_name}/Round_Robin_Benchmark/Data/run2_ss_hist_plots/"
-# plotter = PlotAllRR('2024-12-17', figure_quality, save_figs, fit_saved, signal, run_name, tot_num_of_qubits, outerFolder,
-#                   outerFolder_save_plots)
-# plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_ss = True, plot_ss_hist_only=True,
-#             ss_plot_title='Run 2', plot_t1 = False,
-#             plot_t2r = False, plot_t2e = False)
+
+outerFolder = '/data/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-19/study_data/'
+outerFolder_save_plots = '/data/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-19/documentation/ssf_clean_plotted/'
+#date, figure_quality, save_figs, fit_saved, signal, run_name, run_num, number_of_qubits, outerFolder,
+                 # outerFolder_save_plots, unique_folder_path, saved_shots
+plotter = PlotAllRR('2024-12-19', figure_quality, save_figs, fit_saved, signal, run_name, 2, tot_num_of_qubits, outerFolder,
+                  outerFolder_save_plots,unique_folder_path=None, saved_shots=None)
+plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_ss = True, plot_ss_hist_only=True,
+            ss_plot_title='Run 2', plot_t1 = False,
+            plot_t2r = False, plot_t2e = False)
