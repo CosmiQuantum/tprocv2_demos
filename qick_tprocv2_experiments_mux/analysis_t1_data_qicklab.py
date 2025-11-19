@@ -115,8 +115,28 @@ if analysis_flags["load_all_data"]:
     print('done')
 
     # t1_ge.cleanup()
+
 if analysis_flags["plot_RR_t1"]:
-    fig, ax = plt.subplots(3, 2, layout='constrained')
+    for r in selected_round:
+        print(f"Plotting round {r} T1 data...")
+
+        # This extracts the result, but we don't use it to plot, we do that
+        q1_fit_exponential, T1_err, T1_est = t1_ge.get_round(r, plot=True)
+
+#         plt.figure()
+#         # If delay_times is 1D and shared across rounds, this is fine.
+#         # If it's 2D, use delay_times[r] instead.
+#         plt.plot(delay_times, t1_p_excited[r],
+#                  'o',
+#                  label=f'round {r + 1} T1 = {T1_est:.2f} ± {T1_err:.2f} µs')
+#         plt.plot(delay_times, q1_fit_exponential, 'k:')
+#
+#         plt.title('T1 (thresholded P(e))', fontsize=sz)
+#         plt.ylabel('P(e)', fontsize=sz)
+#         plt.xlabel('delay time [µs]', fontsize=sz)
+#         plt.legend(fontsize=sz)
+#
+# plt.show()
 
 
 if analysis_flags["timestream"]:
