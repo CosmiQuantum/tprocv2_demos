@@ -149,15 +149,16 @@ class QubitSpectroscopy:
     def plot_results(self, I, Q, freqs, config=None, fig_quality=100, sigma_guess=1, return_fwhm=False):
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
-
-        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, fit_err = self.fit_lorenzian(I, Q, freqs,
+        if self.plot_fit:
+            mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, fit_err = self.fit_lorenzian(I, Q, freqs,
                                                                                                           freq_q,sigma_guess)
 
         # Check if the returned values are all None
-        if (mean_I is None and mean_Q is None and I_fit is None and Q_fit is None
-                and largest_amp_curve_mean is None and largest_amp_curve_fwhm is None):
-            # If so, return None for the values in this definition as well
-            return None, None, None
+        if self.plot_fit:
+            if (mean_I is None and mean_Q is None and I_fit is None and Q_fit is None
+                    and largest_amp_curve_mean is None and largest_amp_curve_fwhm is None):
+                # If so, return None for the values in this definition as well
+                return None, None, None
 
         # If we get here, the fit was successful and we can proceed with plotting
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
@@ -232,7 +233,11 @@ class QubitSpectroscopy:
         if return_fwhm:
             return largest_amp_curve_mean, I_fit, Q_fit, largest_amp_curve_fwhm
         else:
-            return largest_amp_curve_mean, I_fit, Q_fit
+            if self.plot_fit:
+                return largest_amp_curve_mean, I_fit, Q_fit
+            else:
+                return None, None, None
+
 
     def get_results(self, I, Q, freqs):
         freqs = np.array(freqs)

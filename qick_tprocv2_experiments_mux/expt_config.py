@@ -43,10 +43,10 @@ if FRIDGE == "QUIET":
         },
 
         "qubit_spec_ge": {
-            "reps": 1000, #300
+            "reps": 2000, #300
             "rounds": 1, #10
-            "start": list(VNA_qubit-2), # [MHz] #-300 #-15
-            "stop": list(VNA_qubit+2), # [MHz] #+15
+            "start": list(VNA_qubit-0.25), # [MHz] #-300 #-15
+            "stop": list(VNA_qubit+0.05), # [MHz] #+15
             "steps": 200, #100
             "relax_delay":10,#1000 # [us]
             "list_of_all_qubits": list_of_all_qubits,
