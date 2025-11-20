@@ -325,17 +325,19 @@ class PlotAllRR:
 
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 
+        data_key = 'ss_ge'
+
         for h5_file in h5_files:
         
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
 
             H5_class_instance = Data_H5(h5_file)
-            load_data = H5_class_instance.load_from_h5(data_type=  'SS', save_r = int(save_round))
+            load_data = H5_class_instance.load_from_h5(data_type=  data_key, save_r = int(save_round))
         
             populated_keys = []
-            for q_key in load_data['SS']:
+            for q_key in load_data[data_key]:
                 # Access 'Dates' for the current q_key
-                dates_list = load_data['SS'][q_key].get('Dates', [[]])
+                dates_list = load_data[data_key][q_key].get('Dates', [[]])
         
                 # Check if any entry in 'Dates' is not NaN
                 if any(
@@ -345,29 +347,29 @@ class PlotAllRR:
                     populated_keys.append(q_key)
         
             for q_key in populated_keys:
-                for dataset in range(len(load_data['SS'][q_key].get('Dates', [])[0])):
-                    date= datetime.datetime.fromtimestamp(load_data['SS'][q_key].get('Dates', [])[0][dataset])
-                    angle = load_data['SS'][q_key].get('Angle', [])[0][dataset]
-                    fidelity = load_data['SS'][q_key].get('Fidelity', [])[0][dataset]
-                    I_g = self.process_h5_data(load_data['SS'][q_key].get('I_g', [])[0][dataset].decode())
-                    Q_g = self.process_h5_data(load_data['SS'][q_key].get('Q_g', [])[0][dataset].decode())
-                    I_e = self.process_h5_data(load_data['SS'][q_key].get('I_e', [])[0][dataset].decode())
-                    Q_e = self.process_h5_data(load_data['SS'][q_key].get('Q_e', [])[0][dataset].decode())
-                    round_num = load_data['SS'][q_key].get('Round Num', [])[0][dataset]
-                    batch_num = load_data['SS'][q_key].get('Batch Num', [])[0][dataset]
-                    # syst_config = load_data['SS'][q_key].get('Syst Config', [])[0][dataset].decode()
-                    # exp_config = load_data['SS'][q_key].get('Exp Config', [])[0][dataset].decode()
-                    # safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-                    # syst_config = eval(syst_config, safe_globals)
-                    # exp_config = eval(exp_config, safe_globals)
-                    from expt_config import expt_cfg as exp_config
+                for dataset in range(len(load_data[data_key][q_key].get('Dates', [])[0])):
+                    date= datetime.datetime.fromtimestamp(load_data[data_key][q_key].get('Dates', [])[0][dataset])
+                    angle = load_data[data_key][q_key].get('Angle', [])[0][dataset]
+                    fidelity = load_data[data_key][q_key].get('Fidelity', [])[0][dataset]
+                    I_g = self.process_h5_data(load_data[data_key][q_key].get('I_g', [])[0][dataset].decode())
+                    Q_g = self.process_h5_data(load_data[data_key][q_key].get('Q_g', [])[0][dataset].decode())
+                    I_e = self.process_h5_data(load_data[data_key][q_key].get('I_e', [])[0][dataset].decode())
+                    Q_e = self.process_h5_data(load_data[data_key][q_key].get('Q_e', [])[0][dataset].decode())
+                    round_num = load_data[data_key][q_key].get('Round Num', [])[0][dataset]
+                    batch_num = load_data[data_key][q_key].get('Batch Num', [])[0][dataset]
+                    syst_config = load_data[data_key][q_key].get('Syst Config', [])[0][dataset].decode()
+                    exp_config = load_data[data_key][q_key].get('Exp Config', [])[0][dataset].decode()
+                    safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                    syst_config = eval(syst_config, safe_globals)
+                    exp_config = eval(exp_config, safe_globals)
+                    # from expt_config import expt_cfg as exp_config
                     I_g = np.array(I_g)
                     Q_g = np.array(Q_g)
                     I_e = np.array(I_e)
                     Q_e = np.array(Q_e)
         
                     if len(Q_g)>0:
-                        ss_class_instance = SingleShot(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.save_figs)
+                        ss_class_instance = SingleShot(q_key, self.number_of_qubits, self.outerFolder, self.outerFolder_save_plots, round_num, self.save_figs)
 
                         if type(exp_config) is dict:
                             readout_opt = exp_config['Readout_Optimization']
@@ -504,6 +506,8 @@ class PlotAllRR:
                             soccfg_dump_path,
                             qubit_index=int(q_key))
 
+                        print(f"Q{q_key} dataset {dataset}: ro_cycles = {replica._ro_cycles}")
+
                         exp_cfg = replica._safe_eval_cfg(exp_config_str)
                         syst_cfg = replica._safe_eval_cfg(syst_config_str)
 
@@ -541,7 +545,7 @@ class PlotAllRR:
         
             del H5_class_instance
 
-    def load_t1_shots_vs_avgIQ_arrays(self, plot_both_methods_tog = False, plot_both_methods_diff = False, plot_T1res_method_comp = True):
+    def load_t1_shots_vs_avgIQ_arrays(self, plot_both_methods_tog = False, plot_both_methods_diff = False, plot_T1res_method_comp = False):
         # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
         outerFolder_expt = self.outerFolder + "/Data_h5/t1_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -594,7 +598,8 @@ class PlotAllRR:
 
                     # --- path to the soccfg dump (txt file made with save_run_soccfg_params.py) ---
                     if self.run_num == 8:  # this does work
-                        soccfg_dump_path = "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
+                        soccfg_dump_path = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
+                            # "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
                     elif self.run_num == 6:  # this doesn't work yet (shots need to be processed diff for run 6) but the skeleton is set up
                         soccfg_dump_path = "/data/QICK_data/run6/6transmon/loud2_soccfg_params/soccfg_full_dump_2025-11-04_16-30-54_firmware_during_run6.txt"
 
@@ -605,6 +610,8 @@ class PlotAllRR:
                         syst_config_str,
                         soccfg_dump_path,
                         qubit_index=int(q_key))
+
+                    print(f"Q{q_key} dataset {dataset}: ro_cycles = {replica._ro_cycles}")
 
                     exp_cfg = replica._safe_eval_cfg(exp_config_str)
                     syst_cfg = replica._safe_eval_cfg(syst_config_str)
@@ -1953,7 +1960,7 @@ class OfflineAcquireReplica:
         offset_eff = float(info.get("iq_offset_effective", 0.0))
 
         # EXACTLY how QICK derives buffer length: trunc(us * MHz)
-        ro_cycles = int(np.trunc(res_len_us * dec_mhz))
+        ro_cycles = self.to_int(res_len_us, dec_mhz, parname='length', trunc=True)
         return ro_cycles, offset_eff, ro_ch_for_q
 
     def to_int(self, val, scale, quantize=1, parname=None, trunc=False):

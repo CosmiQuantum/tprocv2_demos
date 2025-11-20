@@ -213,7 +213,7 @@ class SingleShot:
         qe = data[3]
 
         if cfg is not None:
-            numbins = round(math.sqrt(float(self.config["steps"])))
+            numbins = round(math.sqrt(float(cfg["steps"])))
         else:
             numbins = 60
 

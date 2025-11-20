@@ -19,19 +19,18 @@ data_dir = os.path.join(study_dir, substudy)
 dataset = '2025-10-27_22-04-57'
 
 QubitIndex = 0  # zero indexed
-analysis_flags = {"get_threshold": True, "load_all_data": True, "timestream": False, "plot_RR_t1": True}
-selected_round = [0]
+analysis_flags = {"get_threshold": True, "load_all_data": False, "plot_RR_t1": False, "timestream": False}
+selected_round = [0] # file you want to make plots for (we've only saved 1 round per h5 file in recent QUIET runs)
 threshold = 0  # overwritten when get_threshold flag is set to True
 theta = 0  # overwritten when get_threshold flag is set to True
-sz = 10  # fontsize for plots
-method_ssf = "gauss2" # "gauss2" and "max_contrast" are the two options. This defines how the thresh and fid are calc in ssf
+sz = 9  # fontsize for plots
+method_ssf = "max_contrast" # "gauss2" and "max_contrast" are the two options. This defines how the thresh and fid are calc in ssf
 do_thresholding = True # thresholding for T1 analysis?
+verbose = True
 
 ############### experimental constants ###############
-res_phase = [0, 0, 0, 0, 2.61,0]  # can be pulled from system config of optimization rspec or qspec (any measurement before SSF overwrites it)
-ro_length = [249, 345, 230, 326, 307, 384] # from QICK us2cycles conversion. Depends on the qubit's readout length
-
-verbose = True
+res_phase = [0, 0, 0, 0, 0, 0]  # can be pulled from system config of optimization rspec or qspec (any measurement before SSF overwrites it)
+ro_length = [249, 345, 230, 326, 307, 384] # from QICK us2cycles conversion. QICK calculates it as: ro_length_cycles = trunc(res_length_us * decimated_MHz)
 
 if analysis_flags["get_threshold"]:
     print("Determining threshold...")
@@ -59,6 +58,9 @@ if analysis_flags["get_threshold"]:
         ssf_result = opt_ssf_ge.run_analysis(verbose=verbose)
         ana_params["ssf_theta"] = ssf_result["thetas"][0]
         ana_params["ssf_threshold"] = ssf_result["thresholds"][0]
+
+        print('SSF threshold before being passed to AnaAutoThreshold: ', ana_params["ssf_threshold"])
+        print('SSF theta before being passed to AnaAutoThreshold: ', ana_params["ssf_theta"])
 
     auto = AnaAutoThreshold(data_dir, dataset, QubitIndex, expt_name="t1_ge", datagroup="T1", ana_params=ana_params)
 

@@ -204,11 +204,14 @@ if t1_analysis_flags["load_t1_data"]:
 
 if t1_analysis_flags["plot_RR_data"]:
     date = "2025-10-27_22-04-57"  #only plot all of the data for one date at a time because there is a lot
-    unique_folder_path = f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/shots_method/" # only used when plot_rabis_Qtemps = True or for load_t1_shots_vs_avgIQ_arrays()
-    outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/{date}/study_data"
+    unique_folder_path = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/replotted_RR_data/2025-10-27_22-04-57/shots_method/"
+        # f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/shots_method/" # only used when plot_rabis_Qtemps = True or for load_t1_shots_vs_avgIQ_arrays()
+    outerFolder = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/2025-10-27_22-04-57/study_data"
+        #f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/{date}/study_data"
     #outerFolder_save_plots = f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/"
-    outerFolder_save_plots = f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/avg_IQ_method/"
-    saved_shots_t1 = False
+    outerFolder_save_plots = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/replotted_RR_data/2025-10-27_22-04-57/avg_IQ_method/"
+        #f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/avg_IQ_method/"
+    saved_shots_t1 = True
     plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, run_number, tot_num_of_qubits, outerFolder,
                       outerFolder_save_plots, unique_folder_path, saved_shots = saved_shots_t1)
     plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, rabi_rolling_avg=False, plot_ss = False,
