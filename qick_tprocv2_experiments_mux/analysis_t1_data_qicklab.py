@@ -9,14 +9,17 @@ from qicklab.utils import get_abs_min
 
 np.random.seed(1001)
 ############### set values here ###################
-study_dir = "/data/QICK_data/run8/6transmon/round_robin"
+study_dir = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # on Arianna's local pc
+    #"/data/QICK_data/run8/6transmon/round_robin" # on qubituser-daq01
 
-substudy = 'AB_paper_datadump_T1_Analysis'
+substudy = 'ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional'
+    #'AB_paper_datadump_T1_Analysis' # on qubituser-daq01
+
 data_dir = os.path.join(study_dir, substudy)
 dataset = '2025-10-27_22-04-57'
 
 QubitIndex = 0  # zero indexed
-analysis_flags = {"get_threshold": False, "load_all_data": True, "timestream": False, "plot_RR_t1": True}
+analysis_flags = {"get_threshold": True, "load_all_data": True, "timestream": False, "plot_RR_t1": True}
 selected_round = [0]
 threshold = 0  # overwritten when get_threshold flag is set to True
 theta = 0  # overwritten when get_threshold flag is set to True
@@ -42,20 +45,20 @@ if analysis_flags["get_threshold"]:
     }
 
     if ana_params["method"] == "from_ssf":
-        ## load ssf data from optimization. Pass data and result to the AnaAutoThreshold class
-        print("Loading optimization SSF data...")
+        ## load ssf data from study_data. Pass data and result to the AnaAutoThreshold class
+        print("Loading SSF data...")
 
         ssf_ana_params = {
             "method": "gauss2",
         }
 
-        opt_ssf_ge = AnaSSF(data_dir, dataset, QubitIndex, folder="optimization", ana_params=ssf_ana_params)
+        opt_ssf_ge = AnaSSF(data_dir, dataset, QubitIndex, folder="study_data", ana_params=ssf_ana_params)
         ssf_data = opt_ssf_ge.load_all(verbose=verbose)
         ssf_result = opt_ssf_ge.run_analysis(verbose=verbose)
         ana_params["ssf_theta"] = ssf_result["thetas"][0]
         ana_params["ssf_threshold"] = ssf_result["thresholds"][0]
 
-    auto = AnaAutoThreshold(data_dir, dataset, QubitIndex, ana_params=ana_params)
+    auto = AnaAutoThreshold(data_dir, dataset, QubitIndex, expt_name="t1_ge", datagroup="T1", ana_params=ana_params)
 
     data = auto.load_all()
     result = auto.run_analysis(verbose=verbose)
