@@ -9,16 +9,16 @@ import numpy as np
 
 #number_of_qubits = 4
 
-outerFolder = os.path.join(f"/home/nexusadmin/Documents/Data/run33d/4charge/Initial Checkout/Q2_BiasSpec", str(datetime.date.today()))
+outerFolder = os.path.join(f"/home/nexusadmin/Documents/Data/run33e/4charge/Initial Checkout/Q4_BiasSpec", str(datetime.date.today()))
 
 experiment = QICK_experiment(outerFolder, fridge=FRIDGE)
 #resGs=np.linspace(0.1,0.5,11)
 #resFs=np.linspace(5958.673-1.5, 5958.673+1.5, 11)
 #num_qubits = 4
-qubit = [2] #[1, 2, 3, 4] #Qubit to Run, 1-4
+qubit = [4] #[1, 2, 3, 4] #Qubit to Run, 1-4
 start_voltage = [0.0] #[0.0]*4 #0.06 #V
-stop_voltage = [0.1] #[0.15]*4 #0.08 #0.15 max!!! #V
-voltage_pts = [10] #*4
+stop_voltage = [0.15] #[0.15]*4 #0.08 #0.15 max!!! #V
+voltage_pts = [20] #*4
 
 Unmask = True
 

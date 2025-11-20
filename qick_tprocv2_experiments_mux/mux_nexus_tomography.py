@@ -14,7 +14,7 @@ import time
 from NetDrivers import E36300
 
 class AllQubitTomographyMeasurement:
-    def __init__(self, outerFolder, experiment, num_qubits, res_len, unmasking_resgain = False):
+    def __init__(self, outerFolder, experiment, num_qubits, res_len, freq_offset, unmasking_resgain = False):
         self.outerFolder = outerFolder
         self.Q13_BiasPS = E36300('192.168.0.44', server_port=5025)
         self.Q4_BiasPS = E36300('192.168.0.41', server_port=5025)
@@ -44,20 +44,27 @@ class AllQubitTomographyMeasurement:
         self.q4_exp_cfg = add_qubit_experiment(expt_cfg, self.q4_expt_name, 3)
         self.q4_config = {**self.q_config['Q3'], **self.q4_exp_cfg}
 
-        print(f'Q1 Tomography configuration: ', self.q1_config)
-        print(f'Q2 Tomography configuration: ', self.q2_config)
-        print(f'Q3 Tomography configuration: ', self.q3_config)
-        print(f'Q4 Tomography configuration: ', self.q4_config)
+        # print(f'Q1 Tomography configuration: ', self.q1_config)
+        # print(f'Q2 Tomography configuration: ', self.q2_config)
+        # print(f'Q3 Tomography configuration: ', self.q3_config)
+        # print(f'Q4 Tomography configuration: ', self.q4_config)
 
         self.q1_config['res_length'] = res_len[0]
         self.q2_config['res_length'] = res_len[1]
         self.q3_config['res_length'] = res_len[2]
         self.q4_config['res_length'] = res_len[3]
 
-        print(f'Q1 Tomography good configuration: ', self.q1_config)
-        print(f'Q2 Tomography good configuration: ', self.q2_config)
-        print(f'Q3 Tomography good configuration: ', self.q3_config)
-        print(f'Q4 Tomography good configuration: ', self.q4_config)
+        good_res_freq_list = [base + offset for base, offset in zip(self.q1_config['res_freq_ge'], freq_offset)]
+
+        self.q1_config['res_freq_ge'] = good_res_freq_list
+        self.q2_config['res_freq_ge'] = good_res_freq_list
+        self.q3_config['res_freq_ge'] = good_res_freq_list
+        self.q4_config['res_freq_ge'] = good_res_freq_list
+
+        print(f'Q1 Tomography configuration: ', self.q1_config)
+        print(f'Q2 Tomography configuration: ', self.q2_config)
+        print(f'Q3 Tomography configuration: ', self.q3_config)
+        print(f'Q4 Tomography configuration: ', self.q4_config)
 
     def allq_run_tomography(self, soccfg, soc, qs, start_volt, stop_volt, volt_pts, rounds, plot=True, save=True):
 
@@ -72,14 +79,17 @@ class AllQubitTomographyMeasurement:
         # Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44', '192.168.0.41']  # IP address of bias PS (qubits 1-3 are the same PS)
         # Bias_ch = [1, 2, 3, 1]  # Channel number of qubit 1-4 on associated PS
 
-        self.Q13_BiasPS.setVoltage(0, 1)
-        self.Q13_BiasPS.enable(1)
-        self.Q13_BiasPS.setVoltage(0, 2)
-        self.Q13_BiasPS.enable(2)
-        self.Q13_BiasPS.setVoltage(0, 3)
-        self.Q13_BiasPS.enable(3)
-        self.Q4_BiasPS.setVoltage(0, 1)
-        self.Q4_BiasPS.enable(1)
+        try:
+            self.Q13_BiasPS.setVoltage(0, 1)
+            self.Q13_BiasPS.enable(1)
+            self.Q13_BiasPS.setVoltage(0, 2)
+            self.Q13_BiasPS.enable(2)
+            self.Q13_BiasPS.setVoltage(0, 3)
+            self.Q13_BiasPS.enable(3)
+            self.Q4_BiasPS.setVoltage(0, 1)
+            self.Q4_BiasPS.enable(1)
+        except Exception as e:
+            print(f"Couldn't set bias to zero, {e}")
         return
 
     def bias_sweep(self, soccfg, soc, qs, vsweep, total_rounds, plot_data=False, save_data=True):
@@ -103,14 +113,21 @@ class AllQubitTomographyMeasurement:
 
             ## sweep voltage and take data on all 4 qubits
             for index, v in enumerate(vsweep):
-                if 0 in qs:
-                    self.Q13_BiasPS.setVoltage(v, 1)
-                if 1 in qs:
-                    self.Q13_BiasPS.setVoltage(v, 2)
-                if 2 in qs:
-                    self.Q13_BiasPS.setVoltage(v, 3)
-                if 3 in qs:
-                    self.Q4_BiasPS.setVoltage(v, 1)
+                try:
+                    if 0 in qs:
+                        self.Q13_BiasPS.setVoltage(v, 1)
+                        time.sleep(0.2)
+                    if 1 in qs:
+                        self.Q13_BiasPS.setVoltage(v, 2)
+                        time.sleep(0.2)
+                    if 2 in qs:
+                        self.Q13_BiasPS.setVoltage(v, 3)
+                        time.sleep(0.2)
+                    if 3 in qs:
+                        self.Q4_BiasPS.setVoltage(v, 1)
+                        time.sleep(0.2)
+                except Exception as e:
+                    print(f"Couldn't bias a qubit: {e}")
 
                 ## Q1
                 if 0 in qs:

@@ -40,7 +40,7 @@ from analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
 ################################################ Run Configurations ####################################################
 st = time.time()
 #
-n= 1000
+n= 3
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
@@ -55,20 +55,21 @@ qick_verbose = False                 # qick verbose prints the progress bar for 
 debug_mode = False                   # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 thresholding = False                 # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 increase_qubit_reps = False          # if you want to increase the reps for a qubit, set to True
-unmask = True                          # Do you want to use the unmasking feature to increase resonator gain?
+unmask = True                        # Do you want to use the unmasking feature to increase resonator gain?
 qubit_to_increase_reps_for = 0       # only has impact if previous line is True
 multiply_qubit_reps_by = 2           # only has impact if the line two above is True
 
-Qs_to_look_at = [0,1,2,3] #[0,1,2,3]#,1,2,3,4,5]       # only list the qubits you want to do the RR for
+Qs_to_look_at = [0, 1, 2, 3] #[0,1,2,3]#,1,2,3,4,5]       # only list the qubits you want to do the RR for
 
+#One round take 11.27 minutes for all 4 qubits: Rspec, Qspec, Rabi, SS, and T1
 
 #debug
 print(FRIDGE)
 
 #Data saving info
-run_name = 'run33d'
+run_name = 'run33e'
 device_name = '4charge'
-substudy_txt_notes = ('Longtime Study')#('Active Reset Test')##('round robin with relax delays of 1000us for T1 and T2 measurements.')#('Active Reset Test')#('Normal Round Robin during cooldown, now everything works properly, set debug to false to run '
+substudy_txt_notes = ('DD on, rear shield hole open, 0V bias') #('Active Reset Test')##('round robin with relax delays of 1000us for T1 and T2 measurements.')#('Active Reset Test')#('Normal Round Robin during cooldown, now everything works properly, set debug to false to run '
                       # 'overFalsenight and running in terminal with repeater script')
 
 # set which of the following you'd like to run to 'True'
@@ -78,9 +79,9 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi":
 #              "t1": False, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": True, "fh_q_spec":True, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 
 # optimization outputs from qick board, unmasking set to true
-res_leng_vals = [5.1, 5, 4, 3.6] #[9.25, 5.5, 6.25, 7.5] #Q1,~Q2,Q4 opt
-res_gain = [0.115, 0.1, 0.1, 0.19] #[0.75, 0.7, 0.8, 0.75] #Q1,~Q2,Q4 optimized
-freq_offsets = [0.1364,-0.2,0,-0.1364] #[-0.1429, -0.1429, 0, -0.1429] #Q1,~Q2,Q4 optimized
+res_leng_vals = [5, 5.6, 5, 3.6] #[9.25, 5.5, 6.25, 7.5] #Q1,~Q2,Q4 opt
+res_gain = [0.10, 0.0994, 0.09, 0.145] #[0.75, 0.7, 0.8, 0.75] #Q1,~Q2,Q4 optimized
+freq_offsets = [-0.18, 0.2, -0.3375, 0.09] #[-0.1429, -0.1429, 0, -0.1429] #Q1,~Q2,Q4 optimized
 
 qubit_freqs_ef = [None]*4
 # increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
@@ -90,8 +91,8 @@ number_of_qubits = 4
 figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 #Folders
-study = 'Longtime_Study'
-sub_study = 'RR_Long' #'SSF_PostRabi'
+study = 'DDon_SC_HoleOpen' #'Longtime_Study'
+sub_study = 'RR_Long' #'RR_Long' #'SSF_PostRabi'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/home/nexusadmin/Documents/Data/{run_name}/"):

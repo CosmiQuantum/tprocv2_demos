@@ -24,7 +24,7 @@ FRIDGE = 'NEXUS'
 number_of_qubits = 4
 list_of_all_qubits = [0, 1, 2, 3]
 
-run_name = 'run33d'
+run_name = 'run33e'
 device_name = '4charge'
 substudy = 'TWPA_opt_Q4'
 
@@ -45,9 +45,9 @@ n_loops = 4  # Number of ssf repetitions - currently unused
 Qs = [3] #0, 1, 2, 3
 
 # optimization outputs for NEXUS
-res_leng_vals = [5.1, 4, 4, 3.6] #[9.5, 5.5, 6.25, 7.0] # Q1, Q4 reopt
-res_gain = [0.115, 0.1, 0.15, 0.19] #[0.9, 0.7, 0.8, 0.8] # Q1, Q4 reopt
-freq_offsets = [0.1364, 0, 0, -0.1364] #[-0.1429, -0.1429, 0, -0.04] # Q1, Q4 reopt
+res_leng_vals = [5, 4, 4, 3.6] #[9.5, 5.5, 6.25, 7.0] # Q1, Q4 reopt
+res_gain = [0.1, 0.1, 0.15, 0.145] #[0.9, 0.7, 0.8, 0.8] # Q1, Q4 reopt
+freq_offsets = [-0.18, 0, 0, 0.09] #[-0.1429, -0.1429, 0, -0.04] # Q1, Q4 reopt
 
 # Define sweeping parameters
 gain_arr = np.linspace(-13.5, -11, 10)
