@@ -6,7 +6,9 @@ from qicklab.analysis.t1 import AnaT1
 from qicklab.analysis.ssf import AnaSSF
 from qicklab.analysis.auto_threshold import AnaAutoThreshold
 from qicklab.utils import get_abs_min
+import random
 
+random.seed(1001)
 np.random.seed(1001)
 ############### set values here ###################
 study_dir = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # on Arianna's local pc
@@ -51,6 +53,7 @@ if analysis_flags["get_threshold"]:
 
         ssf_ana_params = {
             "method": method_ssf,
+            "numbins": 55
         }
 
         opt_ssf_ge = AnaSSF(data_dir, dataset, QubitIndex, folder="study_data", ana_params=ssf_ana_params)
@@ -81,6 +84,7 @@ if analysis_flags["load_all_data"]:
 
     ana_params = {
         "method": method_ssf,
+        "numbins": 55
     }
 
     ssf_ge = AnaSSF(data_dir, dataset, QubitIndex, ana_params=ana_params)
