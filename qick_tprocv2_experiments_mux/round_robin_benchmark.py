@@ -64,7 +64,7 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [4,0]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [0, 4]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
@@ -114,7 +114,7 @@ rpm_any = False # and rabi population measurements?
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin' #qubit_checkouts
-sub_study = 'temperature_sweep_run8_25dBDAC_onechan' # temperature_sweep_run8_25dBDAC_onechan. #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
+sub_study = 'temperature_sweep_run8_25dBDAC_onechan_day2' # temperature_sweep_run8_25dBDAC_onechan. #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
 #ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional, ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt, 18dB_DAC_testdata_allQs_exceptQ4, cooldown_run8b_19dB_DAC_allQs
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -302,7 +302,7 @@ while j < n:
 
                 if QubitIndex == 4:
                     increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 1500
+                    qspecge_increase_reps_to = 1300
                     # increase_qspec_rounds = True
                     # increase_qspec_rounds_to = 1
 
