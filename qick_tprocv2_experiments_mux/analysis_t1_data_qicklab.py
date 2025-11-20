@@ -24,9 +24,11 @@ selected_round = [0]
 threshold = 0  # overwritten when get_threshold flag is set to True
 theta = 0  # overwritten when get_threshold flag is set to True
 sz = 10  # fontsize for plots
+method_ssf = "gauss2" # "gauss2" and "max_contrast" are the two options. This defines how the thresh and fid are calc in ssf
+do_thresholding = True # thresholding for T1 analysis?
 
 ############### experimental constants ###############
-res_phase = [1.748, 0, 0, 0, 2.61,0]  # can be pulled from system config of optimization rspec or qspec (any measurement before SSF overwrites it)
+res_phase = [0, 0, 0, 0, 2.61,0]  # can be pulled from system config of optimization rspec or qspec (any measurement before SSF overwrites it)
 ro_length = [249, 345, 230, 326, 307, 384] # from QICK us2cycles conversion. Depends on the qubit's readout length
 
 verbose = True
@@ -49,7 +51,7 @@ if analysis_flags["get_threshold"]:
         print("Loading SSF data...")
 
         ssf_ana_params = {
-            "method": "gauss2",
+            "method": method_ssf,
         }
 
         opt_ssf_ge = AnaSSF(data_dir, dataset, QubitIndex, folder="study_data", ana_params=ssf_ana_params)
@@ -76,7 +78,7 @@ if analysis_flags["load_all_data"]:
     print("Loading SSF data...")
 
     ana_params = {
-        "method": "gauss2",
+        "method": method_ssf,
     }
 
     ssf_ge = AnaSSF(data_dir, dataset, QubitIndex, ana_params=ana_params)
@@ -102,7 +104,7 @@ if analysis_flags["load_all_data"]:
     ana_params = {
         "theta": theta,
         "threshold": threshold,
-        "thresholding": True
+        "thresholding": do_thresholding
     }
 
     t1_ge = AnaT1(data_dir, dataset, QubitIndex, ana_params=ana_params)
@@ -123,24 +125,7 @@ if analysis_flags["plot_RR_t1"]:
     for r in selected_round:
         print(f"Plotting round {r} T1 data...")
 
-        # This extracts the result, but we don't use it to plot, we do that
         q1_fit_exponential, T1_err, T1_est = t1_ge.get_round(r, plot=True)
-
-#         plt.figure()
-#         # If delay_times is 1D and shared across rounds, this is fine.
-#         # If it's 2D, use delay_times[r] instead.
-#         plt.plot(delay_times, t1_p_excited[r],
-#                  'o',
-#                  label=f'round {r + 1} T1 = {T1_est:.2f} ± {T1_err:.2f} µs')
-#         plt.plot(delay_times, q1_fit_exponential, 'k:')
-#
-#         plt.title('T1 (thresholded P(e))', fontsize=sz)
-#         plt.ylabel('P(e)', fontsize=sz)
-#         plt.xlabel('delay time [µs]', fontsize=sz)
-#         plt.legend(fontsize=sz)
-#
-# plt.show()
-
 
 if analysis_flags["timestream"]:
     fig, ax = plt.subplots(3, 2, layout='constrained')
