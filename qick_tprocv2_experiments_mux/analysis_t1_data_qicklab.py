@@ -21,14 +21,15 @@ data_dir = os.path.join(study_dir, substudy)
 dataset = '2025-10-27_22-04-57'
 
 QubitIndex = 0  # zero indexed
-analysis_flags = {"get_threshold": True, "load_all_data": False, "plot_RR_t1": False, "timestream": False}
+analysis_flags = {"get_threshold": True, "load_all_data": True, "plot_RR_t1": True, "timestream": False}
 selected_round = [0] # file you want to make plots for (we've only saved 1 round per h5 file in recent QUIET runs)
 threshold = 0  # overwritten when get_threshold flag is set to True
 theta = 0  # overwritten when get_threshold flag is set to True
-sz = 9  # fontsize for plots
+sz = 7  # fontsize for plots
 method_ssf = "max_contrast" # "gauss2" and "max_contrast" are the two options. This defines how the thresh and fid are calc in ssf
 do_thresholding = True # thresholding for T1 analysis?
 verbose = True
+ssf_numbins = 55
 
 ############### experimental constants ###############
 res_phase = [0, 0, 0, 0, 0, 0]  # can be pulled from system config of optimization rspec or qspec (any measurement before SSF overwrites it)
@@ -53,7 +54,7 @@ if analysis_flags["get_threshold"]:
 
         ssf_ana_params = {
             "method": method_ssf,
-            "numbins": 55
+            "numbins": ssf_numbins,
         }
 
         opt_ssf_ge = AnaSSF(data_dir, dataset, QubitIndex, folder="study_data", ana_params=ssf_ana_params)
@@ -84,7 +85,7 @@ if analysis_flags["load_all_data"]:
 
     ana_params = {
         "method": method_ssf,
-        "numbins": 55
+        "numbins": ssf_numbins
     }
 
     ssf_ge = AnaSSF(data_dir, dataset, QubitIndex, ana_params=ana_params)
