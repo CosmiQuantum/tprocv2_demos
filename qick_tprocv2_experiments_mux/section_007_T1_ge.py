@@ -210,18 +210,15 @@ class T1Measurement:
         """
         Fits T1 curve using a 3-parameter exponential with a chi^2 or least-squares minimizer depending on whether you provide
         the errs of each point in the curve or not (iminuit).
-
         (3 parameters, no time shift):
             y(t) = d + a * (1 - exp(-t / c))
 
             a: amplitude (positive or negative)
             c: T1 (>0)
             d: baseline
-
         Migrad gives you best-fit parameters.
         Hesse tells you how uncertain they are.
         """
-
         # ---------------- choose signal (same logic we were using before) ----------------
         I = np.asarray(I, float)
         Q = np.asarray(Q, float)
@@ -372,23 +369,23 @@ class T1Measurement:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"Q{self.QubitIndex + 1} " + f"T1={T1_est:.2f} us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         f"{date} Q{self.QubitIndex + 1} " + f"T1={T1_est:.2f} us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
                          fontsize=24, ha='center',
                          va='top')  # , pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
                 fig.text(plot_middle, 0.98,
-                         f"T1 Q{self.QubitIndex + 1}, T1={T1_est:.2f} us",
+                         f"{date} T1 Q{self.QubitIndex + 1}, T1={T1_est:.2f} us",
                          fontsize=24, ha='center', va='top')
 
         else:
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"T1 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         f"{date} T1 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
                          fontsize=24, ha='center',
                          va='top')  # , pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma"   you can put this back once you save configs properly for when replotting
             else:
                 fig.text(plot_middle, 0.98,
-                         f"T1 Q{self.QubitIndex + 1}",
+                         f"{date} T1 Q{self.QubitIndex + 1}",
                          fontsize=24, ha='center', va='top')
             q1_fit_exponential = None
             T1_est = None

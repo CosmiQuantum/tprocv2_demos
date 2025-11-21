@@ -21,15 +21,16 @@ data_dir = os.path.join(study_dir, substudy)
 dataset = '2025-10-27_22-04-57'
 
 QubitIndex = 0  # zero indexed
-analysis_flags = {"get_threshold": True, "load_all_data": True, "plot_RR_t1": True, "timestream": False}
+analysis_flags = {"get_threshold": True, "load_all_data": True, "plot_t1_round": True, "timestream": False}
 selected_round = [0] # file you want to make plots for (we've only saved 1 round per h5 file in recent QUIET runs)
 threshold = 0  # overwritten when get_threshold flag is set to True
 theta = 0  # overwritten when get_threshold flag is set to True
 sz = 7  # fontsize for plots
 method_ssf = "max_contrast" # "gauss2" and "max_contrast" are the two options. This defines how the thresh and fid are calc in ssf
 do_thresholding = True # thresholding for T1 analysis?
-verbose = True
+verbose = False
 ssf_numbins = 55
+iminuit_method_t1fit = True # Instead of the default Curvefit() T1 fitting, do you want to use iminuit?
 
 ############### experimental constants ###############
 res_phase = [0, 0, 0, 0, 0, 0]  # can be pulled from system config of optimization rspec or qspec (any measurement before SSF overwrites it)
@@ -40,7 +41,7 @@ if analysis_flags["get_threshold"]:
 
     ana_params = {
         "idx": 0,
-        "plot": True,
+        "plot": False,
         "method": "from_ssf",
         "ssf_theta": None,
         "ssf_threshold": None,
@@ -60,6 +61,9 @@ if analysis_flags["get_threshold"]:
         opt_ssf_ge = AnaSSF(data_dir, dataset, QubitIndex, folder="study_data", ana_params=ssf_ana_params)
         ssf_data = opt_ssf_ge.load_all(verbose=verbose)
         ssf_result = opt_ssf_ge.run_analysis(verbose=verbose)
+
+        print('done')
+
         ana_params["ssf_theta"] = ssf_result["thetas"][0]
         ana_params["ssf_threshold"] = ssf_result["thresholds"][0]
 
@@ -70,7 +74,6 @@ if analysis_flags["get_threshold"]:
 
     data = auto.load_all()
     result = auto.run_analysis(verbose=verbose)
-    plt.show()
 
     theta = result["theta"]
     threshold = result["threshold"]
@@ -104,6 +107,7 @@ if analysis_flags["load_all_data"]:
     # thresholds = result["thresholds"]
 
     # ssf_ge.cleanup()
+    print('done')
 
     ## =============================== T1 =============================== ##
     print("Loading T1 data...")
@@ -111,7 +115,8 @@ if analysis_flags["load_all_data"]:
     ana_params = {
         "theta": theta,
         "threshold": threshold,
-        "thresholding": do_thresholding
+        "thresholding": do_thresholding,
+        "iminuit_fitting": iminuit_method_t1fit,
     }
 
     t1_ge = AnaT1(data_dir, dataset, QubitIndex, ana_params=ana_params)
@@ -128,11 +133,11 @@ if analysis_flags["load_all_data"]:
 
     # t1_ge.cleanup()
 
-if analysis_flags["plot_RR_t1"]:
+if analysis_flags["plot_t1_round"]:
     for r in selected_round:
         print(f"Plotting round {r} T1 data...")
 
-        q1_fit_exponential, T1_err, T1_est = t1_ge.get_round(r, plot=True)
+        q1_fit_exponential, T1_err, T1_est = t1_ge.get_round(r, plot=True, iminuit_method = iminuit_method_t1fit, verbose = True)
 
 if analysis_flags["timestream"]:
     fig, ax = plt.subplots(3, 2, layout='constrained')
@@ -161,7 +166,7 @@ if analysis_flags["timestream"]:
 
 
     ##### t1 data #####
-    q1_fit_exponential, T1_err, T1_est = t1_ge.get_round(round, plot=False)
+    q1_fit_exponential, T1_err, T1_est = t1_ge.get_round(round, plot=False, iminuit_method = iminuit_method_t1fit)
     plot = ax[0][2]
 
     try:

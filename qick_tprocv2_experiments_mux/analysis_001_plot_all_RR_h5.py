@@ -553,7 +553,15 @@ class PlotAllRR:
         # store post-processed T1 results from both methods, per qubit
         t1_results_by_qubit = {}  # q_index -> {"qick_avg": [...], "shots_avg": [...]}
 
-        for h5_file in h5_files:
+        # sort by timestamp at the start of the filename
+        h5_files_sorted = sorted(h5_files, key=lambda f: os.path.basename(f).split("_t1_ge")[0])
+
+        for h5_file in h5_files_sorted:
+
+            # what is the date in the h5 file filename?
+            file_basename = os.path.basename(h5_file)
+            filename_date = file_basename.split("_t1_ge")[0]
+            # filename_date_datetime = datetime.datetime.strptime(filename_date, "%Y-%m-%d_%H-%M-%S")
 
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
             H5_class_instance = Data_H5(h5_file)
@@ -645,14 +653,14 @@ class PlotAllRR:
                         # ------------------------------- plot a la avg IQ arrays ------------------------------
                         T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.outerFolder_save_plots,
                                                           round_num, self.signal, self.save_figs, fit_data=True)
-                        I_avg, Q_avg, t, fit_avg, T1_err_avg, T1_est_avg, plot_sig_avg = T1_class_instance.plot_results(I, Q, delay_times, date, T1_spec_cfg,
+                        I_avg, Q_avg, t, fit_avg, T1_err_avg, T1_est_avg, plot_sig_avg = T1_class_instance.plot_results(I, Q, delay_times, filename_date, T1_spec_cfg,
                                                                                            self.figure_quality, iminuit_fit_instead = True)
                         del T1_class_instance
 
                         # ----------------------------------- plot a la shots ------------------------------
                         T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.unique_folder_path,
                                                           round_num, self.signal, self.save_figs, fit_data=True)
-                        I_sh,  Q_sh,  t, fit_sh,  T1_err_sh,  T1_est_sh,  plot_sig_sh = T1_class_instance.plot_results(I_viashots, Q_viashots, delay_times, date, T1_spec_cfg,
+                        I_sh,  Q_sh,  t, fit_sh,  T1_err_sh,  T1_est_sh,  plot_sig_sh = T1_class_instance.plot_results(I_viashots, Q_viashots, delay_times, filename_date, T1_spec_cfg,
                                                                                             self.figure_quality, iminuit_fit_instead = True)
                         del T1_class_instance
 
