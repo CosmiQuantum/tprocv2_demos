@@ -43,11 +43,11 @@ if FRIDGE == "QUIET":
         },
 
         "qubit_spec_ge": {
-            "reps": 2000, #300
+            "reps": 4000, #300
             "rounds": 1, #10
-            "start": list(VNA_qubit-0.25), # [MHz] #-300 #-15
-            "stop": list(VNA_qubit+0.05), # [MHz] #+15
-            "steps": 200, #100
+            "start": list(VNA_qubit-10), # [MHz] #-300 #-15
+            "stop": list(VNA_qubit+10), # [MHz] #+15
+            "steps": 600, #100
             "relax_delay":10,#1000 # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -88,9 +88,9 @@ if FRIDGE == "QUIET":
         "qubit_spec_ef": {
             "reps": 4000,  # 300
             "rounds": 1,  # 10
-            "start": list(ef_freqs - 1.4),  # [MHz] #-300
-            "stop": list(ef_freqs + 1.4),  # [MHz]
-            "steps": 200,
+            "start": list(ef_freqs - 5),  # [MHz] #-300
+            "stop": list(ef_freqs + 5),  # [MHz]
+            "steps": 500,
             "relax_delay": 1000, #1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -107,8 +107,8 @@ if FRIDGE == "QUIET":
         "qubit_spec_fh": {
             "reps": 20000,#15000,  # 300
             "rounds": 1,  # 10
-            "start": list(fh_freqs - 0.11),#0.125), # [MHz] #-300 #-6
-            "stop": list(fh_freqs +  0.11),#0.125),  # [MHz] #6
+            "start": list(fh_freqs - 1),#0.125), # [MHz] #-300 #-6
+            "stop": list(fh_freqs +  1),#0.125),  # [MHz] #6
             "steps": 110,#300,#450,  # 1000 #450
             "relax_delay": 1000,  # 1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
@@ -143,7 +143,7 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ge": {
-            "reps": 300,#500,
+            "reps": 600,#500,
             "rounds": 1,  # 5
             "start": [0] * 6,  # [DAC units]
             "stop": [1] * 6,#[1.0] * 6,  # [DAC units]
@@ -194,7 +194,7 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ef": {
-            "reps": 300,
+            "reps": 600,
             "reps2": 850, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
@@ -203,7 +203,7 @@ if FRIDGE == "QUIET":
             "relax_delay": 1000,  # [us]
         },
         "power_rabi_fh": {
-            "reps": 300,
+            "reps": 600,
             "reps2": 850,  # this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
@@ -379,7 +379,7 @@ if FRIDGE == "QUIET":
         },
 
         "Ramsey_fh": {
-            "reps": 400,#350,  # 300
+            "reps": 1600,#350,  # 300
             "rounds": 1,  # 10
             "start":[0.0] * 6,  # [us]
             "stop": [45] * 6,  # [us]

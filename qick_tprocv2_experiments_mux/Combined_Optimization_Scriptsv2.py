@@ -57,7 +57,7 @@ n = 1  # Number of rounds
 n_loops = 4  # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [4,5]#[0,1,2,3,4,5]
+Qs = [1]#[0,1,2,3,4,5]
 
 #Change for NEXUS vs QUIET
 res_leng_vals  = [5.0, 5.0, 8.0, 7.0, 9.0, 7.5]#[6.5, 5.5, 7.0, 9.0, 8.5, 9.0]
@@ -145,167 +145,167 @@ for QubitIndex in Qs:
     tuned_experiment = copy.deepcopy(experiment)
 
     # # #-----------Sweeping Readout Length----------------------------
-    # QubitIndex = int(QubitIndex)  # Ensure QubitIndex is an integer
-    #
-    # avg_fids = []
-    # rms_fids = []
-    #
-    # timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    # h5_filename = os.path.join(output_folder_length, f"ge_readoutlength_sweep_Q{QubitIndex + 1}_data_{timestamp}.h5")
-    # with h5py.File(h5_filename, 'w') as h5_file:
-    #     # Top-level group for the qubit
-    #     qubit_group = h5_file.create_group(f"Qubit_{QubitIndex + 1}")
-    #     fids = []  # Store fidelity values for each loop
-    #     ground_iq_data = []  # Store ground state IQ data for each loop
-    #     excited_iq_data = []  # Store excited state IQ data for each loop
-    #
-    #     # Iterate over each readout pulse length
-    #     for leng in lengs:
-    #         print(len)
-    #         # Subgroup for each readout length within the round
-    #         length_group = qubit_group.create_group(f"Length_{leng}")
-    #
-    #         for k in range(n_loops):  # loops for each read out length
-    #             # ------------------------Single Shot-------------------------
-    #             # Initialize experiment for each loop iteration
-    #             experiment = copy.deepcopy(tuned_experiment)
-    #             # Set specific configuration values for each iteration
-    #             experiment.readout_cfg['res_length'] = leng  # Set the current readout pulse length
-    #
-    #             # Set gain for the current qubit
-    #             gain = res_gain[QubitIndex]
-    #             #res_gains = experiment.set_gain_filter_ge(QubitIndex, gain)  # Set gain for current qubit only
-    #             res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=gain)
-    #             experiment.readout_cfg['res_gain_ge'] = res_gains
-    #
-    #             ss = SingleShot(QubitIndex, number_of_qubits, outerFolder,  j, save_figs, experiment, unmasking_resgain = unmask)  # updated way
-    #             fid, angle, iq_list_g, iq_list_e, ss_config = ss.run()
-    #             print('leng',leng,'fid',fid)
-    #             fids.append(fid)
-    #
-    #             # Append IQ data for each loop
-    #             ground_iq_data.append(iq_list_g)
-    #             excited_iq_data.append(iq_list_e)
-    #
-    #             # Save individual fidelity and IQ data for this loop
-    #             loop_group = length_group.create_group(f"Loop_{k + 1}")
-    #             loop_group.create_dataset("fidelity", data=fid)
-    #             loop_group.create_dataset("ground_iq_data", data=iq_list_g)
-    #             loop_group.create_dataset("excited_iq_data", data=iq_list_e)
-    #
-    #             del experiment
-    #
-    #         # Calculate average and RMS for fidelities across loops
-    #         avg_fid = np.mean(fids)
-    #         rms_fid = np.std(fids)
-    #         avg_fids.append(avg_fid)
-    #         rms_fids.append(rms_fid)
-    #
-    #         # Calculate average IQ data across all loops
-    #         avg_ground_iq = np.mean(ground_iq_data, axis=0)
-    #         avg_excited_iq = np.mean(excited_iq_data, axis=0)
-    #
-    #         fids.clear()
-    #         ground_iq_data.clear()
-    #         excited_iq_data.clear()
-    #
-    #     # Save the averages and RMS to the HDF5 file for this length
-    #     length_group.create_dataset("avg_fidelity", data=avg_fids)
-    #     length_group.create_dataset("rms_fidelity", data=rms_fids)
-    #     length_group.create_dataset("avg_ground_iq_data", data=avg_ground_iq)
-    #     length_group.create_dataset("avg_excited_iq_data", data=avg_excited_iq)
-    #
-    # # avg_max = max(avg_fids[:10])
-    # avg_max = max(avg_fids)
-    # avg_max_index = avg_fids.index(avg_max)
-    # max_len = lengs[avg_max_index]
-    # optimal_lengths[QubitIndex] = max_len
-    #
-    # # Plot the average fidelity vs. pulse length with error bars for each qubit
-    # plt.figure()
-    # plt.errorbar(lengs, avg_fids, yerr=rms_fids, fmt='-o', color='black')
-    # plt.axvline(x=max_len, linestyle="--", color="red")
-    # plt.text(max_len + 0.1, avg_fids[0], f'{max_len:.4f}', color='red')
-    # plt.xlabel('Readout and Pulse Length')
-    # plt.ylabel('Fidelity')
-    # plt.title(f'Avg Fidelity vs. Readout and Pulse Length for Qubit {QubitIndex + 1}, ({n_loops} repetitions)' , fontsize=10)
-    # path = os.path.join(outerfolder_plots, 'readout_length_ge')
-    # create_folder_if_not_exists(path)
-    # file_nm = os.path.join(path, f'ge_readoutlength_sweep_Q{QubitIndex + 1}_{timestamp}.png')
-    # plt.savefig(file_nm, dpi=300)
-    # print('res leng sweep plot saved to:', outerfolder_plots)
-    # #plt.show()
-    # plt.close()
-    #
+    QubitIndex = int(QubitIndex)  # Ensure QubitIndex is an integer
+
+    avg_fids = []
+    rms_fids = []
+
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    h5_filename = os.path.join(output_folder_length, f"ge_readoutlength_sweep_Q{QubitIndex + 1}_data_{timestamp}.h5")
+    with h5py.File(h5_filename, 'w') as h5_file:
+        # Top-level group for the qubit
+        qubit_group = h5_file.create_group(f"Qubit_{QubitIndex + 1}")
+        fids = []  # Store fidelity values for each loop
+        ground_iq_data = []  # Store ground state IQ data for each loop
+        excited_iq_data = []  # Store excited state IQ data for each loop
+
+        # Iterate over each readout pulse length
+        for leng in lengs:
+            print(len)
+            # Subgroup for each readout length within the round
+            length_group = qubit_group.create_group(f"Length_{leng}")
+
+            for k in range(n_loops):  # loops for each read out length
+                # ------------------------Single Shot-------------------------
+                # Initialize experiment for each loop iteration
+                experiment = copy.deepcopy(tuned_experiment)
+                # Set specific configuration values for each iteration
+                experiment.readout_cfg['res_length'] = leng  # Set the current readout pulse length
+
+                # Set gain for the current qubit
+                gain = res_gain[QubitIndex]
+                #res_gains = experiment.set_gain_filter_ge(QubitIndex, gain)  # Set gain for current qubit only
+                res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=gain)
+                experiment.readout_cfg['res_gain_ge'] = res_gains
+
+                ss = SingleShot(QubitIndex, number_of_qubits, outerFolder,  j, save_figs, experiment, unmasking_resgain = unmask)  # updated way
+                fid, angle, iq_list_g, iq_list_e, ss_config = ss.run()
+                print('leng',leng,'fid',fid)
+                fids.append(fid)
+
+                # Append IQ data for each loop
+                ground_iq_data.append(iq_list_g)
+                excited_iq_data.append(iq_list_e)
+
+                # Save individual fidelity and IQ data for this loop
+                loop_group = length_group.create_group(f"Loop_{k + 1}")
+                loop_group.create_dataset("fidelity", data=fid)
+                loop_group.create_dataset("ground_iq_data", data=iq_list_g)
+                loop_group.create_dataset("excited_iq_data", data=iq_list_e)
+
+                del experiment
+
+            # Calculate average and RMS for fidelities across loops
+            avg_fid = np.mean(fids)
+            rms_fid = np.std(fids)
+            avg_fids.append(avg_fid)
+            rms_fids.append(rms_fid)
+
+            # Calculate average IQ data across all loops
+            avg_ground_iq = np.mean(ground_iq_data, axis=0)
+            avg_excited_iq = np.mean(excited_iq_data, axis=0)
+
+            fids.clear()
+            ground_iq_data.clear()
+            excited_iq_data.clear()
+
+        # Save the averages and RMS to the HDF5 file for this length
+        length_group.create_dataset("avg_fidelity", data=avg_fids)
+        length_group.create_dataset("rms_fidelity", data=rms_fids)
+        length_group.create_dataset("avg_ground_iq_data", data=avg_ground_iq)
+        length_group.create_dataset("avg_excited_iq_data", data=avg_excited_iq)
+
+    # avg_max = max(avg_fids[:10])
+    avg_max = max(avg_fids)
+    avg_max_index = avg_fids.index(avg_max)
+    max_len = lengs[avg_max_index]
+    optimal_lengths[QubitIndex] = max_len
+
+    # Plot the average fidelity vs. pulse length with error bars for each qubit
+    plt.figure()
+    plt.errorbar(lengs, avg_fids, yerr=rms_fids, fmt='-o', color='black')
+    plt.axvline(x=max_len, linestyle="--", color="red")
+    plt.text(max_len + 0.1, avg_fids[0], f'{max_len:.4f}', color='red')
+    plt.xlabel('Readout and Pulse Length')
+    plt.ylabel('Fidelity')
+    plt.title(f'Avg Fidelity vs. Readout and Pulse Length for Qubit {QubitIndex + 1}, ({n_loops} repetitions)' , fontsize=10)
+    path = os.path.join(outerfolder_plots, 'readout_length_ge')
+    create_folder_if_not_exists(path)
+    file_nm = os.path.join(path, f'ge_readoutlength_sweep_Q{QubitIndex + 1}_{timestamp}.png')
+    plt.savefig(file_nm, dpi=300)
+    print('res leng sweep plot saved to:', outerfolder_plots)
+    #plt.show()
+    plt.close()
+
     # del avg_fids, rms_fids, avg_ground_iq, avg_excited_iq, loop_group, length_group
 
     # ##---------------------Res Gain and Res Freq Sweeps------------------------
-    optimal_lengths = [6.5, 5.5, 7.0, 9.0, 8.5, 9.0] #optional # DAC 2 optimization
-    # optimal_lengths = [4.2, 5, 7.0, 6, 6, 7.5] # DAC 0 optimization
-    date_str = str(datetime.date.today())
-    output_folder = outerFolder + "/study_data/Data_h5/2D_Gain_Freq_Sweeps/"
-    # Ensure the output folder exists
-    os.makedirs(output_folder, exist_ok=True)
-
-    # Define sweeping parameters
-    # if QubitIndex == 0 :
-    gain_range = [0.95, 1.05]
-    # elif QubitIndex == 1 or QubitIndex == 2  or QubitIndex == 4  or QubitIndex == 5:
-    #     gain_range = [0.6, 0.85]
-    # elif QubitIndex == 3:
-    #     gain_range = [0.3,0.7]  # Gain range in a.u.
-    # elif QubitIndex == 3:
-    #     gain_range = [0.3, 0.7]
-    reference_frequency = res_freq_ge[QubitIndex]
-    freq_range = [reference_frequency - 0.5, reference_frequency + 0.5]  # Frequency range in MHz
-
-    freq_steps = int((freq_range[1] - freq_range[0])/0.1)
-    gain_steps = int((gain_range[-1] - gain_range[0]) / 0.05)
-
-    print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')
-    # Select the reference frequency for the current resonator
-
-
-
-    #freq_range = [reference_frequency -0.2, (reference_frequency + 0.2) + 1]  # Frequency range in MHz
-
-    experiment = copy.deepcopy(tuned_experiment)
-    sweep = GainFrequencySweep(QubitIndex, number_of_qubits, list_of_all_qubits, experiment, optimal_lengths=optimal_lengths, output_folder=output_folder, unmasking_resgain = unmask)
-    results = sweep.run_sweep(freq_range, gain_range, freq_steps, gain_steps)
-    results = np.array(results)
-
-    timestamp = time.strftime("%H%M%S")
-    h5_file = os.path.join(output_folder, f"Gain_Freq_Sweep_Qubit_{QubitIndex + 1}_{timestamp}.h5")
-
-    with h5py.File(h5_file, "w") as f:
-        # Store the data
-        f.create_dataset("results", data=results)
-        # Store metadata
-        f.attrs["gain_range"] = gain_range
-        f.attrs["freq_range"] = freq_range
-        f.attrs["reference_frequency"] = reference_frequency
-        f.attrs["freq_steps"] = freq_steps
-        f.attrs["gain_steps"] = gain_steps
-        f.attrs["optimal_length"] = optimal_lengths[QubitIndex]
-
-    #print(f"Saved data for Qubit {QubitIndex + 1} to {h5_file}")
-
-    plt.imshow(results, aspect='auto',
-               extent=[gain_range[0], gain_range[1], freq_range[0] - reference_frequency,
-                       freq_range[1] - reference_frequency],
-               origin='lower')
-    plt.colorbar(label="Fidelity")
-    plt.xlabel("Readout pulse gain (a.u.)")  # Gain on x-axis
-    plt.ylabel("Readout frequency offset (MHz)")  # Frequency on y-axis
-    plt.title(f"Gain-Frequency Sweep for Qubit {QubitIndex + 1}")
-    # plt.show()
-    path = os.path.join(outerfolder_plots, '2D_GainFreq_Sweep')
-    create_folder_if_not_exists(path)
-    file_nm = os.path.join(path, f'ge_gain_freqoffset_2Dsweep_Q{QubitIndex + 1}_{timestamp}.png')
-    plt.savefig(file_nm, dpi=600, bbox_inches='tight')
-
-    plt.close()  # Close the plot to free up memory
-    del results, sweep
+    # optimal_lengths = [6.5, 5.5, 7.0, 9.0, 8.5, 9.0] #optional # DAC 2 optimization
+    # # optimal_lengths = [4.2, 5, 7.0, 6, 6, 7.5] # DAC 0 optimization
+    # date_str = str(datetime.date.today())
+    # output_folder = outerFolder + "/study_data/Data_h5/2D_Gain_Freq_Sweeps/"
+    # # Ensure the output folder exists
+    # os.makedirs(output_folder, exist_ok=True)
+    #
+    # # Define sweeping parameters
+    # # if QubitIndex == 0 :
+    # gain_range = [0.45, 1]
+    # # elif QubitIndex == 1 or QubitIndex == 2  or QubitIndex == 4  or QubitIndex == 5:
+    # #     gain_range = [0.6, 0.85]
+    # # elif QubitIndex == 3:
+    # #     gain_range = [0.3,0.7]  # Gain range in a.u.
+    # # elif QubitIndex == 3:
+    # #     gain_range = [0.3, 0.7]
+    # reference_frequency = res_freq_ge[QubitIndex]
+    # freq_range = [reference_frequency - 0.5, reference_frequency + 0.5]  # Frequency range in MHz
+    #
+    # freq_steps = int((freq_range[1] - freq_range[0])/0.1)
+    # gain_steps = int((gain_range[-1] - gain_range[0]) / 0.05)
+    #
+    # print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')
+    # # Select the reference frequency for the current resonator
+    #
+    #
+    #
+    # #freq_range = [reference_frequency -0.2, (reference_frequency + 0.2) + 1]  # Frequency range in MHz
+    #
+    # experiment = copy.deepcopy(tuned_experiment)
+    # sweep = GainFrequencySweep(QubitIndex, number_of_qubits, list_of_all_qubits, experiment, optimal_lengths=optimal_lengths, output_folder=output_folder, unmasking_resgain = unmask)
+    # results = sweep.run_sweep(freq_range, gain_range, freq_steps, gain_steps)
+    # results = np.array(results)
+    #
+    # timestamp = time.strftime("%H%M%S")
+    # h5_file = os.path.join(output_folder, f"Gain_Freq_Sweep_Qubit_{QubitIndex + 1}_{timestamp}.h5")
+    #
+    # with h5py.File(h5_file, "w") as f:
+    #     # Store the data
+    #     f.create_dataset("results", data=results)
+    #     # Store metadata
+    #     f.attrs["gain_range"] = gain_range
+    #     f.attrs["freq_range"] = freq_range
+    #     f.attrs["reference_frequency"] = reference_frequency
+    #     f.attrs["freq_steps"] = freq_steps
+    #     f.attrs["gain_steps"] = gain_steps
+    #     f.attrs["optimal_length"] = optimal_lengths[QubitIndex]
+    #
+    # #print(f"Saved data for Qubit {QubitIndex + 1} to {h5_file}")
+    #
+    # plt.imshow(results, aspect='auto',
+    #            extent=[gain_range[0], gain_range[1], freq_range[0] - reference_frequency,
+    #                    freq_range[1] - reference_frequency],
+    #            origin='lower')
+    # plt.colorbar(label="Fidelity")
+    # plt.xlabel("Readout pulse gain (a.u.)")  # Gain on x-axis
+    # plt.ylabel("Readout frequency offset (MHz)")  # Frequency on y-axis
+    # plt.title(f"Gain-Frequency Sweep for Qubit {QubitIndex + 1}")
+    # # plt.show()
+    # path = os.path.join(outerfolder_plots, '2D_GainFreq_Sweep')
+    # create_folder_if_not_exists(path)
+    # file_nm = os.path.join(path, f'ge_gain_freqoffset_2Dsweep_Q{QubitIndex + 1}_{timestamp}.png')
+    # plt.savefig(file_nm, dpi=600, bbox_inches='tight')
+    #
+    # plt.close()  # Close the plot to free up memory
+    # del results, sweep
     # #
 # end=time.time()
 # print('timetaken=',end-start)

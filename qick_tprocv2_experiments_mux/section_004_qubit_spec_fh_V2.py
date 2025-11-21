@@ -112,14 +112,14 @@ class FHQubitSpectroscopy:
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
 
-        # mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, fit_err = self.fit_lorenzian(I, Q, freqs,
-        #                                                                                                   freq_q)
+        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, fit_err = self.fit_lorenzian(I, Q, freqs,
+                                                                                                          freq_q)
 
         # Check if the returned values are all None
-        # if (mean_I is None and mean_Q is None and I_fit is None and Q_fit is None
-        #         and largest_amp_curve_mean is None and largest_amp_curve_fwhm is None):
-        #     # If so, return None for the values in this definition as well
-        #     return None, None, None
+        if (mean_I is None and mean_Q is None and I_fit is None and Q_fit is None
+                and largest_amp_curve_mean is None and largest_amp_curve_fwhm is None):
+            # If so, return None for the values in this definition as well
+            return None, None, None
 
         # If we get here, the fit was successful and we can proceed with plotting
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
@@ -139,11 +139,11 @@ class FHQubitSpectroscopy:
         ax2.legend()
 
         # Plot the fits
-        # ax1.plot(freqs, I_fit, 'r--', label='Lorentzian Fit')
-        # ax1.axvline(largest_amp_curve_mean, color='orange', linestyle='--', linewidth=2)
-        #
-        # ax2.plot(freqs, Q_fit, 'r--', label='Lorentzian Fit')
-        # ax2.axvline(largest_amp_curve_mean, color='orange', linestyle='--', linewidth=2)
+        ax1.plot(freqs, I_fit, 'r--', label='Lorentzian Fit')
+        ax1.axvline(largest_amp_curve_mean, color='orange', linestyle='--', linewidth=2)
+
+        ax2.plot(freqs, Q_fit, 'r--', label='Lorentzian Fit')
+        ax2.axvline(largest_amp_curve_mean, color='orange', linestyle='--', linewidth=2)
 
         # Calculate the middle of the plot area
         plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
@@ -151,16 +151,16 @@ class FHQubitSpectroscopy:
         # Add title, centered on the plot area
         if config is not None:  # then its been passed to this definition, so use that
             fig.text(plot_middle, 0.98,
-                     f"FH Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz")# % largest_amp_curve_mean +
-                     # f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
-                     # f", {config['reps']}*{config['rounds']} avgs",
-                     # fontsize=24, ha='center', va='top')
+                     f"FH Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz% largest_amp_curve_mean" +
+                     f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
+                     f", {config['reps']}*{config['rounds']} avgs",
+                     fontsize=24, ha='center', va='top')
         else:
             fig.text(plot_middle, 0.98,
-                     f"FH Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz")# % largest_amp_curve_mean +
-                     # f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
-                     # f", {self.config['reps']}*{self.config['rounds']} avgs",
-                     # fontsize=24, ha='center', va='top')
+                     f"FH Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz % largest_amp_curve_mean" +
+                     f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
+                     f", {self.config['reps']}*{self.config['rounds']} avgs",
+                     fontsize=24, ha='center', va='top')
 
         # Adjust spacing
         plt.tight_layout()
