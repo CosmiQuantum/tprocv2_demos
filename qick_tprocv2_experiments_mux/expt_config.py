@@ -3,7 +3,7 @@ import numpy as np
 FRIDGE = "QUIET"  # change to "NEXUS" as needed
 
 if FRIDGE == "QUIET":
-    VNA_res = np.array([6227.187, 6289.175, 6348.55, 6419.665, 6485.360, 6552.35])# ge resonator freqs, updated 10/10 during run 8
+    VNA_res = np.array([6226.487, 6288.475, 6347.800, 6418.965, 6484.665,6551.650])# ge resonator freqs, updated 11/21 during run 8
     VNA_qubit = np.array([4194.77, 3828.69, 4173.69, 4474.04, 4485.38, 5018.12])  # Qubit freqs g/e Transition, updated during run 8 on 10/10
     ef_freqs = np.array([4020.48, 3650.81, 3999.01, 4302.33, 4313.06, 4848.81]) # Qubit freqs e/f Transition,Arianna 10/13
     fh_freqs = np.array([3820.97, 3450.85, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition
@@ -35,9 +35,9 @@ if FRIDGE == "QUIET":
         "res_spec": {
             "reps": 500, # 300
             "rounds": 1,
-            "start": -1.40,       # MHz (expanded by 0.15)
-            "step_size": 0.05,    # MHz
-            "steps": 57,          # keeps resolution the same
+            "start": -1.60,       # MHz (expanded by +0.20 on each side)
+            "step_size": 0.05,    # MHz (same resolution)
+            "steps": 65,          # matches the wider span
             "relax_delay": 10,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
