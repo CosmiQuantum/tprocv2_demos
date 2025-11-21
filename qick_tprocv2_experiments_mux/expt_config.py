@@ -35,9 +35,9 @@ if FRIDGE == "QUIET":
         "res_spec": {
             "reps": 500, # 300
             "rounds": 1,
-            "start": -1.25,  # [MHz]
-            "step_size": 0.05,  # [MHz]
-            "steps": 51,
+            "start": -1.40,       # MHz (expanded by 0.15)
+            "step_size": 0.05,    # MHz
+            "steps": 57,          # keeps resolution the same
             "relax_delay": 10,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
