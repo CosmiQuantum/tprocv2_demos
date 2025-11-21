@@ -34,7 +34,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 10000000 # number of rounds
+n = 10000000000 # number of rounds
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
 ssf_avgs_per_opt_pt = 5 # ignore
@@ -64,7 +64,7 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [0, 4]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,3,4,5] # [0, 4]  # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run8'
@@ -73,13 +73,13 @@ substudy_txt_notes = ('Temperature Sweep data. After retuning Q5. This data was 
 
 # set which of the following you'd like to run to 'True'
 
-# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
-#              "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
-#              "rabi_pop_meas": False, "ef_Rabi": False}
+run_flags = {"tof": False, "res_spec": True, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False,
+             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
+             "rabi_pop_meas": False, "ef_Rabi": False}
 
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
-             "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
-             "rabi_pop_meas": True, "ef_Rabi": False}
+# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
+#              "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
+#              "rabi_pop_meas": True, "ef_Rabi": False}
 
 
 # For 21dB DAC
@@ -114,7 +114,8 @@ rpm_any = False # and rabi population measurements?
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin' #qubit_checkouts
-sub_study = 'temperature_sweep_run8_25dBDAC_onechan_day3' # temperature_sweep_run8_25dBDAC_onechan. #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
+sub_study = 'temp_sweep_run8_resspec_allQs_225mkup'  # temp_sweep_run8_resspec_allQs_200mk, temp_sweep_run8_25dBDAC_onechan_day4_200mK
+# temperature_sweep_run8_25dBDAC_onechan. #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
 #ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional, ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt, 18dB_DAC_testdata_allQs_exceptQ4, cooldown_run8b_19dB_DAC_allQs
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -251,7 +252,7 @@ while j < n:
                 increase_geres_reps_to = None
                 if QubitIndex == 5:
                     increase_geres_reps = True
-                    increase_geres_reps_to = 400
+                    increase_geres_reps_to = 500 #400
                 if QubitIndex == 3:
                     increase_geres_reps = True
                     increase_geres_reps_to = 600
