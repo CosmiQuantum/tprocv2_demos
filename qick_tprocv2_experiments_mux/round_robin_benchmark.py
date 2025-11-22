@@ -114,7 +114,7 @@ rpm_any = False # and rabi population measurements?
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin' #qubit_checkouts
-sub_study = 'temp_sweep_run8_resspec_allQs_225mkup'  # temp_sweep_run8_resspec_allQs_200mk, temp_sweep_run8_25dBDAC_onechan_day4_200mK
+sub_study = 'temp_sweep_run8_resspec_allQs_1point1K'  # temp_sweep_run8_resspec_allQs_200mk, temp_sweep_run8_25dBDAC_onechan_day4_200mK
 # temperature_sweep_run8_25dBDAC_onechan. #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
 #ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional, ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt, 18dB_DAC_testdata_allQs_exceptQ4, cooldown_run8b_19dB_DAC_allQs
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -250,15 +250,15 @@ while j < n:
             try:
                 increase_geres_reps = False
                 increase_geres_reps_to = None
-                if QubitIndex == 5:
-                    increase_geres_reps = True
-                    increase_geres_reps_to = 500 #400
-                if QubitIndex == 3:
-                    increase_geres_reps = True
-                    increase_geres_reps_to = 600
-                if QubitIndex == 4:
-                    increase_geres_reps = True
-                    increase_geres_reps_to = 500
+                # if QubitIndex == 5:
+                #     increase_geres_reps = True
+                #     increase_geres_reps_to = 500 #400
+                # if QubitIndex == 3:
+                #     increase_geres_reps = True
+                #     increase_geres_reps_to = 600
+                # if QubitIndex == 4:
+                #     increase_geres_reps = True
+                #     increase_geres_reps_to = 500
 
                 res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs, increase_geres_reps,
                                                  increase_geres_reps_to, experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
