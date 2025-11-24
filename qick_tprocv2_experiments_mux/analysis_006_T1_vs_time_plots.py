@@ -8,6 +8,7 @@ from section_004_qubit_spec_ge import QubitSpectroscopy
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
 from section_007_T1_ge import T1Measurement
 from section_008_save_data_to_h5 import Data_H5
+from match_h5files_to_pngs_get_timestamps import load_h5_png_map  # adjust name if needed
 from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
 #from expt_config import *
@@ -154,6 +155,9 @@ class T1VsTime:
     def run(self, return_errs = False, exp_extension='', saved_shots = False):
         import datetime
 
+        # --- NEW: loader for the h5–png map -----------------
+        map_loader = load_h5_png_map()
+
         # ----------Load/get data------------------------
         t1_vals = {i: [] for i in range(self.number_of_qubits)}
         t1_errs = {i: [] for i in range(self.number_of_qubits)}
@@ -163,15 +167,25 @@ class T1VsTime:
         date_times = {i: [] for i in range(self.number_of_qubits)}
         mean_values = {}
         #print(self.top_folder_dates)
+        timestamp_dir = "" ""
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
-                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
-                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "/documentation/"
+                timestamp_dir = f"/data/QICK_data/{self.run_name}/{folder_date}"
+                outerFolder = timestamp_dir + "/study_data/"
+                outerFolder_save_plots = timestamp_dir + "/documentation/"
             elif self.fridge.upper() == 'NEXUS':
                 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
                 outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
             else:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+
+            # --- NEW: load the mapping HDF5 for this timestamp_dir, if it exists ---
+            map_path = os.path.join(timestamp_dir, "documentation/h5_png_timestamp_map.h5")
+            if os.path.exists(map_path):
+                mapping_data = map_loader.load_map(map_path)
+            else:
+                mapping_data = None
+                print(f"[WARN] No mapping file found at {map_path}; falling back to HDF5 timestamps.")
 
             # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
             if '_' in exp_extension:
@@ -304,7 +318,34 @@ class T1VsTime:
 
                             t1_vals[q_key].extend([T1_est])
                             t1_errs[q_key].extend([T1_err])
-                            date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
+                            # date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")]) # og way
+
+                            # --- NEW: use PNG timestamp from mapping if available ------
+                            if mapping_data is not None:
+                                # mapping uses experiment='t1_ge', qubit as 1-indexed
+                                qubit_in_map = q_key + 1
+                                subset = map_loader.filter_by(
+                                    mapping_data,
+                                    experiment="t1_ge",
+                                    qubit=qubit_in_map,
+                                    round=round_num)
+
+                                if len(subset) > 0:
+                                    png_ts = subset[0]["png_timestamp"].decode()
+                                    try:
+                                        png_dt = datetime.datetime.strptime(png_ts, "%Y-%m-%d_%H-%M-%S")
+                                        date_str = png_dt.strftime("%Y-%m-%d %H:%M:%S") # from png file
+                                    except Exception:
+                                        # in case of weird format, fall back
+                                        date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
+                                else:
+                                    # no mapping match for this qubit/round → fall back
+                                    date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
+                            else:
+                                # no mapping file for this timestamp_dir
+                                date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
+
+                            date_times[q_key].append(date_str)
 
                             del T1_class_instance
 

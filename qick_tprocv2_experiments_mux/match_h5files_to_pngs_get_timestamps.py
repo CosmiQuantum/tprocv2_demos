@@ -428,7 +428,7 @@ timestamp_dirs = [
 
 ts_dir = Path(timestamp_dirs[0]).resolve()
 m = load_h5_png_map()                       # create instance
-data = m.load_map(ts_dir / "h5_png_timestamp_map.h5")  # use instance method
+data = m.load_map(ts_dir / "documentation/h5_png_timestamp_map.h5")  # use instance method
 m.summary(data)                              # use summary
 
 def print_entry(data, i):
