@@ -206,7 +206,7 @@ class T1VsTime:
 
                 except Exception as e:
                     print(f"[WARN] Failed to create mapping: {e}")
-                    print("[WARN] Falling back to HDF5 timestamps instead.")
+                    # print("[WARN] Falling back to HDF5 timestamps instead.")
                     mapping_data = None
 
             # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
@@ -339,7 +339,7 @@ class T1VsTime:
 
                             t1_vals[q_key].extend([T1_est])
                             t1_errs[q_key].extend([T1_err])
-                            # date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")]) # og way
+                            #date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")]) # og way
 
                             # --- NEW: use PNG filename timestamp from mapping if available ------
                             # the reason for this is bc the png timestamp is more accurate than the h5 file ones
@@ -359,14 +359,16 @@ class T1VsTime:
                                         date_str = png_dt.strftime("%Y-%m-%d %H:%M:%S") # from png file
                                     except Exception:
                                         # in case of weird format, fall back
-                                        date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
+                                        # date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
+                                        continue
                                 else:
                                     # no mapping match for this qubit/round → fall back
-                                    date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
+                                    # date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
+                                    continue
                             else:
                                 # no mapping file for this timestamp_dir
-                                date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
-
+                                # date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
+                                continue
                             date_times[q_key].append(date_str)
 
                             del T1_class_instance

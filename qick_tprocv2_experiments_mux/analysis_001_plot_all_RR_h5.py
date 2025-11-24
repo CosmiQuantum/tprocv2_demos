@@ -445,7 +445,11 @@ class PlotAllRR:
         soc, soccfg = makeProxy()
 
         for h5_file in h5_files:
-        
+            # what is the date in the h5 file filename?
+            file_basename = os.path.basename(h5_file)
+            filename_date = file_basename.split("_t1_ge")[0]
+            # filename_date_datetime = datetime.datetime.strptime(filename_date, "%Y-%m-%d_%H-%M-%S")
+
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
             H5_class_instance = Data_H5(h5_file)
             load_data = H5_class_instance.load_from_h5(data_type=  't1_ge', save_r = int(save_round))
@@ -540,7 +544,7 @@ class PlotAllRR:
                     if len(I)>0:
                         T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
                         # T1_spec_cfg = exp_config['T1_ge'] # not using it for now, found out the one that should be used is the syst config one. that one gets updated during meas but expt doesn't
-                        T1_class_instance.plot_results(I, Q, delay_times, date, self.figure_quality, iminuit_fit_instead = True)
+                        T1_class_instance.plot_results(I, Q, delay_times, filename_date, None, self.figure_quality, iminuit_fit_instead = True)
                         del T1_class_instance
         
             del H5_class_instance

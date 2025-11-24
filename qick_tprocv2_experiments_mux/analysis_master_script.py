@@ -97,7 +97,7 @@ if run_number == 8:
 
         "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_08-04-25",
         "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-00-00",
-        "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-27-04"
+        "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-27-04",
         
         "temperature_sweep_run8_25dBDAC_onechan_day3/2025-11-20_07-31-49",
 
@@ -274,21 +274,22 @@ date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extens
 # print(soccfg)
 
 # date = "2025-10-27_22-04-57"  #only plot all of the data for one date at a time because there is a lot
-# #date = '2025-10-24_01-41-30'
+# date = '2025-11-21_08-54-05'
 # #outerFolder = f"/data/QICK_data/{run_name}/" + date + "/"
 # unique_folder_path = "" # only used when plot_rabis_Qtemps = True or for load_t1_shots_vs_avgIQ_arrays()
 # # outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/{date}/study_data"
-# outerFolder = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/2025-10-27_22-04-57/study_data"
+# outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/temperature_sweep_qubit_data/temp_sweep_run8_25dBDAC_onechan_day4_175mK/{date}/study_data"
+#     #r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/2025-10-27_22-04-57/study_data"
 #     #f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/{date}/study_data"
 # #outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/{date}/study_data"
-# outerFolder_save_plots = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/replotted_RR_data/2025-10-27_22-04-57/ssf_ge/"
-#     #f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/"
+# outerFolder_save_plots = f"/data/QICK_data/run8/6transmon/replotted_RR_data/t1_ge_temp_sweep/{date}/"
+#     #r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/replotted_RR_data/2025-10-27_22-04-57/ssf_ge/"
 # saved_shots_t1 = False
 #
 # plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, run_number, tot_num_of_qubits, outerFolder = outerFolder,
 #                   outerFolder_save_plots = outerFolder_save_plots, unique_folder_path = unique_folder_path, saved_shots = saved_shots_t1)
-# plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, rabi_rolling_avg=False, plot_ss = True,
-#             plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = False,
+# plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, rabi_rolling_avg=False, plot_ss = False,
+#             plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = True,
 #             plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = False)
 # #
 # # ########################################## 03: Resonator Freqs vs Time Plots ###########################################
