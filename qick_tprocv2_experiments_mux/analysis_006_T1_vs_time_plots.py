@@ -320,7 +320,7 @@ class T1VsTime:
                             T1_class_instance = T1Measurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                               fit_data=True)
                             #T1_spec_cfg = exp_config['T1_ge']
-                            q1_fit_exponential, T1_err, T1_est, plot_sig = T1_class_instance.t1_fit(I, Q, delay_times)
+                            q1_fit_exponential, T1_err, T1_est, plot_sig = T1_class_instance.t1_fit_iminuit(I, Q, delay_times)
                             if T1_est < 0:
                                 print("The value is negative, continuing...")
                                 continue

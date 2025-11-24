@@ -425,18 +425,18 @@ timestamp_dirs = [
     # records = mapper.collect_matches(ts_dir)
     # mapper.save_to_h5(out_path, ts_dir, records)
 
-ts_dir = Path(timestamp_dirs[0]).resolve()
-m = load_h5_png_map()                       # create instance
-data = m.load_map(ts_dir / "documentation/h5_png_timestamp_map.h5")  # use instance method
-m.summary(data)                              # use summary
+# ts_dir = Path(timestamp_dirs[0]).resolve()
+# m = load_h5_png_map()                       # create instance
+# data = m.load_map(ts_dir / "documentation/h5_png_timestamp_map.h5")  # use instance method
+# m.summary(data)                              # use summary
 
-def print_entry(data, i):
-    row = data[i]
-    print(f"--- Entry {i} ---")
-    for field in row.dtype.names:
-        val = row[field]
-        if isinstance(val, bytes):
-            val = val.decode()
-        print(f"{field}: {val}")
-
-print_entry(data, 1)
+# def print_entry(data, i):
+#     row = data[i]
+#     print(f"--- Entry {i} ---")
+#     for field in row.dtype.names:
+#         val = row[field]
+#         if isinstance(val, bytes):
+#             val = val.decode()
+#         print(f"{field}: {val}")
+#
+# print_entry(data, 1)

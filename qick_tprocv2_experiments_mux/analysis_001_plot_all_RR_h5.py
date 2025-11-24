@@ -540,7 +540,7 @@ class PlotAllRR:
                     if len(I)>0:
                         T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
                         # T1_spec_cfg = exp_config['T1_ge'] # not using it for now, found out the one that should be used is the syst config one. that one gets updated during meas but expt doesn't
-                        T1_class_instance.plot_results(I, Q, delay_times, date, self.figure_quality)
+                        T1_class_instance.plot_results(I, Q, delay_times, date, self.figure_quality, iminuit_fit_instead = True)
                         del T1_class_instance
         
             del H5_class_instance

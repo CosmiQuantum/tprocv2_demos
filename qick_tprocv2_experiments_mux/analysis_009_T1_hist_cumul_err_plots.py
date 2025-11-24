@@ -246,7 +246,7 @@ class T1HistCumulErrPlots:
                                                               self.save_figs, fit_data = True)
                             #T1_spec_cfg = exp_config['T1_ge']
                             try:
-                                q1_fit_exponential, T1_err, T1, plot_sig = T1_class_instance.t1_fit(I, Q, delay_times)
+                                q1_fit_exponential, T1_err, T1, plot_sig = T1_class_instance.t1_fit_iminuit(I, Q, delay_times)
                             except Exception as e:
                                 print('Fit didnt work due to error: ', e)
                                 continue
