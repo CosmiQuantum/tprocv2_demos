@@ -17,22 +17,21 @@ import h5py
 
 # Mapping between data folders and plot folders (relative to study_data/Data_h5 and documentation respectively) -------
 
-DATA_TO_PLOTS = {
-    "qspec_ef": "qubit_spec_ef_plots",
-    "qspec_ge": "qubit_spec_ge_plots",
-    "q_temperatures": "q_temperatures_plots",
-    "rabi_ge": "power_rabi_ge_plots",
-    "res_ef": "res_spec_ef_plots",
-    "res_ge": "res_spec_ge_plots",
-    "ss_ge": "ss_ge_plots",          # <-- has extra qubit-level folders (Q1, Q5, etc)
-    "t1_ge": "T1_ge",
-    "t2e_ge": "SpinEcho_ge",
-    "t2_ge": "Ramsey_ge",
-}
-
 class create_h5_png_map():
-    def __init__(self, DATA_TO_PLOTS):
-        self.DATA_TO_PLOTS = DATA_TO_PLOTS
+    DATA_TO_PLOTS = {
+        "qspec_ef": "qubit_spec_ef_plots",
+        "qspec_ge": "qubit_spec_ge_plots",
+        "q_temperatures": "q_temperatures_plots",
+        "rabi_ge": "power_rabi_ge_plots",
+        "res_ef": "res_spec_ef_plots",
+        "res_ge": "res_spec_ge_plots",
+        "ss_ge": "ss_ge_plots",  # <-- has extra qubit-level folders (Q1, Q5, etc)
+        "t1_ge": "T1_ge",
+        "t2e_ge": "SpinEcho_ge",
+        "t2_ge": "Ramsey_ge",
+    }
+    def __init__(self, DATA_TO_PLOTS = None):
+        self.DATA_TO_PLOTS = DATA_TO_PLOTS or self.DATA_TO_PLOTS
     # --- regex helpers ----------------------------------------------------
     TIMESTAMP_RE = re.compile(r"\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}") # timestamps
     # PNG: uses R_1, R_2, ...

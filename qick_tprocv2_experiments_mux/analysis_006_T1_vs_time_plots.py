@@ -8,10 +8,11 @@ from section_004_qubit_spec_ge import QubitSpectroscopy
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
 from section_007_T1_ge import T1Measurement
 from section_008_save_data_to_h5 import Data_H5
-from match_h5files_to_pngs_get_timestamps import load_h5_png_map  # adjust name if needed
+from match_h5files_to_pngs_get_timestamps import load_h5_png_map, create_h5_png_map  # adjust name if needed
 from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
 #from expt_config import *
+from pathlib import Path
 from collections import OrderedDict
 import glob
 import re
@@ -183,9 +184,30 @@ class T1VsTime:
             map_path = os.path.join(timestamp_dir, "documentation/h5_png_timestamp_map.h5")
             if os.path.exists(map_path):
                 mapping_data = map_loader.load_map(map_path)
+
             else:
-                mapping_data = None
-                print(f"[WARN] No mapping file found at {map_path}; falling back to HDF5 timestamps.")
+                print(f"[INFO] Mapping file not found at {map_path}.")
+                print(f"[INFO] Attempting to create a new mapping...")
+
+                # Instantiate mapping creator
+                mapper = create_h5_png_map()
+
+                try:
+                    # Run mapping creation for this timestamp_dir
+                    records = mapper.collect_matches(Path(timestamp_dir))
+
+                    # Save mapping to the expected path
+                    mapper.save_to_h5(Path(map_path), Path(timestamp_dir), records)
+
+                    # Load the newly created mapping
+                    mapping_data = map_loader.load_map(map_path)
+
+                    print(f"[INFO] Successfully created mapping at {map_path}.")
+
+                except Exception as e:
+                    print(f"[WARN] Failed to create mapping: {e}")
+                    print("[WARN] Falling back to HDF5 timestamps instead.")
+                    mapping_data = None
 
             # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
             if '_' in exp_extension:
@@ -197,7 +219,6 @@ class T1VsTime:
             soc, soccfg = makeProxy()
 
             for h5_file in h5_files:
-
                 save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
                 H5_class_instance = Data_H5(h5_file)
                 load_data = H5_class_instance.load_from_h5(data_type=f't1{exp_extension}', save_r=int(save_round))
@@ -320,7 +341,8 @@ class T1VsTime:
                             t1_errs[q_key].extend([T1_err])
                             # date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")]) # og way
 
-                            # --- NEW: use PNG timestamp from mapping if available ------
+                            # --- NEW: use PNG filename timestamp from mapping if available ------
+                            # the reason for this is bc the png timestamp is more accurate than the h5 file ones
                             if mapping_data is not None:
                                 # mapping uses experiment='t1_ge', qubit as 1-indexed
                                 qubit_in_map = q_key + 1
