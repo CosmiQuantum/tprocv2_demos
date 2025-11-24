@@ -48,7 +48,7 @@ final_figure_quality = 200
 saved_shots_t1ge = False
 
 if run_number == 8:
-    run_name = 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis'
+    run_name = 'run8/6transmon/round_robin/temperature_sweep_qubit_data' # 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis'
     data_path = f'/data/QICK_data/{run_name}'
     plots_path = data_path
 
@@ -75,17 +75,36 @@ if run_number == 8:
     # ]
 
     # # when saving t1 shots + avg IQ data started
+    # top_folder_dates = [
+    #     "2025-10-24_13-58-37",
+    #     "2025-10-27_14-15-40",
+    #     "2025-10-27_14-24-29",
+    #     "2025-10-27_22-04-57",
+    #     "2025-10-28_21-57-47",
+    #     "2025-10-29_18-38-25",
+    #     "2025-10-29_23-48-45",
+    #     "2025-10-31_01-54-57",
+    #     "2025-10-31_20-40-11",
+    #     "2025-11-01_12-54-55"]
+
+    # All run 8 qubit temperature sweep data except the 200mK dataset bc no qubits visible
     top_folder_dates = [
-        "2025-10-24_13-58-37",
-        "2025-10-27_14-15-40",
-        "2025-10-27_14-24-29",
-        "2025-10-27_22-04-57",
-        "2025-10-28_21-57-47",
-        "2025-10-29_18-38-25",
-        "2025-10-29_23-48-45",
-        "2025-10-31_01-54-57",
-        "2025-10-31_20-40-11",
-        "2025-11-01_12-54-55"]
+        "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_08-39-37",
+        "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_09-02-01",
+        "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_12-40-59",
+        "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_14-26-01",
+        "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_14-48-11",
+
+        "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_08-04-25",
+        "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-00-00",
+        "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-27-04"
+        
+        "temperature_sweep_run8_25dBDAC_onechan_day3/2025-11-20_07-31-49",
+
+        "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-01-57",
+        "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-33-09",
+        "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-45-17",
+        "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-54-05"]
 
 elif run_number == 7:
     run_name = 'run7/6transmon/round_robin_benchmark/AB_paper_data'

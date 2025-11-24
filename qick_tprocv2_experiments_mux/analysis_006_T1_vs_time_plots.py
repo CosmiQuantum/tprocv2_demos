@@ -332,10 +332,10 @@ class T1VsTime:
                                     f"Skipping T1 = {T1_est:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
                                 continue
 
-                            if (self.run_number == 8) and (q_key != 5) and (T1_est <= 22):  # # QUIET run 8 patch while fitting is fixed
-                                print(
-                                    f"Skipping T1 = {T1_est:.3f} µs for Q{q_key + 1} because it is presumed to be a bad fit (Run 8 patch).")
-                                continue
+                            # if (self.run_number == 8) and (q_key != 5) and (T1_est <= 22):  # # QUIET run 8 patch while fitting is fixed
+                            #     print(
+                            #         f"Skipping T1 = {T1_est:.3f} µs for Q{q_key + 1} because it is presumed to be a bad fit (Run 8 patch).")
+                            #     continue
 
                             t1_vals[q_key].extend([T1_est])
                             t1_errs[q_key].extend([T1_err])
