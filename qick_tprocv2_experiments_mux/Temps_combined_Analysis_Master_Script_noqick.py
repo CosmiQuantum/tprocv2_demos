@@ -51,7 +51,7 @@ qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
-# For combined analysis
+# For combined analysis (SSF qtemps + RPM qtemps)
 comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
                        "Pe_vs_time_comb_single_plt": False }
 
@@ -60,6 +60,9 @@ london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 
 # For double-gaussian SSF analysis using non-pre-built functions (ft Dan)
 non_prebuilt_ana_flags = {"Qtemps_chi2_hists_viaSSF": False}
+
+# For coherence-qubit temps combined analysis
+coh_qtemp_ana_flags = {"load_rpm_qtemps": False, "load_ssf_qtemps": False, "load_mcp1_temps": False, "plot_qtemps_t1_ftemps_qfreq": False}
 ############################################################################## Set up #######################################################################################################################
 #----------------------------------------------------- For qubit temperature calculations via rabi population measurements --------------------------------------------------------------------------------------
 # Specify which dates you want to loop through. It will process all the files inside all the folders that contain these dates in their title.
@@ -473,7 +476,7 @@ if qtemp_method_flags["combined_studies_qtemps"]:
                                      restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
 
 #################################################### London Penetration Analysis ##########################################################
-if london_flags["get_qfreqs_resfreqs_qtemps"]: # There was no "pre-science-run" data for this analysis, since the relevant data is the science run heater temperature sweep data
+if london_flags["get_qfreqs_resfreqs_qtemps"]: # There was no "pre-science-run" data in run 6 for this analysis, since the relevant data is the science run heater temperature sweep data
     #--------------------------------------Get RPM qubit temps, qfreqs and res freqs, etc. -----------------------
     RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits)
     qfreqs_resfreqs_qtemps_data = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal,
@@ -488,3 +491,12 @@ if london_flags["get_qfreqs_resfreqs_qtemps"]: # There was no "pre-science-run" 
     RPM_plotter = PlotRR_noQick(date_string, figure_quality, save_figs, fit_saved, signal, run_name, tot_num_of_qubits, outerFolder, outerFolder_qtemps_plots, outerFolder_qtemps_data, run_num)
     RPM_plotter.save_RPM_qtemp_data_to_excel(qfreqs_resfreqs_qtemps_data, outerFolder_london_path, run_num, FRIDGE)
     del RPM_calcs
+
+################################################### Coherence + Fridge  + Qtemps Analysis ###########################################
+if coh_qtemp_ana_flags["load_rpm_qtemps"]:
+
+if coh_qtemp_ana_flags["load_ssf_qtemps"]:
+
+if coh_qtemp_ana_flags["load_mcp1_temps"]:
+
+if coh_qtemp_ana_flags["plot_qtemps_t1_ftemps_qfreq"]:
