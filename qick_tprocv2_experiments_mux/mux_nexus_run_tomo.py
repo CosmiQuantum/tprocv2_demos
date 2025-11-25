@@ -11,7 +11,7 @@ import datetime
 
 run_name = 'run33e'
 device_name = '4charge'
-study = 'DDon_SC_HoleOpen' #'Tomography' #
+study =  'DDoff_SC_HoleClosed' #'Tomography' #
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 studyFolder = os.path.join(f"/home/nexusadmin/Documents/Data/{run_name}/{device_name}/", study)
@@ -80,8 +80,8 @@ if not os.path.exists(data_setFolder):
     os.makedirs(data_setFolder)
 
 qs_to_look_at = [0, 1, 2, 3]
-res_len = [5, 5.6, 5, 3.6]
-freq_offset = [-0.18, 0.2, -0.3375, 0.09] #MHz
+res_len = [5, 4.75, 5, 4.25] #[5, 5.6, 5, 3.6]
+freq_offset = [0.05, -0.225, -0.2, -0.075] #[-0.18, 0.2, -0.3375, 0.09] #MHz
 
 start_voltage = 0 #V
 stop_voltage = 0.1 #V
@@ -89,7 +89,7 @@ voltage_pts = 30
 
 ## Get num of rounds to use by total time you want, or just set manually below:
 run_time = 1 # hrs
-round_time = 6.1 #min
+round_time = 4.5 #min
 round_num = int(run_time*60/round_time)
 
 rounds = 10

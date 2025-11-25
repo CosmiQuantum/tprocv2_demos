@@ -16,9 +16,9 @@ experiment = QICK_experiment(outerFolder, fridge=FRIDGE)
 #resFs=np.linspace(5958.673-1.5, 5958.673+1.5, 11)
 #num_qubits = 4
 qubit = [4] #[1, 2, 3, 4] #Qubit to Run, 1-4
-start_voltage = [0.0] #[0.0]*4 #0.06 #V
-stop_voltage = [0.15] #[0.15]*4 #0.08 #0.15 max!!! #V
-voltage_pts = [20] #*4
+start_voltage = [0.005] #[0.0]*4 #0.06 #V
+stop_voltage = [0.025] #[0.15]*4 #0.08 #0.15 max!!! #V
+voltage_pts = [10] #*4
 
 Unmask = True
 

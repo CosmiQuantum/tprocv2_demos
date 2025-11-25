@@ -5,7 +5,7 @@ Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44', '192.168.0.41'] #I
 Bias_ch = [1, 2, 3, 1] #Channel number of qubit 1-4 on associated PS
 
 ###################
-qubit_index = 2 #0, 1, 2, 3
+qubit_index = 3 #0, 1, 2, 3
 voltage = 0.0 #0.15 MAX!!! #V
 ######################
 
@@ -16,4 +16,5 @@ if voltage > 0.15:
 else:
     print(f"Setting {qubit_index +1} bias to {voltage}V")
     BiasPS.setVoltage(voltage, Bias_ch[qubit_index])
+    BiasPS.enable(Bias_ch[qubit_index])
     #time.sleep(8)

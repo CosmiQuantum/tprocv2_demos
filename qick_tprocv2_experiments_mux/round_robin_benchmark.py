@@ -40,7 +40,7 @@ from analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
 ################################################ Run Configurations ####################################################
 st = time.time()
 #
-n= 3
+n= 2
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
@@ -69,7 +69,7 @@ print(FRIDGE)
 #Data saving info
 run_name = 'run33e'
 device_name = '4charge'
-substudy_txt_notes = ('DD on, rear shield hole open, 0V bias') #('Active Reset Test')##('round robin with relax delays of 1000us for T1 and T2 measurements.')#('Active Reset Test')#('Normal Round Robin during cooldown, now everything works properly, set debug to false to run '
+substudy_txt_notes = ('DD off, rear shield hole closed, 0V bias') #('Active Reset Test')##('round robin with relax delays of 1000us for T1 and T2 measurements.')#('Active Reset Test')#('Normal Round Robin during cooldown, now everything works properly, set debug to false to run '
                       # 'overFalsenight and running in terminal with repeater script')
 
 # set which of the following you'd like to run to 'True'
@@ -79,9 +79,10 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi":
 #              "t1": False, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": True, "fh_q_spec":True, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 
 # optimization outputs from qick board, unmasking set to true
-res_leng_vals = [5, 5.6, 5, 3.6] #[9.25, 5.5, 6.25, 7.5] #Q1,~Q2,Q4 opt
-res_gain = [0.10, 0.0994, 0.09, 0.145] #[0.75, 0.7, 0.8, 0.75] #Q1,~Q2,Q4 optimized
-freq_offsets = [-0.18, 0.2, -0.3375, 0.09] #[-0.1429, -0.1429, 0, -0.1429] #Q1,~Q2,Q4 optimized
+res_leng_vals = [5, 4.75, 5, 4.25] #[9.25, 5.5, 6.25, 7.5] #Q1,~Q2,Q4 opt
+res_gain = [0.116, 0.0935, 0.1162, 0.14] #[0.75, 0.7, 0.8, 0.75] #Q1,~Q2,Q4 optimized
+freq_offsets = [0.05, -0.225, -0.2, -0.075] #[-0.1429, -0.1429, 0, -0.1429] #Q1,~Q2,Q4 optimized
+
 
 qubit_freqs_ef = [None]*4
 # increase_qubit_steps_ef = False #if you want to increase the steps for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
@@ -91,7 +92,7 @@ number_of_qubits = 4
 figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 #Folders
-study = 'DDon_SC_HoleOpen' #'Longtime_Study'
+study = 'DDoff_SC_HoleClosed' #'Longtime_Study'
 sub_study = 'RR_Long' #'RR_Long' #'SSF_PostRabi'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 

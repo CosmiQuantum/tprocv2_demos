@@ -8,7 +8,7 @@ def run_script(path):
     return end-start
 
 def main():
-    num_cycles = 3
+    num_cycles = 5
 
     total_runtime = 0.0
 

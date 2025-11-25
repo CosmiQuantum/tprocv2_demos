@@ -1,8 +1,8 @@
 import numpy as np
 from section_008_save_data_to_h5 import Data_H5
-import sys
+#import sys
 import os
-sys.path.append(os.path.abspath("/home/nexusadmin/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+#sys.path.append(os.path.abspath("/home/nexusadmin/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import glob
@@ -97,16 +97,26 @@ class PlotRRData:
 
         return all_scans
 
-    def plot_IQ_long(self, all_scans, qubit, backsub = False):
+    def plot_IQ_long(self, all_scans, qubit, f_min = None, f_max = None, backsub = False):
         scans = [s for s in all_scans if s["q_key"] == qubit]
+        found_freqs = [4914.05, 4764.5, 4577, 4782]
 
         if len(scans) == 0:
             print(f"No scans found for qubit {qubit}")
             return
 
         freqs = scans[0]['freqs'] #1d freq axis
-        I_all = np.array([s['I'] for s in scans]) #(n_scans, n_freq)
-        Q_all = np.array([s['Q'] for s in scans])
+
+        if f_min is not None:
+            freq_mask = freqs >= f_min
+        else:
+            freq_mask = np.ones_like(freqs, dtype=bool)
+        if f_max is not None:
+            freq_mask &= freqs <= f_max
+        freqs = freqs[freq_mask]
+
+        I_all = np.array([s['I'][freq_mask] for s in scans]) #(n_scans, n_freq)
+        Q_all = np.array([s['Q'][freq_mask] for s in scans])
         dates = np.array([s['date'] for s in scans])
 
         # if normalize:
@@ -139,10 +149,12 @@ class PlotRRData:
         fig, (axI, axQ) = plt.subplots(2, 1, figsize = (9,7), sharex=True)
 
         imI = axI.imshow(I_plot.T, aspect = 'auto', origin = 'lower', extent = [times_numeric[0], times_numeric[-1], freqs[0], freqs[-1]])
+        axI.axhline(found_freqs[qubit], color = 'red', linestyle = '--', alpha = 0.6)
         axI.set_ylabel('Freq (MHz)')
         plt.colorbar(imI, ax=axI)
 
         imQ = axQ.imshow(Q_plot.T, aspect = 'auto', origin = 'lower', extent = [times_numeric[0], times_numeric[-1], freqs[0], freqs[-1]])
+        axQ.axhline(found_freqs[qubit], color='red', linestyle='--', alpha=0.6)
         axQ.set_ylabel('Freq (MHz)')
         axQ.set_xlabel('Time')
         plt.colorbar(imQ, ax=axQ)
@@ -161,21 +173,45 @@ class PlotRRData:
 
         plt.tight_layout()
         if backsub:
-            save_name = f'Q{qubit + 1}_Spec_bkgdsub_{dates[0]}.png'
+            save_name = f'Q{qubit + 1}_Spec_bkgdsub_{dates[0]}'
         else:
-            save_name = f'Q{qubit + 1}_Spec_{dates[0]}.png'
-        fig_path = os.path.join(self.outerFolder_saveplots, save_name)
+            save_name = f'Q{qubit + 1}_Spec_{dates[0]}'
+        if f_min is not None:
+            save_name += '_zoomed'
+        fig_path = os.path.join(self.outerFolder_saveplots, f'{save_name}.png')
         plt.savefig(fig_path)
         #plt.show()
         return
 
-date = "2025-11-13_21-59-08"
-outerFolder = f"/home/nexusadmin/Documents/Data/run33e/4charge/Longtime_Study/RR_Long/{date}/study_data"
-outerFolder_saveplots = f"/home/nexusadmin/Documents/Data/run33e/4charge/Longtime_Study/RR_Long/{date}/analysis_plots"
-if not os.path.exists( f"/home/nexusadmin/Documents/Data/run33e/4charge/Longtime_Study/RR_Long/{date}/analysis_plots"):
-    os.makedirs(f"/home/nexusadmin/Documents/Data/run33e/4charge/Longtime_Study/RR_Long/{date}/analysis_plots")
+run = 'run33e'
+study = 'DDon_SC_HoleClosed' #'Initial Checkout' #DDoff_SC_HoleOpen' #'DDon_SC_HoleClosed' #'DDon_SC_HoleOpen' #'Longtime_Study
+substudy = 'RR_Long' #RR_Q1' #RR_Long'
+date = '2025-11-24'
 
-data_handler = PlotRRData(outerFolder, outerFolder_saveplots)
+root_folder = f'/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}'
+folders = sorted(glob.glob(os.path.join(root_folder, f"{date}*")))
+print(folders)
+if not os.path.exists(f'/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}/{date}_analysis_plots'):
+    os.makedirs(f'/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}/{date}_analysis_plots')
+plot_folder = f'/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}/{date}_analysis_plots'
+all_scans = []
+for f in folders:
+    folder = os.path.join(f, 'study_data')
+    data_handler = PlotRRData(folder, plot_folder)
+    all_scans.extend(data_handler.load_qspec())
 
-all_scans = data_handler.load_qspec()
-data_handler.plot_IQ_long(all_scans, 3, backsub = False)
+# outerFolder = f"/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}/{date}/study_data"
+# outerFolder_saveplots = f"/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}/{date}/analysis_plots"
+# if not os.path.exists( f"/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}/{date}/analysis_plots"):
+#     os.makedirs(f"/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}/{date}/analysis_plots")
+#
+# data_handler = PlotRRData(outerFolder, outerFolder_saveplots)
+#
+# all_scans = data_handler.load_qspec()
+data_handler= PlotRRData(folders[0], plot_folder)
+found_freqs = [4914.05, 4764.5, 4577, 4782]
+f_min = [4914.05-3, 4764.5-3, 4577-3, 4782-3]
+f_max = [4914.05+3, 4764.5+3, 4577+3, 4782+3]
+for q in [0]: #[0, 1, 2, 3]:
+    #.plot_IQ_long(all_scans, q, f_min = f_min[q], f_max = f_max[q], backsub = True)
+    data_handler.plot_IQ_long(all_scans, q, f_min=None, f_max=None, backsub=True)
