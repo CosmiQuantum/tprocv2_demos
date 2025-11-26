@@ -8,7 +8,7 @@ from section_004_qubit_spec_ge import QubitSpectroscopy
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
 from section_007_T1_ge import T1Measurement
 from section_008_save_data_to_h5 import Data_H5
-from match_h5files_to_pngs_get_timestamps import load_h5_png_map, create_h5_png_map  # adjust name if needed
+from match_h5files_to_pngs_get_timestamps import load_h5_png_map, create_h5_png_map
 from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
 #from expt_config import *
@@ -153,11 +153,14 @@ class T1VsTime:
         Y = y.reshape(N, R)
         return np.median(Y, axis=1) if reducer == "median" else np.mean(Y, axis=1)
 
-    def run(self, return_errs = False, exp_extension='', saved_shots = False):
+    def run(self, return_errs = False, exp_extension='', saved_shots = False, use_png_timestamps = False):
         import datetime
 
-        # --- NEW: loader for the h5–png map -----------------
-        map_loader = load_h5_png_map()
+        if use_png_timestamps:
+            # This is a setting used to extract the timestamps in the png file names instead of using the ones
+            # stored inside the h5 files (which mark the time that the file was saved, not when the meas was done).
+            # --- loader for the h5–png map -----------------
+            map_loader = load_h5_png_map()
 
         # ----------Load/get data------------------------
         t1_vals = {i: [] for i in range(self.number_of_qubits)}
@@ -180,34 +183,35 @@ class T1VsTime:
             else:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
-            # --- NEW: load the mapping HDF5 for this timestamp_dir, if it exists ---
-            map_path = os.path.join(timestamp_dir, "documentation/h5_png_timestamp_map.h5")
-            if os.path.exists(map_path):
-                mapping_data = map_loader.load_map(map_path)
-
-            else:
-                print(f"[INFO] Mapping file not found at {map_path}.")
-                print(f"[INFO] Attempting to create a new mapping...")
-
-                # Instantiate mapping creator
-                mapper = create_h5_png_map()
-
-                try:
-                    # Run mapping creation for this timestamp_dir
-                    records = mapper.collect_matches(Path(timestamp_dir))
-
-                    # Save mapping to the expected path
-                    mapper.save_to_h5(Path(map_path), Path(timestamp_dir), records)
-
-                    # Load the newly created mapping
+            if use_png_timestamps:
+                # --- load the mapping HDF5 for this timestamp_dir, if it exists ---
+                map_path = os.path.join(timestamp_dir, "documentation/h5_png_timestamp_map.h5")
+                if os.path.exists(map_path):
                     mapping_data = map_loader.load_map(map_path)
 
-                    print(f"[INFO] Successfully created mapping at {map_path}.")
+                else:
+                    print(f"[INFO] Mapping file not found at {map_path}.")
+                    print(f"[INFO] Attempting to create a new mapping...")
 
-                except Exception as e:
-                    print(f"[WARN] Failed to create mapping: {e}")
-                    # print("[WARN] Falling back to HDF5 timestamps instead.")
-                    mapping_data = None
+                    # Instantiate mapping creator
+                    mapper = create_h5_png_map()
+
+                    try:
+                        # Run mapping creation for this timestamp_dir
+                        records = mapper.collect_matches(Path(timestamp_dir))
+
+                        # Save mapping to the expected path
+                        mapper.save_to_h5(Path(map_path), Path(timestamp_dir), records)
+
+                        # Load the newly created mapping
+                        mapping_data = map_loader.load_map(map_path)
+
+                        print(f"[INFO] Successfully created mapping at {map_path}.")
+
+                    except Exception as e:
+                        print(f"[WARN] Failed to create mapping: {e}")
+                        # print("[WARN] Falling back to HDF5 timestamps instead.")
+                        mapping_data = None
 
             # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
             if '_' in exp_extension:
@@ -254,8 +258,8 @@ class T1VsTime:
                             print("Processing shots...")
 
                             # --- load cfg strings from H5 ---
-                            exp_config_str = load_data['t1_ge'][q_key]['Exp Config'][0][dataset].decode()
-                            syst_config_str = load_data['t1_ge'][q_key]['Syst Config'][0][dataset].decode()
+                            exp_config_str = load_data[f't1{exp_extension}'][q_key]['Exp Config'][0][dataset].decode()
+                            syst_config_str = load_data[f't1{exp_extension}'][q_key]['Syst Config'][0][dataset].decode()
 
                             # --- choose which datasets hold the *shots* based on date ---
                             if date < cutoff_dt:
@@ -266,8 +270,8 @@ class T1VsTime:
                                 I_key, Q_key = 'Ishots', 'Qshots'
 
                             # --- raw shots from H5 ---
-                            Ishots_raw = self.process_h5_data(load_data['t1_ge'][q_key][I_key][0][dataset].decode())
-                            Qshots_raw = self.process_h5_data(load_data['t1_ge'][q_key][Q_key][0][dataset].decode())
+                            Ishots_raw = self.process_h5_data(load_data[f't1{exp_extension}'][q_key][I_key][0][dataset].decode())
+                            Qshots_raw = self.process_h5_data(load_data[f't1{exp_extension}'][q_key][Q_key][0][dataset].decode())
 
                             # --- path to the soccfg dump (txt file made with save_run_soccfg_params.py) ---
                             if self.run_number == 8:  # this does work
@@ -287,8 +291,8 @@ class T1VsTime:
                             syst_cfg = replica._safe_eval_cfg(syst_config_str)
 
                             # Pull steps/reps from Syst Config first; fall back to Exp Config only if missing. Sys config is the updated one in each measurement during RR
-                            steps = int(syst_cfg.get('steps', exp_cfg['T1_ge']['steps']))
-                            reps = int(syst_cfg.get('reps', exp_cfg['T1_ge']['reps']))
+                            steps = int(syst_cfg.get('steps', exp_cfg[f'T1{exp_extension}']['steps']))
+                            reps = int(syst_cfg.get('reps', exp_cfg[f'T1{exp_extension}']['reps']))
                             # rounds not needed here; H5 holds one round
 
                             # --- coerce raw shots to (rounds, N, reps) before averaging ---
@@ -299,8 +303,8 @@ class T1VsTime:
                             I, Q = replica.acquire_offline(Ishots, Qshots, soft_avgs=1)
                         # -----------------------------------------------------------------------------------------------
                         else:
-                            I = self.process_h5_data(load_data['t1_ge'][q_key].get('I', [])[0][dataset].decode())
-                            Q = self.process_h5_data(load_data['t1_ge'][q_key].get('Q', [])[0][dataset].decode())
+                            I = self.process_h5_data(load_data[f't1{exp_extension}'][q_key].get('I', [])[0][dataset].decode())
+                            Q = self.process_h5_data(load_data[f't1{exp_extension}'][q_key].get('Q', [])[0][dataset].decode())
 
                         delay_times = self.process_h5_data(load_data[f't1{exp_extension}'][q_key].get('Delay Times', [])[0][dataset].decode())
                         # fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
@@ -339,37 +343,40 @@ class T1VsTime:
 
                             t1_vals[q_key].extend([T1_est])
                             t1_errs[q_key].extend([T1_err])
-                            #date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")]) # og way
 
-                            # --- NEW: use PNG filename timestamp from mapping if available ------
-                            # the reason for this is bc the png timestamp is more accurate than the h5 file ones
-                            if mapping_data is not None:
-                                # mapping uses experiment='t1_ge', qubit as 1-indexed
-                                qubit_in_map = q_key + 1
-                                subset = map_loader.filter_by(
-                                    mapping_data,
-                                    experiment="t1_ge",
-                                    qubit=qubit_in_map,
-                                    round=round_num)
+                            if use_png_timestamps:
+                                # --- use PNG filename timestamp from mapping if available ------
+                                # the reason for this is bc the png timestamp is more accurate than the h5 file ones
+                                if mapping_data is not None:
+                                    # mapping uses experiment='t1_ge', qubit as 1-indexed
+                                    qubit_in_map = q_key + 1
+                                    subset = map_loader.filter_by(
+                                        mapping_data,
+                                        experiment=f"t1{exp_extension}",
+                                        qubit=qubit_in_map,
+                                        round=round_num)
 
-                                if len(subset) > 0:
-                                    png_ts = subset[0]["png_timestamp"].decode()
-                                    try:
-                                        png_dt = datetime.datetime.strptime(png_ts, "%Y-%m-%d_%H-%M-%S")
-                                        date_str = png_dt.strftime("%Y-%m-%d %H:%M:%S") # from png file
-                                    except Exception:
-                                        # in case of weird format, fall back
+                                    if len(subset) > 0:
+                                        png_ts = subset[0]["png_timestamp"].decode()
+                                        try:
+                                            png_dt = datetime.datetime.strptime(png_ts, "%Y-%m-%d_%H-%M-%S")
+                                            date_str = png_dt.strftime("%Y-%m-%d %H:%M:%S") # from png file
+                                        except Exception:
+                                            # in case of weird format, fall back
+                                            # date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
+                                            continue # skip
+                                    else:
+                                        # no mapping match for this qubit/round, fall back
                                         # date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
-                                        continue
+                                        continue # skip
                                 else:
-                                    # no mapping match for this qubit/round → fall back
+                                    # no mapping file for this timestamp_dir, fall back
                                     # date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
-                                    continue
+                                    continue # skip
+                                date_times[q_key].append(date_str)
+
                             else:
-                                # no mapping file for this timestamp_dir
-                                # date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
-                                continue
-                            date_times[q_key].append(date_str)
+                                date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])  # og way, from h5 file
 
                             del T1_class_instance
 

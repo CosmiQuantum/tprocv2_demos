@@ -6,6 +6,7 @@ import sys
 import h5py
 from sklearn.mixture import GaussianMixture
 import os
+import matplotlib.ticker as mticker
 from scipy.stats import norm
 sys.path.insert(0, os.path.abspath("/home/quietuser/Documents/GitHub/QICK_Qubit_LabSuite/src"))
 # from qicklab.analysis.qspec import AnaQSpec
@@ -16,6 +17,8 @@ from analysis_021_plot_allRR_noqick import PlotRR_noQick
 import math
 import os
 import datetime
+import pandas as pd
+from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from bisect import bisect_left
@@ -1317,7 +1320,7 @@ class RPMTempCalcAndPlots:
 
     def run_RPMqtemps(self, base_dir, target_dates, filter_keywords, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
                      outerFolder_RR_plots, replot_RPMs = False, get_qtemp_data = False, get_london_data = False, figure_quality = 200, save_figsRR = False,
-                      exclude_temp_sweeps = False, passing_pre_sciencerun_data = False, filter_out_bad_amp_fits = False):
+                      exclude_temp_sweeps = False, passing_pre_sciencerun_data = False, filter_out_bad_amp_fits = False, use_png_timestamps = False):
 
         combined_qtemp_data = []  # list of results from different .h5 files
 
@@ -1371,7 +1374,8 @@ class RPMTempCalcAndPlots:
 
                         if get_qtemp_data: # returns RPM qubit temperature data (and qfreqs that were used for the calculations)
                             # ---------------------------------------- Load data and append to list spanning multiple dates --------------------------------------------------
-                            qtemp_data = plotter.load_plot_save_rabis_Qtemps(list_of_all_qubits, run_num, save_figs = save_figsRR, get_qtemp_data = get_qtemp_data, filter_out_bad_amp_fits = filter_out_bad_amp_fits)
+                            qtemp_data = plotter.load_plot_save_rabis_Qtemps(list_of_all_qubits, run_num, save_figs = save_figsRR, get_qtemp_data = get_qtemp_data, filter_out_bad_amp_fits = filter_out_bad_amp_fits,
+                                                                             use_png_timestamps = use_png_timestamps)
                             combined_qtemp_data.extend(qtemp_data)
 
                         if get_london_data: # returns RPM qubit temperature data, qfreqs that were used to calculate the temps, and resonator freqs
@@ -1387,7 +1391,7 @@ class combined_Qtemp_studies:
         self.figure_quality = figure_quality
         self.number_of_qubits = number_of_qubits
 
-    def Qtemps_vs_time_comb_methods(self, all_qubit_temperatures_ssf_g, all_qubit_timestamps_ssf_g, all_qubit_temps_ssf_errs_g, all_qubit_temperatures_ssf_ge, all_qubit_timestamps_ssf_ge,
+    def Qtemps_vs_time_comb_methods_3col(self, all_qubit_temperatures_ssf_g, all_qubit_timestamps_ssf_g, all_qubit_temps_ssf_errs_g, all_qubit_temperatures_ssf_ge, all_qubit_timestamps_ssf_ge,
                                     all_qubit_temps_ssf_errs_ge, out_dir, all_files_Qtemp_results_RPMs, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = True,
                                     plot_error_bars = False):
         """
@@ -1892,7 +1896,7 @@ class combined_Qtemp_studies:
         plt.close(fig)
         print("Saved P_e plot →", fname)
 
-    def Qtemps_vs_time_comb_2subplts_improved(self, all_qubit_temperatures_ssf_g, all_qubit_timestamps_ssf_g,
+    def Qtemps_vs_time_comb_allQs_1col(self, all_qubit_temperatures_ssf_g, all_qubit_timestamps_ssf_g,
                                               all_qubit_temperatures_ssf_ge, all_qubit_timestamps_ssf_ge,
                                               out_dir, all_files_Qtemp_results_RPMs, restrict_time_xaxis=False,
                                               plot_extra_event_lines=False, rad_events_plot_lines=False):
@@ -1983,3 +1987,356 @@ class combined_Qtemp_studies:
         print("Saved combined methods plot: ", out_path)
         return out_path
 
+    def load_mixing_chamber_csv(self, csv_path, restrict_time=False,
+                                start_time=None, end_time=None):
+        """
+        Load mixing-chamber CSV and return:
+            - times: list[str] formatted '%Y-%m-%d %H:%M:%S'
+            - mix_s: list[float]   (DRI-MIX-S, mK)
+            - mix_h: list[float]   (DRI-MIX-H, µW)
+
+        If restrict_time=True:
+            Only rows within [start_time, end_time] are kept.
+            Both start_time and end_time must be in '%Y-%m-%d %H:%M:%S' format.
+            If either is None, that bound is ignored.
+        """
+
+        csv_path = Path(csv_path)
+        df = pd.read_csv(csv_path)
+
+        # --- Parse timestamps into datetime ---
+        df["Time"] = pd.to_datetime(df["Time"])
+
+        # --- Apply time restriction if requested ---
+        if restrict_time:
+            # Convert to datetime if provided
+            if start_time is not None:
+                start_time = pd.to_datetime(start_time)
+                df = df[df["Time"] >= start_time]
+
+            if end_time is not None:
+                end_time = pd.to_datetime(end_time)
+                df = df[df["Time"] <= end_time]
+
+        # --- Format timestamps to match your T1 format ---
+        times = df["Time"].dt.strftime("%Y-%m-%d %H:%M:%S").tolist()
+
+        # --- Convert values (remove units, convert to float) ---
+        mix_s = (
+            df["DRI-MIX-S"]
+            .astype(str)
+            .str.replace("mK", "", regex=False)
+            .str.strip()
+            .astype(float)
+            .tolist()
+        )
+
+        mix_h = (
+            df["DRI-MIX-H"]
+            .astype(str)
+            .str.replace("µW", "", regex=False)
+            .str.strip()
+            .astype(float)
+            .tolist()
+        )
+
+        return times, mix_s, mix_h
+
+
+    def plot_qtemps_and_coherence_res(self, out_dir, all_qubit_temperatures_ssf_g = None, all_qubit_timestamps_ssf_g = None,
+                                      all_files_Qtemp_results_RPMs = None, fridge_temps = None, fridge_dates = None,
+                                      t1_vals = None, t1_dates = None, qfreqs_vals = None, qfreqs_dates = None,
+                                      restrict_time_xaxis=False, start_time = None, end_time = None, plot_extra_event_lines=False,
+                                      rad_events_plot_lines=False):
+        """
+        One subplot per qubit.
+
+        Plots (only if provided):
+          - RPM Qtemps
+          - SSF g-only Qtemps
+          - Fridge mixing-chamber temp
+          - T1 (µs)
+          - Qubit freq (MHz)
+        """
+
+        os.makedirs(out_dir, exist_ok=True)
+
+        num_qubits = self.number_of_qubits
+        qubits_to_plot = list(range(num_qubits))
+        nrows = len(qubits_to_plot)
+
+        small_fs = 8  # font size for y axes labels and ticks
+
+        # ------------------------------------------------------------------
+        # RPM Qtemps (per-qubit dicts)
+        # ------------------------------------------------------------------
+        times_RPM = {q: [] for q in range(num_qubits)}
+        temps_RPM = {q: [] for q in range(num_qubits)}
+
+        if all_files_Qtemp_results_RPMs is not None:
+            for rec in all_files_Qtemp_results_RPMs:
+                for q in range(num_qubits):
+                    d = rec.get("qubits", {}).get(q)
+                    if not d:
+                        continue
+                    if d["T_mK"] < 750: # mK, just filtering out bad data
+                        t = datetime.datetime.fromtimestamp(d["date"])
+                        times_RPM[q].append(t)
+                        temps_RPM[q].append(d["T_mK"])
+
+        # ------------------------------------------------------------------
+        # SSF g-only Qtemps (expect dicts {q: [datetimes]} and {q: [floats]})
+        # ------------------------------------------------------------------
+        if all_qubit_timestamps_ssf_g is not None:
+            times_g = all_qubit_timestamps_ssf_g
+        else:
+            times_g = {q: [] for q in range(num_qubits)}
+
+        if all_qubit_temperatures_ssf_g is not None:
+            temps_g = all_qubit_temperatures_ssf_g
+        else:
+            temps_g = {q: [] for q in range(num_qubits)}
+
+        # ------------------------------------------------------------------
+        # Fridge temperatures (global series, same for all qubits)
+        # fridge_dates: list of strings "%Y-%m-%d %H:%M:%S"
+        # fridge_temps: list of floats (mK)
+        # ------------------------------------------------------------------
+        fridge_times = None
+        if fridge_temps is not None and fridge_dates is not None:
+            time_fmt = "%Y-%m-%d %H:%M:%S"
+            fridge_times = [
+                datetime.datetime.strptime(d, time_fmt) for d in fridge_dates]
+
+        # ------------------------------------------------------------------
+        # T1 per qubit (2D lists: t1_dates[q] -> list[str], t1_vals[q] -> list[float])
+        # ------------------------------------------------------------------
+        t1_times = {q: [] for q in range(num_qubits)}
+        t1_values = {q: [] for q in range(num_qubits)}
+
+        if t1_vals is not None and t1_dates is not None:
+            time_fmt = "%Y-%m-%d %H:%M:%S"
+            for q in qubits_to_plot:
+                if q >= len(t1_dates) or q >= len(t1_vals):
+                    continue
+                q_dates = t1_dates[q]
+                q_vals = t1_vals[q]
+                if not q_dates or not q_vals:
+                    continue
+                t1_times[q] = [datetime.datetime.strptime(d, time_fmt) for d in q_dates]
+                t1_values[q] = q_vals
+
+        # ------------------------------------------------------------------
+        # Qubit frequencies per qubit (2D lists, MHz)
+        # ------------------------------------------------------------------
+        qfreq_times = {q: [] for q in range(num_qubits)}
+        qfreq_values = {q: [] for q in range(num_qubits)}
+
+        if qfreqs_vals is not None and qfreqs_dates is not None:
+            time_fmt = "%Y-%m-%d %H:%M:%S"
+            for q in qubits_to_plot:
+                if q >= len(qfreqs_dates) or q >= len(qfreqs_vals):
+                    continue
+                q_dates = qfreqs_dates[q]
+                q_vals = qfreqs_vals[q]
+                if not q_dates or not q_vals:
+                    continue
+                qfreq_times[q] = [datetime.datetime.strptime(d, time_fmt) for d in q_dates]
+                qfreq_values[q] = q_vals
+
+        # ------------------------------------------------------------------
+        # Decide which qubits actually have any data
+        # ------------------------------------------------------------------
+        qubits_to_plot = []
+        for q in range(num_qubits):
+            has_rpm = bool(times_RPM[q])
+            has_ssf = bool(times_g.get(q, []))
+            has_t1 = bool(t1_times[q])
+            has_qf = bool(qfreq_times[q])
+            if has_rpm or has_ssf or has_t1 or has_qf:
+                qubits_to_plot.append(q)
+
+        if not qubits_to_plot:
+            print("[WARN] No data found for any qubit. Nothing to plot.")
+            return None
+
+        nrows = len(qubits_to_plot)
+
+        # ------------------------------------------------------------------
+        # Optional time window
+        # ------------------------------------------------------------------
+        if restrict_time_xaxis:
+            window_start = start_time
+            window_end = end_time
+
+        # ------------------------------------------------------------------
+        # Optional radiation events
+        # ------------------------------------------------------------------
+        rad_events = []
+        if rad_events_plot_lines:
+            rad_events = [
+                (datetime.datetime(2025, 4, 21, 12, 35), "Co-60"),
+                (datetime.datetime(2025, 4, 23, 12, 53), "Cs-137"),
+                (datetime.datetime(2025, 4, 28, 9, 40), "Cs-137 closer"),
+                (datetime.datetime(2025, 5, 4, 18, 20), "Cs-137 removed"),
+            ]
+
+        # ------------------------------------------------------------------
+        # Make figure: 1 row per qubit
+        # ------------------------------------------------------------------
+        fig, axes = plt.subplots(
+            nrows, 1, figsize=(12, 3.2 * nrows), sharex=True, constrained_layout=True
+        )
+        if nrows == 1:
+            axes = [axes]
+
+        date_fmt = DateFormatter("%m-%d-%H")
+
+        # Qtemp methods
+        methods = [
+            ("RPM Qtemps", times_RPM, temps_RPM, "orange"),
+            ("SSF g-only Qtemps", times_g, temps_g, "blue"),
+        ]
+
+        for ax, q in zip(axes, qubits_to_plot):
+            # ------------------------------
+            # Left axis: Qtemp (mK)
+            # ------------------------------
+            for label, tdict, ydict, color in methods:
+                ts = tdict.get(q, []) if isinstance(tdict, dict) else []
+                ys = ydict.get(q, []) if isinstance(ydict, dict) else []
+                if ts and ys:
+                    ax.scatter(
+                        ts,
+                        ys,
+                        s=30,
+                        alpha=0.85,
+                        edgecolors="k",
+                        color=color,
+                        label=label,
+                    )
+
+            ax.set_title(f"Q{q + 1}", loc="left", fontsize=13, fontweight="bold")
+            # ax.set_ylabel("Qtemp & MCP1 temps (mK)", fontsize=small_fs)
+            ax.set_ylabel("Qtemp (mK)", fontsize=small_fs)
+            ax.grid(False)
+
+            ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+            ax.xaxis.set_major_formatter(date_fmt)
+            ax.tick_params(axis="x", rotation=45, labelsize=small_fs)
+            ax.tick_params(axis="y", labelsize=small_fs)
+            # left_ymin, left_ymax = ax.get_ylim() # get y limits to use them for fridge y axis too
+            if restrict_time_xaxis:
+                ax.set_xlim(window_start, window_end)
+
+            # ------------------------------
+            # Extra y-axes
+            # ------------------------------
+            right_axes_offset = 0
+            handles, labels = ax.get_legend_handles_labels()
+
+            # Fridge temp (global) on first right axis
+            fridge_ax = None
+            if fridge_times is not None and fridge_temps is not None:
+                # ax.plot(
+                #     fridge_times,
+                #     fridge_temps,
+                #     color="green",
+                #     alpha=0.5,
+                #     linewidth=1.5,
+                #     label="Fridge MCP1 (mK)",
+                # )
+                ## To make the fridge temp have its own y axis:
+                fridge_ax = ax.twinx()
+                fridge_ax.plot(
+                    fridge_times,
+                    fridge_temps,
+                    color="green",
+                    alpha=0.5,
+                    linewidth=1.5,
+                    label="Fridge MCP1 (mK)",
+                )
+                fridge_ax.set_ylabel("MCP1 Temp (mK)", color="green", fontsize=small_fs)
+                fridge_ax.tick_params(axis="y", labelcolor="green", labelsize=small_fs)
+
+                # # Match Qtemps axis limits
+                # fridge_ax.set_ylim(left_ymin, left_ymax)
+                #
+                # # Match Qtemps ticks
+                # fridge_ax.set_yticks(ax.get_yticks())
+
+                h2, l2 = fridge_ax.get_legend_handles_labels()
+                handles += h2
+                labels += l2
+                right_axes_offset = 1
+
+            # T1 (µs) on second right axis (per qubit)
+            if t1_times[q] and t1_values[q]:
+                t1_ax = ax.twinx()
+                t1_ax.spines["right"].set_position(("axes", 1.0 + 0.08 * right_axes_offset))
+                t1_ax.plot(
+                    t1_times[q],
+                    t1_values[q],
+                    marker="^",
+                    linestyle="None",
+                    color="red",
+                    alpha=0.8,
+                    label="T1 (µs)",
+                )
+                t1_ax.set_ylabel("T1 (µs)", color="red", fontsize=small_fs)
+                t1_ax.tick_params(axis="y", labelcolor="red", labelsize=small_fs)
+                h3, l3 = t1_ax.get_legend_handles_labels()
+                handles += h3
+                labels += l3
+                right_axes_offset += 1
+
+            # Qfreq (MHz) on third right axis (per qubit)
+            if qfreq_times[q] and qfreq_values[q]:
+                qf_ax = ax.twinx()
+                qf_ax.spines["right"].set_position(("axes", 1.0 + 0.08 * right_axes_offset))
+                qf_ax.plot(
+                    qfreq_times[q],
+                    qfreq_values[q],
+                    marker="s",
+                    linestyle="None",
+                    color="purple",
+                    alpha=0.8,
+                    label="Qfreq (MHz)",
+                )
+                qf_ax.set_ylabel("Qfreq (MHz)", color="purple", fontsize=small_fs)
+                qf_ax.tick_params(axis="y", labelcolor="purple", labelsize=small_fs)
+                qf_ax.yaxis.get_offset_text().set_visible(False)
+                qf_ax.yaxis.set_major_formatter(mticker.FormatStrFormatter("%.2f")) # Force 2-decimal formatting
+                h4, l4 = qf_ax.get_legend_handles_labels()
+                handles += h4
+                labels += l4
+                right_axes_offset += 1
+
+            # Radiation event lines
+            for t_evt, lbl in rad_events:
+                ax.axvline(t_evt, color="gray", linestyle="--", linewidth=1)
+                ax.text(
+                    t_evt,
+                    ax.get_ylim()[1] * 0.9,
+                    lbl,
+                    rotation=90,
+                    va="top",
+                    ha="right",
+                    fontsize=8,
+                )
+
+            if handles:
+                ax.legend(handles, labels, loc="upper left", fontsize=8, frameon=False)
+
+        axes[-1].set_xlabel("Time")
+        fig.suptitle("Qtemps, Fridge, T1, and Qfreq vs Time", fontsize=15)
+
+        # Save
+        paramvstime_dir = os.path.join(out_dir, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_path = os.path.join(paramvstime_dir, f"Qtemps_Coherence_allQs_{stamp}.png")
+        fig.savefig(out_path, dpi=self.figure_quality)
+        plt.close(fig)
+        print("Saved combined methods plot: ", out_path)
+        return out_path

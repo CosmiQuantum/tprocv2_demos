@@ -248,17 +248,17 @@ run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB
 #                                        save_figs, fit_saved, signal, run_name, FRIDGE)
 # date_times_res_spec, res_freqs = res_spec_vs_time.run()
 # #
-# q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-#                                   save_figs, fit_saved, signal, run_name, FRIDGE)
-# date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run()
+q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+                                  save_figs, fit_saved, signal, run_name, FRIDGE)
+date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = True)
 
 # pi_amps_vs_time = PiAmpsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
 #                               fit_saved,signal, run_name)
 # date_times_pi_amps, pi_amps = pi_amps_vs_time.run(plot_depths=False)
 #
-t1_vs_time = T1VsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, FRIDGE, run_number)
-date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge', saved_shots = saved_shots_t1ge)
+# t1_vs_time = T1VsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
+#                  signal, run_name, FRIDGE, run_number)
+# date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge', saved_shots = saved_shots_t1ge)
 
 # t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, FRIDGE)
@@ -297,7 +297,7 @@ date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extens
 #
 # ######################################### 04: Qubit Freqs vs Time Plots #############################################
 # q_spec_vs_time.plot_without_errs(date_times_q_spec, q_freqs,show_legends)
-# q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends)
+q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends)
 # q_spec_vs_time.plot_with_errs_single_plot(date_times_q_spec, q_freqs, qspec_fit_err, show_legends=True)
 #
 # ############################################## 05: Pi Amp vs Time Plots ###############################################
@@ -330,7 +330,7 @@ date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extens
 #
 # ################################################ 06: T1 vs Time Plots #################################################
 # t1_vs_time.plot_without_errs(date_times_t1, t1_vals, show_legends)
-t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends)
+# t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends)
 # t1_vs_time.plot_with_errs_single_plot(date_times_t1, t1_vals, t1_fit_err, show_legends=True)
 #
 # ################################################# 07: T2R vs Time Plots ################################################

@@ -409,21 +409,21 @@ class load_h5_png_map():
 
 ####################################### Using the Classes here ############################################
 # list of timestamp directories you want to process
-timestamp_dirs = [
-    r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\2025-10-27_22-04-57",
-]
+# timestamp_dirs = [
+#     "/data/QICK_data/run8/6transmon/round_robin/temperature_sweep_qubit_data/temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_12-40-59",
+# ]
 
-
-# mapper = create_h5_png_map(DATA_TO_PLOTS)  # uses default DATA_TO_PLOTS
-#
 # for ts in timestamp_dirs:
 #     ts_dir = Path(ts).resolve()
-    # # name output per dataset; you can customize this pattern
-    # out_path = ts_dir / "h5_png_timestamp_map.h5"
-    #
-    # print(f"Processing {ts_dir} → {out_path}")
-    # records = mapper.collect_matches(ts_dir)
-    # mapper.save_to_h5(out_path, ts_dir, records)
+#     # name output per dataset; you can customize this pattern
+#     out_path = ts_dir / "documentation/h5_png_timestamp_map.h5"
+#
+#     m = load_h5_png_map()
+#     data = m.load_map(out_path)
+#     qtemps = m.filter_by(data, experiment="q_temperatures", qubit=1, round=1)
+#     print(len(qtemps))  # should be 2
+#     print(m.get_png_filenames(qtemps))
+#     print(m.get_png_timestamps(qtemps))
 
 # ts_dir = Path(timestamp_dirs[0]).resolve()
 # m = load_h5_png_map()                       # create instance

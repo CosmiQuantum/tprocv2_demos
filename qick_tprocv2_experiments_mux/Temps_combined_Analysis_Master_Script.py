@@ -20,19 +20,22 @@ import math
 import h5py
 from expt_config import expt_cfg, list_of_all_qubits, FRIDGE
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
-
+from analysis_003_q_freqs_vs_time_plots import QubitFreqsVsTime
+from analysis_006_T1_vs_time_plots import T1VsTime
+from analysis_007_T2R_vs_time_plots import T2rVsTime
+from analysis_008_T2E_vs_time_plots import T2eVsTime
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 8 # first run with qubits was QUIET run 3, second run with qubits was QUIET run 4, and so forth
-run_name = f'run{run_num}/6transmon'
+run_num = 8
+run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence analysis it's defined in its respective section
 signal = 'None' # Do not change
-
+final_figure_quality = 200 # plot quality
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
 replot_RPMs = False # Do you want to re-plot rabi population measurements from RR data?
 save_figsRR = False # Do you want to save (or not save) re-plotted RR measurements plots?
 save_figs = False # To be used in general for any function or class to save (or not save) plots.
 fit_saved = False # Not used here, set to false.
-exclude_temp_sweeps = True # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
-
+exclude_temp_sweeps = False # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
+filter_out_bad_amp_fits = False # filter out bad rpm fits? this doesn't work perfect but helps a bit
 get_qtemp_data = True # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
 get_london_data = False # This returns RPM qubit temperatures, resonator freqs, and qubit freqs for specified dates. Designed for London Penetration analysis.
 
@@ -44,11 +47,11 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
                       "combined_studies_qtemps": False}
 
 # What analysis plots do you want to make?
-analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
+analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps)
@@ -62,7 +65,7 @@ london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 non_prebuilt_ana_flags = {"Qtemps_chi2_hists_viaSSF": False}
 
 # For coherence-qubit temps combined analysis
-coh_qtemp_ana_flags = {"load_rpm_qtemps": False, "load_ssf_qtemps": False, "load_mcp1_temps": False, "plot_qtemps_t1_ftemps_qfreq": False}
+coh_qtemp_ana_flags = {"load_rpm_qtemps": True, "load_ssf_qtemps": False, "load_mcp1_temps": True, "load_coherence_res": True, "plot_qtemps_t1_ftemps_qfreq": True}
 ############################################################################## Set up #######################################################################################################################
 #----------------------------------------------------- For qubit temperature calculations via rabi population measurements --------------------------------------------------------------------------------------
 # Specify which dates you want to loop through. It will process all the files inside all the folders that contain these dates in their title.
@@ -179,10 +182,16 @@ filter_keywords_run7 = ['AB_paper_data']
 
 #-----------------------------------------------------------------------run 8------------------------------------------------------------
 # Base path of where the data is stored up to the Study Name (round_robin_benchmark)
-base_dir_run8 = "/data/QICK_data/run8/6transmon/round_robin" # up to study name
+# base_dir_run8 = "/data/QICK_data/run8/6transmon/round_robin" # up to study name
 
-# for 24hr AB data
-target_dates_qtemps_RPM_run8 = ["2025-10-19", "2025-10-20", "2025-10-23", "2025-10-24", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-31", "2025-11-01"]
+# For run 8 temp sweep
+base_dir_run8 = "/data/QICK_data/run8/6transmon/round_robin/temperature_sweep_qubit_data" # up to study name
+
+# for AB data: (specify up to the day only)
+# target_dates_qtemps_RPM_run8 = ["2025-10-19", "2025-10-20", "2025-10-23", "2025-10-24", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-31", "2025-11-01"]
+
+# for run 8 temp sweep data: (specify up to the day only)
+target_dates_qtemps_RPM_run8 = ["2025-11-18", "2025-11-19", "2025-11-20", "2025-11-21"]
 
 # To re-make and save RPM RR plots
 outerFolder_qtemps_plots_RR_run8 = f"/data/QICK_data/run8/6transmon/replotted_RR_data/rabi_pop_meas/"
@@ -193,10 +202,15 @@ outerFolder_qtemps_plots_run8 = f"/data/QICK_data/run8/6transmon/rabi_pop_meas_a
     #"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/run8_analysis/benchmark_analysis_plots/Qtemps_RPMmethod" # Inside each analysis function, a subfolder will be defined
 
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name. THese are substudies.
-filter_keywords_run8 = ["AB_Paper_Data_24hrs", "ABpaperdata2ndbatch_21dB_DACatten_Q1to5", "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots",
-                        "ABpaperdata3rdbatch_21dB_DACatten_Q1to5", "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional",
-                        "ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional", "ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional",
-                        "ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt", "19dB_DAC_testdata_allQs"]
+# For all AB paper data:
+# filter_keywords_run8 = ["AB_Paper_Data_24hrs", "ABpaperdata2ndbatch_21dB_DACatten_Q1to5", "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots",
+#                         "ABpaperdata3rdbatch_21dB_DACatten_Q1to5", "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional",
+#                         "ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional", "ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional",
+#                         "ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt", "19dB_DAC_testdata_allQs"]
+
+# For run 8 temp sweep data:
+filter_keywords_run8 = ["temperature_sweep_run8_25dBDAC_onechan_day1", "temperature_sweep_run8_25dBDAC_onechan_day2",
+                        "temperature_sweep_run8_25dBDAC_onechan_day3", "temp_sweep_run8_25dBDAC_onechan_day4_175mK"]
 
 #-------------------------------------------------------------------------------- Assign func variables depending on run number ---------------------------------------------------------------------------
 
@@ -324,19 +338,81 @@ elif run_num == 5:
 else:
     raise ValueError("You must choose run_num = 4, 5, 6, 7 or 8. Otherwise, define a section for your run of interest.")
 
+#-------------------------------------------------------- For coherence data -------------------------------------------
+if run_num == 8:
+    run_name_coh = 'run8/6transmon/round_robin/temperature_sweep_qubit_data'  # 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis'
+    data_path = f'/data/QICK_data/{run_name}'
+    plots_path = data_path
+
+    # all of run 8 thus far
+    # top_folder_dates = [
+    #     "2025-10-19_11-09-32",
+    #     "2025-10-19_12-05-25",
+    #     "2025-10-19_19-43-00",
+    #     "2025-10-19_20-25-18",
+    #     "2025-10-20_12-10-19",
+    #     "2025-10-23_00-49-28",
+    #     "2025-10-23_14-47-22",
+    #     "2025-10-24_01-41-30",
+    #     "2025-10-24_13-58-37",
+    #     "2025-10-27_14-15-40",
+    #     "2025-10-27_14-24-29",
+    #     "2025-10-27_22-04-57",
+    #     "2025-10-28_21-57-47",
+    #     "2025-10-29_18-38-25",
+    #     "2025-10-29_23-48-45",
+    #     "2025-10-31_01-54-57",
+    #     "2025-10-31_20-40-11",
+    #     "2025-11-01_12-54-55"
+    # ]
+
+    # # when saving t1 shots + avg IQ data started
+    # top_folder_dates = [
+    #     "2025-10-24_13-58-37",
+    #     "2025-10-27_14-15-40",
+    #     "2025-10-27_14-24-29",
+    #     "2025-10-27_22-04-57",
+    #     "2025-10-28_21-57-47",
+    #     "2025-10-29_18-38-25",
+    #     "2025-10-29_23-48-45",
+    #     "2025-10-31_01-54-57",
+    #     "2025-10-31_20-40-11",
+    #     "2025-11-01_12-54-55"]
+
+    # All run 8 qubit temperature sweep data except the 200mK dataset bc no qubits visible
+    top_folder_dates = [
+        "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_08-39-37",
+        "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_09-02-01",
+        "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_12-40-59",
+        "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_14-26-01",
+        "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_14-48-11",
+
+        "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_08-04-25",
+        "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-00-00",
+        "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-27-04",
+
+        "temperature_sweep_run8_25dBDAC_onechan_day3/2025-11-20_07-31-49",
+
+        "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-01-57",
+        "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-33-09",
+        "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-45-17",
+        "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-54-05"]
+else:
+    raise ValueError("You must choose run_num = 8 to load coherence data. Otherwise, define a section for your run of interest.")
+
 ############################################################################### Qubit temperature calculations via rabi population measurements #####################################################
 if qtemp_method_flags["Qtemps_viaRPM"]:
-    filter_out_bad_amp_fits = True
     RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits)
     combined_qtemp_data = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
-                            outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, passing_pre_sciencerun_data = False,
-                            filter_out_bad_amp_fits = filter_out_bad_amp_fits)
+                            outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, filter_out_bad_amp_fits = filter_out_bad_amp_fits,
+                                                  passing_pre_sciencerun_data = False)
 
     if run_num == 6:
         if pre_sciencerun6_data:
             combined_qtemp_data2 = RPM_calcs.run_RPMqtemps(base_dir2, target_dates_qtemps_RPM2, filter_keywords2, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
-                                                          outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, passing_pre_sciencerun_data = True,
-                                                           filter_out_bad_amp_fits = filter_out_bad_amp_fits)
+                                                          outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, filter_out_bad_amp_fits = filter_out_bad_amp_fits,
+                                                           passing_pre_sciencerun_data = True)
+
             combined_qtemp_data += combined_qtemp_data2
 
     del RPM_calcs # to free up memory
@@ -456,13 +532,15 @@ if qtemp_method_flags["combined_studies_qtemps"]:
 
     # ------------ Qubit temperatures vs Time using all three methods
     if comb_analysis_flags["Qtemps_vs_time_comb_separate_plts"]:
+        # This func has only been set up to work for 2 qubits.
         # Plots two rows (one for each qubit) and 3 columns (one for each method)
-        combined_studies.Qtemps_vs_time_comb_methods(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, all_qubit_temps_ge, all_qubit_times_ge, all_qubit_temps_errs_ge,
+        combined_studies.Qtemps_vs_time_comb_methods_3col(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, all_qubit_temps_ge, all_qubit_times_ge, all_qubit_temps_errs_ge,
                                                      outerFolder_qtemps_plots, all_files_Qtemp_results_RPMs, restrict_time_xaxis = False, plot_extra_event_lines = False,
                                                      rad_events_plot_lines = False, plot_error_bars = True)
     if comb_analysis_flags["Qtemps_vs_time_comb_single_plt"]:
-        # Plots two rows (one for each qubit) and 1 column (all methods in a single plot)
-        combined_studies.Qtemps_vs_time_comb_2subplts_improved(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_ge, all_qubit_times_ge, outerFolder_qtemps_plots,
+        # This one works for multiple qubits (has been improved)
+        # Makes 1 subplot per qubit (and all methods in a single plot)
+        combined_studies.Qtemps_vs_time_comb_allQs_1col(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_ge, all_qubit_times_ge, outerFolder_qtemps_plots,
                                                      all_files_Qtemp_results_RPMs, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
 
     #----------- Thermal Populations vs Time using all three methods
@@ -493,10 +571,88 @@ if london_flags["get_qfreqs_resfreqs_qtemps"]: # There was no "pre-science-run" 
     del RPM_calcs
 
 ################################################### Coherence + Fridge  + Qtemps Analysis ###########################################
-if coh_qtemp_ana_flags["load_rpm_qtemps"]:
+all_files_Qtemp_results_RPMs = None
+all_qubit_times_g = None
+all_qubit_temps_g = None
+mcp_dates = None
+mcp_temps = None
+date_times_t1 = None
+t1_vals = None
+date_times_q_spec = None
+q_freqs = None
+date_times_t2r = None
+t2r_vals = None
+date_times_t2e = None
+t2e_vals = None
 
-if coh_qtemp_ana_flags["load_ssf_qtemps"]:
+use_png_timestamps = True
+start_time = datetime.datetime(2025, 11, 18, 0, 0)
+end_time = datetime.datetime(2025, 11, 21, 12, 0)
+
+if coh_qtemp_ana_flags["load_rpm_qtemps"]:
+    # ----------- Get Qubit temperature results via RPMs
+    RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits)
+    all_files_Qtemp_results_RPMs = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords,
+                                                           fit_saved, signal,
+                                                           run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
+                                                           outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data,
+                                                           get_london_data, figure_quality, save_figsRR,
+                                                           exclude_temp_sweeps, passing_pre_sciencerun_data=False,
+                                                           filter_out_bad_amp_fits = filter_out_bad_amp_fits,
+                                                           use_png_timestamps = use_png_timestamps)
+    if run_num == 6:
+        if pre_sciencerun6_data:
+            all_files_Qtemp_results_RPMs2 = RPM_calcs.run_RPMqtemps(base_dir2, target_dates_qtemps_RPM2,
+                                                                    filter_keywords2, fit_saved, signal, run_name,
+                                                                    run_num, list_of_all_qubits, tot_num_of_qubits,
+                                                                    outerFolder_qtemps_plots_RR, replot_RPMs,
+                                                                    get_qtemp_data, get_london_data,
+                                                                    figure_quality, save_figsRR, exclude_temp_sweeps,
+                                                                    passing_pre_sciencerun_data=True,
+                                                                    filter_out_bad_amp_fits = filter_out_bad_amp_fits,
+                                                                    use_png_timestamps = use_png_timestamps)
+            all_files_Qtemp_results_RPMs += all_files_Qtemp_results_RPMs2
+
+if coh_qtemp_ana_flags["load_ssf_qtemps"]: # IMPORTANT: have not yet implemented use_png_timestamps. TO DO.
+    # ----------- Get Qubit temperature results via SSF g-state double gaussian threshold method
+    SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, run_num, save_figs)
+    # pairs_info = SSF_calcs_obj.process_ssf_and_qfreq_data_qtemps(Science_Qubits, paths_SSFmethods)
+    #
+    # all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps(
+    #     pairs_info, limit_temp_k=0.95, use_gessf_thresh_only=False, fallback_to_threshold=False)
 
 if coh_qtemp_ana_flags["load_mcp1_temps"]:
+    mcp1_csv_path = "/data/QICK_data/run8/6transmon/round_robin/temperature_sweep_qubit_data/Mixing chamber stage-data-2025-11-25 09_46_33.csv"
+    combined_studies = combined_Qtemp_studies(figure_quality, tot_num_of_qubits)
+    mcp_dates, mcp_temps, _ = combined_studies.load_mixing_chamber_csv(mcp1_csv_path, restrict_time=True,
+                                start_time=start_time, end_time=end_time)
+    del combined_studies
+
+if coh_qtemp_ana_flags["load_coherence_res"]:
+    saved_shots_t1ge = False
+
+    q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+                                      save_figs, fit_saved, signal, run_name_coh, FRIDGE)
+    date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = use_png_timestamps)
+
+    t1_vs_time = T1VsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,signal,
+                          run_name_coh, FRIDGE, run_num)
+    date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension='_ge',saved_shots=saved_shots_t1ge, use_png_timestamps = use_png_timestamps)
+
+    # IMPORTANT: have not yet implemented use_png_timestamps for t2r and t2e. TO DO.
+    # t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
+    #                  signal, run_name, FRIDGE)
+    # date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True, use_png_timestamps = True)
+
+    # t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
+    #                  signal, run_name, FRIDGE)
+    # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, use_png_timestamps = True)
+
 
 if coh_qtemp_ana_flags["plot_qtemps_t1_ftemps_qfreq"]:
+    comb_plots_path = "/data/QICK_data/run8/6transmon/round_robin/temperature_sweep_qubit_data/analysis_plots/"
+    combined_studies = combined_Qtemp_studies(figure_quality, tot_num_of_qubits)
+    combined_studies.plot_qtemps_and_coherence_res(comb_plots_path, all_qubit_temperatures_ssf_g=all_qubit_temps_g, all_qubit_timestamps_ssf_g=all_qubit_times_g,
+                                  all_files_Qtemp_results_RPMs=all_files_Qtemp_results_RPMs, fridge_temps=mcp_temps, fridge_dates=mcp_dates,
+                                  t1_vals=t1_vals, t1_dates=date_times_t1, qfreqs_vals=q_freqs, qfreqs_dates=date_times_q_spec,
+                                  restrict_time_xaxis=True, start_time = start_time, end_time = end_time, plot_extra_event_lines=False)

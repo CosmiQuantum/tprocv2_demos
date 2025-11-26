@@ -3,8 +3,10 @@ import matplotlib.dates as mdates
 from typing import List
 from matplotlib.axes import Axes
 import glob
+from pathlib import Path
 from matplotlib.lines import Line2D
 from matplotlib import cm, colors as mcolors
+from match_h5files_to_pngs_get_timestamps import load_h5_png_map, create_h5_png_map
 import sys
 # from section_011_qubit_temperatures_efRabipt3 import Temps_EFAmpRabiExperiment #uses qick modoule
 from section_011_qubit_temperatures_efRabipt3_noqick_analysis import Temps_EFAmpRabiExperiment
@@ -1710,18 +1712,56 @@ class PlotRR_noQick:
     def relerr(self, val, err, eps=1e-12): # calculates relative error of a value and its associated error
         return float(abs(err) / max(abs(val), eps)) # eps=1e-12 is to avoidthis blowing up if err is too close to zero
 
-    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, run_num, save_figs = False, get_qtemp_data = False, filter_out_bad_amp_fits = False):
+    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, run_num, save_figs = False, get_qtemp_data = False, filter_out_bad_amp_fits = False, use_png_timestamps = False):
         """
         Note: this code assumes that a single h5 file contains ONE dataset for EACH qubit inside.
 
         Creates a dictionary called file_result with two keys: 'filename': a string, e.g. 'my_file.h5' and 'qubits': an empty dictionary, which you populate.
         In other words, at the end of the script, you assign values inside 'qubits'.
         """
+        if use_png_timestamps:
+            # This is a setting used to extract the timestamps in the png file names instead of using the ones
+            # stored inside the h5 files (which mark the time that the file was saved, not when the meas was done).
+            # --- loader for the h5–png map -----------------
+            map_loader = load_h5_png_map()
         # -----------------------------------------Load/Plot/Save Rabi pop. meas. and qspec ---------------------------------------
+        p = Path(self.unique_folder_path)  # .../study_data or .../optimization
+        timestamp_dir = p.parent  # .../<date>
+
         outerFolder_expt_qtemps = self.unique_folder_path+ "/Data_h5/q_temperatures/"
         h5_files_qtemps = glob.glob(os.path.join(outerFolder_expt_qtemps, "*.h5"))
         all_files_Qtemp_results = [] #to store qubit temperature results
         cutoff_timestamp = datetime.datetime(2025, 4, 11, 19, 0).timestamp()  # when I started saving qubit freqs in the same files
+
+        if use_png_timestamps:
+            # --- load the mapping HDF5 for this timestamp_dir, if it exists ---
+            map_path = os.path.join(timestamp_dir, "documentation/h5_png_timestamp_map.h5")
+            if os.path.exists(map_path):
+                mapping_data = map_loader.load_map(map_path)
+
+            else:
+                print(f"[INFO] Mapping file not found at {map_path}.")
+                print(f"[INFO] Attempting to create a new mapping...")
+
+                # Instantiate mapping creator
+                mapper = create_h5_png_map()
+
+                try:
+                    # Run mapping creation for this timestamp_dir
+                    records = mapper.collect_matches(Path(timestamp_dir))
+
+                    # Save mapping to the expected path
+                    mapper.save_to_h5(Path(map_path), Path(timestamp_dir), records)
+
+                    # Load the newly created mapping
+                    mapping_data = map_loader.load_map(map_path)
+
+                    print(f"[INFO] Successfully created mapping at {map_path}.")
+
+                except Exception as e:
+                    print(f"[WARN] Failed to create mapping: {e}")
+                    # print("[WARN] Falling back to HDF5 timestamps instead.")
+                    mapping_data = None
 
         if get_qtemp_data: # load qspec data too
             # This function returns a list of dicts with keys like 'filename', 'q_key', 'qfreq_MHz', 'Qfreq_fit_err', etc.
@@ -1869,6 +1909,7 @@ class PlotRR_noQick:
                         continue
 
                     # -----------------------Grabbing matching qubit frequency for this qubit---------------------------------
+                    # This uses the h5 file timestamp bc we just want to match rounds of data !!!
                     if date.timestamp() > cutoff_timestamp and get_qtemp_data:
                         # Files after this date contain the matching g-e qubit frequency already BUT the files do not contain the corresponding qspec fit errors.
 
@@ -1950,6 +1991,42 @@ class PlotRR_noQick:
                             print(f"Error computing T_err for Q{q_key + 1}: {e}", flush = True)
                             continue
 
+                        if use_png_timestamps:
+                            # --- use PNG filename timestamp from mapping if available ------
+                            # the reason for this is bc the png timestamp is more accurate than the h5 file ones
+                            if mapping_data is not None:
+                                # mapping uses experiment='t1_ge', qubit as 1-indexed
+                                qubit_in_map = q_key + 1
+                                subset = map_loader.filter_by(
+                                    mapping_data,
+                                    experiment="q_temperatures",
+                                    qubit=qubit_in_map,
+                                    round=round_num)
+
+                                if len(subset) > 0:
+                                    # pick the PNG with the latest timestamp (the second one, which corresponds to Pg)
+                                    latest_row = max(subset, key=lambda row: row["png_timestamp"])
+                                    png_ts = latest_row["png_timestamp"].decode()
+
+                                    try:
+                                        png_dt = datetime.datetime.strptime(png_ts, "%Y-%m-%d_%H-%M-%S")
+                                        date_time = png_dt.timestamp()  # from png
+                                    except Exception:
+                                        # in case of weird format, fall back
+                                        # date_time = date.timestamp()  # from h5 file
+                                        continue  # skip
+                                else:
+                                    # no mapping match for this qubit/round, fall back
+                                    # date_time = date.timestamp() # from h5 file
+                                    continue  # skip
+                            else:
+                                # no mapping file for this timestamp_dir, fall back
+                                # date_time = date.timestamp()  # from h5 file
+                                continue  # skip
+
+                        else:
+                            date_time = date.timestamp()  # og way, from h5 file
+
                         if T_err is not None: # qubit index starts at zero
                             file_result['qubits'][int(q_key)] = { # You're accessing the 'qubits' dictionary inside file_result and adding info for the qubit
                                 'A1': A_amplitude1,
@@ -1961,7 +2038,7 @@ class PlotRR_noQick:
                                 'P_e': P_e,
                                 'qubit_freq_MHz': qubit_freq_MHz,
                                 "Qfreq_fit_err" : qfreq_err, #MHz
-                                'date': date.timestamp(),
+                                'date':date_time,
                                 'filepath': h5_file}
                         else:
                             print(f"Skipping Q{q_key + 1} entry because T_err was not calculated successfully.", flush = True)
