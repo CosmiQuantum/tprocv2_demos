@@ -30,7 +30,7 @@ run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
-replot_RPMs = False # Do you want to re-plot rabi population measurements from RR data?
+replot_RPMs = True # Do you want to re-plot rabi population measurements from RR data?
 save_figsRR = False # Do you want to save (or not save) re-plotted RR measurements plots?
 save_figs = False # To be used in general for any function or class to save (or not save) plots.
 fit_saved = False # Not used here, set to false.
@@ -47,7 +47,7 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
                       "combined_studies_qtemps": False}
 
 # What analysis plots do you want to make?
@@ -65,7 +65,7 @@ london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 non_prebuilt_ana_flags = {"Qtemps_chi2_hists_viaSSF": False}
 
 # For coherence-qubit temps combined analysis
-coh_qtemp_ana_flags = {"load_rpm_qtemps": True, "load_ssf_qtemps": False, "load_mcp1_temps": True, "load_coherence_res": True, "plot_qtemps_t1_ftemps_qfreq": True}
+coh_qtemp_ana_flags = {"load_rpm_qtemps": False, "load_ssf_qtemps": False, "load_mcp1_temps": False, "load_coherence_res": False, "plot_qtemps_t1_ftemps_qfreq": False}
 ############################################################################## Set up #######################################################################################################################
 #----------------------------------------------------- For qubit temperature calculations via rabi population measurements --------------------------------------------------------------------------------------
 # Specify which dates you want to loop through. It will process all the files inside all the folders that contain these dates in their title.
@@ -421,7 +421,7 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
     outerFolder = ""
     outerFolder_qtemps_data = ""
     date_string = ""
-    RPM_plotter = PlotRR_noQick(date_string, figure_quality, save_figs, fit_saved, signal, run_name, tot_num_of_qubits, outerFolder, outerFolder_qtemps_plots, outerFolder_qtemps_data, run_num)
+    RPM_plotter = PlotRR_noQick(date_string, figure_quality, save_figs, fit_saved, signal, run_name, tot_num_of_qubits, outerFolder, outerFolder_qtemps_plots, outerFolder_qtemps_data, run_num, filter_out_bad_amp_fits)
 
     if analysis_flags["Qtemps_vs_time_viaRPM"]:
         #------------------------------------------------------------------- Qubit temperatures vs time via RPMs ----------------------------------------------------

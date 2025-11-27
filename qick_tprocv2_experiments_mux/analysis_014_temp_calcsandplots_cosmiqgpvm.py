@@ -1365,7 +1365,7 @@ class RPMTempCalcAndPlots:
 
                         # ---------------------------------------- Initialize the PlotRR_noQick class ------------------------------------------------
                         plotter = PlotRR_noQick(date_string, figure_quality, save_figsRR, fit_saved, signal, run_name,
-                                                tot_num_of_qubits, outerFolder, outerFolder_RR_plots, outerFolder_qtemps_data, run_num)
+                                                tot_num_of_qubits, outerFolder, outerFolder_RR_plots, outerFolder_qtemps_data, run_num, filter_out_bad_amp_fits)
 
                         if replot_RPMs:
                             # ------------------------------------To re-plot the RPM plots, or any other data from the selected date-----------------------------------------------------

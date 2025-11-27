@@ -1409,8 +1409,9 @@ class QubitFreqsVsTime:
 
 class PlotRR_noQick:
     def __init__(self,  date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
-                 outerFolder_save_plots, unique_folder_path, run_num):
+                 outerFolder_save_plots, unique_folder_path, run_num, filter_out_bad_amp_fits):
         self.date = date
+        self.filter_out_bad_amp_fits = filter_out_bad_amp_fits
         self.figure_quality = figure_quality
         self.save_figs = save_figs
         self.fit_saved = fit_saved
@@ -1480,7 +1481,7 @@ class PlotRR_noQick:
         #     self.load_plot_save_q_spec()
         if plot_rabis_Qtemps:
             list_of_all_qubits = [i for i in range(self.number_of_qubits + 1)]
-            self.load_plot_save_rabis_Qtemps(list_of_all_qubits, run_num = self.run_num, save_figs = self.save_figs, filter_out_bad_amp_fits = True)
+            self.load_plot_save_rabis_Qtemps(list_of_all_qubits, run_num = self.run_num, save_figs = self.save_figs, filter_out_bad_amp_fits = self.filter_out_bad_amp_fits)
         # if plot_rabi:
         #     if rabi_rolling_avg:
         #         self.load_plot_save_rabi(rabi_rolling_avg=True)
@@ -1829,7 +1830,7 @@ class PlotRR_noQick:
                     if len(I1) > 0:
                         rabi_class_instance = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits, list_of_all_qubits,
                                                                       self.outerFolder_save_plots, round_num,
-                                                                      self.signal, save_figs = False)
+                                                                      self.signal, save_figs = True)
                         I1 = np.asarray(I1)
                         Q1 = np.asarray(Q1)
                         gains1 = np.asarray(gains1)
@@ -1840,7 +1841,7 @@ class PlotRR_noQick:
                         rabi_class_instance = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits,
                                                                         list_of_all_qubits,
                                                                         self.outerFolder_save_plots, round_num,
-                                                                        self.signal, save_figs = False)
+                                                                        self.signal, save_figs = True)
                         I2 = np.asarray(I2)
                         Q2 = np.asarray(Q2)
                         gains2 = np.asarray(gains2)
