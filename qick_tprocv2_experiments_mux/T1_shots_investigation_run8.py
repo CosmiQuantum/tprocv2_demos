@@ -7,7 +7,7 @@ from analysis_001_plot_all_RR_h5 import PlotAllRR
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 
 ###################################################### Set These #######################################################
-save_figs = True
+save_figs = False
 fit_saved = True
 show_legends = False
 signal = 'None'
@@ -26,25 +26,26 @@ if run_number == 8:
     # top_folder_dates = ["2025-10-24_13-58-37"]
 
     # all of run 8 thus far, located in AB_paper_datadump_for_analysis
-    top_folder_dates = [
-        "2025-10-19_11-09-32",
-        "2025-10-19_12-05-25",
-        "2025-10-19_19-43-00",
-        "2025-10-19_20-25-18",
-        "2025-10-20_12-10-19",
-        "2025-10-23_00-49-28",
-        "2025-10-23_14-47-22",
-        "2025-10-24_13-58-37",
-        "2025-10-27_14-15-40",
-        "2025-10-27_14-24-29",
-        "2025-10-27_22-04-57",
-        "2025-10-28_21-57-47",
-        "2025-10-29_18-38-25",
-        "2025-10-29_23-48-45",
-        "2025-10-31_01-54-57",
-        "2025-10-31_20-40-11",
-        "2025-11-01_12-54-55"
-    ]
+    # top_folder_dates = [
+    #     "2025-10-19_11-09-32",
+    #     "2025-10-19_12-05-25",
+    #     "2025-10-19_19-43-00",
+    #     "2025-10-19_20-25-18",
+    #     "2025-10-20_12-10-19",
+    #     "2025-10-23_00-49-28",
+    #     "2025-10-23_14-47-22",
+    #     "2025-10-24_13-58-37",
+    #     "2025-10-27_14-15-40",
+    #     "2025-10-27_14-24-29",
+    #     "2025-10-27_22-04-57",
+    #     "2025-10-28_21-57-47",
+    #     "2025-10-29_18-38-25",
+    #     "2025-10-29_23-48-45",
+    #     "2025-10-31_01-54-57",
+    #     "2025-10-31_20-40-11",
+    #     "2025-11-01_12-54-55"
+    # ]
+    top_folder_dates = ["2025-10-27_22-04-57"]
 
     # # when saving t1 shots + avg IQ data started
     # top_folder_dates = [
@@ -211,7 +212,7 @@ if t1_analysis_flags["plot_RR_data"]:
     #outerFolder_save_plots = f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/"
     outerFolder_save_plots = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/replotted_RR_data/2025-10-27_22-04-57/t1_ge/avg_IQ_method/"
         #f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/avg_IQ_method/"
-    saved_shots_t1 = True
+    saved_shots_t1 = True # for plot_t1. plot_t1_shots_analysis does both methods regardless of this flag (purpose if to compare them).
     plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, run_number, tot_num_of_qubits, outerFolder,
                       outerFolder_save_plots, unique_folder_path, saved_shots = saved_shots_t1)
     plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, rabi_rolling_avg=False, plot_ss = False,

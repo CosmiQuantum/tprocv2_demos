@@ -7,7 +7,7 @@ import os
 from analysis_021_plot_allRR_noqick import QubitSpectroscopy
 # from qicklab.analysis.qspec import AnaQSpec
 # from qicklab.analysis.ssf import AnaSSF
-#from Arianna_non_prebuilt_SSF_doublegauss_funcs import non_prebuilt_ssf_analysis_class
+from Arianna_non_prebuilt_SSF_doublegauss_funcs import non_prebuilt_ssf_analysis_class
 from section_008_save_data_to_h5 import Data_H5
 from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots, combined_Qtemp_studies, RPMTempCalcAndPlots
 import glob
@@ -61,8 +61,8 @@ comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_tim
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 
-# For double-gaussian SSF analysis using non-pre-built functions (ft Dan)
-non_prebuilt_ana_flags = {"Qtemps_chi2_hists_viaSSF": False}
+# For double-gaussian SSF analysis using alternative methods
+alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": True}
 
 # For coherence-qubit temps combined analysis
 coh_qtemp_ana_flags = {"load_rpm_qtemps": False, "load_ssf_qtemps": False, "load_mcp1_temps": False, "load_coherence_res": False, "plot_qtemps_t1_ftemps_qfreq": False}
@@ -502,9 +502,31 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
                     SSF_calcs_obj.plot_threshold_split(q_key, rec, made_on_folder)
 
 ####################################### SSF qubit temps analysis WITHOUT pre-built sklearn.mixture.GaussianMixture double gaussian fitting functions ##########################################
-if non_prebuilt_ana_flags["Qtemps_chi2_hists_viaSSF"]:
+if alt_ssf_analysis_flags["jupyter_method_Arianna"]:
     non_pre_built_ana = non_prebuilt_ssf_analysis_class()
     # To be continued
+elif alt_ssf_analysis_flags["iminuit_method"]:
+    SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, run_num, save_figs)
+    pairs_info = SSF_calcs_obj.process_ssf_and_qfreq_data_qtemps(Science_Qubits, paths_SSFmethods)
+    # Using ground-state double gaussian fit method
+    all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, limit_temp_k=1.0)
+    for q_key, recs in fit_results.items():
+        # path_saveplots/Q1, Q2, etc.
+        qubit_folder = os.path.join(path_saveplots_fits, f"Q{q_key + 1}")
+        os.makedirs(qubit_folder, exist_ok=True)
+        # Make a date‐stamped subfolder
+        date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+        made_on_folder = os.path.join(qubit_folder, f"made_on_{date_str}")
+        os.makedirs(made_on_folder, exist_ok=True)
+
+        for rec in recs:
+            # plots the double-gaussian fits on the ground state data and shows where the population threshold was set (midpoint of the two means)
+            SSF_calcs_obj.plot_gaussians_qtemps(q_key, made_on_folder, rec["ig_new"], rec["ground_data"],
+                                                rec["excited_data"], rec["ground_gaussian"],
+                                                rec["excited_gaussian"], rec["pop_threshold"],
+                                                rec["temperature_mK"], rec["dataset"], rec["weights"],
+                                                rec["sigmas"], rec["means"])
+
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 if qtemp_method_flags["combined_studies_qtemps"]:
     # ----------- Get Qubit temperature results via RPMs

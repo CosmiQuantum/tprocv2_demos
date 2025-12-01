@@ -19,6 +19,7 @@ import os
 import datetime
 import pandas as pd
 from pathlib import Path
+from iminuit import Minuit
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from bisect import bisect_left
@@ -172,7 +173,7 @@ class SSFTempCalcAndPlots:
             "excited_data": np.ndarray,
             "ground_gaussian": <int>,
             "excited_gaussian": <int>,
-            "crossing_point": <float>,
+            "pop_threshold": <float>,
             "weights": np.ndarray(shape=(2,)),
             "sigmas": np.ndarray(shape=(2,)), #sigma of each gaussian in the double gaussian fit
             "total_sigma_Pe": sigma_Pe, # total 1‐σ uncertainty on Pe
@@ -364,6 +365,125 @@ class SSFTempCalcAndPlots:
 
         return all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs, fit_results
 
+    def run_ssf_qtemps_iminuit(self, pairs_info, limit_temp_k=0.8):
+        """
+        Uses iminuit instead of GMM for double gaussian fitting and minimization.
+
+        Parameters
+        ----------
+        pairs_info : dict
+            {qubit: [ {"qspec":..., "ssf":..., "qfreq_MHz":<MHz>,
+                        "ig_new":<np.ndarray>, "ie_new":<np.ndarray>, "data_timestamp":<unix-time> }, … ]}
+        limit_temp_k : float
+        Discard temperatures above this value (default 0.8 K → 800 mK).
+
+        Returns
+        -------
+        all_qubit_temperatures : dict {qubit: [temp_mK, …]}
+        all_qubit_timestamps   : dict {qubit: [datetime, …]}
+        all_qubit_temperatures_errs : dict {qubit: [temp_mK_error, …]}
+
+        fit_results : dict
+        { qubit_index: [
+          {
+            "dataset": <int>,
+            "timestamp": <datetime>,
+            "temperature_mK": <float>,
+            "ig_new": np.ndarray,
+            "ground_data": np.ndarray,
+            "excited_data": np.ndarray,
+            "ground_gaussian": <int>,
+            "excited_gaussian": <int>,
+            "pop_threshold": <float>,
+            "weights": np.ndarray(shape=(2,)),
+            "sigmas": np.ndarray(shape=(2,)), #sigma of each gaussian in the double gaussian fit
+            "total_sigma_Pe": sigma_Pe, # total 1‐σ uncertainty on Pe
+            "means": np.ndarray(shape=(2,)),
+            "Pg": Pg,
+            "Pe": Pe,
+            "qfreq_mhz": freq_mhz, # qubit frequency
+            "qfreq_mhz_err": freq_mhz_err,
+          }]}
+        """
+        # initialise output arrays
+        all_qubit_temperatures = {i: [] for i in range(self.number_of_qubits)}
+        all_qubit_temperatures_errs = {i: [] for i in range(self.number_of_qubits)}
+        all_qubit_timestamps = {i: [] for i in range(self.number_of_qubits)}
+        fit_results = {qid: [] for qid in range(self.number_of_qubits)}
+
+        for qid, records in pairs_info.items():  # loop over qubits
+            for idx, rec in enumerate(records):  # …and every pair
+                freq_mhz = rec["qfreq_MHz"]
+                freq_mhz_err = rec["qfreq_MHz_err"]
+                ig_new = rec["ig_new"]
+                ie_new = rec["ie_new"]
+                ts_unix = rec["data_timestamp"]
+
+                # -------- Only using double-Gaussian fit on ground state data, without fallback method --------------------------
+                (Pg, Pe, minuit, means, sigmas, weights, threshold_mid, threshold_mid_err, ground_gaussian, excited_gaussian,
+                 ground_data, excited_data, _) = self.fit_double_gaussian_midpoint_iminuit(ig_new)
+
+                pop_threshold = threshold_mid
+
+                # -- 1-σ contribution to Pe from the threshold uncertainty --
+                mask_plus = (ig_new <= threshold_mid + threshold_mid_err)
+                Pe_plus = 1.0 - mask_plus.mean()
+
+                mask_minus = (ig_new <= threshold_mid - threshold_mid_err)
+                Pe_minus = 1.0 - mask_minus.mean()
+
+                sigma_Pe_from_thresh = 0.5 * abs(Pe_plus - Pe_minus)
+
+                # statistical err of Pe
+                Nshots = ig_new.size
+                sigma_Pe_stat = np.sqrt(Pe * (1 - Pe) / Nshots)
+
+                # -- total 1‐σ uncertainty on Pe--
+                sigma_Pe = np.sqrt(sigma_Pe_from_thresh ** 2 + sigma_Pe_stat ** 2)
+
+                pop_threshold = float(pop_threshold)
+
+                #Calculate qubit temps using Pg and Pe
+                temp_k = self.calculate_qubit_temperature(freq_mhz, Pg, Pe)
+
+                # -------- screening -----------------------------------------
+                if temp_k is None:
+                    # un-physical, skip
+                    continue
+                if temp_k > limit_temp_k:
+                    print(f"[run]  Q{qid + 1}: {temp_k * 1e3:.1f} mK  > {limit_temp_k * 1e3:.0f} mK  -> dropped")
+                    continue
+
+                # Now call on the function compute_temperature_error_SSF to calculate the errs of the qubit temps
+                T_mK = temp_k * 1e3
+                sigma_TmK = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
+
+                # -------- save qubit temps and timestamps ----------------------------------------------
+                all_qubit_temperatures[qid].append(T_mK)  # temperatures in mK
+                all_qubit_temperatures_errs[qid].append(sigma_TmK) #temperature errors
+                all_qubit_timestamps[qid].append(datetime.datetime.fromtimestamp(ts_unix)) # time stamps
+
+                fit_results[qid].append({
+                    "dataset": idx,
+                    "timestamp": datetime.datetime.fromtimestamp(ts_unix),
+                    "temperature_mK": T_mK,
+                    "ig_new": ig_new,
+                    "ground_data": ground_data,
+                    "excited_data": excited_data,
+                    "ground_gaussian": ground_gaussian,
+                    "excited_gaussian": excited_gaussian,
+                    "pop_threshold": pop_threshold,
+                    "weights": weights,
+                    "sigmas": sigmas, # of each gaussian in the double gaussian fit
+                    "total_sigma_Pe": sigma_Pe, # total 1‐σ uncertainty on Pe
+                    "means": means,
+                    "Pg": Pg,
+                    "Pe": Pe,
+                    "qfreq_mhz": freq_mhz,
+                    "qfreq_mhz_err": freq_mhz_err,
+                })
+
+        return all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs, fit_results
 
     def compute_temperature_error_SSF(self, Pe, sigma_Pe, T_mK, qubit_freq_MHz, sigma_qfreq_MHz):
         """
@@ -1312,6 +1432,157 @@ class SSFTempCalcAndPlots:
                     "data_timestamp": timestamp_ssf_cache[ss_key].timestamp(),  # unix-timestamps
                 })
         return pairs_info
+
+    def gaussian_pdf(self, x, mu, sigma):
+        """Normalized 1D Gaussian pdf."""
+        return np.exp(-0.5 * ((x - mu) / sigma) ** 2) / (np.sqrt(2 * np.pi) * sigma)
+
+    def fit_double_gaussian_midpoint_iminuit(self, iq_data):
+        """
+        Iminuit-based version of fit_double_gaussian_midpoint().
+
+        iq_data: 1D array (e.g. ig_new or ie_new after rotation)
+
+        Fits a double Gaussian mixture via unbinned NLL, then:
+          - identifies which component is true "ground" (lower mean)
+          - sets threshold_mid as the midpoint between the two means
+          - estimates threshold_mid_err from "effective N" using soft responsibilities
+          - splits data into ground_data / excited_data
+          - computes Pg, Pe
+
+        Returns:
+          Pg, Pe, minuit, means, sigmas, weights,
+          threshold_mid, threshold_mid_err, ground_gaussian, excited_gaussian,
+          ground_data, excited_data, iq_data
+        """
+
+        # -------------------- Prepare data --------------------
+        x = np.asarray(iq_data, dtype=float).ravel()
+        if x.size == 0:
+            raise ValueError("iq_data is empty; cannot fit double Gaussian.")
+
+        # -------------------- Initial guesses --------------------
+        # Rough guesses from quantiles
+        q25, q75 = np.percentile(x, [25, 75])
+        std_all = np.std(x)
+        if std_all <= 0:
+            std_all = 1.0  # fallback
+
+        mu1_init = q25
+        mu2_init = q75
+        sigma1_init = std_all / 2.0
+        sigma2_init = std_all / 2.0
+        w1_init = 0.5
+
+        eps = 1e-300  # to avoid log(0)
+
+        # -------------------- Negative log-likelihood --------------------
+        def nll(self, mu1, sigma1, mu2, sigma2, w1):
+            # enforce w1 between 0 and 1 via limits (Minuit) but still be safe numerically
+            w1_clipped = np.clip(w1, 1e-6, 1.0 - 1e-6)
+            w2 = 1.0 - w1_clipped
+
+            g1 = self.gaussian_pdf(x, mu1, sigma1)
+            g2 = self.gaussian_pdf(x, mu2, sigma2)
+
+            p = w1_clipped * g1 + w2 * g2
+            p = np.clip(p, eps, None)
+            return -np.sum(np.log(p))
+
+        # -------------------- Run iminuit --------------------
+        m = Minuit(
+            nll,
+            mu1=mu1_init,
+            sigma1=sigma1_init,
+            mu2=mu2_init,
+            sigma2=sigma2_init,
+            w1=w1_init,
+        )
+
+        # Parameter limits
+        m.limits["sigma1"] = (1e-6, None)
+        m.limits["sigma2"] = (1e-6, None)
+        m.limits["w1"] = (1e-6, 1.0 - 1e-6)
+
+        # Tell iminuit this is a likelihood-style cost function: NLL = -sum(log p)
+        m.errordef = Minuit.LIKELIHOOD
+
+        m.migrad()
+        m.hesse()  # get covariance / errors
+
+        # -------------------- Extract and sort components --------------------
+        mu1, sigma1, mu2, sigma2, w1 = m.values
+        w2 = 1.0 - w1
+
+        means = np.array([mu1, mu2], dtype=float)
+        sigmas = np.array([sigma1, sigma2], dtype=float)
+        weights = np.array([w1, w2], dtype=float)
+
+        # identify which component is "ground" (lower mean)
+        ground_gaussian = int(np.argmin(means))
+        excited_gaussian = 1 - ground_gaussian
+
+        # reorder arrays so index 0 is ground, 1 is excited (optional but convenient)
+        order = np.array([ground_gaussian, excited_gaussian])
+        means = means[order]
+        sigmas = sigmas[order]
+        weights = weights[order]
+
+        # in this convention:
+        ground_gaussian = 0
+        excited_gaussian = 1
+
+        # -------------------- Midpoint threshold --------------------
+        threshold_mid = 0.5 * (means[ground_gaussian] + means[excited_gaussian])
+
+        # -------------------- Responsibilities & threshold_mid_err --------------------
+        # compute soft assignments like in GMM
+        g_ground = self.gaussian_pdf(x, means[ground_gaussian], sigmas[ground_gaussian])
+        g_excited = self.gaussian_pdf(x, means[excited_gaussian], sigmas[excited_gaussian])
+
+        pg = weights[ground_gaussian] * g_ground
+        pe = weights[excited_gaussian] * g_excited
+        denom = pg + pe
+        denom = np.clip(denom, eps, None)
+
+        rg = pg / denom  # responsibility for ground
+        re = pe / denom  # responsibility for excited
+
+        N_g = rg.sum()
+        N_e = re.sum()
+
+        sigma_g = sigmas[ground_gaussian]
+        sigma_e = sigmas[excited_gaussian]
+
+        sigma_mu_g = sigma_g / np.sqrt(N_g) if N_g > 0 else 0.0
+        sigma_mu_e = sigma_e / np.sqrt(N_e) if N_e > 0 else 0.0
+
+        # Propagate into σ_threshold = ½ * sqrt(σ_{μ_g}² + σ_{μ_e}²)
+        threshold_mid_err = 0.5 * np.sqrt(sigma_mu_g ** 2 + sigma_mu_e ** 2)
+
+        # -------------------- Split data and compute populations --------------------
+        ground_data = x[x <= threshold_mid]
+        excited_data = x[x > threshold_mid]
+
+        Pg = len(ground_data) / len(x)
+        Pe = len(excited_data) / len(x)
+
+        # Return Minuit instead of GMM as the "fit object"
+        return (
+            Pg,
+            Pe,
+            m,  # was gmm in the original
+            means,
+            sigmas,
+            weights,
+            threshold_mid,
+            threshold_mid_err,
+            ground_gaussian,
+            excited_gaussian,
+            ground_data,
+            excited_data,
+            x,
+        )
 
 class RPMTempCalcAndPlots:
     def __init__(self, figure_quality, number_of_qubits):

@@ -549,7 +549,13 @@ class PlotAllRR:
         
             del H5_class_instance
 
-    def load_t1_shots_vs_avgIQ_arrays(self, plot_both_methods_tog = False, plot_both_methods_diff = False, plot_T1res_method_comp = False):
+    def load_t1_shots_vs_avgIQ_arrays(self, plot_both_methods_tog = True, plot_both_methods_diff = False, plot_T1res_method_comp = False):
+        """
+        plot_both_methods_tog --> plot both T1 curves (the QICK one and the Arianna offline one) in the same plot.
+        plot_both_methods_diff --> plot the difference (subtraction) of those two curves.
+        plot_T1res_method_comp --> plot both T1 values (from the QICK t1 curve and Arianna's offline T1 curve) in the same plot.
+
+        """
         # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
         outerFolder_expt = self.outerFolder + "/Data_h5/t1_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -614,6 +620,8 @@ class PlotAllRR:
                             # "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
                     elif self.run_num == 6:  # this doesn't work yet (shots need to be processed diff for run 6) but the skeleton is set up
                         soccfg_dump_path = "/data/QICK_data/run6/6transmon/loud2_soccfg_params/soccfg_full_dump_2025-11-04_16-30-54_firmware_during_run6.txt"
+                    else:
+                        print('You need to provide a soccfg_dump_path for your run of interest. If the file doesnt exist, make one.')
 
                     # --- init offline replica (no live soccfg) and set it up from strings + dump ---
                     replica = OfflineAcquireReplica(remove_offset=True, length_norm=True, edge_counting=False)
@@ -682,10 +690,11 @@ class PlotAllRR:
                         if plot_both_methods_tog:
                             self.plot_t1_overlay(
                                 avg_tuple, shots_tuple,
-                                labels=("Avg-IQ", "Shots-Offline"),
-                                title_prefix="T1 Overlay",
+                                labels=("QICK Avg-IQ", "Shots-Offline"),
+                                title_prefix=f"Rnd {int(round_num)} T1 Overlay",
                                 qubit_index=q_key,
-                                out_dir=f"/data/QICK_data/run8/6transmon/replotted_RR_data/{self.date}/avgIQ_andshots_plotted_tog",
+                                out_dir= fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/replotted_RR_data/{self.date}/t1_ge/avgIQ_andshots_plotted_tog",
+                                #f"/data/QICK_data/run8/6transmon/replotted_RR_data/{self.date}/avgIQ_andshots_plotted_tog",
                                 dpi=140)
 
                         # --- difference plot (offline shots-averaged minus QICK-averaged IQ arrays) ---
@@ -696,9 +705,10 @@ class PlotAllRR:
                                 I_fromshots=I_viashots,  # Your offline-averaged-from-shots IQ
                                 Q_fromshots=Q_viashots,
                                 delay_times=delay_times,
-                                title_prefix="T1 AvgIQ vs Shots Diff",
+                                title_prefix=f"Rnd {int(round_num)} T1 QICK AvgIQ vs Offline Shots Diff",
                                 qubit_index=q_key,
-                                out_dir=f"/data/QICK_data/run8/6transmon/replotted_RR_data/{self.date}/avgIQ_minus_shots_diff",
+                                out_dir= fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/replotted_RR_data/{self.date}/t1_ge/avgIQ_minus_shots_diff",
+                                #f"/data/QICK_data/run8/6transmon/replotted_RR_data/{self.date}/avgIQ_minus_shots_diff",
                                 dpi=140
                             )
 
