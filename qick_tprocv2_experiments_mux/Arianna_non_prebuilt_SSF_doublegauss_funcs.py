@@ -41,8 +41,7 @@ class non_prebuilt_ssf_analysis_class:
         p1 = self.gauss_pdf(x, mu1, sig1)
         p2 = self.gauss_pdf(x, mu2, sig2)
         mix = w1 * p1 + (1.0 - w1) * p2  # gaussian mixture func (sum of both contributions)
-        return -np.sum(
-            np.log(np.clip(mix, 1e-300, None)))  # np.clip here replaces zero or neg values with a very small number
+        return -np.sum(np.log(np.clip(mix, 1e-300, None)))  # np.clip here replaces zero or neg values with a very small number
 
 
     def safe_std(self, a: np.ndarray, floor: float = 1e-6):

@@ -9,8 +9,8 @@ import os
 import matplotlib.ticker as mticker
 from scipy.stats import norm
 sys.path.insert(0, os.path.abspath("/home/quietuser/Documents/GitHub/QICK_Qubit_LabSuite/src"))
-# from qicklab.analysis.qspec import AnaQSpec
-# from qicklab.analysis.ssf import AnaSSF
+from qicklab.analysis.qspec import AnaQSpec
+from qicklab.analysis.ssf import AnaSSF
 
 from matplotlib.ticker import MaxNLocator
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
@@ -420,8 +420,37 @@ class SSFTempCalcAndPlots:
                 ts_unix = rec["data_timestamp"]
 
                 # -------- Only using double-Gaussian fit on ground state data, without fallback method --------------------------
-                (Pg, Pe, minuit, means, sigmas, weights, threshold_mid, threshold_mid_err, ground_gaussian, excited_gaussian,
-                 ground_data, excited_data, _) = self.fit_double_gaussian_midpoint_iminuit(ig_new)
+                (Pg, Pe, m2, means, sigmas, weights, threshold_mid, threshold_mid_err,
+                 ground_gaussian, excited_gaussian,
+                 ground_data, excited_data, x,
+                 lr_stat, nll1, nll2) = self.fit_double_gaussian_midpoint_iminuit(ig_new)
+
+                # --- quality cut (do 2 gaussians fit the data better than a single one?) --
+                lr_stat_limit = 50.0
+                if lr_stat < lr_stat_limit: # higher = stricter
+                    print(f'Rejected a fit with Likelihood ratio test score < {lr_stat_limit}')
+                    # not convincingly bimodal --> skip this dataset, it is better described by a single gaussian
+                    continue
+
+                # --- skewness test ----
+                mu_e = means[excited_gaussian]
+                sigma_e = sigmas[excited_gaussian]
+
+                ex = np.asarray(excited_data, float)
+
+                if ex.size >= 3 and sigma_e > 0:
+                    z = (ex - mu_e) / sigma_e  # data in "sigma units"
+                    skew_e = np.mean(z ** 3)  # simple skewness
+                else:
+                    skew_e = 0.0  # don't penalize tiny samples
+
+                gof = abs(skew_e)  # goodness-of-fit metric
+
+                max_gof = 1.0  # or 1.5 if you want to be looser
+                if gof > max_gof:
+                    # excited data are too non-Gaussian -> reject this fit
+                    print('Failed skewness test. Excited data is too non-Gaussian. Rejected fit.')
+                    continue
 
                 pop_threshold = threshold_mid
 
@@ -1441,19 +1470,11 @@ class SSFTempCalcAndPlots:
         """
         Iminuit-based version of fit_double_gaussian_midpoint().
 
-        iq_data: 1D array (e.g. ig_new or ie_new after rotation)
-
-        Fits a double Gaussian mixture via unbinned NLL, then:
-          - identifies which component is true "ground" (lower mean)
-          - sets threshold_mid as the midpoint between the two means
-          - estimates threshold_mid_err from "effective N" using soft responsibilities
-          - splits data into ground_data / excited_data
-          - computes Pg, Pe
-
         Returns:
-          Pg, Pe, minuit, means, sigmas, weights,
+          Pg, Pe, minuit_2g, means, sigmas, weights,
           threshold_mid, threshold_mid_err, ground_gaussian, excited_gaussian,
-          ground_data, excited_data, iq_data
+          ground_data, excited_data, iq_data,
+          lr_stat, nll_1g, nll_2g
         """
 
         # -------------------- Prepare data --------------------
@@ -1461,23 +1482,40 @@ class SSFTempCalcAndPlots:
         if x.size == 0:
             raise ValueError("iq_data is empty; cannot fit double Gaussian.")
 
-        # -------------------- Initial guesses --------------------
-        # Rough guesses from quantiles
+        eps = 1e-300  # to avoid log(0)
+
+        # -------------------- Initial guesses (shared) --------------------
         q25, q75 = np.percentile(x, [25, 75])
         std_all = np.std(x)
         if std_all <= 0:
             std_all = 1.0  # fallback
 
+        # ---- initial guesses for 2-Gaussian mixture ----
         mu1_init = q25
         mu2_init = q75
         sigma1_init = std_all / 2.0
         sigma2_init = std_all / 2.0
         w1_init = 0.5
 
-        eps = 1e-300  # to avoid log(0)
+        # -------------------- 1-Gaussian (null model) --------------------
+        def nll_1g(mu, sigma):
+            g = self.gaussian_pdf(x, mu, sigma)
+            p = np.clip(g, eps, None)
+            return -np.sum(np.log(p))
 
-        # -------------------- Negative log-likelihood --------------------
-        def nll(self, mu1, sigma1, mu2, sigma2, w1):
+        mu0_init = np.mean(x)
+        sigma0_init = std_all
+
+        m1 = Minuit(nll_1g, mu=mu0_init, sigma=sigma0_init)
+        m1.limits["sigma"] = (1e-6, None)
+        m1.errordef = Minuit.LIKELIHOOD
+        m1.migrad()
+        m1.hesse()
+
+        nll_1g_min = m1.fval  # NLL for best 1-Gaussian fit
+
+        # -------------------- 2-Gaussian mixture (alternative model) --------------------
+        def nll_2g(mu1, sigma1, mu2, sigma2, w1):
             # enforce w1 between 0 and 1 via limits (Minuit) but still be safe numerically
             w1_clipped = np.clip(w1, 1e-6, 1.0 - 1e-6)
             w2 = 1.0 - w1_clipped
@@ -1489,30 +1527,33 @@ class SSFTempCalcAndPlots:
             p = np.clip(p, eps, None)
             return -np.sum(np.log(p))
 
-        # -------------------- Run iminuit --------------------
-        m = Minuit(
-            nll,
+        m2 = Minuit(
+            nll_2g,
             mu1=mu1_init,
             sigma1=sigma1_init,
             mu2=mu2_init,
             sigma2=sigma2_init,
             w1=w1_init,
         )
+        m2.limits["sigma1"] = (1e-6, None)
+        m2.limits["sigma2"] = (1e-6, None)
+        m2.limits["w1"] = (1e-6, 1.0 - 1e-6)
+        m2.errordef = Minuit.LIKELIHOOD
 
-        # Parameter limits
-        m.limits["sigma1"] = (1e-6, None)
-        m.limits["sigma2"] = (1e-6, None)
-        m.limits["w1"] = (1e-6, 1.0 - 1e-6)
+        m2.migrad()
+        m2.hesse()
 
-        # Tell iminuit this is a likelihood-style cost function: NLL = -sum(log p)
-        m.errordef = Minuit.LIKELIHOOD
+        nll_2g_min = m2.fval  # NLL for best 2-Gaussian mixture
 
-        m.migrad()
-        m.hesse()  # get covariance / errors
+        # -------------------- Likelihood-ratio statistic --------------------
+        # Λ = 2 (NLL_1g - NLL_2g); Δk = 3 extra params (mu2, sigma2, w1)
+        lr_stat = 2.0 * (nll_1g_min - nll_2g_min)
+
+        # You can cut later, e.g. lr_stat < 25 => reject as "not truly double-peaked".
 
         # -------------------- Extract and sort components --------------------
-        mu1, sigma1, mu2, sigma2, w1 = m.values
-        w2 = 1.0 - w1
+        mu1, sigma1, mu2, sigma2, w1 = m2.values
+        w2 = 1.0 - w1 # weights = the fraction of the data that belongs to each Gaussian
 
         means = np.array([mu1, mu2], dtype=float)
         sigmas = np.array([sigma1, sigma2], dtype=float)
@@ -1522,28 +1563,21 @@ class SSFTempCalcAndPlots:
         ground_gaussian = int(np.argmin(means))
         excited_gaussian = 1 - ground_gaussian
 
-        # reorder arrays so index 0 is ground, 1 is excited (optional but convenient)
         order = np.array([ground_gaussian, excited_gaussian])
         means = means[order]
         sigmas = sigmas[order]
         weights = weights[order]
 
-        # in this convention:
-        ground_gaussian = 0
-        excited_gaussian = 1
-
         # -------------------- Midpoint threshold --------------------
         threshold_mid = 0.5 * (means[ground_gaussian] + means[excited_gaussian])
 
         # -------------------- Responsibilities & threshold_mid_err --------------------
-        # compute soft assignments like in GMM
         g_ground = self.gaussian_pdf(x, means[ground_gaussian], sigmas[ground_gaussian])
         g_excited = self.gaussian_pdf(x, means[excited_gaussian], sigmas[excited_gaussian])
 
         pg = weights[ground_gaussian] * g_ground
         pe = weights[excited_gaussian] * g_excited
-        denom = pg + pe
-        denom = np.clip(denom, eps, None)
+        denom = np.clip(pg + pe, eps, None)
 
         rg = pg / denom  # responsibility for ground
         re = pe / denom  # responsibility for excited
@@ -1557,7 +1591,6 @@ class SSFTempCalcAndPlots:
         sigma_mu_g = sigma_g / np.sqrt(N_g) if N_g > 0 else 0.0
         sigma_mu_e = sigma_e / np.sqrt(N_e) if N_e > 0 else 0.0
 
-        # Propagate into σ_threshold = ½ * sqrt(σ_{μ_g}² + σ_{μ_e}²)
         threshold_mid_err = 0.5 * np.sqrt(sigma_mu_g ** 2 + sigma_mu_e ** 2)
 
         # -------------------- Split data and compute populations --------------------
@@ -1567,11 +1600,10 @@ class SSFTempCalcAndPlots:
         Pg = len(ground_data) / len(x)
         Pe = len(excited_data) / len(x)
 
-        # Return Minuit instead of GMM as the "fit object"
         return (
             Pg,
             Pe,
-            m,  # was gmm in the original
+            m2,  # 2-Gaussian Minuit object
             means,
             sigmas,
             weights,
@@ -1582,6 +1614,9 @@ class SSFTempCalcAndPlots:
             ground_data,
             excited_data,
             x,
+            lr_stat,
+            nll_1g_min,
+            nll_2g_min,
         )
 
 class RPMTempCalcAndPlots:

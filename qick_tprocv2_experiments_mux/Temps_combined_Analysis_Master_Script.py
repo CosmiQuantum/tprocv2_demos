@@ -5,8 +5,8 @@ import os
 #sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 
 from analysis_021_plot_allRR_noqick import QubitSpectroscopy
-# from qicklab.analysis.qspec import AnaQSpec
-# from qicklab.analysis.ssf import AnaSSF
+from qicklab.analysis.qspec import AnaQSpec
+from qicklab.analysis.ssf import AnaSSF
 from Arianna_non_prebuilt_SSF_doublegauss_funcs import non_prebuilt_ssf_analysis_class
 from section_008_save_data_to_h5 import Data_H5
 from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots, combined_Qtemp_studies, RPMTempCalcAndPlots
@@ -301,14 +301,10 @@ path_saveplots_fits_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporar
 path_saveplots_ssf_qtemps_vsT_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/Qtemps_SSFmethod/Qtemps_vs_Time_run7" # to save qubit temps vs time via ssf methods
 
 # ----------------------------------------------------------------------------------------------run 8----------------------------------------------------------------------------------------------------------
-paths_SSFmethods_run8 = ["/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_11-09-32",
-                         "/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_12-05-25",
-                         "/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_19-43-00",
-                         "/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_20-25-18"
-                         "/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-20_12-10-19"]
+paths_SSFmethods_run8 = [r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\2025-10-27_22-04-57"]
 
-path_saveplots_fits_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/run8_analysis/benchmark_analysis_plots/Qtemps_SSFmethod/Gaussian_Fits_run8" # where to save ssf plots to check gaussian fits
-path_saveplots_ssf_qtemps_vsT_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/run8_analysis/benchmark_analysis_plots/Qtemps_SSFmethod/Qtemps_vs_Time_run8" # to save qubit temps vs time via ssf methods
+path_saveplots_fits_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\qtemps_ssf_analysis\Gaussian_Fits_run8" # where to save ssf plots to check gaussian fits
+path_saveplots_ssf_qtemps_vsT_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\qtemps_ssf_analysis\Qtemps_vs_Time_run8" # to save qubit temps vs time via ssf methods
 
 #------------------------------------------------------------------------------ Assign func variables depending on run number ---------------------------------------
 if run_num == 6:  # We have science-run data as well as pre-science-run data available. Note: we already defined Science_Qubits above.
