@@ -225,10 +225,16 @@ class non_prebuilt_ssf_analysis_class:
 
         ax.set_xlabel("Rotated I (a.u.)")
         ax.set_ylabel("Counts")
-        ax.set_title(f"{title_ext} g-State-only double Gauss fit, not-prebuilt fitting")
+        ax.set_title(f"{title_ext} g-state double gauss fit, not-prebuilt fitting")
         ax.legend()
         plt.tight_layout()
-        fname = os.path.join(save_figs_path, f"{filename_ext}_SSFdoublegaussfit_notprebuilt_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
+
+        os.makedirs(save_figs_path, exist_ok=True)
+        print('save_figs_path: ', save_figs_path)
+        fname = os.path.join(
+            save_figs_path,
+            f"{filename_ext}_SSFgaussfits_notprebuilt_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
+
         fig.savefig(fname)
 
         t1 = time.perf_counter()
@@ -236,3 +242,70 @@ class non_prebuilt_ssf_analysis_class:
         print("Ground state population: ", Pg)
         print("Excited state population: ", Pe)
         print("Chi-squared val:", chisq)
+
+    def nll_1gauss_single(self, params: np.ndarray, x: np.ndarray):
+        """
+        Negative log-likelihood for a single Gaussian.
+        params = [mu, sigma]
+        """
+        mu, sig = params
+        sig = max(float(sig), 1e-12)
+        p = self.gauss_pdf(x, mu, sig)
+        return -np.sum(np.log(np.clip(p, 1e-300, None)))
+
+    def fit_single_gaussian_on_ground_Arianna(self, ig_new: np.ndarray, numbins: int = 55, lo=None, hi=None):
+        """
+        Fits a single Gaussian to ig_new (ground state ssf data).
+        Returns params and a pre-scaled curve for plotting over the SSF histogram.
+
+        ig_new must be a 1D array.
+        """
+        x = ig_new[np.isfinite(ig_new)]  # drops NaN or infinite values
+        if x.size < 2:
+            raise ValueError("Need at least 2 data points")
+
+        # ----- initial guesses -----
+        mu0 = float(np.mean(x))
+        sig0 = self.safe_std(x)
+
+        p0 = np.array([mu0, sig0], dtype=float)
+        bounds = [(None, None), (1e-6, None)]  # sigma > 0
+
+        # ----- minimize single-Gaussian NLL -----
+        res = minimize(
+            self.nll_1gauss_single,
+            p0,
+            args=(x,),
+            bounds=bounds,
+            options={"maxiter": 300, "ftol": 0.001},
+        )
+        if not res.success:
+            raise RuntimeError(f"Single-Gaussian fit failed: {res.message}")
+
+        mu, sig = res.x
+        nll1 = res.fun  # best NLL for 1-Gaussian
+
+        # ----- x-range for plotting -----
+        if lo is None:
+            lo = float(np.min(x)) - 0.05 * (np.max(x) - np.min(x))
+        if hi is None:
+            hi = float(np.max(x)) + 0.05 * (np.max(x) - np.min(x))
+        xvals = np.linspace(lo, hi, 1000)
+
+        # ----- PDF and scaled curve -----
+        pdf = self.gauss_pdf(xvals, mu, sig)
+        N = x.size
+        bin_width = (hi - lo) / float(numbins)
+        gauss_scaled = N * pdf * bin_width  # expected histogram heights
+
+        # chi^2-like statistic: 2 * NLL
+        chisq = 2 * nll1
+
+        params = {
+            "mu": mu,
+            "sigma": sig,
+            "chisq": chisq,
+            "nll": nll1,
+        }
+
+        return params, xvals, gauss_scaled, lo, hi

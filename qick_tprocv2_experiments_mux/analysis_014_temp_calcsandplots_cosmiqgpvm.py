@@ -407,23 +407,50 @@ class SSFTempCalcAndPlots:
                     # if self.verbose: print(f"Q{qid+1} idx {idx}: fit failed ({e})")
                     continue
 
-                # Grab chi^2 from your params dict
+                # Grab chi^2 from your params dict (2 * NLL_2G)
                 chi2 = params["chisq"]
-                # N    = ig_new.size
-                # ndof = max(N - 5, 1)   # 5 fitted params: mu1, sig1, mu2, sig2, w1
-                # chi2_red = chi2 / ndof # reduced chi-square, this is a little iffy, doesn't seem to be working great
+                x_finite = ig_new[np.isfinite(ig_new)]
+                nll2 = chi2 / 2.0  # since chisq = 2 * NLL_2G
 
-                maxchi2 = 30000
-                if chi2 < maxchi2:
-                    print(f'Skipped due to chi2 < {maxchi2}')
+                # ----------------- fit single Gaussian (for LR test) -----------------
+                try:
+                    params_1g, xvals_1g, gauss1_scaled, lo1, hi1 = (
+                        notprebuiltclass.fit_single_gaussian_on_ground_Arianna(
+                            ig_new, numbins=55
+                        )
+                    )
+                except RuntimeError:
+                    # if single-G fit fails, skip
                     continue
 
-                # ----------------- simple chi^2 quality cut -----------------
-                # max_chi2_red = 5000
-                # if chi2_red > max_chi2_red:
-                #     # SSF shape does not look Gaussian enough for the double-Gaussian model
-                #     # if self.verbose: print(f"Q{qid+1} idx {idx}: chi2_red={chi2_red:.2f} > {max_chi2_red}")
-                #     continue
+                nll1 = params_1g["nll"]
+
+                # ----------------- Likelihood-ratio test -----------------
+                # lr_stat = 2 * (NLL_1G - NLL_2G)
+                lr_stat = 2.0 * (nll1 - nll2)
+
+                # 3 extra params in 2G vs 1G
+                lrt_limit = 35.0  # higher = stricter
+
+                if lr_stat < lrt_limit:
+                    # 2-Gaussian is NOT strongly favored over single Gaussian
+                    # -> treat as essentially single blob, reject this dataset
+                    print(f'Rejected a fit with Likelihood ratio test score < {lrt_limit}')
+
+                    if do_plots:
+                        bad_plots_path = os.path.join(save_figs_path, "bad_fits_LRT_failed")
+                        os.makedirs(bad_plots_path, exist_ok=True)
+                        print('bad_plots_path: ', bad_plots_path)
+                        notprebuiltclass.plot_Ariannas_doublegauss_func(
+                            ig_new,  # ground-state rotated I shots
+                            ie_new,  # excited-state rotated I shots
+                            params,
+                            numbins=55,
+                            save_figs_path=bad_plots_path,
+                            filename_ext=f"Q{qid + 1}",
+                            title_ext=f"Q{qid + 1}, chi2={chi2:.2f},"
+                        )
+                    continue
 
                 # ----------------- unpack fit parameters -----------------
                 mu1, mu2       = params["mu"]
@@ -453,6 +480,7 @@ class SSFTempCalcAndPlots:
                     Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
 
                 if do_plots:
+                    os.makedirs(save_figs_path, exist_ok=True)
                     notprebuiltclass.plot_Ariannas_doublegauss_func(
                         ig_new,  # ground-state rotated I shots
                         ie_new,  # excited-state rotated I shots
@@ -554,7 +582,7 @@ class SSFTempCalcAndPlots:
                  lr_stat, nll1, nll2) = self.fit_double_gaussian_midpoint_iminuit(ig_new)
 
                 # --- quality cut (do 2 gaussians fit the data better than a single one?) --
-                lr_stat_limit = 50.0
+                lr_stat_limit = 30.0
                 if lr_stat < lr_stat_limit: # higher = stricter
                     print(f'Rejected a fit with Likelihood ratio test score < {lr_stat_limit}')
                     # not convincingly bimodal --> skip this dataset, it is better described by a single gaussian
