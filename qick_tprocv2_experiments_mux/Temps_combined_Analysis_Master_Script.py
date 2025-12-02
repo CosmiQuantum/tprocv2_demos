@@ -62,7 +62,7 @@ comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_tim
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 
 # For double-gaussian SSF analysis using alternative methods
-alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": True}
+alt_ssf_analysis_flags = {"jupyter_method_Arianna": True, "iminuit_method": False}
 
 # For coherence-qubit temps combined analysis
 coh_qtemp_ana_flags = {"load_rpm_qtemps": False, "load_ssf_qtemps": False, "load_mcp1_temps": False, "load_coherence_res": False, "plot_qtemps_t1_ftemps_qfreq": False}
@@ -499,8 +499,21 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
 
 ####################################### SSF qubit temps analysis WITHOUT pre-built sklearn.mixture.GaussianMixture double gaussian fitting functions ##########################################
 if alt_ssf_analysis_flags["jupyter_method_Arianna"]:
-    non_pre_built_ana = non_prebuilt_ssf_analysis_class()
-    # To be continued
+    SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, run_num, save_figs)
+    pairs_info = SSF_calcs_obj.process_ssf_and_qfreq_data_qtemps(Science_Qubits, paths_SSFmethods)
+
+    # path_saveplots/Q1, Q2, etc.
+    qubit_folder = os.path.join(path_saveplots_fits, "Arianna_nonprebuilt")
+    os.makedirs(qubit_folder, exist_ok=True)
+    # Make a date‐stamped subfolder
+    date_str = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
+    made_on_folder = os.path.join(qubit_folder, f"made_on_{date_str}")
+    os.makedirs(made_on_folder, exist_ok=True)
+
+    # Using ground-state double gaussian fit method
+    all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results = SSF_calcs_obj.run_ssf_qtemps_notprebuilt(
+        pairs_info, limit_temp_k=1.0, do_plots = True, save_figs_path = made_on_folder)
+
 elif alt_ssf_analysis_flags["iminuit_method"]:
     SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, run_num, save_figs)
     pairs_info = SSF_calcs_obj.process_ssf_and_qfreq_data_qtemps(Science_Qubits, paths_SSFmethods)
@@ -511,7 +524,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
         qubit_folder = os.path.join(path_saveplots_fits, f"Q{q_key + 1}")
         os.makedirs(qubit_folder, exist_ok=True)
         # Make a date‐stamped subfolder
-        date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+        date_str = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
         made_on_folder = os.path.join(qubit_folder, f"made_on_{date_str}")
         os.makedirs(made_on_folder, exist_ok=True)
 

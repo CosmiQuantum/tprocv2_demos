@@ -11,7 +11,7 @@ from scipy.stats import norm
 sys.path.insert(0, os.path.abspath("/home/quietuser/Documents/GitHub/QICK_Qubit_LabSuite/src"))
 from qicklab.analysis.qspec import AnaQSpec
 from qicklab.analysis.ssf import AnaSSF
-
+from Arianna_non_prebuilt_SSF_doublegauss_funcs import non_prebuilt_ssf_analysis_class
 from matplotlib.ticker import MaxNLocator
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 import math
@@ -361,6 +361,134 @@ class SSFTempCalcAndPlots:
                     "qfreq_mhz_err": freq_mhz_err,
                     "used_gessf_thresh_only": use_gessf_thresh_only, #True when the user decides to use this method
                     "used_fallback_method": used_fallback, #only True if it goes into effect, regardless of user decision
+                })
+
+        return all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs, fit_results
+
+    def run_ssf_qtemps_notprebuilt(self, pairs_info, limit_temp_k=0.8, do_plots = False, save_figs_path = ""):
+        """
+        Use Arianna's from-scratch double-Gaussian fitter (SciPy+KMeans)
+        and a chi^2 cut as the SSF method.
+
+        Parameters
+        ----------
+        pairs_info : dict
+            {qubit: [ {"qspec":..., "ssf":..., "qfreq_MHz":<MHz>, "qfreq_MHz_err":<MHz_err>,
+                       "ig_new":<np.ndarray>, "ie_new":<np.ndarray>, "data_timestamp":<unix-time> }, … ]}
+        limit_temp_k : float
+            Drop temperatures above this (default 0.8 K -> 800 mK).
+        max_chi2_red : float
+            Maximum reduced chi^2 allowed for the double-Gaussian fit.
+            chi2_red ~ 1 is ideal; 1–2 is usually fine.
+        """
+
+        # initialise output arrays
+        all_qubit_temperatures      = {i: [] for i in range(self.number_of_qubits)}
+        all_qubit_temperatures_errs = {i: [] for i in range(self.number_of_qubits)}
+        all_qubit_timestamps        = {i: [] for i in range(self.number_of_qubits)}
+        fit_results                 = {qid: [] for qid in range(self.number_of_qubits)}
+
+        for qid, records in pairs_info.items():  # loop over qubits
+            for idx, rec in enumerate(records):  # …and every SSF+qspec pair
+                freq_mhz     = rec["qfreq_MHz"]
+                freq_mhz_err = rec["qfreq_MHz_err"]
+                ig_new       = rec["ig_new"]
+                ie_new       = rec["ie_new"]
+                ts_unix      = rec["data_timestamp"]
+
+                # ----------------- fit double Gaussian on ground-state SSF -----------------
+                try:
+                    notprebuiltclass = non_prebuilt_ssf_analysis_class()
+                    (params, xvals,
+                     ground_gaussian, excited_gaussian, sum_gaussians,
+                     Pg, Pe, lo, hi) = notprebuiltclass.fit_double_gaussian_on_ground_Arianna(ig_new, numbins=55)
+                except RuntimeError as e:
+                    # fit failed - skip this dataset
+                    # if self.verbose: print(f"Q{qid+1} idx {idx}: fit failed ({e})")
+                    continue
+
+                # Grab chi^2 from your params dict
+                chi2 = params["chisq"]
+                # N    = ig_new.size
+                # ndof = max(N - 5, 1)   # 5 fitted params: mu1, sig1, mu2, sig2, w1
+                # chi2_red = chi2 / ndof # reduced chi-square, this is a little iffy, doesn't seem to be working great
+
+                maxchi2 = 30000
+                if chi2 < maxchi2:
+                    print(f'Skipped due to chi2 < {maxchi2}')
+                    continue
+
+                # ----------------- simple chi^2 quality cut -----------------
+                # max_chi2_red = 5000
+                # if chi2_red > max_chi2_red:
+                #     # SSF shape does not look Gaussian enough for the double-Gaussian model
+                #     # if self.verbose: print(f"Q{qid+1} idx {idx}: chi2_red={chi2_red:.2f} > {max_chi2_red}")
+                #     continue
+
+                # ----------------- unpack fit parameters -----------------
+                mu1, mu2       = params["mu"]
+                sig1, sig2     = params["sigma"]
+                w1, w2         = params["weight"]
+                pop_threshold  = params["threshold"]  # midpoint between means
+
+                # Ground vs excited data split (consistent with your fitter)
+                ground_data  = ig_new[ig_new <= pop_threshold]
+                excited_data = ig_new[ig_new > pop_threshold]
+
+                # ----------------- population error: simple binomial -----------------
+                # fitter already computed Pg, Pe for ig_new
+                Nshots = ig_new.size
+                sigma_Pe = np.sqrt(Pe * (1.0 - Pe) / Nshots) if Nshots > 0 else 0.0
+
+                # ----------------- convert Pg, Pe to temperature -----------------
+                temp_k = self.calculate_qubit_temperature(freq_mhz, Pg, Pe)
+
+                # discard unphysical or too-hot temps
+                if (temp_k is None) or (temp_k > limit_temp_k):
+                    # if self.verbose: print(f"Q{qid+1} idx {idx}: T={temp_k*1e3:.1f} mK > {limit_temp_k*1e3:.0f} mK")
+                    continue
+
+                T_mK = temp_k * 1e3
+                sigma_TmK = self.compute_temperature_error_SSF(
+                    Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
+
+                if do_plots:
+                    notprebuiltclass.plot_Ariannas_doublegauss_func(
+                        ig_new,  # ground-state rotated I shots
+                        ie_new,  # excited-state rotated I shots
+                        params,
+                        numbins=55,
+                        save_figs_path = save_figs_path,
+                        filename_ext = f"Q{qid + 1}",
+                        title_ext = f"Q{qid + 1}, chi2={chi2:.2f},"
+                    )
+
+                # ----------------- save qubit temps + timestamps -----------------
+                dt = datetime.datetime.fromtimestamp(ts_unix)
+
+                all_qubit_temperatures[qid].append(T_mK)
+                all_qubit_temperatures_errs[qid].append(sigma_TmK)
+                all_qubit_timestamps[qid].append(dt)
+
+                # ----------------- save detailed fit info -----------------
+                fit_results[qid].append({
+                    "dataset": idx,
+                    "timestamp": dt,
+                    "temperature_mK": T_mK,
+                    "ig_new": ig_new,
+                    "ground_data": ground_data,
+                    "excited_data": excited_data,
+                    "ground_gaussian": ground_gaussian,
+                    "excited_gaussian": excited_gaussian,
+                    "pop_threshold": pop_threshold,
+                    "weights": np.array([w1, w2]),
+                    "sigmas":  np.array([sig1, sig2]),
+                    "means":   np.array([mu1, mu2]),
+                    "Pg": Pg,
+                    "Pe": Pe,
+                    "qfreq_mhz": freq_mhz,
+                    "qfreq_mhz_err": freq_mhz_err,
+                    "chi2": chi2
                 })
 
         return all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs, fit_results
@@ -1485,6 +1613,7 @@ class SSFTempCalcAndPlots:
         eps = 1e-300  # to avoid log(0)
 
         # -------------------- Initial guesses (shared) --------------------
+        # we always have a dominant left cluster and a smaller excited/leakage Gaussian (tail shifting right)
         q25, q75 = np.percentile(x, [25, 75])
         std_all = np.std(x)
         if std_all <= 0:
@@ -1514,7 +1643,7 @@ class SSFTempCalcAndPlots:
 
         nll_1g_min = m1.fval  # NLL for best 1-Gaussian fit
 
-        # -------------------- 2-Gaussian mixture (alternative model) --------------------
+        # -------------------- 2-Gaussian mixture --------------------
         def nll_2g(mu1, sigma1, mu2, sigma2, w1):
             # enforce w1 between 0 and 1 via limits (Minuit) but still be safe numerically
             w1_clipped = np.clip(w1, 1e-6, 1.0 - 1e-6)
@@ -1549,8 +1678,6 @@ class SSFTempCalcAndPlots:
         # Λ = 2 (NLL_1g - NLL_2g); Δk = 3 extra params (mu2, sigma2, w1)
         lr_stat = 2.0 * (nll_1g_min - nll_2g_min)
 
-        # You can cut later, e.g. lr_stat < 25 => reject as "not truly double-peaked".
-
         # -------------------- Extract and sort components --------------------
         mu1, sigma1, mu2, sigma2, w1 = m2.values
         w2 = 1.0 - w1 # weights = the fraction of the data that belongs to each Gaussian
@@ -1571,13 +1698,13 @@ class SSFTempCalcAndPlots:
         # -------------------- Midpoint threshold --------------------
         threshold_mid = 0.5 * (means[ground_gaussian] + means[excited_gaussian])
 
-        # -------------------- Responsibilities & threshold_mid_err --------------------
+        # -------------------- Responsibilities (probabilitie) & threshold_mid_err --------------------
         g_ground = self.gaussian_pdf(x, means[ground_gaussian], sigmas[ground_gaussian])
         g_excited = self.gaussian_pdf(x, means[excited_gaussian], sigmas[excited_gaussian])
 
         pg = weights[ground_gaussian] * g_ground
         pe = weights[excited_gaussian] * g_excited
-        denom = np.clip(pg + pe, eps, None)
+        denom = np.clip(pg + pe, eps, None) # total
 
         rg = pg / denom  # responsibility for ground
         re = pe / denom  # responsibility for excited

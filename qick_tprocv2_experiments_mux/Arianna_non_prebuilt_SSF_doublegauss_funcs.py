@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 from sklearn.cluster import KMeans
+import datetime
+import os
 
 class non_prebuilt_ssf_analysis_class:
     def gauss_pdf(self, x: np.ndarray, mu: float, sigma: float):
@@ -180,7 +182,7 @@ class non_prebuilt_ssf_analysis_class:
 
         return params, xvals, ground_gaussian, excited_gaussian, sum_gaussians, ground_state_population, excited_state_population_leakage, lo, hi
 
-    def plot_Ariannas_doublegauss_func(self, ig_new, ie_new, params, lo, hi, numbins = 55):
+    def plot_Ariannas_doublegauss_func(self, ig_new, ie_new, params, numbins = 55, save_figs_path = "", title_ext = "", filename_ext = ""):
         t0 = time.perf_counter()
         lo = float(np.min(ig_new))
         hi = float(np.max(ie_new))
@@ -215,18 +217,19 @@ class non_prebuilt_ssf_analysis_class:
         ax.axvline(thresh, color='k', linestyle=':', linewidth=1.4, label=f"threshold = {thresh:.3f}")
 
         # Shade to the RIGHT of threshold under the sum curve
-        ax.fill_between(
-            xvals, sum_gaussians, 0.0,
-            where=(xvals >= thresh),
-            interpolate=True,
-            color='red', alpha=0.5, label='thermal pop.')
+        # ax.fill_between(
+        #     xvals, sum_gaussians, 0.0,
+        #     where=(xvals >= thresh),
+        #     interpolate=True,
+        #     color='red', alpha=0.5, label='thermal pop.')
 
         ax.set_xlabel("Rotated I (a.u.)")
         ax.set_ylabel("Counts")
-        ax.set_title("Ground State-only double Gaussian fit with threshold (mine)")
+        ax.set_title(f"{title_ext} g-State-only double Gauss fit, not-prebuilt fitting")
         ax.legend()
         plt.tight_layout()
-        plt.show()
+        fname = os.path.join(save_figs_path, f"{filename_ext}_SSFdoublegaussfit_notprebuilt_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
+        fig.savefig(fname)
 
         t1 = time.perf_counter()
         print(f"My function took {t1 - t0:.4f} seconds")
