@@ -230,7 +230,6 @@ class non_prebuilt_ssf_analysis_class:
         plt.tight_layout()
 
         os.makedirs(save_figs_path, exist_ok=True)
-        print('save_figs_path: ', save_figs_path)
         fname = os.path.join(
             save_figs_path,
             f"{filename_ext}_SSFgaussfits_notprebuilt_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")

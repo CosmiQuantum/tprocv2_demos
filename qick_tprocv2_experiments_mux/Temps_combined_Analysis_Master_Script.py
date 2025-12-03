@@ -56,13 +56,13 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
 
 # For combined analysis (SSF qtemps + RPM qtemps)
 comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
-                       "Pe_vs_time_comb_single_plt": False }
+                       "Pe_vs_time_comb_single_plt": False, "use_iminuit": True}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 
 # For double-gaussian SSF analysis using alternative methods
-alt_ssf_analysis_flags = {"jupyter_method_Arianna": True, "iminuit_method": False}
+alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": True, "Qtemps_vs_time_comb_single_plt": True}
 
 # For coherence-qubit temps combined analysis
 coh_qtemp_ana_flags = {"load_rpm_qtemps": False, "load_ssf_qtemps": False, "load_mcp1_temps": False, "load_coherence_res": False, "plot_qtemps_t1_ftemps_qfreq": False}
@@ -303,7 +303,7 @@ path_saveplots_ssf_qtemps_vsT_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1h
 # ----------------------------------------------------------------------------------------------run 8----------------------------------------------------------------------------------------------------------
 paths_SSFmethods_run8 = [r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\2025-10-27_22-04-57"]
 
-path_saveplots_fits_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\qtemps_ssf_analysis\Gaussian_Fits_run8" # where to save ssf plots to check gaussian fits
+path_saveplots_fits_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\qtemps_ssf_gaussfits" # where to save ssf plots to check gaussian fits
 path_saveplots_ssf_qtemps_vsT_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\qtemps_ssf_analysis\Qtemps_vs_Time_run8" # to save qubit temps vs time via ssf methods
 
 #------------------------------------------------------------------------------ Assign func variables depending on run number ---------------------------------------
@@ -502,7 +502,6 @@ if alt_ssf_analysis_flags["jupyter_method_Arianna"]:
     SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, run_num, save_figs)
     pairs_info = SSF_calcs_obj.process_ssf_and_qfreq_data_qtemps(Science_Qubits, paths_SSFmethods)
 
-    # path_saveplots/Q1, Q2, etc.
     qubit_folder = os.path.join(path_saveplots_fits, "Arianna_nonprebuilt")
     os.makedirs(qubit_folder, exist_ok=True)
     # Make a date‐stamped subfolder
@@ -515,26 +514,38 @@ if alt_ssf_analysis_flags["jupyter_method_Arianna"]:
         pairs_info, limit_temp_k=1.0, do_plots = True, save_figs_path = made_on_folder)
 
 elif alt_ssf_analysis_flags["iminuit_method"]:
+
     SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, run_num, save_figs)
     pairs_info = SSF_calcs_obj.process_ssf_and_qfreq_data_qtemps(Science_Qubits, paths_SSFmethods)
-    # Using ground-state double gaussian fit method
-    all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, limit_temp_k=1.0)
-    for q_key, recs in fit_results.items():
-        # path_saveplots/Q1, Q2, etc.
-        qubit_folder = os.path.join(path_saveplots_fits, f"Q{q_key + 1}")
-        os.makedirs(qubit_folder, exist_ok=True)
-        # Make a date‐stamped subfolder
-        date_str = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
-        made_on_folder = os.path.join(qubit_folder, f"made_on_{date_str}")
-        os.makedirs(made_on_folder, exist_ok=True)
 
-        for rec in recs:
-            # plots the double-gaussian fits on the ground state data and shows where the population threshold was set (midpoint of the two means)
-            SSF_calcs_obj.plot_gaussians_qtemps(q_key, made_on_folder, rec["ig_new"], rec["ground_data"],
-                                                rec["excited_data"], rec["ground_gaussian"],
-                                                rec["excited_gaussian"], rec["pop_threshold"],
-                                                rec["temperature_mK"], rec["dataset"], rec["weights"],
-                                                rec["sigmas"], rec["means"])
+    qubit_folder = os.path.join(path_saveplots_fits, "Iminuit_method")
+    os.makedirs(qubit_folder, exist_ok=True)
+    # Make a date‐stamped subfolder
+    date_str = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
+    made_on_folder = os.path.join(qubit_folder, f"made_on_{date_str}")
+    os.makedirs(made_on_folder, exist_ok=True)
+
+    # Using ground-state double gaussian fit method
+    all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, limit_temp_k=1.0,
+                                                                                                           do_plots = True, save_figs_path = made_on_folder)
+
+    # This is for plotting outside of run_ssf_qtemps_iminuit(); when do_plots = False instead of True
+    # for q_key, recs in fit_results.items():
+    #     qubit_folder = os.path.join(path_saveplots_fits, "Iminuit_method")
+    #     os.makedirs(qubit_folder, exist_ok=True)
+    #     # Make a date‐stamped subfolder
+    #     date_str = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
+    #     made_on_folder = os.path.join(qubit_folder, f"made_on_{date_str}")
+    #     os.makedirs(made_on_folder, exist_ok=True)
+    #
+    #     for rec in recs:
+    #         # plots the double-gaussian fits on the ground state data and shows where the population threshold was set (midpoint of the two means)
+    #         SSF_calcs_obj.plot_gaussians_qtemps(q_key, made_on_folder, rec["ig_new"], rec["ground_data"],
+    #                                             rec["excited_data"], rec["ground_gaussian"],
+    #                                             rec["excited_gaussian"], rec["pop_threshold"],
+    #                                             rec["temperature_mK"], rec["dataset"], rec["weights"],
+    #                                             rec["sigmas"], rec["means"])
+
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 if qtemp_method_flags["combined_studies_qtemps"]:
@@ -555,8 +566,13 @@ if qtemp_method_flags["combined_studies_qtemps"]:
     SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, run_num, save_figs)
     pairs_info = SSF_calcs_obj.process_ssf_and_qfreq_data_qtemps(Science_Qubits, paths_SSFmethods)
 
-    all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.95, use_gessf_thresh_only = False, fallback_to_threshold = False)
-    all_qubit_temps_ge, all_qubit_times_ge, all_qubit_temps_errs_ge, fit_results_ge = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.95, use_gessf_thresh_only=True, fallback_to_threshold=False)
+    if comb_analysis_flags["use_iminuit"]: # we are currently only studying the g-state-only double gaussian fit method when using iminuit
+        all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, limit_temp_k=0.95,
+            do_plots=False)
+
+    else: # uses sklearn.mixture.GaussianMixture for double gaussian fitting
+        all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.95, use_gessf_thresh_only = False, fallback_to_threshold = False)
+        all_qubit_temps_ge, all_qubit_times_ge, all_qubit_temps_errs_ge, fit_results_ge = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.95, use_gessf_thresh_only=True, fallback_to_threshold=False)
 
     #------------ Initialize class for combined qubit temps analysis ------------------
     combined_studies = combined_Qtemp_studies(figure_quality, tot_num_of_qubits)
@@ -570,9 +586,9 @@ if qtemp_method_flags["combined_studies_qtemps"]:
                                                      rad_events_plot_lines = False, plot_error_bars = True)
     if comb_analysis_flags["Qtemps_vs_time_comb_single_plt"]:
         # This one works for multiple qubits (has been improved)
-        # Makes 1 subplot per qubit (and all methods in a single plot)
+        # Makes 1 subplot per qubit (and all methods in a single plot). Note: I removed the ge SSF method from being plotted since we haven't been using that one lately.
         combined_studies.Qtemps_vs_time_comb_allQs_1col(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_ge, all_qubit_times_ge, outerFolder_qtemps_plots,
-                                                     all_files_Qtemp_results_RPMs, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
+                                                     all_files_Qtemp_results_RPMs, rad_events_plot_lines = False)
 
     #----------- Thermal Populations vs Time using all three methods
     if comb_analysis_flags["Pe_vs_time_comb_separate_plts"]:

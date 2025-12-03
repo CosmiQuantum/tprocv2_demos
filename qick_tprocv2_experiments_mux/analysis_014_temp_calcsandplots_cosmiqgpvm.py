@@ -429,8 +429,7 @@ class SSFTempCalcAndPlots:
                 # lr_stat = 2 * (NLL_1G - NLL_2G)
                 lr_stat = 2.0 * (nll1 - nll2)
 
-                # 3 extra params in 2G vs 1G
-                lrt_limit = 35.0  # higher = stricter
+                lrt_limit = 765 # 35.0  # higher = stricter
 
                 if lr_stat < lrt_limit:
                     # 2-Gaussian is NOT strongly favored over single Gaussian
@@ -440,7 +439,7 @@ class SSFTempCalcAndPlots:
                     if do_plots:
                         bad_plots_path = os.path.join(save_figs_path, "bad_fits_LRT_failed")
                         os.makedirs(bad_plots_path, exist_ok=True)
-                        print('bad_plots_path: ', bad_plots_path)
+
                         notprebuiltclass.plot_Ariannas_doublegauss_func(
                             ig_new,  # ground-state rotated I shots
                             ie_new,  # excited-state rotated I shots
@@ -448,7 +447,7 @@ class SSFTempCalcAndPlots:
                             numbins=55,
                             save_figs_path=bad_plots_path,
                             filename_ext=f"Q{qid + 1}",
-                            title_ext=f"Q{qid + 1}, chi2={chi2:.2f},"
+                            title_ext=f"Q{qid + 1}, chi2={chi2:.2f}, LRT value={lr_stat:.2f}"
                         )
                     continue
 
@@ -488,7 +487,7 @@ class SSFTempCalcAndPlots:
                         numbins=55,
                         save_figs_path = save_figs_path,
                         filename_ext = f"Q{qid + 1}",
-                        title_ext = f"Q{qid + 1}, chi2={chi2:.2f},"
+                        title_ext = f"Q{qid + 1}, chi2={chi2:.2f}, LRT value={lr_stat:.2f}"
                     )
 
                 # ----------------- save qubit temps + timestamps -----------------
@@ -521,7 +520,7 @@ class SSFTempCalcAndPlots:
 
         return all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs, fit_results
 
-    def run_ssf_qtemps_iminuit(self, pairs_info, limit_temp_k=0.8):
+    def run_ssf_qtemps_iminuit(self, pairs_info, limit_temp_k=0.8, do_plots = False, save_figs_path = ""):
         """
         Uses iminuit instead of GMM for double gaussian fitting and minimization.
 
@@ -581,34 +580,44 @@ class SSFTempCalcAndPlots:
                  ground_data, excited_data, x,
                  lr_stat, nll1, nll2) = self.fit_double_gaussian_midpoint_iminuit(ig_new)
 
+                pop_threshold = threshold_mid # threshold to determine Pe
+
                 # --- quality cut (do 2 gaussians fit the data better than a single one?) --
-                lr_stat_limit = 30.0
+                lr_stat_limit = 645.0 #35.0
                 if lr_stat < lr_stat_limit: # higher = stricter
                     print(f'Rejected a fit with Likelihood ratio test score < {lr_stat_limit}')
                     # not convincingly bimodal --> skip this dataset, it is better described by a single gaussian
+
+                    if do_plots:
+                        bad_plots_path = os.path.join(save_figs_path, "bad_fits_LRT_failed")
+                        os.makedirs(bad_plots_path, exist_ok=True)
+                        self.plot_gaussians_qtemps(qid, bad_plots_path, ig_new, ground_data,
+                                                            excited_data, ground_gaussian,
+                                                            excited_gaussian, pop_threshold,
+                                                            idx, weights,
+                                                            sigmas, means, temperature_mk = None)
+
                     continue
 
                 # --- skewness test ----
-                mu_e = means[excited_gaussian]
-                sigma_e = sigmas[excited_gaussian]
-
-                ex = np.asarray(excited_data, float)
-
-                if ex.size >= 3 and sigma_e > 0:
-                    z = (ex - mu_e) / sigma_e  # data in "sigma units"
-                    skew_e = np.mean(z ** 3)  # simple skewness
-                else:
-                    skew_e = 0.0  # don't penalize tiny samples
-
-                gof = abs(skew_e)  # goodness-of-fit metric
-
-                max_gof = 1.0  # or 1.5 if you want to be looser
-                if gof > max_gof:
-                    # excited data are too non-Gaussian -> reject this fit
-                    print('Failed skewness test. Excited data is too non-Gaussian. Rejected fit.')
-                    continue
-
-                pop_threshold = threshold_mid
+                # mu_e = means[excited_gaussian]
+                # sigma_e = sigmas[excited_gaussian]
+                #
+                # ex = np.asarray(excited_data, float)
+                #
+                # if ex.size >= 3 and sigma_e > 0:
+                #     z = (ex - mu_e) / sigma_e  # data in "sigma units"
+                #     skew_e = np.mean(z ** 3)  # simple skewness
+                # else:
+                #     skew_e = 0.0  # don't penalize tiny samples
+                #
+                # gof = abs(skew_e)  # goodness-of-fit metric
+                #
+                # max_gof = 1.0  # or 1.5 if you want to be looser
+                # if gof > max_gof:
+                #     # excited data are too non-Gaussian -> reject this fit
+                #     print('Failed skewness test. Excited data is too non-Gaussian. Rejected fit.')
+                #     continue
 
                 # -- 1-σ contribution to Pe from the threshold uncertainty --
                 mask_plus = (ig_new <= threshold_mid + threshold_mid_err)
@@ -642,6 +651,14 @@ class SSFTempCalcAndPlots:
                 # Now call on the function compute_temperature_error_SSF to calculate the errs of the qubit temps
                 T_mK = temp_k * 1e3
                 sigma_TmK = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
+
+                # Plotting
+                if do_plots:
+                    self.plot_gaussians_qtemps(qid, save_figs_path, ig_new, ground_data,
+                                               excited_data, ground_gaussian,
+                                               excited_gaussian, pop_threshold,
+                                               idx, weights,
+                                               sigmas, means, T_mK, title_ext=f"LRT val = {lr_stat}")
 
                 # -------- save qubit temps and timestamps ----------------------------------------------
                 all_qubit_temperatures[qid].append(T_mK)  # temperatures in mK
@@ -812,7 +829,8 @@ class SSFTempCalcAndPlots:
         print('Plots saved to:', plotting_path)
         return thresh_results
 
-    def plot_gaussians_qtemps(self, q_key, qubit_folder, ig_new, ground_data, excited_data, ground_gaussian, excited_gaussian, pop_threshold, temperature_mk, dataset, weights, sigmas, means):
+    def plot_gaussians_qtemps(self, q_key, qubit_folder, ig_new, ground_data, excited_data, ground_gaussian, excited_gaussian, pop_threshold, dataset, weights, sigmas, means,
+                              temperature_mk = None, title_ext = ""):
         # -----------------PLOTS TO CHECK g-state double gaussian FITS AND THRESHOLDS---------------
         # Plotting double gaussian distributions and fitting
         xlims = [np.min(ig_new), np.max(ig_new)]
@@ -875,9 +893,13 @@ class SSFTempCalcAndPlots:
         #     iq_data, bins=numbins, range=[np.min(ig_new), np.max(ig_new)], density=False,
         #     alpha=0.2, color="green", label="All IQ Data Region", zorder=1
         # )
+        if temperature_mk is not None:
+            plt.title(
+                f"G-state double gaussian fit ; Qubit {q_key + 1} ; Temp= {temperature_mk:2f} mK {title_ext}")
+        else:
+            plt.title(
+                f"G-state double gaussian fit ; Qubit {q_key + 1} {title_ext}")
 
-        plt.title(
-            f"Method: Ground-state double gaussian fit ; Qubit {q_key + 1} ; Temp= {temperature_mk:2f} mK")
         plt.xlabel("$I_g$' " , fontsize=14)
         plt.ylabel('Counts', fontsize=14)
         plt.legend()
@@ -2358,7 +2380,6 @@ class combined_Qtemp_studies:
         print("Saved P_e plot →", fname)
 
     def Qtemps_vs_time_comb_allQs_1col(self, all_qubit_temperatures_ssf_g, all_qubit_timestamps_ssf_g,
-                                              all_qubit_temperatures_ssf_ge, all_qubit_timestamps_ssf_ge,
                                               out_dir, all_files_Qtemp_results_RPMs, restrict_time_xaxis=False,
                                               plot_extra_event_lines=False, rad_events_plot_lines=False):
         """Works for more than 2 qubits and does not plot g-e ssf method, only rpm and regular ground state ssf method"""
