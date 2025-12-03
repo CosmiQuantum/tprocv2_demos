@@ -27,7 +27,7 @@ threshold = 0  # overwritten when get_threshold flag is set to True
 theta = 0  # overwritten when get_threshold flag is set to True
 sz = 7  # fontsize for plots
 method_ssf = "max_contrast" # "gauss2" and "max_contrast" are the two options. This defines how the thresh and fid are calc in ssf
-do_thresholding = True # thresholding for T1 analysis?
+do_thresholding = False # thresholding for T1 analysis?
 verbose = False
 ssf_numbins = 55
 iminuit_method_t1fit = True # Instead of the default Curvefit() T1 fitting, do you want to use iminuit?
@@ -41,7 +41,7 @@ if analysis_flags["get_threshold"]:
 
     ana_params = {
         "idx": 0,
-        "plot": False,
+        "plot": True,
         "method": "from_ssf",
         "ssf_theta": None,
         "ssf_threshold": None,
