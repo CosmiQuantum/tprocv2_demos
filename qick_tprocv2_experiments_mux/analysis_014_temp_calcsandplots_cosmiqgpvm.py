@@ -2428,8 +2428,8 @@ class combined_Qtemp_studies:
 
         # Only two methods now: RPM + SSF(g-only)
         methods = [
-            ("RPM Pop. Meas.", times_RPM, temps_RPM, "orange"),
-            ("SSF g-only", times_g, temps_g, "blue"),
+            ("RPM Qtemps", times_RPM, temps_RPM, "orange"),
+            ("SSF Qtemps", times_g, temps_g, "blue"),
         ]
 
         for ax, q in zip(axes, qubits_to_plot):
@@ -2457,13 +2457,13 @@ class combined_Qtemp_studies:
             ax.legend(loc="upper left", fontsize=9, frameon=False)
 
         axes[-1].set_xlabel("Time")
-        fig.suptitle("Qubit Temperatures vs Time (RPM vs SSF g-only)", fontsize=15)
+        fig.suptitle("Effective Qubit Temperatures vs Time", fontsize=15)
 
         # Save
         paramvstime_dir = os.path.join(out_dir, "params_vs_time")
         os.makedirs(paramvstime_dir, exist_ok=True)
         stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        out_path = os.path.join(paramvstime_dir, f"Qtemps_TwoMethods_6qubits_{stamp}.png")
+        out_path = os.path.join(paramvstime_dir, f"Qtemps_Comparison_TwoMethods_AllQs_{stamp}.png")
         fig.savefig(out_path, dpi=self.figure_quality)
         plt.close(fig)
         print("Saved combined methods plot: ", out_path)

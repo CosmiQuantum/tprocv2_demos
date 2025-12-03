@@ -30,16 +30,16 @@ run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
-replot_RPMs = True # Do you want to re-plot rabi population measurements from RR data?
+replot_RPMs = False # Do you want to re-plot rabi population measurements from RR data?
 save_figsRR = False # Do you want to save (or not save) re-plotted RR measurements plots?
 save_figs = False # To be used in general for any function or class to save (or not save) plots.
 fit_saved = False # Not used here, set to false.
 exclude_temp_sweeps = False # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
-filter_out_bad_amp_fits = False # filter out bad rpm fits? this doesn't work perfect but helps a bit
+filter_out_bad_amp_fits = True # filter out bad rpm fits? this doesn't work perfect but helps a bit
 get_qtemp_data = True # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
 get_london_data = False # This returns RPM qubit temperatures, resonator freqs, and qubit freqs for specified dates. Designed for London Penetration analysis.
 
-pre_sciencerun6_data = True # Do you also want to incorporate the run 6 pre-science run data? THis only applies when run_num = 6
+pre_sciencerun6_data = False # Do you also want to incorporate the run 6 pre-science run data? THis only applies when run_num = 6
 
 figure_quality = 200
 theta = 0
@@ -47,22 +47,22 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_qtemps": False}
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+                      "combined_studies_qtemps": True}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps)
-comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
+comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": True, "Pe_vs_time_comb_separate_plts": False,
                        "Pe_vs_time_comb_single_plt": False, "use_iminuit": True}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 
 # For double-gaussian SSF analysis using alternative methods
-alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": True, "Qtemps_vs_time_comb_single_plt": True}
+alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False, "Qtemps_vs_time_comb_single_plt": False}
 
 # For coherence-qubit temps combined analysis
 coh_qtemp_ana_flags = {"load_rpm_qtemps": False, "load_ssf_qtemps": False, "load_mcp1_temps": False, "load_coherence_res": False, "plot_qtemps_t1_ftemps_qfreq": False}
@@ -184,21 +184,21 @@ filter_keywords_run7 = ['AB_paper_data']
 # Base path of where the data is stored up to the Study Name (round_robin_benchmark)
 # base_dir_run8 = "/data/QICK_data/run8/6transmon/round_robin" # up to study name
 
-# For run 8 temp sweep
-base_dir_run8 = "/data/QICK_data/run8/6transmon/round_robin/temperature_sweep_qubit_data" # up to study name
+# Arianna's local analysis
+base_dir_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # up to study name
 
 # for AB data: (specify up to the day only)
 # target_dates_qtemps_RPM_run8 = ["2025-10-19", "2025-10-20", "2025-10-23", "2025-10-24", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-31", "2025-11-01"]
 
-# for run 8 temp sweep data: (specify up to the day only)
-target_dates_qtemps_RPM_run8 = ["2025-11-18", "2025-11-19", "2025-11-20", "2025-11-21"]
+# for Arianna's local analysis: (specify up to the day only)
+target_dates_qtemps_RPM_run8 = ["2025-10-27_22-04-57"]
 
 # To re-make and save RPM RR plots
-outerFolder_qtemps_plots_RR_run8 = f"/data/QICK_data/run8/6transmon/replotted_RR_data/rabi_pop_meas/"
+outerFolder_qtemps_plots_RR_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\replotted_RR_data\rpm"
     #"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/run8_analysis/benchmark_analysis_plots/RPM_RR_plots"
 #
 # For RPM Analysis
-outerFolder_qtemps_plots_run8 = f"/data/QICK_data/run8/6transmon/rabi_pop_meas_analysis/"
+outerFolder_qtemps_plots_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/rabi_pop_meas_analysis/"
     #"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/run8_analysis/benchmark_analysis_plots/Qtemps_RPMmethod" # Inside each analysis function, a subfolder will be defined
 
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name. THese are substudies.
@@ -208,9 +208,12 @@ outerFolder_qtemps_plots_run8 = f"/data/QICK_data/run8/6transmon/rabi_pop_meas_a
 #                         "ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional", "ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional",
 #                         "ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt", "19dB_DAC_testdata_allQs"]
 
-# For run 8 temp sweep data:
-filter_keywords_run8 = ["temperature_sweep_run8_25dBDAC_onechan_day1", "temperature_sweep_run8_25dBDAC_onechan_day2",
-                        "temperature_sweep_run8_25dBDAC_onechan_day3", "temp_sweep_run8_25dBDAC_onechan_day4_175mK"]
+# # For run 8 temp sweep data:
+# filter_keywords_run8 = ["temperature_sweep_run8_25dBDAC_onechan_day1", "temperature_sweep_run8_25dBDAC_onechan_day2",
+#                         "temperature_sweep_run8_25dBDAC_onechan_day3", "temp_sweep_run8_25dBDAC_onechan_day4_175mK"]
+
+# For Arianna's local analysis
+filter_keywords_run8 = ['ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional']
 
 #-------------------------------------------------------------------------------- Assign func variables depending on run number ---------------------------------------------------------------------------
 
@@ -555,11 +558,12 @@ if qtemp_method_flags["combined_studies_qtemps"]:
                                                   run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
                                                   outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data,
                                                   get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps,
-                                                  passing_pre_sciencerun_data=False)
+                                                  passing_pre_sciencerun_data=False, filter_out_bad_amp_fits = filter_out_bad_amp_fits)
     if run_num == 6:
         if pre_sciencerun6_data:
             all_files_Qtemp_results_RPMs2 = RPM_calcs.run_RPMqtemps(base_dir2, target_dates_qtemps_RPM2, filter_keywords2, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
-                                                          outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, passing_pre_sciencerun_data = True)
+                                                          outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps,
+                                                                    passing_pre_sciencerun_data = True, filter_out_bad_amp_fits = filter_out_bad_amp_fits)
             all_files_Qtemp_results_RPMs += all_files_Qtemp_results_RPMs2
 
     # ----------- Get Qubit temperature results via SSF g-e threshold method and SSF g-state double gaussian threshold method
