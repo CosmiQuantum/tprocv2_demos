@@ -1830,7 +1830,7 @@ class PlotRR_noQick:
                     if len(I1) > 0:
                         rabi_class_instance = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits, list_of_all_qubits,
                                                                       self.outerFolder_save_plots, round_num,
-                                                                      self.signal, save_figs = True)
+                                                                      self.signal, save_figs = False)
                         I1 = np.asarray(I1)
                         Q1 = np.asarray(Q1)
                         gains1 = np.asarray(gains1)
@@ -1841,7 +1841,7 @@ class PlotRR_noQick:
                         rabi_class_instance = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits,
                                                                         list_of_all_qubits,
                                                                         self.outerFolder_save_plots, round_num,
-                                                                        self.signal, save_figs = True)
+                                                                        self.signal, save_figs = False)
                         I2 = np.asarray(I2)
                         Q2 = np.asarray(Q2)
                         gains2 = np.asarray(gains2)

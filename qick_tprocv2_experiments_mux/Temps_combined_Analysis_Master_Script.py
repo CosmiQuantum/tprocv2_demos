@@ -591,8 +591,9 @@ if qtemp_method_flags["combined_studies_qtemps"]:
     if comb_analysis_flags["Qtemps_vs_time_comb_single_plt"]:
         # This one works for multiple qubits (has been improved)
         # Makes 1 subplot per qubit (and all methods in a single plot). Note: I removed the ge SSF method from being plotted since we haven't been using that one lately.
-        combined_studies.Qtemps_vs_time_comb_allQs_1col(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_ge, all_qubit_times_ge, outerFolder_qtemps_plots,
-                                                     all_files_Qtemp_results_RPMs, rad_events_plot_lines = False)
+        # Plots error bars always, unless you pass None instead of all_qubit_temps_errs_g.
+        combined_studies.Qtemps_vs_time_comb_allQs_1col(all_qubit_temps_g, all_qubit_times_g, outerFolder_qtemps_plots,
+                                                     all_files_Qtemp_results_RPMs, all_qubit_temps_errs_g, rad_events_plot_lines = False, qubits_to_plot = [0,1])
 
     #----------- Thermal Populations vs Time using all three methods
     if comb_analysis_flags["Pe_vs_time_comb_separate_plts"]:

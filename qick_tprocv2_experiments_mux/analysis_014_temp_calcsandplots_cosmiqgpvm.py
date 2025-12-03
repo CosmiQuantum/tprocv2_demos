@@ -2380,15 +2380,20 @@ class combined_Qtemp_studies:
         print("Saved P_e plot →", fname)
 
     def Qtemps_vs_time_comb_allQs_1col(self, all_qubit_temperatures_ssf_g, all_qubit_timestamps_ssf_g,
-                                              out_dir, all_files_Qtemp_results_RPMs, restrict_time_xaxis=False,
-                                              plot_extra_event_lines=False, rad_events_plot_lines=False):
-        """Works for more than 2 qubits and does not plot g-e ssf method, only rpm and regular ground state ssf method"""
+                                              out_dir, all_files_Qtemp_results_RPMs, all_qubit_temps_errs_g,
+                                            restrict_time_xaxis=False, plot_extra_event_lines=False, rad_events_plot_lines=False,
+                                                qubits_to_plot = None):
+        """Works for more than 2 qubits and does not plot g-e ssf method, only rpm and regular ground state ssf method
+            Always plots err bars.
+        """
         os.makedirs(out_dir, exist_ok=True)
 
         # --- Build RPM dicts ---
         num_qubits = self.number_of_qubits  # expect 6 in your setup
         times_RPM = {q: [] for q in range(num_qubits)}
         temps_RPM = {q: [] for q in range(num_qubits)}
+        errs_RPM = {q: [] for q in range(num_qubits)}
+
         for rec in all_files_Qtemp_results_RPMs:
             for q in range(num_qubits):
                 d = rec.get("qubits", {}).get(q)
@@ -2397,10 +2402,12 @@ class combined_Qtemp_studies:
                 t = datetime.datetime.fromtimestamp(d["date"])
                 times_RPM[q].append(t)
                 temps_RPM[q].append(d["T_mK"])
+                errs_RPM[q].append(d["T_mK_err"])
 
         # --- SSF (g-only) dicts ---
         times_g = all_qubit_timestamps_ssf_g  # {q: [datetime...]}
         temps_g = all_qubit_temperatures_ssf_g  # {q: [float...]}
+        errs_g = all_qubit_temps_errs_g # {q: [float...]}
 
         # --- Optional time window ---
         if restrict_time_xaxis:
@@ -2417,8 +2424,19 @@ class combined_Qtemp_studies:
                 (datetime.datetime(2025, 5, 4, 18, 20), "Cs-137 removed"),
             ]
 
+        # --- Decide which qubits to plot ---
+        if qubits_to_plot is None:
+            qubits_to_plot = list(range(num_qubits))  # default: all qubits
+        else:
+            # clean + clamp to valid range
+            qubits_to_plot = sorted(
+                q for q in qubits_to_plot
+                if isinstance(q, int) and 0 <= q < num_qubits
+            )
+        if not qubits_to_plot:
+            raise ValueError("qubits_to_plot is empty after filtering valid indices.")
+
         # --- Make N rows (one per qubit), 1 column ---
-        qubits_to_plot = list(range(num_qubits))  # [0,1,2,3,4,5]
         nrows = len(qubits_to_plot)
         fig, axes = plt.subplots(nrows, 1, figsize=(12, 3.2 * nrows), sharex=True, constrained_layout=True)
         if nrows == 1:
@@ -2428,22 +2446,41 @@ class combined_Qtemp_studies:
 
         # Only two methods now: RPM + SSF(g-only)
         methods = [
-            ("RPM Qtemps", times_RPM, temps_RPM, "orange"),
-            ("SSF Qtemps", times_g, temps_g, "blue"),
+            ("RPM Qtemps", times_RPM, temps_RPM, errs_RPM, "orange"),
+            ("SSF Qtemps", times_g, temps_g, errs_g, "blue"),
         ]
 
         for ax, q in zip(axes, qubits_to_plot):
-            for label, tdict, ydict, color in methods:
+            for label, tdict, ydict, edict, color in methods:
                 ts = tdict.get(q, [])
                 ys = ydict.get(q, [])
+                es = None if edict is None else edict.get(q, [])
+
                 if ts and ys:
-                    ax.scatter(ts, ys, s=30, alpha=0.85, edgecolors='k', color=color, label=label)
+                    # Use errors only if they're valid and the same length
+                    use_yerr = es is not None and len(es) == len(ys)
+
+                    ax.errorbar(
+                        ts,
+                        ys,
+                        yerr=es if use_yerr else None,
+                        fmt='o',
+                        markersize=4,
+                        elinewidth=1,
+                        capsize=3,
+                        alpha=0.85,
+                        color=color,
+                        ecolor=color,
+                        markeredgecolor='k',
+                        label=label
+                    )
 
             ax.set_title(f"Q{q + 1}", loc="left", fontsize=13, fontweight="bold")
             ax.set_ylabel("Temp (mK)")
             ax.grid(False)
 
-            ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+            # ax.xaxis.set_major_locator(mdates.AutoDateLocator()) # automatic
+            ax.yaxis.set_major_locator(MaxNLocator(nbins=4, prune=None))
             ax.xaxis.set_major_formatter(date_fmt)
             ax.tick_params(axis='x', rotation=45, labelsize=9)
 
