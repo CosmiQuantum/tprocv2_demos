@@ -21,7 +21,7 @@ data_dir = os.path.join(study_dir, substudy)
 dataset = '2025-10-27_22-04-57'
 
 QubitIndex = 0  # zero indexed
-analysis_flags = {"get_threshold": True, "load_all_data": True, "plot_t1_round": True, "timestream": False}
+analysis_flags = {"get_threshold": True, "load_all_data": True, "plot_t1_round": True}
 selected_round = [0] # file you want to make plots for (we've only saved 1 round per h5 file in recent QUIET runs)
 threshold = 0  # overwritten when get_threshold flag is set to True
 theta = 0  # overwritten when get_threshold flag is set to True
@@ -131,7 +131,6 @@ if analysis_flags["load_all_data"]:
     t1s = result["t1s"]
     t1_errs = result["t1_errs"]
     print('done')
-
     # t1_ge.cleanup()
 
 if analysis_flags["plot_t1_round"]:
@@ -139,65 +138,3 @@ if analysis_flags["plot_t1_round"]:
         print(f"Plotting round {r} T1 data...")
 
         q1_fit_exponential, T1_err, T1_est = t1_ge.get_round(r, plot=True, iminuit_method = iminuit_method_t1fit, verbose = True)
-
-if analysis_flags["timestream"]:
-    fig, ax = plt.subplots(3, 2, layout='constrained')
-
-    ##### single-shot ##########
-    plot = ax[1][0]
-    try:
-        plot.errorbar(get_abs_min(start_time, ssf_dates), np.array(fids) * 100, fmt='o')
-        plot.set_xlabel('time [min]')
-        plot.set_ylabel('single-shot fidelity [%]')
-        for i in selected_round:
-            plot.scatter((ssf_dates[i] - start_time).total_seconds() / 60, fids[i] * 100, marker="o", s=200, alpha=0.5)
-    except Exception:
-        plot.set_title("ssf_ge data error")
-
-    ##### t1 data #####
-    plot = ax[2][0]
-    try:
-        plot.errorbar(get_abs_min(start_time, t1_dates), t1s, t1_errs, fmt='o')
-        plot.set_xlabel('time [min]')
-        plot.set_ylabel('t1_ge [us]')
-        for i in selected_round:
-            plot.scatter((t1_dates[i] - start_time).total_seconds() / 60, t1s[i], marker="o", s=200, alpha=0.5)
-    except Exception:
-        plot.title("t1_ge data error")
-
-
-    ##### t1 data #####
-    q1_fit_exponential, T1_err, T1_est = t1_ge.get_round(round, plot=False, iminuit_method = iminuit_method_t1fit)
-    plot = ax[0][2]
-
-    try:
-        plot.plot(delay_times, t1_p_excited[round],
-                  label=f'round {round + 1} T1 = {T1_est:.2f} +/- {T1_err:.2f} us')
-        plot.plot(delay_times, q1_fit_exponential, 'k:')
-        plot.set_title('t1_ge', fontsize=sz)
-        plot.set_ylabel('P(e)', fontsize=sz)
-        plot.set_xlabel('delay time [us]', fontsize=sz)
-        plot.legend(fontsize=sz)
-    except Exception:
-        plot.set_title("t1_ge data error", fontsize=sz)
-
-    ##### ssf data ####
-    theta0, threshold0, fid0, ig_new, qg_new, ie_new, qe_new, xg, yg, xe, ye = ssf_ge.get_round(round)
-    plot = ax[1][2]
-    try:
-        plot.scatter(ig_new, qg_new, c='b', label='g', s=2)
-        plot.scatter(ie_new, qe_new, c='r', label='e', s=2)
-        plot.set_title(f'ssf_ge: theta = {np.round(theta0, 3)}, threshold = {np.round(threshold0, 2)}', fontsize=sz)
-        plot.scatter(xg, yg, c='k', s=6)
-        plot.scatter(xe, ye, c='k', s=6)
-        plot.set_xlabel('I [a.u.]', fontsize=sz)
-        plot.set_ylabel('Q [a.u.]', fontsize=sz)
-        plot.plot([threshold0, threshold0], [np.min(qe_new), np.max(qe_new)], 'k:', linewidth=2)
-        plot.legend(fontsize=sz)
-        plot.set_aspect("equal")
-    except Exception:
-        plot.set_title("ssf_ge data error", fontsize=sz)
-
-    fig.suptitle(f'{substudy} dataset {dataset} qubit {QubitIndex + 1}')
-
-plt.show()

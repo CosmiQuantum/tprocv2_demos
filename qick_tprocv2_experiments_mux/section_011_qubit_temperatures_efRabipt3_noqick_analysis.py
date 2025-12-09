@@ -41,137 +41,140 @@ class Temps_EFAmpRabiExperiment:
 
         return a * np.cos(2. * np.pi * b * x - c * 2 * np.pi) + d
 
-    def plot_results(self, I, Q, gains, config = None, fig_quality = 200):
-        try:
-            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
-            plt.rcParams.update({'font.size': 18})
+    def plot_results(self, I, Q, gains, config = None, fig_quality = 200, use_iminuit_instead = False):
+        if use_iminuit_instead:
+            try:
+                print('working on this')
+                # return best_signal_fit, pi_amp, A_amplitude, A_amplitude_err, amplitude_fit, R2
+                return None, None, None, None, None, None
+            except Exception as e:
+                print("Error fitting cosine:", e)
+                # Return None if the fit didn't work
+                return None, None, None, None, None, None
 
-            plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
+        else:
+            try:
+                fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
+                plt.rcParams.update({'font.size': 18})
 
-            q1_a_guess_I = (np.max(I) - np.min(I)) / 2
-            q1_d_guess_I = np.mean(I)
-            q1_a_guess_Q = (np.max(Q) - np.min(Q)) / 2
-            q1_d_guess_Q = np.mean(Q)
-            q1_b_guess = 1 / gains[-1]
-            q1_c_guess = 0
+                plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
 
-            q1_guess_I = [q1_a_guess_I, q1_b_guess, q1_c_guess, q1_d_guess_I]
-            q1_popt_I, q1_pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
-            q1_fit_cosine_I = self.cosine(gains, *q1_popt_I)
+                q1_a_guess_I = (np.max(I) - np.min(I)) / 2
+                q1_d_guess_I = np.mean(I)
+                q1_a_guess_Q = (np.max(Q) - np.min(Q)) / 2
+                q1_d_guess_Q = np.mean(Q)
+                q1_b_guess = 1 / gains[-1]
+                q1_c_guess = 0
 
-            q1_guess_Q = [q1_a_guess_Q, q1_b_guess, q1_c_guess, q1_d_guess_Q]
-            q1_popt_Q, q1_pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
-            q1_fit_cosine_Q = self.cosine(gains, *q1_popt_Q)
+                q1_guess_I = [q1_a_guess_I, q1_b_guess, q1_c_guess, q1_d_guess_I]
+                q1_popt_I, q1_pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
+                q1_fit_cosine_I = self.cosine(gains, *q1_popt_I)
 
-            first_three_avg_I = np.mean(q1_fit_cosine_I[:3])
-            last_three_avg_I = np.mean(q1_fit_cosine_I[-3:])
-            first_three_avg_Q = np.mean(q1_fit_cosine_Q[:3])
-            last_three_avg_Q = np.mean(q1_fit_cosine_Q[-3:])
+                q1_guess_Q = [q1_a_guess_Q, q1_b_guess, q1_c_guess, q1_d_guess_Q]
+                q1_popt_Q, q1_pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
+                q1_fit_cosine_Q = self.cosine(gains, *q1_popt_Q)
 
-            best_signal_fit = None
-            pi_amp = None
-            if 'Q' in self.signal:
-                best_signal_fit = q1_fit_cosine_Q
-                # figure out if you should take the min or the max value of the fit to say where pi_amp should be
-                if last_three_avg_Q > first_three_avg_Q:
-                    pi_amp = gains[np.argmax(best_signal_fit)]
-                else:
-                    pi_amp = gains[np.argmin(best_signal_fit)]
-            if 'I' in self.signal:
-                best_signal_fit = q1_fit_cosine_I
-                # figure out if you should take the min or the max value of the fit to say where pi_amp should be
-                if last_three_avg_I > first_three_avg_I:
-                    pi_amp = gains[np.argmax(best_signal_fit)]
-                else:
-                    pi_amp = gains[np.argmin(best_signal_fit)]
-            if 'None' in self.signal:
-                # choose the best signal depending on which has a larger magnitude
-                if abs(first_three_avg_Q - last_three_avg_Q) > abs(first_three_avg_I - last_three_avg_I):
+                first_three_avg_I = np.mean(q1_fit_cosine_I[:3])
+                last_three_avg_I = np.mean(q1_fit_cosine_I[-3:])
+                first_three_avg_Q = np.mean(q1_fit_cosine_Q[:3])
+                last_three_avg_Q = np.mean(q1_fit_cosine_Q[-3:])
+
+                best_signal_fit = None
+                pi_amp = None
+                if 'Q' in self.signal:
                     best_signal_fit = q1_fit_cosine_Q
                     # figure out if you should take the min or the max value of the fit to say where pi_amp should be
                     if last_three_avg_Q > first_three_avg_Q:
                         pi_amp = gains[np.argmax(best_signal_fit)]
                     else:
                         pi_amp = gains[np.argmin(best_signal_fit)]
-                else:
+                if 'I' in self.signal:
                     best_signal_fit = q1_fit_cosine_I
                     # figure out if you should take the min or the max value of the fit to say where pi_amp should be
                     if last_three_avg_I > first_three_avg_I:
                         pi_amp = gains[np.argmax(best_signal_fit)]
                     else:
                         pi_amp = gains[np.argmin(best_signal_fit)]
-            else:
-                print('Invalid signal passed, please do I Q or None')
+                if 'None' in self.signal:
+                    # choose the best signal depending on which has a larger magnitude
+                    if abs(first_three_avg_Q - last_three_avg_Q) > abs(first_three_avg_I - last_three_avg_I):
+                        best_signal_fit = q1_fit_cosine_Q
+                        # figure out if you should take the min or the max value of the fit to say where pi_amp should be
+                        if last_three_avg_Q > first_three_avg_Q:
+                            pi_amp = gains[np.argmax(best_signal_fit)]
+                        else:
+                            pi_amp = gains[np.argmin(best_signal_fit)]
+                    else:
+                        best_signal_fit = q1_fit_cosine_I
+                        # figure out if you should take the min or the max value of the fit to say where pi_amp should be
+                        if last_three_avg_I > first_three_avg_I:
+                            pi_amp = gains[np.argmax(best_signal_fit)]
+                        else:
+                            pi_amp = gains[np.argmin(best_signal_fit)]
+                else:
+                    print('Invalid signal passed, please do I Q or None')
 
 
-            ax2.plot(gains, q1_fit_cosine_Q, '-', color='red', linewidth=3, label="Fit")
-            ax1.plot(gains, q1_fit_cosine_I, '-', color='red', linewidth=3, label="Fit")
+                ax2.plot(gains, q1_fit_cosine_Q, '-', color='red', linewidth=3, label="Fit")
+                ax1.plot(gains, q1_fit_cosine_I, '-', color='red', linewidth=3, label="Fit")
 
-            if config is not None:
-                fig.text(plot_middle, 0.98,
-                         f"e-f Rabi Q{self.QubitIndex + 1}: {pi_amp:.4f} (a.u.) _"  + f", {config['reps']}*{config['rounds']} avgs",
-                         fontsize=24, ha='center', va='top') #f", {config['sigma'] * 1000} ns sigma" need to add in all qqubit sigmas to save exp_cfg before putting htis back
-            else:
-                fig.text(plot_middle, 0.98,
-                         f"e-f Rabi Q{self.QubitIndex + 1}: {pi_amp:.4f} (a.u.)_" f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']}*{self.config['rounds']} avgs",
-                         fontsize=24, ha='center', va='top')
-            # print(len(gains))
-            ax1.plot(gains, I, label="Gain (a.u.)", linewidth=2)
-            ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
-            ax1.tick_params(axis='both', which='major', labelsize=16)
+                if config is not None:
+                    fig.text(plot_middle, 0.98,
+                             f"e-f Rabi Q{self.QubitIndex + 1}: {pi_amp:.4f} (a.u.) _"  + f", {config['reps']}*{config['rounds']} avgs",
+                             fontsize=24, ha='center', va='top') #f", {config['sigma'] * 1000} ns sigma" need to add in all qqubit sigmas to save exp_cfg before putting htis back
+                else:
+                    fig.text(plot_middle, 0.98,
+                             f"e-f Rabi Q{self.QubitIndex + 1}: {pi_amp:.4f} (a.u.)_" f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']}*{self.config['rounds']} avgs",
+                             fontsize=24, ha='center', va='top')
+                # print(len(gains))
+                ax1.plot(gains, I, label="Gain (a.u.)", linewidth=2)
+                ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
+                ax1.tick_params(axis='both', which='major', labelsize=16)
 
-            ax2.plot(gains, Q, label="Q", linewidth=2)
-            ax2.set_xlabel("Gain (a.u.)", fontsize=20)
-            ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
-            ax2.tick_params(axis='both', which='major', labelsize=16)
+                ax2.plot(gains, Q, label="Q", linewidth=2)
+                ax2.set_xlabel("Gain (a.u.)", fontsize=20)
+                ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
+                ax2.tick_params(axis='both', which='major', labelsize=16)
 
-            #---------------------------------------------------------------------------------
-            # --- Compute amplitude data from I and Q ---
-            amplitude_data = np.sqrt(np.array(I) ** 2 + np.array(Q) ** 2)
+                #---------------------------------------------------------------------------------
+                # --- Compute amplitude data from I and Q ---
+                amplitude_data = np.sqrt(np.array(I) ** 2 + np.array(Q) ** 2)
 
-            # --- Fit the amplitude data with the cosine function ---
-            # Define initial guesses based on the amplitude_data characteristics.
-            a_guess_amp = (np.max(amplitude_data) - np.min(amplitude_data)) / 2
-            d_guess_amp = np.mean(amplitude_data)
-            b_guess_amp = 1 / gains[-1]
-            c_guess_amp = 0
+                # --- Fit the amplitude data with the cosine function ---
+                # Define initial guesses based on the amplitude_data characteristics.
+                a_guess_amp = (np.max(amplitude_data) - np.min(amplitude_data)) / 2
+                d_guess_amp = np.mean(amplitude_data)
+                b_guess_amp = 1 / gains[-1]
+                c_guess_amp = 0
 
-            amp_guess = [a_guess_amp, b_guess_amp, c_guess_amp, d_guess_amp]
-            amp_popt, amp_pcov = curve_fit(self.cosine, gains, amplitude_data, maxfev=100000, p0=amp_guess)
-            amplitude_fit = self.cosine(gains, *amp_popt)
+                amp_guess = [a_guess_amp, b_guess_amp, c_guess_amp, d_guess_amp]
+                amp_popt, amp_pcov = curve_fit(self.cosine, gains, amplitude_data, maxfev=100000, p0=amp_guess)
+                amplitude_fit = self.cosine(gains, *amp_popt)
 
-            # --- Extract the amplitude parameter A directly ---
-            A_amplitude = amp_popt[0]
-            # print("Amplitude parameter A from cosine fit:", A_amplitude)
-            amp_perr = np.sqrt(np.diag(amp_pcov))
-            A_amplitude_err = amp_perr[0]
-            #print('Amplitude error (std): ', A_amplitude_err)
+                # --- Extract the amplitude parameter A directly ---
+                A_amplitude = amp_popt[0]
+                # print("Amplitude parameter A from cosine fit:", A_amplitude)
+                amp_perr = np.sqrt(np.diag(amp_pcov))
+                A_amplitude_err = amp_perr[0]
+                #print('Amplitude error (std): ', A_amplitude_err)
 
-            # --- Compute R-squared to evaluate goodness of amplitude fit ---
-            ss_res = np.sum((amplitude_data - amplitude_fit) ** 2) #Residual sum of squares
-            ss_tot = np.sum((amplitude_data - np.mean(amplitude_data)) ** 2) # Total sum of squares (tot variance, how much the raw data varies around its mean)
-            R2 = 1 - ss_res / ss_tot if ss_tot != 0 else 0
+                # --- Compute R-squared to evaluate goodness of amplitude fit ---
+                ss_res = np.sum((amplitude_data - amplitude_fit) ** 2) #Residual sum of squares
+                ss_tot = np.sum((amplitude_data - np.mean(amplitude_data)) ** 2) # Total sum of squares (tot variance, how much the raw data varies around its mean)
+                R2 = 1 - ss_res / ss_tot if ss_tot != 0 else 0
 
-            # --- Plot amplitude data and its cosine fit on the third subplot ---
-            ax3.plot(gains, amplitude_data, '-', label="Amplitude Data", linewidth=2)
-            ax3.plot(gains, amplitude_fit, '-', color='green', linewidth=3, label="Amplitude Fit")
-            ax3.set_xlabel("Gain (a.u.)", fontsize=20)
-            ax3.set_ylabel("Amplitude (a.u.)", fontsize=20)
-            ax3.tick_params(axis='both', which='major', labelsize=16)
-            ax3.legend(loc='best')
+                # --- Plot amplitude data and its cosine fit on the third subplot ---
+                ax3.plot(gains, amplitude_data, '-', label="Amplitude Data", linewidth=2)
+                ax3.plot(gains, amplitude_fit, '-', color='green', linewidth=3, label="Amplitude Fit")
+                ax3.set_xlabel("Gain (a.u.)", fontsize=20)
+                ax3.set_ylabel("Amplitude (a.u.)", fontsize=20)
+                ax3.tick_params(axis='both', which='major', labelsize=16)
+                ax3.legend(loc='best')
 
-            # # Optionally, annotate the amplitude subplot with the extracted A
-            # ax3.axhline(y=A_amplitude, linestyle='--', color='black', label=f"A = {A_amplitude:.2f}")
-            # ax3.annotate(f"{A_amplitude:.2f}",
-            #              xy=(gains[-1], A_amplitude),
-            #              xytext=(gains[-1], A_amplitude + 0.1 * A_amplitude),
-            #              arrowprops=dict(arrowstyle="->", color="black"),
-            #              fontsize=16)
+                #------------------------------------------------------------------------------------------------
 
-            #------------------------------------------------------------------------------------------------
-
-            # plt.tight_layout()
-            # plt.subplots_adjust(top=0.93)
+                # plt.tight_layout()
+                # plt.subplots_adjust(top=0.93)
 
             if self.save_figs:
                 today_date = datetime.datetime.now().strftime("%Y-%m-%d")

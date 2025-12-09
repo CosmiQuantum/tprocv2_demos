@@ -16,7 +16,7 @@ figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 saved_shots_t1ge = True
 
-t1_analysis_flags = {"load_t1_data": False, "plot_RR_data": False, "t1_vs_time_plots": False, "t1_hists": False}
+t1_analysis_flags = {"load_t1_data": False, "plot_RR_data": True, "t1_vs_time_plots": False, "t1_hists": False}
 
 if run_number == 8:
     run_name = 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis' # AB_paper_datadump_T1_Analysis

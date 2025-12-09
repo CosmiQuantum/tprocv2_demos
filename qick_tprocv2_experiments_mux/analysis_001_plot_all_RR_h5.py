@@ -121,7 +121,7 @@ class PlotAllRR:
         if ss_plot_gef:
             self.load_plot_save_ss_gef(plot_ssf_gef = ss_plot_gef)
         if plot_t1:
-            self.load_plot_save_t1(saved_shots = self.saved_shots, per_pt_errs = self.per_pt_errs)
+            self.load_plot_save_t1()
         if plot_t1_shots_analysis:
             self.load_t1_shots_vs_avgIQ_arrays()
         if plot_t2r:
@@ -439,7 +439,7 @@ class PlotAllRR:
             ss_class.plot_results(iq_list_g, iq_list_e, QubitIndex,  fig_quality=200)
 
 
-    def load_plot_save_t1(self, saved_shots = False, per_pt_errs = False):
+    def load_plot_save_t1(self):
         # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
         outerFolder_expt = self.outerFolder + "/Data_h5/t1_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -477,7 +477,7 @@ class PlotAllRR:
                     cutoff_dt = datetime.datetime(2025, 10, 24, 13, 58, 37)
 
                     # --- make per-shot data compatible with per-delay fitting --------------------------------
-                    if saved_shots:
+                    if self.saved_shots:
                         # --- process IQ shots and turn them into IQ arrays (using Arianna's func, not QICK) --------------------------------
                         print("Processing shots...")
 
@@ -526,30 +526,8 @@ class PlotAllRR:
                         Ishots = replica.coerce_to_rounds_N_reps(Ishots_raw, steps, reps)
                         Qshots = replica.coerce_to_rounds_N_reps(Qshots_raw, steps, reps)
 
-                        # ------------------ NEW: per-point errors from shots ------------------
-                        if per_pt_errs:
-                            # Assume shape (rounds, steps, reps) and that each H5 holds one round
-                            I_round0 = Ishots[0]  # shape: (steps, reps)
-                            Q_round0 = Qshots[0]  # shape: (steps, reps)
-
-                            # standard error of the mean over reps for each step
-                            N_reps = I_round0.shape[-1]
-
-                            if N_reps > 1:
-                                I_errs = np.std(I_round0, axis=-1, ddof=1) / np.sqrt(N_reps)  # shape: (steps,)
-                                Q_errs = np.std(Q_round0, axis=-1, ddof=1) / np.sqrt(N_reps)
-                            else:
-                                # only 1 shot -> then no spread; define errors as 0
-                                I_errs = np.zeros(steps, dtype=float)
-                                Q_errs = np.zeros(steps, dtype=float)
-
-                        else:
-                            I_errs = None
-                            Q_errs = None
-                        # ---------------------------------------------------------------------
-
                         # --- acquire (software average over a single round) ---
-                        I, Q = replica.acquire_offline(Ishots, Qshots, soft_avgs=1)
+                        I, Q, I_errs, Q_errs = replica.acquire_offline(Ishots, Qshots, soft_avgs=1, per_pt_errs = self.per_pt_errs)
                     # -----------------------------------------------------------------------------------------------
                     else:
                         I = self.process_h5_data(load_data['t1_ge'][q_key].get('I', [])[0][dataset].decode())
@@ -2186,10 +2164,14 @@ class OfflineAcquireReplica:
         return avg_d
 
     # -------------------- public: acquire offline --------------------
-    def acquire_offline(self, Ishots, Qshots, *, soft_avgs=None):
+    def acquire_offline(self, Ishots, Qshots, *, soft_avgs=None, per_pt_errs = False):
         """
         Inputs:
           Ishots, Qshots shaped like (rounds, N, reps) or flattenable to that.
+          per_pt_errs : bool
+          If True, also return per-point standard error over rounds
+          for the final I and Q traces.
+
         Output:
           (I_final, Q_final) each shape (N,)
         """
@@ -2201,6 +2183,9 @@ class OfflineAcquireReplica:
 
         I3 = self._ensure_rounds_axis(Ishots, N=self._N_steps, rounds=self._rounds, reps=self._reps)
         Q3 = self._ensure_rounds_axis(Qshots, N=self._N_steps, rounds=self._rounds, reps=self._reps)
+
+        # collect per-round averages so we can also compute SEM over rounds
+        round_avgs = []  # each element: (steps, 2) [I,Q]
 
         # accumulate per-round like QICK does, using the same averaging kernel
         summed = None
@@ -2228,4 +2213,32 @@ class OfflineAcquireReplica:
         I_final = summed[:, 0]  # (N,)
         Q_final = summed[:, 1]
 
-        return I_final, Q_final
+        # ---------- NEW: optional per-point errors over rounds ----------
+        if per_pt_errs:
+            if soft_avgs == 1:
+                raw_I = I3[0]  # (steps, reps)
+                raw_Q = Q3[0]
+                n_reps = raw_I.shape[1]
+
+                if n_reps > 1:
+                    raw_I_std = raw_I.std(axis=1, ddof=1) / np.sqrt(n_reps)
+                    raw_Q_std = raw_Q.std(axis=1, ddof=1) / np.sqrt(n_reps)
+
+                    scale = 1.0 / float(self._ro_cycles) # this is the only factor that affects the errs scaling
+
+                    I_errs = raw_I_std * scale
+                    Q_errs = raw_Q_std * scale
+
+                else:
+                    I_errs = np.zeros_like(I_final)
+                    Q_errs = np.zeros_like(Q_final)
+
+            else:
+                print('The code has not been set up to return per-point errors for datasets with soft_avgs > 1.')
+                I_errs = None
+                Q_errs = None
+        else:
+            I_errs = None
+            Q_errs = None
+
+        return I_final, Q_final, I_errs, Q_errs
