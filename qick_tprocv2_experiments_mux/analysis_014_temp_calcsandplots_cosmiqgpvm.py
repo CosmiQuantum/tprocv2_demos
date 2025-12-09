@@ -407,6 +407,12 @@ class SSFTempCalcAndPlots:
                     # if self.verbose: print(f"Q{qid+1} idx {idx}: fit failed ({e})")
                     continue
 
+                # ----------------- unpack fit parameters -----------------
+                mu1, mu2 = params["mu"]
+                sig1, sig2 = params["sigma"]
+                w1, w2 = params["weight"]
+                pop_threshold = params["threshold"]  # midpoint between means
+
                 # Grab chi^2 from your params dict (2 * NLL_2G)
                 chi2 = params["chisq"]
                 x_finite = ig_new[np.isfinite(ig_new)]
@@ -449,15 +455,17 @@ class SSFTempCalcAndPlots:
                             filename_ext=f"Q{qid + 1}",
                             title_ext=f"Q{qid + 1}, chi2={chi2:.2f}, LRT value={lr_stat:.2f}"
                         )
+
+                        # self.plot_gaussians_qtemps(qid, bad_plots_path, ig_new, ground_data,
+                        #                            excited_data, params["ground_gaussian_idx"],
+                        #                            params["excited_gaussian_idx"], pop_threshold,
+                        #                            idx, params["weight"],
+                        #                            params["sigma"], params["mu"], temperature_mk=None)
+
                     continue
 
-                # ----------------- unpack fit parameters -----------------
-                mu1, mu2       = params["mu"]
-                sig1, sig2     = params["sigma"]
-                w1, w2         = params["weight"]
-                pop_threshold  = params["threshold"]  # midpoint between means
 
-                # Ground vs excited data split (consistent with your fitter)
+                # ---------------------- Ground vs excited data split ------------------------------------------
                 ground_data  = ig_new[ig_new <= pop_threshold]
                 excited_data = ig_new[ig_new > pop_threshold]
 
@@ -489,6 +497,12 @@ class SSFTempCalcAndPlots:
                         filename_ext = f"Q{qid + 1}",
                         title_ext = f"Q{qid + 1}, chi2={chi2:.2f}, LRT value={lr_stat:.2f}"
                     )
+
+                    # self.plot_gaussians_qtemps(qid, save_figs_path, ig_new, ground_data,
+                    #                            excited_data, params["ground_gaussian_idx"],
+                    #                            params["excited_gaussian_idx"], pop_threshold,
+                    #                            idx, params["weight"],
+                    #                            params["sigma"], params["mu"], temperature_mk=None)
 
                 # ----------------- save qubit temps + timestamps -----------------
                 dt = datetime.datetime.fromtimestamp(ts_unix)

@@ -113,6 +113,9 @@ class T1HistCumulErrPlots:
         # ----------Load/get data from T1------------------------
         t1_vals = {i: [] for i in range(self.number_of_qubits)}
         t1_errs = {i: [] for i in range(self.number_of_qubits)}
+        I_per_pt_errs = {i: [] for i in range(self.number_of_qubits)}  # to store the errors of each point in the I-T1 curve
+        Q_per_pt_errs = {i: [] for i in range(self.number_of_qubits)}  # to store the errors of each point in the Q-T1 curve
+
         qubit_for_this_index = []
         rounds = []
         reps = []
@@ -169,7 +172,7 @@ class T1HistCumulErrPlots:
                             print(f"Skipping data for {date} (excluded date)")
                             continue
 
-                        # --- NEW: make per-shot data compatible with per-delay fitting --------------------------------
+                        # --- make per-shot data compatible with per-delay fitting --------------------------------
                         if saved_shots:
                             # --- process IQ shots and turn them into IQ arrays (using Arianna's func, not QICK) --------------------------------
                             print("Processing shots...")
@@ -223,6 +226,23 @@ class T1HistCumulErrPlots:
                             Ishots = replica.coerce_to_rounds_N_reps(Ishots_raw, steps, reps)
                             Qshots = replica.coerce_to_rounds_N_reps(Qshots_raw, steps, reps)
 
+                            # ------------------ NEW: per-point errors from shots ------------------
+                            # Assume shape (rounds, steps, reps) and that each H5 holds one round
+                            I_round0 = Ishots[0]  # shape: (steps, reps)
+                            Q_round0 = Qshots[0]  # shape: (steps, reps)
+
+                            # standard error of the mean over reps for each step
+                            N_reps = I_round0.shape[-1]
+
+                            if N_reps > 1:
+                                I_errs = np.std(I_round0, axis=-1, ddof=1) / np.sqrt(N_reps)  # shape: (steps,)
+                                Q_errs = np.std(Q_round0, axis=-1, ddof=1) / np.sqrt(N_reps)
+                            else:
+                                # only 1 shot -> then no spread; define errors as 0
+                                I_errs = np.zeros(steps, dtype=float)
+                                Q_errs = np.zeros(steps, dtype=float)
+                            # ---------------------------------------------------------------------
+
                             # --- acquire (software average over a single round) ---
                             I, Q = replica.acquire_offline(Ishots, Qshots, soft_avgs=1)
                         # -----------------------------------------------------------------------------------------------
@@ -268,6 +288,12 @@ class T1HistCumulErrPlots:
 
                             t1_vals[q_key].extend([T1])  # Store T1 values
                             t1_errs[q_key].extend([T1_err])  # Store T1 error values
+
+                            # --- store per-point errors too, only if we had saved_shots ---
+                            if saved_shots:
+                                I_per_pt_errs[int(q_key)].append(I_errs)
+                                Q_per_pt_errs[int(q_key)].append(Q_errs)
+
                             dates[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])  # Decode bytes to string
 
                             # You can also append qubit indices if needed

@@ -174,11 +174,13 @@ class non_prebuilt_ssf_analysis_class:
 
         # parameters of the gaussian fits that can be used later on for plotting
         params = {
-            "mu": (mu1, mu2),
-            "sigma": (sig1, sig2),
-            "weight": (w1, 1.0 - w1),  # w2 = 1-w1
-            "threshold": (threshold),
-            "chisq": (chisq)}
+            "ground_gaussian_idx": 0,
+            "excited_gaussian_idx": 1,
+            "mu": [mu1, mu2],
+            "sigma": [sig1, sig2],
+            "weight": [w1, 1.0 - w1],  # w2 = 1-w1
+            "threshold": threshold,
+            "chisq": chisq }
 
         return params, xvals, ground_gaussian, excited_gaussian, sum_gaussians, ground_state_population, excited_state_population_leakage, lo, hi
 
