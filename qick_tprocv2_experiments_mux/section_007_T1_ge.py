@@ -206,7 +206,7 @@ class T1Measurement:
 
         return q1_fit_exponential, T1_err, T1_est, plot_sig
 
-    def t1_fit_iminuit(self, I, Q, delay_times, y_err=None):
+    def t1_fit_iminuit(self, I, Q, delay_times, y_errs=None):
         """
         Fits T1 curve using a 3-parameter exponential with a chi^2 or least-squares minimizer depending on whether you provide
         the errs of each point in the curve or not (iminuit).
@@ -243,8 +243,8 @@ class T1Measurement:
         order = np.argsort(t)
         t = t[order]
         signal = signal[order]
-        if y_err is not None:
-            y_err = np.asarray(y_err, float)[order]
+        if y_errs is not None:
+            sigma = np.asarray(y_errs, float)[order]
 
         # ---------------- new, simpler 3-parameter model ----------------
         def t1_model(tvals, a, c, d):
@@ -263,15 +263,13 @@ class T1Measurement:
         c_guess = max(span / 3.0, 1e-3)  # T1 ~ span/3, and we set a floor of 1e-3 to make sure T>0
 
         # ---------------- chi^2 function ----------------
-        if y_err is not None:
-            sigma = np.asarray(y_err, float)
-
+        if y_errs is not None:
             # Handle zero or negative uncertainties
             if np.any(sigma > 0): # Look at only the positive sigmas, and use their median.
                 med_pos = np.median(sigma[sigma > 0])
                 sigma = np.where(sigma <= 0, med_pos, sigma) # replaces zeros, negative sigmas, NaNs
             else:
-                raise ValueError("y_err must contain at least one positive value is y_err is not set to None.")
+                raise ValueError("y_errs must contain at least one positive value if y_errs is not set to None.")
 
             def chi2(a, c, d):
                 model = t1_model(t, a, c, d)
@@ -347,17 +345,24 @@ class T1Measurement:
 
         return fit_curve, T1_err, T1_est, plot_sig
 
-    def plot_results(self, I, Q, delay_times, date, config = None, fig_quality =100, iminuit_fit_instead = False):
+    def plot_results(self, I, Q, delay_times, date, I_errs = None, Q_errs = None, config = None, fig_quality =100, iminuit_fit_instead = False):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
         # Calculate the middle of the plot area
         plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
 
+        y_err_for_fit = None # used to choose which y_err to pass into iminuit (I or Q per-point errors)
 
         if self.fit_data:
             if iminuit_fit_instead:
-                q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit_iminuit(I, Q, delay_times)
+                if 'I' in self.signal and I_errs is not None:
+                    y_err_for_fit = I_errs
+                elif 'Q' in self.signal and Q_errs is not None:
+                    y_err_for_fit = Q_errs
+                # else: no matching errs, leave as None
+
+                q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit_iminuit(I, Q, delay_times, y_err_for_fit)
             else:
                 q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit(I, Q, delay_times)
 
@@ -392,13 +397,36 @@ class T1Measurement:
             T1_err = None
 
         # I subplot
-        ax1.plot(delay_times, I, label="Gain (a.u.)", linewidth=2)
+        if I_errs is not None:
+            ax1.errorbar(
+                delay_times,
+                I,
+                yerr=I_errs,
+                fmt='o-',
+                linewidth=2,
+                capsize=3,
+                label="I")
+        else:
+            ax1.plot(delay_times, I, label="I", linewidth=2)
+
         ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
         ax1.tick_params(axis='both', which='major', labelsize=16)
         # ax1.axvline(freq_q, color='orange', linestyle='--', linewidth=2)
 
         # Q subplot
-        ax2.plot(delay_times, Q, label="Q", linewidth=2)
+        if Q_errs is not None:
+            ax2.errorbar(
+                delay_times,
+                Q,
+                yerr=Q_errs,
+                fmt='o-',
+                linewidth=2,
+                capsize=3,
+                label="Q"
+            )
+        else:
+            ax2.plot(delay_times, Q, label="Q", linewidth=2)
+
         ax2.set_xlabel("Delay time (us)", fontsize=20)
         ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
         ax2.tick_params(axis='both', which='major', labelsize=16)

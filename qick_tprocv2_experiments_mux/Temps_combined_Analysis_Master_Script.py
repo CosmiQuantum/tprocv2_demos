@@ -30,13 +30,13 @@ run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
-replot_RPMs = False # Do you want to re-plot rabi population measurements from RR data?
+replot_RPMs = True # Do you want to re-plot rabi population measurements from RR data?
 save_figsRR = False # Do you want to save (or not save) re-plotted RR measurements plots?
 save_figs = False # To be used in general for any function or class to save (or not save) plots.
 fit_saved = False # Not used here, set to false.
 exclude_temp_sweeps = False # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
 filter_out_bad_amp_fits = True # filter out bad rpm fits? this doesn't work perfect but helps a bit
-get_qtemp_data = True # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
+get_qtemp_data = False # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
 get_london_data = False # This returns RPM qubit temperatures, resonator freqs, and qubit freqs for specified dates. Designed for London Penetration analysis.
 
 pre_sciencerun6_data = False # Do you also want to incorporate the run 6 pre-science run data? THis only applies when run_num = 6
@@ -47,7 +47,7 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
                       "combined_studies_qtemps": False}
 
 # What analysis plots do you want to make?
@@ -62,7 +62,7 @@ comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_tim
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 
 # For double-gaussian SSF analysis using alternative methods
-alt_ssf_analysis_flags = {"jupyter_method_Arianna": True, "iminuit_method": False, "Qtemps_vs_time_comb_single_plt": False}
+alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False, "Qtemps_vs_time_comb_single_plt": False}
 
 # For coherence-qubit temps combined analysis
 coh_qtemp_ana_flags = {"load_rpm_qtemps": False, "load_ssf_qtemps": False, "load_mcp1_temps": False, "load_coherence_res": False, "plot_qtemps_t1_ftemps_qfreq": False}
@@ -317,17 +317,17 @@ path_saveplots_ssf_qtemps_vsT_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1h
 
 # ----------------------------------------------------------------------------------------------run 8----------------------------------------------------------------------------------------------------------
 # Arianna's local analysis:
-paths_SSFmethods_run8 = [r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\2025-10-27_22-04-57"]
-path_saveplots_fits_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\qtemps_ssf_gaussfits" # where to save ssf plots to check gaussian fits
-path_saveplots_ssf_qtemps_vsT_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\qtemps_ssf_analysis\Qtemps_vs_Time_run8" # to save qubit temps vs time via ssf methods
+# paths_SSFmethods_run8 = [r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\2025-10-27_22-04-57"]
+# path_saveplots_fits_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\qtemps_ssf_gaussfits" # where to save ssf plots to check gaussian fits
+# path_saveplots_ssf_qtemps_vsT_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\qtemps_ssf_analysis\Qtemps_vs_Time_run8" # to save qubit temps vs time via ssf methods
 
 # on qubituser-daq01:
-# paths_SSFmethods_run8 = [
-#     "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_11-09-32",
-#     "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_12-05-25",
-#     "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_19-43-00",
-#     "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_20-25-18",
-#     "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-20_12-10-19",
+paths_SSFmethods_run8 = [
+    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_11-09-32",
+    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_12-05-25",
+    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_19-43-00",
+    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_20-25-18",
+    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-20_12-10-19"]
 #     "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-23_00-49-28",
 #     "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-23_14-47-22",
 #     "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-24_13-58-37",
@@ -342,8 +342,8 @@ path_saveplots_ssf_qtemps_vsT_run8 = r"C:\Users\Arianna\Documents\Grad\Research\
 #     "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-11-01_12-54-55"
 # ]
 
-# path_saveplots_fits_run8 ="/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_gaussfits" # where to save ssf plots to check gaussian fits
-# path_saveplots_ssf_qtemps_vsT_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_analysis\Qtemps_vs_Time_run8" # to save qubit temps vs time via ssf methods
+path_saveplots_fits_run8 ="/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_gaussfits" # where to save ssf plots to check gaussian fits
+path_saveplots_ssf_qtemps_vsT_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_analysis\Qtemps_vs_Time_run8" # to save qubit temps vs time via ssf methods
 
 #------------------------------------------------------------------------------ Assign func variables depending on run number ---------------------------------------
 if run_num == 6:  # We have science-run data as well as pre-science-run data available. Note: we already defined Science_Qubits above.

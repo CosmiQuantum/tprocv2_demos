@@ -34,13 +34,14 @@ sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/
 
 class PlotAllRR:
     def __init__(self,  date, figure_quality, save_figs, fit_saved, signal, run_name, run_num, number_of_qubits, outerFolder,
-                 outerFolder_save_plots, unique_folder_path, saved_shots):
+                 outerFolder_save_plots, unique_folder_path, saved_shots, per_pt_errs = False):
         self.date = date
         self.figure_quality = figure_quality
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
         self.run_name = run_name
+        self.per_pt_errs = per_pt_errs
         self.run_num = run_num
         self.number_of_qubits = number_of_qubits
         self.outerFolder = outerFolder
@@ -120,7 +121,7 @@ class PlotAllRR:
         if ss_plot_gef:
             self.load_plot_save_ss_gef(plot_ssf_gef = ss_plot_gef)
         if plot_t1:
-            self.load_plot_save_t1(saved_shots = self.saved_shots)
+            self.load_plot_save_t1(saved_shots = self.saved_shots, per_pt_errs = self.per_pt_errs)
         if plot_t1_shots_analysis:
             self.load_t1_shots_vs_avgIQ_arrays()
         if plot_t2r:
@@ -438,11 +439,11 @@ class PlotAllRR:
             ss_class.plot_results(iq_list_g, iq_list_e, QubitIndex,  fig_quality=200)
 
 
-    def load_plot_save_t1(self, saved_shots = False):
+    def load_plot_save_t1(self, saved_shots = False, per_pt_errs = False):
         # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
         outerFolder_expt = self.outerFolder + "/Data_h5/t1_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
-        soc, soccfg = makeProxy()
+        # soc, soccfg = makeProxy()
 
         for h5_file in h5_files:
             # what is the date in the h5 file filename?
@@ -475,7 +476,7 @@ class PlotAllRR:
                     # cutoff when we switched to saving both averaged arrays *and* shots under Ishots/Qshots
                     cutoff_dt = datetime.datetime(2025, 10, 24, 13, 58, 37)
 
-                    # --- NEW: make per-shot data compatible with per-delay fitting --------------------------------
+                    # --- make per-shot data compatible with per-delay fitting --------------------------------
                     if saved_shots:
                         # --- process IQ shots and turn them into IQ arrays (using Arianna's func, not QICK) --------------------------------
                         print("Processing shots...")
@@ -498,7 +499,8 @@ class PlotAllRR:
 
                         # --- path to the soccfg dump (txt file made with save_run_soccfg_params.py) ---
                         if self.run_num == 8:  # this does work
-                            soccfg_dump_path = "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
+                            soccfg_dump_path = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
+                                # "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
                         elif self.run_num == 6:  # this doesn't work yet (shots need to be processed diff for run 6) but the skeleton is set up
                             soccfg_dump_path = "/data/QICK_data/run6/6transmon/loud2_soccfg_params/soccfg_full_dump_2025-11-04_16-30-54_firmware_during_run6.txt"
 
@@ -524,12 +526,38 @@ class PlotAllRR:
                         Ishots = replica.coerce_to_rounds_N_reps(Ishots_raw, steps, reps)
                         Qshots = replica.coerce_to_rounds_N_reps(Qshots_raw, steps, reps)
 
+                        # ------------------ NEW: per-point errors from shots ------------------
+                        if per_pt_errs:
+                            # Assume shape (rounds, steps, reps) and that each H5 holds one round
+                            I_round0 = Ishots[0]  # shape: (steps, reps)
+                            Q_round0 = Qshots[0]  # shape: (steps, reps)
+
+                            # standard error of the mean over reps for each step
+                            N_reps = I_round0.shape[-1]
+
+                            if N_reps > 1:
+                                I_errs = np.std(I_round0, axis=-1, ddof=1) / np.sqrt(N_reps)  # shape: (steps,)
+                                Q_errs = np.std(Q_round0, axis=-1, ddof=1) / np.sqrt(N_reps)
+                            else:
+                                # only 1 shot -> then no spread; define errors as 0
+                                I_errs = np.zeros(steps, dtype=float)
+                                Q_errs = np.zeros(steps, dtype=float)
+
+                        else:
+                            I_errs = None
+                            Q_errs = None
+                        # ---------------------------------------------------------------------
+
                         # --- acquire (software average over a single round) ---
                         I, Q = replica.acquire_offline(Ishots, Qshots, soft_avgs=1)
                     # -----------------------------------------------------------------------------------------------
                     else:
                         I = self.process_h5_data(load_data['t1_ge'][q_key].get('I', [])[0][dataset].decode())
                         Q = self.process_h5_data(load_data['t1_ge'][q_key].get('Q', [])[0][dataset].decode())
+
+                        # We don't have per-point errors when shots are not saved
+                        I_errs = None
+                        Q_errs = None
 
                     delay_times = self.process_h5_data(load_data['t1_ge'][q_key].get('Delay Times', [])[0][dataset].decode())
                     #fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
@@ -544,7 +572,7 @@ class PlotAllRR:
                     if len(I)>0:
                         T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
                         # T1_spec_cfg = exp_config['T1_ge'] # not using it for now, found out the one that should be used is the syst config one. that one gets updated during meas but expt doesn't
-                        T1_class_instance.plot_results(I, Q, delay_times, filename_date, None, self.figure_quality, iminuit_fit_instead = True)
+                        T1_class_instance.plot_results(I, Q, delay_times, filename_date, I_errs, Q_errs, None, self.figure_quality, iminuit_fit_instead = True)
                         del T1_class_instance
         
             del H5_class_instance
@@ -645,6 +673,23 @@ class PlotAllRR:
                     Ishots = replica.coerce_to_rounds_N_reps(Ishots_raw, steps, reps)
                     Qshots = replica.coerce_to_rounds_N_reps(Qshots_raw, steps, reps)
 
+                    # ------------------ NEW: per-point errors from shots ------------------
+                    # Assume shape (rounds, steps, reps) and that each H5 holds one round
+                    I_round0 = Ishots[0]  # shape: (steps, reps)
+                    Q_round0 = Qshots[0]  # shape: (steps, reps)
+
+                    # standard error of the mean over reps for each step
+                    N_reps = I_round0.shape[-1]
+
+                    if N_reps > 1:
+                        I_errs = np.std(I_round0, axis=-1, ddof=1) / np.sqrt(N_reps)  # shape: (steps,)
+                        Q_errs = np.std(Q_round0, axis=-1, ddof=1) / np.sqrt(N_reps)
+                    else:
+                        # only 1 shot -> then no spread; define errors as 0
+                        I_errs = np.zeros(steps, dtype=float)
+                        Q_errs = np.zeros(steps, dtype=float)
+                    # ---------------------------------------------------------------------
+
                     # --- acquire (software average over a single round) ---
                     I_viashots, Q_viashots = replica.acquire_offline(Ishots, Qshots, soft_avgs=1)
 
@@ -665,15 +710,15 @@ class PlotAllRR:
                         # ------------------------------- plot a la avg IQ arrays ------------------------------
                         T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.outerFolder_save_plots,
                                                           round_num, self.signal, self.save_figs, fit_data=True)
-                        I_avg, Q_avg, t, fit_avg, T1_err_avg, T1_est_avg, plot_sig_avg = T1_class_instance.plot_results(I, Q, delay_times, filename_date, T1_spec_cfg,
+                        I_avg, Q_avg, t, fit_avg, T1_err_avg, T1_est_avg, plot_sig_avg = T1_class_instance.plot_results(I, Q, delay_times, filename_date, I_errs, Q_errs, T1_spec_cfg,
                                                                                            self.figure_quality, iminuit_fit_instead = True)
                         del T1_class_instance
 
                         # ----------------------------------- plot a la shots ------------------------------
                         T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.unique_folder_path,
                                                           round_num, self.signal, self.save_figs, fit_data=True)
-                        I_sh,  Q_sh,  t, fit_sh,  T1_err_sh,  T1_est_sh,  plot_sig_sh = T1_class_instance.plot_results(I_viashots, Q_viashots, delay_times, filename_date, T1_spec_cfg,
-                                                                                            self.figure_quality, iminuit_fit_instead = True)
+                        I_sh,  Q_sh,  t, fit_sh,  T1_err_sh,  T1_est_sh,  plot_sig_sh = T1_class_instance.plot_results(I_viashots, Q_viashots, delay_times, filename_date, I_errs, Q_errs,
+                                                                                            T1_spec_cfg, self.figure_quality, iminuit_fit_instead = True)
                         del T1_class_instance
 
                         avg_tuple = (I_avg, Q_avg, t, fit_avg, T1_err_avg, T1_est_avg, plot_sig_avg)

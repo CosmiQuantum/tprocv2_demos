@@ -7,7 +7,7 @@ from analysis_001_plot_all_RR_h5 import PlotAllRR
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 
 ###################################################### Set These #######################################################
-save_figs = False
+save_figs = True
 fit_saved = True
 show_legends = False
 signal = 'None'
@@ -16,7 +16,7 @@ figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 saved_shots_t1ge = True
 
-t1_analysis_flags = {"load_t1_data": False, "plot_RR_data": True, "t1_vs_time_plots": False, "t1_hists": False}
+t1_analysis_flags = {"load_t1_data": False, "plot_RR_data": False, "t1_vs_time_plots": False, "t1_hists": False}
 
 if run_number == 8:
     run_name = 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis' # AB_paper_datadump_T1_Analysis
@@ -213,11 +213,12 @@ if t1_analysis_flags["plot_RR_data"]:
     outerFolder_save_plots = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/replotted_RR_data/2025-10-27_22-04-57/t1_ge/avg_IQ_method/"
         #f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/avg_IQ_method/"
     saved_shots_t1 = True # for plot_t1. plot_t1_shots_analysis does both methods regardless of this flag (purpose if to compare them).
+    per_pt_errs_T1 = True
     plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, run_number, tot_num_of_qubits, outerFolder,
-                      outerFolder_save_plots, unique_folder_path, saved_shots = saved_shots_t1)
+                      outerFolder_save_plots, unique_folder_path, saved_shots = saved_shots_t1, per_pt_errs = per_pt_errs_T1)
     plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, rabi_rolling_avg=False, plot_ss = False,
-                plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = False,
-                plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = False, plot_t1_shots_analysis = True)
+                plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = True,
+                plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = False, plot_t1_shots_analysis = False)
 
 ################################################# T1 vs Time Plots #################################################
 if t1_analysis_flags["t1_vs_time_plots"]:
