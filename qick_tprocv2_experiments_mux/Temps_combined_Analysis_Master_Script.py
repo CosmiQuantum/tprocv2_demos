@@ -30,7 +30,7 @@ run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
-replot_RPMs = True # Do you want to re-plot rabi population measurements from RR data?
+replot_RPMs = False # Do you want to re-plot rabi population measurements from RR data?
 save_figsRR = False # Do you want to save (or not save) re-plotted RR measurements plots?
 save_figs = False # To be used in general for any function or class to save (or not save) plots.
 fit_saved = False # Not used here, set to false.
@@ -47,7 +47,7 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
                       "combined_studies_qtemps": False}
 
 # What analysis plots do you want to make?
@@ -62,7 +62,7 @@ comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_tim
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 
 # For double-gaussian SSF analysis using alternative methods
-alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False, "Qtemps_vs_time_comb_single_plt": False}
+alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": True, "Qtemps_vs_time_comb_single_plt": False}
 
 # For coherence-qubit temps combined analysis
 coh_qtemp_ana_flags = {"load_rpm_qtemps": False, "load_ssf_qtemps": False, "load_mcp1_temps": False, "load_coherence_res": False, "plot_qtemps_t1_ftemps_qfreq": False}
@@ -182,33 +182,33 @@ filter_keywords_run7 = ['AB_paper_data']
 
 #-----------------------------------------------------------------------run 8------------------------------------------------------------
 # Base path of where the data is stored up to the Study Name (round_robin_benchmark)
-# base_dir_run8 = "/data/QICK_data/run8/6transmon/round_robin" # up to study name
+base_dir_run8 = "/data/QICK_data/run8/6transmon/round_robin" # up to study name
 
 # Arianna's local analysis
-base_dir_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # up to study name
+# base_dir_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # up to study name
 
 # for AB data: (specify up to the day only)
-# target_dates_qtemps_RPM_run8 = [
-#     "2025-10-19",
-#     "2025-10-20",
+target_dates_qtemps_RPM_run8 = [
+    # "2025-10-19",
+    # "2025-10-20",
 #     "2025-10-23",
 #     "2025-10-24",
 #     "2025-10-27",
 #     "2025-10-28",
 #     "2025-10-29",
 #     "2025-10-31",
-#     "2025-11-01"
+    "2025-11-01"]
 # ]
 # for Arianna's local analysis: (specify up to the day only)
-target_dates_qtemps_RPM_run8 = ["2025-10-27_22-04-57"]
+# target_dates_qtemps_RPM_run8 = ["2025-10-27_22-04-57"]
 
 # To re-make and save RPM RR plots
-outerFolder_qtemps_plots_RR_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\replotted_RR_data\rpm"
+outerFolder_qtemps_plots_RR_run8 = "/data/QICK_data/run8/6transmon/replotted_RR_data/rabi_pop_meas"
     # r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\replotted_RR_data\rpm"
     #"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/run8_analysis/benchmark_analysis_plots/RPM_RR_plots"
 #
 # For RPM Analysis
-outerFolder_qtemps_plots_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/rabi_pop_meas_analysis/" # Inside each analysis function, a subfolder will be defined
+outerFolder_qtemps_plots_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/run8_analysis/benchmark_analysis_plots/Qtemps_RPMmethod" # Inside each analysis function, a subfolder will be defined # Inside each analysis function, a subfolder will be defined
     # r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/rabi_pop_meas_analysis/"
     #"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/run8_analysis/benchmark_analysis_plots/Qtemps_RPMmethod" # Inside each analysis function, a subfolder will be defined
 
@@ -218,14 +218,14 @@ outerFolder_qtemps_plots_run8 = r"C:\Users\Arianna\Documents\Grad\Research\Cosmi
 #                         "ABpaperdata3rdbatch_21dB_DACatten_Q1to5", "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional",
 #                         "ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional", "ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional",
 #                         "ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt", "19dB_DAC_testdata_allQs"]
-# filter_keywords_run8 = ["AB_paper_datadump_for_analysis"]
+filter_keywords_run8 = ["AB_paper_datadump_for_analysis"]
 
 # # For run 8 temp sweep data:
 # filter_keywords_run8 = ["temperature_sweep_run8_25dBDAC_onechan_day1", "temperature_sweep_run8_25dBDAC_onechan_day2",
 #                         "temperature_sweep_run8_25dBDAC_onechan_day3", "temp_sweep_run8_25dBDAC_onechan_day4_175mK"]
 
 # For Arianna's local analysis
-filter_keywords_run8 = ['ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional']
+# filter_keywords_run8 = ['ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional']
 
 #-------------------------------------------------------------------------------- Assign func variables depending on run number ---------------------------------------------------------------------------
 
@@ -323,11 +323,11 @@ path_saveplots_ssf_qtemps_vsT_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1h
 
 # on qubituser-daq01:
 paths_SSFmethods_run8 = [
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_11-09-32",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_12-05-25",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_19-43-00",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_20-25-18",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-20_12-10-19"]
+    # "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_11-09-32",
+    # "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_12-05-25",
+    # "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_19-43-00",
+    # "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_20-25-18",
+    # "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-20_12-10-19",
 #     "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-23_00-49-28",
 #     "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-23_14-47-22",
 #     "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-24_13-58-37",
@@ -339,9 +339,9 @@ paths_SSFmethods_run8 = [
 #     "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-29_23-48-45",
 #     "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-31_01-54-57",
 #     "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-31_20-40-11",
-#     "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-11-01_12-54-55"
-# ]
-
+    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-11-01_12-54-55"
+]
+#
 path_saveplots_fits_run8 ="/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_gaussfits" # where to save ssf plots to check gaussian fits
 path_saveplots_ssf_qtemps_vsT_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_analysis\Qtemps_vs_Time_run8" # to save qubit temps vs time via ssf methods
 
