@@ -2400,6 +2400,10 @@ class combined_Qtemp_studies:
                 d = rec.get("qubits", {}).get(q)
                 if not d:
                     continue
+
+                if d["T_mK_err"]/d["T_mK"] > 0.5:
+                    continue
+
                 t = datetime.datetime.fromtimestamp(d["date"])
                 times_RPM[q].append(t)
                 temps_RPM[q].append(d["T_mK"])

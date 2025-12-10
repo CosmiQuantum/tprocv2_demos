@@ -149,14 +149,6 @@ class Temps_EFAmpRabiExperiment:
             ax2.plot(gains, q1_fit_cosine_Q, '-', color='red', linewidth=3, label="Fit")
             ax1.plot(gains, q1_fit_cosine_I, '-', color='red', linewidth=3, label="Fit")
 
-            if config is not None:
-                fig.text(plot_middle, 0.98,
-                         f"e-f Rabi Q{self.QubitIndex + 1}: {pi_amp:.4f} (a.u.) _"  + f", {config['reps']}*{config['rounds']} avgs",
-                         fontsize=24, ha='center', va='top') #f", {config['sigma'] * 1000} ns sigma" need to add in all qqubit sigmas to save exp_cfg before putting htis back
-            else:
-                fig.text(plot_middle, 0.98,
-                         f"e-f Rabi Q{self.QubitIndex + 1}: {pi_amp:.4f} (a.u.)_" f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']}*{self.config['rounds']} avgs",
-                         fontsize=24, ha='center', va='top')
             # print(len(gains))
             ax1.plot(gains, I, label="Gain (a.u.)", linewidth=2)
             ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
@@ -192,6 +184,15 @@ class Temps_EFAmpRabiExperiment:
             A_amplitude_err = amp_perr[0]
             #print('Amplitude error (std): ', A_amplitude_err)
 
+            if config is not None:
+                fig.text(plot_middle, 0.98,
+                         f"e-f RPM Q{self.QubitIndex + 1}: {pi_amp:.2f} (a.u.),  A={A_amplitude}"  + f", Pg: {config['reps']}*{config['rounds']} avgs, Pe: {config['reps2']}*{config['rounds']} avgs",
+                         fontsize=18, ha='center', va='top') #f", {config['sigma'] * 1000} ns sigma" need to add in all qqubit sigmas to save exp_cfg before putting htis back
+            else:
+                fig.text(plot_middle, 0.98,
+                         f"e-f RPM Q{self.QubitIndex + 1}: {pi_amp:.2f} (a.u.), A={A_amplitude}",
+                         fontsize=18, ha='center', va='top')
+
             # --- Compute R-squared to evaluate goodness of amplitude fit ---
             ss_res = np.sum((amplitude_data - amplitude_fit) ** 2) #Residual sum of squares
             ss_tot = np.sum((amplitude_data - np.mean(amplitude_data)) ** 2) # Total sum of squares (tot variance, how much the raw data varies around its mean)
@@ -206,9 +207,6 @@ class Temps_EFAmpRabiExperiment:
             ax3.legend(loc='best')
 
             #------------------------------------------------------------------------------------------------
-
-            # plt.tight_layout()
-            # plt.subplots_adjust(top=0.93)
 
             if self.save_figs:
                 today_date = datetime.datetime.now().strftime("%Y-%m-%d")

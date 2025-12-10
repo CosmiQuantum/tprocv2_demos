@@ -1890,13 +1890,13 @@ class PlotRR_noQick:
                         saver1 = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits,
                                                            list_of_all_qubits,
                                                            out_dir, round_num, self.signal, save_figs=save_figs)
-                        saver1.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality)
+                        saver1.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality, use_iminuit_instead = True)
                         del saver1
 
                         saver2 = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits,
                                                            list_of_all_qubits,
                                                            out_dir, round_num, self.signal, save_figs=save_figs)
-                        saver2.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality)
+                        saver2.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality, use_iminuit_instead = True)
                         del saver2
 
                         # Skip temperature calculation if flagged
