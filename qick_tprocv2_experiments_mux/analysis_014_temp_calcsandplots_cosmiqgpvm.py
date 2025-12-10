@@ -397,15 +397,10 @@ class SSFTempCalcAndPlots:
                 ts_unix      = rec["data_timestamp"]
 
                 # ----------------- fit double Gaussian on ground-state SSF -----------------
-                try:
-                    notprebuiltclass = non_prebuilt_ssf_analysis_class()
-                    (params, xvals,
-                     ground_gaussian, excited_gaussian, sum_gaussians,
-                     Pg, Pe, lo, hi) = notprebuiltclass.fit_double_gaussian_on_ground_Arianna(ig_new, numbins=55)
-                except RuntimeError as e:
-                    # fit failed - skip this dataset
-                    # if self.verbose: print(f"Q{qid+1} idx {idx}: fit failed ({e})")
-                    continue
+                notprebuiltclass = non_prebuilt_ssf_analysis_class()
+                (params, xvals,
+                 ground_gaussian, excited_gaussian, sum_gaussians,
+                 Pg, Pe, lo, hi) = notprebuiltclass.fit_double_gaussian_on_ground_Arianna(ig_new, numbins=55)
 
                 # ----------------- unpack fit parameters -----------------
                 mu1, mu2 = params["mu"]
@@ -418,16 +413,8 @@ class SSFTempCalcAndPlots:
                 x_finite = ig_new[np.isfinite(ig_new)]
                 nll2 = chi2 / 2.0  # since chisq = 2 * NLL_2G
 
-                # ----------------- fit single Gaussian (for LR test) -----------------
-                try:
-                    params_1g, xvals_1g, gauss1_scaled, lo1, hi1 = (
-                        notprebuiltclass.fit_single_gaussian_on_ground_Arianna(
-                            ig_new, numbins=55
-                        )
-                    )
-                except RuntimeError:
-                    # if single-G fit fails, skip
-                    continue
+                # ----------------- fit single Gaussian (finds NLL1 for Likelihood ratio test) -----------------
+                params_1g = notprebuiltclass.single_gaussian_nll1(ig_new)
 
                 nll1 = params_1g["nll"]
 
@@ -452,7 +439,7 @@ class SSFTempCalcAndPlots:
                             params,
                             numbins=55,
                             save_figs_path=bad_plots_path,
-                            filename_ext=f"Q{qid + 1}",
+                            filename_ext=f"Q{qid + 1}_Dataset{idx}",
                             title_ext=f"Q{qid + 1}, chi2={chi2:.2f}, LRT value={lr_stat:.2f}"
                         )
 
@@ -478,7 +465,7 @@ class SSFTempCalcAndPlots:
                 temp_k = self.calculate_qubit_temperature(freq_mhz, Pg, Pe)
 
                 # discard unphysical or too-hot temps
-                if (temp_k is None) or (temp_k > limit_temp_k):
+                if (temp_k is None): # or (temp_k > limit_temp_k)
                     # if self.verbose: print(f"Q{qid+1} idx {idx}: T={temp_k*1e3:.1f} mK > {limit_temp_k*1e3:.0f} mK")
                     continue
 
@@ -494,7 +481,7 @@ class SSFTempCalcAndPlots:
                         params,
                         numbins=55,
                         save_figs_path = save_figs_path,
-                        filename_ext = f"Q{qid + 1}",
+                        filename_ext = f"Q{qid + 1}_Dataset{idx}",
                         title_ext = f"Q{qid + 1}, chi2={chi2:.2f}, LRT value={lr_stat:.2f}"
                     )
 
@@ -658,9 +645,9 @@ class SSFTempCalcAndPlots:
                 if temp_k is None:
                     # un-physical, skip
                     continue
-                if temp_k > limit_temp_k:
-                    print(f"[run]  Q{qid + 1}: {temp_k * 1e3:.1f} mK  > {limit_temp_k * 1e3:.0f} mK  -> dropped")
-                    continue
+                # if temp_k > limit_temp_k:
+                #     print(f"[run]  Q{qid + 1}: {temp_k * 1e3:.1f} mK  > {limit_temp_k * 1e3:.0f} mK  -> dropped")
+                #     continue
 
                 # Now call on the function compute_temperature_error_SSF to calculate the errs of the qubit temps
                 T_mK = temp_k * 1e3

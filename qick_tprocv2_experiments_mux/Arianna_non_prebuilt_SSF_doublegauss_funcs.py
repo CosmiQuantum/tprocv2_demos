@@ -310,3 +310,30 @@ class non_prebuilt_ssf_analysis_class:
         }
 
         return params, xvals, gauss_scaled, lo, hi
+
+    def single_gaussian_nll1(self, ig_new):
+        """Serves same purpose as fit_single_gaussian_on_ground_Arianna() without minimizing. Reduces failing during analysis.
+        I only need NLL"""
+
+        x = ig_new[np.isfinite(ig_new)]
+        if x.size < 2:
+            raise ValueError("Need at least 2 data points")
+
+        mu = float(np.mean(x))
+        sig = self.safe_std(x)
+        if sig <= 0:
+            # fallback: tiny sigma or treat as failure
+            raise RuntimeError("Sigma too small in analytic 1-G")
+
+        g = self.gauss_pdf(x, mu, sig)
+        eps = 1e-300
+        p = np.clip(g, eps, None)
+        nll1 = -np.sum(np.log(p))
+        chisq = 2 * nll1
+
+        return {
+            "mu": mu,
+            "sigma": sig,
+            "chisq": chisq,
+            "nll": nll1,
+        }

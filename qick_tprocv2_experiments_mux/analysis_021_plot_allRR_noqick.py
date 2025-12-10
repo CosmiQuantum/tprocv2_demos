@@ -1834,7 +1834,7 @@ class PlotRR_noQick:
                         I1 = np.asarray(I1)
                         Q1 = np.asarray(Q1)
                         gains1 = np.asarray(gains1)
-                        best_signal_fit1, pi_amp1, A_amplitude1, A_amplitude_err1, amp_fit1, R2_Pe = rabi_class_instance.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality)
+                        best_signal_fit1, pi_amp1, A_amplitude1, A_amplitude_err1, amp_fit1, R2_Pe = rabi_class_instance.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality, use_iminuit_instead = True)
                         del rabi_class_instance
 
                     if len(I2) > 0:
@@ -1845,7 +1845,7 @@ class PlotRR_noQick:
                         I2 = np.asarray(I2)
                         Q2 = np.asarray(Q2)
                         gains2 = np.asarray(gains2)
-                        best_signal_fit2, pi_amp2, A_amplitude2, A_amplitude_err2, amp_fit2, R2_Pg = rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality)
+                        best_signal_fit2, pi_amp2, A_amplitude2, A_amplitude_err2, amp_fit2, R2_Pg = rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality, use_iminuit_instead = True)
                         del rabi_class_instance
 
                     #-------------------------------------------- New: to inspect bad fits --------------------------------------------
