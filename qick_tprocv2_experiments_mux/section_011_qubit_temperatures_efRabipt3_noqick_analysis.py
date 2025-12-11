@@ -202,8 +202,8 @@ class Temps_EFAmpRabiExperiment:
             R2 = 1 - ss_res / ss_tot if ss_tot != 0 else 0
 
             # --- Plot amplitude data and its cosine fit on the third subplot ---
-            ax3.plot(gains, amplitude_data, '-', label="Amplitude Data", linewidth=2)
-            ax3.plot(gains, amplitude_fit, '-', color='green', linewidth=3, label="Amplitude Fit")
+            ax3.plot(gains, amplitude_data, '-', label="Amp Data", linewidth=2)
+            ax3.plot(gains, amplitude_fit, '-', color='green', linewidth=3, label="Cos Fit to Amp Data")
 
             ax3.plot(gains, amp_fit, '-', color='orange', linewidth=3, label="Amp Fit from I and Q Fits") # for a test
 
