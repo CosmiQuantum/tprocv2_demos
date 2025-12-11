@@ -177,6 +177,9 @@ class Temps_EFAmpRabiExperiment:
                 amp_popt, amp_pcov = curve_fit(self.cosine, gains, amplitude_data, maxfev=100000, p0=amp_guess)
             amplitude_fit = self.cosine(gains, *amp_popt)
 
+            # --- Compute amplitude curve from the I and Q FITS instead of the data, this is for a test ---
+            amp_fit = np.sqrt(q1_fit_cosine_I ** 2 + q1_fit_cosine_Q ** 2)
+
             # --- Extract the amplitude parameter A directly ---
             A_amplitude = amp_popt[0]
             # print("Amplitude parameter A from cosine fit:", A_amplitude)
@@ -201,13 +204,15 @@ class Temps_EFAmpRabiExperiment:
             # --- Plot amplitude data and its cosine fit on the third subplot ---
             ax3.plot(gains, amplitude_data, '-', label="Amplitude Data", linewidth=2)
             ax3.plot(gains, amplitude_fit, '-', color='green', linewidth=3, label="Amplitude Fit")
+
+            ax3.plot(gains, amp_fit, '-', color='orange', linewidth=3, label="Amp Fit from I and Q Fits") # for a test
+
             ax3.set_xlabel("Gain (a.u.)", fontsize=20)
             ax3.set_ylabel("Amplitude (a.u.)", fontsize=20)
             ax3.tick_params(axis='both', which='major', labelsize=16)
             ax3.legend(loc='best')
 
             #------------------------------------------------------------------------------------------------
-
             if self.save_figs:
                 today_date = datetime.datetime.now().strftime("%Y-%m-%d")
                 dated_folder_name = f"made_on_{today_date}"

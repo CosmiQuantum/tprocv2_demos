@@ -48,7 +48,7 @@ tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
 qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_qtemps": True}
+                      "combined_studies_qtemps": False}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
@@ -416,23 +416,23 @@ if run_num == 8:
     #     "2025-11-01_12-54-55"]
 
     # All run 8 qubit temperature sweep data except the 200mK dataset bc no qubits visible
-    top_folder_dates = [
-        "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_08-39-37",
-        "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_09-02-01",
-        "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_12-40-59",
-        "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_14-26-01",
-        "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_14-48-11",
-
-        "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_08-04-25",
-        "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-00-00",
-        "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-27-04",
-
-        "temperature_sweep_run8_25dBDAC_onechan_day3/2025-11-20_07-31-49",
-
-        "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-01-57",
-        "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-33-09",
-        "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-45-17",
-        "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-54-05"]
+    # top_folder_dates = [
+    #     "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_08-39-37",
+    #     "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_09-02-01",
+    #     "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_12-40-59",
+    #     "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_14-26-01",
+    #     "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_14-48-11",
+    #
+    #     "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_08-04-25",
+    #     "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-00-00",
+    #     "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-27-04",
+    #
+    #     "temperature_sweep_run8_25dBDAC_onechan_day3/2025-11-20_07-31-49",
+    #
+    #     "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-01-57",
+    #     "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-33-09",
+    #     "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-45-17",
+    #     "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-54-05"]
 else:
     raise ValueError("You must choose run_num = 8 to load coherence data. Otherwise, define a section for your run of interest.")
 
