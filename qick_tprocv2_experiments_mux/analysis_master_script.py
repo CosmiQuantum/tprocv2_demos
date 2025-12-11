@@ -244,13 +244,13 @@ elif run_number == 4:
 FRIDGE = "QUIET"
 run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB attenuator ') #please make it brief for the plot
 # ################################################ 01: Get all data ######################################################
-# res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-#                                        save_figs, fit_saved, signal, run_name, FRIDGE)
-# date_times_res_spec, res_freqs = res_spec_vs_time.run()
+res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+                                       save_figs, fit_saved, signal, run_name, FRIDGE)
+date_times_res_spec, res_freqs = res_spec_vs_time.run()
 # #
-q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                  save_figs, fit_saved, signal, run_name, FRIDGE)
-date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = True)
+# q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                   save_figs, fit_saved, signal, run_name, FRIDGE)
+# date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = True)
 
 # pi_amps_vs_time = PiAmpsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
 #                               fit_saved,signal, run_name)
@@ -297,7 +297,7 @@ date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_g
 #
 # ######################################### 04: Qubit Freqs vs Time Plots #############################################
 # q_spec_vs_time.plot_without_errs(date_times_q_spec, q_freqs,show_legends)
-q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends)
+# q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends)
 # q_spec_vs_time.plot_with_errs_single_plot(date_times_q_spec, q_freqs, qspec_fit_err, show_legends=True)
 #
 # ############################################## 05: Pi Amp vs Time Plots ###############################################

@@ -555,7 +555,7 @@ class PlotAllRR:
         
             del H5_class_instance
 
-    def load_t1_shots_vs_avgIQ_arrays(self, plot_both_methods_tog = True, plot_both_methods_diff = False, plot_T1res_method_comp = False):
+    def load_t1_shots_vs_avgIQ_arrays(self, plot_both_methods_tog = False, plot_both_methods_diff = False, plot_T1res_method_comp = True):
         """
         plot_both_methods_tog --> plot both T1 curves (the QICK one and the Arianna offline one) in the same plot.
         plot_both_methods_diff --> plot the difference (subtraction) of those two curves.
@@ -651,25 +651,8 @@ class PlotAllRR:
                     Ishots = replica.coerce_to_rounds_N_reps(Ishots_raw, steps, reps)
                     Qshots = replica.coerce_to_rounds_N_reps(Qshots_raw, steps, reps)
 
-                    # ------------------ NEW: per-point errors from shots ------------------
-                    # Assume shape (rounds, steps, reps) and that each H5 holds one round
-                    I_round0 = Ishots[0]  # shape: (steps, reps)
-                    Q_round0 = Qshots[0]  # shape: (steps, reps)
-
-                    # standard error of the mean over reps for each step
-                    N_reps = I_round0.shape[-1]
-
-                    if N_reps > 1:
-                        I_errs = np.std(I_round0, axis=-1, ddof=1) / np.sqrt(N_reps)  # shape: (steps,)
-                        Q_errs = np.std(Q_round0, axis=-1, ddof=1) / np.sqrt(N_reps)
-                    else:
-                        # only 1 shot -> then no spread; define errors as 0
-                        I_errs = np.zeros(steps, dtype=float)
-                        Q_errs = np.zeros(steps, dtype=float)
-                    # ---------------------------------------------------------------------
-
                     # --- acquire (software average over a single round) ---
-                    I_viashots, Q_viashots = replica.acquire_offline(Ishots, Qshots, soft_avgs=1)
+                    I_viashots, Q_viashots, I_errs, Q_errs = replica.acquire_offline(Ishots, Qshots, soft_avgs=1, per_pt_errs=self.per_pt_errs)
 
                     # -------------------------- Extract avg IQ arrays from h5 files (these were made by QICK) --------------------------------------------
                     I = self.process_h5_data(load_data['t1_ge'][q_key].get('I', [])[0][dataset].decode())
@@ -741,7 +724,8 @@ class PlotAllRR:
         if plot_T1res_method_comp:
             self.plot_t1_methods_comparison_all_qubits(
                 t1_results_by_qubit,
-                out_dir=f"/data/QICK_data/run8/6transmon/replotted_RR_data/{self.date}/T1_results_method_comparison_all_qubits"
+                out_dir=fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\rabi_pop_meas_analysis"
+                #f"/data/QICK_data/run8/6transmon/replotted_RR_data/{self.date}/T1_results_method_comparison_all_qubits"
             )
 
     def plot_t1_methods_comparison_all_qubits(
@@ -781,44 +765,52 @@ class PlotAllRR:
             t1_avg = np.asarray(data["qick_avg"], dtype=float)
             t1_sh = np.asarray(data["shots_avg"], dtype=float)
 
-            # --- max |delta T1| on overlapping points (ignore any extra failed entries) ---
+            # --- differences on overlapping points, using your convention: Offline - Qick ---
             min_len = min(len(t1_avg), len(t1_sh))
             if min_len > 0:
-                diffs = np.abs(t1_avg[:min_len] - t1_sh[:min_len])
-                max_diff = float(np.nanmax(diffs))
+                # ΔT1 = T1_offline - T1_qick
+                deltas = t1_sh[:min_len] - t1_avg[:min_len]
+
+                max_diff = float(np.nanmax(np.abs(deltas)))  # max |ΔT1|
+                mean_delta = float(np.nanmean(deltas))  # ⟨ΔT1⟩
+                frac_offline_bigger = float(np.mean(deltas > 0))  # P(Offline > Qick)
             else:
                 max_diff = np.nan
+                mean_delta = np.nan
+                frac_offline_bigger = np.nan
 
             n_pts = max(len(t1_avg), len(t1_sh))
             x = np.arange(n_pts)
-
-            # protect against unequal lengths (shouldn't normally happen)
-            if len(t1_avg) != n_pts:
-                t1_avg = np.pad(
-                    t1_avg,
-                    (0, n_pts - len(t1_avg)),
-                    mode="constant",
-                    constant_values=np.nan
-                )
-            if len(t1_sh) != n_pts:
-                t1_sh = np.pad(
-                    t1_sh,
-                    (0, n_pts - len(t1_sh)),
-                    mode="constant",
-                    constant_values=np.nan
-                )
 
             ax.plot(x, t1_avg, "o-", label="Qick T1", linewidth=1)
             ax.plot(x, t1_sh, "s--", label="Offline Shots T1", linewidth=1)
 
             # per-qubit title
             if np.isfinite(max_diff):
-                ax.set_title(f"Q{qidx + 1}, max T1 diff = {max_diff:.3g} us", fontsize=9 )
+                # show both magnitude and direction, but keep title compact
+                if np.isfinite(mean_delta):
+                    frac_pct = int(round(frac_offline_bigger * 100)) if np.isfinite(frac_offline_bigger) else 0
+                    ax.set_title(
+                        f"Q{qidx + 1}, max |Δ T1|={max_diff:.3g} µs\n"
+                        f"⟨ΔT1⟩={mean_delta:+.3g} µs (Offline−QICK), {frac_pct}% > 0)", # mean diff between 2 methods and fraction when Offline T1 exceeds QICK T1
+                        fontsize=9
+                    )
+                else:
+                    ax.set_title(f"Q{qidx + 1}, max |ΔT1|={max_diff:.3g} µs", fontsize=9)
             else:
-                ax.set_title(f"Q{qidx + 1}, max delta T1 = n/a", fontsize=9 )
+                ax.set_title(f"Q{qidx + 1}, ΔT1 n/a", fontsize=9)
 
             ax.set_xlabel("Dataset index")
             ax.grid(alpha=0.3)
+
+            # prints a line per qubit to the terminal as you go
+            if min_len > 0:
+                print(
+                    f"[T1 Δ] Q{qidx + 1}: mean ΔT1 (Offline − Qick) = {mean_delta:+.3f} µs, "
+                    f"max |ΔT1| = {max_diff:.3f} µs, "
+                    f"Offline > Qick in {frac_offline_bigger * 100:.1f}% of overlapping datasets "
+                    f"(N_overlap = {min_len})"
+                )
 
         # Common y-label and global title
         for ax in axes:

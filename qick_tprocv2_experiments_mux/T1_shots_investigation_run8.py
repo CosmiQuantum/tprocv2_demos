@@ -7,7 +7,7 @@ from analysis_001_plot_all_RR_h5 import PlotAllRR
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 
 ###################################################### Set These #######################################################
-save_figs = True
+save_figs = False
 fit_saved = True
 show_legends = False
 signal = 'None'
@@ -217,8 +217,8 @@ if t1_analysis_flags["plot_RR_data"]:
     plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, run_number, tot_num_of_qubits, outerFolder,
                       outerFolder_save_plots, unique_folder_path, saved_shots = saved_shots_t1, per_pt_errs = per_pt_errs_T1)
     plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, rabi_rolling_avg=False, plot_ss = False,
-                plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = True,
-                plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = False, plot_t1_shots_analysis = False)
+                plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = False,
+                plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = False, plot_t1_shots_analysis = True)
 
 ################################################# T1 vs Time Plots #################################################
 if t1_analysis_flags["t1_vs_time_plots"]:

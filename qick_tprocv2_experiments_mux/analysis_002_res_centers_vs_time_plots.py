@@ -126,7 +126,6 @@ class ResonatorFreqVsTime:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
             # ------------------------------------------Load/Plot/Save Res Spec------------------------------------
-
             if '_' in exp_extension:
                 outerFolder_expt = outerFolder + f"/Data_h5/res{exp_extension}/"
             else:
@@ -160,8 +159,7 @@ class ResonatorFreqVsTime:
                                                           dataset].decode())  # comes in as an array but put into a string, need to convert to list
                         freqs_found = self.string_to_float_list(load_data[f'res{exp_extension}'][q_key].get('Found Freqs', [])[0][
                                                                dataset].decode())  # comes in as a list of floats in string format, need to convert
-                        amps = self.process_string_of_nested_lists(
-                            load_data[f'res{exp_extension}'][q_key].get('Amps', [])[0][dataset].decode())  # list of lists
+                        amps = self.process_string_of_nested_lists(load_data[f'res{exp_extension}'][q_key].get('Amps', [])[0][dataset].decode())  # list of lists
                         round_num = load_data[f'res{exp_extension}'][q_key].get('Round Num', [])[0][dataset]  # already a float
                         batch_num = load_data[f'res{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
 

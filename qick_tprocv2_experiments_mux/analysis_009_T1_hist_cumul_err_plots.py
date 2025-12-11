@@ -244,7 +244,7 @@ class T1HistCumulErrPlots:
                             # ---------------------------------------------------------------------
 
                             # --- acquire (software average over a single round) ---
-                            I, Q = replica.acquire_offline(Ishots, Qshots, soft_avgs=1)
+                            I, Q, I_errs, Q_errs = replica.acquire_offline(Ishots, Qshots, soft_avgs=1, per_pt_errs = self.per_pt_errs)
                         # -----------------------------------------------------------------------------------------------
                         else:
                             I = self.process_h5_data(load_data['t1_ge'][q_key].get('I', [])[0][dataset].decode())
@@ -881,10 +881,14 @@ class OfflineAcquireReplica:
         return avg_d
 
     # -------------------- public: acquire offline --------------------
-    def acquire_offline(self, Ishots, Qshots, *, soft_avgs=None):
+    def acquire_offline(self, Ishots, Qshots, *, soft_avgs=None, per_pt_errs=False):
         """
         Inputs:
           Ishots, Qshots shaped like (rounds, N, reps) or flattenable to that.
+          per_pt_errs : bool
+          If True, also return per-point standard error over rounds
+          for the final I and Q traces.
+
         Output:
           (I_final, Q_final) each shape (N,)
         """
@@ -896,6 +900,9 @@ class OfflineAcquireReplica:
 
         I3 = self._ensure_rounds_axis(Ishots, N=self._N_steps, rounds=self._rounds, reps=self._reps)
         Q3 = self._ensure_rounds_axis(Qshots, N=self._N_steps, rounds=self._rounds, reps=self._reps)
+
+        # collect per-round averages so we can also compute SEM over rounds
+        round_avgs = []  # each element: (steps, 2) [I,Q]
 
         # accumulate per-round like QICK does, using the same averaging kernel
         summed = None
@@ -923,4 +930,32 @@ class OfflineAcquireReplica:
         I_final = summed[:, 0]  # (N,)
         Q_final = summed[:, 1]
 
-        return I_final, Q_final
+        # ---------- NEW: optional per-point errors over rounds ----------
+        if per_pt_errs:
+            if soft_avgs == 1:
+                raw_I = I3[0]  # (steps, reps)
+                raw_Q = Q3[0]
+                n_reps = raw_I.shape[1]
+
+                if n_reps > 1:
+                    raw_I_std = raw_I.std(axis=1, ddof=1) / np.sqrt(n_reps)
+                    raw_Q_std = raw_Q.std(axis=1, ddof=1) / np.sqrt(n_reps)
+
+                    scale = 1.0 / float(self._ro_cycles)  # this is the only factor that affects the errs scaling
+
+                    I_errs = raw_I_std * scale
+                    Q_errs = raw_Q_std * scale
+
+                else:
+                    I_errs = np.zeros_like(I_final)
+                    Q_errs = np.zeros_like(Q_final)
+
+            else:
+                print('The code has not been set up to return per-point errors for datasets with soft_avgs > 1.')
+                I_errs = None
+                Q_errs = None
+        else:
+            I_errs = None
+            Q_errs = None
+
+        return I_final, Q_final, I_errs, Q_errs
