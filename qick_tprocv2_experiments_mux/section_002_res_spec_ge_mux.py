@@ -110,9 +110,9 @@ class ResonanceSpectroscopy:
             self.create_folder_if_not_exists(outerFolder_expt)
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-            file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name)
+            file_name = os.path.join(outerFolder_expt, f"Rnd{self.round_num}_" + f"Q{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name)
             plt.savefig(file_name + ".png", dpi=fig_quality)
-            plt.savefig(file_name + ".pdf", dpi=fig_quality)
+            # plt.savefig(file_name + ".pdf", dpi=fig_quality)
         plt.close()
 
         res_freqs = [round(x, 5) for x in res_freqs]

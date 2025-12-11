@@ -135,20 +135,20 @@ class PlotAllRR:
         outerFolder_expt = os.path.join(self.outerFolder, "Data_h5")
         h5_files = glob.glob(os.path.join(outerFolder_expt, "Res_ge", "*.h5"))
         h5_files += glob.glob(os.path.join(outerFolder_expt, "Res", "*.h5"))
-        print(outerFolder_expt)
+        h5_files += glob.glob(os.path.join(outerFolder_expt, "res_ge", "*.h5"))
+
+        res_key = 'res_ge'
+
         for h5_file in h5_files:
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
             H5_class_instance = Data_H5(h5_file)
-            #H5_class_instance.print_h5_contents(h5_file)
-            load_data = H5_class_instance.load_from_h5(data_type=  'Res', save_r = int(save_round))
-        
-            #just look at this resonator data, should have batch_num of arrays in each one
-            #right now the data writes the same thing batch_num of times, so it will do the same 5 datasets 5 times, until you fix this just grab the first one (All 5)
-        
+
+            load_data = H5_class_instance.load_from_h5(data_type= res_key, save_r = int(save_round))
+
             populated_keys = []
-            for q_key in load_data['Res']:
+            for q_key in load_data[res_key]:
                 # Access 'Dates' for the current q_key
-                dates_list = load_data['Res'][q_key].get('Dates', [[]])
+                dates_list = load_data[res_key][q_key].get('Dates', [[]])
         
                 # Check if any entry in 'Dates' is not NaN
                 if any(
@@ -159,22 +159,22 @@ class PlotAllRR:
         
             for q_key in populated_keys:
                 #go through each dataset in the batch and plot
-                for dataset in range(len(load_data['Res'][q_key].get('Dates', [])[0])):
-                    date = datetime.datetime.fromtimestamp(load_data['Res'][q_key].get('Dates', [])[0][dataset])   #single date per dataset
-                    freq_pts = self.process_h5_data(load_data['Res'][q_key].get('freq_pts', [])[0][dataset].decode())   # comes in as an array but put into a byte string, need to convert to list
+                for dataset in range(len(load_data[res_key][q_key].get('Dates', [])[0])):
+                    date = datetime.datetime.fromtimestamp(load_data[res_key][q_key].get('Dates', [])[0][dataset])   #single date per dataset
+                    freq_pts = self.process_h5_data(load_data[res_key][q_key].get('freq_pts', [])[0][dataset].decode())   # comes in as an array but put into a byte string, need to convert to list
 
-                    freq_center = self.process_h5_data(load_data['Res'][q_key].get('freq_center', [])[0][dataset].decode()) # comes in as an array but put into a string, need to convert to list
-                    freqs_found = self.string_to_float_list(load_data['Res'][q_key].get('Found Freqs', [])[0][dataset].decode()) #comes in as a list of floats in string format, need to convert
-                    amps =  self.process_string_of_nested_lists(load_data['Res'][q_key].get('Amps', [])[0][dataset].decode())  #list of lists
-                    syst_config = load_data['Res'][q_key].get('Syst Config', [])[0][dataset].decode()
-                    exp_config = load_data['Res'][q_key].get('Exp Config', [])[0][dataset].decode()
+                    freq_center = self.process_h5_data(load_data[res_key][q_key].get('freq_center', [])[0][dataset].decode()) # comes in as an array but put into a string, need to convert to list
+                    freqs_found = self.string_to_float_list(load_data[res_key][q_key].get('Found Freqs', [])[0][dataset].decode()) #comes in as a list of floats in string format, need to convert
+                    amps =  self.process_string_of_nested_lists(load_data[res_key][q_key].get('Amps', [])[0][dataset].decode())  #list of lists
+                    syst_config = load_data[res_key][q_key].get('Syst Config', [])[0][dataset].decode()
+                    exp_config = load_data[res_key][q_key].get('Exp Config', [])[0][dataset].decode()
                     safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
                     syst_config = eval(syst_config, safe_globals)
                     exp_config = eval(exp_config, safe_globals)
 
-                    round_num = load_data['Res'][q_key].get('Round Num', [])[0][dataset] #already a float
-                    batch_num = load_data['Res'][q_key].get('Batch Num', [])[0][dataset]
-                    freq_pts_data = load_data['Res'][q_key].get('freq_pts', [])[0][dataset].decode()
+                    round_num = load_data[res_key][q_key].get('Round Num', [])[0][dataset] #already a float
+                    batch_num = load_data[res_key][q_key].get('Batch Num', [])[0][dataset]
+                    freq_pts_data = load_data[res_key][q_key].get('freq_pts', [])[0][dataset].decode()
         
                     # Replace whitespace between numbers with commas to make it a valid list
                     formatted_str = freq_pts_data.replace('  ', ',').replace('\n', '')
@@ -183,11 +183,11 @@ class PlotAllRR:
                     formatted_str = formatted_str.replace('],[', '],[')
                     formatted_str = re.sub(r",,", ",", formatted_str)
                     formatted_str = re.sub(r",\s*([\]])", r"\1", formatted_str)
-                    formatted_str = re.sub(r"(\d+)\.,", r"\1.0,",
-                                           formatted_str)  # Fix malformed floating-point numbers (e.g., '5829.,' -> '5829.0')
+                    formatted_str = re.sub(r"(\d+)\.,", r"\1.0,",formatted_str)  # Fix malformed floating-point numbers (e.g., '5829.,' -> '5829.0')
+
                     # Convert to NumPy array
                     freq_points = np.array(eval(formatted_str))
-                    #print('here: ', freq_points)
+
                     if len(freq_pts) > 0:
                         res_class_instance = ResonanceSpectroscopy(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.save_figs)
                         res_spec_cfg = exp_config['res_spec']
