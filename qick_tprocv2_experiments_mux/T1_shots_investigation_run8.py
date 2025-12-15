@@ -5,25 +5,30 @@ from analysis_006_T1_vs_time_plots import T1VsTime
 from analysis_009_T1_hist_cumul_err_plots import T1HistCumulErrPlots
 from analysis_001_plot_all_RR_h5 import PlotAllRR
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
-
+from analysis_t1_qicklab_vs_offlineQick_funcs import comp_t1_methods_allQs_offline_vs_qicklab, run_qicklab_t1_all_qubits
 ###################################################### Set These #######################################################
-save_figs = False
+save_figs = True
 fit_saved = True
 show_legends = False
 signal = 'None'
 run_number = 8
+num_of_qubits = 6
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
-saved_shots_t1ge = True
+saved_shots_t1ge = True # used for non-Qicklab analysis, where we can decide to process shots offline or just use QICK avg IQ arrays
+per_pt_errs = True
 
-t1_analysis_flags = {"load_t1_data": False, "plot_RR_data": True, "t1_vs_time_plots": False, "t1_hists": False}
+t1_analysis_flags = {"load_t1_data_tprocv2": True, "Qicklab_T1_processing_allQs": True, "plot_RR_data": False, "t1_vs_time_plots": False, "t1_hists": False,
+                     "t1_qicklab_vs_offline_shots": True}
 
 if run_number == 8:
-    run_name = 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis' # AB_paper_datadump_T1_Analysis
-    data_path = f'/data/QICK_data/{run_name}'
+    run_name = "run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional"
+        # 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis' # AB_paper_datadump_T1_Analysis
+    data_path = fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\{run_name}"
+        #f'/data/QICK_data/{run_name}'
     plots_path = data_path
 
-    # top_folder_dates = ["2025-10-24_13-58-37"]
+    top_folder_dates = ["2025-10-27_22-04-57"]
 
     # all of run 8 thus far, located in AB_paper_datadump_for_analysis
     # top_folder_dates = [
@@ -45,7 +50,6 @@ if run_number == 8:
     #     "2025-10-31_20-40-11",
     #     "2025-11-01_12-54-55"
     # ]
-    top_folder_dates = ["2025-10-27_22-04-57"]
 
     # # when saving t1 shots + avg IQ data started
     # top_folder_dates = [
@@ -193,10 +197,23 @@ FRIDGE = "QUIET"
 run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB attenuator ') #please make it brief for the plot
 
 ############################################### Get all data #########################################################
-if t1_analysis_flags["load_t1_data"]:
+if t1_analysis_flags["load_t1_data_tprocv2"]:
     t1_vs_time = T1VsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-                     signal, run_name, FRIDGE, run_number)
-    date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge', saved_shots = saved_shots_t1ge)
+                     signal, run_name, FRIDGE, run_number, per_pt_errs = per_pt_errs)
+    if saved_shots_t1ge:
+        if per_pt_errs:
+            print(f'Analyzing T1 data using tprocv2 functions. Processing shots and returning per-point errs too.')
+            date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs = t1_vs_time.run(return_errs=True, exp_extension = '_ge', saved_shots = saved_shots_t1ge)
+            offline_tuple = (date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs)
+        else:
+            print(f'Analyzing T1 data using tprocv2 functions. Processing shots but not returning per-point errs.')
+            date_times_t1, t1_vals, t1_fit_err, _, _ = t1_vs_time.run(return_errs=True, exp_extension='_ge', saved_shots=saved_shots_t1ge)
+            I_per_pt_errs = None
+            Q_per_pt_errs = None
+            offline_tuple = (date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs)
+    else:
+        print(f'Analyzing T1 data using tprocv2 functions. Processing QICK Avg IQ data, not shots.')
+        date_times_t1, t1_vals, t1_fit_err= t1_vs_time.run(return_errs=True,exp_extension='_ge',saved_shots=saved_shots_t1ge)
 
 ########################################  Plot All Individual Data Plots ###########################################
 # from tprocv2_demos.qick_tprocv2_experiments_mux.socProxy import makeProxy
@@ -233,4 +250,46 @@ if t1_analysis_flags["t1_hists"]:
     dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", saved_shots = saved_shots_t1ge)
     t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
 
-############################################### T1 Shots vs Avg IQ Arrays Study #############################################
+###############################################  QICKLab shot-based T1 (with thresholding option) ############################
+if t1_analysis_flags["Qicklab_T1_processing_allQs"]:
+    study_dir = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # on Arianna's local pc
+        #"/data/QICK_data/run8/6transmon/round_robin" # on qubituser-daq01
+    substudy = 'ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional'
+        #'AB_paper_datadump_T1_Analysis' # on qubituser-daq01
+    data_dir = os.path.join(study_dir, substudy)
+    dataset = '2025-10-27_22-04-57'
+    res_phase = [0, 0, 0, 0, 0, 0]  # can be pulled from system config of optimization rspec or qspec (any measurement before SSF overwrites it)
+    ro_length = [249, 345, 230, 326, 307, 384] # from QICK us2cycles conversion. QICK calculates it as: ro_length_cycles = trunc(res_length_us * decimated_MHz)
+    iminuit_method_t1fit = True # Instead of the default Curvefit() T1 fitting, do you want to use iminuit?
+    ssf_numbins = 55
+    method_ssf = "max_contrast" # "gauss2" and "max_contrast" are the two options. This defines how the thresh and fid are calc in ssf
+    do_thresholding = True # thresholding for T1 analysis?
+    verbose = False 
+    plot_threshold = False 
+    plot_t1_round = False 
+    rounds = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
+    
+    qicklab_out = run_qicklab_t1_all_qubits(
+        data_dir=data_dir,
+        dataset=dataset,
+        qubits_to_analyze=num_of_qubits,                 # or however many are in the H5 files
+        res_phase=res_phase,                # list, length = n_qubits
+        ro_length=ro_length,                # list, length = n_qubits
+        method_ssf=method_ssf,              # e.g. "max_contrast" or "gauss2"
+        ssf_numbins=ssf_numbins,
+        do_thresholding=do_thresholding,   
+        iminuit_method_t1fit=iminuit_method_t1fit,
+        selected_rounds=rounds,
+        per_pt_errs = per_pt_errs,
+        plot_threshold=plot_threshold,               # or True if you want SSF/auto-thresh plots
+        plot_t1_round=plot_t1_round,     # only set to True if you are looking at a single round, since it uses plt.show()
+        verbose=verbose,
+    )
+################################## Comparing Offline T1 shots vs Qicklab Processed Shots with Thresholding #############
+if t1_analysis_flags["t1_qicklab_vs_offline_shots"]:
+    comp = comp_t1_methods_allQs_offline_vs_qicklab(
+        qicklab_out=qicklab_out,  # from your QICKLab runner (shots+thresholding)
+        offline_tuple=offline_tuple,  # from your offline processing run()
+        out_dir=r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\t1_ge_analysis",
+        save_plot=save_figs,
+    )

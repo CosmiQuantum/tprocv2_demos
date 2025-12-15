@@ -25,10 +25,11 @@ from scipy.stats import norm
 from scipy.optimize import curve_fit
 import matplotlib.dates as mdates
 from matplotlib.ticker import StrMethodFormatter
+import numpy as np
 
 class T1VsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, fridge, run_number, exp_name = 'ge'):
+                 signal, run_name, fridge, run_number, exp_name = 'ge', per_pt_errs = False):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.run_number = run_number
@@ -39,6 +40,7 @@ class T1VsTime:
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
         self.fridge = fridge
+        self.per_pt_errs = per_pt_errs
         self.exp_name = exp_name
 
     def datetime_to_unix(self, dt):
@@ -222,8 +224,8 @@ class T1VsTime:
             else:
                 outerFolder_expt = outerFolder + "/Data_h5/t1_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
-            #print(outerFolder_expt)
-            soc, soccfg = makeProxy()
+            # #print(outerFolder_expt)
+            # soc, soccfg = makeProxy()
 
             for h5_file in h5_files:
                 save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]

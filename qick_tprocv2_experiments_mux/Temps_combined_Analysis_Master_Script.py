@@ -567,7 +567,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
     # Using ground-state double gaussian fit method
     all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, limit_temp_k=1.0,
-                                                                                                           do_plots = True, save_figs_path = made_on_folder)
+                                                                        do_plots = True, save_figs_path = made_on_folder)
 
     # This is for plotting outside of run_ssf_qtemps_iminuit(); when do_plots = False instead of True
     # for q_key, recs in fit_results.items():
