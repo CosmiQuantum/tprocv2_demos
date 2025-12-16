@@ -907,7 +907,7 @@ class SSFTempCalcAndPlots:
         # plt.show()
 
         # Save the plot to the Temperatures folder
-        plot_filename = os.path.join(qubit_folder, f"Q{q_key + 1}_SSF_ground_gaussianfit_Dataset{dataset}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
+        plot_filename = os.path.join(qubit_folder, f"Q{q_key + 1}_SSF_gstate_gaussfit_Dataset{dataset}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
         plt.savefig(plot_filename)
         # print(f"Plot saved to: {qubit_folder}")
         plt.close()
@@ -1185,7 +1185,7 @@ class SSFTempCalcAndPlots:
             ax.plot(x_vals, scaled_pdf, linestyle='--', linewidth=2,
                     color='black', label='Weighted Gaussian fit')
 
-            ax.set_title(f"Q{q + 1}  µ={mu_1:.2f} mK,  s={std_1:.2f} mK, c: {n_counts}")
+            ax.set_title(f"Q{q + 1}  µ={mu_1:.2f} mK,  s={std_1:.2f} mK, c: {n_counts}", fontsize=14)
             ax.set_xlabel("Temperature (mK)")
             ax.set_ylabel("Count")
             ax.grid(alpha=0.3)
@@ -2489,6 +2489,7 @@ class combined_Qtemp_studies:
 
             # ax.xaxis.set_major_locator(mdates.AutoDateLocator()) # automatic
             ax.yaxis.set_major_locator(MaxNLocator(nbins=4, prune=None))
+            ax.set_ylim(20, 160)
             ax.xaxis.set_major_formatter(date_fmt)
             ax.tick_params(axis='x', rotation=45, labelsize=9)
 
