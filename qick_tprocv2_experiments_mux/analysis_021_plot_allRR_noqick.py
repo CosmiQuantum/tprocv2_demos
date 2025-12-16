@@ -1964,7 +1964,6 @@ class PlotRR_noQick:
                               f"(Δt = {time_diff:.2f} s from filename timestamp)", flush = True)
 
                     # ---------------------------------------------------------------------------------------------
-
                     if (A_amplitude1 is not None and A_amplitude2 is not None and
                         A_amplitude_err1 is not None and A_amplitude_err2 is not None):
                         A_e = A_amplitude1
@@ -2052,7 +2051,7 @@ class PlotRR_noQick:
         return all_files_Qtemp_results
 
     def Qubit_Temperature_Convert(self, A_e, A_g, qubit_freq_MHz):
-        P_e = np.abs(A_e / (A_e + A_g))  # Excited state population (leakage, thermal population)
+        P_e = abs(A_e) / (abs(A_e) + abs(A_g))
         P_g = (1 - P_e)
         if P_e <= 0 or P_g <= 0: #if one of them is zero can't calculate the temp
             print("Warning: Invalid population values encountered (<= 0). Skipping this dataset.")
@@ -2088,11 +2087,11 @@ class PlotRR_noQick:
           sigma_T_mK           – propagated 1-sigma error on T_mK
         """
         # get sigma_Pe from A1,A2 errors
-        sum_A = A1 + A2
-        # ∂Pe/∂A1 =  A2 / (A1+A2)^2
-        # ∂Pe/∂A2 = -A1 / (A1+A2)^2
-        dPe_dA1 = A2 / sum_A ** 2
-        dPe_dA2 = -A1 / sum_A ** 2
+        sum_A = np.abs(A1) + np.abs(A2)
+        # ∂Pe/∂A1 =  |A2| / (|A1|+|A2|)^2 * np.sign(A1)
+        # ∂Pe/∂A2 = -|A1| / (|A1|+|A2|)^2  * np.sign(A2)
+        dPe_dA1 = (np.abs(A2) / sum_A ** 2) * np.sign(A1)
+        dPe_dA2 = (-np.abs(A1) / sum_A ** 2) * np.sign(A2)
 
         sigma_Pe = np.sqrt(
             (dPe_dA1 * sigma_A1) ** 2 +
@@ -2291,13 +2290,15 @@ class PlotRR_noQick:
                     T_mK = qubit_data['T_mK']
 
                     # # Skip if relative error is ≥ rel_err_cutoff
-                    if T_err / T_mK >= rel_err_cutoff: # rel_err_cutoff is a decimal (0.8 = a relative error of 80% and so forth)
-                        continue
 
-                    if T_err > 150:  # skip if error is too large (for example, larger than 300mK)
-                        continue
+                    if rel_err_cutoff is not None:
+                        if T_err / T_mK >= rel_err_cutoff: # rel_err_cutoff is a decimal (0.8 = a relative error of 80% and so forth)
+                            continue
 
-                    if T_mK > 750:  # huge outliers that ruin plots and are not accurate
+                    # if T_err > 150:  # skip if error is too large (for example, larger than 300mK)
+                    #     continue
+                    #
+                    if T_mK > 600:  # huge outliers that ruin plots and are not accurate
                         continue
 
                     errs.append(T_err)
@@ -2626,10 +2627,12 @@ class PlotRR_noQick:
                 # skip if either is missing or relative error is larger than threshold
                 if T_mK is None or T_err is None:
                     continue
-                if T_mK > 750: # huge outliers that ruin plots and are not accurate
+                if T_mK > 600: # huge outliers that ruin plots and are not accurate
                     continue
-                # if T_err / T_mK >= rel_err_cutoff: # rel_err_cutoff is a decimal (0.8 = a relative error of 80% and so forth)
-                #     continue
+
+                if rel_err_cutoff is not None:
+                    if T_err / T_mK >= rel_err_cutoff: # rel_err_cutoff is a decimal (0.8 = a relative error of 80% and so forth)
+                        continue
 
                 temp_vals.append(T_mK)
                 temp_errs.append(T_err)

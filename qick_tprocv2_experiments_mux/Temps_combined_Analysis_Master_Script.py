@@ -30,16 +30,19 @@ run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
-replot_RPMs = True # Do you want to re-plot rabi population measurements from RR data?
-save_figsRR = True # Do you want to save (or not save) re-plotted RR measurements plots?
-save_figs = True # To be used in general for any function or class to save (or not save) plots.
+replot_RPMs = False # Do you want to re-plot rabi population measurements from RR data?
+save_figsRR = False # Do you want to save (or not save) re-plotted RR measurements plots?
+save_figs = False # To be used in general for any function or class to save (or not save) plots.
+save_figs_SSF = False
 fit_saved = False # Not used here, set to false.
 exclude_temp_sweeps = True # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
 filter_out_bad_amp_fits = True # filter out bad rpm fits? this doesn't work perfect but helps a bit
-get_qtemp_data = False # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
+get_qtemp_data = True # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
 get_london_data = False # This returns RPM qubit temperatures, resonator freqs, and qubit freqs for specified dates. Designed for London Penetration analysis.
 
 pre_sciencerun6_data = False # Do you also want to incorporate the run 6 pre-science run data? THis only applies when run_num = 6
+
+use_iminuit_gdoublegauss_ssf = True # do you want to fit the g-state to a double gaussian using iminuit? The default is GMM instead
 
 figure_quality = 200
 theta = 0
@@ -47,16 +50,16 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_qtemps": False}
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+                      "combined_studies_qtemps": True}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps)
-comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
-                       "Pe_vs_time_comb_single_plt": False, "use_iminuit": True}
+comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": True, "Pe_vs_time_comb_separate_plts": False,
+                       "Pe_vs_time_comb_single_plt": False}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
@@ -187,18 +190,19 @@ base_dir_run8 = "/data/QICK_data/run8/6transmon/round_robin" # up to study name
 # Arianna's local analysis
 # base_dir_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # up to study name
 
-# for AB data: (specify up to the day only)
+# all AB paper data: (specify up to the day only)
 target_dates_qtemps_RPM_run8 = [
-    "2025-10-19",
-    "2025-10-20"]
-#     "2025-10-23",
-#     "2025-10-24",
-#     "2025-10-27",
-#     "2025-10-28",
-#     "2025-10-29",
-#     "2025-10-31",
-#     "2025-11-01"
-# ]
+  "2025-10-19",
+  "2025-10-20",
+  "2025-10-23",
+  "2025-10-24",
+  "2025-10-27",
+  "2025-10-28",
+  "2025-10-29",
+  "2025-10-31",
+  "2025-11-01"
+]
+
 # for Arianna's local analysis: (specify up to the day only)
 # target_dates_qtemps_RPM_run8 = ["2025-10-27_22-04-57"]
 
@@ -323,28 +327,30 @@ path_saveplots_ssf_qtemps_vsT_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1h
 # path_saveplots_ssf_qtemps_vsT_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\qtemps_ssf_analysis\Qtemps_vs_Time_run8" # to save qubit temps vs time via ssf methods
 
 # on qubituser-daq01:
+# All AB paper data
 paths_SSFmethods_run8 = [
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_11-09-32",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_12-05-25",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_19-43-00",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_20-25-18",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-20_12-10-19",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-23_00-49-28",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-23_14-47-22",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-24_13-58-37",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-27_14-15-40",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-27_14-24-29",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-27_22-04-57",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-28_21-57-47",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-29_18-38-25",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-29_23-48-45",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-31_01-54-57",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-31_20-40-11",
-    "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-11-01_12-54-55"
+  "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_11-09-32",
+  "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_12-05-25",
+  "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_19-43-00",
+  "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_20-25-18",
+  "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-20_12-10-19",
+  "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-23_00-49-28",
+  "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-23_14-47-22",
+  "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-24_01-41-30",
+  "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-24_13-58-37",
+  "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-27_14-15-40",
+  "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-27_14-24-29",
+  "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-27_22-04-57",
+  "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-28_21-57-47",
+  "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-29_18-38-25",
+  "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-29_23-48-45",
+  "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-31_01-54-57",
+  "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-31_20-40-11",
+  "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-11-01_12-54-55"
 ]
 
 path_saveplots_fits_run8 ="/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_gaussfits" # where to save ssf plots to check gaussian fits
-path_saveplots_ssf_qtemps_vsT_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_analysis\Qtemps_vs_Time_run8" # to save qubit temps vs time via ssf methods
+path_saveplots_ssf_qtemps_vsT_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_analysis" # to save qubit temps vs time via ssf methods
 
 #------------------------------------------------------------------------------ Assign func variables depending on run number ---------------------------------------
 if run_num == 6:  # We have science-run data as well as pre-science-run data available. Note: we already defined Science_Qubits above.
@@ -461,12 +467,12 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
 
     if analysis_flags["Qtemps_vs_time_viaRPM"]:
         #------------------------------------------------------------------- Qubit temperatures vs time via RPMs ----------------------------------------------------
-        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 10, yaxis_max = 750, rel_err_cutoff = 0.5, restrict_time_xaxis = False,
+        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 10, yaxis_max = 750, rel_err_cutoff = None, restrict_time_xaxis = False,
                                                          plot_extra_event_lines = False, rad_events_plot_lines = False, plot_error_bars = True, fit_to_line=False, average_per_heater_step=False)
 
     if analysis_flags["Qtemps_hists_viaRPM"]:
         #----------------------------------------------------------------- Histograms of Qubit temperatures (via RPMs) -----------------------------------------------
-        RPM_plotter.plot_qubit_temperature_histograms_RPMs(combined_qtemp_data, num_qubits=6)
+        RPM_plotter.plot_qubit_temperature_histograms_RPMs(combined_qtemp_data, num_qubits=6, rel_err_cutoff = None)
 
     if analysis_flags["Pe_vs_time_viaRPM"]:
         #------------------------------------------------------------ Excited state populations (P_e) vs time (via RPMs) ----------------------------------------
@@ -497,7 +503,12 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
 
     # ------------------------------------------------------------------- Calculate Qubit Temperatures ----------------------------------------------------------------------------
     if qtemp_method_flags["Qtemps_viaSSF_gmeans_thresh"]: # Default method of the function - fits only PREPARED GROUND STATE SSF data to a double gaussian ; threshold = midpoint of the two gaussian means
-        all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only = False, fallback_to_threshold = False)
+        if use_iminuit_gdoublegauss_ssf:
+            # Made a special iminuit-based double gaussian fitting function. For now it is only set up to fit g-state data.
+            # optionally saves fitted data and shows which scans were filtered out and which were kept
+            all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, limit_temp_k=1.0, do_plots=save_figs_SSF, save_figs_path = path_saveplots_fits)
+        else:
+            all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only = False, fallback_to_threshold = False)
     elif qtemp_method_flags["Qtemps_viaSSF_ge_thresh"]: # Fits both GROUND STATE and PREPARED EXCITED STATE SSF data to a double gaussian ; threshold = midpoint of the two gaussian means
         all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only = True, fallback_to_threshold = False)
     elif qtemp_method_flags["Qtemps_viaSSF_with_fallback"]: # Uses Default method and if the fit fails it falls back to the method that fits both GROUND STATE and PREPARED EXCITED STATE SSF data to a double gaussian
@@ -607,13 +618,13 @@ if qtemp_method_flags["combined_studies_qtemps"]:
     SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, run_num, save_figs)
     pairs_info = SSF_calcs_obj.process_ssf_and_qfreq_data_qtemps(Science_Qubits, paths_SSFmethods)
 
-    if comb_analysis_flags["use_iminuit"]: # we are currently only studying the g-state-only double gaussian fit method when using iminuit
-        all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, limit_temp_k=0.95,
+    if use_iminuit_gdoublegauss_ssf: # Made a special iminuit-based double gaussian fitting function, but for now it is only set up to fit g-state data.
+        all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, limit_temp_k=0.6,
             do_plots=False)
 
     else: # uses sklearn.mixture.GaussianMixture for double gaussian fitting
-        all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.95, use_gessf_thresh_only = False, fallback_to_threshold = False)
-        all_qubit_temps_ge, all_qubit_times_ge, all_qubit_temps_errs_ge, fit_results_ge = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=0.95, use_gessf_thresh_only=True, fallback_to_threshold=False)
+        all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only = False, fallback_to_threshold = False)
+        all_qubit_temps_ge, all_qubit_times_ge, all_qubit_temps_errs_ge, fit_results_ge = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only=True, fallback_to_threshold=False)
 
     #------------ Initialize class for combined qubit temps analysis ------------------
     combined_studies = combined_Qtemp_studies(figure_quality, tot_num_of_qubits)

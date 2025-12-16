@@ -645,9 +645,9 @@ class SSFTempCalcAndPlots:
                 if temp_k is None:
                     # un-physical, skip
                     continue
-                # if temp_k > limit_temp_k:
-                #     print(f"[run]  Q{qid + 1}: {temp_k * 1e3:.1f} mK  > {limit_temp_k * 1e3:.0f} mK  -> dropped")
-                #     continue
+                if temp_k > limit_temp_k:
+                    print(f"[run]  Q{qid + 1}: {temp_k * 1e3:.1f} mK  > {limit_temp_k * 1e3:.0f} mK  -> dropped")
+                    continue
 
                 # Now call on the function compute_temperature_error_SSF to calculate the errs of the qubit temps
                 T_mK = temp_k * 1e3
@@ -1003,7 +1003,7 @@ class SSFTempCalcAndPlots:
 
     #  Scatter plot – qubit temperatures vs. time  (all dates, each qubit its own subplot)
     def plot_qubit_temperatures_vs_time_ssf(self, all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs,
-                                            out_dir, rel_err_cutoff = 1, plot_error_bars = False):
+                                            out_dir, rel_err_cutoff = None, plot_error_bars = False):
         """Scatter plot of qubit temperatures vs. time for each qubit, optionally with error bars."""
 
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
@@ -1024,7 +1024,7 @@ class SSFTempCalcAndPlots:
             # Filter out temperature data with error > 300 mK
             filtered = [(t, T, e)
                 for t, T, e in zip(times, temps, errs)
-                if T > 0 and T < 1000] # and e / T < rel_err_cutoff. rel_err_cutoff is the relative error, it should be a decimal (aka 0.4 = 40% relative error and so forth)
+                if T > 0 and T < 600] # and e / T < rel_err_cutoff. rel_err_cutoff is the relative error, it should be a decimal (aka 0.4 = 40% relative error and so forth)
             if not filtered:
                 continue
 
@@ -1104,7 +1104,7 @@ class SSFTempCalcAndPlots:
                 except (TypeError, ValueError):
                     continue
                 # hard bounds / invalids
-                if T <= 0 or T > 1000:
+                if T <= 0 or T > 600:
                     continue
                 if e <= 0:
                     continue
@@ -2401,7 +2401,10 @@ class combined_Qtemp_studies:
                 if not d:
                     continue
 
-                if d["T_mK_err"]/d["T_mK"] > 0.5:
+                # if d["T_mK_err"]/d["T_mK"] > 0.5:
+                #     continue
+
+                if d["T_mK"] > 600:
                     continue
 
                 t = datetime.datetime.fromtimestamp(d["date"])
