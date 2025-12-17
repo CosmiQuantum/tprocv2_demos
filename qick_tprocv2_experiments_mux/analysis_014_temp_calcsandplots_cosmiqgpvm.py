@@ -14,6 +14,7 @@ from qicklab.analysis.ssf import AnaSSF
 from Arianna_non_prebuilt_SSF_doublegauss_funcs import non_prebuilt_ssf_analysis_class
 from matplotlib.ticker import MaxNLocator
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
+from qicklab.datahandling.datafile_tools import find_h5_files
 import math
 import os
 import datetime
@@ -1575,9 +1576,11 @@ class SSFTempCalcAndPlots:
                     qspec_freqs, qspec_errs, qspec_fwhms = qspec_obj.get_all_qspec_freq(qspec_probe_freqs, qspec_I, qspec_Q, qspec_n)
 
                     # recreate the list of file–paths in the SAME order the helper used
-                    qspec_dir = os.path.join(path, dataset, qspec_obj.folder, "Data_h5", qspec_obj.expt_name)
-                    h5_files = sorted(os.listdir(qspec_dir))
-                    h5_paths = [os.path.join(qspec_dir, f) for f in h5_files]
+                    h5_files, data_path, n = find_h5_files(
+                        path, dataset, expt_name_qspec,
+                        folder=folder_qspec,
+                        qubit_index=QubitIndex)
+                    h5_paths = [os.path.join(data_path, f) for f in h5_files]
 
                     for i in range(qspec_n):
                         freq_cache[(h5_paths[i], QubitIndex)] = qspec_freqs[i]
@@ -1599,8 +1602,11 @@ class SSFTempCalcAndPlots:
                     Q_e = ssf_data["Q_e"]
 
                     # recreate the list of SSF-file paths in the SAME order the helper used
-                    ssf_dir = os.path.join(path, dataset, ssf_ge.folder, "Data_h5", ssf_ge.expt_name)
-                    ssf_paths = [os.path.join(ssf_dir, f) for f in sorted(os.listdir(ssf_dir))]  # length==ssf_n
+                    ssf_files, ssf_data_path, ssf_n2 = find_h5_files(
+                        path, dataset, expt_name_ssf,
+                        folder=folder_ssf,
+                        qubit_index=QubitIndex)
+                    ssf_paths = [os.path.join(ssf_data_path, f) for f in ssf_files]
 
                     # iterate through every round (file)
                     for i in range(ssf_n):
