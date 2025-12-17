@@ -10,7 +10,7 @@ import visdom
 import gc, copy
 import time
 
-sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+sys.path.append(os.path.abspath("/home/louduser/QickCode/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_001_time_of_flight import TOFExperiment
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_002_res_spec_ef import ResonanceSpectroscopyEF
@@ -34,7 +34,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 10000000000 # number of rounds
+n = 10000000 # number of rounds
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
 ssf_avgs_per_opt_pt = 5 # ignore
@@ -64,17 +64,17 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [0,1,2,3,4,5] # [0, 4]  # only list the qubits you want to do the RR for
+Qs_to_look_at = [1] # [1,3,5] # [0, 4]  # only list the qubits you want to do the RR for
 
 # Data saving info
-run_name = 'run8'
-device_name = '6transmon'
-substudy_txt_notes = ('Temperature Sweep data. After retuning Q5. This data was taken after reverting back to only 1 channel on the qick box. T1 shots saved as well as averaged IQ data.\n') # Initial qubit checkouts quiet run 8
+run_name = 'run5'
+device_name = 'sapphire_MEMS_ON_OffCenter_Light_Off'
+substudy_txt_notes = ('MEMS+Saph tests') # Initial qubit checkouts quiet run 8
 
 # set which of the following you'd like to run to 'True'
 
-run_flags = {"tof": False, "res_spec": True, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss":False, "rabi":True, "ss_gef": False,
+             "t1": True, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False}
 
 # run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False,
@@ -98,9 +98,9 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": False, "ss": False, "rabi
 # freq_offsets = [-0.3231, -0.1385, 0.3231, 0.0471, -0.3294, 0.4154]
 
 # For 25dB DAC
-res_leng_vals = [5.0, 5, 7.5, 7.0, 7.5, 7.5]
-res_gain = [0.95, 1, 0.85, 0.55, 0.8833, 0.85]
-freq_offsets = [0, 0, -0.2273, -0.2273, -0.25, -0.1364] #-0.2000
+res_leng_vals = [7.5, 12, 9.0, 9.5, 7.5, 9.5]
+res_gain =  [0.2, 0.14, 0.1211, 0.10, 0.09, 0.11] #[0.2, 0.15, 0.21, 0.11, 0.1, 0.11]
+freq_offsets = [-0.15,0.00,0.4,-0.1,0.05,-0.2]#  [-0.15,0.05,0.1,-0.05,0,-0.15]         #[0, 0, -0.2273, -0.2273, -0.25, -0.1364] #Measurements prior to ss
 # 0.0467, -0.0467,
 qubit_freqs_ef = [None] * 6
 ef_res_sample_number = 1 # keep this as one
@@ -113,8 +113,8 @@ ef_qspec_any = False # what about ef qspec?
 rpm_any = False # and rabi population measurements?
 ################################################ Data Saving Setup ##################################################
 # Folders
-study = 'round_robin' #qubit_checkouts
-sub_study = 'temp_sweep_run8_resspec_allQs_225mkup'  # temp_sweep_run8_resspec_allQs_200mk, temp_sweep_run8_25dBDAC_onechan_day4_200mK
+study = 'MEMS_ON_offCenter_X_0_Y_0_Light_Off_qubit_chara' #qubit_checkouts
+sub_study = 'Resspec_to__T1'  # temp_sweep_run8_resspec_allQs_200mk, temp_sweep_run8_25dBDAC_onechan_day4_200mK
 # temperature_sweep_run8_25dBDAC_onechan. #pre_AB_paper_data_still_optimizing, two_photon_peak_search, AB_Paper_Data_24hrs, ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional
 #ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional, ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt, 18dB_DAC_testdata_allQs_exceptQ4, cooldown_run8b_19dB_DAC_allQs
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -250,15 +250,15 @@ while j < n:
             try:
                 increase_geres_reps = False
                 increase_geres_reps_to = None
-                if QubitIndex == 5:
-                    increase_geres_reps = True
-                    increase_geres_reps_to = 500 #400
-                if QubitIndex == 3:
-                    increase_geres_reps = True
-                    increase_geres_reps_to = 600
-                if QubitIndex == 4:
-                    increase_geres_reps = True
-                    increase_geres_reps_to = 500
+                #if QubitIndex == 5:
+                #    increase_geres_reps = True
+                #    increase_geres_reps_to = 500 #400
+                #if QubitIndex == 3:
+                #    increase_geres_reps = True
+                #    increase_geres_reps_to = 600
+                #if QubitIndex == 4:
+                #    increase_geres_reps = True
+                #    increase_geres_reps_to = 500
 
                 res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs, increase_geres_reps,
                                                  increase_geres_reps_to, experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
@@ -289,87 +289,87 @@ while j < n:
 
         ################################################## g-e Qubit spec ##################################################
         if run_flags["q_spec"]:
-            try:
-                increase_qubit_reps_qspec = False
-                increase_qspec_rounds = False
-                qspecge_increase_reps_to = None
-                increase_qspec_rounds_to = None
+            #try:
+            increase_qubit_reps_qspec = False
+            increase_qspec_rounds = False
+            qspecge_increase_reps_to = None
+            increase_qspec_rounds_to = None
 
-                if QubitIndex == 5:
-                    increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 1600
-                    # increase_qspec_rounds = True
-                    # increase_qspec_rounds_to = 2
+            #if QubitIndex == 5:
+            #    increase_qubit_reps_qspec = True
+            #    qspecge_increase_reps_to = 1600
+                # increase_qspec_rounds = True
+                # increase_qspec_rounds_to = 2
 
-                if QubitIndex == 4:
-                    increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 1300
-                    # increase_qspec_rounds = True
-                    # increase_qspec_rounds_to = 1
+            #if QubitIndex == 4:
+            #    increase_qubit_reps_qspec = True
+            #    qspecge_increase_reps_to = 1300
+                # increase_qspec_rounds = True
+                # increase_qspec_rounds_to = 1
 
-                if QubitIndex == 3:
-                    increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 700
-                    increase_qspec_rounds = True
-                    increase_qspec_rounds_to = 3
+            #if QubitIndex == 3:
+            #    increase_qubit_reps_qspec = True
+            #    qspecge_increase_reps_to = 700
+            #    increase_qspec_rounds = True
+            #    increase_qspec_rounds_to = 3
 
-                if QubitIndex == 2:
-                    increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 800
+            #if QubitIndex == 2:
+            #    increase_qubit_reps_qspec = True
+            #    qspecge_increase_reps_to = 800
 
-                q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
-                                           signal, save_figs, increase_reps = increase_qubit_reps_qspec, increase_rounds =increase_qspec_rounds,
-                                           increase_reps_to = qspecge_increase_reps_to, increase_rounds_to = increase_qspec_rounds_to,
-                                           plot_fit=True, experiment=experiment, live_plot=live_plot, verbose=verbose,
-                                           logger=rr_logger, unmasking_resgain=unmask)
-                (qspec_I, qspec_Q, qspec_freqs, qspec_I_fit,
-                 qspec_Q_fit, qubit_freq, sys_config_qspec) = q_spec.run()
+            q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
+                                       signal, save_figs, increase_reps = increase_qubit_reps_qspec, increase_rounds =increase_qspec_rounds,
+                                       increase_reps_to = qspecge_increase_reps_to, increase_rounds_to = increase_qspec_rounds_to,
+                                       plot_fit=True, fit_data = True ,experiment=experiment, live_plot=live_plot, verbose=verbose,
+                                       logger=rr_logger, unmasking_resgain=unmask)
+            (qspec_I, qspec_Q, qspec_freqs, qspec_I_fit,
+             qspec_Q_fit, qubit_freq, sys_config_qspec) = q_spec.run()
 
-                if qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None:
-                    if stored_qspec_list[QubitIndex] is not None:
-                        experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = stored_qspec_list[QubitIndex]
-                        rr_logger.warning(f"Using previous stored value: {stored_qspec_list[QubitIndex]}")
-                        recycled_qfreq = True
-                        qubit_freq = stored_qspec_list[QubitIndex]
-                        experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
-                        stored_qspec_list[QubitIndex] = float(qubit_freq)
-                        if verbose:
-                            print(f"Using previous stored value: {qubit_freq}")
-                    else:
-                        rr_logger.warning(f"No stored g-e qubit spec value for qubit {QubitIndex}; skipping iteration.")
-                        if verbose:
-                            print('No stored g-e qubit spec value for qubit {QubitIndex}; skipping iteration.')
-                        del q_spec
-
-                    continue
-                else:
+            if qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None:
+                if stored_qspec_list[QubitIndex] is not None:
+                    experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = stored_qspec_list[QubitIndex]
+                    rr_logger.warning(f"Using previous stored value: {stored_qspec_list[QubitIndex]}")
+                    recycled_qfreq = True
+                    qubit_freq = stored_qspec_list[QubitIndex]
                     experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
                     stored_qspec_list[QubitIndex] = float(qubit_freq)
+                    if verbose:
+                        print(f"Using previous stored value: {qubit_freq}")
+                else:
+                    rr_logger.warning(f"No stored g-e qubit spec value for qubit {QubitIndex}; skipping iteration.")
+                    if verbose:
+                        print('No stored g-e qubit spec value for qubit {QubitIndex}; skipping iteration.')
+                    del q_spec
+
+                #continue
+            else:
+                experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
+                stored_qspec_list[QubitIndex] = float(qubit_freq)
                 rr_logger.info(f"g-e Qubit {QubitIndex + 1} frequency: {float(qubit_freq)}")
                 if verbose:
                     print(f"g-e Qubit {QubitIndex + 1} frequency: {float(qubit_freq)}")
                 del q_spec
 
-            except Exception as e:
-                if debug_mode:
-                    raise e
-                else:
-                    rr_logger.exception(f"RR g-e QSpec error on qubit {QubitIndex}: {e}")
-                    if verbose:
-                        print(f"g-e QSpec error on qubit {QubitIndex}: {e}")
-                    continue
+          #except Exception as e:
+             #if debug_mode:
+             #    raise e
+             #else:
+             #    rr_logger.exception(f"RR g-e QSpec error on qubit {QubitIndex}: {e}")
+             #   if verbose:
+             #       print(f"g-e QSpec error on qubit {QubitIndex}: {e}")
+             #       continue
 
         ###################################################### g-e Rabi ####################################################
         if run_flags["rabi"]:
             try:
                 increase_qubit_reps_gerabi = False  # if you want to increase the reps for a qubit, set to True
                 qubit_to_increase_reps_for = None  # only has impact if previous line is True
-                if QubitIndex == 3:
-                    increase_qubit_reps_gerabi = True
-                    qubit_to_increase_reps_for = QubitIndex
-                if QubitIndex == 4:
-                    increase_qubit_reps_gerabi = True
-                    qubit_to_increase_reps_for = QubitIndex
+                #if QubitIndex == 3:
+                #    increase_qubit_reps_gerabi = True
+                #    qubit_to_increase_reps_for = QubitIndex
+                #if QubitIndex == 4:
+                #    increase_qubit_reps_gerabi = True
+                #    qubit_to_increase_reps_for = QubitIndex
                 # if QubitIndex == 5:
                 #     increase_qubit_reps_gerabi = True
                 #     qubit_to_increase_reps_for = QubitIndex

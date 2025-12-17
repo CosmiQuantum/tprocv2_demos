@@ -1,7 +1,7 @@
 import sys
 import os
 import numpy as np
-sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/")) # for QUIET
+sys.path.append(os.path.abspath("/home/louduser/QickCode/tprocv2_demos/qick_tprocv2_experiments_mux/")) # for QUIET
 # sys.path.append(os.path.abspath("/home/nexusadmin/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux_nexus/")) # for NEXUS
 from system_config import QICK_experiment
 from expt_config import FRIDGE
@@ -14,7 +14,7 @@ number_of_qubits = 6  #currently 4 for NEXUS, 6 for QUIET
 # sweep_DAC_attenuator2 =[10]#[15,20,25,30] #np.linspace(5,20,4)
 
 substudy = 'punchout_1chan_25dBDAC'
-outerFolder = os.path.join(f"/data/QICK_data/run8/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
+outerFolder = os.path.join(f"/data/QICK_data/run5/216loopback 5b/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 outerfolder_plots = outerFolder + "/documentation/"
 #outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/", str(datetime.date.today())) # for NEXUS
 # for att_1 in sweep_DAC_attenuator1:
@@ -48,20 +48,20 @@ experiment = QICK_experiment(outerfolder_plots, DAC_attenuator1 = DAC_att_1, DAC
 # [1.0, 0.9, 1.0, 0.65, 0.95, 1.0]  from 10/22/2025
 
 # For resonators back to back:
-Qs = [4] #starts at 0
+Qs =  [0,1,2,3,4,5] #starts at 0
 for QubitIndex in Qs:
     if QubitIndex == 0:
-        start_gain, stop_gain, num_points = 0.8, 0.97, 5
+        start_gain, stop_gain, num_points = 0.001, 0.4, 5
     if QubitIndex == 1:
-        start_gain, stop_gain, num_points = 0.74, 0.79, 5
+        start_gain, stop_gain, num_points = 0.13, 0.21, 4
     if QubitIndex == 2:
-        start_gain, stop_gain, num_points = 0.95, 0.99, 4
+        start_gain, stop_gain, num_points = 0.11, 0.14, 4
     if QubitIndex == 3:
-        start_gain, stop_gain, num_points = 0.45, 0.47, 3  #0.3, 0.38, 4
+        start_gain, stop_gain, num_points = 0.13, 0.165, 4  #0.3, 0.38, 4
     if QubitIndex == 4:
-        start_gain, stop_gain, num_points = 0.5, 1.0, 5
+        start_gain, stop_gain, num_points = 0.14,  0.16, 4
     if QubitIndex == 5:
-        start_gain, stop_gain, num_points = 0.85,0.9, 4
+        start_gain, stop_gain, num_points = 0.13,  0.17, 4
 
     punch_out  = PunchOut(QubitIndex, number_of_qubits, outerfolder_plots, experiment, Unmask)
     punch_out.run(experiment.soccfg, experiment.soc, start_gain, stop_gain, num_points, DAC_att, ADC_att, plot_Center_shift = False, plot_res_sweeps = True)

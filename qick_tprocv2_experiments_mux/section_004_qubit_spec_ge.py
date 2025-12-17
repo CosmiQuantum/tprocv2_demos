@@ -73,6 +73,11 @@ class QubitSpectroscopy:
 
     def run(self,return_fwhm=False):
 
+        print("Begin Run")
+        print("1")
+        print("2")
+        print("3")
+        
         if self.increase_reps:
             self.config['reps'] = self.increase_reps_to
 
@@ -84,8 +89,16 @@ class QubitSpectroscopy:
 
         # iq_lists= []
         if self.live_plot:
+            print("start live plot 1")
+            print("1")
+            print("2")
+            print("3")
             I, Q, freqs = self.live_plotting(qspec)
         else:
+            print("no live plot")
+            print("1")
+            print("2")
+            print("3")
             # print("rounds for this qubit: ", self.exp_cfg["rounds"])
             # print("rounds for this qubit config: ", self.config["rounds"])
             iq_list = qspec.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=self.qick_verbose)
@@ -158,15 +171,39 @@ class QubitSpectroscopy:
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
 
-        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, fit_err = self.fit_lorenzian(I, Q, freqs,
+        if self.fit_data == False:
+            mean_I = None
+            mean_Q = None
+            I_fit = None
+            Q_fit = None
+            largest_amp_curve_mean = None
+            largest_amp_curve_fwhm = None
+            fit_err = None
+
+        print("Begin Plotting")
+        print("1")
+        print("2")
+        print("3")
+        print("4")
+        print("5")
+        print("6")
+        
+        if self.fit_data:
+            mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, fit_err = self.fit_lorenzian(I, Q, freqs,
                                                                                                           freq_q,sigma_guess)
+            print("done fit")
 
-        # Check if the returned values are all None
-        if (mean_I is None and mean_Q is None and I_fit is None and Q_fit is None
-                and largest_amp_curve_mean is None and largest_amp_curve_fwhm is None):
-            # If so, return None for the values in this definition as well
-            return None, None, None
+        print("post fit data")
+            
+        ## Check if the returned values are all None
+        #if (mean_I is None and mean_Q is None and I_fit is None and Q_fit is None
+        #        and largest_amp_curve_mean is None and largest_amp_curve_fwhm is None):
+        #    # If so, return None for the values in this definition as well
+        #    print("return")
+        #    return None, None, None
 
+        print("Pre plot")
+        
         # If we get here, the fit was successful and we can proceed with plotting
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
@@ -194,6 +231,8 @@ class QubitSpectroscopy:
         # Calculate the middle of the plot area
         plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
 
+        print("Post Plot")
+        
         if self.plot_fit:
             # Add title, centered on the plot area
             if config is not None:  # then its been passed to this definition, so use that
@@ -229,9 +268,11 @@ class QubitSpectroscopy:
 
         ### Save figure
         if self.save_figs:
+            print("Begin Save Fig")
             outerFolder_expt = os.path.join(self.outerFolder, self.expt_name + "_plots")
             self.create_folder_if_not_exists(outerFolder_expt)
             now = datetime.datetime.now()
+            print(outerFolder_expt)
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
             file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" +
                                      f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")

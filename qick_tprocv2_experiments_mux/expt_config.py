@@ -3,8 +3,9 @@ import numpy as np
 FRIDGE = "QUIET"  # change to "NEXUS" as needed
 
 if FRIDGE == "QUIET":
-    VNA_res = np.array([6226.487, 6288.475, 6347.800, 6418.965, 6484.665,6551.650])# ge resonator freqs, updated 11/21 during run 8
-    VNA_qubit = np.array([4194.77, 3828.69, 4173.69, 4474.04, 4485.38, 5018.12])  # Qubit freqs g/e Transition, updated during run 8 on 10/10
+    #[4194.77, 3949.66, 3815.34, 4087.17, 4433.97, 4800.55]
+    VNA_res = np.array([6170.26, 6227.45, 6291.93, 6394.350, 6407.85,6456.00])# ge resonator freqs, updated 11/21 during run 8
+    VNA_qubit = np.array([4194.77, 3953.35, 3812.34, 4087.07, 4433.97, 4801.86])  # Qubit freqs g/e Transition, updated during run 8 on 10/10
     ef_freqs = np.array([4020.48, 3650.81, 3999.01, 4302.33, 4313.06, 4848.81]) # Qubit freqs e/f Transition,Arianna 10/13
     fh_freqs = np.array([3820.97, 3450.85, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition
     two_photon_freqs=np.array([4107.61, 3739.36, 4086.36, 4388.34, 4399.3, 4933.52]) # qubit freqs, two photon peak between ge and ef qubit freqs
@@ -17,7 +18,7 @@ if FRIDGE == "QUIET":
     expt_cfg = {
         "tof": {
             "reps": 1, #reps doesnt make a difference here, leave it at 1
-            "soft_avgs": 100,
+            "soft_avgs": 3000,
             "relax_delay": 0,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -33,11 +34,11 @@ if FRIDGE == "QUIET":
         # },
 
         "res_spec": {
-            "reps": 500, # 300
-            "rounds": 1,
-            "start": -1.60,       # MHz (expanded by +0.20 on each side)
-            "step_size": 0.05,    # MHz (same resolution)
-            "steps": 65,          # matches the wider span
+            "reps": 1000, # 300
+            "rounds": 1 ,
+            "start":  -2,       # MHz (expanded by +0.20 on each side)
+            "step_size":  0.01,    # MHz (same resolution)
+            "steps": 400,          # matches the wider span
             "relax_delay": 10,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -54,10 +55,10 @@ if FRIDGE == "QUIET":
         # },
 
         "res_spec_ef": {
-            "reps": 400,
+            "reps": 1000,
             "rounds": 1,
-            "start": -2,  # [MHz]
-            "step_size": 0.05,  # [MHz]
+            "start": -0.5,  # [MHz]
+            "step_size": 0.0125,  # [MHz]
             "steps": 100,
             "relax_delay": 1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
@@ -84,11 +85,11 @@ if FRIDGE == "QUIET":
         # },
 
         "qubit_spec_ge": {
-            "reps": 600, #300
+            "reps": 4000, #300
             "rounds": 1, #10
-            "start": list(VNA_qubit-6), # [MHz] #-300 #-15
-            "stop": list(VNA_qubit+6), # [MHz] #+15
-            "steps": 300, #100
+            "start": list(VNA_qubit-2), # [MHz] #-300 #-15
+            "stop": list(VNA_qubit+2), # [MHz] #+15
+            "steps": 200, #100
             "relax_delay":10,#1000 # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -165,11 +166,11 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ge": {
-            "reps": 200,#500,
+            "reps":  1000,#500,
             "rounds": 1,  # 5
             "start": [0] * 6,  # [DAC units]
             "stop": [1] * 6,#[1.0] * 6,  # [DAC units]
-            "steps": 115, #50,
+            "steps": 100, #50,
             "relax_delay": 1000,#1000,#1000,#1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -234,7 +235,7 @@ if FRIDGE == "QUIET":
             "relax_delay": 1000,  # [us]
         },
         "T1_ge": {
-            "reps": 250, #300
+            "reps": 1500, #300
             "rounds": 1, #1
             "start": [0.0] * 6,  # [us]
             "stop": [200]*6, #[250.0] * 6,  # [us]
@@ -459,7 +460,7 @@ if FRIDGE == "QUIET":
     # #
 
         "Readout_Optimization":{
-            "steps": 3000, # shots
+            "steps": 5000, # shots
             "py_avg": 1,
             "gain_start" : [0, 0, 0, 0],
             "gain_stop" : [1, 0, 0, 0],

@@ -128,6 +128,12 @@ class SingleShotProgram_e(AveragerProgramV2):
         self.delay_auto(0.0)
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+        #################################################################
+        ######### Active Reset #########################################
+        self.read_input(ch=cfg['ro_ch'])
+        self.write_dmem(addr=0, src='s_port_l')
+        self.write_dmem(addr=1, src='s_port_h')
+        I,Q=
 
 class SingleShot:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, save_figs=False, experiment = None,
