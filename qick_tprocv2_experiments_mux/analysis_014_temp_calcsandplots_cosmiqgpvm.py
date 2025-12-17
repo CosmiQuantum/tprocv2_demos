@@ -1503,6 +1503,8 @@ class SSFTempCalcAndPlots:
             datagroup_ssf = 'SS'
             folder_ssf = "study_data"
 
+            tolerance_seconds = 10
+
         elif self.run_num == 6:
             folder_qspec = "optimization"
             expt_name_qspec = "qspec_ge"
@@ -1511,6 +1513,10 @@ class SSFTempCalcAndPlots:
             expt_name_ssf = "ss_ge"
             datagroup_ssf = 'SS'
             folder_ssf = "optimization"
+
+            tolerance_seconds = 600 # ~10min. In this run, one h5 per qubit was saved right after each meas
+            # during the optimization block, which lasted ~30min.
+            # in other runs, h5 files were saved all at the end and they contained multiple qubits instead.
 
         elif self.run_num == 7:
             folder_qspec = "study_data"
@@ -1521,6 +1527,8 @@ class SSFTempCalcAndPlots:
             datagroup_ssf = 'SS'
             folder_ssf = "study_data"
 
+            tolerance_seconds = 10
+
         elif self.run_num == 8:
             folder_qspec = "study_data"
             expt_name_qspec = "qspec_ge"
@@ -1530,8 +1538,10 @@ class SSFTempCalcAndPlots:
             datagroup_ssf = 'SS'
             folder_ssf = "study_data"
 
+            tolerance_seconds = 10
+
         else:
-            raise ValueError("You must choose run_num = 4,5,6 or 7. Otherwise, define a section for your run of interest inside process_ssf_and_qfreq_data_qtemps().")
+            raise ValueError("You must choose run_num = 4,5,6,7 or 8. Otherwise, define a section for your run of interest inside process_ssf_and_qfreq_data_qtemps().")
 
         for full_path in paths:
 
@@ -1619,7 +1629,7 @@ class SSFTempCalcAndPlots:
             ssf_h5s[qidx].append(path)
 
         ########################################## Pair up Qspec_ge data and ssf_ge h5 files ###########################################
-        pairs_by_qubit, lonely_qspec, lonely_ssf = self.pair_qspec_and_ssf(qspec_h5s, ssf_h5s, tolerance_seconds=10)
+        pairs_by_qubit, lonely_qspec, lonely_ssf = self.pair_qspec_and_ssf(qspec_h5s, ssf_h5s, tolerance_seconds=tolerance_seconds)
 
         # Store relevant info for these pairs in a dictionary
         pairs_info = {q: [] for q in Science_Qubits}
@@ -2489,7 +2499,7 @@ class combined_Qtemp_studies:
 
             # ax.xaxis.set_major_locator(mdates.AutoDateLocator()) # automatic
             ax.yaxis.set_major_locator(MaxNLocator(nbins=4, prune=None))
-            ax.set_ylim(20, 160)
+            ax.set_ylim(10, 200)
             ax.xaxis.set_major_formatter(date_fmt)
             ax.tick_params(axis='x', rotation=45, labelsize=9)
 
