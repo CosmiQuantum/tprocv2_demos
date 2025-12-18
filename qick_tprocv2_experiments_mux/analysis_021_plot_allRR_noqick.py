@@ -2071,52 +2071,45 @@ class PlotRR_noQick:
 
     def compute_temperature_error_RPM(self, A1, A2, Pe, T_mK, qubit_freq_MHz, sigma_A1, sigma_A2, sigma_qfreq_MHz):
         """
-        Propagate the 1-sigma uncertainties in A1, A2 and f_ge
-        into a 1-sigma uncertainty on T_mK, given you already know
-        Pe and T_mK.
+        Error propagation formula:
+          sigma_T^2 = (dT/dA1 * sigma_A1)^2 + (dT/dA2 * sigma_A2)^2 + (dT/df_ge * sigma_f_ge)^2
 
-        Inputs:
-          A1, A2               – fitted amplitudes
-          Pe                   – thermal population associated with T_mK
-          T_mK                 – temperature via rabi pop. meas. in mK
-          qubit_freq_MHz       – fitted g-e qubit frequency (MHz)
-          sigma_A1, sigma_A2   – 1-sigma errors on A1 and A2 (standard deviations)
-          sigma_qfreq_MHz      – 1-sigma error on qubit_freq_MHz (standard deviation)
-
-        Returns:
-          sigma_T_mK           – propagated 1-sigma error on T_mK
+        Assumes:
+          Pe = |A1| / (|A1| + |A2|)
+          T = (h f_ge / kB) / ln((1-Pe)/Pe)
         """
-        # get sigma_Pe from A1,A2 errors
+        # --- guards (prevents NaNs/infs blowing up functions) ---
+        # If Pe < 1e-12, it gets replaced by 1e-12, and if Pe > 1 - 1e-12, it gets replaced by 1 - 1e-12
+        eps = 1e-12
+        Pe = np.clip(Pe, eps, 1.0 - eps)
+
+        # --- dPe/dA1, dPe/dA2 (correct for Pe = |A1|/(|A1|+|A2|)) ---
         sum_A = np.abs(A1) + np.abs(A2)
-        # ∂Pe/∂A1 =  |A2| / (|A1|+|A2|)^2 * np.sign(A1)
-        # ∂Pe/∂A2 = -|A1| / (|A1|+|A2|)^2  * np.sign(A2)
-        dPe_dA1 = (np.abs(A2) / sum_A ** 2) * np.sign(A1)
-        dPe_dA2 = (-np.abs(A1) / sum_A ** 2) * np.sign(A2)
+        if np.any(sum_A == 0):
+            return np.nan  # could also raise ValueError("A1 and A2 both zero -> Pe undefined")
 
-        sigma_Pe = np.sqrt(
-            (dPe_dA1 * sigma_A1) ** 2 +
-            (dPe_dA2 * sigma_A2) ** 2
-        )
+        dPe_dA1 = (np.abs(A2) / sum_A**2) * np.sign(A1)      # includes sgn from d|A|/dA
+        dPe_dA2 = (-np.abs(A1) / sum_A**2) * np.sign(A2)
 
-        # convert MHz → Hz for the qubit frequency and its error
+        # --- dT/dPe ---
+        ln_term = np.log((1.0 - Pe) / Pe)
+        dT_dPe = T_mK / (ln_term * Pe * (1.0 - Pe))
+
+        # --- chain rule to get dT/dA1 and dT/dA2 ---
+        dT_dA1 = dT_dPe * dPe_dA1
+        dT_dA2 = dT_dPe * dPe_dA2
+
+        # --- frequency term: dT/df_ge = T / f_ge ---
+        # Hz units
         f0_Hz = qubit_freq_MHz * 1e6
         sigma_f0_Hz = sigma_qfreq_MHz * 1e6
-
-        # build the log term (we already know Pe)
-        ln_arg = np.log((1 - Pe) / Pe)
-
-        # partial derivatives of T_mK
-        # ∂T/∂f0  = T_mK / f0_Hz
         dT_df0 = T_mK / f0_Hz
 
-        # ∂T/∂Pe  = T_mK / [ ln_arg * Pe * (1-Pe) ]
-        dT_dPe = T_mK / (ln_arg * Pe * (1 - Pe))
-
-        # combine in quadrature
+        # --- Plugging eveyrthing into the sigma formula ---
         sigma_T_mK = np.sqrt(
-            (dT_df0 * sigma_f0_Hz) ** 2 +
-            (dT_dPe * sigma_Pe) ** 2
-        )
+            (dT_dA1 * sigma_A1)**2 +
+            (dT_dA2 * sigma_A2)**2 +
+            (dT_df0 * sigma_f0_Hz)**2)
 
         return sigma_T_mK # Temperature calculation error via rabi population measurements
 
@@ -2303,6 +2296,8 @@ class PlotRR_noQick:
 
                     errs.append(T_err)
                     temps.append(T_mK)
+
+                    # print(f'Temp: {T_mK} +/- {T_err} mK')
 
                     timestamp = qubit_data['date']
                     times.append(datetime.datetime.fromtimestamp(timestamp))
