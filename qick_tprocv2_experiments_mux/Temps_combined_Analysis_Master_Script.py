@@ -33,7 +33,7 @@ plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
 replot_RPMs = False # Do you want to re-plot rabi population measurements from RR data?
 save_figsRR = False # Do you want to save (or not save) re-plotted RR measurements plots?
 save_figs = False # To be used in general for any function or class to save (or not save) plots.
-save_figs_SSF = True # Do you want to save gaussian fit plots while calculating ssf qtemps? iminuit case only
+save_figs_SSF = False # Do you want to save gaussian fit plots while calculating ssf qtemps? iminuit case only
 fit_saved = False # Not used here, set to false.
 exclude_temp_sweeps = True # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
 filter_out_bad_amp_fits = True # filter out bad rpm fits? this doesn't work perfect but helps a bit
@@ -51,21 +51,21 @@ tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
 qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_qtemps": False}
+                      "combined_studies_qtemps": True}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps)
-comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
+comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": True, "Pe_vs_time_comb_separate_plts": False,
                        "Pe_vs_time_comb_single_plt": False}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 
 # For double-gaussian SSF analysis using alternative methods
-alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": True}
+alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
 
 # For coherence-qubit temps combined analysis
 coh_qtemp_ana_flags = {"load_rpm_qtemps": False, "load_ssf_qtemps": False, "load_mcp1_temps": False, "load_coherence_res": False, "plot_qtemps_t1_ftemps_qfreq": False}
@@ -380,7 +380,7 @@ paths_SSFmethods_run7 = [
   "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/2025-07-20_06-33-03"
 ]
 
-path_saveplots_fits_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/ssf_qtemps_analysis/GaussFits_run7" # where to save ssf plots to check gaussian fits
+path_saveplots_fits_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/ssf_qtemps_analysis/GaussFits_r7" # where to save ssf plots to check gaussian fits
 path_saveplots_ssf_qtemps_vsT_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/ssf_qtemps_analysis/Qtemps_vs_Time_run7" # to save qubit temps vs time via ssf methods
 
 # ----------------------------------------------------------------------------------------------run 8----------------------------------------------------------------------------------------------------------
