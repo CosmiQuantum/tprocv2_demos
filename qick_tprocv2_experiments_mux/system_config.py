@@ -104,7 +104,7 @@ class QICK_experiment:
 
             # Qubit Configuration
             self.qubit_cfg = {
-                "qubit_freq_ge": [4189.8773, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86],  # Joyce 3/11
+                "qubit_freq_ge": [4189.8773, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86],  # Joyce 3/11, run 6
                 "qubit_freq_chevron_detuned_ge": [4189.7582, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86], # Olivia May 17
                 "qubit_freq_ge_starked": [4189.737678, 3820.4723, 4161.3726, 4463.15226, 4471.4469, 4997.86], # Olivia 4/04 for zeno/stark tone
                 "fwhm_w01_starked": None, #for err bars
