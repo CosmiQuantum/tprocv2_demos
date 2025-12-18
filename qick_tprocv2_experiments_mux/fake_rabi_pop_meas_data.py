@@ -1,46 +1,47 @@
 import numpy as np
 from section_011_qubit_temperatures_efRabipt3_noqick_analysis import Temps_EFAmpRabiExperiment
+from analysis_021_plot_allRR_noqick import PlotRR_noQick
+from tprocv2_demos.qick_tprocv2_experiments_mux.analysis_021_plot_allRR_noqick import PlotRR_noQick
 
-def make_fake_rabi_IQ_for_plot_results(
-    *,
+
+def make_fake_rabi_IQ_1scan(
+    *, # all arguments must be passed by keyword, not position, to avoid passing numbers incorrectly
     gains=None,
     npts=81,
     gain_max=1.0,
     # shared cosine argument params
     b=0.65,          # cycles per gain (because you use cos(2p*b*g + c))
     c=0.0,           # phase (rad)
-    # choose offsets/amplitudes to match the look
     dI=-8.0, aI=4.0, # I ~ [-12, -4]
     dQ=-2.0, aQ=4.0, # Q ~ [-6,  2]
     noise_sigma_I=0.25,
     noise_sigma_Q=0.25,
     seed=20250101,
-    # safety: keep magnitude away from 0 so it stays smooth
-    min_radius=2.0,
+    min_radius=2.0 # safety: keep magnitude away from 0 to avoid W behavior
 ):
-    rng = np.random.default_rng(seed)
 
+    rng = np.random.default_rng(seed) # fixed seed guarantees same IQ every time, same plots, same fit results, etc
+
+    # In case you don't want to pass gains, it calculates them for you based on the number of pts you pass
     if gains is None:
         gains = np.linspace(0.0, gain_max, npts)
     else:
         gains = np.asarray(gains, dtype=float)
 
+    # Shared cosine phase (Keeps I and Q synchronized).
+    # b = how many oscillations you get per unit gain
+    # c = phase offset (where the oscillation starts)
     theta = 2*np.pi*b*gains + c
 
+    # aI, aQ = Oscillation size
+    # dI, dQ = DC offset (moves the curve up/down)
+    # what we do for I and Q below is: offset + amplitude x cos(theta)
     I_true = dI + aI * np.cos(theta)
     Q_true = dQ + aQ * np.cos(theta)
 
+    # Adds Gaussian noise. Same noise every run because of fixed seed. Mean = 0
     I = I_true + rng.normal(0.0, noise_sigma_I, size=gains.size)
     Q = Q_true + rng.normal(0.0, noise_sigma_Q, size=gains.size)
-
-    # If you *really* want to guarantee no weirdness: shift both up if needed
-    rmin = np.min(np.sqrt(I**2 + Q**2))
-    if rmin < min_radius:
-        shift = (min_radius - rmin) + 1e-6
-        I += shift
-        Q += shift
-        I_true += shift
-        Q_true += shift
 
     truth = {
         "b": b, "c": c,
@@ -53,7 +54,7 @@ def make_fake_rabi_IQ_for_plot_results(
     return gains, I, Q, truth
 
 
-gains, I, Q, truth = make_fake_rabi_IQ_for_plot_results(
+gains, I, Q, truth = make_fake_rabi_IQ_1scan(
     npts=160,
     b=0.65,
     c=0.0,
@@ -64,14 +65,132 @@ gains, I, Q, truth = make_fake_rabi_IQ_for_plot_results(
     seed=20250101,
 )
 
-QubitIndex = 0
+## ---------------------------------- Run the above function to generate one fake rabi population measurement scan: ----------------------------------------------
+# QubitIndex = 0
+# list_of_all_qubits = [0,1,2,3,4,5]
+# number_of_qubits = len(list_of_all_qubits)
+# outerFolder = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/benchmark_analysis_plots/RPM_analysis/fake_data_study"
+# round_num = 0 # not relevant here
+# signal = "None" # let it choose between I or Q by itself
+# save_figs = True
+#
+# temps_class = Temps_EFAmpRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits,  outerFolder, round_num, signal, save_figs)
+# best_signal_fit, pi_amp, A_amp, A_err, amp_fit, R2 = temps_class.plot_results(I, Q, gains)
+# print("Recovered A_amplitude:", A_amp, "+/-", A_err)
+
+# ----------------------------------- Make two scans, to simulate rabi population measurements for effective temperatures ---------------------------------------
+def make_fake_rpm_two_scans(
+    *,
+    # shared geometry / physics
+    gains=None,
+    npts=160,
+    gain_max=1.0,
+    b=0.65,
+    c=0.0,
+    dI=-8.0,
+    dQ=-2.0,
+
+    # Pg (ground) parameters
+    aI_g=4.0,
+    aQ_g=4.0,
+    noise_sigma_I_g=0.20,
+    noise_sigma_Q_g=0.20,
+    seed_g=20250101,
+
+    # Pe (excited) parameters
+    aI_e=0.8,
+    aQ_e=0.8,
+    noise_sigma_I_e=0.35,
+    noise_sigma_Q_e=0.35,
+    seed_e=20250102,
+):
+    # Pg scan
+    gains, Ig, Qg, truth_g = make_fake_rabi_IQ_1scan(
+        gains=gains,
+        npts=npts,
+        gain_max=gain_max,
+        b=b,
+        c=c,
+        dI=dI,
+        dQ=dQ,
+        aI=aI_g,
+        aQ=aQ_g,
+        noise_sigma_I=noise_sigma_I_g,
+        noise_sigma_Q=noise_sigma_Q_g,
+        seed=seed_g,
+    )
+
+    # Pe scan (reuse same gains!)
+    _, Ie, Qe, truth_e = make_fake_rabi_IQ_1scan(
+        gains=gains,
+        b=b,
+        c=c,
+        dI=dI,
+        dQ=dQ,
+        aI=aI_e,
+        aQ=aQ_e,
+        noise_sigma_I=noise_sigma_I_e,
+        noise_sigma_Q=noise_sigma_Q_e,
+        seed=seed_e,
+    )
+
+    truth = {
+        "Pg": truth_g,
+        "Pe": truth_e,
+    }
+
+    return gains, Ig, Qg, Ie, Qe, truth
+
+
+QubitIndex = 0 # starts at zero
 list_of_all_qubits = [0,1,2,3,4,5]
 number_of_qubits = len(list_of_all_qubits)
-outerFolder = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/benchmark_analysis_plots/RPM_analysis/fake_data_study"
+outerFolder_save_plots = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/benchmark_analysis_plots/RPM_analysis/fake_data_study"
 round_num = 0 # not relevant here
 signal = "None" # let it choose between I or Q by itself
 save_figs = True
 
-temps_class = Temps_EFAmpRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits,  outerFolder, round_num, signal, save_figs)
-best_signal_fit, pi_amp, A_amp, A_err, amp_fit, R2 = temps_class.plot_results(I, Q, gains)
-print("Recovered A_amplitude:", A_amp, "+/-", A_err)
+avail_ge_Qfreqs = [4194.77, 3828.69, 4173.69, 4474.23, 4485.38, 5018.12]
+qubit_freq_MHz = avail_ge_Qfreqs[QubitIndex]
+
+sigma_qfreq_MHz = 0.00474 # chosen based on run 8 typical qspec sigma from a Q1 lorentzian fit
+
+temps_class_plts = Temps_EFAmpRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits,  outerFolder_save_plots, round_num, signal, save_figs)
+
+_, Ig, Qg, Ie, Qe, _ = make_fake_rpm_two_scans(
+    aI_g=4.0, aQ_g=4.0,
+    aI_e=0.8, aQ_e=0.8,
+    noise_sigma_I_g=0.20,
+    noise_sigma_I_e=0.35)
+
+# Ground
+_, _, A_g, sigma_Ag, _, _ = temps_class_plts.plot_results(Ig, Qg, gains)
+
+# Excited
+_, _, A_e, sigma_Ae, _, _ = temps_class_plts.plot_results(Ie, Qe, gains)
+
+fit_saved = False
+run_name = None
+outerFolder = ""
+unique_folder_path = ""
+run_num = 8
+filter_out_bad_amp_fits = True
+figure_quality = 200
+date = None
+
+temp_class_calcs = PlotRR_noQick(date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
+                 outerFolder_save_plots, unique_folder_path, run_num, filter_out_bad_amp_fits)
+
+T_K, T_mK, Pe, _ = temp_class_calcs.Qubit_Temperature_Convert(A_e, A_g, qubit_freq_MHz)
+
+sigma_T_mK = temp_class_calcs.compute_temperature_error_RPM(
+    A_e, A_g, Pe, T_mK,
+    qubit_freq_MHz,
+    sigma_Ae, sigma_Ag,
+    sigma_qfreq_MHz,
+)
+
+print('Fake data results:')
+print(f'Amplitudes: Ae = {A_e}, Ag = {A_g}')
+print(f'Pe = {Pe}')
+print(f'Temperature: {T_mK} +/- {sigma_T_mK} mK')
