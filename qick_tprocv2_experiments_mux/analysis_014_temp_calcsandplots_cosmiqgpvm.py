@@ -660,7 +660,7 @@ class SSFTempCalcAndPlots:
                                                excited_data, ground_gaussian,
                                                excited_gaussian, pop_threshold,
                                                idx, weights,
-                                               sigmas, means, T_mK, title_ext=f"LRT val = {lr_stat}")
+                                               sigmas, means, T_mK, title_ext=f"Qfreq:{freq_mhz:.2f}MHz, LRT val:{lr_stat:.2f}")
 
                 # -------- save qubit temps and timestamps ----------------------------------------------
                 all_qubit_temperatures[qid].append(T_mK)  # temperatures in mK
@@ -973,32 +973,33 @@ class SSFTempCalcAndPlots:
 
             spec_times = [self.timestamp(p) for p in spec_list]
             ssf_times = [self.timestamp(p) for p in ssf_list]
-            free_ssf = set(ssf_list)
 
-            matches, lonely_spec = [], []
-            for t_spec, f_spec in zip(spec_times, spec_list):
-                idx = bisect_left(ssf_times, t_spec)
+            matches, lonely_ssf = [], []
+
+            # loop over SSF (anchor)
+            for t_ssf, f_ssf in zip(ssf_times, ssf_list):
+                idx = bisect_left(spec_times, t_ssf)
                 candidates = []
-                if idx < len(ssf_list):
-                    candidates.append((ssf_times[idx], ssf_list[idx]))
+                if idx < len(spec_list):
+                    candidates.append((spec_times[idx], spec_list[idx]))
                 if idx > 0:
-                    candidates.append((ssf_times[idx - 1], ssf_list[idx - 1]))
+                    candidates.append((spec_times[idx - 1], spec_list[idx - 1]))
 
                 best = None
-                for t_ssf, f_ssf in candidates:
-                    delta = abs((t_ssf - t_spec).total_seconds())
-                    if delta <= tolerance_seconds and (best is None or delta < abs((best[0] - t_spec).total_seconds())):
-                        best = (t_ssf, f_ssf)
+                for t_spec, f_spec in candidates:
+                    delta = abs((t_spec - t_ssf).total_seconds())
+                    if delta <= tolerance_seconds and (best is None or delta < best[0]):
+                        best = (delta, f_spec)
 
-                if best and best[1] in free_ssf:
-                    matches.append((f_spec, best[1]))
-                    free_ssf.remove(best[1])
+                if best is not None:
+                    matches.append((best[1], f_ssf))
                 else:
-                    lonely_spec.append(f_spec)
+                    lonely_ssf.append(f_ssf)
 
             pairs_by_qubit[qi] = matches
-            unmatched_qspec[qi] = lonely_spec
-            unmatched_ssf[qi] = list(free_ssf)
+            unmatched_ssf[qi] = lonely_ssf
+            used_spec = {qspec_path for (qspec_path, _) in matches}
+            unmatched_qspec[qi] = [p for p in spec_list if p not in used_spec]
 
         return pairs_by_qubit, unmatched_qspec, unmatched_ssf
 
@@ -1515,9 +1516,7 @@ class SSFTempCalcAndPlots:
             datagroup_ssf = 'SS'
             folder_ssf = "optimization"
 
-            tolerance_seconds = 600 # ~10min. In this run, one h5 per qubit was saved right after each meas
-            # during the optimization block, which lasted ~30min.
-            # in other runs, h5 files were saved all at the end and they contained multiple qubits instead.
+            tolerance_seconds = 600
 
         elif self.run_num == 7:
             folder_qspec = "study_data"
@@ -1586,7 +1585,7 @@ class SSFTempCalcAndPlots:
                         freq_cache[(h5_paths[i], QubitIndex)] = qspec_freqs[i]
                         freq_err_cache[(h5_paths[i], QubitIndex)] = qspec_errs[i]
                 except Exception as e:
-                    print(f"Skipped QSpec scan in {dataset} for Q{QubitIndex}: {e}")
+                    print(f"Error extracting Qspec data in {dataset} for Q{QubitIndex + 1}: {e}")
                     #raise ValueError(f"Skipped QSpec scan in {dataset} for Q{QubitIndex}: {e}") # for debugging
 
                 try:
@@ -1622,7 +1621,7 @@ class SSFTempCalcAndPlots:
                         timestamp_ssf_cache[key] = ssf_dates[i]
 
                 except Exception as e:
-                    print(f"Failed loading SSF for qubit {QubitIndex} from {full_path}: {e}")
+                    print(f"Error extracting SSF data in {dataset} for Q{QubitIndex + 1}: {e}")
                     #raise ValueError(f"Failed loading SSF for qubit {QubitIndex} from {full_path}: {e}") # for debugging
 
         # Organize files by type and qubit index after loading all the data
