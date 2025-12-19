@@ -28,6 +28,8 @@ if run_number == 8:
         #f'/data/QICK_data/{run_name}'
     plots_path = data_path
 
+    save_bad_t1plts_dir = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\t1_ge_analysis"
+
     top_folder_dates = ["2025-10-27_22-04-57"]
 
     # all of run 8 thus far, located in AB_paper_datadump_for_analysis
@@ -205,6 +207,7 @@ if t1_analysis_flags["load_t1_data_tprocv2"]:
             print(f'Analyzing T1 data using tprocv2 functions. Processing shots and returning per-point errs too.')
             date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs = t1_vs_time.run(return_errs=True, exp_extension = '_ge', saved_shots = saved_shots_t1ge)
             offline_tuple = (date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs)
+            # print('t1 vals', t1_vals[0])
         else:
             print(f'Analyzing T1 data using tprocv2 functions. Processing shots but not returning per-point errs.')
             date_times_t1, t1_vals, t1_fit_err, _, _ = t1_vs_time.run(return_errs=True, exp_extension='_ge', saved_shots=saved_shots_t1ge)
@@ -266,8 +269,12 @@ if t1_analysis_flags["Qicklab_T1_processing_allQs"]:
     do_thresholding = True # thresholding for T1 analysis?
     verbose = False 
     plot_threshold = False 
-    plot_t1_round = False 
+    plot_t1_round = True
+    save_rejected_plots = False
+    max_t1_keep = 300
     rounds = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
+
+    save_good_t1plts_dir = save_bad_t1plts_dir
     
     qicklab_out = run_qicklab_t1_all_qubits(
         data_dir=data_dir,
@@ -282,7 +289,11 @@ if t1_analysis_flags["Qicklab_T1_processing_allQs"]:
         selected_rounds=rounds,
         per_pt_errs = per_pt_errs,
         plot_threshold=plot_threshold,               # or True if you want SSF/auto-thresh plots
-        plot_t1_round=plot_t1_round,     # only set to True if you are looking at a single round, since it uses plt.show()
+        save_plot_t1_round=plot_t1_round,     # save plots for ACCEPTED rounds (no show)
+        save_rejected_plots=save_rejected_plots,  # save plots for REJECTED rounds above max_t1_keep
+        save_plt_dir = save_good_t1plts_dir,
+        rejected_plots_dir=save_bad_t1plts_dir,
+        max_t1_keep=max_t1_keep,
         verbose=verbose,
     )
 ################################## Comparing Offline T1 shots vs Qicklab Processed Shots with Thresholding #############
@@ -291,5 +302,6 @@ if t1_analysis_flags["t1_qicklab_vs_offline_shots"]:
         qicklab_out=qicklab_out,  # from your QICKLab runner (shots+thresholding)
         offline_tuple=offline_tuple,  # from your offline processing run()
         out_dir=r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\t1_ge_analysis",
-        save_plot=save_figs,
+        save_comp_results_plot=save_figs,
+        max_t1 = max_t1_keep
     )

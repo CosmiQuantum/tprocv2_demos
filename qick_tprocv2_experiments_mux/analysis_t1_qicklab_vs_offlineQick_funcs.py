@@ -6,20 +6,24 @@ from qicklab.analysis.auto_threshold import AnaAutoThreshold
 import matplotlib.pyplot as plt
 
 def run_qicklab_t1_all_qubits(
-        data_dir,
-        dataset,
-        qubits_to_analyze=6,
-        res_phase=None,
-        ro_length=None,
-        method_ssf="max_contrast",
-        ssf_numbins=55,
-        do_thresholding=True,
-        iminuit_method_t1fit=True,
-        verbose=False,
-        selected_rounds=(0,),
-        per_pt_errs = False,
-        plot_threshold=False,
-        plot_t1_round=False,
+    data_dir,
+    dataset,
+    qubits_to_analyze=6,
+    res_phase=None,
+    ro_length=None,
+    method_ssf="max_contrast",
+    ssf_numbins=55,
+    do_thresholding=True,
+    iminuit_method_t1fit=True,
+    verbose=False,
+    selected_rounds=(0,),
+    per_pt_errs=True,
+    plot_threshold=False,
+    save_plot_t1_round=False,      # save plots for ACCEPTED rounds (no show)
+    save_rejected_plots=False,     # save plots for REJECTED rounds (no show)
+    rejected_plots_dir="",
+    save_plt_dir="",
+    max_t1_keep=200.0,             # reject T1 >= this (and non-finite)
 ):
     """
     Runs SSF -> AutoThreshold (optional) -> T1 for each qubit index in [0..qubits_to_analyze-1].
@@ -30,7 +34,8 @@ def run_qicklab_t1_all_qubits(
         "threshold": {q: threshold},
         "t1_vals": {q: [T1_est per selected_round]},
         "t1_errs": {q: [T1_err per selected_round]},
-        "dates": {q: [date strings per selected_round]}  # from AnaT1 loader
+        "dates": {q: [date strings per selected_round]},  # from AnaT1 loader
+        "rejected": {q: [{"round": r, "t1": T1_est, "t1_err": T1_err}, ...]}
       }
     """
     if res_phase is None:
@@ -44,20 +49,21 @@ def run_qicklab_t1_all_qubits(
         "t1_vals": {q: [] for q in range(qubits_to_analyze)},
         "t1_errs": {q: [] for q in range(qubits_to_analyze)},
         "dates": {q: [] for q in range(qubits_to_analyze)},
+        "rejected": {q: [] for q in range(qubits_to_analyze)},
     }
 
     for q in range(qubits_to_analyze):
-        print(f'Analyzing qubit {q + 1} data using Qicklab funcs')
+        print(f"Analyzing qubit {q + 1} data using Qicklab funcs")
+
         # -------------------- threshold (via SSF -> AutoThreshold) --------------------
-        # These will get overwritten, they are just initial values
         theta = 0.0
         threshold = 0.0
 
         if do_thresholding:
-            # SSF
+            # SSF (seed for AutoThreshold)
             ssf_ana_params = {"method": method_ssf, "numbins": ssf_numbins}
             opt_ssf_ge = AnaSSF(data_dir, dataset, q, folder="study_data", ana_params=ssf_ana_params)
-            _ssf_data = opt_ssf_ge.load_all(verbose=verbose)
+            _ = opt_ssf_ge.load_all(verbose=verbose)
             ssf_result = opt_ssf_ge.run_analysis(verbose=verbose)
 
             ssf_theta = ssf_result["thetas"][0]
@@ -74,7 +80,7 @@ def run_qicklab_t1_all_qubits(
                 "ro_length": ro_length[q],
             }
             auto = AnaAutoThreshold(data_dir, dataset, q, expt_name="t1_ge", datagroup="T1", ana_params=auto_params)
-            _auto_data = auto.load_all()
+            _ = auto.load_all()
             auto_result = auto.run_analysis(verbose=verbose)
 
             theta = auto_result["theta"]
@@ -92,34 +98,76 @@ def run_qicklab_t1_all_qubits(
             "threshold": threshold,
             "thresholding": bool(do_thresholding),
             "iminuit_fitting": bool(iminuit_method_t1fit),
-            "per_pt_errs": per_pt_errs,  # matches your script
+            "per_pt_errs": bool(per_pt_errs),
         }
 
         t1_ge = AnaT1(data_dir, dataset, q, ana_params=t1_params)
         t1_data = t1_ge.load_all(verbose=verbose)
-        _t1_result = t1_ge.run_analysis(verbose=verbose)
+        _ = t1_ge.run_analysis(verbose=verbose)
 
-        # dates as loaded by qicklab (one per “round” / dataset entry)
-        # If t1_data["dates"] is a list for multiple rounds, we index by r.
         dates = t1_data.get("dates", [])
 
-        if plot_t1_round:
-            for r in selected_rounds:
-                q1_fit_exponential, T1_err, T1_est = t1_ge.get_round(
-                    r, plot=True, iminuit_method=iminuit_method_t1fit, verbose=verbose
+        # Directories (optionally per-qubit subfolders for sanity)
+        good_dir_base = save_plt_dir or os.path.join(data_dir, "t1_plots")
+        rej_dir_base = rejected_plots_dir or os.path.join(data_dir, "rejected_t1_plots")
+        good_dir_q = os.path.join(good_dir_base, f"Q{q+1}")
+        rej_dir_q = os.path.join(rej_dir_base, f"Q{q+1}")
+
+        if save_plot_t1_round:
+            os.makedirs(good_dir_q, exist_ok=True)
+        if save_rejected_plots:
+            os.makedirs(rej_dir_q, exist_ok=True)
+
+        for r in selected_rounds:
+            # First: compute T1 without showing/saving
+            try:
+                _, T1_err, T1_est = t1_ge.get_round(
+                    r,
+                    plot=False,  # never show
+                    iminuit_method=iminuit_method_t1fit,
+                    verbose=verbose
                 )
-                out["t1_vals"][q].append(T1_est)
-                out["t1_errs"][q].append(T1_err)
-                out["dates"][q].append(dates[r] if (isinstance(dates, (list, tuple)) and len(dates) > r) else None)
-        else:
-            # no plotting: just store whatever AnaT1 already computed for the file
-            # (often one T1 per round)
-            t1s = _t1_result.get("t1s", [])
-            t1_errs = _t1_result.get("t1_errs", [])
-            for i in range(min(len(t1s), len(t1_errs))):
-                out["t1_vals"][q].append(t1s[i])
-                out["t1_errs"][q].append(t1_errs[i])
-                out["dates"][q].append(dates[i] if (isinstance(dates, (list, tuple)) and len(dates) > i) else None)
+            except Exception as e:
+                if verbose:
+                    print(f"[Q{q + 1}] get_round({r}) failed: {e}")
+                continue
+
+            rejected = (not np.isfinite(T1_est)) or (T1_est >= float(max_t1_keep))
+
+            # If rejected, optionally save plot (still no show)
+            if rejected:
+                out["rejected"][q].append({"round": int(r), "t1": float(T1_est), "t1_err": float(T1_err)})
+
+                if save_rejected_plots:
+                    t1_ge.get_round(
+                        r,
+                        plot=False,
+                        save_fig=True,
+                        save_plt_dir=rej_dir_q,
+                        iminuit_method=iminuit_method_t1fit,
+                        verbose=verbose
+                    )
+                    if verbose:
+                        print(f"[Q{q + 1}] REJECTED round {r}: T1={T1_est:.3g} µs (saved plot)")
+                continue
+
+            # Accepted: optionally save plot
+            if save_plot_t1_round:
+                t1_ge.get_round(
+                    r,
+                    plot=False,
+                    save_fig=True,
+                    save_plt_dir=good_dir_q,
+                    iminuit_method=iminuit_method_t1fit,
+                    verbose=verbose
+                )
+
+            # Store accepted values
+            out["t1_vals"][q].append(T1_est)
+            out["t1_errs"][q].append(T1_err)
+            out["dates"][q].append(
+                dates[r] if (isinstance(dates, (list, tuple)) and len(dates) > r) else None
+            )
 
         # t1_ge.cleanup()  # optional
 
@@ -131,9 +179,10 @@ def comp_t1_methods_allQs_offline_vs_qicklab(
     out_dir=None,
     title_prefix="T1: QICKLab shots(thresholded) vs Offline shots(unthresholded)",
     dpi=140,
-    save_plot=True,
+    save_comp_results_plot=True,
     sharey=True,
     max_cols=3,
+    max_t1 = 200.0 # filter out data above this value
 ):
     """
     Compare:
@@ -177,7 +226,7 @@ def comp_t1_methods_allQs_offline_vs_qicklab(
         print("[T1 compare] No qubits found in inputs.")
         return {}
 
-    # --------- build comp dict ----------
+    # --------- build dict ----------
     comp = {}
     for q in qubits:
         t1_q = qicklab_out.get("t1_vals", {}).get(q, [])
@@ -195,8 +244,30 @@ def comp_t1_methods_allQs_offline_vs_qicklab(
 
         n = int(min(len(t1_q_arr), len(t1_o_arr)))
 
+        # ---------------- filter out unphysical T1 values ----------------
+        # restrict to overlapping region first
+        t1_q_use = t1_q_arr[:n]
+        e_q_use = e_q_arr[:n]
+        t1_o_use = t1_o_arr[:n]
+        e_o_use = e_o_arr[:n]
+
+        # keep only points where both methods are <= max_t1
+        good = (
+                np.isfinite(t1_q_use) & np.isfinite(t1_o_use) &
+                (t1_q_use <= max_t1) & (t1_o_use <= max_t1)
+        )
+
+        t1_q_use = t1_q_use[good]
+        e_q_use = e_q_use[good]
+        t1_o_use = t1_o_use[good]
+        e_o_use = e_o_use[good]
+
+        # update overlap count after filtering
+        n = int(t1_q_use.size)
+        # -----------------------------------------------------------------
+
         if n > 0:
-            delta = t1_o_arr[:n] - t1_q_arr[:n]  # Offline - QICKLab  (your convention)
+            delta = t1_o_use - t1_q_use # Offline - QICKLab  (your convention)
             mean_delta = float(np.nanmean(delta))
             rms_delta  = float(np.sqrt(np.nanmean(delta**2)))
             max_abs_delta = float(np.nanmax(np.abs(delta)))
@@ -213,10 +284,10 @@ def comp_t1_methods_allQs_offline_vs_qicklab(
         dates_o = date_times_off.get(q, []) if isinstance(date_times_off, dict) else []
 
         comp[q] = {
-            "t1_qicklab": t1_q_arr,
-            "err_qicklab": e_q_arr,
-            "t1_offline": t1_o_arr,
-            "err_offline": e_o_arr,
+            "t1_qicklab": t1_q_use,
+            "err_qicklab": e_q_use,
+            "t1_offline": t1_o_use,
+            "err_offline": e_o_use,
             "delta": delta,
             "mean_delta": mean_delta,
             "rms_delta": rms_delta,
@@ -239,7 +310,7 @@ def comp_t1_methods_allQs_offline_vs_qicklab(
             print(f"[T1 Δ] Q{q + 1}: no overlap to compare (len_offline={len(t1_o_arr)}, len_qicklab={len(t1_q_arr)}).")
 
     # --------- plot (grid, like your plot_t1_methods_comparison_all_qubits) ----------
-    if save_plot:
+    if save_comp_results_plot:
         if out_dir is None:
             raise ValueError("out_dir must be provided when save_plot=True")
         os.makedirs(out_dir, exist_ok=True)
@@ -272,8 +343,9 @@ def comp_t1_methods_allQs_offline_vs_qicklab(
             n_pts = int(max(len(t1_q), len(t1_o)))
             x = np.arange(n_pts)
 
-            ax.plot(x[:len(t1_q)], t1_q, "o-", label="QICKLab shots (thresholded)", linewidth=1)
-            ax.plot(x[:len(t1_o)], t1_o, "s--", label="Offline shots (raw)", linewidth=1)
+            ax.plot(x[:len(t1_q)], t1_q, "o-", label="QICKLab-processed shots (thresholding)", linewidth=1)
+            ax.plot(x[:len(t1_o)], t1_o, "s--", label="Offline-processed shots (no thresholding)", linewidth=1)
+            ax.legend(fontsize=9, frameon=True)
 
             if n > 0 and np.isfinite(max_diff):
                 frac_pct = int(round(frac_offline_bigger * 100)) if np.isfinite(frac_offline_bigger) else 0

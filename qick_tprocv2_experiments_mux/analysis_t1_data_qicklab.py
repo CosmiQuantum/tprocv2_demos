@@ -20,6 +20,9 @@ substudy = 'ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional'
 data_dir = os.path.join(study_dir, substudy)
 dataset = '2025-10-27_22-04-57'
 
+save_plts = True # saves plots
+plot = True # uses plt.show()
+save_plts_dir = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\t1_ge_analysis"
 QubitIndex = 0  # zero indexed
 analysis_flags = {"get_threshold": True, "load_all_data": True, "plot_t1_round": True}
 selected_round = [0] # file you want to make plots for (we've only saved 1 round per h5 file in recent QUIET runs)
@@ -41,7 +44,7 @@ if analysis_flags["get_threshold"]:
 
     ana_params = {
         "idx": 0,
-        "plot": True,
+        "plot": plot,
         "method": "from_ssf",
         "ssf_theta": None,
         "ssf_threshold": None,
@@ -137,4 +140,4 @@ if analysis_flags["plot_t1_round"]:
     for r in selected_round:
         print(f"Plotting round {r} T1 data...")
 
-        q1_fit_exponential, T1_err, T1_est = t1_ge.get_round(r, plot=True, iminuit_method = iminuit_method_t1fit, verbose = True)
+        q1_fit_exponential, T1_err, T1_est = t1_ge.get_round(r, plot=plot, save_fig = save_plts, save_plt_dir = save_plts_dir,iminuit_method = iminuit_method_t1fit, verbose = True)
