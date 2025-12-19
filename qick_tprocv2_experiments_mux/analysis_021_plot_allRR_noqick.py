@@ -2297,8 +2297,6 @@ class PlotRR_noQick:
                     errs.append(T_err)
                     temps.append(T_mK)
 
-                    # print(f'Temp: {T_mK} +/- {T_err} mK')
-
                     timestamp = qubit_data['date']
                     times.append(datetime.datetime.fromtimestamp(timestamp))
 

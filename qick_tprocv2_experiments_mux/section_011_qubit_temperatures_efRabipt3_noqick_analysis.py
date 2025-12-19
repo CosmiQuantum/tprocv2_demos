@@ -50,7 +50,7 @@ class Temps_EFAmpRabiExperiment:
         x = np.asarray(x, dtype=float)
         y = np.asarray(y, dtype=float)
 
-        def chi2(a, b, c, d): # we don't have sigmas available so this is technically just the least squares part, which is fine.
+        def chi2(a, b, c,d):  # we don't have sigmas available so this is technically just the sum of squared errors, not chi2, which is fine.
             model = self.cosine(x, a, b, c, d)
             return np.sum((y - model) ** 2)
 
@@ -63,7 +63,7 @@ class Temps_EFAmpRabiExperiment:
         # Extract best-fit parameter values into a NumPy array
         popt = np.array([m.values["a"], m.values["b"], m.values["c"], m.values["d"]])
 
-        # Convert Minuit’s covariance object to a regular NumPy matrix
+        # Convert Minuit?s covariance object to a regular NumPy matrix
         # Our analysis code expects a NumPy array like the one from curve_fit
         cov = m.covariance
         if cov is None:
@@ -74,6 +74,16 @@ class Temps_EFAmpRabiExperiment:
             for i, ni in enumerate(names):
                 for j, nj in enumerate(names):
                     pcov[i, j] = cov[ni, nj]
+
+            # curve_fit default behavior (absolute_sigma=False) rescales covariance by chi2/(N - p)
+            # If we want Minuit's errors to be comparable, we apply the same scaling here. Raw Minuit covariance is missing the noise scale
+            # estimates the noise variance from the residuals
+            N = x.size
+            p = len(names)
+            ndof = N - p
+            if ndof > 0 and np.isfinite(m.fval):
+                scale = m.fval / ndof
+                pcov = pcov * scale
 
         return popt, pcov
 

@@ -42,7 +42,7 @@ save_figs = True
 fit_saved = True
 show_legends = False
 signal = 'None'
-run_number = 8
+run_number = 7
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 saved_shots_t1ge = False
@@ -254,8 +254,8 @@ q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, tot_num_
                                   save_figs, fit_saved, signal, run_name, FRIDGE)
 date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
 
-# print("qspec fit errs Q1: ", qspec_fit_err[0])
-# print("mean qspec fit err Q1: ", np.mean(qspec_fit_err[0]))
+print("qspec fit errs Q1: ", qspec_fit_err[0])
+print("mean qspec fit err Q1: ", np.mean(qspec_fit_err[0]))
 
 # pi_amps_vs_time = PiAmpsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
 #                               fit_saved,signal, run_name)

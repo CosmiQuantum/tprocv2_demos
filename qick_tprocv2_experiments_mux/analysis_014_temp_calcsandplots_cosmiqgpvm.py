@@ -2426,6 +2426,7 @@ class combined_Qtemp_studies:
                 times_RPM[q].append(t)
                 temps_RPM[q].append(d["T_mK"])
                 errs_RPM[q].append(d["T_mK_err"])
+                print(f'Temp: {d["T_mK"]} +/- {d["T_mK_err"]} mK')
 
         # --- SSF (g-only) dicts ---
         times_g = all_qubit_timestamps_ssf_g  # {q: [datetime...]}

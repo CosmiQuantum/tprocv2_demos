@@ -143,12 +143,21 @@ def make_fake_rpm_two_scans(
 
 
 QubitIndex = 0 # starts at zero
+save_figs = True
 list_of_all_qubits = [0,1,2,3,4,5]
 number_of_qubits = len(list_of_all_qubits)
 outerFolder_save_plots = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/benchmark_analysis_plots/RPM_analysis/fake_data_study"
 round_num = 0 # not relevant here
 signal = "None" # let it choose between I or Q by itself
-save_figs = True
+fit_saved = False
+run_name = None
+outerFolder = ""
+unique_folder_path = ""
+run_num = 8
+filter_out_bad_amp_fits = True
+figure_quality = 200
+date = None
+use_iminuit_instead = False
 
 avail_ge_Qfreqs = [4194.77, 3828.69, 4173.69, 4474.23, 4485.38, 5018.12]
 qubit_freq_MHz = avail_ge_Qfreqs[QubitIndex]
@@ -158,25 +167,16 @@ sigma_qfreq_MHz = 0.00474 # chosen based on run 8 typical qspec sigma from a Q1 
 temps_class_plts = Temps_EFAmpRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits,  outerFolder_save_plots, round_num, signal, save_figs)
 
 _, Ig, Qg, Ie, Qe, _ = make_fake_rpm_two_scans(
-    aI_g=4.0, aQ_g=4.0,
+    aI_g=5.4, aQ_g=5.4, # Oscillation size Pg
     aI_e=0.8, aQ_e=0.8,
     noise_sigma_I_g=0.20,
     noise_sigma_I_e=0.35)
 
 # Ground
-_, _, A_g, sigma_Ag, _, _ = temps_class_plts.plot_results(Ig, Qg, gains)
+_, _, A_g, sigma_Ag, _, _ = temps_class_plts.plot_results(Ig, Qg, gains, use_iminuit_instead = use_iminuit_instead)
 
 # Excited
-_, _, A_e, sigma_Ae, _, _ = temps_class_plts.plot_results(Ie, Qe, gains)
-
-fit_saved = False
-run_name = None
-outerFolder = ""
-unique_folder_path = ""
-run_num = 8
-filter_out_bad_amp_fits = True
-figure_quality = 200
-date = None
+_, _, A_e, sigma_Ae, _, _ = temps_class_plts.plot_results(Ie, Qe, gains, use_iminuit_instead = use_iminuit_instead)
 
 temp_class_calcs = PlotRR_noQick(date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
                  outerFolder_save_plots, unique_folder_path, run_num, filter_out_bad_amp_fits)
