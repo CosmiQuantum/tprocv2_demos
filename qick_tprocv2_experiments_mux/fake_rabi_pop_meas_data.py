@@ -192,5 +192,6 @@ sigma_T_mK = temp_class_calcs.compute_temperature_error_RPM(
 
 print('Fake data results:')
 print(f'Amplitudes: Ae = {A_e}, Ag = {A_g}')
+print(f'ge qubit freq: {qubit_freq_MHz} MHz')
 print(f'Pe = {Pe}')
 print(f'Temperature: {T_mK} +/- {sigma_T_mK} mK')

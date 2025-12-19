@@ -2505,7 +2505,7 @@ class combined_Qtemp_studies:
 
             # ax.xaxis.set_major_locator(mdates.AutoDateLocator()) # automatic
             ax.yaxis.set_major_locator(MaxNLocator(nbins=4, prune=None))
-            ax.set_ylim(20, 160)
+            ax.set_ylim(70, 130)
             ax.xaxis.set_major_formatter(date_fmt)
             ax.tick_params(axis='x', rotation=45, labelsize=9)
 
