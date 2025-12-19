@@ -271,7 +271,7 @@ if t1_analysis_flags["Qicklab_T1_processing_allQs"]:
     plot_threshold = False 
     plot_t1_round = True
     save_rejected_plots = False
-    max_t1_keep = 300
+    max_t1_keep = 100
     rounds = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
 
     save_good_t1plts_dir = save_bad_t1plts_dir
