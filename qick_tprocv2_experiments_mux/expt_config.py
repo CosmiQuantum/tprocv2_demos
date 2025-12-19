@@ -435,7 +435,7 @@ if FRIDGE == "QUIET":
 
 elif FRIDGE == "NEXUS":
     VNA_res = np.array([6187.9, 5828.4, 6074.59, 5959.2]) #Run 34 #[6187.9, 5828.5, 6074.6, 5959.3]) #Run 33 VNA low power   # Old [6187.8, 5828.3, 6074.6, 5959.3])
-    VNA_qubit = np.array([4914.3, 4764.2, 4577, 4782]) #4912.07, 4763.0, 4576.3, 4781.3 #Run 34 start pt #[4921.5, 4761.8, 4575.8, 4784.6]) #Found with QICK, run 33
+    VNA_qubit =np.array([4913.6, 4764.2, 4577, 4782]) #np.array([4914.3, 4764.2, 4577, 4782]) #4912.07, 4763.0, 4576.3, 4781.3 #Run 34 start pt #[4921.5, 4761.8, 4575.8, 4784.6]) #Found with QICK, run 33
     # #np.array([4909, 4749.4, 4569, 4759])  # Found on NR25 with the QICK
 
     tot_num_of_qubits = 4
@@ -490,7 +490,7 @@ elif FRIDGE == "NEXUS":
         },
 
         "bias_qubit_spec_ge": {
-            "reps": 2000,  # 100
+            "reps": 1800,  # 100
             "rounds": 1,  # 10
             "start": list(VNA_qubit - 3),  # [MHz]
             "stop": list(VNA_qubit + 3),  # [MHz]
@@ -500,7 +500,7 @@ elif FRIDGE == "NEXUS":
         },
 
         "power_rabi_ge": {
-            "reps": 1500,  # 100
+            "reps": 2000,  # 100
             "rounds": 1,  # 5
             "start": [0.0] * 4,  # [DAC units]
             "stop": [1.0] * 4,  # [DAC units]

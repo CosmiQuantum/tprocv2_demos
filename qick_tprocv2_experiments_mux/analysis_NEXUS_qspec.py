@@ -184,9 +184,9 @@ class PlotRRData:
         return
 
 run = 'run33e'
-study = 'DDon_SC_HoleClosed' #'Initial Checkout' #DDoff_SC_HoleOpen' #'DDon_SC_HoleClosed' #'DDon_SC_HoleOpen' #'Longtime_Study
+study = 'DDoff_SC_HoleClosed' #'Initial Checkout' #DDoff_SC_HoleOpen' #'DDon_SC_HoleClosed' #'DDon_SC_HoleOpen' #'Longtime_Study
 substudy = 'RR_Long' #RR_Q1' #RR_Long'
-date = '2025-11-24'
+date = '2025-11-25'
 
 root_folder = f'/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}'
 folders = sorted(glob.glob(os.path.join(root_folder, f"{date}*")))
@@ -210,8 +210,8 @@ for f in folders:
 # all_scans = data_handler.load_qspec()
 data_handler= PlotRRData(folders[0], plot_folder)
 found_freqs = [4914.05, 4764.5, 4577, 4782]
-f_min = [4914.05-3, 4764.5-3, 4577-3, 4782-3]
-f_max = [4914.05+3, 4764.5+3, 4577+3, 4782+3]
-for q in [0]: #[0, 1, 2, 3]:
-    #.plot_IQ_long(all_scans, q, f_min = f_min[q], f_max = f_max[q], backsub = True)
+f_min = [4914.05-5, 4764.5-5, 4577-5, 4782-5]
+f_max = [4914.05+5, 4764.5+5, 4577+5, 4782+5]
+for q in [0, 1, 2, 3]:
+    data_handler.plot_IQ_long(all_scans, q, f_min = f_min[q], f_max = f_max[q], backsub = True)
     data_handler.plot_IQ_long(all_scans, q, f_min=None, f_max=None, backsub=True)

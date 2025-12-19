@@ -62,7 +62,7 @@ class BiasQubitSpectroscopy:
         print(f"PS ch {Bias_ch[qubit_index]}")
         BiasPS = E36300(Bias_PS_ip[qubit_index], server_port = 5025)
 
-        BiasPS.setVoltage(0, Bias_ch[qubit_index])
+        set_v = BiasPS.setVoltage(0, Bias_ch[qubit_index])
         BiasPS.enable(Bias_ch[qubit_index])
 
         I_arr = []
@@ -73,8 +73,9 @@ class BiasQubitSpectroscopy:
         for index, v in enumerate(vsweep):
             voltage = round(v,3)
             print(f"Setting bias to {voltage}V")
-            BiasPS.setVoltage(voltage, Bias_ch[qubit_index])
-            time.sleep(8)
+            set_v = BiasPS.setVoltage(voltage, Bias_ch[qubit_index])
+            print(set_v)
+            #time.sleep(3)
 
 
             qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'], final_delay = self.exp_cfg['relax_delay'], cfg=self.config)
@@ -89,7 +90,8 @@ class BiasQubitSpectroscopy:
             amps_arr.append(amps)
             freq_arrs.append(freqs)
         #BiasPS.disable(Bias_ch[qubit_index])
-        BiasPS.setVoltage(0, Bias_ch[qubit_index])
+        set_v = BiasPS.setVoltage(0, Bias_ch[qubit_index])
+        print(set_v)
 
         freq_arr = freq_arrs[0]
 

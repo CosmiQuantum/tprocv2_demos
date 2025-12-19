@@ -80,13 +80,13 @@ class AllQubitTomographyMeasurement:
         # Bias_ch = [1, 2, 3, 1]  # Channel number of qubit 1-4 on associated PS
 
         try:
-            self.Q13_BiasPS.setVoltage(0, 1)
+            set_v = self.Q13_BiasPS.setVoltage(0, 1)
             self.Q13_BiasPS.enable(1)
-            self.Q13_BiasPS.setVoltage(0, 2)
+            set_v = self.Q13_BiasPS.setVoltage(0, 2)
             self.Q13_BiasPS.enable(2)
-            self.Q13_BiasPS.setVoltage(0, 3)
+            set_v = self.Q13_BiasPS.setVoltage(0, 3)
             self.Q13_BiasPS.enable(3)
-            self.Q4_BiasPS.setVoltage(0, 1)
+            set_v = self.Q4_BiasPS.setVoltage(0, 1)
             self.Q4_BiasPS.enable(1)
         except Exception as e:
             print(f"Couldn't set bias to zero, {e}")
@@ -115,16 +115,16 @@ class AllQubitTomographyMeasurement:
             for index, v in enumerate(vsweep):
                 try:
                     if 0 in qs:
-                        self.Q13_BiasPS.setVoltage(v, 1)
+                        set_v = self.Q13_BiasPS.setVoltage(v, 1)
                         time.sleep(0.2)
                     if 1 in qs:
-                        self.Q13_BiasPS.setVoltage(v, 2)
+                        set_v = self.Q13_BiasPS.setVoltage(v, 2)
                         time.sleep(0.2)
                     if 2 in qs:
-                        self.Q13_BiasPS.setVoltage(v, 3)
+                        set_v = self.Q13_BiasPS.setVoltage(v, 3)
                         time.sleep(0.2)
                     if 3 in qs:
-                        self.Q4_BiasPS.setVoltage(v, 1)
+                        set_v = self.Q4_BiasPS.setVoltage(v, 1)
                         time.sleep(0.2)
                 except Exception as e:
                     print(f"Couldn't bias a qubit: {e}")
@@ -170,10 +170,10 @@ class AllQubitTomographyMeasurement:
                     Q4_Iarr.append(q4I)
                     Q4_Qarr.append(q4Q)
 
-            self.Q13_BiasPS.setVoltage(0, 1)
-            self.Q13_BiasPS.setVoltage(0, 2)
-            self.Q13_BiasPS.setVoltage(0,3)
-            self.Q4_BiasPS.setVoltage(0,1)
+            set_v = self.Q13_BiasPS.setVoltage(0, 1)
+            set_v = self.Q13_BiasPS.setVoltage(0, 2)
+            set_v = self.Q13_BiasPS.setVoltage(0,3)
+            set_v = self.Q4_BiasPS.setVoltage(0,1)
 
             ## put all the data together
             all_data = np.array([Q1_Iarr, Q1_Qarr, Q2_Iarr, Q2_Qarr, Q3_Iarr, Q3_Qarr, Q4_Iarr, Q4_Qarr])
@@ -255,12 +255,13 @@ class AllQubitTomographyMeasurement:
 
 
 class TomographyMeasurement:
-    def __init__(self, QubitIndex, outerFolder, experiment, num_qubits, unmasking_resgain=False):
+    def __init__(self, QubitIndex, outerFolder, experiment, num_qubits, res_len, freq_offset, unmasking_resgain=False):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "tomography_ge"
         self.experiment = experiment
         self.Qubit = 'Q' + str(self.QubitIndex)
+        print(self.Qubit)
         self.exp_cfg = expt_cfg[self.expt_name]
         if unmasking_resgain:
             self.exp_cfg["list_of_all_qubits"] = [self.QubitIndex]
@@ -268,6 +269,10 @@ class TomographyMeasurement:
         self.q_config = all_qubit_state(self.experiment, num_qubits)
         self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+
+        self.config['res_length'] = res_len[self.QubitIndex]
+        good_res_freq_list = [base + offset for base, offset in zip(self.config['res_freq_ge'], freq_offset)]
+        self.config['res_freq_ge'] = good_res_freq_list
 
         print(f'Q {self.QubitIndex + 1} Tomography configuration: ', self.config)
 
@@ -296,7 +301,7 @@ class TomographyMeasurement:
 
         BiasPS = E36300(Bias_PS_ip[qubit_index], server_port=5025)
 
-        BiasPS.setVoltage(0, Bias_ch[qubit_index])
+        set_v = BiasPS.setVoltage(0, Bias_ch[qubit_index])
         BiasPS.enable(Bias_ch[qubit_index])
 
         r = 0
@@ -310,7 +315,13 @@ class TomographyMeasurement:
             amps_arr = []
 
             for index, v in enumerate(vsweep):
-                BiasPS.setVoltage(v, Bias_ch[qubit_index])
+                try:
+                    set_v = BiasPS.setVoltage(v, Bias_ch[qubit_index])
+                    time.sleep(0.2)
+                except Exception as e:
+                    print(f"Couldn't bias the qubit: {e}")
+                # BiasPS.setVoltage(v, Bias_ch[qubit_index])
+                # time.sleep(0.2)
                 #time.sleep(2)
 
                 tomography = TomographyProgram(soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
@@ -324,7 +335,7 @@ class TomographyMeasurement:
                 Q_arr.append(Q)
                 #amps_arr.append(amps)
             #BiasPS.disable(Bias_ch[qubit_index])
-            BiasPS.setVoltage(0, Bias_ch[qubit_index])
+            #BiasPS.setVoltage(0, Bias_ch[qubit_index])
             #print(I_arr)
 
             ## put all the data together

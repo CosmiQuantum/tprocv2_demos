@@ -40,18 +40,18 @@ from analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
 ################################################ Run Configurations ####################################################
 st = time.time()
 #
-n= 2
+n= 3
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
 save_r = 1                           # how many rounds to save after
 signal = 'None'                      # 'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization
 save_figs = True                     # save plots for everything as you go along the RR script?
-live_plot = False                     # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
-fit_data = True                     # fit the data here and save or plot the fits?
+live_plot = False                    # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
+fit_data = True                      # fit the data here and save or plot the fits?
 save_data_h5 = True                  # save all of the data to h5 files?
-verbose = False                      # print everything to the console in real time, good for debugging, bad for memory
-qick_verbose = False                 # qick verbose prints the progress bar for each qick experiment as it is happening (the red bar that fills out as more experiment rounds/reps are being done)
+verbose = True                      # print everything to the console in real time, good for debugging, bad for memory
+qick_verbose = False                  # qick verbose prints the progress bar for each qick experiment as it is happening (the red bar that fills out as more experiment rounds/reps are being done)
 debug_mode = False                   # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 thresholding = False                 # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 increase_qubit_reps = False          # if you want to increase the reps for a qubit, set to True
@@ -59,7 +59,7 @@ unmask = True                        # Do you want to use the unmasking feature 
 qubit_to_increase_reps_for = 0       # only has impact if previous line is True
 multiply_qubit_reps_by = 2           # only has impact if the line two above is True
 
-Qs_to_look_at = [0, 1, 2, 3] #[0,1,2,3]#,1,2,3,4,5]       # only list the qubits you want to do the RR for
+Qs_to_look_at = [3] #[0,1,2,3]    # only list the qubits you want to do the RR for
 
 #One round take 11.27 minutes for all 4 qubits: Rspec, Qspec, Rabi, SS, and T1
 
@@ -69,19 +69,18 @@ print(FRIDGE)
 #Data saving info
 run_name = 'run33e'
 device_name = '4charge'
-substudy_txt_notes = ('DD off, rear shield hole closed, 0V bias') #('Active Reset Test')##('round robin with relax delays of 1000us for T1 and T2 measurements.')#('Active Reset Test')#('Normal Round Robin during cooldown, now everything works properly, set debug to false to run '
-                      # 'overFalsenight and running in terminal with repeater script')
+substudy_txt_notes = ('post data taking and end of run check, Q4 biased to degen') #'DD off, rear shield hole closed, no colimator, 0V bias') #'0V bias, ssf edit')#('DD off, rear shield hole closed, 0V bias')
 
 # set which of the following you'd like to run to 'True'
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False, "test_act":False, "fh_rabi":False,
-             "t1": True, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": False, "fh_q_spec":False, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
+             "t1": True, "t2r": True, "t2e": True, "ef_res_spec":False, "ef_q_spec": False, "fh_q_spec":False, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 # run_flags = {"tof": False, "res_spec": False, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False, "test_act":False,
 #              "t1": False, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": True, "fh_q_spec":True, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 
 # optimization outputs from qick board, unmasking set to true
-res_leng_vals = [5, 4.75, 5, 4.25] #[9.25, 5.5, 6.25, 7.5] #Q1,~Q2,Q4 opt
-res_gain = [0.116, 0.0935, 0.1162, 0.14] #[0.75, 0.7, 0.8, 0.75] #Q1,~Q2,Q4 optimized
-freq_offsets = [0.05, -0.225, -0.2, -0.075] #[-0.1429, -0.1429, 0, -0.1429] #Q1,~Q2,Q4 optimized
+res_leng_vals = [3, 5.25, 4.5, 4] #[5, 4.75, 5, 4.25] #[9.25, 5.5, 6.25, 7.5] #Q1,~Q2,Q4 opt
+res_gain = [0.625, 0.375, 0.475, 0.475] #[0.6, 0.25, 0.35, 0.5] #[0.116, 0.0935, 0.1162, 0.14] #[0.75, 0.7, 0.8, 0.75] #Q1,~Q2,Q4 optimized
+freq_offsets = [-0.25, 0.2, -0.3, 0] #[0.05, -0.225, -0.2, -0.075] #[-0.1429, -0.1429, 0, -0.1429] #Q1,~Q2,Q4 optimized
 
 
 qubit_freqs_ef = [None]*4
@@ -92,8 +91,8 @@ number_of_qubits = 4
 figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 #Folders
-study = 'DDoff_SC_HoleClosed' #'Longtime_Study'
-sub_study = 'RR_Long' #'RR_Long' #'SSF_PostRabi'
+study = 'Final Check' #'DDon_SC_HoleClosed_noCol' #'Initial Checkout' #'DDoff_SC_HoleClosed' #'Longtime_Study'
+sub_study = 'RR_Q4' #'RR_Long' #'RR_Long' #'SSF_PostRabi'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/home/nexusadmin/Documents/Data/{run_name}/"):
@@ -487,8 +486,7 @@ while j < n:
                 if qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None:
                     if stored_qspec_list[QubitIndex] is not None:
                         experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = stored_qspec_list[QubitIndex]
-                        rr_logger.warning(f"U"
-                                          f"=sing previous stored value: {stored_qspec_list[QubitIndex]}")
+                        rr_logger.warning(f"Using previous stored value: {stored_qspec_list[QubitIndex]}")
                         recycled_qfreq = True
                         qubit_freq = stored_qspec_list[QubitIndex]
                         experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
@@ -562,7 +560,7 @@ while j < n:
 
             # fid, threshold, angle, ig_new, ie_new = ss.hist_ssf(
             #     data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
-            print(sys_config_ss)
+            #print(sys_config_ss)
             # except Exception as e:
             #     if debug_mode:
             #         raise  # In debug mode, re-raise the exception immediately

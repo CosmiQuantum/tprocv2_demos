@@ -14,7 +14,7 @@ BiasPS = E36300(Bias_PS_ip[qubit_index], server_port = 5025)
 if voltage > 0.15:
     print(f"{voltage} V is too high, reset")
 else:
-    print(f"Setting {qubit_index +1} bias to {voltage}V")
-    BiasPS.setVoltage(voltage, Bias_ch[qubit_index])
+    print(f"Setting qubit {qubit_index +1} bias to {voltage}V")
+    set_v = BiasPS.setVoltage(voltage, Bias_ch[qubit_index])
     BiasPS.enable(Bias_ch[qubit_index])
     #time.sleep(8)

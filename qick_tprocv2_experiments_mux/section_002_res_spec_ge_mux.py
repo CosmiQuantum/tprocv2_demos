@@ -7,6 +7,7 @@ import copy
 import datetime
 import logging
 from scipy.signal import savgol_filter
+from scipy.optimize import curve_fit
 
 
 class SingleToneSpectroscopyProgram(AveragerProgramV2):
@@ -94,15 +95,26 @@ class ResonanceSpectroscopy:
         for i in range(self.number_of_qubits):
             plt.subplot(2, 3, i + 1)
             #plt.plot(fpts + fcenter[i], amps[i], '-', linewidth=1.5)
-            plt.plot([f + fcenter[i] for f in fpts], amps[i], '-', linewidth=1.5)
-            plt.plot([f + fcenter[i] for f in fpts], filtered_amps[i], '-', linewidth=1.5, alpha = 0.7)
+            # Plot raw and filtered data on the same plot
+            plt.plot([f + fcenter[i] for f in fpts], amps[i], '-', linewidth=1.5, label = 'Raw')
+            plt.plot([f + fcenter[i] for f in fpts], filtered_amps[i], '-', linewidth=1.5, alpha = 0.7, label = 'Smoothed')
             freq_r = fpts[np.argmin(filtered_amps[i])] + fcenter[i]
             res_freqs.append(freq_r)
             if i == self.QubitIndex:
+                ##### Uncomment to debug, leave commented if res spec measurment plots needed
+                # freqs = [f + fcenter[i] for f in fpts]
+                # print('freqs: ', freqs)
+                # print('amps: ', amps[i])
+                # mean, fit, fwhm, error = self.fit_lorentzian(amps[i], freqs, freq_r[-1])
+                # print('mean', mean)
+                # print(fwhm)
+                # print(fit)
+                # plt.plot([f + fcenter[i] for f in fpts], fit, 'r--', label = 'Lor Fit')
                 plt.axvline(freq_r, linestyle='--', color='orange', linewidth=1.5)
-                plt.title(f"Resonator {i + 1} {freq_r:.3f} MHz", pad=10)
+                plt.title(f"Resonator {i + 1} {freq_r:.3f} MHz", pad=10) #, fwhm: {fwhm:.2f} MHz
             else:
                 plt.title(f"Resonator {i + 1}", pad=10)
+            #plt.legend()
             plt.xlabel("Frequency (MHz)")
             plt.ylabel("Amplitude (a.u.)")
 
@@ -142,6 +154,65 @@ class ResonanceSpectroscopy:
 
         res_freqs = [round(x, 7) for x in res_freqs]
         return res_freqs
+
+    def lorentzian(self, f, f0, gamma, A, B):
+        return A * gamma ** 2 / ((f-f0) ** 2 + gamma **2) + B
+
+    def max_offset_difference_with_x(self, x_values, y_values, offset):
+        # Taken from section 004 qubit spec ge
+        max_average_difference = -1
+        corresponding_x = None
+
+        # averaging all 3 to avoid noise spikes
+        for i in range(len(y_values) - 2):
+            # group 3 vals
+            y_triplet = y_values[i:i + 3]
+
+            # avg differences for these 3
+            average_difference = sum(abs(y - offset) for y in y_triplet) / 3
+
+            # see if this is highest
+            if average_difference > max_average_difference:
+                max_average_difference = average_difference
+                # x value of middle y value in the 3 vals
+                corresponding_x = x_values[i + 1]
+        return corresponding_x, max_average_difference
+
+    def fit_lorentzian(self, amps, freqs, freq_r, sigma_guess=1):
+        #Adapted from qubit spec ge fitting function
+        print('freqs: ', freqs)
+        print('amps: ', amps)
+        try:
+            initial_guess = [freq_r, sigma_guess, np.max(amps), np.min(amps)]
+
+            # First round fits to get rough estimates
+            params1, cov1 = curve_fit(self.lorentzian, freqs, amps, p0=initial_guess)
+            print("DEBUG params1: ", params1, "type: ", type(params1))
+
+            #Refine guess
+            x_max_diff, max_diff = self.max_offset_difference_with_x(freqs, amps, params1[3])
+            initial_guess = [x_max_diff, sigma_guess, np.max(amps), np.min(amps)]
+
+            # Second round of fits, getting covariance matrices
+            params, cov = curve_fit(self.lorentzian, freqs, amps, p0=initial_guess)
+
+            # Create the fitted curves
+            amp_fit = self.lorentzian(freqs, *params)
+
+            # Calculate errrors from the covariance matrices
+            fit_err = np.sqrt(np.diag(cov))
+
+            # Extract fitted means and FWHM (assuming params[0] is mean and params[1] relates to the width
+            mean = params[0]
+            fwhm = 2 * params[1]
+
+            # Return all desired results including error
+            return mean, amp_fit, fwhm, fit_err
+
+        except Exception as e:
+            if self.verbose: print("Error during res Lorentzian fit:", e)
+            self.logger.info(f'Error during Lorentzian fit: {e}')
+            return None, None, None, None
 
 class PostProcessResonanceSpectroscopy:
     def __init__(self, QubitIndex,  outerFolder, round_num, save_figs, experiment = None):

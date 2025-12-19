@@ -8,7 +8,7 @@ import datetime
 
 # #For NEXUS
 #outerFolder1 = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/2025-02-08")
-outerFolder_RO = ("/home/nexusadmin/Documents/Data/run33e/4charge/readout_optimization/optimization_Q4/2025-11-23_23-47-09/study_data/Data_h5/2D_Gain_Freq_Sweeps")
+outerFolder_RO = ("/home/nexusadmin/Documents/Data/run33e/4charge/readout_optimization/optimization_Q4/2025-12-03_23-30-02/study_data/Data_h5/2D_Gain_Freq_Sweeps")
                #"2025-09-08_20-55-09/study_data/Data_h5/2D_Gain_Freq_Sweeps")
 outerFolder_TWPA = ("/home/nexusadmin/Documents/Data/run33d/4charge/TWPA_optimization/TWPA_opt_Q4/2025-11-10/2025-11-10_22-04-32/study_data/Data_h5/2D_Power_Freq_Sweeps")
 
@@ -157,7 +157,7 @@ if TWPA:
     print('For files inside: ', outerFolder_TWPA)
 else:
     print('For files inside: ', outerFolder_RO)
-punchout_thresholds =  [0.12, 0.1, 0.12, 0.15] #[0.85, 0.8, 0.8, 0.8] #from punchout test on 10//2025
+punchout_thresholds =  [0.7, 0.4, 0.51, 0.5] #[0.85, 0.8, 0.8, 0.8] #from punchout test on 10//2025
 
 if TWPA:
     for qubit_index in range(Q, Q+1):
