@@ -4,10 +4,11 @@ import ast
 import numpy as np
 import sys
 import h5py
+from matplotlib.axes import Axes
 from sklearn.mixture import GaussianMixture
-import os
 import matplotlib.ticker as mticker
 from scipy.stats import norm
+import os
 sys.path.insert(0, os.path.abspath("/home/quietuser/Documents/GitHub/QICK_Qubit_LabSuite/src"))
 from qicklab.analysis.qspec import AnaQSpec
 from qicklab.analysis.ssf import AnaSSF
@@ -16,7 +17,6 @@ from matplotlib.ticker import MaxNLocator
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 from qicklab.datahandling.datafile_tools import find_h5_files
 import math
-import os
 import datetime
 import pandas as pd
 from pathlib import Path
@@ -25,10 +25,9 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from bisect import bisect_left
 from matplotlib.dates import DateFormatter
-
+import matplotlib.pyplot as plt
 save_figs = True
 figure_quality = 100 #ramp this up to like 500 for presentation plots
-
 
 class SSFTempCalcAndPlots:
     def __init__(self, figure_quality, number_of_qubits, run_num, save_figs):
@@ -1889,6 +1888,246 @@ class combined_Qtemp_studies:
     def __init__(self, figure_quality, number_of_qubits):
         self.figure_quality = figure_quality
         self.number_of_qubits = number_of_qubits
+
+    def plot_t1t2_vs_qtemps(self, out_dir, all_qubit_temperatures_ssf_g = None, all_qubit_timestamps_ssf_g = None,
+                          all_files_Qtemp_results_RPMs = None, t1_vals = None, t1_dates = None, t2r_vals = None, t2r_dates = None,
+                            t2e_vals=None, t2e_dates=None, restrict_time_xaxis=False, start_time = None, end_time = None,
+                            plot_extra_event_lines=False, qbt_to_plt = [0,1,2,3,4,5], max_match_dt_s=10, save_name="T1_T2_vs_Qtemp.png"):
+
+        """
+        Plots T1/T2R/T2E vs effective qubit temperature.
+
+        Layout:
+          - rows = len(qbt_to_plt) (each row is a qubit)
+          - cols = 2
+              col 0: RPM temperatures
+              col 1: SSF temperatures
+
+        Matching strategy:
+          - For each coherence datapoint timestamp, match to the nearest temperature timestamp
+            within max_match_delta_s. Otherwise skip (left as NaN and not plotted).
+
+        Expected input shapes (flexible, but these are the “happy path”):
+          - t1_vals[q], t1_dates[q]  are arrays for qubit q (same length)
+          - t2r_vals[q], t2r_dates[q]
+          - t2e_vals[q], t2e_dates[q]
+          - all_qubit_temperatures_ssf_g[q], all_qubit_timestamps_ssf_g[q]
+
+          - all_files_Qtemp_results_RPMs:
+              list of per-file dicts. Each dict should contain (any one of these patterns works):
+                A) dict["timestamps"][q] and dict["temps_mK"][q]
+                B) dict["qubits"][q]["timestamps"] and dict["qubits"][q]["temps_mK"]
+              (If your keys differ, tweak _extract_rpm_for_qubit below.)
+        """
+        os.makedirs(out_dir, exist_ok=True)
+
+        qbt_to_plt = list(qbt_to_plt)
+        nrows = len(qbt_to_plt)
+
+        fig, axes = plt.subplots(
+            nrows=nrows,
+            ncols=2,
+            figsize=(13, max(3.0, 2.6 * nrows)),
+            constrained_layout=True,
+        )
+        if nrows == 1:
+            axes = np.array([axes])
+
+        metrics = [
+            ("T1", t1_vals, t1_dates, "o"),
+            ("T2R", t2r_vals, t2r_dates, "s"),
+            ("T2E", t2e_vals, t2e_dates, "^"),
+        ]
+
+        for row, q in enumerate(qbt_to_plt):
+            ax_rpm: Axes = axes[row, 0]
+            ax_ssf: Axes = axes[row, 1]
+
+            # --------------------- Gather RPM temps for this qubit ---------------------
+            rpm_times_list = []
+            rpm_temps_list = []
+
+            if all_files_Qtemp_results_RPMs is not None:
+                for f in all_files_Qtemp_results_RPMs:
+                    # Expected: f["qubits"][q]["timestamps"], f["qubits"][q]["temps_mK"]
+                    if isinstance(f, dict) and ("qubits" in f) and (q in f["qubits"]):
+                        qb = f["qubits"][q]
+                        if ("timestamps" in qb) and ("temps_mK" in qb):
+                            rpm_times_list.extend(list(qb["timestamps"]))
+                            rpm_temps_list.extend(list(qb["temps_mK"]))
+
+            if len(rpm_times_list) > 0:
+                rpm_times = np.array(rpm_times_list, dtype="datetime64[ns]")
+                rpm_temps = np.array(rpm_temps_list, dtype=float)
+            else:
+                rpm_times = np.array([], dtype="datetime64[ns]")
+                rpm_temps = np.array([], dtype=float)
+
+            # sort RPM by time (required for before/after matching)
+            if len(rpm_times) > 0:
+                o = np.argsort(rpm_times)
+                rpm_times = rpm_times[o]
+                rpm_temps = rpm_temps[o]
+
+            if restrict_time_xaxis and len(rpm_times) > 0:
+                m = np.ones(len(rpm_times), dtype=bool)
+                if start_time is not None:
+                    m &= (rpm_times >= np.datetime64(start_time))
+                if end_time is not None:
+                    m &= (rpm_times <= np.datetime64(end_time))
+                rpm_times = rpm_times[m]
+                rpm_temps = rpm_temps[m]
+
+            # --------------------- Gather SSF temps for this qubit ---------------------
+            if (
+                    all_qubit_temperatures_ssf_g is not None
+                    and all_qubit_timestamps_ssf_g is not None
+                    and q < len(all_qubit_timestamps_ssf_g)
+                    and q < len(all_qubit_temperatures_ssf_g)
+                    and all_qubit_timestamps_ssf_g[q] is not None
+                    and all_qubit_temperatures_ssf_g[q] is not None
+            ):
+                ssf_times = np.array(all_qubit_timestamps_ssf_g[q], dtype="datetime64[ns]")
+                ssf_temps = np.array(all_qubit_temperatures_ssf_g[q], dtype=float)
+            else:
+                ssf_times = np.array([], dtype="datetime64[ns]")
+                ssf_temps = np.array([], dtype=float)
+
+            # sort SSF by time (required for before/after matching)
+            if len(ssf_times) > 0:
+                o = np.argsort(ssf_times)
+                ssf_times = ssf_times[o]
+                ssf_temps = ssf_temps[o]
+
+            if restrict_time_xaxis and len(ssf_times) > 0:
+                m = np.ones(len(ssf_times), dtype=bool) # Start by assuming every SSF temperature point is valid
+                if start_time is not None:
+                    m &= (ssf_times >= np.datetime64(start_time)) # “Keep only those after start_time”
+                if end_time is not None:
+                    m &= (ssf_times <= np.datetime64(end_time))  # “Keep only those before end_time”
+
+                # Apply mask
+                ssf_times = ssf_times[m]
+                ssf_temps = ssf_temps[m]
+
+            # --------------------- Plot coherence metrics ---------------------
+            for name, vals_by_q, dates_by_q, marker in metrics:
+                if vals_by_q is None or dates_by_q is None:
+                    continue
+                if q >= len(vals_by_q) or q >= len(dates_by_q):
+                    continue
+                if vals_by_q[q] is None or dates_by_q[q] is None:
+                    continue
+
+                y = np.array(vals_by_q[q], dtype=float)
+                t = np.array(dates_by_q[q], dtype="datetime64[ns]")
+
+                if len(y) == 0 or len(t) == 0:
+                    continue
+
+                if restrict_time_xaxis:
+                    m = np.ones(len(t), dtype=bool) # Start by assuming every SSF temperature point is valid
+                    if start_time is not None:
+                        m &= (t >= np.datetime64(start_time)) # “Keep only those after start_time”
+                    if end_time is not None:
+                        m &= (t <= np.datetime64(end_time)) # “Keep only those before end_time”
+
+                    # Apply mask
+                    t = t[m]
+                    y = y[m]
+                    if len(t) == 0:
+                        continue
+
+                # -------- RPM match using before/after --------
+                x_rpm = np.full(len(t), np.nan, dtype=float)
+                if len(rpm_times) > 0:
+                    idx = np.searchsorted(rpm_times, t, side="left")  # insertion points
+                    for i in range(len(t)):
+                        j = int(idx[i])
+
+                        best_temp = np.nan
+                        best_dt = np.inf
+
+                        # candidate before
+                        if j - 1 >= 0:
+                            dt_before = abs((t[i] - rpm_times[j - 1]).astype("timedelta64[s]").astype(float))
+                            if dt_before < best_dt:
+                                best_dt = dt_before
+                                best_temp = float(rpm_temps[j - 1])
+
+                        # candidate after
+                        if j < len(rpm_times):
+                            dt_after = abs((t[i] - rpm_times[j]).astype("timedelta64[s]").astype(float))
+                            if dt_after < best_dt:
+                                best_dt = dt_after
+                                best_temp = float(rpm_temps[j])
+
+                        if best_dt <= max_match_dt_s:
+                            x_rpm[i] = best_temp
+
+                # -------- SSF match using before/after --------
+                x_ssf = np.full(len(t), np.nan, dtype=float)
+                if len(ssf_times) > 0:
+                    idx = np.searchsorted(ssf_times, t, side="left")
+                    for i in range(len(t)):
+                        j = int(idx[i])
+
+                        best_temp = np.nan
+                        best_dt = np.inf
+
+                        if j - 1 >= 0:
+                            dt_before = abs((t[i] - ssf_times[j - 1]).astype("timedelta64[s]").astype(float))
+                            if dt_before < best_dt:
+                                best_dt = dt_before
+                                best_temp = float(ssf_temps[j - 1])
+
+                        if j < len(ssf_times):
+                            dt_after = abs((t[i] - ssf_times[j]).astype("timedelta64[s]").astype(float))
+                            if dt_after < best_dt:
+                                best_dt = dt_after
+                                best_temp = float(ssf_temps[j])
+
+                        if best_dt <= max_match_dt_s:
+                            x_ssf[i] = best_temp
+
+                ok_y = np.isfinite(y)
+
+                ok_rpm = ok_y & np.isfinite(x_rpm)
+                if np.any(ok_rpm):
+                    ax_rpm.scatter(x_rpm[ok_rpm], y[ok_rpm], marker=marker, label=name, alpha=0.85)
+
+                ok_ssf = ok_y & np.isfinite(x_ssf)
+                if np.any(ok_ssf):
+                    ax_ssf.scatter(x_ssf[ok_ssf], y[ok_ssf], marker=marker, label=name, alpha=0.85)
+
+            # --------------------- Cosmetics ---------------------
+            ax_rpm.set_title(f"Q{q + 1} — RPM temps")
+            ax_ssf.set_title(f"Q{q + 1} — SSF temps")
+            ax_rpm.set_xlabel("Effective qubit temperature (mK)")
+            ax_ssf.set_xlabel("Effective qubit temperature (mK)")
+            ax_rpm.set_ylabel("Coherence (µs)")
+
+            ax_rpm.grid(alpha=0.3)
+            ax_ssf.grid(alpha=0.3)
+            ax_rpm.legend(fontsize=9, loc="best")
+            ax_ssf.legend(fontsize=9, loc="best")
+
+            if plot_extra_event_lines:
+                ax_rpm.text(
+                    0.02, 0.95,
+                    "plot_extra_event_lines=True\n(no-op for temp-x plots)",
+                    transform=ax_rpm.transAxes,
+                    va="top",
+                    fontsize=8,
+                    alpha=0.7,
+                )
+
+        savepath = os.path.join(out_dir, save_name)
+        fig.savefig(savepath)
+        plt.close(fig)
+
+        return savepath
+
 
     def Qtemps_vs_time_comb_methods_3col(self, all_qubit_temperatures_ssf_g, all_qubit_timestamps_ssf_g, all_qubit_temps_ssf_errs_g, all_qubit_temperatures_ssf_ge, all_qubit_timestamps_ssf_ge,
                                     all_qubit_temps_ssf_errs_ge, out_dir, all_files_Qtemp_results_RPMs, restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = True,

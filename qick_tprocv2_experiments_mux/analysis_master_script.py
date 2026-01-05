@@ -464,7 +464,7 @@ print("mean qspec fit err Q1: ", np.mean(qspec_fit_err[0]))
 #
 #now plot them vs eachother
 # plotter = PlotMetricDependencies(run_name, tot_num_of_qubits, final_figure_quality, fridge=FRIDGE)
-#
+
 # plotter.plot(date_times_q_spec, q_freqs, date_times_t1, t1_vals, metric_1_label = 'Q Freq (MHz)',
 #              metric_2_label = 'T1 (us)')
 # plotter.plot(date_times_pi_amps, pi_amps, date_times_t1, t1_vals, metric_1_label = 'Pi Amp (a.u.)',
