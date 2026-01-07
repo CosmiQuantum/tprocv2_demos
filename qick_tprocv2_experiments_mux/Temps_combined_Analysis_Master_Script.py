@@ -68,8 +68,7 @@ london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
 
 # For coherence-qubit temps combined analysis
-coh_qtemp_ana_flags = {"load_rpm_qtemps": True, "load_ssf_qtemps": True, "load_mcp1_temps": False, "load_coherence_res": True, "plot_qtemps_t1_ftemps_qfreq": False,
-                       "plot_t1t2vsQtemps": True}
+coh_qtemp_ana_flags = {"load_rpm_qtemps": True, "load_ssf_qtemps": True, "load_mcp1_temps": False, "load_coherence_res": True, "plot_qtemps_t1_ftemps_qfreq": False}
 ############################################################################## Set up #######################################################################################################################
 #----------------------------------------------------- For qubit temperature calculations via rabi population measurements --------------------------------------------------------------------------------------
 # Specify which dates you want to loop through. It will process all the files inside all the folders that contain these dates in their title.
@@ -758,8 +757,7 @@ date_times_t2e = None
 t2e_vals = None
 
 saved_shots_t1ge = False
-
-use_png_timestamps = True
+use_png_timestamps = False
 
 restrict_time = False
 start_time = datetime.datetime(2025, 11, 18, 0, 0)
@@ -792,10 +790,10 @@ if coh_qtemp_ana_flags["load_rpm_qtemps"]:
 if coh_qtemp_ana_flags["load_ssf_qtemps"]: # IMPORTANT: have not yet implemented use_png_timestamps. TO DO.
     # ----------- Get Qubit temperature results via SSF g-state double gaussian threshold method
     SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, run_num, save_figs)
-    # pairs_info = SSF_calcs_obj.process_ssf_and_qfreq_data_qtemps(Science_Qubits, paths_SSFmethods)
-    #
-    # all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps(
-    #     pairs_info, limit_temp_k=0.95, use_gessf_thresh_only=False, fallback_to_threshold=False)
+    pairs_info = SSF_calcs_obj.process_ssf_and_qfreq_data_qtemps(Science_Qubits, paths_SSFmethods)
+
+    all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps(
+        pairs_info, limit_temp_k=0.95, use_gessf_thresh_only=False, fallback_to_threshold=False)
 
 if coh_qtemp_ana_flags["load_mcp1_temps"]:
     mcp1_csv_path = "/data/QICK_data/run8/6transmon/round_robin/temperature_sweep_qubit_data/Mixing chamber stage-data-2025-11-25 09_46_33.csv"
@@ -830,9 +828,3 @@ if coh_qtemp_ana_flags["plot_qtemps_t1_ftemps_qfreq"]:
                                   all_files_Qtemp_results_RPMs=all_files_Qtemp_results_RPMs, fridge_temps=mcp_temps, fridge_dates=mcp_dates,
                                   t1_vals=t1_vals, t1_dates=date_times_t1, qfreqs_vals=q_freqs, qfreqs_dates=date_times_q_spec,
                                   restrict_time_xaxis=restrict_time, start_time = start_time, end_time = end_time, plot_extra_event_lines=False)
-if coh_qtemp_ana_flags["plot_t1t2vsQtemps"]:
-    right_now = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    combined_studies.plot_t1t2_vs_qtemps(comb_plots_path, all_qubit_temperatures_ssf_g = all_qubit_temps_g, all_qubit_timestamps_ssf_g = all_qubit_times_g,
-                          all_files_Qtemp_results_RPMs = all_files_Qtemp_results_RPMs, t1_vals = t1_vals, t1_dates = date_times_t1, t2r_vals = t2r_vals, t2r_dates = date_times_t2r,
-                            t2e_vals=t2e_vals, t2e_dates=date_times_t2e, restrict_time_xaxis=restrict_time, start_time = start_time, end_time = end_time,
-                            qbt_to_plt = [0,1,2,3,4,5], max_match_dt_s=10, save_name=f"T1_vs_Qtemp_{right_now}.png")
