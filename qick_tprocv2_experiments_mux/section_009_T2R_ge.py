@@ -652,11 +652,11 @@ class T2RMeasurement:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"T2 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         f"T2 Q{self.QubitIndex + 1}: {t2r_est:.2f} +/- {t2r_err:.2f}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
                          fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
                 fig.text(plot_middle, 0.98,
-                         f"T2R Q{self.QubitIndex + 1}: {float(t2r_est):.2f}", fontsize=24, ha='center', va='top')
+                         f"T2R Q{self.QubitIndex + 1}: {t2r_est:.2f} +/- {t2r_err:.2f}", fontsize=24, ha='center', va='top')
 
         else:
             # Add title, centered on the plot area

@@ -1068,20 +1068,18 @@ class PlotAllRR:
 
                         # --------- simple peak-count gate on the fitted curve ----------
                         try:
-                            min_peaks = 3
+                            min_peaks = 2
                             y_fit = np.asarray(fitted, float)
-                            if y_fit.size < 3:
-                                continue
 
                             # ignore micro-wiggles: require peaks be at least ~10% of the record apart
-                            min_dist = max(3, y_fit.size // 10)
+                            min_dist = max(3, y_fit.size // 10) # and never allow peaks closer than 3 points apart
 
                             pks, _ = find_peaks(y_fit, distance=min_dist)
                             trs, _ = find_peaks(-y_fit, distance=min_dist)
                             n_osc = min(len(pks), len(trs))  # need alternating ups/downs
 
                             if n_osc < min_peaks:
-                                print('Rejected a T2R scan. Failed ramsey shape, less than 3 oscillations.')
+                                print(f'Rejected a T2R scan. Failed ramsey shape, less than {min_peaks} oscillations.')
 
                                 T2_bad = T2RMeasurement(q_key, self.number_of_qubits, bad_plots_dir,
                                                         round_num, self.signal, self.save_figs, fit_data=False)
@@ -1092,26 +1090,63 @@ class PlotAllRR:
                         except Exception:
                             # if peak counting fails for any reason, be conservative and skip
                             continue
-                        # ----------------------------------------------------------------
-                        # goodness of fit check---------------------------------------------
+
+                        # ------------------------------- R2 goodness of fit check------------------------------------
+                        # y = I if plot_sig == "I" else Q
+                        # # Compute R-squared goodness-of-fit
+                        # ss_res = np.sum((y - fitted) ** 2)
+                        # ss_tot = np.sum((y - np.mean(y)) ** 2)
+                        # r2 = 1 - ss_res / ss_tot
+                        #
+                        # if r2 < 0.15: # adjust threshold if needed; chosen by eye
+                        #     print(f"Bad T2R fit for Q{int(q_key) + 1}, R² = {r2:.2f}")
+                        #
+                        #     T2_bad = T2RMeasurement(q_key, self.number_of_qubits, bad_plots_dir,
+                        #                             round_num, self.signal, self.save_figs, fit_data=False)
+                        #     T2_bad.plot_results(I, Q, delay_times, date, fitted, t2r_est, t2r_err, plot_sig,
+                        #                         fig_quality=self.figure_quality)
+                        #     del T2_bad
+                        #     continue
+                        #---------------------------BIC goodness of fit test-------------------------------
                         y = I if plot_sig == "I" else Q
+                        y = np.asarray(y, float)
+                        fitted = np.asarray(fitted, float)
 
-                        # Compute R-squared goodness-of-fit
-                        ss_res = np.sum((y - fitted) ** 2)
-                        ss_tot = np.sum((y - np.mean(y)) ** 2)
-                        r2 = 1 - ss_res / ss_tot
+                        n = len(y) # number of datapoints
 
-                        if r2 < 0.15: # adjust threshold if needed; chosen by eye
-                            print(f"Bad T2R fit for Q{int(q_key) + 1}, R² = {r2:.2f}")
+                        # SSE of fitted model (sum of squared errors). We want the residuals to be small (so SSE small)
+                        sse_fit = np.sum((y - fitted) ** 2)
 
+                        # SSE of flat constant baseline model
+                        # So, we do the same but now considering a “no oscillation” baseline model
+                        y0 = np.mean(y)
+                        sse0 = np.sum((y - y0) ** 2)
+
+                        # Number of parameters
+                        k_fit = 6  # a0..a5 in Ramsey model
+                        k0 = 1  # for a constant baseline we just have one param
+
+                        # Guard against log(0), since BIC contains log(SSE/n).
+                        eps = 1e-12
+                        sse_fit = max(sse_fit, eps)
+                        sse0 = max(sse0, eps)
+
+                        # BIC values (using BIC formula)
+                        bic_fit = k_fit * np.log(n) + n * np.log(sse_fit / n) # BIC of ramsey model
+                        bic0 = k0 * np.log(n) + n * np.log(sse0 / n) # BIC of a constant baseline model
+
+                        delta_bic = bic0 - bic_fit  # positive means oscillatory model is better
+
+                        # Decision threshold, change as needed
+                        if delta_bic < 5:
+                            print(f"Rejected by BIC: ΔBIC = {delta_bic:.2f}")
                             T2_bad = T2RMeasurement(q_key, self.number_of_qubits, bad_plots_dir,
-                                                    round_num, self.signal, self.save_figs, fit_data=False)
+                                                        round_num, self.signal, self.save_figs, fit_data=False)
                             T2_bad.plot_results(I, Q, delay_times, date, fitted, t2r_est, t2r_err, plot_sig,
-                                                fig_quality=self.figure_quality)
+                                                    fig_quality=self.figure_quality)
                             del T2_bad
                             continue
-                        #--------------------------------------------------------------------------------
-
+                        # ------------------------------------------------------------------
                         if t2r_est < 0:
                             print("The value is negative, continuing...")
                             continue
