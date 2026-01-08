@@ -6,6 +6,7 @@ from build_state import *
 from expt_config import *
 from system_config import *
 import copy
+from iminuit import Minuit
 import visdom
 from scipy import optimize
 from sklearn import preprocessing
@@ -235,6 +236,195 @@ class T2EMeasurement:
                         # self.config['ramsey_freq'] = 2 * self.config['ramsey_freq']
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2E configuration: ', self.config)
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} T2E configuration: {self.config}')
+
+    def t2_fit_iminuit(self, x_data, I, Q, verbose=False, guess=None, plot=False):
+        """
+        Iminuit-based version of T2 fit function (keeps the same logic + parameter names).
+        """
+        # Choose I or Q based on best signal
+        if abs(I[-1] - I[0]) > abs(Q[-1] - Q[0]):
+            y_data = I
+            plot_sig = "I"
+        else:
+            y_data = Q
+            plot_sig = "Q"
+
+        # Normalize
+        xn = preprocessing.normalize([x_data], return_norm=True)
+        yn = preprocessing.normalize([y_data], return_norm=True)
+        x = xn[0][0]
+        y = yn[0][0]
+        x_normal = xn[1][0]
+        y_normal = yn[1][0]
+
+        # FFT-based initial guesses (same as other code)
+        fft = np.fft.fft(y)
+        f = np.fft.fftfreq(len(x))
+
+        fft = fft[1: len(f) // 2]
+        f = f[1: len(f) // 2]
+
+        if (np.abs(fft)[1:] - np.abs(fft)[:-1] > 0).any():
+            first_read_data_ind = np.where(np.abs(fft)[1:] - np.abs(fft)[:-1] > 0)[0][0]
+            fft = fft[first_read_data_ind:]
+            f = f[first_read_data_ind:]
+
+        out_freq = f[np.argmax(np.abs(fft))]
+        guess_freq = out_freq / (x[1] - x[0])
+
+        period = int(np.ceil(1 / out_freq)) if out_freq != 0 else max(1, len(y) // 10)
+        n_chunks = max(1, round(len(y) / period))
+        peaks = (
+                np.array([np.std(y[i * period: (i + 1) * period]) for i in range(n_chunks)])
+                * np.sqrt(2)
+                * 2
+        )
+
+        if len(peaks) > 1 and np.all(peaks > 0):
+            guess_T2 = (
+                    -1
+                    / ((np.log(peaks)[-1] - np.log(peaks)[0]) / (period * (len(peaks) - 1)))
+                    * (x[1] - x[0])
+            )
+        else:
+            guess_T2 = 100 / x_normal
+
+        initial_offset = np.mean(y[:period]) if period > 0 else np.mean(y)
+        final_offset = np.mean(y[-period:]) if period > 0 else np.mean(y)
+
+        guess_phase = np.angle(fft[np.argmax(np.abs(fft))]) - guess_freq * 2 * np.pi * x[0]
+
+        # Gguesses (same keys/behavior as other code)
+        if guess is not None:
+            for key in guess.keys():
+                if key == "f":
+                    guess_freq = float(guess[key]) * x_normal
+                elif key == "phase":
+                    guess_phase = float(guess[key])
+                elif key == "T2":
+                    guess_T2 = float(guess[key]) * x_normal
+                elif key == "amp":
+                    peaks[0] = float(guess[key]) / y_normal
+                elif key == "initial_offset":
+                    initial_offset = float(guess[key]) / y_normal
+                elif key == "final_offset":
+                    final_offset = float(guess[key]) / y_normal
+                else:
+                    raise Exception(
+                        f"The key '{key}' specified in 'guess' does not match a fitting parameters for this function."
+                    )
+
+        if verbose:
+            print(
+                f"Initial guess:\n"
+                f" f = {guess_freq / x_normal:.3f}, \n"
+                f" phase = {guess_phase:.3f}, \n"
+                f" T2 = {guess_T2 * x_normal:.3f}, \n"
+                f" amp = {peaks[0] * y_normal:.3f}, \n"
+                f" initial offset = {initial_offset * y_normal:.3f}, \n"
+                f" final_offset = {final_offset * y_normal:.3f}"
+            )
+
+        # Model:
+        def func(x_var, a0, a1, a2, a3, a4, a5):
+            # Using x (normalized) inside the cosine exactly like your original
+            return final_offset * a4 * (1 - np.exp(-x_var / (guess_T2 * a1))) + peaks[0] / 2 * a2 * (
+                    np.exp(-x_var / (guess_T2 * a1))
+                    * (a5 * initial_offset / peaks[0] * 2 + np.cos(2 * np.pi * a0 * guess_freq * x + a3))
+            )
+
+        def fit_type(x_var, a):
+            return func(x_var, a[0], a[1], a[2], a[3], a[4], a[5])
+
+        # Iminuit objective (least squares; no per-point sigma available)
+        def chi2(a0, a1, a2, a3, a4, a5):
+            y_model = func(x, a0, a1, a2, a3, a4, a5)
+            r = y - y_model
+            return np.sum(r * r)
+
+        # Start values mirror your curve_fit p0
+        m = Minuit(chi2, a0=1.0, a1=1.0, a2=1.0, a3=guess_phase, a4=1.0, a5=1.0)
+        m.errordef = Minuit.LEAST_SQUARES
+
+        # Optional: mild bounds to reduce pathological wandering (comment out if you dislike bounds)
+        # a1 scales T2, so keep it positive; a2/a4 are amplitudes/scale factors
+        m.limits["a1"] = (1e-6, None)
+
+        m.migrad()
+        m.hesse()
+
+        popt = np.array(
+            [m.values["a0"], m.values["a1"], m.values["a2"], m.values["a3"], m.values["a4"], m.values["a5"]],
+            dtype=float)
+
+        # Build "pcov-like" and perr like original code
+        cov = m.covariance
+        if cov is None:
+            pcov = np.full((6, 6), np.nan)
+            perr = np.full(6, np.nan)
+        else:
+            pcov = np.array([[cov[i, j] for j in range(6)] for i in range(6)], dtype=float)
+
+            # ----------------- scale like curve_fit (absolute_sigma=False) -----------------
+            N = len(y)  # number of data points (normalized space)
+            p = 6  # number of fit params: a0..a5
+            ndof = max(1, N - p)
+
+            # Our objective returns SSE = sum(r^2). This is "chi2" in curve_fit's scaling sense
+            chi2_min = m.fval
+
+            scale = chi2_min / ndof  # reduced chi2 (residual variance estimate)
+            pcov = pcov * scale
+            # ------------------------------------------------------------------------------------------------
+
+            perr = np.sqrt(np.diag(pcov))
+
+        # Output dictionary (same keys/units logic as other code)
+        out = {
+            "fit_func": lambda x_var: fit_type((x_var / x_normal), popt) * y_normal,
+            "f": [popt[0] * guess_freq / x_normal, perr[0] * guess_freq / x_normal],
+            "phase": [popt[3] % (2 * np.pi), perr[3] % (2 * np.pi)],
+            "T2": [(guess_T2 * popt[1]) * x_normal, perr[1] * guess_T2 * x_normal],
+            "amp": [peaks[0] * popt[2] * y_normal, perr[2] * peaks[0] * y_normal],
+            "initial_offset": [
+                popt[5] * initial_offset * y_normal,
+                perr[5] * initial_offset * y_normal,
+            ],
+            "final_offset": [
+                final_offset * popt[4] * y_normal,
+                perr[4] * final_offset * y_normal,
+            ],
+        }
+
+        if verbose:
+            print(
+                f"Fitting results:\n"
+                f" f = {out['f'][0] * 1000:.3f} +/- {out['f'][1] * 1000:.3f} MHz, \n"
+                f" phase = {out['phase'][0]:.3f} +/- {out['phase'][1]:.3f} rad, \n"
+                f" T2 = {out['T2'][0]:.2f} +/- {out['T2'][1]:.3f} ns, \n"
+                f" amp = {out['amp'][0]:.2f} +/- {out['amp'][1]:.3f} a.u., \n"
+                f" initial offset = {out['initial_offset'][0]:.2f} +/- {out['initial_offset'][1]:.3f}, \n"
+                f" final_offset = {out['final_offset'][0]:.2f} +/- {out['final_offset'][1]:.3f} a.u."
+            )
+
+        # Plot
+        y_fit = fit_type(x, popt) * y_normal
+        if plot:
+            plt.plot(x_data, y_fit)
+            plt.plot(
+                x_data,
+                y_data,
+                ".",
+                label=(
+                    f"T2  = {out['T2'][0]:.1f} +/- {out['T2'][1]:.1f}ns \n"
+                    f"f = {out['f'][0] * 1000:.3f} +/- {out['f'][1] * 1000:.3f} MHz"
+                ),
+            )
+            plt.legend(loc="upper right")
+
+        t2r_est = out["T2"][0]  # ns
+        t2r_err = out["T2"][1]  # ns
+        return y_fit, t2r_est, t2r_err, plot_sig
 
     def t2_fit(self, x_data, I, Q, verbose = False, guess=None, plot=False):
         #fitting code adapted from https://github.com/qua-platform/py-qua-tools/blob/37c741ade5a8f91888419c6fd23fd34e14372b06/qualang_tools/plot/fitting.py

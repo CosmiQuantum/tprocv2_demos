@@ -1018,24 +1018,28 @@ class PlotAllRR:
         # -------------------------------------------------------Load/Plot/Save T2R------------------------------------------
         outerFolder_expt = self.outerFolder + "/Data_h5/t2_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
-        
+
+        # To save fits that were filtered out
+        bad_plots_dir = os.path.join(self.outerFolder_save_plots, "bad_fits")
+        os.makedirs(bad_plots_dir, exist_ok=True)
+
         for h5_file in h5_files:
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
             H5_class_instance = Data_H5(h5_file)
             load_data = H5_class_instance.load_from_h5(data_type=  't2_ge', save_r = int(save_round))
-        
+
             populated_keys = []
             for q_key in load_data['t2_ge']:
                 # Access 'Dates' for the current q_key
                 dates_list = load_data['t2_ge'][q_key].get('Dates', [[]])
-        
+
                 # Check if any entry in 'Dates' is not NaN
                 if any(
                         not np.isnan(date)
                         for date in dates_list[0]  # Iterate over the first batch of dates
                 ):
                     populated_keys.append(q_key)
-        
+
             for q_key in populated_keys:
                 for dataset in range(len(load_data['t2_ge'][q_key].get('Dates', [])[0])):
                     #T2 = load_data['T2'][q_key].get('T2', [])[0][dataset]
@@ -1052,11 +1056,11 @@ class PlotAllRR:
                     safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
 
                     exp_config = eval(exp_config, safe_globals)
-        
+
                     if len(I) > 0:
                         T2_class_instance = T2RMeasurement(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
                         try:
-                            fitted, t2r_est, t2r_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)
+                            fitted, t2r_est, t2r_err, plot_sig = T2_class_instance.t2_fit_iminuit(delay_times, I, Q)
                         except Exception as e:
                             print('Fit didnt work due to error: ', e)
                             continue
@@ -1078,6 +1082,12 @@ class PlotAllRR:
 
                             if n_osc < min_peaks:
                                 print('Rejected a T2R scan. Failed ramsey shape, less than 3 oscillations.')
+
+                                T2_bad = T2RMeasurement(q_key, self.number_of_qubits, bad_plots_dir,
+                                                        round_num, self.signal, self.save_figs, fit_data=False)
+                                T2_bad.plot_results(I, Q, delay_times, date, fitted, t2r_est, t2r_err, plot_sig,
+                                                    fig_quality=self.figure_quality)
+                                del T2_bad
                                 continue
                         except Exception:
                             # if peak counting fails for any reason, be conservative and skip
@@ -1091,8 +1101,14 @@ class PlotAllRR:
                         ss_tot = np.sum((y - np.mean(y)) ** 2)
                         r2 = 1 - ss_res / ss_tot
 
-                        if r2 < 0.15:  # adjust threshold if needed
+                        if r2 < 0.15: # adjust threshold if needed; chosen by eye
                             print(f"Bad T2R fit for Q{int(q_key) + 1}, R² = {r2:.2f}")
+
+                            T2_bad = T2RMeasurement(q_key, self.number_of_qubits, bad_plots_dir,
+                                                    round_num, self.signal, self.save_figs, fit_data=False)
+                            T2_bad.plot_results(I, Q, delay_times, date, fitted, t2r_est, t2r_err, plot_sig,
+                                                fig_quality=self.figure_quality)
+                            del T2_bad
                             continue
                         #--------------------------------------------------------------------------------
 
@@ -1150,7 +1166,7 @@ class PlotAllRR:
                     if len(I) > 0:
                         T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
                         try:
-                            fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
+                            fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit_iminuit(delay_times, I, Q)
                         except Exception as e:
                             print('Fit didnt work due to error: ', e)
                             continue

@@ -250,12 +250,12 @@ run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB
 #                                        save_figs, fit_saved, signal, run_name, FRIDGE)
 # date_times_res_spec, res_freqs = res_spec_vs_time.run()
 # #
-q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                  save_figs, fit_saved, signal, run_name, FRIDGE)
-date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
-
-print("qspec fit errs Q1: ", qspec_fit_err[0])
-print("mean qspec fit err Q1: ", np.mean(qspec_fit_err[0]))
+# q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                   save_figs, fit_saved, signal, run_name, FRIDGE)
+# date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
+#
+# print("qspec fit errs Q1: ", qspec_fit_err[0])
+# print("mean qspec fit err Q1: ", np.mean(qspec_fit_err[0]))
 
 # pi_amps_vs_time = PiAmpsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
 #                               fit_saved,signal, run_name)
@@ -280,26 +280,26 @@ print("mean qspec fit err Q1: ", np.mean(qspec_fit_err[0]))
 # print(soccfg)
 
 ######################################## 02: Plot All Individual Data Plots ###########################################
-# date = "2025-10-27_22-04-57"  #only plot all of the data for one date at a time because there is a lot
-# saved_shots_t1 = False # only for analyzing T1 data
-# unique_folder_path = "" # only used when plot_rabis_Qtemps = True or for load_t1_shots_vs_avgIQ_arrays()
-#
+date = "2025-10-27_22-04-57"  #only plot all of the data for one date at a time because there is a lot
+saved_shots_t1 = False # only for analyzing T1 data
+unique_folder_path = "" # only used when plot_rabis_Qtemps = True or for load_t1_shots_vs_avgIQ_arrays()
+
 # # --------------------------------------------- For looping through the data --------------------------------
-# # outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/{date}/study_data"
+# outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/{date}/study_data"
 # outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/{date}/study_data"
-#     #r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/2025-10-27_22-04-57/study_data"
-#     #f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/{date}/study_data"
-# #outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/{date}/study_data"
-#
+outerFolder = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/2025-10-27_22-04-57/study_data"
+    #f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/{date}/study_data"
+#outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/{date}/study_data"
+
 # # ---------------------------------------------- For saving plots ---------------------------------------------
 # outerFolder_save_plots = f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/"
-#     #r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/replotted_RR_data/2025-10-27_22-04-57/ssf_ge/"
-#
-# plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, run_number, tot_num_of_qubits, outerFolder = outerFolder,
-#                   outerFolder_save_plots = outerFolder_save_plots, unique_folder_path = unique_folder_path, saved_shots = saved_shots_t1)
-# plotter.run(plot_res_spec = True, plot_q_spec = False, plot_rabi = False, rabi_rolling_avg=False, plot_ss = False,
-#             plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = False,
-#             plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = False)
+outerFolder_save_plots = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/replotted_RR_data/2025-10-27_22-04-57/t2r_ge/"
+
+plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, run_number, tot_num_of_qubits, outerFolder = outerFolder,
+                  outerFolder_save_plots = outerFolder_save_plots, unique_folder_path = unique_folder_path, saved_shots = saved_shots_t1)
+plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, rabi_rolling_avg=False, plot_ss = False,
+            plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = False,
+            plot_t2r = True, plot_t2e = False, plot_rabis_Qtemps = False)
 
 ########################################### 03: Resonator Freqs vs Time Plots ###########################################
 # res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)

@@ -168,7 +168,7 @@ class T2rHistCumulErrPlots:
                             T2_class_instance = T2RMeasurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                                fit_data=True)
                             try:
-                                fitted, T2, T2_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)
+                                fitted, T2, T2_err, plot_sig = T2_class_instance.t2_fit_iminuit(delay_times, I, Q)
                             except Exception as e:
                                 print('Fit didnt work due to error: ', e)
                                 continue
