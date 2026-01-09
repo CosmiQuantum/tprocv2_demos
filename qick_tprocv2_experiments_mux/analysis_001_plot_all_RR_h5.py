@@ -17,6 +17,7 @@ from matplotlib.axes import Axes
 import glob
 from collections import OrderedDict
 from tqdm import tqdm
+from scipy import optimize
 import re
 import datetime
 from scipy.signal import find_peaks
@@ -1014,6 +1015,121 @@ class PlotAllRR:
 
         return fig, (axI, axQ), None
 
+    def exp_vs_ramsey_bic(self, delay_times, y, fitted, k_fit=6, k_exp=3, threshold=15):
+        """
+        Compare a Ramsey fit against a non-oscillatory exponential baseline using BIC.
+
+        Parameters
+        ----------
+        delay_times : array-like
+            Time axis of the measurement.
+        y : array-like
+            Raw data (I or Q trace).
+        fitted : array-like
+            Ramsey model fit to the same data.
+        k_fit : int
+            Number of parameters in the Ramsey model (default = 6).
+        k_exp : int
+            Number of parameters in the exponential baseline (default = 3).
+        threshold : float
+            Required ΔBIC(exp−Ramsey) to accept Ramsey as truly oscillatory.
+
+        Returns
+        -------
+        keep_ramsey : bool
+            True if Ramsey model is strongly favored over exponential baseline.
+        delta_bic_exp : float
+            ΔBIC = BIC_exp − BIC_ramsey (positive favors Ramsey).
+        """
+
+        y = np.asarray(y, float)
+        fitted = np.asarray(fitted, float)
+        t = np.asarray(delay_times, float)
+
+        n = len(y)
+        if n < 8:
+            # not enough points to judge
+            return False, np.nan
+
+        # SSE of Ramsey model
+        sse_fit = np.sum((y - fitted) ** 2)
+
+        # ---------------- exponential baseline model ----------------
+        def exp_baseline(t, c, A, tau):
+            return c + A * (1.0 - np.exp(-t / tau))
+
+        # simple initial guesses
+        m = max(3, n // 10)
+        c0 = np.mean(y[-m:])  # late-time plateau
+        A0 = np.mean(y[:m]) - c0  # early - late
+        tau0 = 0.2 * (t[-1] - t[0]) if t[-1] > t[0] else 1.0
+
+        try:
+            popt_exp, _ = optimize.curve_fit(
+                exp_baseline, t, y, p0=[c0, A0, tau0], maxfev=10000
+            )
+            y_exp = exp_baseline(t, *popt_exp)
+            sse_exp = np.sum((y - y_exp) ** 2)
+        except Exception:
+            # if exponential fit fails, don't reject Ramsey on this basis
+            return True, np.nan
+        # ------------------------------------------------------------
+
+        # Guard against log(0)
+        eps = 1e-12
+        sse_fit = max(sse_fit, eps)
+        sse_exp = max(sse_exp, eps)
+
+        # BIC values
+        bic_ramsey = k_fit * np.log(n) + n * np.log(sse_fit / n)
+        bic_exp = k_exp * np.log(n) + n * np.log(sse_exp / n)
+
+        delta_bic_exp = bic_exp - bic_ramsey  # positive => Ramsey better than exponential
+
+        keep_ramsey = (delta_bic_exp >= threshold)
+        return keep_ramsey, delta_bic_exp
+
+    def flat_vs_ramsey_bic(self, y, fitted, k_fit=6, k0=1, threshold=12):
+        """
+        BIC goodness-of-fit test: flat constant baseline vs Ramsey shape.
+
+        Returns
+        -------
+        keep_ramsey : bool
+            True if Ramsey is favored over flat baseline by at least `threshold`.
+        delta_bic : float
+            ΔBIC = BIC_flat − BIC_ramsey (positive means Ramsey is better).
+        """
+        y = np.asarray(y, float)
+        fitted = np.asarray(fitted, float)
+
+        n = len(y)  # number of datapoints
+        if n < 3:
+            return False, np.nan
+
+        # SSE of fitted model (sum of squared errors). We want the residuals to be small (so SSE small)
+        sse_fit = np.sum((y - fitted) ** 2)
+
+        # SSE of flat constant baseline model
+        # So, we do the same but now considering a “no oscillation” baseline model
+        y0 = np.mean(y)
+        sse0 = np.sum((y - y0) ** 2)
+
+        # Guard against log(0), since BIC contains log(SSE/n).
+        eps = 1e-12
+        sse_fit = max(sse_fit, eps)
+        sse0 = max(sse0, eps)
+
+        # BIC values (using BIC formula)
+        bic_fit = k_fit * np.log(n) + n * np.log(sse_fit / n)  # BIC of ramsey model
+        bic0 = k0 * np.log(n) + n * np.log(sse0 / n)  # BIC of a constant baseline model
+
+        delta_bic = bic0 - bic_fit  # positive means oscillatory model is better
+
+        # Decision threshold, change as needed
+        keep_ramsey = (delta_bic >= threshold)
+        return keep_ramsey, delta_bic
+
     def load_plot_save_t2r(self):
         # -------------------------------------------------------Load/Plot/Save T2R------------------------------------------
         outerFolder_expt = self.outerFolder + "/Data_h5/t2_ge/"
@@ -1115,47 +1231,36 @@ class PlotAllRR:
                         #                         fig_quality=self.figure_quality)
                         #     del T2_bad
                         #     continue
-                        #---------------------------BIC goodness of fit test-------------------------------
+                        # -------------------- flat baseline vs Ramsey shape BIC test -------------------------------
                         y = I if plot_sig == "I" else Q
-                        y = np.asarray(y, float)
-                        fitted = np.asarray(fitted, float)
 
-                        n = len(y) # number of datapoints
+                        keep_ramsey, delta_bic = self.flat_vs_ramsey_bic(y, fitted, k_fit=6, k0=1, threshold=35)
 
-                        # SSE of fitted model (sum of squared errors). We want the residuals to be small (so SSE small)
-                        sse_fit = np.sum((y - fitted) ** 2)
-
-                        # SSE of flat constant baseline model
-                        # So, we do the same but now considering a “no oscillation” baseline model
-                        y0 = np.mean(y)
-                        sse0 = np.sum((y - y0) ** 2)
-
-                        # Number of parameters
-                        k_fit = 6  # a0..a5 in Ramsey model
-                        k0 = 1  # for a constant baseline we just have one param
-
-                        # Guard against log(0), since BIC contains log(SSE/n).
-                        eps = 1e-12
-                        sse_fit = max(sse_fit, eps)
-                        sse0 = max(sse0, eps)
-
-                        # BIC values (using BIC formula)
-                        bic_fit = k_fit * np.log(n) + n * np.log(sse_fit / n) # BIC of ramsey model
-                        bic0 = k0 * np.log(n) + n * np.log(sse0 / n) # BIC of a constant baseline model
-
-                        delta_bic = bic0 - bic_fit  # positive means oscillatory model is better
-
-                        # Decision threshold, change as needed
-                        if delta_bic < 12:
+                        if not keep_ramsey:
                             print(f"Rejected by BIC: ΔBIC = {delta_bic:.2f}")
                             T2_bad = T2RMeasurement(q_key, self.number_of_qubits, bad_plots_dir,
-                                                        round_num, self.signal, self.save_figs, fit_data=False)
+                                                    round_num, self.signal, self.save_figs, fit_data=False)
                             T2_bad.plot_results(I, Q, delay_times, date, fitted, t2r_est, t2r_err, plot_sig,
-                                                    fig_quality=self.figure_quality)
+                                                fig_quality=self.figure_quality)
                             del T2_bad
                             continue
 
-                        # -----------------------------------------------------------------------
+                        # ---------------- Exponential vs Ramsey BIC test ----------------
+                        y = I if plot_sig == "I" else Q
+
+                        keep_ramsey, delta_bic_exp = self.exp_vs_ramsey_bic(
+                            delay_times, y, fitted, k_fit=6, k_exp=3, threshold=10)
+
+                        if not keep_ramsey:
+                            print(f"Rejected by exp-BIC: ΔBIC(exp−Ramsey) = {delta_bic_exp:.2f}")
+                            T2_bad = T2RMeasurement(q_key, self.number_of_qubits, bad_plots_dir,
+                                                    round_num, self.signal, self.save_figs, fit_data=False)
+                            T2_bad.plot_results(I, Q, delay_times, date, fitted, t2r_est, t2r_err, plot_sig,
+                                                fig_quality=self.figure_quality)
+                            del T2_bad
+                            continue
+                        # ---------------------------------------------------------------
+
                         if t2r_est < 0:
                             print("The value is negative, continuing...")
                             continue
@@ -1173,6 +1278,10 @@ class PlotAllRR:
         # -------------------------------------------------------Load/Plot/Save T2E------------------------------------------
         outerFolder_expt = self.outerFolder + "/Data_h5/T2E_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+
+        # To save fits that were filtered out
+        bad_plots_dir = os.path.join(self.outerFolder_save_plots, "bad_fits")
+        os.makedirs(bad_plots_dir, exist_ok=True)
         
         for h5_file in h5_files:
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
@@ -1205,7 +1314,7 @@ class PlotAllRR:
                     exp_config = load_data['T2E'][q_key].get('Exp Config', [])[0][dataset].decode()
                     safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
 
-                    exp_config = eval(exp_config, safe_globals)
+                    #exp_config = eval(exp_config, safe_globals)
         
                     if len(I) > 0:
                         T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
@@ -1214,8 +1323,80 @@ class PlotAllRR:
                         except Exception as e:
                             print('Fit didnt work due to error: ', e)
                             continue
-                        T2E_cfg = exp_config['SpinEcho_ge']
-                        T2E_class_instance.plot_results(I, Q, delay_times, date, fitted, t2e_est, t2e_err, plot_sig, config = T2E_cfg, fig_quality=self.figure_quality)
+                        #T2E_cfg = exp_config['SpinEcho_ge']
+
+                        # --------- simple peak-count gate on the fitted curve ----------
+                        try:
+                            min_peaks = 2
+                            y_fit = np.asarray(fitted, float)
+                            t = np.asarray(delay_times, float)
+
+                            dt = np.median(np.diff(t))
+                            f_fit = abs(out["f"][0])  # cycles per microsecond if t is in us
+
+                            # If frequency is tiny, you can't reliably peak-count anyway
+                            if f_fit < 1e-6:
+                                n_osc = 0
+                            else:
+                                period_samp = max(3, int(round(1.0 / (f_fit * dt))))
+                                min_dist = max(3, period_samp // 2)  # peaks at least half-period apart
+
+                                pks, _ = find_peaks(y_fit, distance=min_dist)
+                                trs, _ = find_peaks(-y_fit, distance=min_dist)
+                                n_osc = min(len(pks), len(trs))
+
+                            if n_osc < min_peaks:
+                                print(f'Rejected a T2E scan. Failed T2E shape, less than {min_peaks} oscillations.')
+
+                                T2_bad = T2EMeasurement(q_key, self.number_of_qubits, bad_plots_dir,
+                                                        round_num, self.signal, self.save_figs, fit_data=False)
+                                T2_bad.plot_results(I, Q, delay_times, date, fitted, t2e_est, t2e_err, plot_sig,
+                                                    fig_quality=self.figure_quality)
+                                del T2_bad
+                                continue
+                        except Exception:
+                            # if peak counting fails for any reason, be conservative and skip
+                            continue
+
+                        # -------------------- flat baseline vs Ramsey shape BIC test -------------------------------
+                        y = I if plot_sig == "I" else Q
+
+                        keep_ramsey, delta_bic = self.flat_vs_ramsey_bic(y, fitted, k_fit=6, k0=1, threshold=35)
+
+                        if not keep_ramsey:
+                            print(f"Rejected by flat BIC test: ΔBIC = {delta_bic:.2f}")
+                            T2_bad = T2EMeasurement(q_key, self.number_of_qubits, bad_plots_dir,
+                                                    round_num, self.signal, self.save_figs, fit_data=False)
+                            T2_bad.plot_results(I, Q, delay_times, date, fitted, t2e_est, t2e_err, plot_sig,
+                                                fig_quality=self.figure_quality)
+                            del T2_bad
+                            continue
+
+                        # ---------------- Exponential vs T2E shape BIC test ----------------
+                        y = I if plot_sig == "I" else Q
+
+                        keep_ramsey, delta_bic_exp = self.exp_vs_ramsey_bic(
+                            delay_times, y, fitted, k_fit=6, k_exp=3, threshold=10)
+
+                        if not keep_ramsey:
+                            print(f"Rejected by exponential BIC test: ΔBIC = {delta_bic_exp:.2f}")
+                            T2_bad = T2EMeasurement(q_key, self.number_of_qubits, bad_plots_dir,
+                                                    round_num, self.signal, self.save_figs, fit_data=False)
+                            T2_bad.plot_results(I, Q, delay_times, date, fitted, t2e_est, t2e_err, plot_sig,
+                                                fig_quality=self.figure_quality)
+                            del T2_bad
+                            continue
+                        # ---------------------------------------------------------------
+                        if t2e_est < 0:
+                            print("The value is negative, continuing...")
+                            continue
+                        max_t1 = 150  # max(t1_vals[q_key]) # our T1s are below this rn
+                        if t2e_est > 2 * max_t1:
+                            print(f"The value is above 2*{max_t1} us, this is a bad fit, continuing...")
+                            continue
+
+                        T2E_class_instance.plot_results(I, Q, delay_times, date, fitted, t2e_est, t2e_err, plot_sig,
+                                                       fig_quality=self.figure_quality)
                         del T2E_class_instance
         
             del H5_class_instance
