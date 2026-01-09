@@ -1060,7 +1060,7 @@ class PlotAllRR:
                     if len(I) > 0:
                         T2_class_instance = T2RMeasurement(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
                         try:
-                            fitted, t2r_est, t2r_err, plot_sig = T2_class_instance.t2_fit_iminuit(delay_times, I, Q)
+                            fitted, t2r_est, t2r_err, plot_sig, out = T2_class_instance.t2_fit_iminuit(delay_times, I, Q)
                         except Exception as e:
                             print('Fit didnt work due to error: ', e)
                             continue
@@ -1070,13 +1070,21 @@ class PlotAllRR:
                         try:
                             min_peaks = 2
                             y_fit = np.asarray(fitted, float)
+                            t = np.asarray(delay_times, float)
 
-                            # ignore micro-wiggles: require peaks be at least ~10% of the record apart
-                            min_dist = max(3, y_fit.size // 10) # and never allow peaks closer than 3 points apart
+                            dt = np.median(np.diff(t))
+                            f_fit = abs(out["f"][0])  # cycles per microsecond if t is in us
 
-                            pks, _ = find_peaks(y_fit, distance=min_dist)
-                            trs, _ = find_peaks(-y_fit, distance=min_dist)
-                            n_osc = min(len(pks), len(trs))  # need alternating ups/downs
+                            # If frequency is tiny, you can't reliably peak-count anyway
+                            if f_fit < 1e-6:
+                                n_osc = 0
+                            else:
+                                period_samp = max(3, int(round(1.0 / (f_fit * dt))))
+                                min_dist = max(3, period_samp // 2)  # peaks at least half-period apart
+
+                                pks, _ = find_peaks(y_fit, distance=min_dist)
+                                trs, _ = find_peaks(-y_fit, distance=min_dist)
+                                n_osc = min(len(pks), len(trs))
 
                             if n_osc < min_peaks:
                                 print(f'Rejected a T2R scan. Failed ramsey shape, less than {min_peaks} oscillations.')
@@ -1138,7 +1146,7 @@ class PlotAllRR:
                         delta_bic = bic0 - bic_fit  # positive means oscillatory model is better
 
                         # Decision threshold, change as needed
-                        if delta_bic < 5:
+                        if delta_bic < 12:
                             print(f"Rejected by BIC: ΔBIC = {delta_bic:.2f}")
                             T2_bad = T2RMeasurement(q_key, self.number_of_qubits, bad_plots_dir,
                                                         round_num, self.signal, self.save_figs, fit_data=False)
@@ -1146,7 +1154,8 @@ class PlotAllRR:
                                                     fig_quality=self.figure_quality)
                             del T2_bad
                             continue
-                        # ------------------------------------------------------------------
+
+                        # -----------------------------------------------------------------------
                         if t2r_est < 0:
                             print("The value is negative, continuing...")
                             continue
@@ -1201,7 +1210,7 @@ class PlotAllRR:
                     if len(I) > 0:
                         T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
                         try:
-                            fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit_iminuit(delay_times, I, Q)
+                            fitted, t2e_est, t2e_err, plot_sig, out = T2E_class_instance.t2_fit_iminuit(delay_times, I, Q)
                         except Exception as e:
                             print('Fit didnt work due to error: ', e)
                             continue

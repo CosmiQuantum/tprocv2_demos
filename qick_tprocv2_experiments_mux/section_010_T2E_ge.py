@@ -424,7 +424,7 @@ class T2EMeasurement:
 
         t2r_est = out["T2"][0]  # ns
         t2r_err = out["T2"][1]  # ns
-        return y_fit, t2r_est, t2r_err, plot_sig
+        return y_fit, t2r_est, t2r_err, plot_sig, out
 
     def t2_fit(self, x_data, I, Q, verbose = False, guess=None, plot=False):
         #fitting code adapted from https://github.com/qua-platform/py-qua-tools/blob/37c741ade5a8f91888419c6fd23fd34e14372b06/qualang_tools/plot/fitting.py
