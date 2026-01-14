@@ -87,7 +87,7 @@ class Temps_EFAmpRabiExperiment:
 
         return popt, pcov
 
-    def plot_results(self, I, Q, gains, config = None, fig_quality = 200, use_iminuit_instead = False):
+    def plot_results(self, I, Q, gains, config = None, fig_quality = 200, use_iminuit_instead = False, filename_ext = ""):
         try:
             fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
             plt.rcParams.update({'font.size': 18})
@@ -187,23 +187,32 @@ class Temps_EFAmpRabiExperiment:
                 amp_popt, amp_pcov = curve_fit(self.cosine, gains, amplitude_data, maxfev=100000, p0=amp_guess)
             amplitude_fit = self.cosine(gains, *amp_popt)
 
-            # --- Compute amplitude curve from the I and Q FITS instead of the data, this is for a test ---
-            amp_fit = np.sqrt(q1_fit_cosine_I ** 2 + q1_fit_cosine_Q ** 2)
+            # ------------------------------- Test: compute amplitude curve from the I and Q FITS instead of the data --------------------------------------
+            amp_fit_IQ = np.sqrt(q1_fit_cosine_I ** 2 + q1_fit_cosine_Q ** 2) # this constructs the point-by-point magnitude of the fitted IQ vector
+            A_I = q1_popt_I[0] # I-curve amplitude
+            A_Q = q1_popt_Q[0] # Q-curve amplitude
+            A_amp_IQ = np.sqrt(A_I ** 2 + A_Q ** 2) # Combined IQ Amplitude from the amplitudes of the I and Q fits
+            sigma_A_I = np.sqrt(np.diag(q1_pcov_I))[0] # I-curve amplitude error
+            sigma_A_Q = np.sqrt(np.diag(q1_pcov_Q))[0] # Q-curve amplitude error
+            A_amp_IQ_err = np.sqrt((A_I / A_amp_IQ) ** 2 * sigma_A_I ** 2 +(A_Q / A_amp_IQ) ** 2 * sigma_A_Q ** 2) # Combined IQ Amplitude err
+            # ------------------------------------------------------------------------------------------------------------------------
 
-            # --- Extract the amplitude parameter A directly ---
+            ax1.legend([f"A={A_I:.4f}"], loc='best')
+            ax2.legend([f"A={A_Q:.4f}"], loc='best')
+
+            # --- Extract the amplitude parameter A directly: the amplitude of the cosine fit to the magnitude data ---
+            # This is the original, most "proper" way of doing it
             A_amplitude = amp_popt[0]
-            # print("Amplitude parameter A from cosine fit:", A_amplitude)
             amp_perr = np.sqrt(np.diag(amp_pcov))
             A_amplitude_err = amp_perr[0]
-            #print('Amplitude error (std): ', A_amplitude_err)
 
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"e-f RPM Q{self.QubitIndex + 1}: {pi_amp:.2f} (a.u.),  A={A_amplitude}"  + f", Pg: {config['reps']}*{config['rounds']} avgs, Pe: {config['reps2']}*{config['rounds']} avgs",
+                         f"e-f RPM Q{self.QubitIndex + 1}: "  + f", Pg: {config['reps']}*{config['rounds']} avgs, Pe: {config['reps2']}*{config['rounds']} avgs, sqrt(A_I**2 + A_Q**2)={A_amp_IQ:.4f}",
                          fontsize=18, ha='center', va='top') #f", {config['sigma'] * 1000} ns sigma" need to add in all qqubit sigmas to save exp_cfg before putting htis back
             else:
                 fig.text(plot_middle, 0.98,
-                         f"e-f RPM Q{self.QubitIndex + 1}: {pi_amp:.2f} (a.u.), A={A_amplitude}",
+                         f"e-f RPM Q{self.QubitIndex + 1}: sqrt(A_I**2 + A_Q**2)={A_amp_IQ:.4f}",
                          fontsize=18, ha='center', va='top')
 
             # --- Compute R-squared to evaluate goodness of amplitude fit ---
@@ -211,11 +220,12 @@ class Temps_EFAmpRabiExperiment:
             ss_tot = np.sum((amplitude_data - np.mean(amplitude_data)) ** 2) # Total sum of squares (tot variance, how much the raw data varies around its mean)
             R2 = 1 - ss_res / ss_tot if ss_tot != 0 else 0
 
-            # --- Plot amplitude data and its cosine fit on the third subplot ---
+            # --- Plot amplitude (magnitude) data and its cosine fit on the third subplot ---
             ax3.plot(gains, amplitude_data, '-', label="Amp Data", linewidth=2)
-            ax3.plot(gains, amplitude_fit, '-', color='green', linewidth=3, label="Cos Fit to Amp Data")
+            ax3.plot(gains, amplitude_fit, '-', color='green', linewidth=3, label=f"Fit to Magnitude Data, A={A_amplitude:.4f}")
 
-            ax3.plot(gains, amp_fit, '-', color='orange', linewidth=3, label="Amp Fit from I and Q Fits") # for a test
+            # Test: curve made from the fits of the I + Q data
+            ax3.plot(gains, amp_fit_IQ, '-', color='orange', linewidth=3, label=f"sqrt(I_fit**2 + Q_fit**2)") # for a test
 
             ax3.set_xlabel("Gain (a.u.)", fontsize=20)
             ax3.set_ylabel("Amplitude (a.u.)", fontsize=20)
@@ -230,7 +240,7 @@ class Temps_EFAmpRabiExperiment:
                 self.create_folder_if_not_exists(outerFolder_expt)
                 now = datetime.datetime.now()
                 formatted_datetime = now.strftime("%Y%m%d%H%M%S")
-                file_name = os.path.join(outerFolder_expt, f"Q{self.QubitIndex + 1}_" + f"Qtemps_RPM_" + f"{formatted_datetime}.png")
+                file_name = os.path.join(outerFolder_expt, f"{filename_ext}Q{self.QubitIndex + 1}_" + f"Qtemps_RPM_" + f"{formatted_datetime}.png")
                 fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
                 # print('Plots saved to this folder:',outerFolder_expt)
             plt.close(fig)

@@ -1124,7 +1124,8 @@ class PlotAllRR:
         bic_fit = k_fit * np.log(n) + n * np.log(sse_fit / n)  # BIC of ramsey model
         bic0 = k0 * np.log(n) + n * np.log(sse0 / n)  # BIC of a constant baseline model
 
-        delta_bic = bic0 - bic_fit  # positive means oscillatory model is better
+        delta_bic = bic0 - bic_fit  # positive means oscillatory model is better. Smaller SSE = better fit = smaller BIC for that model
+        # we want a big baseline BIC (so bad BIC) - a small oscillatory BIC (so a good BIC)
 
         # Decision threshold, change as needed
         keep_ramsey = (delta_bic >= threshold)

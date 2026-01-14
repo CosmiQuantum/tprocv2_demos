@@ -286,7 +286,7 @@ class T2RMeasurement:
 
         guess_phase = np.angle(fft[np.argmax(np.abs(fft))]) - guess_freq * 2 * np.pi * x[0]
 
-        # Gguesses (same keys/behavior as other code)
+        # Guesses (same keys/behavior as other code)
         if guess is not None:
             for key in guess.keys():
                 if key == "f":
@@ -319,7 +319,7 @@ class T2RMeasurement:
 
         # Model:
         def func(x_var, a0, a1, a2, a3, a4, a5):
-            # Using x (normalized) inside the cosine exactly like your original
+            # Using x (normalized) inside the cosine exactly like the original
             return final_offset * a4 * (1 - np.exp(-x_var / (guess_T2 * a1))) + peaks[0] / 2 * a2 * (
                     np.exp(-x_var / (guess_T2 * a1))
                     * (a5 * initial_offset / peaks[0] * 2 + np.cos(2 * np.pi * a0 * guess_freq * x + a3))

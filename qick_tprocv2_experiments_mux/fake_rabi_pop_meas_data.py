@@ -146,7 +146,8 @@ QubitIndex = 0 # starts at zero
 save_figs = True
 list_of_all_qubits = [0,1,2,3,4,5]
 number_of_qubits = len(list_of_all_qubits)
-outerFolder_save_plots = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/benchmark_analysis_plots/RPM_analysis/fake_data_study"
+outerFolder_save_plots = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\rpm_analysis_fake_data"
+    #"/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/benchmark_analysis_plots/RPM_analysis/fake_data_study"
 round_num = 0 # not relevant here
 signal = "None" # let it choose between I or Q by itself
 fit_saved = False
@@ -195,3 +196,68 @@ print(f'Amplitudes: Ae = {A_e}, Ag = {A_g}')
 print(f'ge qubit freq: {qubit_freq_MHz} MHz')
 print(f'Pe = {Pe}')
 print(f'Temperature: {T_mK} +/- {sigma_T_mK} mK')
+
+import numpy as np
+
+# ------------------------------------------------------------------------------------------------------------------------------------
+#                                           Calculating Pe different ways for an analysis test
+# ------------------------------------------------------------------------------------------------------------------------------------
+# Pg scan (ground sequence) amplitudes from individual fits
+A_I_g = 5.4129
+A_Q_g = 5.4155
+
+# Pe scan (excited sequence) amplitudes from individual fits
+A_I_e = 0.8477
+A_Q_e = 0.7810
+
+# Magnitude-fit amplitudes (green curve "Fit to Magnitude Data, A=...")
+# NOTE: use ABS for amplitudes if your fitter can return negative A due to phase conventions.
+A_mag_g = abs(5.6448)
+A_mag_e = abs(-1.0049)
+
+# ----------------------------
+# 4 amplitude methods (for each pair of scans)
+# ----------------------------
+
+# Method 1: magnitude-fit amplitude (green curve amplitude)
+Ag_1 = A_mag_g
+Ae_1 = A_mag_e
+Pe_1 = Ae_1 / (Ae_1 + Ag_1)
+
+# Method 2: use I-only amplitudes
+Ag_2 = abs(A_I_g)
+Ae_2 = abs(A_I_e)
+Pe_2 = Ae_2 / (Ae_2 + Ag_2)
+
+# Method 3: use Q-only amplitudes
+Ag_3 = abs(A_Q_g)
+Ae_3 = abs(A_Q_e)
+Pe_3 = Ae_3 / (Ae_3 + Ag_3)
+
+# Method 4: vector amplitude from I & Q fit amplitudes
+Ag_4 = np.sqrt(A_I_g**2 + A_Q_g**2)
+Ae_4 = np.sqrt(A_I_e**2 + A_Q_e**2)
+Pe_4 = Ae_4 / (Ae_4 + Ag_4)
+
+# ----------------------------
+# Print results
+# ----------------------------
+print("Inputs:")
+print(f"  Pg sequence: A_I={A_I_g}, A_Q={A_Q_g}, A_mag_fit={A_mag_g}")
+print(f"  Pe sequence: A_I={A_I_e}, A_Q={A_Q_e}, A_mag_fit={A_mag_e}")
+print()
+
+print("Method 1: Magnitude-fit A (green curve, this is the Geerlings et al way)")
+print(f"  Ag={Ag_1:.6f}, Ae={Ae_1:.6f}, Pe={Pe_1:.6f}")
+print()
+
+print("Method 2: I-only A")
+print(f"  Ag={Ag_2:.6f}, Ae={Ae_2:.6f}, Pe={Pe_2:.6f}")
+print()
+
+print("Method 3: Q-only A")
+print(f"  Ag={Ag_3:.6f}, Ae={Ae_3:.6f}, Pe={Pe_3:.6f}")
+print()
+
+print("Method 4: sqrt(A_I^2 + A_Q^2)")
+print(f"  Ag={Ag_4:.6f}, Ae={Ae_4:.6f}, Pe={Pe_4:.6f}")
