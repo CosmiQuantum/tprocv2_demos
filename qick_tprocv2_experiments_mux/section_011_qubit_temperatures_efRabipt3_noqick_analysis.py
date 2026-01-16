@@ -42,10 +42,22 @@ class Temps_EFAmpRabiExperiment:
 
         return a * np.cos(2. * np.pi * b * x - c * 2 * np.pi) + d
 
-    def fit_cosine_iminuit(self, x, y, p0):
+    def fit_cosine_iminuit(self, x, y, p0, fix_b=None, fix_c=None):
         """
         Iminuit-based cosine fit that mirrors scipy.curve_fit's output:
         returns popt and an approximate covariance matrix pcov.
+
+        a: oscillation amplitude (what you use for populations)
+        b: oscillation frequency in gain units (how many cycles per gain)
+        c: phase offset (where the oscillation starts)
+        d: DC offset (baseline of the readout)
+
+        Optional: if we want to fit Q using the same b and c params we used for I
+        fix_b: if not None, hold b fixed at this value
+            Both I and Q are responding to the same driven Rabi oscillation.
+            Fixing b says "These are two quadratures of the same rotation in the IQ plane".
+        fix_c: if not None, hold c fixed at this value
+            The oscillation’s phase should be a property of the qubit drive, not of which quadrature you look at.
         """
         x = np.asarray(x, dtype=float)
         y = np.asarray(y, dtype=float)
@@ -57,13 +69,24 @@ class Temps_EFAmpRabiExperiment:
         m = Minuit(chi2, a=p0[0], b=p0[1], c=p0[2], d=p0[3])
         m.errordef = Minuit.LEAST_SQUARES  # least-squares / chi^2 objective
 
+        # --- NEW: optionally fix b and/or c ---
+        # We do this, for example, when we want to fit Q using the same b and c params we used for I
+        if fix_b is not None:
+            m.values["b"] = float(fix_b)
+            m.fixed["b"] = True
+
+        if fix_c is not None:
+            m.values["c"] = float(fix_c)
+            m.fixed["c"] = True
+        # -------------------------------------
+
         m.migrad()
         m.hesse()
 
         # Extract best-fit parameter values into a NumPy array
         popt = np.array([m.values["a"], m.values["b"], m.values["c"], m.values["d"]])
 
-        # Convert Minuit?s covariance object to a regular NumPy matrix
+        # Convert Minuit's covariance object to a regular NumPy matrix
         # Our analysis code expects a NumPy array like the one from curve_fit
         cov = m.covariance
         if cov is None:
@@ -101,6 +124,7 @@ class Temps_EFAmpRabiExperiment:
             q1_b_guess = 1 / gains[-1]
             q1_c_guess = 0
 
+            # Initial guesses for I curve
             q1_guess_I = [q1_a_guess_I, q1_b_guess, q1_c_guess, q1_d_guess_I]
             if use_iminuit_instead:
                 q1_popt_I, q1_pcov_I = self.fit_cosine_iminuit(gains, I, q1_guess_I)
@@ -108,13 +132,21 @@ class Temps_EFAmpRabiExperiment:
                 q1_popt_I, q1_pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
             q1_fit_cosine_I = self.cosine(gains, *q1_popt_I)
 
+            # Initial guesses for Q curve
             q1_guess_Q = [q1_a_guess_Q, q1_b_guess, q1_c_guess, q1_d_guess_Q]
+
+            # Extract shared b,c from I fit
+            b_shared = q1_popt_I[1] # oscillation frequency
+            c_shared = q1_popt_I[2] # phase offset
+
             if use_iminuit_instead:
-                q1_popt_Q, q1_pcov_Q = self.fit_cosine_iminuit(gains, Q, q1_guess_Q)
-            else:
+                # Fit Q but lock b,c to the I-fit values
+                q1_popt_Q, q1_pcov_Q = self.fit_cosine_iminuit(gains, Q, q1_guess_Q, fix_b=b_shared, fix_c=c_shared)
+            else: # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b AND c FOR CURVEFIT
                 q1_popt_Q, q1_pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
             q1_fit_cosine_Q = self.cosine(gains, *q1_popt_Q)
 
+            # Look at first and last couple of points to determine best signal
             first_three_avg_I = np.mean(q1_fit_cosine_I[:3])
             last_three_avg_I = np.mean(q1_fit_cosine_I[-3:])
             first_three_avg_Q = np.mean(q1_fit_cosine_Q[:3])
@@ -197,8 +229,8 @@ class Temps_EFAmpRabiExperiment:
             A_amp_IQ_err = np.sqrt((A_I / A_amp_IQ) ** 2 * sigma_A_I ** 2 +(A_Q / A_amp_IQ) ** 2 * sigma_A_Q ** 2) # Combined IQ Amplitude err
             # ------------------------------------------------------------------------------------------------------------------------
 
-            ax1.legend([f"A={A_I:.4f}"], loc='best')
-            ax2.legend([f"A={A_Q:.4f}"], loc='best')
+            ax1.legend([f"A={A_I:.4f}+/-{sigma_A_I:.4f}"], loc='best')
+            ax2.legend([f"A={A_Q:.4f}+/-{sigma_A_Q:.4f}"], loc='best')
 
             # --- Extract the amplitude parameter A directly: the amplitude of the cosine fit to the magnitude data ---
             # This is the original, most "proper" way of doing it
@@ -208,11 +240,11 @@ class Temps_EFAmpRabiExperiment:
 
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"e-f RPM Q{self.QubitIndex + 1}: "  + f", Pg: {config['reps']}*{config['rounds']} avgs, Pe: {config['reps2']}*{config['rounds']} avgs, sqrt(A_I**2 + A_Q**2)={A_amp_IQ:.4f}",
+                         f"e-f RPM Q{self.QubitIndex + 1}: "  + f", Pg: {config['reps']}*{config['rounds']} avgs, Pe: {config['reps2']}*{config['rounds']} avgs, sqrt(A_I**2 + A_Q**2)={A_amp_IQ:.4f}{A_amp_IQ_err:.4f}",
                          fontsize=18, ha='center', va='top') #f", {config['sigma'] * 1000} ns sigma" need to add in all qqubit sigmas to save exp_cfg before putting htis back
             else:
                 fig.text(plot_middle, 0.98,
-                         f"e-f RPM Q{self.QubitIndex + 1}: sqrt(A_I**2 + A_Q**2)={A_amp_IQ:.4f}",
+                         f"e-f RPM Q{self.QubitIndex + 1}: sqrt(A_I**2 + A_Q**2)={A_amp_IQ:.4f}+/-{A_amp_IQ_err:.4f}",
                          fontsize=18, ha='center', va='top')
 
             # --- Compute R-squared to evaluate goodness of amplitude fit ---
@@ -222,7 +254,7 @@ class Temps_EFAmpRabiExperiment:
 
             # --- Plot amplitude (magnitude) data and its cosine fit on the third subplot ---
             ax3.plot(gains, amplitude_data, '-', label="Amp Data", linewidth=2)
-            ax3.plot(gains, amplitude_fit, '-', color='green', linewidth=3, label=f"Fit to Magnitude Data, A={A_amplitude:.4f}")
+            ax3.plot(gains, amplitude_fit, '-', color='green', linewidth=3, label=f"Fit to Magnitude Data, A={A_amplitude:.4f}+/-{A_amplitude_err:.4f}")
 
             # Test: curve made from the fits of the I + Q data
             ax3.plot(gains, amp_fit_IQ, '-', color='orange', linewidth=3, label=f"sqrt(I_fit**2 + Q_fit**2)") # for a test

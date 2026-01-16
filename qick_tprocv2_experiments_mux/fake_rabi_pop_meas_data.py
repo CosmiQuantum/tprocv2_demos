@@ -2,7 +2,7 @@ import numpy as np
 from section_011_qubit_temperatures_efRabipt3_noqick_analysis import Temps_EFAmpRabiExperiment
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 from tprocv2_demos.qick_tprocv2_experiments_mux.analysis_021_plot_allRR_noqick import PlotRR_noQick
-
+import numpy as np
 
 def make_fake_rabi_IQ_1scan(
     *, # all arguments must be passed by keyword, not position, to avoid passing numbers incorrectly
@@ -158,7 +158,12 @@ run_num = 8
 filter_out_bad_amp_fits = True
 figure_quality = 200
 date = None
-use_iminuit_instead = False
+use_iminuit_instead = True
+
+if use_iminuit_instead:
+    print('Using iminuit. I and Q are sharing phase offset or oscillation frequency.')
+else:
+    print('Using curvefit. I and Q are currently not sharing phase offset or oscillation frequency.')
 
 avail_ge_Qfreqs = [4194.77, 3828.69, 4173.69, 4474.23, 4485.38, 5018.12]
 qubit_freq_MHz = avail_ge_Qfreqs[QubitIndex]
@@ -192,28 +197,26 @@ sigma_T_mK = temp_class_calcs.compute_temperature_error_RPM(
 )
 
 print('Fake data results:')
-print(f'Amplitudes: Ae = {A_e}, Ag = {A_g}')
+print(f'Amplitudes: Ae = {A_e}+/-{sigma_Ae}, Ag = {A_g}+/-{sigma_Ag}')
 print(f'ge qubit freq: {qubit_freq_MHz} MHz')
 print(f'Pe = {Pe}')
 print(f'Temperature: {T_mK} +/- {sigma_T_mK} mK')
-
-import numpy as np
 
 # ------------------------------------------------------------------------------------------------------------------------------------
 #                                           Calculating Pe different ways for an analysis test
 # ------------------------------------------------------------------------------------------------------------------------------------
 # Pg scan (ground sequence) amplitudes from individual fits
 A_I_g = 5.4129
-A_Q_g = 5.4155
+A_Q_g = 5.4148
 
 # Pe scan (excited sequence) amplitudes from individual fits
-A_I_e = 0.8477
-A_Q_e = 0.7810
+A_I_e = 0.8474
+A_Q_e = 0.7675
 
 # Magnitude-fit amplitudes (green curve "Fit to Magnitude Data, A=...")
 # NOTE: use ABS for amplitudes if your fitter can return negative A due to phase conventions.
 A_mag_g = abs(5.6448)
-A_mag_e = abs(-1.0049)
+A_mag_e = abs(1.0047)
 
 # ----------------------------
 # 4 amplitude methods (for each pair of scans)
