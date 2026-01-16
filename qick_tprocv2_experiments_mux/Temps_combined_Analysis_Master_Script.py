@@ -36,7 +36,7 @@ save_figs = False # To be used in general for any function or class to save (or 
 save_figs_SSF = False # Do you want to save gaussian fit plots while calculating ssf qtemps? iminuit case only
 fit_saved = False # Not used here, set to false.
 exclude_temp_sweeps = True # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
-filter_out_bad_amp_fits = False # filter out bad rpm fits? this doesn't work perfect but helps a bit
+filter_out_bad_amp_fits = True # filter out bad rpm fits? this doesn't work perfect but helps a bit
 get_qtemp_data = False # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
 get_london_data = False # This returns RPM qubit temperatures, resonator freqs, and qubit freqs for specified dates. Designed for London Penetration analysis.
 

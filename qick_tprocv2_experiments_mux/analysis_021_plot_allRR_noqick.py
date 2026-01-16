@@ -1834,7 +1834,8 @@ class PlotRR_noQick:
                         I1 = np.asarray(I1)
                         Q1 = np.asarray(Q1)
                         gains1 = np.asarray(gains1)
-                        best_signal_fit1, pi_amp1, A_amplitude1, A_amplitude_err1, amp_fit1, R2_Pe = rabi_class_instance.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
+                        best_signal_fit1, pi_amp1, A_amplitude1, A_amplitude_err1, amp_fit1, R2_Pe,\
+                            A_amp_IQ_Pe, A_amp_IQ_err_Pe, A_I_Pe, sigma_A_I_Pe, A_Q_Pe, sigma_A_Q_Pe = rabi_class_instance.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
                                                                                                                                         filename_ext = "Pe_")
                         del rabi_class_instance
 
@@ -1846,7 +1847,8 @@ class PlotRR_noQick:
                         I2 = np.asarray(I2)
                         Q2 = np.asarray(Q2)
                         gains2 = np.asarray(gains2)
-                        best_signal_fit2, pi_amp2, A_amplitude2, A_amplitude_err2, amp_fit2, R2_Pg = rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
+                        best_signal_fit2, pi_amp2, A_amplitude2, A_amplitude_err2, amp_fit2, R2_Pg,\
+                            A_amp_IQ_Pg, A_amp_IQ_err_Pg, A_I_Pg, sigma_A_I_Pg, A_Q_Pg, sigma_A_Q_Pg = rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
                                                                                                                                       filename_ext = "Pg_")
                         del rabi_class_instance
 
@@ -1861,17 +1863,6 @@ class PlotRR_noQick:
                         flag2 = (R2_Pg is None) or (R2_Pg < MIN_R2)
                         flagged = flag1 or flag2 ## if either is bad, both plots go to FLAGGED
                         #------------------------------------------------------------------------------------------------------------------------
-
-                        # Relative errorfiltering---------------
-                        # MAX_REL_ERR_A = 0.75  # e.g. reject if amplitude std > 80% of fitted amp
-                        # # Determine if either fit is bad
-                        # flag1 = (A_amplitude1 is None) or (A_amplitude_err1 is None) or (
-                        #         self.relerr(A_amplitude1, A_amplitude_err1) > MAX_REL_ERR_A)
-                        # flag2 = (A_amplitude2 is None) or (A_amplitude_err2 is None) or (
-                        #         self.relerr(A_amplitude2, A_amplitude_err2) > MAX_REL_ERR_A)
-                        # flagged = flag1 or flag2
-                        #---------------------------------------------
-
                         base_dir = os.path.join(self.outerFolder_save_plots, "filtering_bad_fits")
 
                         if flagged:
@@ -2031,10 +2022,10 @@ class PlotRR_noQick:
 
                         if T_err is not None: # qubit index starts at zero
                             file_result['qubits'][int(q_key)] = { # You're accessing the 'qubits' dictionary inside file_result and adding info for the qubit
-                                'A1': A_amplitude1,
+                                'A1': A_amplitude1, # Ae
                                 'A1_err': A_amplitude_err1,
                                 'A2_err': A_amplitude_err2,
-                                'A2': A_amplitude2,
+                                'A2': A_amplitude2, # Ag
                                 'T_mK': T_mK,
                                 'T_mK_err': T_err,
                                 'P_e': P_e,
@@ -2044,6 +2035,54 @@ class PlotRR_noQick:
                                 'filepath': h5_file}
                         else:
                             print(f"Skipping Q{q_key + 1} entry because T_err was not calculated successfully.", flush = True)
+
+                        # ----------------------------
+                        # THIS IS A TEST: 4 amplitude methods (for each pair of scans)
+                        # Uses: A_amp_IQ_Pg, A_amp_IQ_err_Pg, A_I_Pg, sigma_A_I_Pg, A_Q_Pg, sigma_A_Q_Pg
+                        # ----------------------------
+
+                        # Method 1: magnitude-fit amplitude (green curve amplitude)
+                        Ag_1 = A_amplitude2
+                        Ae_1 = A_amplitude1
+                        Pe_1 = Ae_1 / (Ae_1 + Ag_1)
+
+                        # Method 2: use I-only amplitudes
+                        Ag_2 = abs(A_I_Pg)
+                        Ae_2 = abs(A_I_Pe)
+                        Pe_2 = Ae_2 / (Ae_2 + Ag_2)
+
+                        # Method 3: use Q-only amplitudes
+                        Ag_3 = abs(A_Q_Pg)
+                        Ae_3 = abs(A_Q_Pe)
+                        Pe_3 = Ae_3 / (Ae_3 + Ag_3)
+
+                        # Method 4: vector amplitude from I & Q fit amplitudes
+                        Ag_4 = np.sqrt(A_I_Pg ** 2 + A_Q_Pg ** 2)
+                        Ae_4 = np.sqrt(A_I_Pe ** 2 + A_Q_Pe ** 2)
+                        Pe_4 = Ae_4 / (Ae_4 + Ag_4)
+
+                        # ----------------------------
+                        # Print results
+                        # ----------------------------
+                        print("Inputs:")
+                        print(f"  Pg sequence: A_I={A_I_Pg:.4f}+/-{sigma_A_I_Pg:.4f}, A_Q={A_Q_Pg:.4f}+/-{sigma_A_Q_Pg:.4f}, A_mag_fit={A_amplitude2:.4f}+/-{A_amplitude_err2:.4f}")
+                        print(f"  Pe sequence: A_I={A_I_Pe:.4f}+/-{sigma_A_I_Pe:.4f}, A_Q={A_Q_Pe:.4f}+/-{sigma_A_Q_Pe:.4f}, A_mag_fit={A_amplitude1:.4f}+/-{A_amplitude_err1:.4f}")
+                        print()
+
+                        print("Method 1: Magnitude-fit A (green curve, this is the Geerlings et al way)")
+                        print(f"  Ag={Ag_1:.6f}, Ae={Ae_1:.6f}, Pe={Pe_1:.6f}")
+                        print()
+
+                        print("Method 2: I-only A")
+                        print(f"  Ag={Ag_2:.6f}, Ae={Ae_2:.6f}, Pe={Pe_2:.6f}")
+                        print()
+
+                        print("Method 3: Q-only A")
+                        print(f"  Ag={Ag_3:.6f}, Ae={Ae_3:.6f}, Pe={Pe_3:.6f}")
+                        print()
+
+                        print("Method 4: sqrt(A_I^2 + A_Q^2)")
+                        print(f"  Ag={Ag_4:.6f}, Ae={Ae_4:.6f}, Pe={Pe_4:.6f}")
 
             if get_qtemp_data:
                 all_files_Qtemp_results.append(file_result)
