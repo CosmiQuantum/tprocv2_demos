@@ -1805,10 +1805,10 @@ class PlotRR_noQick:
             for q_key in populated_keys:
                 # print(f"Extracting data for QubitIndex: {q_key}")
                 for dataset in range(len(load_data['q_temperatures'][q_key].get('Dates', [])[0])):
-                    A_amplitude1 = None
-                    A_amplitude2 = None
-                    A_amplitude_err1 = None
-                    A_amplitude_err2 = None
+                    A_amp_IQ_Pe = None
+                    A_amp_IQ_Pg = None
+                    A_amp_IQ_err_Pe = None
+                    A_amp_IQ_err_Pg = None
                     flagged = False
                     date = datetime.datetime.fromtimestamp(load_data['q_temperatures'][q_key].get('Dates', [])[0][dataset])
                     round_num = load_data['q_temperatures'][q_key].get('Round Num', [])[0][dataset]
@@ -1830,26 +1830,26 @@ class PlotRR_noQick:
                     if len(I1) > 0:
                         rabi_class_instance = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits, list_of_all_qubits,
                                                                       self.outerFolder_save_plots, round_num,
-                                                                      self.signal, save_figs = True)
+                                                                      self.signal, save_figs = False)
                         I1 = np.asarray(I1)
                         Q1 = np.asarray(Q1)
                         gains1 = np.asarray(gains1)
-                        best_signal_fit1, pi_amp1, A_amplitude1, A_amplitude_err1, amp_fit1, R2_Pe,\
-                            A_amp_IQ_Pe, A_amp_IQ_err_Pe, A_I_Pe, sigma_A_I_Pe, A_Q_Pe, sigma_A_Q_Pe = rabi_class_instance.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
+                        A_amp_IQ_Pe, A_amp_IQ_err_Pe, amp_fit_Pe, R2_Pe= rabi_class_instance.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
                                                                                                                                         filename_ext = "Pe_")
+                
                         del rabi_class_instance
 
                     if len(I2) > 0:
                         rabi_class_instance = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits,
                                                                         list_of_all_qubits,
                                                                         self.outerFolder_save_plots, round_num,
-                                                                        self.signal, save_figs = True)
+                                                                        self.signal, save_figs = False)
                         I2 = np.asarray(I2)
                         Q2 = np.asarray(Q2)
                         gains2 = np.asarray(gains2)
-                        best_signal_fit2, pi_amp2, A_amplitude2, A_amplitude_err2, amp_fit2, R2_Pg,\
-                            A_amp_IQ_Pg, A_amp_IQ_err_Pg, A_I_Pg, sigma_A_I_Pg, A_Q_Pg, sigma_A_Q_Pg = rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
+                        A_amp_IQ_Pg, A_amp_IQ_err_Pg, amp_fit_Pg, R2_Pg = rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
                                                                                                                                       filename_ext = "Pg_")
+
                         del rabi_class_instance
 
                     #-------------------------------------------- New: to inspect bad fits --------------------------------------------
@@ -1874,8 +1874,8 @@ class PlotRR_noQick:
                         os.makedirs(out_dir, exist_ok=True)
 
                         # print(
-                        #     f"[{'FLAGGED' if flagged else 'CLEAN'}] Q{q_key + 1}: rel_err A1={self.relerr(A_amplitude1, A_amplitude_err1):.2f}, "
-                        #     f"A2={self.relerr(A_amplitude2, A_amplitude_err2):.2f}. {msg}")
+                        #     f"[{'FLAGGED' if flagged else 'CLEAN'}] Q{q_key + 1}: rel_err A1={self.relerr(A_amp_IQ_Pe, A_amp_IQ_err_Pe):.2f}, "
+                        #     f"A2={self.relerr(A_amp_IQ_Pg, A_amp_IQ_err_Pg):.2f}. {msg}")
 
 
                         # Save the corresponding plots
@@ -1957,10 +1957,10 @@ class PlotRR_noQick:
                               f"(Δt = {time_diff:.2f} s from filename timestamp)", flush = True)
 
                     # ---------------------------------------------------------------------------------------------
-                    if (A_amplitude1 is not None and A_amplitude2 is not None and
-                        A_amplitude_err1 is not None and A_amplitude_err2 is not None):
-                        A_e = A_amplitude1
-                        A_g = A_amplitude2
+                    if (A_amp_IQ_Pe is not None and A_amp_IQ_Pg is not None and
+                        A_amp_IQ_err_Pe is not None and A_amp_IQ_err_Pg is not None):
+                        A_e = A_amp_IQ_Pe
+                        A_g = A_amp_IQ_Pg
 
                         results = self.Qubit_Temperature_Convert(A_e, A_g, qubit_freq_MHz)
                         if results is None:
@@ -1971,13 +1971,13 @@ class PlotRR_noQick:
                         # Compute propagated 1-sigma error (std) on T_mK
                         try:
                             T_err = self.compute_temperature_error_RPM(
-                                A1=A_amplitude1,
-                                A2=A_amplitude2,
+                                A1=A_amp_IQ_Pe,
+                                A2=A_amp_IQ_Pg,
                                 Pe=P_e,
                                 T_mK=T_mK,
                                 qubit_freq_MHz=qubit_freq_MHz,
-                                sigma_A1=A_amplitude_err1,
-                                sigma_A2=A_amplitude_err2,
+                                sigma_A1=A_amp_IQ_err_Pe,
+                                sigma_A2=A_amp_IQ_err_Pg,
                                 sigma_qfreq_MHz=qfreq_err
                             )
                         except Exception as e:
@@ -2022,10 +2022,10 @@ class PlotRR_noQick:
 
                         if T_err is not None: # qubit index starts at zero
                             file_result['qubits'][int(q_key)] = { # You're accessing the 'qubits' dictionary inside file_result and adding info for the qubit
-                                'A1': A_amplitude1, # Ae
-                                'A1_err': A_amplitude_err1,
-                                'A2_err': A_amplitude_err2,
-                                'A2': A_amplitude2, # Ag
+                                'A1': A_amp_IQ_Pe, # Ae
+                                'A1_err': A_amp_IQ_err_Pe,
+                                'A2_err': A_amp_IQ_err_Pg,
+                                'A2': A_amp_IQ_Pg, # Ag
                                 'T_mK': T_mK,
                                 'T_mK_err': T_err,
                                 'P_e': P_e,
@@ -2035,54 +2035,6 @@ class PlotRR_noQick:
                                 'filepath': h5_file}
                         else:
                             print(f"Skipping Q{q_key + 1} entry because T_err was not calculated successfully.", flush = True)
-
-                        # ----------------------------
-                        # THIS IS A TEST: 4 amplitude methods (for each pair of scans)
-                        # Uses: A_amp_IQ_Pg, A_amp_IQ_err_Pg, A_I_Pg, sigma_A_I_Pg, A_Q_Pg, sigma_A_Q_Pg
-                        # ----------------------------
-
-                        # Method 1: magnitude-fit amplitude (green curve amplitude)
-                        Ag_1 = A_amplitude2
-                        Ae_1 = A_amplitude1
-                        Pe_1 = Ae_1 / (Ae_1 + Ag_1)
-
-                        # Method 2: use I-only amplitudes
-                        Ag_2 = abs(A_I_Pg)
-                        Ae_2 = abs(A_I_Pe)
-                        Pe_2 = Ae_2 / (Ae_2 + Ag_2)
-
-                        # Method 3: use Q-only amplitudes
-                        Ag_3 = abs(A_Q_Pg)
-                        Ae_3 = abs(A_Q_Pe)
-                        Pe_3 = Ae_3 / (Ae_3 + Ag_3)
-
-                        # Method 4: vector amplitude from I & Q fit amplitudes
-                        Ag_4 = np.sqrt(A_I_Pg ** 2 + A_Q_Pg ** 2)
-                        Ae_4 = np.sqrt(A_I_Pe ** 2 + A_Q_Pe ** 2)
-                        Pe_4 = Ae_4 / (Ae_4 + Ag_4)
-
-                        # ----------------------------
-                        # Print results
-                        # ----------------------------
-                        print("Inputs:")
-                        print(f"  Pg sequence: A_I={A_I_Pg:.4f}+/-{sigma_A_I_Pg:.4f}, A_Q={A_Q_Pg:.4f}+/-{sigma_A_Q_Pg:.4f}, A_mag_fit={A_amplitude2:.4f}+/-{A_amplitude_err2:.4f}")
-                        print(f"  Pe sequence: A_I={A_I_Pe:.4f}+/-{sigma_A_I_Pe:.4f}, A_Q={A_Q_Pe:.4f}+/-{sigma_A_Q_Pe:.4f}, A_mag_fit={A_amplitude1:.4f}+/-{A_amplitude_err1:.4f}")
-                        print()
-
-                        print("Method 1: Magnitude-fit A (green curve, this is the Geerlings et al way)")
-                        print(f"  Ag={Ag_1:.6f}, Ae={Ae_1:.6f}, Pe={Pe_1:.6f}")
-                        print()
-
-                        print("Method 2: I-only A")
-                        print(f"  Ag={Ag_2:.6f}, Ae={Ae_2:.6f}, Pe={Pe_2:.6f}")
-                        print()
-
-                        print("Method 3: Q-only A")
-                        print(f"  Ag={Ag_3:.6f}, Ae={Ae_3:.6f}, Pe={Pe_3:.6f}")
-                        print()
-
-                        print("Method 4: sqrt(A_I^2 + A_Q^2)")
-                        print(f"  Ag={Ag_4:.6f}, Ae={Ae_4:.6f}, Pe={Pe_4:.6f}")
 
             if get_qtemp_data:
                 all_files_Qtemp_results.append(file_result)
@@ -3092,10 +3044,10 @@ class PlotRR_noQick:
                 ):
                     populated_keys.append(q_key)
 
-            A_amplitude1 = None
-            A_amplitude2 = None
-            A_amplitude_err1 = None
-            A_amplitude_err2 = None
+            A_amp_IQ_Pe = None
+            A_amp_IQ_Pg = None
+            A_amp_IQ_err_Pe = None
+            A_amp_IQ_err_Pg = None
 
             # print('populated_keys ', populated_keys)
 
@@ -3203,8 +3155,7 @@ class PlotRR_noQick:
                         I1 = np.asarray(I1)
                         Q1 = np.asarray(Q1)
                         gains1 = np.asarray(gains1)
-                        best_signal_fit1, pi_amp1, A_amplitude1, A_amplitude_err1, amp_fit1 = rabi_class_instance.plot_results(
-                            I1, Q1, gains1, rabi_cfg, self.figure_quality)
+                        best_signal_fit_Pe, pi_amp_Pe, A_amp_IQ_Pe, A_amp_IQ_err_Pe, amp_fit_Pe = rabi_class_instance.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality)
                         del rabi_class_instance
 
                     if len(I2) > 0:
@@ -3215,17 +3166,17 @@ class PlotRR_noQick:
                         I2 = np.asarray(I2)
                         Q2 = np.asarray(Q2)
                         gains2 = np.asarray(gains2)
-                        best_signal_fit2, pi_amp2, A_amplitude2, A_amplitude_err2, amp_fit2 = rabi_class_instance.plot_results(
+                        best_signal_fit_Pg, pi_amp_Pg, A_amp_IQ_Pg, A_amp_IQ_err_Pg, amp_fit_Pg = rabi_class_instance.plot_results(
                             I2, Q2, gains2, rabi_cfg, self.figure_quality)
                         del rabi_class_instance
 
                     if not get_data:
                         continue  # Skip the rest of this block if not returning data
 
-                    if (A_amplitude1 is not None and A_amplitude2 is not None and
-                            A_amplitude_err1 is not None and A_amplitude_err2 is not None):
-                        A_e = A_amplitude1
-                        A_g = A_amplitude2
+                    if (A_amp_IQ_Pe is not None and A_amp_IQ_Pg is not None and
+                            A_amp_IQ_err_Pe is not None and A_amp_IQ_err_Pg is not None):
+                        A_e = A_amp_IQ_Pe
+                        A_g = A_amp_IQ_Pg
 
                         results = self.Qubit_Temperature_Convert(A_e, A_g, qubit_freq_MHz)
                         if results is None:
@@ -3237,13 +3188,13 @@ class PlotRR_noQick:
                         # Compute propagated 1-sigma error (std) on T_mK
                         try:
                             T_err = self.compute_temperature_error_RPM(
-                                A1=A_amplitude1,
-                                A2=A_amplitude2,
+                                A1=A_amp_IQ_Pe,
+                                A2=A_amp_IQ_Pg,
                                 Pe=P_e,
                                 T_mK=T_mK,
                                 qubit_freq_MHz=qubit_freq_MHz,
-                                sigma_A1=A_amplitude_err1,
-                                sigma_A2=A_amplitude_err2,
+                                sigma_A1=A_amp_IQ_err_Pe,
+                                sigma_A2=A_amp_IQ_err_Pg,
                                 sigma_qfreq_MHz=qfreq_err
                             )
                         except Exception as e:
@@ -3252,10 +3203,10 @@ class PlotRR_noQick:
 
                         if T_err is not None and qubit_freq_MHz is not None and res_freq_MHz is not None : # You're accessing the 'qubits' dictionary inside file_result and adding info for the qubit
                             file_result['qubits'][int(q_key)] = { # qubits index starts at zero
-                                'A1': A_amplitude1,
-                                'A1_err': A_amplitude_err1,
-                                'A2_err': A_amplitude_err2,
-                                'A2': A_amplitude2,
+                                'A1': A_amp_IQ_Pe,
+                                'A1_err': A_amp_IQ_err_Pe,
+                                'A2_err': A_amp_IQ_err_Pg,
+                                'A2': A_amp_IQ_Pg,
                                 'T_mK': T_mK,
                                 'T_mK_err': T_err,
                                 'P_e': P_e,

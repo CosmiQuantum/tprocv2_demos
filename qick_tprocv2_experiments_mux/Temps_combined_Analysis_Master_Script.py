@@ -30,14 +30,14 @@ run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
-replot_RPMs = True # Do you want to re-plot rabi population measurements from RR data?
+replot_RPMs = False # Do you want to re-plot rabi population measurements from RR data?
 save_figsRR = True # Do you want to save (or not save) re-plotted RR measurements plots?
-save_figs = False # To be used in general for any function or class to save (or not save) plots.
+save_figs = True # To be used in general for any function or class to save (or not save) plots.
 save_figs_SSF = False # Do you want to save gaussian fit plots while calculating ssf qtemps? iminuit case only
 fit_saved = False # Not used here, set to false.
 exclude_temp_sweeps = True # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
 filter_out_bad_amp_fits = True # filter out bad rpm fits? this doesn't work perfect but helps a bit
-get_qtemp_data = False # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
+get_qtemp_data = True # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
 get_london_data = False # This returns RPM qubit temperatures, resonator freqs, and qubit freqs for specified dates. Designed for London Penetration analysis.
 
 pre_sciencerun6_data = True # Do you also want to incorporate the run 6 pre-science run data? This only applies when run_num = 6
@@ -55,7 +55,7 @@ qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
-                  "Qtemps_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
+                  "Qtemps_hists_viaRPM": True, "Qtemps_hists_viaSSF": False, "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps)
 comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
@@ -185,45 +185,45 @@ filter_keywords_run7 = ['AB_paper_data']
 
 #-----------------------------------------------------------------------run 8------------------------------------------------------------
 # Base path of where the data is stored up to the Study Name (round_robin_benchmark)
-# base_dir_run8 = "/data/QICK_data/run8/6transmon/round_robin" # up to study name
+base_dir_run8 = "/data/QICK_data/run8/6transmon/round_robin" # up to study name
 
 # Arianna's local analysis
-base_dir_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # up to study name
+# base_dir_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # up to study name
 
 # all AB paper data: (specify up to the day only)
-# target_dates_qtemps_RPM_run8 = [
-#   "2025-10-19",
-#   "2025-10-20",
-#   "2025-10-23",
-#   "2025-10-24",
-#   "2025-10-27",
-#   "2025-10-28",
-#   "2025-10-29",
-#   "2025-10-31",
-#   "2025-11-01"
-# ]
+target_dates_qtemps_RPM_run8 = [
+  "2025-10-19",
+  "2025-10-20",
+  "2025-10-23",
+  "2025-10-24",
+  "2025-10-27",
+  "2025-10-28",
+  "2025-10-29",
+  "2025-10-31",
+  "2025-11-01"
+]
 
 # for Arianna's local analysis: (specify date folder)
-target_dates_qtemps_RPM_run8 = ["2025-10-19_20-25-18"]
+# target_dates_qtemps_RPM_run8 = ["2025-10-19_20-25-18"]
 
 # To re-make and save RPM RR plots
-outerFolder_qtemps_plots_RR_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\AB_Paper_Data_24hrs\replotted_RR_data\rpm"
+# outerFolder_qtemps_plots_RR_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\AB_Paper_Data_24hrs\replotted_RR_data\rpm"
     # r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\replotted_RR_data\rpm"
     #"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/run8_analysis/benchmark_analysis_plots/RPM_RR_plots"
-    # "/data/QICK_data/run8/6transmon/replotted_RR_data/rabi_pop_meas"
+outerFolder_qtemps_plots_RR_run8 = "/data/QICK_data/run8/6transmon/replotted_RR_data/rabi_pop_meas"
 
 # For RPM Analysis
-outerFolder_qtemps_plots_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\AB_Paper_Data_24hrs/rabi_pop_meas_analysis/" # Inside each analysis function, a subfolder will be defined
+# outerFolder_qtemps_plots_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\AB_Paper_Data_24hrs/rabi_pop_meas_analysis/" # Inside each analysis function, a subfolder will be defined
     # r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/rabi_pop_meas_analysis/"
     #"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/run8_analysis/benchmark_analysis_plots/Qtemps_RPMmethod"
-    # "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/benchmark_analysis_plots/Qtemps_RPMmethod"
+outerFolder_qtemps_plots_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/benchmark_analysis_plots/Qtemps_RPMmethod"
 
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name. THese are substudies.
 # For all AB paper data:
-# filter_keywords_run8 = ["AB_Paper_Data_24hrs", "ABpaperdata2ndbatch_21dB_DACatten_Q1to5", "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots",
-#                         "ABpaperdata3rdbatch_21dB_DACatten_Q1to5", "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional",
-#                         "ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional", "ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional",
-#                         "ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt", "19dB_DAC_testdata_allQs"]
+filter_keywords_run8 = ["AB_Paper_Data_24hrs", "ABpaperdata2ndbatch_21dB_DACatten_Q1to5", "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots",
+                        "ABpaperdata3rdbatch_21dB_DACatten_Q1to5", "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional",
+                        "ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional", "ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional",
+                        "ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt", "19dB_DAC_testdata_allQs"]
 # filter_keywords_run8 = ["AB_paper_datadump_for_analysis"]
 
 # # For run 8 temp sweep data:
@@ -232,7 +232,7 @@ outerFolder_qtemps_plots_run8 = r"C:\Users\Arianna\Documents\Grad\Research\Cosmi
 
 # For Arianna's local analysis
 #filter_keywords_run8 = ['ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional']
-filter_keywords_run8 = ["AB_Paper_Data_24hrs"]
+# filter_keywords_run8 = ["AB_Paper_Data_24hrs"]
 #-------------------------------------------------------------------------------- Assign func variables depending on run number ---------------------------------------------------------------------------
 if run_num == 6: # We have science-run data as well as pre-science-run data available
     Science_Qubits = [0, 4]

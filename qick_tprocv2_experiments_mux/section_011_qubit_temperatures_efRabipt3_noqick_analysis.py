@@ -126,67 +126,62 @@ class Temps_EFAmpRabiExperiment:
 
             # Initial guesses for I curve
             q1_guess_I = [q1_a_guess_I, q1_b_guess, q1_c_guess, q1_d_guess_I]
-            if use_iminuit_instead:
-                q1_popt_I, q1_pcov_I = self.fit_cosine_iminuit(gains, I, q1_guess_I)
-            else:
-                q1_popt_I, q1_pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
-            q1_fit_cosine_I = self.cosine(gains, *q1_popt_I)
 
             # Initial guesses for Q curve
             q1_guess_Q = [q1_a_guess_Q, q1_b_guess, q1_c_guess, q1_d_guess_Q]
 
-            # Extract shared b,c from I fit
-            b_shared = q1_popt_I[1] # oscillation frequency
-            c_shared = q1_popt_I[2] # phase offset
+            # ---------------- Minimal tweak: decide which quadrature to fit first (best signal) ----------------
+            # Use the same metric we already rely on later: how much the signal changes from start to end.
+            span_I = abs(np.mean(I[-3:]) - np.mean(I[:3]))
+            span_Q = abs(np.mean(Q[-3:]) - np.mean(Q[:3]))
 
-            if use_iminuit_instead:
-                # Fit Q but lock b,c to the I-fit values
-                q1_popt_Q, q1_pcov_Q = self.fit_cosine_iminuit(gains, Q, q1_guess_Q, fix_b=b_shared, fix_c=c_shared)
-            else: # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b AND c FOR CURVEFIT
-                q1_popt_Q, q1_pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
-            q1_fit_cosine_Q = self.cosine(gains, *q1_popt_Q)
-
-            # Look at first and last couple of points to determine best signal
-            first_three_avg_I = np.mean(q1_fit_cosine_I[:3])
-            last_three_avg_I = np.mean(q1_fit_cosine_I[-3:])
-            first_three_avg_Q = np.mean(q1_fit_cosine_Q[:3])
-            last_three_avg_Q = np.mean(q1_fit_cosine_Q[-3:])
-
-            best_signal_fit = None
-            pi_amp = None
-            if 'Q' in self.signal:
-                best_signal_fit = q1_fit_cosine_Q
-                # figure out if you should take the min or the max value of the fit to say where pi_amp should be
-                if last_three_avg_Q > first_three_avg_Q:
-                    pi_amp = gains[np.argmax(best_signal_fit)]
-                else:
-                    pi_amp = gains[np.argmin(best_signal_fit)]
+            # If user forces I or Q, respect that; if 'None', choose the larger-span quadrature.
             if 'I' in self.signal:
-                best_signal_fit = q1_fit_cosine_I
-                # figure out if you should take the min or the max value of the fit to say where pi_amp should be
-                if last_three_avg_I > first_three_avg_I:
-                    pi_amp = gains[np.argmax(best_signal_fit)]
-                else:
-                    pi_amp = gains[np.argmin(best_signal_fit)]
-            if 'None' in self.signal:
-                # choose the best signal depending on which has a larger magnitude
-                if abs(first_three_avg_Q - last_three_avg_Q) > abs(first_three_avg_I - last_three_avg_I):
-                    best_signal_fit = q1_fit_cosine_Q
-                    # figure out if you should take the min or the max value of the fit to say where pi_amp should be
-                    if last_three_avg_Q > first_three_avg_Q:
-                        pi_amp = gains[np.argmax(best_signal_fit)]
-                    else:
-                        pi_amp = gains[np.argmin(best_signal_fit)]
-                else:
-                    best_signal_fit = q1_fit_cosine_I
-                    # figure out if you should take the min or the max value of the fit to say where pi_amp should be
-                    if last_three_avg_I > first_three_avg_I:
-                        pi_amp = gains[np.argmax(best_signal_fit)]
-                    else:
-                        pi_amp = gains[np.argmin(best_signal_fit)]
+                fit_first = 'I'
+            elif 'Q' in self.signal:
+                fit_first = 'Q'
+            elif 'None' in self.signal:
+                fit_first = 'Q' if span_Q > span_I else 'I'
             else:
                 print('Invalid signal passed, please do I Q or None')
+                fit_first = 'I'
+            # ---------------------------------------------------------------------------------------------------
 
+            if fit_first == 'I':
+                if use_iminuit_instead:
+                    q1_popt_I, q1_pcov_I = self.fit_cosine_iminuit(gains, I, q1_guess_I)
+                else: # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b AND c FOR CURVEFIT
+                    q1_popt_I, q1_pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
+                q1_fit_cosine_I = self.cosine(gains, *q1_popt_I)
+
+                # Extract shared b,c from I fit
+                b_shared = q1_popt_I[1]  # oscillation frequency
+                c_shared = q1_popt_I[2]  # phase offset
+
+                if use_iminuit_instead:
+                    # Fit Q but lock b,c to the I-fit values
+                    q1_popt_Q, q1_pcov_Q = self.fit_cosine_iminuit(gains, Q, q1_guess_Q, fix_b=b_shared, fix_c=c_shared)
+                else:  # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b AND c FOR CURVEFIT
+                    q1_popt_Q, q1_pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
+                q1_fit_cosine_Q = self.cosine(gains, *q1_popt_Q)
+
+            else:  # fit_first == 'Q'
+                if use_iminuit_instead:
+                    q1_popt_Q, q1_pcov_Q = self.fit_cosine_iminuit(gains, Q, q1_guess_Q)
+                else: # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b AND c FOR CURVEFIT
+                    q1_popt_Q, q1_pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
+                q1_fit_cosine_Q = self.cosine(gains, *q1_popt_Q)
+
+                # Extract shared b,c from Q fit
+                b_shared = q1_popt_Q[1]  # oscillation frequency
+                c_shared = q1_popt_Q[2]  # phase offset
+
+                if use_iminuit_instead:
+                    # Fit I but lock b,c to the Q-fit values
+                    q1_popt_I, q1_pcov_I = self.fit_cosine_iminuit(gains, I, q1_guess_I, fix_b=b_shared, fix_c=c_shared)
+                else:  # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b AND c FOR CURVEFIT
+                    q1_popt_I, q1_pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
+                q1_fit_cosine_I = self.cosine(gains, *q1_popt_I)
 
             ax2.plot(gains, q1_fit_cosine_Q, '-', color='red', linewidth=3, label="Fit")
             ax1.plot(gains, q1_fit_cosine_I, '-', color='red', linewidth=3, label="Fit")
@@ -277,7 +272,7 @@ class Temps_EFAmpRabiExperiment:
                 fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
                 # print('Plots saved to this folder:',outerFolder_expt)
             plt.close(fig)
-            return best_signal_fit, pi_amp, A_amp_IQ, A_amp_IQ_err, amplitude_fit, R2
+            return A_amp_IQ, A_amp_IQ_err, amplitude_fit, R2
 
         except Exception as e:
             print("Error fitting cosine:", e)
