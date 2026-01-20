@@ -1830,11 +1830,11 @@ class PlotRR_noQick:
                     if len(I1) > 0:
                         rabi_class_instance = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits, list_of_all_qubits,
                                                                       self.outerFolder_save_plots, round_num,
-                                                                      self.signal, save_figs = False)
+                                                                      self.signal, save_figs = True)
                         I1 = np.asarray(I1)
                         Q1 = np.asarray(Q1)
                         gains1 = np.asarray(gains1)
-                        A_amp_IQ_Pe, A_amp_IQ_err_Pe, amp_fit_Pe, R2_Pe= rabi_class_instance.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
+                        A_amp_IQ_Pe, A_amp_IQ_err_Pe, amp_fit_Pe, R2_Pe, A_amplitude_Pe, A_amplitude_err_Pe= rabi_class_instance.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
                                                                                                                                         filename_ext = "Pe_")
                 
                         del rabi_class_instance
@@ -1843,11 +1843,11 @@ class PlotRR_noQick:
                         rabi_class_instance = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits,
                                                                         list_of_all_qubits,
                                                                         self.outerFolder_save_plots, round_num,
-                                                                        self.signal, save_figs = False)
+                                                                        self.signal, save_figs = True)
                         I2 = np.asarray(I2)
                         Q2 = np.asarray(Q2)
                         gains2 = np.asarray(gains2)
-                        A_amp_IQ_Pg, A_amp_IQ_err_Pg, amp_fit_Pg, R2_Pg = rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
+                        A_amp_IQ_Pg, A_amp_IQ_err_Pg, amp_fit_Pg, R2_Pg, A_amplitude_Pg, A_amplitude_err_Pg = rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
                                                                                                                                       filename_ext = "Pg_")
 
                         del rabi_class_instance
@@ -2035,6 +2035,39 @@ class PlotRR_noQick:
                                 'filepath': h5_file}
                         else:
                             print(f"Skipping Q{q_key + 1} entry because T_err was not calculated successfully.", flush = True)
+
+                        #########################
+                        # THIS IS FOR A TEST
+                        #########################
+                        # ----------------------------
+                        # for each pair of scans
+                        # ----------------------------
+                        # Method 1: magnitude-fit amplitude (green curve amplitude)
+                        Ag_1 = abs(A_amplitude_Pg)
+                        Ae_1 = abs(A_amplitude_Pe)
+                        Pe_1 = Ae_1 / (Ae_1 + Ag_1)
+
+                        # Method 4: vector amplitude from I & Q fit amplitudes
+                        Ag_4 = abs(A_amp_IQ_Pg)
+                        Ae_4 = abs(A_amp_IQ_Pe)
+                        Pe_4 = Ae_4 / (Ae_4 + Ag_4)
+
+                        # ----------------------------
+                        # Print results
+                        # ----------------------------
+                        print("Inputs:")
+                        print(f"  Pg sequence: A_IQ={Ag_4}, A_mag_fit={Ag_1}")
+                        print(f"  Pe sequence: A_IQ={Ae_4}, A_mag_fit={Ae_1}")
+                        print(f" Qubit freq: {qubit_freq_MHz:.4f}")
+                        print()
+
+                        print("Method 1: Magnitude-fit A (green curve, old way)")
+                        _, T_mK_test, _, qubit_freq_MHz_test = self.Qubit_Temperature_Convert(Ae_1, Ag_1, qubit_freq_MHz)
+                        print(f"  Ag={Ag_1:.6f}, Ae={Ae_1:.6f}, Pe={Pe_1:.6f}, T_mK={T_mK_test:.6f}")
+                        print()
+
+                        print("Method 4: sqrt(A_I^2 + A_Q^2), new way") # the one we are using now officially
+                        print(f"  Ag={Ag_4:.6f}, Ae={Ae_4:.6f}, Pe={Pe_4:.6f}, T_mK={T_mK:.6f}")
 
             if get_qtemp_data:
                 all_files_Qtemp_results.append(file_result)

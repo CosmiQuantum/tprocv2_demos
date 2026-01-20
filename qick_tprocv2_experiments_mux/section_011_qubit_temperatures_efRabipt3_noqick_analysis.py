@@ -230,9 +230,9 @@ class Temps_EFAmpRabiExperiment:
             # --- Extract the amplitude parameter A directly: the amplitude of the cosine fit to the magnitude data ---
             # THIS IS THE WAY WE PREVIOUSLY DID IT WHICH WAS WRONG
             # THIS DEFINITION OF AMPLITUDE MEASURES DISTANCE FROM THE ORIGIN, NOT THE AMPLITUDE OF THE RABI OSCILLATION
-            # A_amplitude = amp_popt[0]
-            # amp_perr = np.sqrt(np.diag(amp_pcov))
-            # A_amplitude_err = amp_perr[0]
+            A_amplitude = amp_popt[0]
+            amp_perr = np.sqrt(np.diag(amp_pcov))
+            A_amplitude_err = amp_perr[0]
 
             if config is not None:
                 fig.text(plot_middle, 0.98,
@@ -250,7 +250,7 @@ class Temps_EFAmpRabiExperiment:
 
             # --- Plot amplitude (magnitude) data and its cosine fit on the third subplot ---
             ax3.plot(gains, amplitude_data, '-', label="Amp Data", linewidth=2)
-            ax3.plot(gains, amplitude_fit, '-', color='green', linewidth=3, label=f"Fit to Magnitude Data")
+            ax3.plot(gains, amplitude_fit, '-', color='green', linewidth=3, label=f"Fit to Magnitude Data, A={A_amplitude:.4f} +/- {A_amplitude_err}")
 
             # Test: curve made from the fits of the I + Q data
             ax3.plot(gains, amp_fit_IQ, '-', color='orange', linewidth=3, label=f"sqrt(I_fit**2 + Q_fit**2)") # for a test
@@ -272,7 +272,7 @@ class Temps_EFAmpRabiExperiment:
                 fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
                 # print('Plots saved to this folder:',outerFolder_expt)
             plt.close(fig)
-            return A_amp_IQ, A_amp_IQ_err, amplitude_fit, R2
+            return A_amp_IQ, A_amp_IQ_err, amplitude_fit, R2, A_amplitude, A_amplitude_err
 
         except Exception as e:
             print("Error fitting cosine:", e)
