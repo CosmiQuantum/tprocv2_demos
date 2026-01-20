@@ -2058,7 +2058,7 @@ class PlotRR_noQick:
                         print("Inputs:")
                         print(f"  Pg sequence: A_IQ={Ag_4}, A_mag_fit={Ag_1}")
                         print(f"  Pe sequence: A_IQ={Ae_4}, A_mag_fit={Ae_1}")
-                        print(f" Qubit freq: {qubit_freq_MHz:.4f}")
+                        print(f" Qubit freq: {qubit_freq_MHz:.4f} MHz")
                         print()
 
                         print("Method 1: Magnitude-fit A (green curve, old way)")

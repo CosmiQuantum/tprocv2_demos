@@ -156,11 +156,11 @@ class Temps_EFAmpRabiExperiment:
 
                 # Extract shared b,c from I fit
                 b_shared = q1_popt_I[1]  # oscillation frequency
-                c_shared = q1_popt_I[2]  # phase offset
+                # c_shared = q1_popt_I[2]  # phase offset
 
                 if use_iminuit_instead:
                     # Fit Q but lock b,c to the I-fit values
-                    q1_popt_Q, q1_pcov_Q = self.fit_cosine_iminuit(gains, Q, q1_guess_Q, fix_b=b_shared, fix_c=c_shared)
+                    q1_popt_Q, q1_pcov_Q = self.fit_cosine_iminuit(gains, Q, q1_guess_Q, fix_b=b_shared)
                 else:  # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b AND c FOR CURVEFIT
                     q1_popt_Q, q1_pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
                 q1_fit_cosine_Q = self.cosine(gains, *q1_popt_Q)
@@ -174,11 +174,11 @@ class Temps_EFAmpRabiExperiment:
 
                 # Extract shared b,c from Q fit
                 b_shared = q1_popt_Q[1]  # oscillation frequency
-                c_shared = q1_popt_Q[2]  # phase offset
+                # c_shared = q1_popt_Q[2]  # phase offset
 
                 if use_iminuit_instead:
                     # Fit I but lock b,c to the Q-fit values
-                    q1_popt_I, q1_pcov_I = self.fit_cosine_iminuit(gains, I, q1_guess_I, fix_b=b_shared, fix_c=c_shared)
+                    q1_popt_I, q1_pcov_I = self.fit_cosine_iminuit(gains, I, q1_guess_I, fix_b=b_shared)
                 else:  # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b AND c FOR CURVEFIT
                     q1_popt_I, q1_pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
                 q1_fit_cosine_I = self.cosine(gains, *q1_popt_I)
