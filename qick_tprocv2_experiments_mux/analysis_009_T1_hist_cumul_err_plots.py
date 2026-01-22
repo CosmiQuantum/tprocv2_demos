@@ -21,7 +21,7 @@ from scipy.optimize import curve_fit
 
 class T1HistCumulErrPlots:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, base_data_path, plots_path, run_name, run_notes, run_number, fridge):
+                 signal, base_data_path, plots_path, run_name, run_notes, run_number, fridge, per_pt_errs = False):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -35,6 +35,7 @@ class T1HistCumulErrPlots:
         self.run_notes = run_notes
         self.run_number = run_number
         self.fridge = fridge
+        self.per_pt_errs = per_pt_errs
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -109,7 +110,7 @@ class T1HistCumulErrPlots:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run(self,exp_extension='', saved_shots = False):
+    def run(self,exp_extension='', process_shots = False):
         # ----------Load/get data from T1------------------------
         t1_vals = {i: [] for i in range(self.number_of_qubits)}
         t1_errs = {i: [] for i in range(self.number_of_qubits)}
@@ -128,7 +129,7 @@ class T1HistCumulErrPlots:
                 outerFolder = os.path.join(self.base_data_path, folder_date, "study_data")
                 self.create_folder_if_not_exists(outerFolder)
 
-                outerFolder_save_plots = os.path.join(self.base_data_path, "benchmark_analysis_plots", f"{folder_date}_RRplots")
+                outerFolder_save_plots = os.path.join(self.base_data_path, "benchmark_analysis_plots", f"{folder_date}_plots")
                 self.create_folder_if_not_exists(outerFolder_save_plots)
             elif self.fridge.upper() == 'NEXUS':
                 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
@@ -171,9 +172,13 @@ class T1HistCumulErrPlots:
                         if date.date() in exclude_dates:
                             print(f"Skipping data for {date} (excluded date)")
                             continue
+                        
+                        # run 8 patch to include a dataset with no saved shots
+                        if folder_date == "2025-10-24_01-41-30": # don't change for QUIET analysis, make more general in the future though
+                            process_shots = False
 
                         # --- make per-shot data compatible with per-delay fitting --------------------------------
-                        if saved_shots:
+                        if process_shots:
                             # --- process IQ shots and turn them into IQ arrays (using Arianna's func, not QICK) --------------------------------
                             print("Processing shots...")
 
@@ -186,7 +191,7 @@ class T1HistCumulErrPlots:
                                 # before 2025-10-24_13-58-37: shots were saved under 'I' and 'Q'
                                 I_key, Q_key = 'I', 'Q'
                             else:
-                                # on/after the cutoff: shots were saved under 'Ishots' and 'Qshots'
+                                # on/after the cutoff: shots were saved under 'Ishots' and 'Qshots', while averaged Qick IQ arrays were stored in 'I' and 'Q'
                                 I_key, Q_key = 'Ishots', 'Qshots'
 
                             grp = load_data[f't1{exp_extension}'][q_key]
@@ -281,16 +286,16 @@ class T1HistCumulErrPlots:
                             #         f"Skipping T1 = {T1:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
                             #     continue
 
-                            if (self.run_number == 8) and (q_key != 5) and (T1 <= 22): # # QUIET run 8 patch while fitting is fixed
-                                print(
-                                    f"Skipping T1 = {T1:.3f} µs for Q{q_key + 1} because it is presumed to be a bad fit (Run 8 patch).")
-                                continue
+                            # if (self.run_number == 8) and (q_key != 5) and (T1 <= 22): # # QUIET run 8 patch while fitting is fixed
+                            #     print(
+                            #         f"Skipping T1 = {T1:.3f} µs for Q{q_key + 1} because it is presumed to be a bad fit (Run 8 patch).")
+                            #     continue
 
                             t1_vals[q_key].extend([T1])  # Store T1 values
                             t1_errs[q_key].extend([T1_err])  # Store T1 error values
 
-                            # --- store per-point errors too, only if we had saved_shots ---
-                            if saved_shots:
+                            # --- store per-point errors too, only if we had process_shots ---
+                            if process_shots:
                                 I_per_pt_errs[int(q_key)].append(I_errs)
                                 Q_per_pt_errs[int(q_key)].append(Q_errs)
 

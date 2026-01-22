@@ -1,7 +1,7 @@
 # from syspurpose.files import three_way_merge
 import sys
 import os
-sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_008_save_data_to_h5 import Data_H5
 from analysis_000_load_configs import LoadConfigs
 from analysis_001_plot_all_RR_h5 import PlotAllRR
@@ -42,10 +42,10 @@ save_figs = True
 fit_saved = True
 show_legends = False
 signal = 'None'
-run_number = 7
+run_number = 8
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
-saved_shots_t1ge = False
+process_shots_t1ge = True
 
 if run_number == 8:
     run_name = "run8/6transmon/round_robin/AB_paper_datadump_for_analysis"
@@ -54,27 +54,27 @@ if run_number == 8:
     data_path = f'/data/QICK_data/{run_name}'
     plots_path = data_path
 
-    # all of run 8 thus far
+    # all of run 8 data
     top_folder_dates = [
-        "2025-10-19_11-09-32",
-        "2025-10-19_12-05-25",
-        "2025-10-19_19-43-00"]
-    #     "2025-10-19_20-25-18",
-    #     "2025-10-20_12-10-19",
-    #     "2025-10-23_00-49-28",
-    #     "2025-10-23_14-47-22",
-    #     "2025-10-24_01-41-30",
-    #     "2025-10-24_13-58-37",
-    #     "2025-10-27_14-15-40",
-    #     "2025-10-27_14-24-29",
-    #     "2025-10-27_22-04-57",
-    #     "2025-10-28_21-57-47",
-    #     "2025-10-29_18-38-25",
-    #     "2025-10-29_23-48-45",
-    #     "2025-10-31_01-54-57",
-    #     "2025-10-31_20-40-11",
-    #     "2025-11-01_12-54-55"
-    # ]
+    "2025-10-19_11-09-32",
+    "2025-10-19_12-05-25",
+    "2025-10-19_19-43-00",
+    "2025-10-19_20-25-18",
+    "2025-10-20_12-10-19",
+    "2025-10-23_00-49-28",
+    "2025-10-23_14-47-22",
+    "2025-10-24_01-41-30",
+    "2025-10-24_13-58-37",
+    "2025-10-27_14-15-40",
+    "2025-10-27_14-24-29",
+    "2025-10-27_22-04-57",
+    "2025-10-28_21-57-47",
+    "2025-10-29_18-38-25",
+    "2025-10-29_23-48-45",
+    "2025-10-31_01-54-57",
+    "2025-10-31_20-40-11",
+    "2025-11-01_12-54-55",
+]
 
     # # when saving t1 shots + avg IQ data started
     # top_folder_dates = [
@@ -263,12 +263,12 @@ run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB
 #
 # t1_vs_time = T1VsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, FRIDGE, run_number)
-# date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge', saved_shots = saved_shots_t1ge)
+# date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge)
 
 # t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, FRIDGE)
 # date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True)
-#
+# #
 # t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, FRIDGE)
 # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
@@ -280,10 +280,10 @@ run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB
 # print(soccfg)
 
 ######################################## 02: Plot All Individual Data Plots ###########################################
-date = "2025-10-31_20-40-11"
-#date = "2025-10-27_22-04-57"  #only plot all of the data for one date at a time because there is a lot
-saved_shots_t1 = False # only for analyzing T1 data
-unique_folder_path = "" # only used when plot_rabis_Qtemps = True or for load_t1_shots_vs_avgIQ_arrays()
+# date = "2025-10-31_20-40-11"
+# #date = "2025-10-27_22-04-57"  #only plot all of the data for one date at a time because there is a lot
+# process_shots_t1 = False # only for analyzing T1 data
+# unique_folder_path = "" # only used when plot_rabis_Qtemps = True or for load_t1_shots_vs_avgIQ_arrays()
 
 # # --------------------------------------------- For looping through the data --------------------------------
 # outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/AB_Paper_Data_24hrs/{date}/study_data"
@@ -291,18 +291,18 @@ unique_folder_path = "" # only used when plot_rabis_Qtemps = True or for load_t1
 # outerFolder = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/2025-10-27_22-04-57/study_data"
                 #f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/{date}/study_data"
 #outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/{date}/study_data"
-outerFolder = fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\19dB_DAC_testdata_allQs\{date}\study_data"
+# outerFolder = fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\19dB_DAC_testdata_allQs\{date}\study_data"
 
 # # ---------------------------------------------- For saving plots ---------------------------------------------
 # outerFolder_save_plots = f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/"
-outerFolder_save_plots = fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\19dB_DAC_testdata_allQs/replotted_RR_data/{date}/"
-# outerFolder_save_plots = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/replotted_RR_data/2025-10-27_22-04-57/t2r_ge/"
-#C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\19dB_DAC_testdata_allQs
-plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, run_number, tot_num_of_qubits, outerFolder = outerFolder,
-                  outerFolder_save_plots = outerFolder_save_plots, unique_folder_path = unique_folder_path, saved_shots = saved_shots_t1)
-plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, rabi_rolling_avg=False, plot_ss = False,
-            plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = False,
-            plot_t2r = True, plot_t2e = False, plot_rabis_Qtemps = False)
+# outerFolder_save_plots = fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\19dB_DAC_testdata_allQs/replotted_RR_data/{date}/"
+# # outerFolder_save_plots = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/replotted_RR_data/2025-10-27_22-04-57/t2r_ge/"
+# #C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\19dB_DAC_testdata_allQs
+# plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, run_number, tot_num_of_qubits, outerFolder = outerFolder,
+#                   outerFolder_save_plots = outerFolder_save_plots, unique_folder_path = unique_folder_path, process_shots = process_shots_t1)
+# plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, rabi_rolling_avg=False, plot_ss = False,
+#             plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = False,
+#             plot_t2r = True, plot_t2e = False, plot_rabis_Qtemps = False)
 
 ########################################### 03: Resonator Freqs vs Time Plots ###########################################
 # res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
@@ -356,22 +356,22 @@ plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, rabi_
 # t2e_vs_time.plot_with_errs_single_plot(date_times_t2e, t2e_vals, t2e_fit_err, show_legends=True)
 #
 # ############################################## 09: T1 hist/cumul/err Plots #############################################
-# t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-#                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, run_notes, run_number, fridge=FRIDGE)
-# dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", saved_shots = saved_shots_t1ge)
-# t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
+t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+                                            save_figs, fit_saved, signal, data_path, plots_path, run_name, run_notes, run_number, fridge=FRIDGE)
+dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", process_shots = process_shots_t1ge)
+t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
 
 # # # # ############################################## 10: T2R hist/cumul/err Plots ############################################
-# t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-#                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
-# dates, t2r_vals, t2r_errs = t2r_distribution_plots.run()
-# t2r_std_values, t2r_mean_values = t2r_distribution_plots.plot(dates, t2r_vals, t2r_errs, show_legends)
+t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+                                            save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
+dates, t2r_vals, t2r_errs = t2r_distribution_plots.run(t1_vals = t1_vals)
+t2r_std_values, t2r_mean_values = t2r_distribution_plots.plot(dates, t2r_vals, t2r_errs, show_legends)
 # # # # #
 # # # ############################################## 11: T2E hist/cumul/err Plots ############################################
-# t2e_distribution_plots = T2eHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-#                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
-# dates, t2e_vals, t2e_errs = t2e_distribution_plots.run()
-# t2e_std_values, t2e_mean_values = t2e_distribution_plots.plot(dates, t2e_vals, t2e_errs, show_legends)
+t2e_distribution_plots = T2eHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+                                            save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
+dates, t2e_vals, t2e_errs = t2e_distribution_plots.run(t1_vals = t1_vals)
+t2e_std_values, t2e_mean_values = t2e_distribution_plots.plot(dates, t2e_vals, t2e_errs, show_legends)
 
 # ############################ 12: Save the Key Statistics for This Run to Compare Later #################################
 #need to run 00,01, and 08-10 before this to get all of the variables

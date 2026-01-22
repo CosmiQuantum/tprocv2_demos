@@ -155,7 +155,7 @@ class T1VsTime:
         Y = y.reshape(N, R)
         return np.median(Y, axis=1) if reducer == "median" else np.mean(Y, axis=1)
 
-    def run(self, return_errs = False, exp_extension='', saved_shots = False, use_png_timestamps = False):
+    def run(self, return_errs = False, exp_extension='', process_shots = False, use_png_timestamps = False):
         import datetime
 
         if use_png_timestamps:
@@ -258,8 +258,12 @@ class T1VsTime:
                             print(f"Skipping data for {date} (excluded date)")
                             continue
 
+                        # run 8 patch to include a dataset with no saved shots
+                        if folder_date == "2025-10-24_01-41-30":  # don't change for QUIET analysis, make more general in the future though
+                            process_shots = False
+                            
                         # --- make per-shot data compatible with per-delay fitting --------------------------------
-                        if saved_shots:
+                        if process_shots:
                             # --- process IQ shots and turn them into IQ arrays (using Arianna's func, not QICK) --------------------------------
                             print("Processing shots...")
 
@@ -351,8 +355,8 @@ class T1VsTime:
                             t1_vals[q_key].extend([T1_est])
                             t1_errs[q_key].extend([T1_err])
 
-                            # --- store per-point errors too, only if we had saved_shots ---
-                            if saved_shots:
+                            # --- store per-point errors too, only if we had process_shots ---
+                            if process_shots:
                                 I_per_pt_errs[int(q_key)].append(I_errs)
                                 Q_per_pt_errs[int(q_key)].append(Q_errs)
 
@@ -395,7 +399,7 @@ class T1VsTime:
                 del H5_class_instance
 
         if return_errs:
-            if saved_shots:
+            if process_shots:
                 # return per-point errors too
                 return date_times, t1_vals, t1_errs, I_per_pt_errs, Q_per_pt_errs
             else:

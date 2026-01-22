@@ -755,7 +755,7 @@ t2r_vals = None
 date_times_t2e = None
 t2e_vals = None
 
-saved_shots_t1ge = False
+process_shots_t1ge = False
 use_png_timestamps = False
 
 restrict_time = False
@@ -808,7 +808,7 @@ if coh_qtemp_ana_flags["load_coherence_res"]:
 
     t1_vs_time = T1VsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,signal,
                           run_name_coh, FRIDGE, run_num)
-    date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension='_ge',saved_shots=saved_shots_t1ge, use_png_timestamps = use_png_timestamps)
+    date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension='_ge',process_shots=process_shots_t1ge, use_png_timestamps = use_png_timestamps)
 
     # IMPORTANT: have not yet implemented use_png_timestamps for t2r and t2e. TO DO.
     t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,

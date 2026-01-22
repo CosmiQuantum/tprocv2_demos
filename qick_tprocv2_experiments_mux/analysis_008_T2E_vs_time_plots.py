@@ -21,6 +21,7 @@ import matplotlib.dates as mdates
 from matplotlib.ticker import StrMethodFormatter
 from scipy.stats import norm
 from scipy.optimize import curve_fit
+from scipy.signal import find_peaks
 
 class T2eVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
@@ -108,7 +109,123 @@ class T2eVsTime:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run(self,return_errs=False):
+    def exp_vs_ramsey_bic(self, delay_times, y, fitted, k_fit=6, k_exp=3, threshold=15):
+        """
+        Compare a Ramsey fit against a non-oscillatory exponential baseline using BIC.
+
+        Parameters
+        ----------
+        delay_times : array-like
+            Time axis of the measurement.
+        y : array-like
+            Raw data (I or Q trace).
+        fitted : array-like
+            Ramsey model fit to the same data.
+        k_fit : int
+            Number of parameters in the Ramsey model (default = 6).
+        k_exp : int
+            Number of parameters in the exponential baseline (default = 3).
+        threshold : float
+            Required ΔBIC(exp−Ramsey) to accept Ramsey as truly oscillatory.
+
+        Returns
+        -------
+        keep_ramsey : bool
+            True if Ramsey model is strongly favored over exponential baseline.
+        delta_bic_exp : float
+            ΔBIC = BIC_exp − BIC_ramsey (positive favors Ramsey).
+        """
+
+        y = np.asarray(y, float)
+        fitted = np.asarray(fitted, float)
+        t = np.asarray(delay_times, float)
+
+        n = len(y)
+        if n < 8:
+            # not enough points to judge
+            return False, np.nan
+
+        # SSE of Ramsey model
+        sse_fit = np.sum((y - fitted) ** 2)
+
+        # ---------------- exponential baseline model ----------------
+        def exp_baseline(t, c, A, tau):
+            return c + A * (1.0 - np.exp(-t / tau))
+
+        # simple initial guesses
+        m = max(3, n // 10)
+        c0 = np.mean(y[-m:])  # late-time plateau
+        A0 = np.mean(y[:m]) - c0  # early - late
+        tau0 = 0.2 * (t[-1] - t[0]) if t[-1] > t[0] else 1.0
+
+        try:
+            popt_exp, _ = curve_fit(
+                exp_baseline, t, y, p0=[c0, A0, tau0], maxfev=10000
+            )
+            y_exp = exp_baseline(t, *popt_exp)
+            sse_exp = np.sum((y - y_exp) ** 2)
+        except Exception:
+            # if exponential fit fails, don't reject Ramsey on this basis
+            return True, np.nan
+        # ------------------------------------------------------------
+
+        # Guard against log(0)
+        eps = 1e-12
+        sse_fit = max(sse_fit, eps)
+        sse_exp = max(sse_exp, eps)
+
+        # BIC values
+        bic_ramsey = k_fit * np.log(n) + n * np.log(sse_fit / n)
+        bic_exp = k_exp * np.log(n) + n * np.log(sse_exp / n)
+
+        delta_bic_exp = bic_exp - bic_ramsey  # positive => Ramsey better than exponential
+
+        keep_ramsey = (delta_bic_exp >= threshold)
+        return keep_ramsey, delta_bic_exp
+
+    def flat_vs_ramsey_bic(self, y, fitted, k_fit=6, k0=1, threshold=12):
+        """
+        BIC goodness-of-fit test: flat constant baseline vs Ramsey shape.
+
+        Returns
+        -------
+        keep_ramsey : bool
+            True if Ramsey is favored over flat baseline by at least `threshold`.
+        delta_bic : float
+            ΔBIC = BIC_flat − BIC_ramsey (positive means Ramsey is better).
+        """
+        y = np.asarray(y, float)
+        fitted = np.asarray(fitted, float)
+
+        n = len(y)  # number of datapoints
+        if n < 3:
+            return False, np.nan
+
+        # SSE of fitted model (sum of squared errors). We want the residuals to be small (so SSE small)
+        sse_fit = np.sum((y - fitted) ** 2)
+
+        # SSE of flat constant baseline model
+        # So, we do the same but now considering a “no oscillation” baseline model
+        y0 = np.mean(y)
+        sse0 = np.sum((y - y0) ** 2)
+
+        # Guard against log(0), since BIC contains log(SSE/n).
+        eps = 1e-12
+        sse_fit = max(sse_fit, eps)
+        sse0 = max(sse0, eps)
+
+        # BIC values (using BIC formula)
+        bic_fit = k_fit * np.log(n) + n * np.log(sse_fit / n)  # BIC of ramsey model
+        bic0 = k0 * np.log(n) + n * np.log(sse0 / n)  # BIC of a constant baseline model
+
+        delta_bic = bic0 - bic_fit  # positive means oscillatory model is better. Smaller SSE = better fit = smaller BIC for that model
+        # we want a big baseline BIC (so bad BIC) - a small oscillatory BIC (so a good BIC)
+
+        # Decision threshold, change as needed
+        keep_ramsey = (delta_bic >= threshold)
+        return keep_ramsey, delta_bic
+
+    def run(self,return_errs=False, t1_vals = None):
         import datetime
 
         # ----------Load/get data------------------------
@@ -137,62 +254,103 @@ class T2eVsTime:
             for h5_file in h5_files:
                 save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
                 H5_class_instance = Data_H5(h5_file)
-                load_data = H5_class_instance.load_from_h5(data_type='t2e', save_r=int(save_round))
+                load_data = H5_class_instance.load_from_h5(data_type='T2E', save_r=int(save_round))
+                populated_keys = []
+                for q_key in load_data['T2E']:
+                    # Access 'Dates' for the current q_key
+                    dates_list = load_data['T2E'][q_key].get('Dates', [[]])
 
-                # Define specific days to exclude
-                exclude_dates = {
-                    datetime.date(2025, 1, 26),  # power outage
-                    datetime.date(2025, 1, 29),  # HEMT Issues
-                    datetime.date(2025, 1, 30),  # HEMT Issues
-                    datetime.date(2025, 1, 31)  # Optimization Issues and non RR work in progress
-                }
+                    # Check if any entry in 'Dates' is not NaN
+                    if any(
+                            not np.isnan(date)
+                            for date in dates_list[0]  # Iterate over the first batch of dates
+                    ):
+                        populated_keys.append(q_key)
 
-                for q_key in load_data['t2e']:
-                    for dataset in range(len(load_data['t2e'][q_key].get('Dates', [])[0])):
-                        if 'nan' in str(load_data['t2e'][q_key].get('Dates', [])[0][dataset]):
-                            continue
+                for q_key in populated_keys:
+                    for dataset in range(len(load_data['T2E'][q_key].get('Dates', [])[0])):
                         # T2 = load_data['T2E'][q_key].get('T2', [])[0][dataset]
                         # errors = load_data['T2E'][q_key].get('Errors', [])[0][dataset]
-                        date = datetime.datetime.fromtimestamp(load_data['t2e'][q_key].get('Dates', [])[0][dataset])
-
-                        # Skip processing if the date (as a date object) is in the excluded set
-                        if date.date() in exclude_dates:
-                            print(f"Skipping data for {date} (excluded date)")
-                            continue
-
-                        I = self.process_h5_data(load_data['t2e'][q_key].get('I', [])[0][dataset].decode())
-                        Q = self.process_h5_data(load_data['t2e'][q_key].get('Q', [])[0][dataset].decode())
-                        delay_times = self.process_h5_data(load_data['t2e'][q_key].get('Delay Times', [])[0][dataset].decode())
+                        date = datetime.datetime.fromtimestamp(load_data['T2E'][q_key].get('Dates', [])[0][dataset])
+                        I = self.process_h5_data(load_data['T2E'][q_key].get('I', [])[0][dataset].decode())
+                        Q = self.process_h5_data(load_data['T2E'][q_key].get('Q', [])[0][dataset].decode())
+                        delay_times = self.process_h5_data(
+                            load_data['T2E'][q_key].get('Delay Times', [])[0][dataset].decode())
                         # fit = load_data['T2E'][q_key].get('Fit', [])[0][dataset]
-                        round_num = load_data['t2e'][q_key].get('Round Num', [])[0][dataset]
-                        batch_num = load_data['t2e'][q_key].get('Batch Num', [])[0][dataset]
-                        try:
-                            syst_config = load_data['t2e'][q_key].get('Syst Config', [])[0][dataset].decode()
-                            exp_config = load_data['t2e'][q_key].get('Exp Config', [])[0][dataset].decode()
-                            safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-                            exp_config = eval(exp_config, safe_globals)
-                        except:
-                            exp_config =None
+                        round_num = load_data['T2E'][q_key].get('Round Num', [])[0][dataset]
+                        batch_num = load_data['T2E'][q_key].get('Batch Num', [])[0][dataset]
+
+                        exp_config = load_data['T2E'][q_key].get('Exp Config', [])[0][dataset].decode()
+                        safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+
+                        # exp_config = eval(exp_config, safe_globals)
 
                         if len(I) > 0:
-                            T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
-                                                               fit_data=True)
+                            T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits,
+                                                                self.outerFolder_save_plots, round_num, self.signal,
+                                                                self.save_figs, fit_data=True)
                             try:
-                                fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit_iminuit(delay_times, I, Q)
+                                fitted, t2e_est, t2e_err, plot_sig, out = T2E_class_instance.t2_fit_iminuit(delay_times,
+                                                                                                            I, Q)
                             except Exception as e:
-                                print(f"good fit not found, error: {e}")
+                                print('Fit didnt work due to error: ', e)
                                 continue
-                            #T2E_cfg = exp_config['SpinEcho_ge']
+                            # T2E_cfg = exp_config['SpinEcho_ge']
+
+                            # --------- simple peak-count gate on the fitted curve ----------
+                            try:
+                                min_peaks = 2
+                                y_fit = np.asarray(fitted, float)
+                                t = np.asarray(delay_times, float)
+
+                                dt = np.median(np.diff(t))
+                                f_fit = abs(out["f"][0])  # cycles per microsecond if t is in us
+
+                                # If frequency is tiny, you can't reliably peak-count anyway
+                                if f_fit < 1e-6:
+                                    n_osc = 0
+                                else:
+                                    period_samp = max(3, int(round(1.0 / (f_fit * dt))))
+                                    min_dist = max(3, period_samp // 2)  # peaks at least half-period apart
+
+                                    pks, _ = find_peaks(y_fit, distance=min_dist)
+                                    trs, _ = find_peaks(-y_fit, distance=min_dist)
+                                    n_osc = min(len(pks), len(trs))
+
+                                if n_osc < min_peaks:
+                                    print(f'Rejected a T2E scan. Failed T2E shape, less than {min_peaks} oscillations.')
+                                    continue
+                            except Exception:
+                                # if peak counting fails for any reason, be conservative and skip
+                                continue
+
+                            # -------------------- flat baseline vs Ramsey shape BIC test -------------------------------
+                            y = I if plot_sig == "I" else Q
+
+                            keep_ramsey, delta_bic = self.flat_vs_ramsey_bic(y, fitted, k_fit=6, k0=1, threshold=35)
+
+                            if not keep_ramsey:
+                                print(f"Rejected by flat BIC test: ΔBIC = {delta_bic:.2f}")
+                                continue
+
+                            # ---------------- Exponential vs T2E shape BIC test ----------------
+                            y = I if plot_sig == "I" else Q
+
+                            keep_ramsey, delta_bic_exp = self.exp_vs_ramsey_bic(
+                                delay_times, y, fitted, k_fit=6, k_exp=3, threshold=10)
+
+                            if not keep_ramsey:
+                                print(f"Rejected by exponential BIC test: ΔBIC = {delta_bic_exp:.2f}")
+                                continue
+                            # ---------------------------------------------------------------
                             if t2e_est < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            if t2e_est > 300:
-                                print("The value is above 300 us, this is a bad fit, continuing...")
-                                continue
-                            if t2e_err >= 0.8 * t2e_est:
-                                print(
-                                    f"Skipping T2R = {t2e_est:.3f} µs because its error {t2e_err:.3f} µs is >= 80% of its value.")
-                                continue
+                            if t1_vals is not None:
+                                max_t1 = max(t1_vals[q_key])  # theoretical value
+                                if t2e_est > 2 * max_t1:
+                                    print(f"The value is above 2*{max_t1} us, this is a bad fit, continuing...")
+                                    continue
                             t2e_vals[q_key].extend([t2e_est])
                             t2e_errs[q_key].extend([t2e_err])
                             date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
