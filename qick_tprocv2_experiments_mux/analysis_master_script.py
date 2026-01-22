@@ -42,12 +42,12 @@ save_figs = True
 fit_saved = True
 show_legends = False
 signal = 'None'
-run_number = 8
+run_number = 4
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
-process_shots_t1ge = True
 
 if run_number == 8:
+    process_shots_t1ge = True
     run_name = "run8/6transmon/round_robin/AB_paper_datadump_for_analysis"
     # 'run8/6transmon/round_robin/temperature_sweep_qubit_data'
     # 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis'
@@ -109,6 +109,7 @@ if run_number == 8:
     #     "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-54-05"]
 
 elif run_number == 7:
+    process_shots_t1ge = False
     run_name = 'run7/6transmon/round_robin_benchmark/AB_paper_data'
     data_path = f'/data/QICK_data/{run_name}'
     plots_path = data_path
@@ -121,6 +122,7 @@ elif run_number == 7:
                         "2025-07-20_06-33-03" ]
 
 elif run_number == 6:
+    process_shots_t1ge = False
     run_name = 'run6/6transmon'
     data_path = f'/exp/cosmiq/data/QUIET/QICK_data/{run_name}'
     plots_path = data_path
@@ -137,7 +139,7 @@ elif run_number == 6:
     "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-02"]
 
 
-    # add TLS_Comprehensive_Study/ before each of the ones below
+    # add TLS_Comprehensive_Study/ before each of the ones below if you want to process "science run" data
     # "source_off_detuning_17MHz_Q1_substudy1/2025-05-15_14-47-38",
     # "source_off_detuning_17MHz_Q1_substudy1/2025-05-15_18-08-15",
     # "source_off_detuning_17MHz_Q1_substudy1/2025-05-15_22-02-12",
@@ -211,6 +213,7 @@ elif run_number == 6:
     # "source_off_substudy6/2025-05-08_11-53-46"]
 
 elif run_number == 5:
+    process_shots_t1ge = False
     run_name = 'run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20'
     data_path = f'/data/QICK_data/{run_name}'
     plots_path = data_path
@@ -230,6 +233,7 @@ elif run_number == 5:
                         "2024-12-19",
                         "2024-12-20"]
 elif run_number == 4:
+    process_shots_t1ge = False
     run_name = 'run4/6transmon/Official_run4_RR_Data_which_started_Nov21'
     data_path = f'/data/QICK_data/{run_name}'
     plots_path = data_path
