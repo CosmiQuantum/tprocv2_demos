@@ -122,7 +122,7 @@ class Temps_EFAmpRabiExperiment:
             q1_a_guess_Q = (np.max(Q) - np.min(Q)) / 2
             q1_d_guess_Q = np.mean(Q)
             q1_b_guess = 1 / gains[-1]
-            q1_c_guess = 0
+            q1_c_guess = np.pi/2 # 0
 
             # Initial guesses for I curve
             q1_guess_I = [q1_a_guess_I, q1_b_guess, q1_c_guess, q1_d_guess_I]
@@ -150,7 +150,7 @@ class Temps_EFAmpRabiExperiment:
             if fit_first == 'I':
                 if use_iminuit_instead:
                     q1_popt_I, q1_pcov_I = self.fit_cosine_iminuit(gains, I, q1_guess_I)
-                else: # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b AND c FOR CURVEFIT
+                else: # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b or c FOR CURVEFIT
                     q1_popt_I, q1_pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
                 q1_fit_cosine_I = self.cosine(gains, *q1_popt_I)
 
@@ -161,14 +161,14 @@ class Temps_EFAmpRabiExperiment:
                 if use_iminuit_instead:
                     # Fit Q but lock b,c to the I-fit values
                     q1_popt_Q, q1_pcov_Q = self.fit_cosine_iminuit(gains, Q, q1_guess_Q, fix_b=b_shared)
-                else:  # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b AND c FOR CURVEFIT
+                else:  # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b or c FOR CURVEFIT
                     q1_popt_Q, q1_pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
                 q1_fit_cosine_Q = self.cosine(gains, *q1_popt_Q)
 
             else:  # fit_first == 'Q'
                 if use_iminuit_instead:
                     q1_popt_Q, q1_pcov_Q = self.fit_cosine_iminuit(gains, Q, q1_guess_Q)
-                else: # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b AND c FOR CURVEFIT
+                else: # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b or c FOR CURVEFIT
                     q1_popt_Q, q1_pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
                 q1_fit_cosine_Q = self.cosine(gains, *q1_popt_Q)
 
@@ -197,22 +197,22 @@ class Temps_EFAmpRabiExperiment:
             ax2.tick_params(axis='both', which='major', labelsize=16)
 
             #---------------------------------------------------------------------------------
-            # --- Compute amplitude data from I and Q ---
-            amplitude_data = np.sqrt(np.array(I) ** 2 + np.array(Q) ** 2)
+            # --- Compute magnitude data from I and Q ---
+            magnitude_data = np.sqrt(np.array(I) ** 2 + np.array(Q) ** 2)
 
             # --- Fit the amplitude data with the cosine function ---
-            # Define initial guesses based on the amplitude_data characteristics.
-            a_guess_amp = (np.max(amplitude_data) - np.min(amplitude_data)) / 2
-            d_guess_amp = np.mean(amplitude_data)
-            b_guess_amp = 1 / gains[-1]
-            c_guess_amp = 0
+            # Define initial guesses based on the magnitude_data characteristics.
+            a_guess_mag = (np.max(magnitude_data) - np.min(magnitude_data)) / 2
+            d_guess_mag = np.mean(magnitude_data)
+            b_guess_mag = 1 / gains[-1]
+            c_guess_mag = 0
 
-            amp_guess = [a_guess_amp, b_guess_amp, c_guess_amp, d_guess_amp]
+            mag_guess = [a_guess_mag, b_guess_mag, c_guess_mag, d_guess_mag]
             if use_iminuit_instead:
-                amp_popt, amp_pcov = self.fit_cosine_iminuit(gains, amplitude_data, amp_guess)
+                mag_popt, mag_pcov = self.fit_cosine_iminuit(gains, magnitude_data, mag_guess)
             else:
-                amp_popt, amp_pcov = curve_fit(self.cosine, gains, amplitude_data, maxfev=100000, p0=amp_guess)
-            amplitude_fit = self.cosine(gains, *amp_popt)
+                mag_popt, mag_pcov = curve_fit(self.cosine, gains, magnitude_data, maxfev=100000, p0=mag_guess)
+            magnitude_fit = self.cosine(gains, *mag_popt)
 
             # ------------------------------- compute amplitude curve from the I and Q FITS instead of the data --------------------------------------
             amp_fit_IQ = np.sqrt(q1_fit_cosine_I ** 2 + q1_fit_cosine_Q ** 2) # this constructs the point-by-point magnitude of the fitted IQ vector
@@ -228,11 +228,11 @@ class Temps_EFAmpRabiExperiment:
             ax2.legend([f"A={A_Q:.4f}+/-{sigma_A_Q:.4f}"], loc='best')
 
             # --- Extract the amplitude parameter A directly: the amplitude of the cosine fit to the magnitude data ---
-            # THIS IS THE WAY WE PREVIOUSLY DID IT WHICH WAS WRONG
-            # THIS DEFINITION OF AMPLITUDE MEASURES DISTANCE FROM THE ORIGIN, NOT THE AMPLITUDE OF THE RABI OSCILLATION
-            A_amplitude = amp_popt[0]
-            amp_perr = np.sqrt(np.diag(amp_pcov))
-            A_amplitude_err = amp_perr[0]
+            # THIS IS THE WAY WE PREVIOUSLY DID IT WHICH WAS WRONG, here for comparison
+            # THIS DEF OF AMPLITUDE MEASURES DISTANCE FROM THE ORIGIN, NOT THE AMPLITUDE OF THE RABI OSCILLATION THAT WE NEED for QTEMPS
+            # A_amplitude = mag_popt[0]
+            # amp_perr = np.sqrt(np.diag(mag_pcov))
+            # A_amplitude_err = amp_perr[0]
 
             if config is not None:
                 fig.text(plot_middle, 0.98,
@@ -244,13 +244,15 @@ class Temps_EFAmpRabiExperiment:
                          fontsize=18, ha='center', va='top')
 
             # --- Compute R-squared to evaluate goodness of amplitude fit ---
-            ss_res = np.sum((amplitude_data - amplitude_fit) ** 2) #Residual sum of squares
-            ss_tot = np.sum((amplitude_data - np.mean(amplitude_data)) ** 2) # Total sum of squares (tot variance, how much the raw data varies around its mean)
+            # Residual sum of squares
+            ss_res = np.sum((magnitude_data - amp_fit_IQ) ** 2)
+            # Total sum of squares
+            ss_tot = np.sum((magnitude_data - np.mean(magnitude_data)) ** 2) # how much the raw data varies around its mean
             R2 = 1 - ss_res / ss_tot if ss_tot != 0 else 0
 
             # --- Plot amplitude (magnitude) data and its cosine fit on the third subplot ---
-            ax3.plot(gains, amplitude_data, '-', label="Amp Data", linewidth=2)
-            ax3.plot(gains, amplitude_fit, '-', color='green', linewidth=3, label=f"Fit to Magnitude Data, A={A_amplitude:.4f} +/- {A_amplitude_err}")
+            ax3.plot(gains, magnitude_data, '-', label="Amp Data", linewidth=2)
+            ax3.plot(gains, magnitude_fit, '-', color='green', linewidth=3, label=f"Fit to Magnitude Data")
 
             # Test: curve made from the fits of the I + Q data
             ax3.plot(gains, amp_fit_IQ, '-', color='orange', linewidth=3, label=f"sqrt(I_fit**2 + Q_fit**2)") # for a test
@@ -272,12 +274,12 @@ class Temps_EFAmpRabiExperiment:
                 fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
                 # print('Plots saved to this folder:',outerFolder_expt)
             plt.close(fig)
-            return A_amp_IQ, A_amp_IQ_err, amplitude_fit, R2, A_amplitude, A_amplitude_err
+            return A_amp_IQ, A_amp_IQ_err, amp_fit_IQ, R2
 
         except Exception as e:
             print("Error fitting cosine:", e)
             # Return None if the fit didn't work
-            return None, None, None, None, None, None
+            return None, None, None, None
 
 
     def get_results(self, I, Q, gains, grab_depths = False):

@@ -1866,7 +1866,9 @@ class RPMTempCalcAndPlots:
                                                 tot_num_of_qubits, outerFolder, outerFolder_RR_plots, outerFolder_qtemps_data, run_num, filter_out_bad_amp_fits)
 
                         if replot_RPMs:
-                            # ------------------------------------To re-plot the RPM plots, or any other data from the selected date-----------------------------------------------------
+                            # You still have to set save_figsRR to True if you want to save plots
+                            # set filter_out_bad_amp_fits to True to save filtered ones, otherwise no quality cuts will be applied
+                            # ------------------------------------To re-plot the RPM plots (the rest have been internally commented out)-----------------------------------------------------
                             plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_ss = False,  ss_plot_gef = False, plot_t1 = False,
                                         plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = True)
 
