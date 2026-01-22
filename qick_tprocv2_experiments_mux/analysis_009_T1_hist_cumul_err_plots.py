@@ -278,8 +278,8 @@ class T1HistCumulErrPlots:
                             if T1 < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            if T1 > 1000:
-                                print("The value is above 750us us, this is a bad fit, continuing...")
+                            if T1 > 500:
+                                print("The value is above 500 us, this is a bad fit, continuing...")
                                 continue
                             # if T1_err >= 0.8 * T1:
                             #     print(
