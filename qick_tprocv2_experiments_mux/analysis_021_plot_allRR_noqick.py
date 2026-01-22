@@ -1872,6 +1872,7 @@ class PlotRR_noQick:
                         flag2 = (R2_Pg is None) or (R2_Pg < MIN_R2)
                         flagged = flag1 or flag2 ## if either pulse sequence has a bad scan, both plots go to FLAGGED
                         #------------------------------------------------------------------------------------------------------------------------
+
                         base_dir = os.path.join(self.outerFolder_save_plots, "filtering_bad_fits")
 
                         if flagged:

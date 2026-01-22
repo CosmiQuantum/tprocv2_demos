@@ -245,7 +245,7 @@ class Temps_EFAmpRabiExperiment:
 
             # --- Compute R-squared to evaluate goodness of amplitude fit ---
             # Residual sum of squares
-            ss_res = np.sum((magnitude_data - amp_fit_IQ) ** 2)
+            ss_res = np.sum((magnitude_data - amp_fit_IQ) ** 2) # if I or Q fit failed, amp_fit_IQ will be bad
             # Total sum of squares
             ss_tot = np.sum((magnitude_data - np.mean(magnitude_data)) ** 2) # how much the raw data varies around its mean
             R2 = 1 - ss_res / ss_tot if ss_tot != 0 else 0
