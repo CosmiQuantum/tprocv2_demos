@@ -149,42 +149,42 @@ class Temps_EFAmpRabiExperiment:
 
             if fit_first == 'I':
                 if use_iminuit_instead:
-                    q1_popt_I, q1_pcov_I = self.fit_cosine_iminuit(gains, I, q1_guess_I)
+                    popt_I, pcov_I = self.fit_cosine_iminuit(gains, I, q1_guess_I)
                 else: # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b or c FOR CURVEFIT
-                    q1_popt_I, q1_pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
-                q1_fit_cosine_I = self.cosine(gains, *q1_popt_I)
+                    popt_I, pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
+                fit_cosine_I = self.cosine(gains, *popt_I)
 
                 # Extract shared b,c from I fit
-                b_shared = q1_popt_I[1]  # oscillation frequency
-                # c_shared = q1_popt_I[2]  # phase offset
+                b_shared = popt_I[1]  # oscillation frequency
+                # c_shared = popt_I[2]  # phase offset
 
                 if use_iminuit_instead:
                     # Fit Q but lock b,c to the I-fit values
-                    q1_popt_Q, q1_pcov_Q = self.fit_cosine_iminuit(gains, Q, q1_guess_Q, fix_b=b_shared)
+                    popt_Q, pcov_Q = self.fit_cosine_iminuit(gains, Q, q1_guess_Q, fix_b=b_shared)
                 else:  # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b or c FOR CURVEFIT
-                    q1_popt_Q, q1_pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
-                q1_fit_cosine_Q = self.cosine(gains, *q1_popt_Q)
+                    popt_Q, pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
+                fit_cosine_Q = self.cosine(gains, *popt_Q)
 
             else:  # fit_first == 'Q'
                 if use_iminuit_instead:
-                    q1_popt_Q, q1_pcov_Q = self.fit_cosine_iminuit(gains, Q, q1_guess_Q)
+                    popt_Q, pcov_Q = self.fit_cosine_iminuit(gains, Q, q1_guess_Q)
                 else: # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b or c FOR CURVEFIT
-                    q1_popt_Q, q1_pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
-                q1_fit_cosine_Q = self.cosine(gains, *q1_popt_Q)
+                    popt_Q, pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
+                fit_cosine_Q = self.cosine(gains, *popt_Q)
 
                 # Extract shared b,c from Q fit
-                b_shared = q1_popt_Q[1]  # oscillation frequency
-                # c_shared = q1_popt_Q[2]  # phase offset
+                b_shared = popt_Q[1]  # oscillation frequency
+                # c_shared = popt_Q[2]  # phase offset
 
                 if use_iminuit_instead:
                     # Fit I but lock b,c to the Q-fit values
-                    q1_popt_I, q1_pcov_I = self.fit_cosine_iminuit(gains, I, q1_guess_I, fix_b=b_shared)
+                    popt_I, pcov_I = self.fit_cosine_iminuit(gains, I, q1_guess_I, fix_b=b_shared)
                 else:  # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b AND c FOR CURVEFIT
-                    q1_popt_I, q1_pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
-                q1_fit_cosine_I = self.cosine(gains, *q1_popt_I)
+                    popt_I, pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
+                fit_cosine_I = self.cosine(gains, *popt_I)
 
-            ax2.plot(gains, q1_fit_cosine_Q, '-', color='red', linewidth=3, label="Fit")
-            ax1.plot(gains, q1_fit_cosine_I, '-', color='red', linewidth=3, label="Fit")
+            ax2.plot(gains, fit_cosine_Q, '-', color='red', linewidth=3, label="Fit")
+            ax1.plot(gains, fit_cosine_I, '-', color='red', linewidth=3, label="Fit")
 
             # print(len(gains))
             ax1.plot(gains, I, label="Gain (a.u.)", linewidth=2)
@@ -215,12 +215,12 @@ class Temps_EFAmpRabiExperiment:
             magnitude_fit = self.cosine(gains, *mag_popt)
 
             # ------------------------------- compute amplitude curve from the I and Q FITS instead of the data --------------------------------------
-            amp_fit_IQ = np.sqrt(q1_fit_cosine_I ** 2 + q1_fit_cosine_Q ** 2) # this constructs the point-by-point magnitude of the fitted IQ vector
-            A_I = q1_popt_I[0] # I-curve amplitude
-            A_Q = q1_popt_Q[0] # Q-curve amplitude
+            amp_fit_IQ = np.sqrt(fit_cosine_I ** 2 + fit_cosine_Q ** 2) # this constructs the point-by-point magnitude of the fitted IQ vector
+            A_I = popt_I[0] # I-curve amplitude
+            A_Q = popt_Q[0] # Q-curve amplitude
             A_amp_IQ = np.sqrt(A_I ** 2 + A_Q ** 2) # Combined IQ Amplitude from the amplitudes of the I and Q fits
-            sigma_A_I = np.sqrt(np.diag(q1_pcov_I))[0] # I-curve amplitude error
-            sigma_A_Q = np.sqrt(np.diag(q1_pcov_Q))[0] # Q-curve amplitude error
+            sigma_A_I = np.sqrt(np.diag(pcov_I))[0] # I-curve amplitude error
+            sigma_A_Q = np.sqrt(np.diag(pcov_Q))[0] # Q-curve amplitude error
             A_amp_IQ_err = np.sqrt((A_I / A_amp_IQ) ** 2 * sigma_A_I ** 2 +(A_Q / A_amp_IQ) ** 2 * sigma_A_Q ** 2) # Combined IQ Amplitude err
             # ------------------------------------------------------------------------------------------------------------------------
 
@@ -274,12 +274,21 @@ class Temps_EFAmpRabiExperiment:
                 fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
                 # print('Plots saved to this folder:',outerFolder_expt)
             plt.close(fig)
-            return A_amp_IQ, A_amp_IQ_err, amp_fit_IQ, R2
+
+            fit_params = {"amp_fit_IQ": amp_fit_IQ,
+                        "I_fit": fit_cosine_I,
+                        "Q_fit": fit_cosine_Q,
+                        "popt_I": popt_I,
+                        "pcov_I": pcov_I,
+                        "popt_Q": popt_Q,
+                        "pcov_Q": pcov_Q}
+
+            return A_amp_IQ, A_amp_IQ_err, fit_params
 
         except Exception as e:
             print("Error fitting cosine:", e)
             # Return None if the fit didn't work
-            return None, None, None, None
+            return None, None, None
 
 
     def get_results(self, I, Q, gains, grab_depths = False):
@@ -292,29 +301,29 @@ class Temps_EFAmpRabiExperiment:
         q1_c_guess = 0
 
         q1_guess_I = [q1_a_guess_I, q1_b_guess, q1_c_guess, q1_d_guess_I]
-        q1_popt_I, q1_pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
-        q1_fit_cosine_I = self.cosine(gains, *q1_popt_I)
+        popt_I, pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
+        fit_cosine_I = self.cosine(gains, *popt_I)
 
         q1_guess_Q = [q1_a_guess_Q, q1_b_guess, q1_c_guess, q1_d_guess_Q]
-        q1_popt_Q, q1_pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
-        q1_fit_cosine_Q = self.cosine(gains, *q1_popt_Q)
+        popt_Q, pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
+        fit_cosine_Q = self.cosine(gains, *popt_Q)
 
-        first_three_avg_I = np.mean(q1_fit_cosine_I[:3])
-        last_three_avg_I = np.mean(q1_fit_cosine_I[-3:])
-        first_three_avg_Q = np.mean(q1_fit_cosine_Q[:3])
-        last_three_avg_Q = np.mean(q1_fit_cosine_Q[-3:])
+        first_three_avg_I = np.mean(fit_cosine_I[:3])
+        last_three_avg_I = np.mean(fit_cosine_I[-3:])
+        first_three_avg_Q = np.mean(fit_cosine_Q[:3])
+        last_three_avg_Q = np.mean(fit_cosine_Q[-3:])
 
         best_signal_fit = None
         pi_amp = None
         if 'Q' in self.signal:
-            best_signal_fit = q1_fit_cosine_Q
+            best_signal_fit = fit_cosine_Q
             # figure out if you should take the min or the max value of the fit to say where pi_amp should be
             if last_three_avg_Q > first_three_avg_Q:
                 pi_amp = gains[np.argmax(best_signal_fit)]
             else:
                 pi_amp = gains[np.argmin(best_signal_fit)]
         if 'I' in self.signal:
-            best_signal_fit = q1_fit_cosine_I
+            best_signal_fit = fit_cosine_I
             # figure out if you should take the min or the max value of the fit to say where pi_amp should be
             if last_three_avg_I > first_three_avg_I:
                 pi_amp = gains[np.argmax(best_signal_fit)]
@@ -323,20 +332,20 @@ class Temps_EFAmpRabiExperiment:
         if 'None' in self.signal:
             # choose the best signal depending on which has a larger magnitude
             if abs(first_three_avg_Q - last_three_avg_Q) > abs(first_three_avg_I - last_three_avg_I):
-                best_signal_fit = q1_fit_cosine_Q
+                best_signal_fit = fit_cosine_Q
                 # figure out if you should take the min or the max value of the fit to say where pi_amp should be
                 if last_three_avg_Q > first_three_avg_Q:
                     pi_amp = gains[np.argmax(best_signal_fit)]
                 else:
                     pi_amp = gains[np.argmin(best_signal_fit)]
             else:
-                best_signal_fit = q1_fit_cosine_I
+                best_signal_fit = fit_cosine_I
                 # figure out if you should take the min or the max value of the fit to say where pi_amp should be
                 if last_three_avg_I > first_three_avg_I:
                     pi_amp = gains[np.argmax(best_signal_fit)]
                 else:
                     pi_amp = gains[np.argmin(best_signal_fit)]
-            tot_amp = [np.sqrt((ifit)**2 + (qfit)**2) for ifit,qfit in zip(q1_fit_cosine_I, q1_fit_cosine_Q)]
+            tot_amp = [np.sqrt((ifit)**2 + (qfit)**2) for ifit,qfit in zip(fit_cosine_I, fit_cosine_Q)]
             depth = abs(tot_amp[np.argmin(tot_amp)] - tot_amp[np.argmax(tot_amp)])
         else:
             print('Invalid signal passed, please do I Q or None')

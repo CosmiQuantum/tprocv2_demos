@@ -1713,6 +1713,113 @@ class PlotRR_noQick:
     def relerr(self, val, err, eps=1e-12): # calculates relative error of a value and its associated error
         return float(abs(err) / max(abs(val), eps)) # eps=1e-12 is to avoidthis blowing up if err is too close to zero
 
+    def bic_line_exp_vs_cosine(self, x, y, y_cos, tau_bounds=(1e-12, np.inf), maxfev=200000):
+        """
+        Uses curvefit instead of iminuit because this is just a quality cut, we don't extract science results.
+        Don't need anything fancy.
+
+        Compare cosine (provided as y_cos) vs:
+          - best-fit line  y = m*x + b
+          - best-fit exp   y = A*exp(-x/tau) + d
+
+        BIC used (Gaussian, unknown sigma):  BIC = n*ln(SSE/n) + k*ln(n)
+          k_line = 2, k_exp = 3, k_cos = 4 (number of parameters)
+
+        Inputs:
+          x, y     : raw data
+          y_cos    : cosine model prediction evaluated at x (e.g. I_fit or Q_fit)
+          tau_bounds: bounds for tau in exponential fit
+        Returns dict with BICs, deltas, winners, and fitted line/exp params.
+        """
+        x = np.asarray(x, float).ravel()
+        y = np.asarray(y, float).ravel()
+        y_cos = np.asarray(y_cos, float).ravel()
+
+        if not (x.size == y.size == y_cos.size):
+            raise ValueError("x, y, y_cos must have the same length.")
+
+        n = x.size
+        if n < 6:
+            return {"ok": False, "reason": "too_few_points", "n": int(n)}
+
+        def sse(y_obs, y_hat):
+            r = y_obs - y_hat
+            return float(np.sum(r * r))
+
+        def bic_from_sse(sse_val, k):
+            sse_val = max(float(sse_val), 1e-300)
+            return float(n * np.log(sse_val / n) + k * np.log(n))
+
+        # --- cosine SSE/BIC (no fitting; you already fit it) ---
+        sse_cos = sse(y, y_cos)
+        bic_cos = bic_from_sse(sse_cos, k=4)
+
+        # --- line fit ---
+        def line(x, m, b):
+            return m * x + b
+
+        # decent guess from polyfit
+        m0, b0 = np.polyfit(x, y, 1)
+        popt_line, pcov_line = curve_fit(line, x, y, p0=(m0, b0), maxfev=maxfev)
+        y_line = line(x, *popt_line)
+        sse_line = sse(y, y_line)
+        bic_line = bic_from_sse(sse_line, k=2)
+
+        # --- exponential fit ---
+        def exp_model(x, A, tau, d):
+            return A * np.exp(-x / tau) + d
+
+        span = max(float(x[-1] - x[0]), 1e-12)
+        A0 = float(y[0] - y[-1])
+        tau0 = span / 2.0
+        d0 = float(y[-1])
+
+        tau_lo, tau_hi = tau_bounds
+        if not np.isfinite(tau_hi):
+            tau_hi = 1e12
+        bounds_exp = ([-np.inf, tau_lo, -np.inf], [np.inf, tau_hi, np.inf])
+
+        popt_exp, pcov_exp = curve_fit(
+            exp_model, x, y, p0=(A0 if A0 != 0 else 1.0, tau0, d0),
+            bounds=bounds_exp, maxfev=maxfev
+        )
+        y_exp = exp_model(x, *popt_exp)
+        sse_exp = sse(y, y_exp)
+        bic_exp = bic_from_sse(sse_exp, k=3)
+
+        # --- comparisons (positive means cosine is better than comparator) ---
+        dBIC_line_minus_cos = bic_line - bic_cos
+        dBIC_exp_minus_cos = bic_exp - bic_cos
+
+        return {
+            "BIC": {
+                "cosine": round(bic_cos, 4),
+                "line": round(bic_line, 4),
+                "exp": round(bic_exp, 4),
+            },
+            "SSE": {
+                "cosine": round(sse_cos, 4),
+                "line": round(sse_line, 4),
+                "exp": round(sse_exp, 4),
+            },
+            "dBIC": {
+                "line_minus_cosine": round(dBIC_line_minus_cos, 4),
+                "exp_minus_cosine": round(dBIC_exp_minus_cos, 4),
+            },
+            "winner": {
+                "line_vs_cosine": "cosine" if bic_cos < bic_line else "line",
+                "exp_vs_cosine": "cosine" if bic_cos < bic_exp else "exp",
+            },
+            "params": {
+                "line": popt_line,
+                "exp": popt_exp,
+            },
+            "cov": {
+                "line": pcov_line,
+                "exp": pcov_exp,
+            },
+        }
+
     def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, run_num, save_figs = False, get_qtemp_data = False, filter_out_bad_amp_fits = False, use_png_timestamps = False):
         """
         Note: this code assumes that a single h5 file contains ONE dataset for EACH qubit inside.
@@ -1843,7 +1950,7 @@ class PlotRR_noQick:
                         I1 = np.asarray(I1)
                         Q1 = np.asarray(Q1)
                         gains1 = np.asarray(gains1)
-                        A_amp_IQ_Pe, A_amp_IQ_err_Pe, amp_fit_Pe, R2_Pe = rabi_class_instance.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
+                        A_amp_IQ_Pe, A_amp_IQ_err_Pe, fit_params_Pe = rabi_class_instance.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
                                                                                                                                         filename_ext = "Pe_")
                 
                         del rabi_class_instance
@@ -1856,7 +1963,7 @@ class PlotRR_noQick:
                         I2 = np.asarray(I2)
                         Q2 = np.asarray(Q2)
                         gains2 = np.asarray(gains2)
-                        A_amp_IQ_Pg, A_amp_IQ_err_Pg, amp_fit_Pg, R2_Pg = rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
+                        A_amp_IQ_Pg, A_amp_IQ_err_Pg, fit_params_Pg= rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
                                                                                                                                       filename_ext = "Pg_")
 
                         del rabi_class_instance
@@ -1865,53 +1972,117 @@ class PlotRR_noQick:
                     if filter_out_bad_amp_fits and len(I1) > 0 and len(I2) > 0:
                         print(f'\n inside filter_out_bad_amp_fits block for {q_key + 1}')
 
-                        # R-squared filtering (tells us what fraction of the data's variation is explained by the fit.) -------------------
-                        MIN_R2 = 0.12  # reject if R-squared < MIN_R2 (1 = perfect fit)
-                        # Determine if either fit is bad based on R-squared
-                        flag1 = (R2_Pe is None) or (R2_Pe < MIN_R2)
-                        flag2 = (R2_Pg is None) or (R2_Pg < MIN_R2)
-                        flagged = flag1 or flag2 ## if either pulse sequence has a bad scan, both plots go to FLAGGED
-                        #------------------------------------------------------------------------------------------------------------------------
+                        # -------------------- pull fit outputs --------------------
+                        I_fit_Pe = fit_params_Pe["I_fit"]
+                        Q_fit_Pe = fit_params_Pe["Q_fit"]
+                        popt_I_Pe = fit_params_Pe["popt_I"]
+                        pcov_I_Pe = fit_params_Pe["pcov_I"]
+                        amp_fit_IQ_Pe = fit_params_Pe["amp_fit_IQ"]
 
-                        base_dir = os.path.join(self.outerFolder_save_plots, "filtering_bad_fits")
+                        I_fit_Pg = fit_params_Pg["I_fit"]
+                        Q_fit_Pg = fit_params_Pg["Q_fit"]
+                        popt_I_Pg = fit_params_Pg["popt_I"]
+                        pcov_I_Pg = fit_params_Pg["pcov_I"]
+                        amp_fit_IQ_Pg = fit_params_Pg["amp_fit_IQ"]
 
-                        if flagged:
-                            out_dir = os.path.join(base_dir, "FLAGGED")
-                            msg = "Saving bad fit plots and skipping temperature calc."
+                        # -------------------- BIC filtering: cosine must beat line AND exp in at least one quadrature ------------
+                        BIC_THRESH_LINE = 12.0  # adjust as needed
+                        BIC_THRESH_EXP = 18.0  # adjust as needed
+
+                        # Pe sequence
+                        res_bic_I_Pe = self.bic_line_exp_vs_cosine(gains1, I1, I_fit_Pe)
+                        res_bic_Q_Pe = self.bic_line_exp_vs_cosine(gains1, Q1, Q_fit_Pe)
+
+                        # Pg sequence
+                        res_bic_I_Pg = self.bic_line_exp_vs_cosine(gains2, I2, I_fit_Pg)
+                        res_bic_Q_Pg = self.bic_line_exp_vs_cosine(gains2, Q2, Q_fit_Pg)
+
+                        Pe_ok = (
+                                (res_bic_I_Pe.get("ok", True) and
+                                 res_bic_I_Pe["dBIC"]["line_minus_cosine"] > BIC_THRESH_LINE and
+                                 res_bic_I_Pe["dBIC"]["exp_minus_cosine"] > BIC_THRESH_EXP)
+                                or
+                                (res_bic_Q_Pe.get("ok", True) and
+                                 res_bic_Q_Pe["dBIC"]["line_minus_cosine"] > BIC_THRESH_LINE and
+                                 res_bic_Q_Pe["dBIC"]["exp_minus_cosine"] > BIC_THRESH_EXP)
+                        )
+
+                        Pg_ok = (
+                                (res_bic_I_Pg.get("ok", True) and
+                                 res_bic_I_Pg["dBIC"]["line_minus_cosine"] > BIC_THRESH_LINE and
+                                 res_bic_I_Pg["dBIC"]["exp_minus_cosine"] > BIC_THRESH_EXP)
+                                or
+                                (res_bic_Q_Pg.get("ok", True) and
+                                 res_bic_Q_Pg["dBIC"]["line_minus_cosine"] > BIC_THRESH_LINE and
+                                 res_bic_Q_Pg["dBIC"]["exp_minus_cosine"] > BIC_THRESH_EXP)
+                        )
+
+                        # Pairwise decision: flag if either sequence fails BIC
+                        flagged = not (Pe_ok and Pg_ok)
+
+                        # Check which scan failed, to include that info in the file names as we save them
+                        Pe_self_fail = not Pe_ok
+                        Pg_self_fail = not Pg_ok
+
+                        # Pe filename tag
+                        if Pe_self_fail:
+                            pe_tag = "Pe_SELF_FAIL"
+                        elif flagged:
+                            pe_tag = "Pe_PAIR_FAIL"
                         else:
-                            out_dir = os.path.join(base_dir, "CLEAN")
-                            msg = "Saving clean fit plots."
-                        os.makedirs(out_dir, exist_ok=True)
+                            pe_tag = "Pe_CLEAN"
 
-                        # print(
-                        #     f"[{'FLAGGED' if flagged else 'CLEAN'}] Q{q_key + 1}: rel_err A1={self.relerr(A_amp_IQ_Pe, A_amp_IQ_err_Pe):.2f}, "
-                        #     f"A2={self.relerr(A_amp_IQ_Pg, A_amp_IQ_err_Pg):.2f}. {msg}")
+                        # Pg filename tag
+                        if Pg_self_fail:
+                            pg_tag = "Pg_SELF_FAIL"
+                        elif flagged:
+                            pg_tag = "Pg_PAIR_FAIL"
+                        else:
+                            pg_tag = "Pg_CLEAN"
 
+                        # -----------------------------------------------------------------------------------
+                        base_dir = os.path.join(self.outerFolder_save_plots, "filtering_bad_fits")
+                        out_dir = os.path.join(base_dir, "FLAGGED" if flagged else "CLEAN")
+                        msg = "Saving bad fit plots and skipping temperature calc." if flagged else "Saving clean fit plots."
 
-                        # Save the corresponding plots
+                        if self.save_figs:
+                            os.makedirs(out_dir, exist_ok=True)
 
-                        saver1 = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits,
-                                                           list_of_all_qubits,
-                                                           out_dir, round_num, self.signal, save_figs=save_figs)
-                        saver1.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality, use_iminuit_instead = True)
+                        # Pe sequence (I1/Q1/gains1)
+                        saver1 = Temps_EFAmpRabiExperiment(
+                            q_key, self.number_of_qubits, list_of_all_qubits,
+                            out_dir, round_num, self.signal, save_figs=save_figs)
+                        saver1.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality,
+                                            use_iminuit_instead=True, filename_ext=pe_tag)
                         del saver1
 
-                        saver2 = Temps_EFAmpRabiExperiment(q_key, self.number_of_qubits,
-                                                           list_of_all_qubits,
-                                                           out_dir, round_num, self.signal, save_figs=save_figs)
-                        saver2.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality, use_iminuit_instead = True)
+                        # Pg sequence (I2/Q2/gains2)
+                        saver2 = Temps_EFAmpRabiExperiment(
+                            q_key, self.number_of_qubits, list_of_all_qubits,
+                            out_dir, round_num, self.signal, save_figs=save_figs)
+                        saver2.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality,
+                                            use_iminuit_instead=True, filename_ext=pe_tag)
                         del saver2
 
                         # Skip temperature calculation if flagged
                         if flagged:
-                            print(f"[FLAGGED] Q{q_key + 1}: R2_Pe={R2_Pe if R2_Pe is not None else 'None'}, "
-                                  f"R2_Pg={R2_Pg if R2_Pg is not None else 'None'}. Skipping temperature calc.", flush = True)
+                            reasons = []
+                            if not Pe_ok: reasons.append("BIC_fail_Pe")
+                            if not Pg_ok: reasons.append("BIC_fail_Pg")
+
+                            print(
+                                f"[FLAGGED] Q{q_key + 1}: "
+                                f"dBIC_Pe(I)={res_bic_I_Pe.get('dBIC', {}).get('line_minus_cosine', 'NA')}, "
+                                f"dBIC_Pe(Q)={res_bic_Q_Pe.get('dBIC', {}).get('line_minus_cosine', 'NA')}, "
+                                f"dBIC_Pg(I)={res_bic_I_Pg.get('dBIC', {}).get('line_minus_cosine', 'NA')}, "
+                                f"dBIC_Pg(Q)={res_bic_Q_Pg.get('dBIC', {}).get('line_minus_cosine', 'NA')}. "
+                                f"Reasons: {', '.join(reasons)}. Skipping temp calc.",
+                                flush=True)
                             continue
                     #-----------------------------------------------------------------------------------------------------------------
                     # Skip temperature calculation if not requested
                     if not get_qtemp_data:
                         continue
-
                     # -----------------------Grabbing matching qubit frequency for this qubit---------------------------------
                     # This uses the h5 file timestamp bc we just want to match rounds of data !!!
                     if date.timestamp() > cutoff_timestamp and get_qtemp_data:
