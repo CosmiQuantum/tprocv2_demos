@@ -243,13 +243,6 @@ class Temps_EFAmpRabiExperiment:
                          f"e-f RPM Q{self.QubitIndex + 1}: A=sqrt(A_I**2 + A_Q**2)={A_amp_IQ:.4f}+/-{A_amp_IQ_err:.4f}",
                          fontsize=18, ha='center', va='top')
 
-            # --- Compute R-squared to evaluate goodness of amplitude fit ---
-            # Residual sum of squares
-            ss_res = np.sum((magnitude_data - amp_fit_IQ) ** 2) # if I or Q fit failed, amp_fit_IQ will be bad
-            # Total sum of squares
-            ss_tot = np.sum((magnitude_data - np.mean(magnitude_data)) ** 2) # how much the raw data varies around its mean
-            R2 = 1 - ss_res / ss_tot if ss_tot != 0 else 0
-
             # --- Plot amplitude (magnitude) data and its cosine fit on the third subplot ---
             ax3.plot(gains, magnitude_data, '-', label="Amp Data", linewidth=2)
             ax3.plot(gains, magnitude_fit, '-', color='green', linewidth=3, label=f"Fit to Magnitude Data")
