@@ -1987,7 +1987,7 @@ class PlotRR_noQick:
 
                         # -------------------- BIC filtering: cosine must beat line AND exp in at least one quadrature ------------
                         BIC_THRESH_LINE = 12.0  # adjust as needed
-                        BIC_THRESH_EXP = 18.0  # adjust as needed
+                        BIC_THRESH_EXP = 20.0  # adjust as needed
 
                         # Pe sequence
                         res_bic_I_Pe = self.bic_line_exp_vs_cosine(gains1, I1, I_fit_Pe)
@@ -1998,24 +1998,18 @@ class PlotRR_noQick:
                         res_bic_Q_Pg = self.bic_line_exp_vs_cosine(gains2, Q2, Q_fit_Pg)
 
                         Pe_ok = (
-                                (res_bic_I_Pe.get("ok", True) and
-                                 res_bic_I_Pe["dBIC"]["line_minus_cosine"] > BIC_THRESH_LINE and
+                                (res_bic_I_Pe["dBIC"]["line_minus_cosine"] > BIC_THRESH_LINE and
                                  res_bic_I_Pe["dBIC"]["exp_minus_cosine"] > BIC_THRESH_EXP)
                                 or
-                                (res_bic_Q_Pe.get("ok", True) and
-                                 res_bic_Q_Pe["dBIC"]["line_minus_cosine"] > BIC_THRESH_LINE and
-                                 res_bic_Q_Pe["dBIC"]["exp_minus_cosine"] > BIC_THRESH_EXP)
-                        )
+                                (res_bic_Q_Pe["dBIC"]["line_minus_cosine"] > BIC_THRESH_LINE and
+                                 res_bic_Q_Pe["dBIC"]["exp_minus_cosine"] > BIC_THRESH_EXP))
 
                         Pg_ok = (
-                                (res_bic_I_Pg.get("ok", True) and
-                                 res_bic_I_Pg["dBIC"]["line_minus_cosine"] > BIC_THRESH_LINE and
+                                (res_bic_I_Pg["dBIC"]["line_minus_cosine"] > BIC_THRESH_LINE and
                                  res_bic_I_Pg["dBIC"]["exp_minus_cosine"] > BIC_THRESH_EXP)
                                 or
-                                (res_bic_Q_Pg.get("ok", True) and
-                                 res_bic_Q_Pg["dBIC"]["line_minus_cosine"] > BIC_THRESH_LINE and
-                                 res_bic_Q_Pg["dBIC"]["exp_minus_cosine"] > BIC_THRESH_EXP)
-                        )
+                                (res_bic_Q_Pg["dBIC"]["line_minus_cosine"] > BIC_THRESH_LINE and
+                                 res_bic_Q_Pg["dBIC"]["exp_minus_cosine"] > BIC_THRESH_EXP))
 
                         # Pairwise decision: flag if either sequence fails BIC
                         flagged = not (Pe_ok and Pg_ok)
