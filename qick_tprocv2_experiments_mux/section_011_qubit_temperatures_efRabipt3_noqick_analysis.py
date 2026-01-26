@@ -122,7 +122,7 @@ class Temps_EFAmpRabiExperiment:
             q1_a_guess_Q = (np.max(Q) - np.min(Q)) / 2
             q1_d_guess_Q = np.mean(Q)
             q1_b_guess = 1 / gains[-1]
-            q1_c_guess = np.pi/2 # 0
+            q1_c_guess = 0 # np.pi/2 # you can try 0 too
 
             # Initial guesses for I curve
             q1_guess_I = [q1_a_guess_I, q1_b_guess, q1_c_guess, q1_d_guess_I]
@@ -259,7 +259,8 @@ class Temps_EFAmpRabiExperiment:
             if self.save_figs:
                 today_date = datetime.datetime.now().strftime("%Y-%m-%d")
                 dated_folder_name = f"made_on_{today_date}"
-                outerFolder_expt = os.path.join(self.outerFolder, "q_temperatures", dated_folder_name)
+                # outerFolder_expt = os.path.join(self.outerFolder, "q_temperatures", dated_folder_name)
+                outerFolder_expt = os.path.join(self.outerFolder, dated_folder_name)
                 self.create_folder_if_not_exists(outerFolder_expt)
                 now = datetime.datetime.now()
                 formatted_datetime = now.strftime("%Y%m%d%H%M%S")

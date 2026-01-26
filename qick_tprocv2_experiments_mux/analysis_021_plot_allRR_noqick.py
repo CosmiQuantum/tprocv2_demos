@@ -2020,19 +2020,19 @@ class PlotRR_noQick:
 
                         # Pe filename tag
                         if Pe_self_fail:
-                            pe_tag = "Pe_SELF_FAIL"
+                            pe_tag = "Pe_SELF_FAIL_"
                         elif flagged:
-                            pe_tag = "Pe_PAIR_FAIL"
+                            pe_tag = "Pe_PAIR_FAIL_"
                         else:
-                            pe_tag = "Pe_CLEAN"
+                            pe_tag = "Pe_CLEAN_"
 
                         # Pg filename tag
                         if Pg_self_fail:
-                            pg_tag = "Pg_SELF_FAIL"
+                            pg_tag = "Pg_SELF_FAIL_"
                         elif flagged:
-                            pg_tag = "Pg_PAIR_FAIL"
+                            pg_tag = "Pg_PAIR_FAIL_"
                         else:
-                            pg_tag = "Pg_CLEAN"
+                            pg_tag = "Pg_CLEAN_"
 
                         # -----------------------------------------------------------------------------------
                         base_dir = os.path.join(self.outerFolder_save_plots, "filtering_bad_fits")
@@ -2066,12 +2066,17 @@ class PlotRR_noQick:
 
                             print(
                                 f"[FLAGGED] Q{q_key + 1}: "
-                                f"dBIC_Pe(I)={res_bic_I_Pe.get('dBIC', {}).get('line_minus_cosine', 'NA')}, "
-                                f"dBIC_Pe(Q)={res_bic_Q_Pe.get('dBIC', {}).get('line_minus_cosine', 'NA')}, "
-                                f"dBIC_Pg(I)={res_bic_I_Pg.get('dBIC', {}).get('line_minus_cosine', 'NA')}, "
-                                f"dBIC_Pg(Q)={res_bic_Q_Pg.get('dBIC', {}).get('line_minus_cosine', 'NA')}. "
-                                f"Reasons: {', '.join(reasons)}. Skipping temp calc.",
-                                flush=True)
+                                f"Pe dBIC(I): line={res_bic_I_Pe['dBIC']['line_minus_cosine']:.1f}, "
+                                f"exp={res_bic_I_Pe['dBIC']['exp_minus_cosine']:.1f} | "
+                                f"Pe dBIC(Q): line={res_bic_Q_Pe['dBIC']['line_minus_cosine']:.1f}, "
+                                f"exp={res_bic_Q_Pe['dBIC']['exp_minus_cosine']:.1f} | "
+                                f"Pg dBIC(I): line={res_bic_I_Pg['dBIC']['line_minus_cosine']:.1f}, "
+                                f"exp={res_bic_I_Pg['dBIC']['exp_minus_cosine']:.1f} | "
+                                f"Pg dBIC(Q): line={res_bic_Q_Pg['dBIC']['line_minus_cosine']:.1f}, "
+                                f"exp={res_bic_Q_Pg['dBIC']['exp_minus_cosine']:.1f} "
+                                f"Reasons: {', '.join(reasons)}",
+                                flush=True
+                            )
                             continue
                     #-----------------------------------------------------------------------------------------------------------------
                     # Skip temperature calculation if not requested
