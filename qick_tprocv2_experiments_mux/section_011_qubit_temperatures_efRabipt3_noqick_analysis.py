@@ -69,7 +69,10 @@ class Temps_EFAmpRabiExperiment:
         m = Minuit(chi2, a=p0[0], b=p0[1], c=p0[2], d=p0[3])
         m.errordef = Minuit.LEAST_SQUARES  # least-squares / chi^2 objective
 
-        # --- NEW: optionally fix b and/or c ---
+        # Setting some param limits
+        m.limits["c"] = (-2 * np.pi, 2 * np.pi) # phase periodic: keep it in a reasonable range
+
+        # --- optionally fix b and/or c ---
         # We do this, for example, when we want to fit Q using the same b and c params we used for I
         if fix_b is not None:
             m.values["b"] = float(fix_b)
@@ -80,8 +83,14 @@ class Temps_EFAmpRabiExperiment:
             m.fixed["c"] = True
         # -------------------------------------
 
-        m.migrad()
-        m.hesse()
+        # NEW: finds the correct valley. Runs Nelder-Mead simplex minimization. Note this is optional.
+        # It only evaluates your objective function (chi2) at a small set of points.
+        # It works by moving a geometric shape (a simplex) around parameter space until it finds a low point.
+        # Makes fitting less sensitive to initial guesses
+        m.simplex()
+
+        m.migrad() # Once you're in the correct valley, gradients are reliable and fast (find optimal params)
+        m.hesse() # Measure how wide the valley is (get errors)
 
         # Extract best-fit parameter values into a NumPy array
         popt = np.array([m.values["a"], m.values["b"], m.values["c"], m.values["d"]])
@@ -117,12 +126,14 @@ class Temps_EFAmpRabiExperiment:
 
             plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
 
+            # Initial seeds (guesses)
             q1_a_guess_I = (np.max(I) - np.min(I)) / 2
             q1_d_guess_I = np.mean(I)
             q1_a_guess_Q = (np.max(Q) - np.min(Q)) / 2
             q1_d_guess_Q = np.mean(Q)
+
             q1_b_guess = 1 / gains[-1]
-            q1_c_guess = 0 # np.pi/2 # you can try 0 too
+            q1_c_guess = 0 # another option is np.pi/2
 
             # Initial guesses for I curve
             q1_guess_I = [q1_a_guess_I, q1_b_guess, q1_c_guess, q1_d_guess_I]

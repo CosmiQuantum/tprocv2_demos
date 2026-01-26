@@ -1731,34 +1731,38 @@ class PlotRR_noQick:
           tau_bounds: bounds for tau in exponential fit
         Returns dict with BICs, deltas, winners, and fitted line/exp params.
         """
-        x = np.asarray(x, float).ravel()
-        y = np.asarray(y, float).ravel()
+        # Data
+        x = np.asarray(x, float).ravel() # Gains
+        y = np.asarray(y, float).ravel() # I or Q amplitudes
+        # Cosine fit of the data (I or Q) provided by the user
         y_cos = np.asarray(y_cos, float).ravel()
 
         if not (x.size == y.size == y_cos.size):
             raise ValueError("x, y, y_cos must have the same length.")
 
-        n = x.size
-        if n < 6:
-            return {"ok": False, "reason": "too_few_points", "n": int(n)}
+        n = x.size # number of points
 
+        # sum of squared errors
+        # Smaller SSE = better fit
         def sse(y_obs, y_hat):
             r = y_obs - y_hat
             return float(np.sum(r * r))
 
+        # Bayesian information criterion (BIC) or Schwarz information criterion formula
+        # This uses the "Gaussian errors, unknown variance" BIC form
         def bic_from_sse(sse_val, k):
             sse_val = max(float(sse_val), 1e-300)
             return float(n * np.log(sse_val / n) + k * np.log(n))
 
-        # --- cosine SSE/BIC (no fitting; you already fit it) ---
+        # --- cosine SSE/BIC (no fitting; uses the user-provided cosine fit) ---
         sse_cos = sse(y, y_cos)
-        bic_cos = bic_from_sse(sse_cos, k=4)
+        bic_cos = bic_from_sse(sse_cos, k=4) # cosine has 4 params
 
         # --- line fit ---
         def line(x, m, b):
             return m * x + b
 
-        # decent guess from polyfit
+        # guess from polyfit
         m0, b0 = np.polyfit(x, y, 1)
         popt_line, pcov_line = curve_fit(line, x, y, p0=(m0, b0), maxfev=maxfev)
         y_line = line(x, *popt_line)
@@ -1787,7 +1791,8 @@ class PlotRR_noQick:
         sse_exp = sse(y, y_exp)
         bic_exp = bic_from_sse(sse_exp, k=3)
 
-        # --- comparisons (positive means cosine is better than comparator) ---
+        # --- comparisons (positive means cosine is better than the other) ---
+        # because small BIC = good
         dBIC_line_minus_cos = bic_line - bic_cos
         dBIC_exp_minus_cos = bic_exp - bic_cos
 
@@ -1987,7 +1992,7 @@ class PlotRR_noQick:
 
                         # -------------------- BIC filtering: cosine must beat line AND exp in at least one quadrature ------------
                         BIC_THRESH_LINE = 12.0  # adjust as needed
-                        BIC_THRESH_EXP = 20.0  # adjust as needed
+                        BIC_THRESH_EXP = 15.0  # adjust as needed. #20 worked well for QUIET run 8
 
                         # Pe sequence
                         res_bic_I_Pe = self.bic_line_exp_vs_cosine(gains1, I1, I_fit_Pe)
@@ -2055,7 +2060,7 @@ class PlotRR_noQick:
                             q_key, self.number_of_qubits, list_of_all_qubits,
                             out_dir, round_num, self.signal, save_figs=save_figs)
                         saver2.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality,
-                                            use_iminuit_instead=True, filename_ext=pe_tag)
+                                            use_iminuit_instead=True, filename_ext=pg_tag)
                         del saver2
 
                         # Skip temperature calculation if flagged
