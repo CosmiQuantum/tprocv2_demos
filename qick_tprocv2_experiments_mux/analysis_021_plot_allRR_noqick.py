@@ -2469,8 +2469,8 @@ class PlotRR_noQick:
                     # if T_err > 150:  # skip if error is too large (for example, larger than 300mK)
                     #     continue
                     #
-                    if T_mK > 600:  # huge outliers that ruin plots and are not accurate
-                        continue
+                    # if T_mK > 600:  # huge outliers that ruin plots and are not accurate
+                    #     continue
 
                     errs.append(T_err)
                     temps.append(T_mK)
