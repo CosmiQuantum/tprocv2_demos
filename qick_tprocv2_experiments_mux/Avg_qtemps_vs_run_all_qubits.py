@@ -79,20 +79,20 @@ if runs6_through_8_rpm is False:
 else: # Only SSF qubit temps
     qubit_temps = [
         [201.13, 100.98, 89.26, 77.21],  # Qubit 1
-        # [302.20, 84.26, 78.32, 75.36],  # Qubit 2
-        # [170.90, 106.43, 80.11, 78.82],  # Qubit 3
-        # [339.13, 135.15, 91.27, 100.85],  # Qubit 4
+        [302.20, None, 85.85, 85.96],  # Qubit 2
+        [170.90, None, 84.47, 85.38],  # Qubit 3
+        [339.13, None, None, None],  # Qubit 4
         [174.67, 88.59, 93.73, 81.36],  # Qubit 5
-        # [225.68, 91.56, 78.55, 64.90],  # Qubit 6
+        [225.68, None, None, None],  # Qubit 6
     ]
 
     qtemp_errs = [
         [10.98, 3.84, 2.26, 1.88],  # Qubit 1
-        # [16.42, 2.74, 1.18, 1.64],  # Qubit 2
-        # [7.33, 8.37, 1.37, 2.55],  # Qubit 3,
-        # [19.11, 10.16, 2.38, 7.78],  # Qubit 4,
+        [16.42, None, 2.58, 3.09],  # Qubit 2
+        [7.33, None, 2.02, 2.83],  # Qubit 3,
+        [19.11,None, None, None],  # Qubit 4,
         [6.17, 2.98, 2.29, 1.14],  # Qubit 5
-        # [8.18, 1.65, 1.98, 3.96]  # Qubit 6
+        [8.18, None,None, None]  # Qubit 6
     ]
 
     runs = np.array([5, 6, 7, 8])
@@ -117,13 +117,15 @@ else: # Only SSF qubit temps
         )
 
     for qubit_index, temps in enumerate(qubit_temps):
-        temps_array = np.array(temps, dtype=np.float64)
-        errs_array = np.array(qtemp_errs[qubit_index], dtype=np.float64)
+        temps_array = np.array(temps, dtype=float)
+        errs_array = np.array(qtemp_errs[qubit_index], dtype=float)
         color = colors[qubit_index % len(colors)]
 
+        mask = np.isfinite(temps_array) & np.isfinite(errs_array)  # keep only real points w/ real errors
+
         plt.errorbar(
-            runs, temps_array,
-            yerr=errs_array,
+            runs[mask], temps_array[mask],
+            yerr=errs_array[mask],
             fmt='-o',
             color=color,
             capsize=3,
@@ -133,9 +135,9 @@ else: # Only SSF qubit temps
         )
 
         if show_text:
-            for x, y in zip(runs, temps_array):
-                if not np.isnan(y):
-                    plt.text(x + 0.06, y + 2.0, f"{y:.0f}mK", ha='center', va='bottom', fontsize=11, color=color)
+            for x, y in zip(runs[mask], temps_array[mask]):
+                plt.text(x + 0.06, y + 2.0, f"{y:.0f}mK",
+                         ha='center', va='bottom', fontsize=11, color=color)
 
     plt.xlabel("Run Number")
     plt.ylabel("Average Effective Qubit Temperature (mK)")
