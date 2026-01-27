@@ -1105,9 +1105,9 @@ class SSFTempCalcAndPlots:
                 except (TypeError, ValueError):
                     continue
                 # hard bounds / invalids
-                if T <= 0 or T > 600:
-                    continue
-                if e <= 0:
+                # if T <= 0 or T > 600:
+                #     continue
+                if T <= 0:
                     continue
                 # optional relative error cutoff
                 if rel_err_cutoff is not None and (e / T) > rel_err_cutoff:
@@ -2746,7 +2746,7 @@ class combined_Qtemp_studies:
 
             # ax.xaxis.set_major_locator(mdates.AutoDateLocator()) # automatic
             ax.yaxis.set_major_locator(MaxNLocator(nbins=4, prune=None))
-            ax.set_ylim(70, 130)
+            ax.set_ylim(50, 100)
             ax.xaxis.set_major_formatter(date_fmt)
             ax.tick_params(axis='x', rotation=45, labelsize=9)
 

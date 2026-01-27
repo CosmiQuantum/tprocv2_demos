@@ -2798,7 +2798,7 @@ class PlotRR_noQick:
                 # skip if either is missing or relative error is larger than threshold
                 if T_mK is None or T_err is None:
                     continue
-                if T_mK > 600: # huge outliers that ruin plots and are not accurate
+                if T_mK > 200: # huge outliers that ruin plots and are not accurate
                     continue
 
                 if rel_err_cutoff is not None:
@@ -2813,32 +2813,6 @@ class PlotRR_noQick:
                 plt.setp(ax, visible=False)
                 continue
 
-            # Fit a Gaussian to the temperature data (this is unweighted)
-            # mu, std = norm.fit(temp_vals)
-            # mean_values[f"Qubit {i + 1}"] = mu
-            # std_values[f"Qubit {i + 1}"] = std
-
-            # # Inverse-variance weighted average ---------------------------------------------
-            # # Weighted Gaussian fit (using inverse-variance weights)
-            # temps = np.asarray(temp_vals)
-            # errs = np.asarray(temp_errs)
-            #
-            # # avoiding infinite weights and NaN pollution
-            # err_floor = 1e-12
-            # safe_errs = np.clip(errs, err_floor, np.inf)
-            #
-            # # Further clip extremely small errors (e.g. below the 1st percentile)
-            # low_clip_percentile = 1.0  # adjust if needed
-            # clip_threshold = np.nanpercentile(safe_errs, low_clip_percentile)
-            # safe_errs = np.maximum(safe_errs, clip_threshold)
-            #
-            # weights = 1.0 / (safe_errs ** 2)
-            #
-            # # Weighted mean and variance maximum-likelihood estimate assuming Gaussian noise
-            # mu = np.sum(weights * temps) / np.sum(weights)
-            # var = np.sum(weights * (temps - mu) ** 2) / np.sum(weights)
-            # std = np.sqrt(var)
-            #------------------------------------------------------------------------------------------------
             # === Weighted mean with robust median-MAD clipping===
             temps = np.asarray(temp_vals, dtype=float)
             errs = np.asarray(temp_errs, dtype=float)
@@ -2898,6 +2872,7 @@ class PlotRR_noQick:
             # --- Plot ---
             ax.hist(temp_vals, bins=optimal_bin_num, alpha=0.7,
                     color=colors[i % len(colors)], edgecolor='black', label="Counts")
+
             ax.plot(x_vals, scaled_pdf, linestyle='--', linewidth=2,
                     color='black', label=f"Weighted Gaussian fit")
 
