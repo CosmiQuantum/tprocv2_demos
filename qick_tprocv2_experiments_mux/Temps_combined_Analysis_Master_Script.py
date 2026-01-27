@@ -25,7 +25,7 @@ from analysis_006_T1_vs_time_plots import T1VsTime
 from analysis_007_T2R_vs_time_plots import T2rVsTime
 from analysis_008_T2E_vs_time_plots import T2eVsTime
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 7
+run_num = 6
 run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence analysis it's defined in its respective section
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
@@ -364,9 +364,15 @@ paths_SSFmethods_SR = [
     # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_detuning_24MHz_Q1_substudy1/",
     #"/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/"
 
-# Pre-Science-Run Data
-paths_SSFmethods_preSR = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ef_studies_pre_science_run/q_temperatures_efRabi/2025-04-11_14-05-22",
-                          "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ef_studies_pre_science_run/q_temperatures_efRabi/2025-04-12_00-24-12"]
+# All pre-Science-Run Data
+paths_SSFmethods_preSR = ["ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-21",
+                        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-22",
+                        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-23",
+                        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-24",
+                        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-26",
+                        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-28",
+                        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-01",
+                        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-02"]
 
 path_saveplots_fits_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r6" # where to save ssf plots to check gaussian fits
 path_saveplots_ssf_qtemps_vsT_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run6" # to save qubit temps vs time via ssf methods
