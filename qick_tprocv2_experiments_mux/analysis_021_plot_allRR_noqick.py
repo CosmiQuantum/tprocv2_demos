@@ -33,6 +33,222 @@ import pandas as pd
 # Can also do T1 vs time and Q1 vs time
 
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+
+class SingleShot:
+    def __init__(self, QubitIndex, number_of_qubits,  outerFolder , outerFolder_save_plots, round_num, save_figs=False, experiment = None,
+                 verbose = False, logger = None, qick_verbose=True):
+        self.qick_verbose = qick_verbose
+        self.QubitIndex = QubitIndex
+        self.outerFolder = outerFolder
+        self.outerFolder_save_plots = outerFolder_save_plots
+        self.expt_name = "Readout_Optimization"
+        self.Qubit = 'Q' + str(self.QubitIndex)
+        self.round_num = round_num
+        self.save_figs = save_figs
+        self.experiment = experiment
+        self.number_of_qubits = number_of_qubits
+        self.verbose = verbose
+        self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
+
+        # if experiment is not None:
+        #     self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
+        #     self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
+        #     self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+        #     if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} Single Shot configuration: ', self.config)
+        #     self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} Single Shot configuration: {self.config}')
+
+        self.q1_t1 = []
+        self.q1_t1_err = []
+        self.dates = []
+
+    def plot_results(self, iq_list_g, iq_list_e, QubitIndex,  fig_quality=100):
+        I_g = iq_list_g[QubitIndex][0].T[0]
+        Q_g = iq_list_g[QubitIndex][0].T[1]
+        I_e = iq_list_e[QubitIndex][0].T[0]
+        Q_e = iq_list_e[QubitIndex][0].T[1]
+
+        if "run4" in self.outerFolder or "run5" in self.outerFolder:
+            # We can update this later if we really care about extracting the config for hist_ssf()
+            config = None #it's not that we didn't save it for runs 4 and 5, it was just saved differently (inside a separate folder as an h5 file, not within our experiment h5 files).
+        else:
+            config = self.config
+
+
+        fid, threshold, angle, ig_new, ie_new = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg = config, plot=self.save_figs,  fig_quality=fig_quality)
+        if self.verbose: print('Optimal fidelity after rotation = %.3f' % fid)
+        if self.verbose: print('Optimal angle after rotation = %f' % angle)
+        self.logger.info('Optimal fidelity after rotation = %.3f' % fid)
+        self.logger.info('Optimal angle after rotation = %f' % angle)
+        return fid, angle
+
+    def hist_ssf(self, data=None, cfg=None, plot=True,  fig_quality = 100):
+
+        ig = data[0]
+        qg = data[1]
+        ie = data[2]
+        qe = data[3]
+
+        if cfg is not None:
+            numbins = round(math.sqrt(float(cfg["steps"])))
+        else:
+            numbins = 60
+
+        xg, yg = np.median(ig), np.median(qg)
+        xe, ye = np.median(ie), np.median(qe)
+
+        if plot == True:
+            fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(16, 4))
+            fig.tight_layout()
+
+            axs[0].scatter(ig, qg, label='g', color='b', marker='*')
+            axs[0].scatter(ie, qe, label='e', color='r', marker='*')
+            axs[0].scatter(xg, yg, color='k', marker='o')
+            axs[0].scatter(xe, ye, color='k', marker='o')
+            axs[0].set_xlabel('I (a.u.)')
+            axs[0].set_ylabel('Q (a.u.)')
+            axs[0].legend(loc='upper right')
+            axs[0].set_title('Unrotated')
+            axs[0].axis('equal')
+        """Compute the rotation angle"""
+        theta = -np.arctan2((ye - yg), (xe - xg))
+        """Rotate the IQ data"""
+        ig_new = ig * np.cos(theta) - qg * np.sin(theta)
+        qg_new = ig * np.sin(theta) + qg * np.cos(theta)
+        ie_new = ie * np.cos(theta) - qe * np.sin(theta)
+        qe_new = ie * np.sin(theta) + qe * np.cos(theta)
+
+        """New means of each blob"""
+        xg, yg = np.median(ig_new), np.median(qg_new)
+        xe, ye = np.median(ie_new), np.median(qe_new)
+
+        # print(xg, xe)
+        #xlims = [xg - ran, xg + ran]
+        xlims = [np.min(ig_new), np.max(ie_new)]
+
+        if plot == True:
+            axs[1].scatter(ig_new, qg_new, label='g', color='b', marker='*')
+            axs[1].scatter(ie_new, qe_new, label='e', color='r', marker='*')
+            axs[1].scatter(xg, yg, color='k', marker='o')
+            axs[1].scatter(xe, ye, color='k', marker='o')
+            axs[1].set_xlabel('I (a.u.)')
+            axs[1].legend(loc='lower right')
+            axs[1].set_title(f'Rotated Theta:{round(theta, 5)}')
+            axs[1].axis('equal')
+
+            """X and Y ranges for histogram"""
+            ng, binsg, pg = axs[2].hist(ig_new, bins=numbins, range=xlims, color='b', label='g', alpha=0.5)
+            ne, binse, pe = axs[2].hist(ie_new, bins=numbins, range=xlims, color='r', label='e', alpha=0.5)
+
+            axs[2].set_xlabel('I(a.u.)')
+        else:
+            ng, binsg = np.histogram(ig_new, bins=numbins, range=xlims)
+            ne, binse = np.histogram(ie_new, bins=numbins, range=xlims)
+
+        """Compute the fidelity using overlap of the histograms"""
+        contrast = np.abs(((np.cumsum(ng) - np.cumsum(ne)) / (0.5 * ng.sum() + 0.5 * ne.sum())))
+        tind = contrast.argmax()
+        threshold = binsg[tind]
+        fid = contrast[tind]
+        #axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
+
+
+        if plot == True:
+            self.create_folder_if_not_exists(self.outerFolder_save_plots)
+            outerFolder_expt = os.path.join(self.outerFolder_save_plots, "ss_ge")
+            self.create_folder_if_not_exists(outerFolder_expt)
+            outerFolder_expt = os.path.join(outerFolder_expt, "Q" + str(self.QubitIndex + 1))
+            self.create_folder_if_not_exists(outerFolder_expt)
+            now = datetime.datetime.now()
+            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            file_name = os.path.join(outerFolder_expt,
+                                     f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
+
+            axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
+            fig.savefig(file_name,  dpi=fig_quality, bbox_inches='tight')
+            plt.close(fig)
+
+        return fid, threshold, theta, ig_new, ie_new
+
+    def only_hist_ssf(self, data=None, cfg=None, plot=True, fig_quality=100, plot_title="Run 3"):
+        import math
+        import numpy as np
+        import matplotlib.pyplot as plt
+        import os
+        import datetime
+
+        # Unpack IQ data
+        ig = data[0]
+        qg = data[1]
+        ie = data[2]
+        qe = data[3]
+
+        # Determine number of bins for the histogram
+        numbins = round(math.sqrt(float(cfg["steps"])))
+
+        # Compute medians (used for rotation angle calculation)
+        xg, yg = np.median(ig), np.median(qg)
+        xe, ye = np.median(ie), np.median(qe)
+
+        # Compute rotation angle
+        theta = -np.arctan2((ye - yg), (xe - xg))
+
+        # Rotate the IQ data
+        ig_new = ig * np.cos(theta) - qg * np.sin(theta)
+        qg_new = ig * np.sin(theta) + qg * np.cos(theta)
+        ie_new = ie * np.cos(theta) - qe * np.sin(theta)
+        qe_new = ie * np.sin(theta) + qe * np.cos(theta)
+
+        # New medians after rotation (not used further in plotting)
+        xg, yg = np.median(ig_new), np.median(qg_new)
+        xe, ye = np.median(ie_new), np.median(qe_new)
+
+        # Define histogram range from the rotated ground state to the excited state
+        xlims = [np.min(ig_new), np.max(ie_new)]
+        ng, binsg = np.histogram(ig_new, bins=numbins, range=xlims)
+        ne, binse = np.histogram(ie_new, bins=numbins, range=xlims)
+        # Compute the fidelity using the overlap of the histograms
+        contrast = np.abs(((np.cumsum(ng) - np.cumsum(ne)) /
+                           (0.5 * ng.sum() + 0.5 * ne.sum())))
+        tind = contrast.argmax()
+        threshold = binsg[tind]
+        fid = contrast[tind]
+        if plot:
+            # Create figure and axis for the histogram
+            fig, ax = plt.subplots(figsize=(8, 6))
+
+            # Plot histogram for ground state and first excited state with updated labels
+            ng, binsg, _ = ax.hist(ig_new, bins=numbins, range=xlims, color='b',
+                                   label='Ground', alpha=0.5)
+            ne, binse, _ = ax.hist(ie_new, bins=numbins, range=xlims, color='r',
+                                   label='First Excited State', alpha=0.5)
+
+            # Set axis labels with 12-point font
+            ax.set_xlabel('I (a.u.)', fontsize=12)
+            ax.set_ylabel('Counts', fontsize=12)
+            # Set plot title using the provided parameter
+            ax.set_title(plot_title + f'   SSF: {int(fid * 100)}%', fontsize=12)
+            ax.legend()
+
+            # Save the figure
+            self.create_folder_if_not_exists(self.outerFolder)
+            outerFolder_expt = os.path.join(self.outerFolder, "ss_repeat_meas_ge")
+            self.create_folder_if_not_exists(outerFolder_expt)
+            outerFolder_expt = os.path.join(outerFolder_expt, "Q" + str(self.QubitIndex + 1))
+            self.create_folder_if_not_exists(outerFolder_expt)
+            now = datetime.datetime.now()
+            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            file_name = os.path.join(outerFolder_expt,
+                                     f"R_{self.round_num}_Q_{self.QubitIndex + 1}_{formatted_datetime}_{self.expt_name}_q{self.QubitIndex + 1}.png")
+            fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
+            plt.close(fig)
+
+        return fid, threshold, theta, ig_new, ie_new
+
+    def create_folder_if_not_exists(self, folder):
+        """Creates a folder at the given path if it doesn't already exist."""
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
 class T1Measurement:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, signal, save_figs, experiment = None,
                  live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
@@ -1473,7 +1689,7 @@ class PlotRR_noQick:
 
     def run(self, plot_res_spec=False, plot_q_spec=False, plot_rabi=False, rabi_rolling_avg=False, plot_ss=False,
             plot_ss_hist_only=False, ss_plot_title=None, ss_plot_gef=False, plot_t1=False,
-            plot_t2r=False, plot_t2e=False, plot_rabis_Qtemps=False):
+            plot_t2r=False, plot_t2e=False, plot_rabis_Qtemps=False, combine_rpm_IQ_signal = False):
 
         # if plot_res_spec:
         #     self.load_plot_save_res_spec()
@@ -1481,7 +1697,8 @@ class PlotRR_noQick:
         #     self.load_plot_save_q_spec()
         if plot_rabis_Qtemps:
             list_of_all_qubits = [i for i in range(self.number_of_qubits + 1)]
-            self.load_plot_save_rabis_Qtemps(list_of_all_qubits, run_num = self.run_num, save_figs = self.save_figs, filter_out_bad_amp_fits = self.filter_out_bad_amp_fits)
+            self.load_plot_save_rabis_Qtemps(list_of_all_qubits, run_num = self.run_num, save_figs = self.save_figs, filter_out_bad_amp_fits = self.filter_out_bad_amp_fits,
+                                             combine_IQ_signal = combine_rpm_IQ_signal)
         # if plot_rabi:
         #     if rabi_rolling_avg:
         #         self.load_plot_save_rabi(rabi_rolling_avg=True)
@@ -1615,6 +1832,102 @@ class PlotRR_noQick:
         return extracted_qfreqs
 
     #
+    def load_plot_save_ss(self, plot_ss_hist_only, plot_title):
+        print('Running load_plot_save_ss function')
+        # ------------------------------------------------Load/Plot/Save SS---------------------------------------
+        outerFolder_expt = self.outerFolder + "/Data_h5/ss_ge/"
+
+        h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+        data_key = 'ss_ge'
+
+        # Return payload: list of records (one per qubit per dataset entry)
+        ssf_dict = {"records": []}
+
+        for h5_file in h5_files:
+
+            save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
+
+            H5_class_instance = Data_H5(h5_file)
+            load_data = H5_class_instance.load_from_h5(data_type=data_key, save_r=int(save_round))
+
+            populated_keys = []
+            for q_key in load_data[data_key]:
+                # Access 'Dates' for the current q_key
+                dates_list = load_data[data_key][q_key].get('Dates', [[]])
+
+                # Check if any entry in 'Dates' is not NaN
+                if any(
+                        not np.isnan(date)
+                        for date in dates_list[0]  # Iterate over the first batch of dates
+                ):
+                    populated_keys.append(q_key)
+
+            for q_key in populated_keys:
+                for dataset in range(len(load_data[data_key][q_key].get('Dates', [])[0])):
+
+                    ts = load_data[data_key][q_key].get('Dates', [])[0][dataset]
+                    if ts is None or (isinstance(ts, float) and np.isnan(ts)):
+                        continue
+
+                    date = datetime.datetime.fromtimestamp(ts)
+                    angle = load_data[data_key][q_key].get('Angle', [])[0][dataset]
+                    fidelity = load_data[data_key][q_key].get('Fidelity', [])[0][dataset]
+                    I_g = self.process_h5_data(load_data[data_key][q_key].get('I_g', [])[0][dataset].decode())
+                    Q_g = self.process_h5_data(load_data[data_key][q_key].get('Q_g', [])[0][dataset].decode())
+                    I_e = self.process_h5_data(load_data[data_key][q_key].get('I_e', [])[0][dataset].decode())
+                    Q_e = self.process_h5_data(load_data[data_key][q_key].get('Q_e', [])[0][dataset].decode())
+                    round_num = load_data[data_key][q_key].get('Round Num', [])[0][dataset]
+                    batch_num = load_data[data_key][q_key].get('Batch Num', [])[0][dataset]
+                    syst_config = load_data[data_key][q_key].get('Syst Config', [])[0][dataset].decode()
+                    exp_config = load_data[data_key][q_key].get('Exp Config', [])[0][dataset].decode()
+                    safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
+                    syst_config = eval(syst_config, safe_globals)
+                    exp_config = eval(exp_config, safe_globals)
+
+                    # from expt_config import expt_cfg as exp_config
+                    I_g = np.array(I_g)
+                    Q_g = np.array(Q_g)
+                    I_e = np.array(I_e)
+                    Q_e = np.array(Q_e)
+
+                    # ---------------- NEW: save a minimal record you can query from RPM ----------------
+                    ssf_dict["records"].append({
+                        "ssf_file": os.path.basename(h5_file),
+                        "q_key": int(q_key),
+                        "timestamp": float(date.timestamp()),  # data timestamp
+                        "datetime": date,
+
+                        "round_num": int(round_num) if round_num is not None else None,
+                        "batch_num": int(batch_num) if batch_num is not None else None,
+                        "angle": float(angle) if angle is not None else None,
+                        "fidelity": float(fidelity) if fidelity is not None else None,
+                    })
+                    # -------------------------------------------------------------------------------
+
+                    if len(Q_g) > 0:
+                        ss_class_instance = SingleShot(q_key, self.number_of_qubits, self.outerFolder,
+                                                       self.outerFolder_save_plots, round_num, self.save_figs)
+
+                        if type(exp_config) is dict:
+                            readout_opt = exp_config['Readout_Optimization']
+                            if isinstance(readout_opt, str):
+                                ss_cfg = ast.literal_eval(readout_opt)
+                            else:
+                                ss_cfg = readout_opt
+                        else:
+                            ss_cfg = ast.literal_eval(exp_config['Readout_Optimization'].decode())
+
+                        if plot_ss_hist_only:
+                            ss_class_instance.only_hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=True,
+                                                            plot_title=plot_title)
+                        else:
+                            ss_class_instance.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=True)
+                        del ss_class_instance
+
+            del H5_class_instance
+
+        return ssf_dict
+
     def load_plot_save_res_spec(self):
         # ------------------------------------------Load/Plot/Save Res Spec------------------------------------
         outerFolder_expt = os.path.join(self.outerFolder, "Data_h5")
@@ -1825,7 +2138,7 @@ class PlotRR_noQick:
             },
         }
 
-    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, run_num, save_figs = False, get_qtemp_data = False, filter_out_bad_amp_fits = False, use_png_timestamps = False):
+    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, run_num, save_figs = False, get_qtemp_data = False, filter_out_bad_amp_fits = False, use_png_timestamps = False, combine_IQ_signal = False):
         """
         Note: this code assumes that a single h5 file contains ONE dataset for EACH qubit inside.
 
@@ -1876,7 +2189,8 @@ class PlotRR_noQick:
                     # print("[WARN] Falling back to HDF5 timestamps instead.")
                     mapping_data = None
 
-        if get_qtemp_data: # load qspec data too
+        if get_qtemp_data:
+            # --------------------------------------- load qspec data too ---------------------------------------------
             # This function returns a list of dicts with keys like 'filename', 'q_key', 'qfreq_MHz', 'Qfreq_fit_err', etc.
             extracted_qspec_results = self.load_plot_save_q_spec()
 
@@ -1884,12 +2198,29 @@ class PlotRR_noQick:
             qspec_by_qkey_and_time = defaultdict(list)
             for entry in extracted_qspec_results:
                 timestamp = self.extract_timestamp_from_filename(entry['filename']).timestamp()
-                q_key = entry['q_key']
-                qspec_by_qkey_and_time[q_key].append((timestamp, entry))
+                q_key_qpsec = entry['q_key']
+                qspec_by_qkey_and_time[q_key_qpsec].append((timestamp, entry))
 
             # Sort by timestamp for efficient matching
             for qkey in qspec_by_qkey_and_time:
                 qspec_by_qkey_and_time[qkey].sort()
+            #-------------------------------------------- optionally load ssf data too --------------------------
+            alpha = None # angle from ssf, will be replaced with real angle if combine_IQ_signal = True
+            if combine_IQ_signal:
+                # Load all SSF metadata records (your edited function returns {"records":[...]} )
+                ssf_meta = self.load_plot_save_ss(plot_ss_hist_only=True, plot_title="")  # or whatever args you want
+                ssf_records = ssf_meta.get("records", [])
+
+                # Index SSF results by qubit, then sort by timestamp for efficient closest-time matching
+                ssf_by_qkey_and_time = defaultdict(list)
+                for record in ssf_records:
+                    ssf_file_dt = self.extract_timestamp_from_filename(record['ssf_file']).timestamp()  # datetime
+                    q_key_ssf = record['q_key']
+                    ssf_by_qkey_and_time[q_key_ssf].append((ssf_file_dt, record))
+
+                for qkey in ssf_by_qkey_and_time:
+                    ssf_by_qkey_and_time[qkey].sort()
+            #---------------------------------------------------------------------------------------------
 
         for h5_file in h5_files_qtemps:
 
@@ -1942,6 +2273,49 @@ class PlotRR_noQick:
                     exp_config = eval(exp_config, safe_globals)
                     rabi_cfg = exp_config['power_rabi_ef']
 
+                    # ----------------------- Inside your per-dataset loop (right after you set round_num / batch_num / file_timestamp) ----------
+                    if combine_IQ_signal and get_qtemp_data:
+                        alpha = None
+
+                        # Get SSF candidates for this qubit
+                        ssf_entries = ssf_by_qkey_and_time.get(int(q_key), [])
+
+                        if run_num == 7 or run_num == 8 or run_num == 4 or run_num == 5:
+                            MAX_TIME_DIFF_SSF_RPM = 10.0  # seconds
+                        elif run_num == 6:
+                            MAX_TIME_DIFF_SSF_RPM = 600
+                        else:
+                            MAX_TIME_DIFF_SSF_RPM = None # breaks code on purpose
+
+                        if not ssf_entries:
+                            print(f"No SSF entries found for Q{q_key + 1}", flush=True)
+                            continue
+
+                        closest_match = min(ssf_entries, key=lambda pair: abs(pair[0] - file_timestamp))
+                        time_diff = abs(closest_match[0] - file_timestamp)
+
+                        if time_diff > MAX_TIME_DIFF_SSF_RPM:
+                            print(
+                                f"[WARN] No SSF within {MAX_TIME_DIFF_SSF_RPM:.1f}s for Q{q_key + 1}. "
+                                f"Closest ?t={time_diff:.2f}s (ssf_file={closest_match[1].get('ssf_file')}, rpm_file={os.path.basename(h5_file)})",
+                                flush=True
+                            )
+                            continue
+
+                        matched_ssf = closest_match[1]
+                        alpha = matched_ssf.get("angle", None)
+
+                        print(
+                            f"Matched SSF for Q{q_key + 1}: angle={alpha} from {matched_ssf.get('ssf_file')} "
+                            f"(Δt={time_diff:.2f}s)",
+                            flush=True
+                        )
+
+                        if alpha is None:
+                            print(f"[WARN] SSF match found but angle is None for Q{q_key + 1}. Skipping.", flush=True)
+                            continue
+                    #---------------------------------------------------------------------------------------------
+
                     # If we are saving filtered plots we don't want to save unfiltered ones
                     # But sometimes we want to just look at unfiltered ones
                     save_figs_nonfiltered = False
@@ -1956,7 +2330,7 @@ class PlotRR_noQick:
                         Q1 = np.asarray(Q1)
                         gains1 = np.asarray(gains1)
                         A_amp_IQ_Pe, A_amp_IQ_err_Pe, fit_params_Pe = rabi_class_instance.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
-                                                                                                                                        filename_ext = "Pe_")
+                                                                                                        filename_ext = "Pe_", rotate_using_ssf = combine_IQ_signal, ssf_angle = alpha)
                 
                         del rabi_class_instance
 
@@ -1969,7 +2343,7 @@ class PlotRR_noQick:
                         Q2 = np.asarray(Q2)
                         gains2 = np.asarray(gains2)
                         A_amp_IQ_Pg, A_amp_IQ_err_Pg, fit_params_Pg= rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
-                                                                                                                                      filename_ext = "Pg_")
+                                                                                                    filename_ext = "Pg_", rotate_using_ssf = combine_IQ_signal, ssf_angle = alpha)
 
                         del rabi_class_instance
 
@@ -2046,7 +2420,7 @@ class PlotRR_noQick:
                             q_key, self.number_of_qubits, list_of_all_qubits,
                             out_dir, round_num, self.signal, save_figs=save_figs)
                         saver1.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality,
-                                            use_iminuit_instead=True, filename_ext=pe_tag)
+                                            use_iminuit_instead=True, filename_ext=pe_tag, rotate_using_ssf = combine_IQ_signal, ssf_angle = alpha)
                         del saver1
 
                         # Pg sequence (I2/Q2/gains2)
@@ -2054,7 +2428,7 @@ class PlotRR_noQick:
                             q_key, self.number_of_qubits, list_of_all_qubits,
                             out_dir, round_num, self.signal, save_figs=save_figs)
                         saver2.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality,
-                                            use_iminuit_instead=True, filename_ext=pg_tag)
+                                            use_iminuit_instead=True, filename_ext=pg_tag, rotate_using_ssf = combine_IQ_signal, ssf_angle = alpha)
                         del saver2
 
                         # Skip temperature calculation if flagged
@@ -2099,8 +2473,7 @@ class PlotRR_noQick:
                             continue
 
                         # Find closest match in timestamp from filename
-                        closest_match = min(qspec_entries, key=lambda pair: abs(pair[
-                                                                                    0] - file_timestamp))  # pair[0] is timestamp from qspec filename. pair = (timestamp, qspec_dict) and it is defined in this line
+                        closest_match = min(qspec_entries, key=lambda pair: abs(pair[0] - file_timestamp))  # pair[0] is timestamp from qspec filename. pair = (timestamp, qspec_dict) and it is defined in this line
                         # Note: closest_match = (timestamp_from_filename, qspec_entry_dict)
                         # closest_match[0] is timestamp_from_filename (a float, in seconds since epoch)
                         # closest_match[1] is the actual QSpec result dictionary with keys
@@ -2209,7 +2582,8 @@ class PlotRR_noQick:
                                 'T_mK_err': T_err,
                                 'P_e': P_e,
                                 'qubit_freq_MHz': qubit_freq_MHz,
-                                "Qfreq_fit_err" : qfreq_err, #MHz
+                                "Qfreq_fit_err" : qfreq_err, #MHz,
+                                "ssf_angle": alpha, # will be None if you don't choose to combine IQ signal
                                 'date':date_time,
                                 'filepath': h5_file}
                         else:
