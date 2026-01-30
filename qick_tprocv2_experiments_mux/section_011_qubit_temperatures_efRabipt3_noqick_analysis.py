@@ -119,7 +119,296 @@ class Temps_EFAmpRabiExperiment:
 
         return popt, pcov
 
+    def fit_cosine_both_IandQ_iminuit(self, x, I, Q, p0_I, p0_Q, fix_b=None, fix_c=None):
+        """
+        Joint Iminuit cosine fit to BOTH I and Q simultaneously with shared b and c.
+
+        Model:
+          I(x) = aI * cos_model(x; b, c) + dI
+          Q(x) = aQ * cos_model(x; b, c) + dQ
+
+        where cos_model is your existing self.cosine(x, a, b, c, d).
+
+        Parameters
+        ----------
+        x : array-like
+            Gain axis.
+        I, Q : array-like
+            Measured I and Q arrays (same length as x).
+        p0_I, p0_Q : array-like length 4
+            Initial guesses in the SAME format you already use:
+              p0_* = [a_guess, b_guess, c_guess, d_guess]
+            Only b and c from p0_I are used as shared initial guesses.
+        fix_b, fix_c : float or None
+            If provided, hold shared b and/or c fixed.
+
+        Returns
+        -------
+        popt : dict
+            {"aI","aQ","b","c","dI","dQ"} best-fit values.
+        pcov : np.ndarray shape (6,6)
+            Approx covariance matrix in the above parameter order:
+            ["aI","aQ","b","c","dI","dQ"]
+            Scaled to match curve_fit absolute_sigma=False behavior.
+        """
+
+        x = np.asarray(x, dtype=float)
+        I = np.asarray(I, dtype=float)
+        Q = np.asarray(Q, dtype=float)
+        if x.size != I.size or x.size != Q.size:
+            raise ValueError("x, I, and Q must have the same length.")
+
+        # Shared initial guesses for b,c (take from I's p0)
+        b0 = float(p0_I[1])
+        c0 = float(p0_I[2])
+
+        # Separate initial guesses for amplitudes/offsets
+        aI0 = float(p0_I[0])
+        dI0 = float(p0_I[3])
+        aQ0 = float(p0_Q[0])
+        dQ0 = float(p0_Q[3])
+
+        def sse(aI, aQ, b, c, dI, dQ):
+            I_model = self.cosine(x, aI, b, c, dI)
+            Q_model = self.cosine(x, aQ, b, c, dQ)
+            return np.sum((I - I_model) ** 2) + np.sum((Q - Q_model) ** 2)
+
+        m = Minuit(sse, aI=aI0, aQ=aQ0, b=b0, c=c0, dI=dI0, dQ=dQ0)
+        m.errordef = Minuit.LEAST_SQUARES
+
+        # Same phase limits idea as before (shared phase)
+        m.limits["c"] = (-2 * np.pi, 2 * np.pi)
+
+        # --- optionally fix shared b/c ---
+        if fix_b is not None:
+            m.values["b"] = float(fix_b)
+            m.fixed["b"] = True
+        if fix_c is not None:
+            m.values["c"] = float(fix_c)
+            m.fixed["c"] = True
+
+        # Improve robustness (same logic you used)
+        m.simplex()
+        m.migrad()
+        m.hesse()
+
+        # Best-fit values
+        popt = {
+            "aI": float(m.values["aI"]),
+            "aQ": float(m.values["aQ"]),
+            "b": float(m.values["b"]),
+            "c": float(m.values["c"]),
+            "dI": float(m.values["dI"]),
+            "dQ": float(m.values["dQ"]),
+        }
+
+        # Convert Minuit covariance -> numpy matrix in a stable order
+        names = ["aI", "aQ", "b", "c", "dI", "dQ"]
+        cov = m.covariance
+        if cov is None:
+            pcov = np.full((len(names), len(names)), np.nan)
+        else:
+            pcov = np.zeros((len(names), len(names)))
+            for i, ni in enumerate(names):
+                for j, nj in enumerate(names):
+                    pcov[i, j] = cov[ni, nj]
+
+            # Match curve_fit absolute_sigma=False scaling
+            # Total data points = 2*N (I and Q)
+            N = 2 * x.size
+            p = len(names)
+            ndof = N - p
+            if ndof > 0 and np.isfinite(m.fval):
+                scale = m.fval / ndof
+                pcov = pcov * scale
+
+            popt_arr = np.array([popt[k] for k in ["aI", "aQ", "b", "c", "dI", "dQ"]])
+
+        return popt_arr, pcov
+
+    def canonicalize_cos_params(self,popt):
+        """
+        Canonicalize cosine params so the fit is unique: enforce A >= 0 ----
+        Model: y = A*cos(b*x + c) + d
+        Identity: A*cos(.) == (-A)*cos(. + pi)
+        """
+        popt = np.array(popt, dtype=float).copy()
+        if popt[0] < 0:  # if A < 0
+            popt[0] *= -1  # flip amplitude
+            popt[2] += np.pi  # shift phase by pi
+        # wrap phase into [-pi, pi] to keep it stable / comparable across scans
+        popt[2] = (popt[2] + np.pi) % (2 * np.pi) - np.pi
+        return popt
+
+    def plot_results_IQ_together_iminuit(self, I, Q, gains, config=None, fig_quality=200, use_iminuit_instead = True, filename_ext="", show_mag_fit=True):
+        """
+        This was made for a test, and it works alright, but it made no difference in RPM results so it is not in use.
+
+        Joint-IQ version of plot_results(): iminuit case
+          - Fits I and Q simultaneously with shared (b, c): oscillation frequency and phase
+          - Returns A_amp_IQ = sqrt(A_I^2 + A_Q^2) and its uncertainty using full covariance
+          - Preserves existing plot layout (I plot, Q plot, Magnitude plot)
+
+        Requires you to have added:
+          self.fit_cosine_both_IandQ_iminuit(gains, I, Q, p0_I, p0_Q) -> (popt6, pcov6)
+        where popt6 order is: [aI, aQ, b, c, dI, dQ]
+        and pcov6 is 6x6 in that same order.
+        """
+        try:
+            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
+            plt.rcParams.update({"font.size": 18})
+
+            plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
+
+            # -------------------- Initial guesses --------------------
+            I = np.asarray(I, dtype=float)
+            Q = np.asarray(Q, dtype=float)
+            gains = np.asarray(gains, dtype=float)
+
+            aI0 = (np.max(I) - np.min(I)) / 2
+            dI0 = np.mean(I)
+            aQ0 = (np.max(Q) - np.min(Q)) / 2
+            dQ0 = np.mean(Q)
+
+            b0 = 1 / gains[-1] if gains.size and gains[-1] != 0 else 1.0
+            c0 = 0.0
+
+            p0_I = [aI0, b0, c0, dI0]
+            p0_Q = [aQ0, b0, c0, dQ0]
+
+            # -------------------- Joint fit --------------------
+            popt6, pcov6 = self.fit_cosine_both_IandQ_iminuit(gains, I, Q, p0_I, p0_Q)
+            aI, aQ, b, c, dI, dQ = popt6
+
+            I_fit = self.cosine(gains, aI, b, c, dI)
+            Q_fit = self.cosine(gains, aQ, b, c, dQ)
+
+            # -------------------- Plots: I and Q --------------------
+            ax1.plot(gains, I, linewidth=2, label="I")
+            ax1.plot(gains, I_fit, "-", color="red", linewidth=3, label="Fit")
+            ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
+            ax1.tick_params(axis="both", which="major", labelsize=16)
+
+            ax2.plot(gains, Q, linewidth=2, label="Q")
+            ax2.plot(gains, Q_fit, "-", color="red", linewidth=3, label="Fit")
+            ax2.set_xlabel("Gain (a.u.)", fontsize=20)
+            ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
+            ax2.tick_params(axis="both", which="major", labelsize=16)
+
+            # -------------------- Combined amplitude + uncertainty (uses correlation) --------------------
+            A_I = aI # I-curve amplitude
+            A_Q = aQ # Q-curve amplitude
+            A_amp_IQ = float(np.sqrt(A_I ** 2 + A_Q ** 2)) # combined amplitude
+
+            # diag errors for per-quadrature legends
+            sigma_A_I = float(np.sqrt(pcov6[0, 0])) if np.isfinite(pcov6[0, 0]) else np.nan
+            sigma_A_Q = float(np.sqrt(pcov6[1, 1])) if np.isfinite(pcov6[1, 1]) else np.nan
+
+            # full propagated error for A = sqrt(aI^2 + aQ^2)
+            if pcov6 is None or not np.all(np.isfinite(pcov6[:2, :2])) or A_amp_IQ <= 0:
+                A_amp_IQ_err = np.nan
+            else:
+                dA_dAI = A_I / A_amp_IQ
+                dA_dAQ = A_Q / A_amp_IQ
+                varA = (
+                        (dA_dAI ** 2) * pcov6[0, 0]
+                        + (dA_dAQ ** 2) * pcov6[1, 1]
+                        + 2.0 * dA_dAI * dA_dAQ * pcov6[0, 1])
+                A_amp_IQ_err = float(np.sqrt(varA)) if varA > 0 else None
+
+            ax1.legend([f"A_I={A_I:.4f} ± {sigma_A_I:.4f}"], loc="best")
+            ax2.legend([f"A_Q={A_Q:.4f} ± {sigma_A_Q:.4f}"], loc="best")
+
+            # -------------------- Third panel: amplitude diagnostics --------------------
+            magnitude_data = np.sqrt(I ** 2 + Q ** 2)
+            amp_fit_IQ = np.sqrt(I_fit ** 2 + Q_fit ** 2)
+
+            ax3.plot(gains, magnitude_data, "-", linewidth=2, label="|IQ| data")
+            ax3.plot(gains, amp_fit_IQ, "-", color="orange", linewidth=3, label="sqrt(I_fit^2 + Q_fit^2)")
+            ax3.set_xlabel("Gain (a.u.)", fontsize=20)
+            ax3.set_ylabel("Amplitude (a.u.)", fontsize=20)
+            ax3.tick_params(axis="both", which="major", labelsize=16)
+
+            if show_mag_fit:
+                # not used for RPM amplitude
+                a0 = (np.max(magnitude_data) - np.min(magnitude_data)) / 2
+                d0 = np.mean(magnitude_data)
+                b0_mag = 1 / gains[-1] if gains.size and gains[-1] != 0 else 1.0
+                c0_mag = 0.0
+                mag_guess = [a0, b0_mag, c0_mag, d0]
+
+                mag_popt, mag_pcov = self.fit_cosine_iminuit(gains, magnitude_data, mag_guess)
+                mag_popt = self.canonicalize_cos_params(mag_popt)
+                magnitude_fit = self.cosine(gains, *mag_popt)
+                ax3.plot(gains, magnitude_fit, "-", color="green", linewidth=3, label="Fit to |IQ|")
+
+            ax3.legend(loc="best")
+
+            # -------------------- Title text --------------------
+            if config is not None:
+                fig.text(
+                    plot_middle,
+                    0.98,
+                    f"e-f RPM Q{self.QubitIndex + 1}: "
+                    f"Pg: {config['reps']}*{config['rounds']} avgs, "
+                    f"Pe: {config['reps2']}*{config['rounds']} avgs, "
+                    f"A=sqrt(aI^2+aQ^2)={A_amp_IQ:.4f}±{A_amp_IQ_err:.4f}",
+                    fontsize=18,
+                    ha="center",
+                    va="top",
+                )
+            else:
+                fig.text(
+                    plot_middle,
+                    0.98,
+                    f"e-f RPM Q{self.QubitIndex + 1}: "
+                    f"A=sqrt(aI^2+aQ^2)={A_amp_IQ:.4f}±{A_amp_IQ_err:.4f}",
+                    fontsize=18,
+                    ha="center",
+                    va="top",
+                )
+
+            # -------------------- Save --------------------
+            if self.save_figs:
+                today_date = datetime.datetime.now().strftime("%Y-%m-%d")
+                dated_folder_name = f"made_on_{today_date}"
+                outerFolder_expt = os.path.join(self.outerFolder, dated_folder_name)
+                self.create_folder_if_not_exists(outerFolder_expt)
+
+                now = datetime.datetime.now()
+                formatted_datetime = now.strftime("%Y%m%d%H%M%S")
+                file_name = os.path.join(
+                    outerFolder_expt,
+                    f"{filename_ext}Q{self.QubitIndex + 1}_Qtemps_RPM_{formatted_datetime}.png",
+                )
+                fig.savefig(file_name, dpi=fig_quality, bbox_inches="tight")
+
+            plt.close(fig)
+
+            fit_params = {
+                "amp_fit_IQ": amp_fit_IQ,
+                "I_fit": I_fit,
+                "Q_fit": Q_fit,
+                "popt_IQ": popt6,
+                "pcov_IQ": pcov6,
+            }
+
+            return A_amp_IQ, A_amp_IQ_err, fit_params
+
+        except Exception as e:
+            print("Error fitting cosine (joint IQ):", e)
+            return None, None, None
+
     def plot_results(self, I, Q, gains, config = None, fig_quality = 200, use_iminuit_instead = False, filename_ext = ""):
+        """
+        iminuit:
+        Figures out which signal is best (I or Q), fits that one first, then uses the found oscillation frequency in the first
+        fit to fit the other signal component. Optional: can fix the phase offset too.
+        Curve fit:
+        Same thing but the option to fix the oscillation frequency is not included. Neither is the option to fix the phase offset.
+
+        Calculates the rabi amplitude as sqrt(A_I**2 + A_Q**2)
+        """
         try:
             fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
             plt.rcParams.update({'font.size': 18})
@@ -163,6 +452,8 @@ class Temps_EFAmpRabiExperiment:
                     popt_I, pcov_I = self.fit_cosine_iminuit(gains, I, q1_guess_I)
                 else: # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b or c FOR CURVEFIT
                     popt_I, pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
+
+                popt_I = self.canonicalize_cos_params(popt_I) # new
                 fit_cosine_I = self.cosine(gains, *popt_I)
 
                 # Extract shared b,c from I fit
@@ -174,6 +465,8 @@ class Temps_EFAmpRabiExperiment:
                     popt_Q, pcov_Q = self.fit_cosine_iminuit(gains, Q, q1_guess_Q, fix_b=b_shared)
                 else:  # NOTE; I HAVE NOT IMPLEMENTED SHARED USE OF b or c FOR CURVEFIT
                     popt_Q, pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
+
+                popt_Q = self.canonicalize_cos_params(popt_Q) # new
                 fit_cosine_Q = self.cosine(gains, *popt_Q)
 
             else:  # fit_first == 'Q'
@@ -223,6 +516,8 @@ class Temps_EFAmpRabiExperiment:
                 mag_popt, mag_pcov = self.fit_cosine_iminuit(gains, magnitude_data, mag_guess)
             else:
                 mag_popt, mag_pcov = curve_fit(self.cosine, gains, magnitude_data, maxfev=100000, p0=mag_guess)
+
+            mag_popt = self.canonicalize_cos_params(mag_popt) # New
             magnitude_fit = self.cosine(gains, *mag_popt)
 
             # ------------------------------- compute amplitude curve from the I and Q FITS instead of the data --------------------------------------

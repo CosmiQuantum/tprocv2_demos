@@ -1980,15 +1980,9 @@ class PlotRR_noQick:
                         # -------------------- pull fit outputs --------------------
                         I_fit_Pe = fit_params_Pe["I_fit"]
                         Q_fit_Pe = fit_params_Pe["Q_fit"]
-                        popt_I_Pe = fit_params_Pe["popt_I"]
-                        pcov_I_Pe = fit_params_Pe["pcov_I"]
-                        amp_fit_IQ_Pe = fit_params_Pe["amp_fit_IQ"]
 
                         I_fit_Pg = fit_params_Pg["I_fit"]
                         Q_fit_Pg = fit_params_Pg["Q_fit"]
-                        popt_I_Pg = fit_params_Pg["popt_I"]
-                        pcov_I_Pg = fit_params_Pg["pcov_I"]
-                        amp_fit_IQ_Pg = fit_params_Pg["amp_fit_IQ"]
 
                         # -------------------- BIC filtering: cosine must beat line AND exp in at least one quadrature ------------
                         BIC_THRESH_LINE = 12.0  # adjust as needed

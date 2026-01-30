@@ -600,26 +600,6 @@ class SSFTempCalcAndPlots:
 
                     continue
 
-                # --- skewness test ----
-                # mu_e = means[excited_gaussian]
-                # sigma_e = sigmas[excited_gaussian]
-                #
-                # ex = np.asarray(excited_data, float)
-                #
-                # if ex.size >= 3 and sigma_e > 0:
-                #     z = (ex - mu_e) / sigma_e  # data in "sigma units"
-                #     skew_e = np.mean(z ** 3)  # simple skewness
-                # else:
-                #     skew_e = 0.0  # don't penalize tiny samples
-                #
-                # gof = abs(skew_e)  # goodness-of-fit metric
-                #
-                # max_gof = 1.0  # or 1.5 if you want to be looser
-                # if gof > max_gof:
-                #     # excited data are too non-Gaussian -> reject this fit
-                #     print('Failed skewness test. Excited data is too non-Gaussian. Rejected fit.')
-                #     continue
-
                 # -- 1-σ contribution to Pe from the threshold uncertainty --
                 mask_plus = (ig_new <= threshold_mid + threshold_mid_err)
                 Pe_plus = 1.0 - mask_plus.mean()
@@ -1756,6 +1736,8 @@ class SSFTempCalcAndPlots:
         excited_gaussian = 1 - ground_gaussian
 
         order = np.array([ground_gaussian, excited_gaussian])
+        ground_gaussian = 0 # based on how it was sorted inside order array
+        excited_gaussian = 1 # based on how it was sorted inside order array
         means = means[order]
         sigmas = sigmas[order]
         weights = weights[order]
@@ -2667,7 +2649,7 @@ class combined_Qtemp_studies:
                 times_RPM[q].append(t)
                 temps_RPM[q].append(d["T_mK"])
                 errs_RPM[q].append(d["T_mK_err"])
-                print(f'Temp: {d["T_mK"]} +/- {d["T_mK_err"]} mK')
+                # print(f'Temp: {d["T_mK"]} +/- {d["T_mK_err"]} mK')
 
         # --- SSF (g-only) dicts ---
         times_g = all_qubit_timestamps_ssf_g  # {q: [datetime...]}
@@ -2746,7 +2728,7 @@ class combined_Qtemp_studies:
 
             # ax.xaxis.set_major_locator(mdates.AutoDateLocator()) # automatic
             ax.yaxis.set_major_locator(MaxNLocator(nbins=4, prune=None))
-            ax.set_ylim(50, 100)
+            #ax.set_ylim(50, 110)
             ax.xaxis.set_major_formatter(date_fmt)
             ax.tick_params(axis='x', rotation=45, labelsize=9)
 

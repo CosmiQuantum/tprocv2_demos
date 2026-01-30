@@ -179,10 +179,10 @@ _, Ig, Qg, Ie, Qe, _ = make_fake_rpm_two_scans(
     noise_sigma_I_e=0.35)
 
 # Ground
-_, _, A_g, sigma_Ag, _, _ = temps_class_plts.plot_results(Ig, Qg, gains, use_iminuit_instead = use_iminuit_instead)
+A_g, sigma_Ag, _= temps_class_plts.plot_results(Ig, Qg, gains, use_iminuit_instead = use_iminuit_instead)
 
 # Excited
-_, _, A_e, sigma_Ae, _, _ = temps_class_plts.plot_results(Ie, Qe, gains, use_iminuit_instead = use_iminuit_instead)
+A_e, sigma_Ae, _ = temps_class_plts.plot_results(Ie, Qe, gains, use_iminuit_instead = use_iminuit_instead)
 
 temp_class_calcs = PlotRR_noQick(date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
                  outerFolder_save_plots, unique_folder_path, run_num, filter_out_bad_amp_fits)
