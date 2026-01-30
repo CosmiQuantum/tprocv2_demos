@@ -361,15 +361,15 @@ def find_folders(run, study, substudy):
 
 run = 'run33e'
 study = 'Cs_TimeStudy_Tomography' #SC_Tomography' #DDoff_SC_HoleOpen' #'DDon_SC_HoleClosed' #'DDon_SC_HoleOpen' #'Longtime_Study
-substudy = 'AllQ_Tomography' #'SingleQ4_Tomography' #AllQ_Tomography'
+substudy = 'SingleQ4_Tomography' #'SingleQ4_Tomography' #AllQ_Tomography'
 
 qubits = [3] #[0, 1, 2, 3]
 qubit = 3
 
 
 # ### To run single timestamp folder ###
-date = '2025-12-04' #'2025-12-11'
-timestamp = '2025-12-04_13-36-05' #'2025-12-11_08-06-54'
+date = '2025-12-11' #'2025-12-11'
+timestamp = '2025-12-11_08-06-54' #'2025-12-11_08-06-54'
 studyFolder = f'/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}/{date}/{timestamp}/study_data'
 if not os.path.exists(f'/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}/{date}/{timestamp}/analysis_plots'):
     os.makedirs(f'/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}/{date}/{timestamp}/analysis_plots')
@@ -379,7 +379,7 @@ start = 0
 stop = 39
 
 metadata, data = load_allQtomo_data(studyFolder)
-#plot_2dtomo_data(metadata, data, qubit, start, stop, backsub = False, saveFolder = plotFolder)
+plot_2dtomo_data(metadata, data, qubit, start, stop, backsub = False, saveFolder = plotFolder)
 
 #metadata, data = load_singleQtomo_data(studyFolder, qubit, start, stop, all = False) #load_allQtomo_data(studyFolder)
 #print(len(data[qubit]['xi'][0]))
