@@ -1,5 +1,7 @@
 # tprocv2_demos
 
+Note: this branch (gb_nexusrun33) was what we tried to use at the beginning of NEXUS run 33 but there were too many bugs, so we switched to a new branch (gb_nexusquiet_r33) to incorporate later changes from the QUIET code and make it work at NEUXS.
+
 Some basic qubit demo scripts using the QICK tProcessorv2
 
 For initial tProcessorv2 demos, see:
