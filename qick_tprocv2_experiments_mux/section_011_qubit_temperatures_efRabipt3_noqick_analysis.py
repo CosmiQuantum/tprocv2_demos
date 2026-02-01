@@ -228,15 +228,15 @@ class Temps_EFAmpRabiExperiment:
 
     def canonicalize_cos_params(self,popt):
         """
-        Canonicalize cosine params so the fit is unique: enforce A >= 0 ----
+        Enforce A >= 0 and confine phase to [-pi, pi].
         Model: y = A*cos(b*x + c) + d
-        Identity: A*cos(.) == (-A)*cos(. + pi)
+        Identity: A*cos(theta) == (-A)*cos(theta + pi)
         """
         popt = np.array(popt, dtype=float).copy()
         if popt[0] < 0:  # if A < 0
             popt[0] *= -1  # flip amplitude
             popt[2] += np.pi  # shift phase by pi
-        # wrap phase into [-pi, pi] to keep it stable / comparable across scans
+        # maps phase into [-pi, pi) to keep it stable / comparable across scans and ensure unique sol
         popt[2] = (popt[2] + np.pi) % (2 * np.pi) - np.pi
         return popt
 
@@ -321,10 +321,10 @@ class Temps_EFAmpRabiExperiment:
 
             # -------------------- Third panel: amplitude diagnostics --------------------
             magnitude_data = np.sqrt(I ** 2 + Q ** 2)
-            amp_fit_IQ = np.sqrt(I_fit ** 2 + Q_fit ** 2)
+            fit_IQ = np.sqrt(I_fit ** 2 + Q_fit ** 2)
 
             ax3.plot(gains, magnitude_data, "-", linewidth=2, label="|IQ| data")
-            ax3.plot(gains, amp_fit_IQ, "-", color="orange", linewidth=3, label="sqrt(I_fit^2 + Q_fit^2)")
+            ax3.plot(gains, fit_IQ, "-", color="orange", linewidth=3, label="sqrt(I_fit^2 + Q_fit^2)")
             ax3.set_xlabel("Gain (a.u.)", fontsize=20)
             ax3.set_ylabel("Amplitude (a.u.)", fontsize=20)
             ax3.tick_params(axis="both", which="major", labelsize=16)
@@ -386,7 +386,7 @@ class Temps_EFAmpRabiExperiment:
             plt.close(fig)
 
             fit_params = {
-                "amp_fit_IQ": amp_fit_IQ,
+                "fit_IQ": fit_IQ,
                 "I_fit": I_fit,
                 "Q_fit": Q_fit,
                 "popt_IQ": popt6,
@@ -521,8 +521,8 @@ class Temps_EFAmpRabiExperiment:
             mag_popt = self.canonicalize_cos_params(mag_popt) # New
             magnitude_fit = self.cosine(gains, *mag_popt)
 
-            # ------------------------------- compute amplitude curve from the I and Q FITS instead of the data --------------------------------------
-            amp_fit_IQ = np.sqrt(fit_cosine_I ** 2 + fit_cosine_Q ** 2) # this constructs the point-by-point magnitude of the fitted IQ vector
+            # ------------------------------- compute amplitude curve from the I and Q FITS --------------------------------------
+            fit_IQ = np.sqrt(fit_cosine_I ** 2 + fit_cosine_Q ** 2) # this constructs the point-by-point magnitude of the fitted IQ vector
             A_I = popt_I[0] # I-curve amplitude
             A_Q = popt_Q[0] # Q-curve amplitude
             A_amp_IQ = np.sqrt(A_I ** 2 + A_Q ** 2) # Combined IQ Amplitude from the amplitudes of the I and Q fits
@@ -543,14 +543,13 @@ class Temps_EFAmpRabiExperiment:
 
             ###################### Geerlings-style TEST: rotate+project IQ onto a fixed axis #########################3
             if rotate_using_ssf and ssf_angle is not None:
-                # Choose a single projection angle alpha and build S = I cos(a) + Q sin(a)
-                # choose alpha from the FIT amplitudes so S captures the full oscillation
-                # This makes the cosine amplitude of S equal to sqrt(A_I^2 + A_Q^2) *IF* the phases are consistent.
+                # Choose a single projection angle and build S = I cos(theta) + Q sin(theta)
+                # This makes the cosine amplitude of S equal to sqrt(A_I^2 + A_Q^2) if the phases are consistent.
 
-                # if you didn't have an ssf angle you could maybe use this:
-                #alpha = np.arctan2(A_Q, A_I)  # angle of the oscillation vector in IQ
+                # if you don't have an ssf angle you could maybe use this:
+                #alpha = np.arctan2(A_Q, A_I)  # angle of the oscillation vector in IQ from the data
 
-                # Build the combined 1D signal from RAW data (not fits)
+                # Build the combined 1D signal from RAW data 
                 S_data = np.cos(ssf_angle) * np.asarray(I) + np.sin(ssf_angle) * np.asarray(Q)
 
                 # Fit S_data to the SAME cosine model we already use
@@ -559,7 +558,7 @@ class Temps_EFAmpRabiExperiment:
                 b_guess_S = b_shared if 'b_shared' in locals() else (1 / gains[-1])  # reuse shared b if available
                 c_guess_S = 0.0
 
-                S_guess = [a_guess_S, b_guess_S, c_guess_S, d_guess_S]
+                S_guess = [a_guess_S, b_guess_S, c_guess_S, d_guess_S] # array of initial guesses to feed iminuit
 
                 if use_iminuit_instead:
                     popt_S, pcov_S = self.fit_cosine_iminuit(gains, S_data, S_guess, fix_b=b_guess_S)
@@ -573,7 +572,7 @@ class Temps_EFAmpRabiExperiment:
                 sigma_A_S = np.sqrt(np.diag(pcov_S))[0] if pcov_S is not None else np.nan
 
                 # Plot it as an extra "Geerlings-style" curve (optional)
-                ax3.plot(gains, S_data, '-', linewidth=2, label=f"S = Icos(alpha)+Qsin(alpha) (alpha={ssf_angle:.3f})")
+                ax3.plot(gains, S_data, '-', linewidth=2, label=f"S = Icos(theta)+Qsin(theta) (theta={ssf_angle:.3f})")
                 ax3.plot(gains, fit_cosine_S, '-', linewidth=3, label=f"Fit to S, A_S={A_S:.4f}")
 
                 #print(f"[Geerlings-style] alpha={alpha:.6f} rad, A_S={A_S:.6f} +/- {sigma_A_S:.6f}")
@@ -589,15 +588,17 @@ class Temps_EFAmpRabiExperiment:
                          fontsize=18, ha='center', va='top')
 
             # --- Plot amplitude (magnitude) data and its cosine fit on the third subplot ---
-            # ax3.plot(gains, magnitude_data, '-', label="Amp Data", linewidth=2)
-            # ax3.plot(gains, magnitude_fit, '-', color='green', linewidth=3, label=f"Fit to Magnitude Data")
+            ax3.plot(gains, magnitude_data, '-', label="Magnitude Data", linewidth=2)
+            #ax3.plot(gains, magnitude_fit, '-', color='green', linewidth=3, label=f"Fit to Magnitude Data")
 
-            # Test: curve made from the fits of the I + Q data
-            # ax3.plot(gains, amp_fit_IQ, '-', color='orange', linewidth=3, label=f"sqrt(I_fit**2 + Q_fit**2)") # for a test
+            # curve made from the fits of the I + Q data
+            ax3.plot(gains, fit_IQ, '-', color='orange', linewidth=3, label=f"sqrt(I_fit**2 + Q_fit**2)")
 
             ax3.set_xlabel("Gain (a.u.)", fontsize=20)
-            # ax3.set_ylabel("Amplitude (a.u.)", fontsize=20)
-            ax3.set_ylabel("S(alpha), a.u." , fontsize=20)
+            if rotate_using_ssf and ssf_angle is not None:
+                ax3.set_ylabel("S(theta) (a.u.)" , fontsize=20)
+            else:
+                ax3.set_ylabel("Magnitude (a.u.)", fontsize=20)
             ax3.tick_params(axis='both', which='major', labelsize=16)
             ax3.legend(loc='best')
 
@@ -615,13 +616,17 @@ class Temps_EFAmpRabiExperiment:
                 # print('Plots saved to this folder:',outerFolder_expt)
             plt.close(fig)
 
-            fit_params = {"amp_fit_IQ": amp_fit_IQ,
+            fit_params = {"fit_IQ": fit_IQ,
                         "I_fit": fit_cosine_I,
                         "Q_fit": fit_cosine_Q,
                         "popt_I": popt_I,
                         "pcov_I": pcov_I,
                         "popt_Q": popt_Q,
-                        "pcov_Q": pcov_Q}
+                        "pcov_Q": pcov_Q,
+                        "A_I": A_I,
+                        "sigma_A_I": sigma_A_I,
+                        "A_Q": A_I,
+                        "sigma_A_Q": sigma_A_I}
 
             if rotate_using_ssf and ssf_angle is not None:
                 return A_S, sigma_A_S, fit_params

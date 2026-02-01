@@ -32,7 +32,7 @@ final_figure_quality = 200 # plot quality
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
 replot_RPMs = False # Do you want to re-plot rabi population measurements from RR data but not extract temps? Only make plots
 save_figsRR = True # Do you want to save (or not save) the RR RPM plots?
-save_figs = False # To be used in general for any function or class to save (or not save) plots.
+save_figs = True # To be used in general for any function or class to save (or not save) plots.
 save_figs_SSF = False # Do you want to save gaussian fit plots while calculating ssf qtemps? iminuit case only
 fit_saved = False # Not used here, set to false.
 exclude_temp_sweeps = True # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
@@ -44,7 +44,7 @@ pre_sciencerun6_data = True # Do you also want to incorporate the run 6 pre-scie
 
 use_iminuit_gdoublegauss_ssf = True # do you want to fit the g-state to a double gaussian using iminuit? The default is GMM instead
 
-rpm_combine_IQ_signal = True # uses ssf angle to rotate rabi population measurement data into a combined IQ signal lying on the same axis
+rpm_combine_IQ_signal = False # uses ssf angle to rotate rabi population measurement data into a combined IQ signal lying on the same axis
 
 figure_quality = 200
 theta = 0

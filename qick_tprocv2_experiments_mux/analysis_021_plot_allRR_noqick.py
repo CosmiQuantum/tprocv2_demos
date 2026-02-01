@@ -2358,6 +2358,16 @@ class PlotRR_noQick:
                         I_fit_Pg = fit_params_Pg["I_fit"]
                         Q_fit_Pg = fit_params_Pg["Q_fit"]
 
+                        A_I_Pe = fit_params_Pe["A_I"]
+                        sigma_A_I_Pe = fit_params_Pe["sigma_A_I"]
+                        A_Q_Pe = fit_params_Pe["A_Q"]
+                        sigma_A_Q_Pe = fit_params_Pe["sigma_A_Q"]
+
+                        A_I_Pg = fit_params_Pg["A_I"]
+                        sigma_A_I_Pg = fit_params_Pg["sigma_A_I"]
+                        A_Q_Pg = fit_params_Pg["A_Q"]
+                        sigma_A_Q_Pg = fit_params_Pg["sigma_A_Q"]
+
                         # -------------------- BIC filtering: cosine must beat line AND exp in at least one quadrature ------------
                         BIC_THRESH_LINE = 12.0  # adjust as needed
                         BIC_THRESH_EXP = 15.0  # adjust as needed. #20 worked well for QUIET run 8
@@ -2574,10 +2584,18 @@ class PlotRR_noQick:
 
                         if T_err is not None: # qubit index starts at zero
                             file_result['qubits'][int(q_key)] = { # You're accessing the 'qubits' dictionary inside file_result and adding info for the qubit
-                                'A1': A_amp_IQ_Pe, # Ae
-                                'A1_err': A_amp_IQ_err_Pe,
-                                'A2_err': A_amp_IQ_err_Pg,
-                                'A2': A_amp_IQ_Pg, # Ag
+                                'A1': A_amp_IQ_Pe, # Ae, the rpm amplitude of the Pe sequence
+                                'A1_err': A_amp_IQ_err_Pe, # Ae error
+                                'A_I_1': A_I_Pe, # I-curve amplitude for Pe sequence
+                                'sigma_A_I_1': sigma_A_I_Pe, # I-curve amplitude error for Pe sequence
+                                'A_Q_1': A_Q_Pe, # Q-curve amplitude for Pe sequence
+                                'sigma_A_Q_1': sigma_A_Q_Pe, # Q-curve amplitude error for Pe sequence
+                                'A2': A_amp_IQ_Pg, # Ag, the rpm amplitude of the Pg sequence
+                                'A2_err': A_amp_IQ_err_Pg,  # Ag error
+                                'A_I_2': A_I_Pg,  # I-curve amplitude for Pe sequence
+                                'sigma_A_I_2': sigma_A_I_Pg,  # I-curve amplitude error for Pe sequence
+                                'A_Q_2': A_Q_Pg,  # Q-curve amplitude for Pe sequence
+                                'sigma_A_Q_2': sigma_A_Q_Pg,  # Q-curve amplitude error for Pe sequence
                                 'T_mK': T_mK,
                                 'T_mK_err': T_err,
                                 'P_e': P_e,
