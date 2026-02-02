@@ -28,6 +28,7 @@ from matplotlib.dates import DateFormatter
 import matplotlib.pyplot as plt
 save_figs = True
 figure_quality = 100 #ramp this up to like 500 for presentation plots
+from analysis_021_plot_allRR_noqick import PlotRR_noQick
 
 class SSFTempCalcAndPlots:
     def __init__(self, figure_quality, number_of_qubits, run_num, save_figs):
@@ -2622,7 +2623,7 @@ class combined_Qtemp_studies:
     def Qtemps_vs_time_comb_allQs_1col(self, all_qubit_temperatures_ssf_g, all_qubit_timestamps_ssf_g,
                                               out_dir, all_files_Qtemp_results_RPMs, all_qubit_temps_errs_g,
                                             restrict_time_xaxis=False, plot_extra_event_lines=False, rad_events_plot_lines=False,
-                                                qubits_to_plot = None):
+                                                qubits_to_plot = None, plot_rpm_I_only=False, plot_rpm_Q_only=False):
         """Works for more than 2 qubits and does not plot g-e ssf method, only rpm and regular ground state ssf method
             Always plots err bars.
         """
@@ -2634,6 +2635,16 @@ class combined_Qtemp_studies:
         temps_RPM = {q: [] for q in range(num_qubits)}
         errs_RPM = {q: [] for q in range(num_qubits)}
 
+        if plot_rpm_I_only:
+            times_RPM_I = {q: [] for q in range(num_qubits)}
+            temps_RPM_I = {q: [] for q in range(num_qubits)}
+            errs_RPM_I = {q: [] for q in range(num_qubits)}
+
+        if plot_rpm_Q_only:
+            times_RPM_Q = {q: [] for q in range(num_qubits)}
+            temps_RPM_Q = {q: [] for q in range(num_qubits)}
+            errs_RPM_Q = {q: [] for q in range(num_qubits)}
+
         for rec in all_files_Qtemp_results_RPMs:
             for q in range(num_qubits):
                 d = rec.get("qubits", {}).get(q)
@@ -2643,14 +2654,82 @@ class combined_Qtemp_studies:
                 # if d["T_mK_err"]/d["T_mK"] > 0.5:
                 #     continue
 
-                if d["T_mK"] > 600:
+                cutoff_temp = 600
+                if d["T_mK"] > cutoff_temp:
                     continue
 
                 t = datetime.datetime.fromtimestamp(d["date"])
                 times_RPM[q].append(t)
                 temps_RPM[q].append(d["T_mK"])
                 errs_RPM[q].append(d["T_mK_err"])
-                # print(f'Temp: {d["T_mK"]} +/- {d["T_mK_err"]} mK')
+
+                qf = d.get("qubit_freq_MHz", None)
+                ef = d.get("Qfreq_fit_err", None)  # MHz
+
+                rr = None
+                if plot_rpm_Q_only or plot_rpm_I_only:
+                    date = ""
+                    figure_quality = ""
+                    save_figs = ""
+                    fit_saved = ""
+                    signal = ""
+                    run_name = ""
+                    number_of_qubits = ""
+                    outerFolder = ""
+                    outerFolder_save_plots = ""
+                    unique_folder_path = ""
+                    run_num = ""
+                    filter_out_bad_amp_fits = ""
+                    rr = PlotRR_noQick(date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
+                                        outerFolder_save_plots, unique_folder_path, run_num, filter_out_bad_amp_fits)
+
+                # ------------------ Optional RPM from I-only amplitudes ------------------
+                if plot_rpm_I_only:
+                    A1I = d.get("A_I_1", None)
+                    A2I = d.get("A_I_2", None)
+                    sA1I = d.get("sigma_A_I_1", None)
+                    sA2I = d.get("sigma_A_I_2", None)
+
+                    if (A1I is not None and A2I is not None and qf is not None
+                            and sA1I is not None and sA2I is not None and ef is not None):
+
+                        out = rr.Qubit_Temperature_Convert(A1I, A2I, qf)
+                        if out is not None:
+                            _, TmK_I, Pe_I, _ = out
+
+                            Terr_I = rr.compute_temperature_error_RPM(
+                                A1=A1I, A2=A2I, Pe=Pe_I, T_mK=TmK_I, qubit_freq_MHz=qf,
+                                sigma_A1=sA1I, sigma_A2=sA2I, sigma_qfreq_MHz=ef
+                            )
+
+                            if np.isfinite(TmK_I) and np.isfinite(Terr_I) and TmK_I <= 600:
+                                times_RPM_I[q].append(t)
+                                temps_RPM_I[q].append(TmK_I)
+                                errs_RPM_I[q].append(Terr_I)
+
+                # ------------------ Optional RPM from Q-only amplitudes ------------------
+                if plot_rpm_Q_only:
+                    A1Q = d.get("A_Q_1", None)
+                    A2Q = d.get("A_Q_2", None)
+                    sA1Q = d.get("sigma_A_Q_1", None)
+                    sA2Q = d.get("sigma_A_Q_2", None)
+
+                    if (A1Q is not None and A2Q is not None and qf is not None
+                            and sA1Q is not None and sA2Q is not None and ef is not None):
+
+                        out = rr.Qubit_Temperature_Convert(A1Q, A2Q, qf)
+                        if out is not None:
+                            _, TmK_Q, Pe_Q, _ = out
+
+                            Terr_Q = rr.compute_temperature_error_RPM(
+                                A1=A1Q, A2=A2Q, Pe=Pe_Q, T_mK=TmK_Q, qubit_freq_MHz=qf,
+                                sigma_A1=sA1Q, sigma_A2=sA2Q, sigma_qfreq_MHz=ef
+                            )
+
+                            if np.isfinite(TmK_Q) and np.isfinite(Terr_Q) and TmK_Q <= cutoff_temp:
+                                times_RPM_Q[q].append(t)
+                                temps_RPM_Q[q].append(TmK_Q)
+                                errs_RPM_Q[q].append(Terr_Q)
 
         # --- SSF (g-only) dicts ---
         times_g = all_qubit_timestamps_ssf_g  # {q: [datetime...]}
@@ -2692,11 +2771,15 @@ class combined_Qtemp_studies:
 
         date_fmt = DateFormatter('%m-%d-%H')
 
-        # Only two methods now: RPM + SSF(g-only)
         methods = [
-            ("RPM Qtemps", times_RPM, temps_RPM, errs_RPM, "orange"),
-            ("SSF Qtemps", times_g, temps_g, errs_g, "blue"),
-        ]
+            ("RPM Qtemps (IQ amp)", times_RPM, temps_RPM, errs_RPM, "orange"),
+            ("SSF Qtemps", times_g, temps_g, errs_g, "blue")]
+
+        if plot_rpm_I_only:
+            methods.insert(1, ("RPM Qtemps (I-only)", times_RPM_I, temps_RPM_I, errs_RPM_I, "green"))
+
+        if plot_rpm_Q_only:
+            methods.insert(1, ("RPM Qtemps (Q-only)", times_RPM_Q, temps_RPM_Q, errs_RPM_Q, "purple"))
 
         for ax, q in zip(axes, qubits_to_plot):
             for label, tdict, ydict, edict, color in methods:
