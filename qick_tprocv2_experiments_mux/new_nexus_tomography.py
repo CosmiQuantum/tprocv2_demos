@@ -17,7 +17,7 @@ class AllQubitTomographyMeasurement:
         self.outerFolder = outerFolder
         ### stuff for bias PS
         self.progress = progress
-        self.error_log = os.path.join(self.outerFolder, "errors.log") ##Decide if we still need an error log and how to populate
+        self.error_log = os.path.join(self.outerFolder, "errors.log") ##Error log for qick errors (and volt errors if we use them)
         self.measure_qubits = measure_qubits
         self.n_qubits = len(measure_qubits)
 
@@ -81,8 +81,9 @@ class AllQubitTomographyMeasurement:
             self.create_h5_file(vsweep, rounds)
             self.h5_file = h5py.File(self.h5_path, "a")
 
+        bias_source = self.init_bias_source()
         try:
-            self.bias_sweep(soccfg, soc, vsweep, rounds, plot_data = plot, save_data = save)
+            self.bias_sweep(soccfg, soc, bias_source, vsweep, rounds, plot_data = plot, save_data = save)
         except KeyboardInterrupt:
             print(f"User stopped run - data saved through last completed round (R{self.rows_written})")
         finally:
@@ -90,6 +91,8 @@ class AllQubitTomographyMeasurement:
                 self.h5_file.flush()
                 self.h5_file.close()
                 self.h5_file = None
+            bias_source.setSourceVoltage(0)
+            bias_source.setOutputState(enable=False)
 
     def create_h5_file(self, vsweep, rounds):
         folder_data = os.path.join(self.outerFolder, 'study_data')
@@ -166,17 +169,22 @@ class AllQubitTomographyMeasurement:
         self.rows_written += 1
         f.attrs["rows_written"] = self.rows_written
 
+    def init_bias_source(self):
+        bias_source = Keithley2400(server_ip = "192.168.0.45", server_port = 4001)
+        bias_source.clearErrors()
+        bias_source.reset()
+        bias_source.initializeVoltageSource(vrange=0.2, current_limit=1e-6, enable_output=False)
+        return bias_source
+
     def log_voltage_error(self):
         print('hi world')
         #idk if this makes sense anymore with new supply, figure out
 
-    def bias_sweep(self, soccfg, soc, vsweep, rounds, plot_data=False, save_data=True):
+    def bias_sweep(self, soccfg, soc, bias_source, vsweep, rounds, plot_data=False, save_data=True):
         n_pts = len(vsweep)
-        bias_ip = 1 #get actual IP
 
-        bias_source = Keithley2400(bias_ip, server_port=1) #get server port
-
-        #rest of set up voltage supply (may change)
+        bias_source.setSourceVoltage(0)
+        bias_source.setOutputState(enable=True)
 
         q1_tomography = TomographyProgram(soccfg, reps = self.q1_config['reps'], final_delay=self.q1_config['relax_delay'],
                                           cfg = self.q1_config)
@@ -201,8 +209,8 @@ class AllQubitTomographyMeasurement:
 
             for index, v in enumerate(vsweep):
                 try:
-                    #set voltage = v
-                    print('voltage set')
+                    bias_source.setSourceVoltage(v)
+                    #print('voltage set')
                 except Exception as e:
                     print(f"Couldn't bias a qubit: {e}")
 
@@ -250,6 +258,8 @@ class AllQubitTomographyMeasurement:
             ## Plot data
             if plot_data:
                 self.plot_all_tomography(vsweep, q_data, volt_flags, round_num, formatted_datetime)
+        bias_source.setSourceVoltage(0)
+        bias_source.setOutputState(enable=False)
         return
 
     def plot_all_tomography(self, vsweep, qdata, volt_flags, round_num, formatted_datetime):

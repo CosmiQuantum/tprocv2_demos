@@ -10,7 +10,7 @@ import csv
 import datetime
 import time
 
-from NetDrivers import E36300
+from NetDrivers import E36300, Keithley2400
 
 class BiasQubitSpectroscopy:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, experiment, unmasking_resgain=False):
@@ -32,13 +32,18 @@ class BiasQubitSpectroscopy:
 
         print(f'Q {self.QubitIndex + 1} Qubit Spec configuration: ', self.config)
 
-    def run(self, soccfg, soc, start_volt, stop_volt, volt_pts, plot_sweeps=True, plot_2d=True, plot_2dbacksub = True):
+    def run(self, soccfg, soc, PS, start_volt, stop_volt, volt_pts, plot_sweeps=True, plot_2d=True, plot_2dbacksub = True):
 
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
 
         vsweep = np.linspace(start_volt, stop_volt, volt_pts, endpoint=True)
-        Is, Qs, amps, freqs = self.sweep_bias(soccfg, soc, vsweep, formatted_datetime, save_csvs=True)
+        if PS == 'Keithley':
+            Is, Qs, amps, freqs = self.sweep_bias_Keithley(soccfg, soc, vsweep, formatted_datetime, save_csvs=True)
+        elif PS == 'Keysight':
+            Is, Qs, amps, freqs = self.sweep_bias_E36300(soccfg, soc, vsweep, formatted_datetime, save_csvs=True)
+        else:
+            raise ValueError(f"PS {PS} is not accepted. Must be  'Keithley' or 'Keysight'.")
 
         if plot_sweeps:
             self.plot_sweeps(vsweep, Is, Qs, freqs, formatted_datetime)
@@ -51,7 +56,71 @@ class BiasQubitSpectroscopy:
 
         return
 
-    def sweep_bias(self, soccfg, soc, vsweep, timestamp, save_csvs=True):
+    def sweep_bias_Keithley(self, soccfg, soc, vsweep, timestamp, save_csvs=True):
+        qubit_index = int(self.QubitIndex)
+        bias = Keithley2400(server_ip="192.168.0.45", server_port=4001)
+        bias.clearErrors()
+        bias.reset()
+        bias.initializeVoltageSource(vrange=0.2, current_limit=1e-6, enable_output=False)
+        bias.setSourceVoltage(0)
+        bias.setOutputState(enable=True)
+
+        print(f"Qubit_index {qubit_index}")
+
+        I_arr = []
+        Q_arr = []
+        amps_arr = []
+        freq_arrs = []
+
+        for index, v in enumerate(vsweep):
+            voltage = round(v, 3)
+            print(f"Setting bias to {voltage}V")
+            bias.setSourceVoltage(voltage)
+
+            qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'],
+                                                  final_delay=self.exp_cfg['relax_delay'], cfg=self.config)
+            iq_list = qspec.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=True)
+            I = iq_list[self.QubitIndex][0, :, 0]
+            Q = iq_list[self.QubitIndex][0, :, 1]
+            amps = np.abs(I + 1j * Q)
+            freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
+            I_arr.append(I)
+            Q_arr.append(Q)
+            amps_arr.append(amps)
+            freq_arrs.append(freqs)
+        bias.setSourceVoltage(0)
+        bias.setOutputState(enable=False)
+
+        freq_arr = freq_arrs[0]
+
+        if save_csvs == True:
+            outerFolder_expt = os.path.join(self.outerFolder, timestamp)
+            self.experiment.create_folder_if_not_exists(outerFolder_expt)
+            # now = datetime.datetime.now()
+            # formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            file_name_Iarr = os.path.join(outerFolder_expt, f"{timestamp}_BiasSpec_Q{self.QubitIndex + 1}_Iarr")
+            file_name_Qarr = os.path.join(outerFolder_expt, f"{timestamp}_BiasSpec_Q{self.QubitIndex + 1}_Qarr")
+            file_name_amparr = os.path.join(outerFolder_expt, f"{timestamp}_BiasSpec_Q{self.QubitIndex + 1}_amparr")
+            file_name_freqarr = os.path.join(outerFolder_expt, f"{timestamp}_BiasSpec_Q{self.QubitIndex + 1}_freqarr")
+            file_name_vsweep = os.path.join(outerFolder_expt, f"{timestamp}_BiasSpec_Q{self.QubitIndex + 1}_vsweep")
+            with open(f"{file_name_Iarr}.csv", 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerows(I_arr)
+            with open(f"{file_name_Qarr}.csv", 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerows(Q_arr)
+            with open(f"{file_name_amparr}.csv", 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerows(amps_arr)
+            with open(f"{file_name_freqarr}.csv", 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(freq_arr)
+            with open(f"{file_name_vsweep}.csv", 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(vsweep)
+
+        return I_arr, Q_arr, amps_arr, freq_arr
+    def sweep_bias_E36300(self, soccfg, soc, vsweep, timestamp, save_csvs=True):
 
         Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44', '192.168.0.41'] #IP address of bias PS (qubits 1-3 are the same PS)
         Bias_ch = [1, 2, 3, 1] #Channel number of qubit 1-4 on associated PS
@@ -75,8 +144,6 @@ class BiasQubitSpectroscopy:
             print(f"Setting bias to {voltage}V")
             set_v = BiasPS.setVoltage(voltage, Bias_ch[qubit_index])
             print(set_v)
-            #time.sleep(3)
-
 
             qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'], final_delay = self.exp_cfg['relax_delay'], cfg=self.config)
             iq_list = qspec.acquire(soc, soft_avgs = self.exp_cfg["rounds"], progress=True)
@@ -84,23 +151,14 @@ class BiasQubitSpectroscopy:
             Q = iq_list[self.QubitIndex][0, :, 1]
             amps = np.abs(I + 1j * Q)
             freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
-            #print(freqs)
             I_arr.append(I)
             Q_arr.append(Q)
             amps_arr.append(amps)
             freq_arrs.append(freqs)
-        #BiasPS.disable(Bias_ch[qubit_index])
         set_v = BiasPS.setVoltage(0, Bias_ch[qubit_index])
         print(set_v)
 
         freq_arr = freq_arrs[0]
-
-        # #Resave as numpy arrays for plotting
-        # I_arr = np.array(I_list)
-        # Q_arr = np.array(Q_list)
-        # amps_arr = np.array(amps_list) #shape  is (len(vsweep), len(freqs))
-        # freq_arr = np.array(freq_list[0]) #Just saving one freq sweep since they're all the same
-        # print(freq_arr)
 
         if save_csvs==True:
 

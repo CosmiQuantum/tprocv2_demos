@@ -20,11 +20,13 @@ start_voltage = [0.03] #[0.0]*4 #0.06 #V
 stop_voltage = [0.06] #[0.15]*4 #0.08 #0.15 max!!! #V
 voltage_pts = [10] #*4
 
+PS = 'Keithley' #'Keysight'
+
 Unmask = True
 
 for i,q in enumerate(qubit):
     bias_spec = BiasQubitSpectroscopy(q-1, tot_num_of_qubits, outerFolder, experiment, Unmask)
-    bias_spec.run(experiment.soccfg, experiment.soc, start_voltage[i], stop_voltage[i], voltage_pts[i], plot_sweeps=True, plot_2d=True, plot_2dbacksub=True)
+    bias_spec.run(experiment.soccfg, experiment.soc, PS, start_voltage[i], stop_voltage[i], voltage_pts[i], plot_sweeps=True, plot_2d=True, plot_2dbacksub=True)
     print(bias_spec.config)
 
 del bias_spec
