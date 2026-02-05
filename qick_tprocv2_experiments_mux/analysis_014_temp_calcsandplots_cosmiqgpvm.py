@@ -590,7 +590,7 @@ class SSFTempCalcAndPlots:
                     print(f'Rejected a fit with Likelihood ratio test score < {lr_stat_limit}')
                     # not convincingly bimodal --> skip this dataset, it is better described by a single gaussian
 
-                    if do_plots:
+                    if do_plots and (qid == 1 or qid == 2 or qid == 3 or qid == 5):
                         bad_plots_path = os.path.join(save_figs_path, "bad_fits_LRT_failed")
                         os.makedirs(bad_plots_path, exist_ok=True)
                         self.plot_gaussians_qtemps(qid, bad_plots_path, ig_new, ground_data,
@@ -635,7 +635,7 @@ class SSFTempCalcAndPlots:
                 sigma_TmK = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
 
                 # Plotting
-                if do_plots:
+                if do_plots and (qid == 1 or qid == 2 or qid == 3 or qid == 5):
                     self.plot_gaussians_qtemps(qid, save_figs_path, ig_new, ground_data,
                                                excited_data, ground_gaussian,
                                                excited_gaussian, pop_threshold,
@@ -1488,15 +1488,28 @@ class SSFTempCalcAndPlots:
             tolerance_seconds = 10
 
         elif self.run_num == 6:
-            folder_qspec = "optimization"
+            # Identify whether we're processing pre-science-run RR data by path substring
+            presr_tag = "ge_round_robin_presciencerun_data"
+            is_preSR = any(presr_tag in str(p) for p in (paths or []))
+
+            if is_preSR:
+                folder_qspec = "study_data"
+            else:
+                folder_qspec = "optimization"
             expt_name_qspec = "qspec_ge"
             datagroup_qspec = 'QSpec'
 
+            if is_preSR:
+                folder_ssf = "study_data"
+            else:
+                folder_ssf = "optimization"
             expt_name_ssf = "ss_ge"
             datagroup_ssf = 'SS'
-            folder_ssf = "optimization"
 
-            tolerance_seconds = 600
+            if is_preSR:
+                tolerance_seconds = 10
+            else:
+                tolerance_seconds = 600
 
         elif self.run_num == 7:
             folder_qspec = "study_data"

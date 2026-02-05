@@ -25,7 +25,7 @@ from analysis_006_T1_vs_time_plots import T1VsTime
 from analysis_007_T2R_vs_time_plots import T2rVsTime
 from analysis_008_T2E_vs_time_plots import T2eVsTime
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 8
+run_num = 6
 run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence analysis it's defined in its respective section
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
@@ -367,14 +367,14 @@ paths_SSFmethods_SR = [
     #"/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/"
 
 # All pre-Science-Run Data
-paths_SSFmethods_preSR = ["ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-21",
-                        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-22",
-                        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-23",
-                        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-24",
-                        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-26",
-                        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-28",
-                        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-01",
-                        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-02"]
+paths_SSFmethods_preSR = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-21",
+                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-22",
+                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-23",
+                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-24",
+                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-26",
+                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-28",
+                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-01",
+                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-02"]
 
 path_saveplots_fits_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r6" # where to save ssf plots to check gaussian fits
 path_saveplots_ssf_qtemps_vsT_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run6" # to save qubit temps vs time via ssf methods
@@ -424,9 +424,10 @@ path_saveplots_fits_run8 ="/data/QICK_data/run8/6transmon/round_robin/AB_paper_d
 path_saveplots_ssf_qtemps_vsT_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_analysis" # to save qubit temps vs time via ssf methods
 
 #------------------------------------------------------------------------------ Assign func variables depending on run number ---------------------------------------
-if run_num == 6:  # We have science-run data as well as pre-science-run data available. Note: we already defined Science_Qubits above.
-    paths_SSFmethods = paths_SSFmethods_SR
+if run_num == 6:  # We have science-run data as well as pre-science-run data available. Note: we already defined Science_Qubits for the science run above.
+    paths_SSFmethods = paths_SSFmethods_SR.copy()
     if pre_sciencerun6_data:  # If True, include pre-science-run data
+        Science_Qubits = [0, 1, 2, 3, 4, 5] # include all qubits, since pre-SR data was taken for all Qs
         paths_SSFmethods += paths_SSFmethods_preSR
     path_saveplots_fits = path_saveplots_fits_run6
     path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run6
