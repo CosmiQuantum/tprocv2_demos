@@ -2297,7 +2297,7 @@ class PlotRR_noQick:
                         if time_diff > MAX_TIME_DIFF_SSF_RPM:
                             print(
                                 f"[WARN] No SSF within {MAX_TIME_DIFF_SSF_RPM:.1f}s for Q{q_key + 1}. "
-                                f"Closest ?t={time_diff:.2f}s (ssf_file={closest_match[1].get('ssf_file')}, rpm_file={os.path.basename(h5_file)})",
+                                f"Closest Δt={time_diff:.2f}s (ssf_file={closest_match[1].get('ssf_file')}, rpm_file={os.path.basename(h5_file)})",
                                 flush=True
                             )
                             continue

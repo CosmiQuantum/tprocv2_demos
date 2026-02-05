@@ -31,7 +31,7 @@ signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
 replot_RPMs = False # Do you want to re-plot rabi population measurements from RR data but not extract temps? Only make plots
-save_figsRR = True # Do you want to save (or not save) the RR RPM plots?
+save_figsRR = False # Do you want to save (or not save) the RR RPM plots?
 save_figs = False # To be used in general for any function or class to save (or not save) plots.
 save_figs_SSF = False # Do you want to save gaussian fit plots while calculating ssf qtemps? iminuit case only
 fit_saved = False # Not used here, set to false.
@@ -44,7 +44,7 @@ pre_sciencerun6_data = True # Do you also want to incorporate the run 6 pre-scie
 
 use_iminuit_gdoublegauss_ssf = True # do you want to fit the g-state to a double gaussian using iminuit? The default is GMM instead
 
-rpm_combine_IQ_signal = True # uses ssf angle to rotate rabi population measurement data into a combined IQ signal lying on the same axis
+rpm_combine_IQ_signal = False # uses ssf angle to rotate rabi population measurement data into a combined IQ signal lying on the same axis
 
 figure_quality = 200
 theta = 0
@@ -720,7 +720,8 @@ if qtemp_method_flags["combined_studies_qtemps"]:
         # Makes 1 subplot per qubit (and all methods in a single plot). Note: I removed the ge SSF method from being plotted since we haven't been using that one lately.
         # Plots error bars always, unless you pass None instead of all_qubit_temps_errs_g.
         combined_studies.Qtemps_vs_time_comb_allQs_1col(all_qubit_temps_g, all_qubit_times_g, outerFolder_qtemps_plots,
-                                                     all_files_Qtemp_results_RPMs, all_qubit_temps_errs_g, rad_events_plot_lines = False, qubits_to_plot = [0,1],
+                                                     all_files_Qtemp_results_RPMs, all_qubit_temps_errs_g, restrict_time_yaxis = True, ylims = [50,120],
+                                                        rad_events_plot_lines = False, qubits_to_plot = [0,1],
                                                         plot_rpm_I_only=True, plot_rpm_Q_only=True)
 
     #----------- Thermal Populations vs Time using all three methods

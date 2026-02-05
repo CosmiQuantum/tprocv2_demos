@@ -2622,8 +2622,9 @@ class combined_Qtemp_studies:
 
     def Qtemps_vs_time_comb_allQs_1col(self, all_qubit_temperatures_ssf_g, all_qubit_timestamps_ssf_g,
                                               out_dir, all_files_Qtemp_results_RPMs, all_qubit_temps_errs_g,
-                                            restrict_time_xaxis=False, plot_extra_event_lines=False, rad_events_plot_lines=False,
-                                                qubits_to_plot = None, plot_rpm_I_only=False, plot_rpm_Q_only=False):
+                                            restrict_time_xaxis=False, restrict_time_yaxis = False, ylims = [],
+                                            plot_extra_event_lines=False, rad_events_plot_lines=False, qubits_to_plot = None,
+                                            plot_rpm_I_only=False, plot_rpm_Q_only=False):
         """Works for more than 2 qubits and does not plot g-e ssf method, only rpm and regular ground state ssf method
             Always plots err bars.
         """
@@ -2812,7 +2813,9 @@ class combined_Qtemp_studies:
 
             # ax.xaxis.set_major_locator(mdates.AutoDateLocator()) # automatic
             ax.yaxis.set_major_locator(MaxNLocator(nbins=4, prune=None))
-            ax.set_ylim(60, 120)
+
+            if restrict_time_yaxis:
+                ax.set_ylim(ylims[0], ylims[1])
             ax.xaxis.set_major_formatter(date_fmt)
             ax.tick_params(axis='x', rotation=45, labelsize=9)
 
@@ -2823,7 +2826,20 @@ class combined_Qtemp_studies:
                 ax.axvline(t_evt, color='gray', linestyle='--', linewidth=1)
                 ax.text(t_evt, ax.get_ylim()[1] * 0.9, lbl, rotation=90, va='top', ha='right', fontsize=8)
 
-            ax.legend(loc="upper left", fontsize=9, frameon=False)
+            # ------------------ Distribution-level mean difference (RPM - SSF) ------------------
+            mean_diff_str = None
+
+            if q in temps_RPM and q in temps_g and temps_RPM[q] and temps_g[q]:
+                mean_diff = np.nanmean(temps_RPM[q]) - np.nanmean(temps_g[q])
+                mean_diff_str = f"<RPM> - <SSF> = {mean_diff:.4f} mK"
+
+            handles, labels = ax.get_legend_handles_labels()
+
+            if mean_diff_str is not None:
+                handles.append(plt.Line2D([], [], color='none'))
+                labels.append(mean_diff_str)
+
+            ax.legend(handles, labels, loc="upper left", fontsize=9, frameon=False)
 
         axes[-1].set_xlabel("Time")
         fig.suptitle("Effective Qubit Temperatures vs Time", fontsize=15)

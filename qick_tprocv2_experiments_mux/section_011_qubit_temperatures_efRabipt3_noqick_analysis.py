@@ -459,7 +459,7 @@ class Temps_EFAmpRabiExperiment:
 
                 # Extract shared b,c from I fit
                 b_shared = popt_I[1]  # oscillation frequency
-                # c_shared = popt_I[2]  # phase offset
+                # c_shared = popt_I[2]  # phase
 
                 if use_iminuit_instead:
                     # Fit Q but lock b,c to the I-fit values
@@ -479,7 +479,7 @@ class Temps_EFAmpRabiExperiment:
 
                 # Extract shared b,c from Q fit
                 b_shared = popt_Q[1]  # oscillation frequency
-                # c_shared = popt_Q[2]  # phase offset
+                # c_shared = popt_Q[2]  # phase
 
                 if use_iminuit_instead:
                     # Fit I but lock b,c to the Q-fit values
@@ -577,22 +577,24 @@ class Temps_EFAmpRabiExperiment:
 
                 #print(f"[Geerlings-style] alpha={alpha:.6f} rad, A_S={A_S:.6f} +/- {sigma_A_S:.6f}")
             ############################################################################################
+            else:
+                # --- Plot amplitude (magnitude) data and its cosine fit on the third subplot ---
+                ax3.plot(gains, magnitude_data, '-', label="Magnitude Data", linewidth=2)
+                # ax3.plot(gains, magnitude_fit, '-', color='green', linewidth=3, label=f"Fit to Magnitude Data")
+
+                # curve made from the fits of the I + Q data
+                ax3.plot(gains, fit_IQ, '-', color='orange', linewidth=3, label=f"sqrt(I_fit**2 + Q_fit**2)")
+
 
             if config is not None:
-                fig.text(plot_middle, 0.98,
+                fig.text(plot_middle, 0.90,
                          f"e-f RPM Q{self.QubitIndex + 1}: "  + f", Pg: {config['reps']}*{config['rounds']} avgs, Pe: {config['reps2']}*{config['rounds']} avgs, A=sqrt(A_I**2 + A_Q**2)={A_amp_IQ:.4f}+/-{A_amp_IQ_err:.4f}",
                          fontsize=18, ha='center', va='top') #f", {config['sigma'] * 1000} ns sigma" need to add in all qqubit sigmas to save exp_cfg before putting htis back
             else:
-                fig.text(plot_middle, 0.98,
+                fig.text(plot_middle, 0.90,
                          f"e-f RPM Q{self.QubitIndex + 1}: A=sqrt(A_I**2 + A_Q**2)={A_amp_IQ:.4f}+/-{A_amp_IQ_err:.4f}",
                          fontsize=18, ha='center', va='top')
 
-            # --- Plot amplitude (magnitude) data and its cosine fit on the third subplot ---
-            ax3.plot(gains, magnitude_data, '-', label="Magnitude Data", linewidth=2)
-            #ax3.plot(gains, magnitude_fit, '-', color='green', linewidth=3, label=f"Fit to Magnitude Data")
-
-            # curve made from the fits of the I + Q data
-            ax3.plot(gains, fit_IQ, '-', color='orange', linewidth=3, label=f"sqrt(I_fit**2 + Q_fit**2)")
 
             ax3.set_xlabel("Gain (a.u.)", fontsize=20)
             if rotate_using_ssf and ssf_angle is not None:
@@ -602,7 +604,8 @@ class Temps_EFAmpRabiExperiment:
             ax3.tick_params(axis='both', which='major', labelsize=16)
             ax3.legend(loc='best')
 
-            #------------------------------------------------------------------------------------------------
+            #------------------------------------------------------------------------------
+
             if self.save_figs:
                 today_date = datetime.datetime.now().strftime("%Y-%m-%d")
                 dated_folder_name = f"made_on_{today_date}"
@@ -625,8 +628,8 @@ class Temps_EFAmpRabiExperiment:
                         "pcov_Q": pcov_Q,
                         "A_I": A_I,
                         "sigma_A_I": sigma_A_I,
-                        "A_Q": A_I,
-                        "sigma_A_Q": sigma_A_I}
+                        "A_Q": A_Q,
+                        "sigma_A_Q": sigma_A_Q}
 
             if rotate_using_ssf and ssf_angle is not None:
                 return A_S, sigma_A_S, fit_params
