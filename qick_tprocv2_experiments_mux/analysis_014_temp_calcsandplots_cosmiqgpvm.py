@@ -522,7 +522,7 @@ class SSFTempCalcAndPlots:
 
         return all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs, fit_results
 
-    def run_ssf_qtemps_iminuit(self, pairs_info, limit_temp_k=0.8, do_plots = False, save_figs_path = ""):
+    def run_ssf_qtemps_iminuit(self, pairs_info, run_num, limit_temp_k=0.8, do_plots = False, save_figs_path = ""):
         """
         Uses iminuit instead of GMM for double gaussian fitting and minimization.
 
@@ -585,19 +585,31 @@ class SSFTempCalcAndPlots:
                 pop_threshold = threshold_mid # threshold to determine Pe
 
                 # --- quality cut (do 2 gaussians fit the data better than a single one?) --
-                lr_stat_limit = 645.0 #35.0
+                # if run_num == 6:
+                #     if qid == 1:
+                #         lr_stat_limit = 904
+                #     if qid == 2:
+                #          lr_stat_limit = 730
+                #     if qid == 3:
+                #     if qid == 4:
+                #     if qid == 5:
+                # else:
+                #     lr_stat_limit = 645.0
+
+                lr_stat_limit = 684
+
                 if lr_stat < lr_stat_limit: # higher = stricter
                     print(f'Rejected a fit with Likelihood ratio test score < {lr_stat_limit}')
                     # not convincingly bimodal --> skip this dataset, it is better described by a single gaussian
 
-                    if do_plots and (qid == 1 or qid == 2 or qid == 3 or qid == 5):
+                    if do_plots and (qid == 2):
                         bad_plots_path = os.path.join(save_figs_path, "bad_fits_LRT_failed")
                         os.makedirs(bad_plots_path, exist_ok=True)
                         self.plot_gaussians_qtemps(qid, bad_plots_path, ig_new, ground_data,
                                                             excited_data, ground_gaussian,
                                                             excited_gaussian, pop_threshold,
                                                             idx, weights,
-                                                            sigmas, means, temperature_mk = None)
+                                                            sigmas, means, temperature_mk = None, title_ext = f"LRT val:{lr_stat:.2f}")
 
                     continue
 
@@ -635,7 +647,7 @@ class SSFTempCalcAndPlots:
                 sigma_TmK = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
 
                 # Plotting
-                if do_plots and (qid == 1 or qid == 2 or qid == 3 or qid == 5):
+                if do_plots and (qid == 2):
                     self.plot_gaussians_qtemps(qid, save_figs_path, ig_new, ground_data,
                                                excited_data, ground_gaussian,
                                                excited_gaussian, pop_threshold,
