@@ -585,24 +585,27 @@ class SSFTempCalcAndPlots:
                 pop_threshold = threshold_mid # threshold to determine Pe
 
                 # --- quality cut (do 2 gaussians fit the data better than a single one?) --
-                # if run_num == 6:
-                #     if qid == 1:
-                #         lr_stat_limit = 904
-                #     if qid == 2:
-                #          lr_stat_limit = 730
-                #     if qid == 3:
-                #     if qid == 4:
-                #     if qid == 5:
-                # else:
-                #     lr_stat_limit = 645.0
-
-                lr_stat_limit = 684
+                if run_num == 6:
+                    if qid == 0:
+                        lr_stat_limit = 904
+                    if qid == 1:
+                         lr_stat_limit = 730
+                    if qid == 2:
+                         lr_stat_limit = 684
+                    if qid == 3:
+                         lr_stat_limit = 604
+                    if qid == 4:
+                          lr_stat_limit = 717
+                    if qid == 5:
+                          lr_stat_limit = 655
+                else:
+                    lr_stat_limit = 645.0
 
                 if lr_stat < lr_stat_limit: # higher = stricter
                     print(f'Rejected a fit with Likelihood ratio test score < {lr_stat_limit}')
                     # not convincingly bimodal --> skip this dataset, it is better described by a single gaussian
 
-                    if do_plots and (qid == 2):
+                    if do_plots and (qid == 5):
                         bad_plots_path = os.path.join(save_figs_path, "bad_fits_LRT_failed")
                         os.makedirs(bad_plots_path, exist_ok=True)
                         self.plot_gaussians_qtemps(qid, bad_plots_path, ig_new, ground_data,
@@ -647,7 +650,7 @@ class SSFTempCalcAndPlots:
                 sigma_TmK = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
 
                 # Plotting
-                if do_plots and (qid == 2):
+                if do_plots and (qid == 5):
                     self.plot_gaussians_qtemps(qid, save_figs_path, ig_new, ground_data,
                                                excited_data, ground_gaussian,
                                                excited_gaussian, pop_threshold,
