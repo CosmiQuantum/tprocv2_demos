@@ -285,6 +285,7 @@ path_saveplots_fits_run4 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporar
 path_saveplots_ssf_qtemps_vsT_run4 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/Qtemps_SSFmethod/Qtemps_vs_Time_run4" # to save qubit temps vs time via ssf methods
 
 # ------------------------------------------------------------------------------------------------run 5----------------------------------------------------------------------------------------------------------
+# All data
 paths_SSFmethods_run5 = [
     "/exp/cosmiq/data/QUIET/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-09",
     "/exp/cosmiq/data/QUIET/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-10",
@@ -300,8 +301,8 @@ paths_SSFmethods_run5 = [
     "/exp/cosmiq/data/QUIET/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-20"
 ]
 
-path_saveplots_fits_run5 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/Qtemps_SSFmethod/Gaussian_Fits_run5" # where to save ssf plots to check gaussian fits
-path_saveplots_ssf_qtemps_vsT_run5 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/Qtemps_SSFmethod/run5_analysis" # to save qubit temps vs time via ssf methods
+path_saveplots_fits_run5 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r5" # where to save ssf plots to check gaussian fits
+path_saveplots_ssf_qtemps_vsT_run5 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run5" # to save qubit temps vs time via ssf methods
 
 # ------------------------------------------------------------------------------------------------run 6------------------------------------------------------------------------------------------------------------
 # Science-Run Data
