@@ -584,22 +584,31 @@ class SSFTempCalcAndPlots:
 
                 pop_threshold = threshold_mid # threshold to determine Pe
 
-                # --- quality cut (do 2 gaussians fit the data better than a single one?) --
-                if run_num == 6:
-                    if qid == 0:
-                        lr_stat_limit = 904
-                    if qid == 1:
-                         lr_stat_limit = 730
-                    if qid == 2:
-                         lr_stat_limit = 684
-                    if qid == 3:
-                         lr_stat_limit = 604
-                    if qid == 4:
-                          lr_stat_limit = 717
-                    if qid == 5:
-                          lr_stat_limit = 655
+                # ---------- quality cut (do 2 gaussians fit the data better than a single one?) ---------------------
+
+                LR_STAT_LIMITS = {
+                    6: {0: 904,
+                        1: 730,
+                        2: 684,
+                        3: 604,
+                        4: 717,
+                        5: 655,
+                    },
+                    7: {0: 645,
+                        1: 645,
+                        2: 645,
+                        3: 645, # No good data for this qubit in this run, all LRT scores below 280
+                        4: 645,
+                        5: 645, # No good data for this qubit in this run
+                        }
+                    # 8: {...}
+                }
+
+                DEFAULT_LR_STAT_LIMIT = 645.0
+                if run_num in LR_STAT_LIMITS: # extract the limit for this qubit in this run, or use default
+                    lr_stat_limit = LR_STAT_LIMITS[run_num].get(qid, DEFAULT_LR_STAT_LIMIT)
                 else:
-                    lr_stat_limit = 645.0
+                    lr_stat_limit = DEFAULT_LR_STAT_LIMIT
 
                 if lr_stat < lr_stat_limit: # higher = stricter
                     print(f'Rejected a fit with Likelihood ratio test score < {lr_stat_limit}')
