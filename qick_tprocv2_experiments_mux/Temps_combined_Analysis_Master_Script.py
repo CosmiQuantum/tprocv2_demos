@@ -25,7 +25,7 @@ from analysis_006_T1_vs_time_plots import T1VsTime
 from analysis_007_T2R_vs_time_plots import T2rVsTime
 from analysis_008_T2E_vs_time_plots import T2eVsTime
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 5
+run_num = 6
 run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence analysis it's defined in its respective section
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
