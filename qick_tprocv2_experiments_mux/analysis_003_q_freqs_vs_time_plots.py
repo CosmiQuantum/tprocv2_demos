@@ -25,11 +25,12 @@ from scipy.stats import norm
 from scipy.optimize import curve_fit
 
 class QubitFreqsVsTime:
-    def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+    def __init__(self, base_data_path, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
                  signal, run_name,  fridge):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
+        self.base_data_path = base_data_path
         self.figure_quality = figure_quality
         self.run_name = run_name
         self.number_of_qubits = number_of_qubits
@@ -128,9 +129,13 @@ class QubitFreqsVsTime:
         mean_values = {}
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
-                timestamp_dir = f"/data/QICK_data/{self.run_name}/{folder_date}"
-                outerFolder = timestamp_dir + "/study_data/"
-                outerFolder_save_plots = timestamp_dir + "/documentation/"
+                timestamp_dir = os.path.join(self.base_data_path, folder_date)
+                if "ge_round_robin_presciencerun_data" in folder_date:
+                    outerFolder = timestamp_dir + "/study_data/" # where data is stored
+                else:
+                    outerFolder = timestamp_dir + "/optimization/" # where data is stored
+                outerFolder_save_plots = timestamp_dir + "/documentation/" # where plots will be stored
+
             elif self.fridge.upper() == 'NEXUS':
                 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
                 outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"

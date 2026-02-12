@@ -143,7 +143,7 @@ class QfreqHistPlots:
                         linestyle='--', linewidth=2, color='black',
                         label='Weighted Gaussian fit')
 
-            ax.set_title(f"Q{q + 1}  µ={mu_1:.4f} MHz,  s={std_1:.4f} MHz, c:{n_counts}", fontsize=9, pad=3)
+            ax.set_title(f"Q{q + 1}  µ={mu_1:.4f} MHz,  s={std_1:.4f} MHz, c:{n_counts}", fontsize=9, pad=1)
             ax.set_xlabel("Qubit Frequency (MHz)", labelpad=1)
             ax.set_ylabel("Count")
             ax.grid(alpha=0.3)
