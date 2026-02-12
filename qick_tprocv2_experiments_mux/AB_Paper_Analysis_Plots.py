@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-MB_distribution_plot = False
-qtemp_noisetemp_plot = True
+MB_distribution_plot = True
+qtemp_noisetemp_plot = False
 
 if qtemp_noisetemp_plot:
     # ---------------------------
@@ -188,6 +188,24 @@ if qtemp_noisetemp_plot:
     plt.show()
 
 if MB_distribution_plot:
+    qubit_temps = [
+        [201.13, 99.22, 81.46, 71.21],  # Qubit 1
+        [302.20, 84.26, 78.32, 75.36],  # Qubit 2
+        [170.90, 106.43, 80.11, 78.82],  # Qubit 3
+        [339.13, 135.15, 91.27, 100.85],  # Qubit 4
+        [174.67, 76.82, 87.88, 74.10],  # Qubit 5
+        [225.68, 91.56, 78.55, 64.90],  # Qubit 6
+    ]
+
+    qtemp_errs = [
+        [10.98, 9.99, 2.52, 1.26],  # Qubit 1
+        [16.42, 2.74, 1.18, 1.64],  # Qubit 2
+        [7.33, 8.37, 1.37, 2.55],  # Qubit 3,
+        [19.11, 10.16, 2.38, 7.78],  # Qubit 4,
+        [6.17, 5.77, 1.58, 2.07],  # Qubit 5
+        [8.18, 1.65, 1.98, 3.96]  # Qubit 6
+    ]
+
     # Physical constants
     h = 6.62607015e-34      # Planck constant [J·s]
     kB = 1.380649e-23      # Boltzmann constant [J/K]
@@ -212,7 +230,47 @@ if MB_distribution_plot:
     plt.ylabel("Excited-State Population (%)")
     plt.title("Thermal Excited-State Population vs Temperature")
     plt.grid(True)
-    plt.legend()
+
+    # ------------------------------------------------------------
+    # Overlay qubit effective temperatures on MB curve
+    # Convert T_eff -> Pe using same MB relation
+    # ------------------------------------------------------------
+
+    colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
+    runs = [5, 6, 7, 8]
+
+
+    # Function: MB excited-state population from temperature (mK)
+    def Pe_from_TmK(TmK):
+        T_K = np.asarray(TmK) * 1e-3
+        T_K = np.clip(T_K, 1e-9, None)
+        pe = np.exp(-E_ge / (kB * T_K))
+        return pe / (1 + pe)
+
+
+    for qi in range(len(qubit_temps)):
+        temps = np.array(qubit_temps[qi], dtype=float)
+        errs = np.array(qtemp_errs[qi], dtype=float)
+
+        Pe_vals = Pe_from_TmK(temps)
+
+        # propagate temperature uncertainty into Pe uncertainty
+        dT = 0.5  # mK numerical step
+        dPe_dT = (Pe_from_TmK(temps + dT) - Pe_from_TmK(temps - dT)) / (2 * dT)
+        Pe_err = np.abs(dPe_dT) * errs
+
+        plt.errorbar(
+            temps,
+            100 * Pe_vals,
+            xerr=errs,
+            yerr=100 * Pe_err,
+            fmt='o',
+            color=colors[qi],
+            capsize=3,
+            label=f"Qubit {qi + 1}"
+        )
+
+    plt.legend(frameon=True)
 
     plt.tight_layout()
     plt.show()

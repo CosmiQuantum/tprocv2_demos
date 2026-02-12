@@ -1090,7 +1090,7 @@ class SSFTempCalcAndPlots:
         print("Saved all-dates scatter →", fname)
 
     # Histograms – temperature distributions  (all dates, each qubit subplot)
-    def plot_all_qubits_hist_ssf(self, all_qubit_temperatures, all_qubit_temperatures_errs, out_dir, bins=20, rel_err_cutoff = None):
+    def plot_all_Qs_qtemps_hists_ssf(self, all_qubit_temperatures, all_qubit_temperatures_errs, out_dir, bins=20, rel_err_cutoff = None):
         """
             Make per-qubit temperature histograms (SSF), with an overlaid
             inverse-variance-weighted Gaussian (same approach as your RPMs plot).
@@ -1212,6 +1212,132 @@ class SSFTempCalcAndPlots:
 
         plt.tight_layout()
         fname = os.path.join(out_dir, f"AllQubits_SSFTemps_Hist_{datetime.datetime.now():%Y%m%d%H%M%S}.png")
+        plt.savefig(fname, dpi=300)
+        plt.close(fig)
+        print("Saved all-dates histogram to:", fname)
+
+    def plot_all_Qs_Pe_hists_ssf(self, SSF_double_gauss_fit_results, out_dir, bins=20, rel_err_cutoff = None):
+        """
+        Make per-qubit Pe histograms (SSF), with an overlaid
+        inverse-variance-weighted Gaussian (same approach as your RPMs plot).
+
+        fit_results: dict {qindex: [ { ... "Pe": float, "total_sigma_Pe": float, ... }, ... ]}
+        """
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        os.makedirs(out_dir, exist_ok=True)
+
+        # make a 2x3 grid like before (assumes up to 6 qubits)
+        fig = plt.figure(figsize=(15, 10))
+
+        for q in sorted(SSF_double_gauss_fit_results.keys()):
+            # ---- extract the arrays we histogram from the dict list ----
+            entries = SSF_double_gauss_fit_results.get(q, [])
+            Pe_list = [d.get("Pe", None) for d in entries if isinstance(d, dict)]
+            Pe_errs_list = [d.get("total_sigma_Pe", None) for d in entries if isinstance(d, dict)]
+            # ------------------------------------------------------------------------
+            if not Pe_list or not Pe_errs_list:
+                continue
+
+            # --- continue-style filtering (skip on any bad condition) ---
+            Pe_vals = []
+            Pe_errs = []
+            for P, e in zip(Pe_list, Pe_errs_list):
+                # try coercion
+                try:
+                    P = float(P)
+                    e = float(e)
+                except (TypeError, ValueError):
+                    continue
+                # hard bounds / invalids
+                # if P <= 0 or P > 600:
+                #     continue
+                if P <= 0:
+                    continue
+                # optional relative error cutoff
+                if rel_err_cutoff is not None and (e / P) > rel_err_cutoff:
+                    continue
+                Pe_vals.append(P)
+                Pe_errs.append(e)
+
+            if len(Pe_vals) == 0:
+                continue
+
+            Pe_vals = np.asarray(Pe_vals, dtype=float)
+            Pe_errs = np.asarray(Pe_errs, dtype=float)
+
+            # # --- Weighted mean/std (same recipe as RPMs) ---
+            # err_floor = 1e-12
+            # safe_errs = np.clip(errs, err_floor, np.inf)
+            # # clip tiny errors (robustness)
+            # low_clip_percentile = 1.0
+            # clip_threshold = np.nanpercentile(safe_errs, low_clip_percentile)
+            # safe_errs = np.maximum(safe_errs, clip_threshold)
+            # weights = 1.0 / (safe_errs ** 2)
+            #
+            # mu = np.sum(weights * Pe_vals) / np.sum(weights)
+            # var = np.sum(weights * (Pe_vals - mu) ** 2) / np.sum(weights)
+            # std = np.sqrt(var)
+
+            # ---------------------------Weighted mean with robust median-MAD clipping---------------------------
+            n_counts = len(Pe_vals)
+
+            # keep only finite pairs
+            finite = np.isfinite(Pe_vals) & np.isfinite(Pe_errs)
+            Pe_vals, Pe_errs = Pe_vals[finite], Pe_errs[finite]
+            if Pe_vals.size == 0:
+                mu_1, std_1 = np.nan, np.nan
+            else:
+                # robust outlier clip around the median
+                k = 2.0  # 2-4  is typical; lower = stricter
+                med = np.median(Pe_vals)
+                mad = np.median(np.abs(Pe_vals - med))
+                if mad == 0:
+                    mad = max(np.std(Pe_vals), 1e-12)
+                keep = np.abs(Pe_vals - med) < k * mad
+                Pe_vals, Pe_errs = Pe_vals[keep], Pe_errs[keep]
+
+                if Pe_vals.size == 0:
+                    mu_1, std_1 = np.nan, np.nan
+                else:
+                    # compute weights and weighted mean/std (using 1/err)
+                    err_floor = 1e-12
+                    safe_errs = np.clip(Pe_errs, err_floor, np.inf)
+                    weights = 1.0 / safe_errs
+
+                    w_sum = np.nansum(weights)
+                    mu_1 = float(np.nansum(weights * Pe_vals) / w_sum)
+
+                    var = float(np.nansum(weights * (Pe_vals - mu_1) ** 2) / w_sum)
+                    std_1 = float(np.sqrt(max(var, 0.0)))
+
+            # --- Histogram (raw counts) ---
+            ax = plt.subplot(2, 3, q + 1)
+            hist_data, edges = np.histogram(Pe_vals, bins=bins)
+            bin_width = np.diff(edges)[0]
+
+            ax.hist(Pe_vals,
+                    bins=bins,
+                    alpha=0.7,
+                    color=colors[q % len(colors)],
+                    edgecolor='black',
+                    label="Counts")
+
+            # --- Weighted Gaussian overlay, area-matched to histogram ---
+            x_vals = np.linspace(Pe_vals.min(), Pe_vals.max(), 400)
+            pdf_vals = norm.pdf(x_vals, mu_1, std_1)
+            scale_factor = len(Pe_vals) * bin_width  # area-match
+            scaled_pdf = pdf_vals * scale_factor
+            ax.plot(x_vals, scaled_pdf, linestyle='--', linewidth=2,
+                    color='black', label='Weighted Gaussian fit')
+
+            ax.set_title(f"Q{q + 1}  µ={mu_1:.2f},  s={std_1:.2f}, c:{n_counts}", fontsize=14)
+            ax.set_xlabel("Thermal Population (Pe)")
+            ax.set_ylabel("Count")
+            ax.grid(alpha=0.3)
+            # ax.legend()
+
+        plt.tight_layout()
+        fname = os.path.join(out_dir, f"AllQubits_SSF_Pe_Hists_{datetime.datetime.now():%Y%m%d%H%M%S}.png")
         plt.savefig(fname, dpi=300)
         plt.close(fig)
         print("Saved all-dates histogram to:", fname)
