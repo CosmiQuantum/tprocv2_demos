@@ -3407,7 +3407,7 @@ class PlotRR_noQick:
             ax.plot(x_vals, scaled_pdf, linestyle='--', linewidth=2,
                     color='black', label=f"Weighted Gaussian fit")
 
-            ax.set_title(f"{titles[i]}  µ={mu_1:.2f},  s={std_1:.2f}, c:{n_counts}", fontsize=font)
+            ax.set_title(f"{titles[i]}  µ={mu_1:.4f},  s={std_1:.4f}, c:{n_counts}", fontsize=font)
             ax.set_xlabel("Thermal Population (Pe)", fontsize=font)
             ax.set_ylabel("Counts", fontsize=font)
             # ax.legend(fontsize=font - 2)

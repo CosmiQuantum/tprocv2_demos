@@ -1330,7 +1330,7 @@ class SSFTempCalcAndPlots:
             ax.plot(x_vals, scaled_pdf, linestyle='--', linewidth=2,
                     color='black', label='Weighted Gaussian fit')
 
-            ax.set_title(f"Q{q + 1}  µ={mu_1:.2f},  s={std_1:.2f}, c:{n_counts}", fontsize=14)
+            ax.set_title(f"Q{q + 1}  µ={mu_1:.4f},  s={std_1:.4f}, c:{n_counts}", fontsize=14)
             ax.set_xlabel("Thermal Population (Pe)")
             ax.set_ylabel("Count")
             ax.grid(alpha=0.3)
