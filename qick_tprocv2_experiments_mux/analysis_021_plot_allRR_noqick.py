@@ -2532,7 +2532,7 @@ class PlotRR_noQick:
 
                         # Compute propagated 1-sigma error (std) on T_mK
                         try:
-                            T_err = self.compute_temperature_error_RPM(
+                            T_err, Pe_err = self.compute_temperature_error_RPM(
                                 A1=A_amp_IQ_Pe,
                                 A2=A_amp_IQ_Pg,
                                 Pe=P_e,
@@ -2599,6 +2599,7 @@ class PlotRR_noQick:
                                 'T_mK': T_mK,
                                 'T_mK_err': T_err,
                                 'P_e': P_e,
+                                'P_e_err': Pe_err,
                                 'qubit_freq_MHz': qubit_freq_MHz,
                                 "Qfreq_fit_err" : qfreq_err, #MHz,
                                 "ssf_angle": alpha, # will be None if you don't choose to combine IQ signal
@@ -2642,11 +2643,6 @@ class PlotRR_noQick:
           Pe = |A1| / (|A1| + |A2|)
           T = (h f_ge / kB) / ln((1-Pe)/Pe)
         """
-        # --- guards (prevents NaNs/infs blowing up functions) ---
-        # If Pe < 1e-12, it gets replaced by 1e-12, and if Pe > 1 - 1e-12, it gets replaced by 1 - 1e-12
-        eps = 1e-12
-        Pe = np.clip(Pe, eps, 1.0 - eps)
-
         # --- dPe/dA1, dPe/dA2 (correct for Pe = |A1|/(|A1|+|A2|)) ---
         sum_A = np.abs(A1) + np.abs(A2)
         if np.any(sum_A == 0):
@@ -2675,7 +2671,13 @@ class PlotRR_noQick:
             (dT_dA2 * sigma_A2)**2 +
             (dT_df0 * sigma_f0_Hz)**2)
 
-        return sigma_T_mK # Temperature calculation error via rabi population measurements
+        # --- Additionally we calculate the error associated with Pe ---
+        sigma_Pe = np.sqrt(
+            (dPe_dA1 * sigma_A1) ** 2 +
+            (dPe_dA2 * sigma_A2) ** 2
+        )
+
+        return sigma_T_mK, sigma_Pe # Temperature calculation error via rabi population measurements
 
     # Helper for fitting & plotting a line on `ax`
     def do_linear_fit_and_plot_qtemps_RPM(self, ax, times_arr, temps_arr, initial_time, final_time, mask, color, label_prefix):
@@ -3279,6 +3281,150 @@ class PlotRR_noQick:
         plt.savefig(save_path, dpi=200)
         plt.close(fig)
 
+    def plot_qubit_Pe_histograms_RPMs(self, all_files_Qtemp_results, num_qubits, rel_err_cutoff = None):
+        """
+        Plots histograms for the thermal population (Pe) data of each qubit.
+
+        Parameters:
+        - all_files_Qtemp_results: list of dicts returned by load_plot_save_rabis_Qtemps
+        - num_qubits: total number of qubits to plot (default is 6)
+
+        # Note: All datetime objects are naive and assumed to be in Central Time (local system time).
+
+        The Gaussian's center and width are determined by the weighted statistics (so smaller-error points pull harder).
+        The histogram shows true counts of samples. The curve is scaled so it aligns visually with the histogram height (counts per bin).
+        """
+        # Set up the subplots grid (2 rows x 3 columns for 6 qubits)
+        ncols = min(num_qubits, 3)
+        nrows = math.ceil(num_qubits / 3)
+        fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(12, 8))
+        axes = axes.flatten() if isinstance(axes, (list, np.ndarray)) else [axes]
+        axes: List[Axes] = axes  # Explicitly tell the IDE that these are Axes objects
+
+        # Define font size and colors (same order as in your temperature-vs-time plots)
+        font = 14
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        plt.suptitle("Qubit Thermal Population", fontsize=font)
+
+        # Titles for each subplot
+        titles = [f"Q{i + 1}" for i in range(num_qubits)]
+
+        # From Gaussian fit
+        mean_values = {}
+        std_values = {}
+
+        # Loop over each qubit / subplot
+        for i, ax in enumerate(axes):
+            # Gather all temperature data for qubit i across all files.
+            Pe_vals = []
+            Pe_errs = []
+            for file_result in all_files_Qtemp_results:
+                qubit_data = file_result['qubits'].get(i)
+                if not qubit_data:
+                    continue
+
+                Pe = qubit_data.get('P_e')
+                Pe_err = qubit_data.get('P_e_err')
+
+                # skip if either is missing or relative error is larger than threshold
+                if Pe is None or Pe_err is None:
+                    continue
+                if Pe > 1 or Pe == 0 or Pe == 1 or Pe < 0:
+                    continue
+
+                if rel_err_cutoff is not None:
+                    if Pe_err / Pe >= rel_err_cutoff: # rel_err_cutoff is a decimal (0.8 = a relative error of 80% and so forth)
+                        continue
+
+                Pe_vals.append(Pe)
+                Pe_errs.append(Pe_err)
+
+            # If no data is present, hide the subplot.
+            if len(Pe_vals) == 0:
+                plt.setp(ax, visible=False)
+                continue
+
+            # === Weighted mean with robust median-MAD clipping===
+            Pe_vals = np.asarray(Pe_vals, dtype=float)
+            Pe_errs = np.asarray(Pe_errs, dtype=float)
+            n_counts = len(Pe_vals)
+
+            # keep only finite pairs
+            finite = np.isfinite(Pe_vals) & np.isfinite(Pe_errs)
+            Pe_vals, Pe_errs = Pe_vals[finite], Pe_errs[finite]
+            if Pe_vals.size == 0:
+                mu_1, std_1 = np.nan, np.nan
+            else:
+                # robust outlier clip around the median
+                k = 2.0  # 2-4  is typical; lower = stricter
+                med = np.median(Pe_vals)
+                mad = np.median(np.abs(Pe_vals - med))
+                if mad == 0:
+                    mad = max(np.std(Pe_vals), 1e-12)
+                keep = np.abs(Pe_vals - med) < k * mad
+                Pe_vals, Pe_errs = Pe_vals[keep], Pe_errs[keep]
+
+                if Pe_vals.size == 0:
+                    mu_1, std_1 = np.nan, np.nan
+                else:
+                    # compute weights and weighted mean/std (using 1/err)
+                    err_floor = 1e-12
+                    safe_errs = np.clip(Pe_errs, err_floor, np.inf)
+                    weights = 1.0 / safe_errs
+
+                    w_sum = np.nansum(weights)
+                    mu_1 = float(np.nansum(weights * Pe_vals) / w_sum)
+
+                    var = float(np.nansum(weights * (Pe_vals - mu_1) ** 2) / w_sum)
+                    std_1 = float(np.sqrt(max(var, 0.0)))
+
+
+                mean_values[f"Qubit {i + 1}"] = mu_1
+                std_values[f"Qubit {i + 1}"] = std_1
+
+            # --- Histogram in raw counts ---
+            optimal_bin_num = 45
+            hist_data, bins = np.histogram(Pe_vals, bins=optimal_bin_num)
+            bin_width = np.diff(bins)[0]
+            bin_centers = bins[:-1] + bin_width / 2
+
+            # --- Weighted Gaussian curve ---
+            x_vals = np.linspace(min(Pe_vals), max(Pe_vals), 400)
+            pdf_vals = norm.pdf(x_vals, mu_1, std_1)
+
+            # # Scale the Gaussian so its peak matches the histogram's maximum height
+            # scale_factor = np.max(hist_data) / np.max(pdf_vals)
+            # scaled_pdf = pdf_vals * scale_factor
+
+            # area-match scaling (robust to sparse/noisy peaks)
+            scale_factor = len(Pe_vals) * bin_width  # total expected counts
+            scaled_pdf = pdf_vals * scale_factor
+
+            # --- Plot ---
+            ax.hist(Pe_vals, bins=optimal_bin_num, alpha=0.7,
+                    color=colors[i % len(colors)], edgecolor='black', label="Counts")
+
+            ax.plot(x_vals, scaled_pdf, linestyle='--', linewidth=2,
+                    color='black', label=f"Weighted Gaussian fit")
+
+            ax.set_title(f"{titles[i]}  µ={mu_1:.2f},  s={std_1:.2f}, c:{n_counts}", fontsize=font)
+            ax.set_xlabel("Thermal Population (Pe)", fontsize=font)
+            ax.set_ylabel("Counts", fontsize=font)
+            # ax.legend(fontsize=font - 2)
+            ax.tick_params(axis='both', which='major', labelsize=font)
+
+        plt.tight_layout()
+
+        hist_dir = os.path.join(self.outerFolder_save_plots, "Pe_hists")
+        os.makedirs(hist_dir, exist_ok=True)
+
+        timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        save_path = os.path.join(hist_dir, f"QubitPe_RPM__Histograms_{timestp}.png")
+        print("Histogram plot saved to:", save_path)
+        plt.savefig(save_path, dpi=200)
+        plt.close(fig)
+
+
     def plot_qubit_pe_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6):
         """
         Plots qubit excited state populations (P_e) vs. time in a separate figure.
@@ -3733,7 +3879,7 @@ class PlotRR_noQick:
 
                         # Compute propagated 1-sigma error (std) on T_mK
                         try:
-                            T_err = self.compute_temperature_error_RPM(
+                            T_err, Pe_err = self.compute_temperature_error_RPM(
                                 A1=A_amp_IQ_Pe,
                                 A2=A_amp_IQ_Pg,
                                 Pe=P_e,

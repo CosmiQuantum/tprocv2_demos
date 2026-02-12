@@ -24,6 +24,7 @@ from analysis_016_metrics_vs_temp import (ResonatorFreqVsTemp, GetThermData, Qub
 from analysis_017_plot_metric_dependencies import PlotMetricDependencies
 from analysis_018_box_whisker import PlotBoxWhisker
 from analysis_019_allan_welch_stats_plots import AllanWelchStats
+from analysis_022_Qfreq_hist_plots import QfreqHistPlots
 from section_011_qubit_temperatures_efRabi import QubitTemperatureProgram, QubitTemperatureRefProgram
 import matplotlib.pyplot as plt
 # from datetime import datetime
@@ -38,11 +39,11 @@ import h5py
 # from qualang_tools.plot import Fit
 # import visdom
 ###################################################### Set These #######################################################
-save_figs = True
+save_figs = False
 fit_saved = True
 show_legends = False
 signal = 'None'
-run_number = 5
+run_number = 6
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
@@ -216,7 +217,7 @@ elif run_number == 5:
     process_shots_t1ge = False
     run_name = 'run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20'
     data_path = f'/data/QICK_data/{run_name}'
-    plots_path = data_path
+    plots_path = os.path.join(data_path, "benchmark_analysis_plots", f"qspec_ge")
 
     # all dates:
     top_folder_dates = [ # Condensing started 12/8/2024
@@ -254,9 +255,9 @@ run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB
 #                                        save_figs, fit_saved, signal, run_name, FRIDGE)
 # date_times_res_spec, res_freqs = res_spec_vs_time.run()
 # #
-# q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-#                                   save_figs, fit_saved, signal, run_name, FRIDGE)
-# date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
+q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+                                  save_figs, fit_saved, signal, run_name, FRIDGE)
+date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
 #
 # print("qspec fit errs Q1: ", qspec_fit_err[0])
 # print("mean qspec fit err Q1: ", np.mean(qspec_fit_err[0]))
@@ -358,24 +359,27 @@ run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB
 # #t2e_vs_time.plot_without_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
 # t2e_vs_time.plot_with_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
 # t2e_vs_time.plot_with_errs_single_plot(date_times_t2e, t2e_vals, t2e_fit_err, show_legends=True)
-#
+############################################### Qubit Frequency hist Plots #############################################
+qfreq_distribution_plots = QfreqHistPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+                                            save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
+qfreq_distribution_plots.run(q_freqs, qspec_fit_err)
 # ############################################## 09: T1 hist/cumul/err Plots #############################################
-t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, data_path, plots_path, run_name, run_notes, run_number, fridge=FRIDGE)
-dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", process_shots = process_shots_t1ge)
-t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
+# t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, run_notes, run_number, fridge=FRIDGE)
+# dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", process_shots = process_shots_t1ge)
+# t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
 
 # # # # ############################################## 10: T2R hist/cumul/err Plots ############################################
-t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
-dates, t2r_vals, t2r_errs = t2r_distribution_plots.run(t1_vals = t1_vals)
-t2r_std_values, t2r_mean_values = t2r_distribution_plots.plot(dates, t2r_vals, t2r_errs, show_legends)
+# t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
+# dates, t2r_vals, t2r_errs = t2r_distribution_plots.run(t1_vals = t1_vals)
+# t2r_std_values, t2r_mean_values = t2r_distribution_plots.plot(dates, t2r_vals, t2r_errs, show_legends)
 # # # # #
 # # # ############################################## 11: T2E hist/cumul/err Plots ############################################
-t2e_distribution_plots = T2eHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
-dates, t2e_vals, t2e_errs = t2e_distribution_plots.run(t1_vals = t1_vals)
-t2e_std_values, t2e_mean_values = t2e_distribution_plots.plot(dates, t2e_vals, t2e_errs, show_legends)
+# t2e_distribution_plots = T2eHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
+# dates, t2e_vals, t2e_errs = t2e_distribution_plots.run(t1_vals = t1_vals)
+# t2e_std_values, t2e_mean_values = t2e_distribution_plots.plot(dates, t2e_vals, t2e_errs, show_legends)
 
 # ############################ 12: Save the Key Statistics for This Run to Compare Later #################################
 #need to run 00,01, and 08-10 before this to get all of the variables

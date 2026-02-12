@@ -57,7 +57,8 @@ qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, 
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
-                  "Qtemps_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_hists_viaSSF": False, "Pe_vs_time_viaRPM": False, "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
+                  "Qtemps_hists_viaRPM": False, "Pe_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_hists_viaSSF": False, "Pe_vs_time_viaRPM": False,
+                  "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps)
 comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
@@ -554,8 +555,9 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
         RPM_plotter.plot_qubit_temperature_histograms_RPMs(combined_qtemp_data, num_qubits=6, rel_err_cutoff = None)
 
     if analysis_flags["Pe_hists_viaRPM"]:
-    # ----------------------------------------------------------------- Histograms of thermal populations (Pe) via RPMs ------------------------
-    
+        # ----------------------------------------------------------------- Histograms of thermal populations (Pe) via RPMs ----------------------------------------
+        RPM_plotter.plot_qubit_Pe_histograms_RPMs(combined_qtemp_data, num_qubits=6, rel_err_cutoff=None)
+    #----------------------------------------------------------------------------------------------------------------------------------------------------------
     if analysis_flags["Pe_vs_time_viaRPM"]:
         #------------------------------------------------------------ Excited state populations (P_e) vs time (via RPMs) ----------------------------------------
         RPM_plotter.plot_qubit_pe_vs_time_RPMs(combined_qtemp_data)
