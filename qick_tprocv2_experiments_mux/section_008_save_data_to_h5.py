@@ -114,9 +114,13 @@ class Data_H5:
         dt = h5py.string_dtype(encoding="utf-8")
         group.create_dataset(name, data=np.array(json_str, dtype=dt))
 
-    def save_to_h5(self, data_type, save_dataset_clean=False, additional_title = ''):
-        self.outerFolder_expt = os.path.join(self.outerFolder_expt, "Data_h5", f"{data_type}")
-        self.create_folder_if_not_exists(self.outerFolder_expt)
+    def save_to_h5(self, data_type, save_dataset_clean=False, additional_title = '', ts = None):
+        if ts is not None:
+            self.outerFolder_expt = os.path.join(self.outerFolder_expt, f"Data_h5_{ts}", f"{data_type}")
+            self.create_folder_if_not_exists(self.outerFolder_expt)
+        else:
+            self.outerFolder_expt = os.path.join(self.outerFolder_expt, "Data_h5", f"{data_type}")
+            self.create_folder_if_not_exists(self.outerFolder_expt)
         formatted_datetime =  datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         h5_filename = os.path.join(self.outerFolder_expt, f"{formatted_datetime}_" + f"{data_type}_results_batch_{self.batch_num}_" + f"Num_per_batch{self.save_r}{additional_title}.h5")
         with h5py.File(h5_filename, 'w') as f:
