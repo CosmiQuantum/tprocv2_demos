@@ -48,25 +48,24 @@ f_ge_err_MHz = [
 # ------------------------------------------------------------
 # Convert + drop Run 4 so arrays align with Runs 5-8
 # ------------------------------------------------------------
-runs = np.array([int(5), int(6), int(7), int(8)], dtype=int)
+runs = np.array([5, 6, 7, 8], dtype=int)
 
 Pe_meas = np.array(Pe_meas, dtype=object).astype(float)[:, 1:]   # (6,4)
 Pe_err  = np.array(Pe_err,  dtype=object).astype(float)[:, 1:]   # (6,4)
 
-f_ge_MHz = np.array(f_ge_MHz, dtype=float)[:, 1:]            # (6,4)
+f_ge_MHz     = np.array(f_ge_MHz, dtype=float)[:, 1:]            # (6,4)
 f_ge_err_MHz = np.array(f_ge_err_MHz, dtype=float)[:, 1:]        # (6,4)
 
-f_ge_Hz = f_ge_MHz * 1e6
+f_ge_Hz     = f_ge_MHz * 1e6
 f_ge_err_Hz = f_ge_err_MHz * 1e6
 
-# Sanity check
 if Pe_meas.shape != f_ge_Hz.shape:
     raise ValueError(f"Shape mismatch: Pe_meas {Pe_meas.shape} vs f_ge_Hz {f_ge_Hz.shape}")
 
 # ------------------------------------------------------------
 # Infer T_qubit from Pe
 # T = hf / (kB * ln((1-Pe)/Pe))
-
+# ------------------------------------------------------------
 h  = 6.62607015e-34
 kB = 1.380649e-23
 
@@ -77,30 +76,35 @@ T_qubit_K  = T_from_Pe(Pe_meas, f_ge_Hz)
 T_qubit_mK = 1e3 * T_qubit_K
 
 # ------------------------------------------------------------
+# Propagate errors: Pe_err (and optionally f_err) -> T_err
+# ------------------------------------------------------------
+L = np.log((1 - Pe_meas) / Pe_meas)
+
+dT_dPe_K = (h * f_ge_Hz / kB) * (1.0 / (L**2)) * (1.0 / (1 - Pe_meas) + 1.0 / Pe_meas)
+dT_df_K_per_Hz = h / (kB * L)
+
+T_qubit_err_mK = 1e3 * np.sqrt((dT_dPe_K * Pe_err)**2 + (dT_df_K_per_Hz * f_ge_err_Hz)**2)
+
+# ------------------------------------------------------------
 # Noise temperature model (MIT supplement style)
-# Uses f_ge_Hz[qi, ri] per run
 # ------------------------------------------------------------
 if qtemp_noisetemp_plot:
-    # These functions model photons leaking down the input line from multiple temperature stages through attenuation.
+
     def nbar_thermal(f_hz: float, T_K: float):
-        # Gives the photon occupation number of a bosonic mode (microwave field) at frequency f
         if T_K <= 0:
             return 0.0
         x = (h * f_hz) / (kB * T_K)
         if x > 700:
             return 0.0
-        return 1.0 / (np.exp(x) - 1.0) # formula
+        return 1.0 / (np.exp(x) - 1.0)
 
     def Te_from_nbar(f_hz: float, nbar: float):
         if nbar <= 0:
             return 0.0
         x = np.log(1.0 + 1.0 / nbar)
-        return (h * f_hz) / (kB * x) # T formula
+        return (h * f_hz) / (kB * x)
 
     def Te_from_stages(f_hz: float, stage_temps_K: dict, A_after_stage_dB: dict):
-        # Used to sum attenuated contributions. This assumes power attenuation (not voltage attenuation) in dB.
-        # A stage's thermal photons are reduced by attenuation after that stage.
-        # This gives the effective photon occupation at the device input, which we use to calculate the predicted effective noise temp.
         n_eff = 0.0
         for stage, T in stage_temps_K.items():
             if stage not in A_after_stage_dB:
@@ -110,69 +114,54 @@ if qtemp_noisetemp_plot:
         return Te_from_nbar(f_hz, n_eff)
 
     def cumulative_after_stage(config_dB: dict, order):
-        # How we compute attenuation AFTER each stage
         cfg = {k: float(config_dB.get(k, 0.0)) for k in order}
         A_after = {}
         for i, stage in enumerate(order):
             A_after[stage] = sum(cfg[order[j]] for j in range(i + 1, len(order)))
         return A_after
 
-    # stages. 300K stage added to account for linea attenuation that we measured warm
     order = ["300K", "4K", "1K", "100mK", "10mK"]
     stage_temps_K = {"300K": 300.0, "4K": 4.0, "1K": 1.0, "100mK": 0.100, "10mK": 0.010}
 
-    # attenuation configs
-    # Approximate insertion losses (dB)
     IL_marki = 0.9
-    IL_eccosorb = 1.0  # adjust if you extract better number
-    SS_line_loss_total_dB = 14.0   # total distributed SS cable loss on INPUT line (top of fridge to mcp)
-
-    # ------------------------
-    # Run-specific attenuation configs (INPUT line only)
-    # ------------------------
+    IL_eccosorb = 1.0
+    SS_line_loss_total_dB = 14.0
 
     atten_config_by_run = {
-
-        5: {  # Run 5: 3 eccosorbs + 1 Marki on input
+        5: {
             "4K": 20,
             "1K": 20,
             "10mK": 20 + 3 * IL_eccosorb + IL_marki,
         },
-
-        6: {  # Run 6: same filtering as Run 5
+        6: {
             "4K": 20,
             "1K": 20,
             "10mK": 20 + 3 * IL_eccosorb + IL_marki,
         },
-
-        7: {  # Run 7: attenuation redistribution
+        7: {
             "4K": 20,
             "1K": 6,
             "100mK": 10,
             "10mK": 30 + 3 * IL_eccosorb + IL_marki,
         },
-
-        8: {  # Run 8: added HERD on input
+        8: {
             "4K": 20,
             "1K": 6,
             "100mK": 10,
             "10mK": 30 + 3 * IL_eccosorb + IL_marki,
-        }
+        },
     }
 
-    # compute Te per qubit per run using per-run mean frequency
     nQ, nRuns = Pe_meas.shape
     Te_mK = np.zeros((nQ, nRuns), dtype=float)
 
     for qi in range(nQ):
         for ri, r in enumerate(runs):
-            cfg = atten_config_by_run[int(r)]
-
-            # Lump all SS cable loss as at room temp (simple total-budget approach)
+            cfg = dict(atten_config_by_run[int(r)])  # copy so we don't mutate the base dict
             cfg["300K"] = cfg.get("300K", 0.0) + SS_line_loss_total_dB
 
             A_after = cumulative_after_stage(cfg, order)
-            f_hz = f_ge_Hz[qi, ri]  # per-run frequency
+            f_hz = f_ge_Hz[qi, ri]
             Te_K = Te_from_stages(f_hz, stage_temps_K, A_after)
             Te_mK[qi, ri] = 1e3 * Te_K
 
@@ -189,26 +178,21 @@ if qtemp_noisetemp_plot:
 
     for qi in range(nQ):
         ax = axes[qi]
-        ax.plot(runs, T_qubit_mK[qi], "o-", label=r"$T_{\mathrm{qubit}}$ (from $P_e$)")
+
+        ax.errorbar(
+            runs, T_qubit_mK[qi],
+            yerr=T_qubit_err_mK[qi],
+            fmt="o-", capsize=3, elinewidth=1,
+            label=r"$T_{\mathrm{qubit}}$ (from $P_e$)"
+        )
+
         ax.plot(runs, Te_mK[qi], "s--", label=r"$T_e$ (pred. noise)")
 
         ax.set_title(f"Q{qi+1}")
-        plt.xticks(runs, ['Run 5', 'Run 6', 'Run 7', 'Run 8'])
-
-        if qi == 0:
-            ax.text(
-                5.5, 300,
-                "Run 5: LPFs, 3 eccosorbs on input, 1 on output\n"
-                "Run 6: cryo terminators, 0dBs, copper tape\n"
-                "Run 7: attenuation changes, 0 eccosorbs on output\n"
-                "Run 8: HERD filter + 0dB\n",
-                fontsize=9,
-                verticalalignment='top',
-                bbox=dict(boxstyle="round", facecolor="white", alpha=0.8)
-            )
+        ax.set_xticks(runs)
+        ax.set_xticklabels(['Run 5', 'Run 6', 'Run 7', 'Run 8'])
         ax.grid(True)
 
-    # fig.supxlabel("Run number", y=0.06)
     fig.supylabel("Temperature (mK)")
     fig.suptitle("Qubit Temperature (from $P_e$) vs Predicted Noise Temperature $T_e$", y=0.98)
 
