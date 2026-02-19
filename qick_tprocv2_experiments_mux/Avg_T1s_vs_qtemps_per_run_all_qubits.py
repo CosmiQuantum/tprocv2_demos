@@ -102,6 +102,7 @@ if T1_vs_qtemps:
             )
 
         ax.set_title(f"Qubit {q+1}")
+        ax.set_yscale("log")
         ax.grid(True)
 
         # Optional annotations
@@ -111,7 +112,7 @@ if T1_vs_qtemps:
 
     # Shared axis labels (nice for grids)
     fig.supxlabel("Effective Qubit Temperature (mK)", y=0.06)
-    fig.supylabel("T1 (µs)")
+    fig.supylabel("T1 (µs) [log scale]")
     fig.suptitle(
         "Mean T1 vs Effective Qubit Temperature (one panel per qubit)",
         y=0.98

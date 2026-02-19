@@ -170,6 +170,115 @@ if qtemp_noisetemp_plot:
         vals = ", ".join([f"R{int(runs[i])}:{Te_mK[qi, i]:.2f}" for i in range(nRuns)])
         print(f"  Q{qi+1}: {vals}")
 
+
+    # ------------------------------------------------------------
+    # EXTRA NOISE POWER needed to go from model Te -> measured Tqubit
+    # Prints PSD and total power in BOTH linear units and dBm units.
+    # Also prints "signed" (direction) and "needed" (clipped at 0) versions.
+    # ------------------------------------------------------------
+    def nbar_from_T(f_hz, T_K):
+        f = np.asarray(f_hz, dtype=float)
+        T = np.asarray(T_K, dtype=float)
+
+        if np.any(T <= 0):
+            raise ValueError("nbar_from_T received non-positive temperature(s).")
+
+        x = (h * f) / (kB * T)
+
+        n = np.where(
+            x > 700,
+            0.0,
+            1.0 / (np.exp(x) - 1.0)
+        )
+        return n
+
+
+    def to_dBm(P_W):
+        """Convert power in Watts to dBm (uses magnitude so signed values don't break log)."""
+        return 10.0 * np.log10(np.abs(P_W) / 1e-3 + 1e-300)
+
+
+    Te_K = Te_mK / 1e3  # (nQ, nRuns)
+    Tq_K = T_qubit_K  # (nQ, nRuns)
+
+    n_meas = nbar_from_T(f_ge_Hz, Tq_K)
+    n_model = nbar_from_T(f_ge_Hz, Te_K)
+
+    # Signed: tells direction (model above/below)
+    delta_n_signed = n_meas - n_model
+
+    # Needed: answers "how much extra is needed" (never negative)
+    delta_n_needed = np.maximum(delta_n_signed, 0.0)
+
+    # ---- PSD (W/Hz): PSD = \u0394n * h f
+    PSD_W_per_Hz_signed = delta_n_signed * h * f_ge_Hz
+    PSD_W_per_Hz_needed = delta_n_needed * h * f_ge_Hz
+
+    PSD_dBm_per_Hz_signed = to_dBm(PSD_W_per_Hz_signed)
+    PSD_dBm_per_Hz_needed = to_dBm(PSD_W_per_Hz_needed)
+
+    # ---- Total power in bandwidth B_Hz
+    B_Hz = 1.0  # change if you want (e.g., IF BW, resonator linewidth, etc.)
+
+    P_W_signed = PSD_W_per_Hz_signed * B_Hz
+    P_W_needed = PSD_W_per_Hz_needed * B_Hz
+
+    P_dBm_signed = to_dBm(P_W_signed)
+    P_dBm_needed = to_dBm(P_W_needed)
+
+    print("\nExtra noise to go from model -> measured (reported at device input):")
+    print("Signed = (measured - model). Needed = max(Signed, 0).")
+    print(f"Using B_Hz = {B_Hz:g} Hz for total power.\n")
+
+    for qi in range(nQ):
+        print(f"Q{qi + 1}:")
+        for ri, r in enumerate(runs):
+            print(
+                f"  R{int(r)} | "
+                f"\u0394n_signed={delta_n_signed[qi, ri]: .3e}, \u0394n_needed={delta_n_needed[qi, ri]: .3e} | "
+                f"PSD_signed={PSD_W_per_Hz_signed[qi, ri]: .3e} W/Hz ({PSD_dBm_per_Hz_signed[qi, ri]: .1f} dBm/Hz), "
+                f"PSD_needed={PSD_W_per_Hz_needed[qi, ri]: .3e} W/Hz ({PSD_dBm_per_Hz_needed[qi, ri]: .1f} dBm/Hz) | "
+                f"P_signed={P_W_signed[qi, ri]: .3e} W ({P_dBm_signed[qi, ri]: .1f} dBm), "
+                f"P_needed={P_W_needed[qi, ri]: .3e} W ({P_dBm_needed[qi, ri]: .1f} dBm)"
+            )
+        print()
+
+    # ------------------------------------------------------------
+    # Print photon occupations and check inequality:
+    # 0 < n_model < n_meas << 1   (where "<<1" is heuristic)
+    # ------------------------------------------------------------
+
+    print("\nPhoton occupation at f_ge:")
+    for qi in range(nQ):
+        print(f"Q{qi + 1}:")
+        for ri, r in enumerate(runs):
+            nm = n_model[qi, ri]
+            nM = n_meas[qi, ri]
+            print(
+                f"  R{int(r)} | n_model={nm:.3e}  n_meas={nM:.3e}  ratio(meas/model)={(nM / nm if nm > 0 else np.inf):.2f}")
+
+    # Checks
+    all_pos_model = np.all(n_model > 0)
+    all_pos_meas = np.all(n_meas > 0)
+    model_lt_meas = np.all(n_model < n_meas)
+
+    # "<<" is not a strict math symbol, so pick a threshold to report
+    # Common choices: 0.1 (very small) or 0.01 (tiny). I'll show both.
+    meas_lt_0p1 = np.all(n_meas < 0.1)
+    meas_lt_0p01 = np.all(n_meas < 0.01)
+    
+
+    print("\nInequality checks:")
+    print(f"  0 < n_model: {all_pos_model}")
+    print(f"  0 < n_meas:  {all_pos_meas}")
+    print(f"  n_model < n_meas: {model_lt_meas}")
+
+    print("\nSummary stats:")
+    print(f"  n_model: min={np.min(n_model):.3e}, max={np.max(n_model):.3e}")
+    print(f"  n_meas : min={np.min(n_meas):.3e}, max={np.max(n_meas):.3e}")
+
+    # ------------------------------------------------------------
+
     # ------------------------------------------------------------
     # Plot: T_qubit(from Pe) vs Predicted Noise Temperature
     # ------------------------------------------------------------
