@@ -48,16 +48,28 @@ t1_errs = [
         [0.35, 1.39, 2.98, 2.02, 1.36]   # Qubit 6
     ]
 
-if T1_vs_qtemps:
-    run_markers = {5: "o", 6: "s", 7: "^", 8: "D"}
+# ---- Physics assumptions ----
+T1_baseline_us = 100.0          # Expected low-T plateau (>100 µs)
+Gamma0 = 1.0 / (T1_baseline_us * 1e-6)   # baseline rate in 1/s
+Delta_over_kB = 2.1             # K (Al junctions)
 
+def T1_model_us(T_mK, Gamma0, B, Delta_over_kB):
+    """Return T1(T) in microseconds."""
+    T_K = np.asarray(T_mK) * 1e-3
+    gamma = Gamma0 + B * np.exp(-Delta_over_kB / T_K)
+    return (1.0 / gamma) * 1e6
+
+
+if T1_vs_qtemps:
+
+    run_markers = {5: "o", 6: "s", 7: "^", 8: "D"}
     num_qubits = len(qubit_temps)
 
-    # ---- 6 subplots: one per qubit ----
     fig, axes = plt.subplots(2, 3, figsize=(14, 8), sharex=True, sharey=True)
     axes = axes.ravel()
 
     for q in range(num_qubits):
+
         ax = axes[q]
         color = colors[q % len(colors)]
 
@@ -67,28 +79,60 @@ if T1_vs_qtemps:
         y_all = np.asarray(t1_vals[q], dtype=float)
         yerr_all = np.asarray(t1_errs[q], dtype=float)
 
-        # Align T1 arrays to runs 58 (drop the first entry)
         y = y_all[1:1 + len(runs)]
         yerr = yerr_all[1:1 + len(runs)]
 
-        # Preliminary watermark (per subplot)
-        if show_text:
-            ax.text(
-                0.5, 0.5, 'Preliminary',
-                fontsize=35,
-                color='lightgray',
-                ha='center',
-                va='center',
-                alpha=0.3,
-                rotation=45,
-                transform=ax.transAxes,
+        # ---------- THEORETICAL OVERLAY (readable, anchored) ----------
+        # Use Al junction gap scale
+        Delta_over_kB = 2.1  # K
+
+        # Baseline expected at low T (<50 mK)
+        T1_baseline_us = 100.0
+        Gamma0 = 1.0 / (T1_baseline_us * 1e-6)
+
+        # Temperature grid for smooth curves
+        T_grid = np.linspace(max(1e-6, x.min() * 0.9), x.max() * 1.1, 400)
+
+        # Anchor curves at a representative temperature (no fitting)
+        T_star_mK = 100.0
+        T_star_K = T_star_mK * 1e-3
+
+        # Choose a few "target T1" values at T_star to generate 3 curves
+        # (These are just visual guides, not fits.)
+        targets_us = [80.0, 50.0, 30.0]
+
+        for T1_target_us in targets_us:
+            Gamma_target = 1.0 / (T1_target_us * 1e-6)
+
+            # Only meaningful if Gamma_target > Gamma0; otherwise B would be negative
+            if Gamma_target <= Gamma0:
+                continue
+
+            B = (Gamma_target - Gamma0) * np.exp(Delta_over_kB / T_star_K)
+
+            ax.plot(
+                T_grid,
+                T1_model_us(T_grid, Gamma0, B, Delta_over_kB),
+                color="black",
+                alpha=0.18,
+                lw=1.4,
                 zorder=0
             )
 
-        # connecting line across runs for this qubit
+        # Optional: label the overlay meaning on the first subplot only
+        if q == 0:
+            ax.text(
+                0.03, 0.10,
+                "Overlay: G1(T)=G0 + B exp[-(?/kB)/T]\n"
+                "?/kB=2.1 K (Al junctions), G0 from T10=100 µs\n"
+                "B chosen so model hits T1={80,50,30} µs at T=100 mK",
+                transform=ax.transAxes, fontsize=7.5, color="k", alpha=0.75,
+                bbox=dict(boxstyle="round", facecolor="white", alpha=0.7)
+            )
+
+        # ---------- DATA ----------
         ax.plot(x, y, "-", color=color, alpha=0.5, zorder=1)
 
-        # points + error bars (marker encodes run)
         for r_i, r in enumerate(runs):
             ax.errorbar(
                 x[r_i], y[r_i],
@@ -101,24 +145,22 @@ if T1_vs_qtemps:
                 zorder=3
             )
 
+        # 50 mK thermalization target
+        ax.axvline(50.0, linestyle="--", color="k", linewidth=1, alpha=0.5, zorder=0)
+
         ax.set_title(f"Qubit {q+1}")
         ax.set_yscale("log")
-        ax.grid(True)
+        ax.grid(True, which="both", alpha=0.35)
 
-        # Optional annotations
-        if show_text:
-            for r_i, r in enumerate(runs):
-                ax.text(x[r_i] + 2.0, y[r_i] + 1.0, f"R{int(r)}", fontsize=9, color=color)
-
-    # Shared axis labels (nice for grids)
     fig.supxlabel("Effective Qubit Temperature (mK)", y=0.06)
     fig.supylabel("T1 (µs) [log scale]")
+
     fig.suptitle(
-        "Mean T1 vs Effective Qubit Temperature (one panel per qubit)",
+        "Mean T1 vs Effective Qubit Temperature\n"
+        "(Activated qp model overlay, ?/kB = 2.1 K, T10 = 100 µs)",
         y=0.98
     )
 
-    # Legend: runs only (since each panel is one qubit)
     run_handles = [
         Line2D([0], [0], marker=run_markers[int(r)], color="black", lw=0,
                markersize=7, label=f"Run {int(r)}")
@@ -133,56 +175,5 @@ if T1_vs_qtemps:
         bbox_to_anchor=(0.5, -0.02)
     )
 
-    # Leave extra room at bottom for xlabel + legend
     fig.tight_layout(rect=[0, 0.10, 1, 0.95])
-    plt.show()
-
-if T1_AND_qtemps:
-    # Align T1 arrays to runs 58 by dropping the first entry (per qubit)
-    # (list slicing, not numpy slicing)
-    t1_vals_58 = [row[1:1 + len(runs)] for row in t1_vals]  # 6 x 4
-    t1_errs_58 = [row[1:1 + len(runs)] for row in t1_errs]  # 6 x 4
-
-    # ---- 6 subplots: one per qubit ----
-    fig, axes = plt.subplots(2, 3, figsize=(14, 8), sharex=True)
-    axes = axes.ravel()
-
-    for q in range(6):
-        axL = axes[q]
-        axR = axL.twinx()
-
-        # Left axis: temperature
-        axL.errorbar(
-            runs, qubit_temps[q], yerr=qtemp_errs[q],
-            fmt="o-", capsize=3, label="Eff. Temp"
-        )
-        axL.set_ylabel("Temp (mK)")
-        axL.grid(True)
-
-        # Right axis: T1
-        axR.errorbar(
-            runs, t1_vals_58[q], yerr=t1_errs_58[q],
-            fmt="s--", capsize=3, label="T1"
-        )
-        axR.set_ylabel("T1 (µs)")
-
-        axL.set_title(f"Qubit {q + 1}")
-
-        # Optional: mark run-7 change
-        axL.axvline(7, linestyle="--", linewidth=1)
-
-    # Shared x label + title
-    fig.supxlabel("Run number")
-    fig.suptitle("Per-Qubit: Average T1 and Average Effective Temperature vs Run", y=0.98)
-
-    # Stable shared legend (dont pull from twinx)
-    legend_handles = [
-        Line2D([0], [0], marker="o", lw=1, label="Eff. Temp"),
-        Line2D([0], [0], marker="s", lw=1, linestyle="--", label="T1"),
-        Line2D([0], [0], lw=1, linestyle="--", color="k", label="Run 7 change"),
-    ]
-    fig.legend(legend_handles, [h.get_label() for h in legend_handles],
-               ncol=3, loc="lower center", bbox_to_anchor=(0.5, -0.02), frameon=True)
-
-    fig.tight_layout(rect=[0, 0.06, 1, 0.95])
     plt.show()
