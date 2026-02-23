@@ -522,7 +522,7 @@ class SSFTempCalcAndPlots:
 
         return all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs, fit_results
 
-    def run_ssf_qtemps_iminuit(self, pairs_info, run_num, limit_temp_k=0.8, do_plots = False, save_figs_path = ""):
+    def run_ssf_qtemps_iminuit(self, pairs_info, run_num, limit_temp_k=0.8, do_plots = False, save_figs_path = "", dontuse_midpt_thresh = False):
         """
         Uses iminuit instead of GMM for double gaussian fitting and minimization.
 
@@ -580,9 +580,9 @@ class SSFTempCalcAndPlots:
                 (Pg, Pe, m2, means, sigmas, weights, threshold_mid, threshold_mid_err,
                  ground_gaussian, excited_gaussian,
                  ground_data, excited_data, x,
-                 lr_stat, nll1, nll2) = self.fit_double_gaussian_midpoint_iminuit(ig_new)
+                 lr_stat, nll1, nll2) = self.fit_double_gaussian_midpoint_iminuit(ig_new, dontuse_midpt_thresh)
 
-                pop_threshold = threshold_mid # threshold to determine Pe
+                pop_threshold = threshold_mid # threshold used to determine Pe
 
                 # ---------- quality cut (do 2 gaussians fit the data better than a single one?) ---------------------
 
@@ -627,14 +627,15 @@ class SSFTempCalcAndPlots:
                     print(f'Rejected a fit with Likelihood ratio test score < {lr_stat_limit}')
                     # not convincingly bimodal --> skip this dataset, it is better described by a single gaussian
 
-                    if do_plots and (qid == 0):
+                    if do_plots:
                         bad_plots_path = os.path.join(save_figs_path, "bad_fits_LRT_failed")
                         os.makedirs(bad_plots_path, exist_ok=True)
                         self.plot_gaussians_qtemps(qid, bad_plots_path, ig_new, ground_data,
                                                             excited_data, ground_gaussian,
                                                             excited_gaussian, pop_threshold,
                                                             idx, weights,
-                                                            sigmas, means, temperature_mk = None, title_ext = f"LRT val:{lr_stat:.2f}")
+                                                            sigmas, means, temperature_mk = None, title_ext = f"LRT val:{lr_stat:.2f}",
+                                                            dontuse_midpt_thresh = dontuse_midpt_thresh)
 
                     continue
 
@@ -672,12 +673,13 @@ class SSFTempCalcAndPlots:
                 sigma_TmK = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
 
                 # Plotting
-                if do_plots and (qid == 0):
+                if do_plots:
                     self.plot_gaussians_qtemps(qid, save_figs_path, ig_new, ground_data,
                                                excited_data, ground_gaussian,
                                                excited_gaussian, pop_threshold,
                                                idx, weights,
-                                               sigmas, means, T_mK, title_ext=f"Qfreq:{freq_mhz:.2f}MHz, LRT val:{lr_stat:.2f}")
+                                               sigmas, means, T_mK, title_ext=f"Qfreq:{freq_mhz:.2f}MHz, LRT val:{lr_stat:.2f}",
+                                               dontuse_midpt_thresh = dontuse_midpt_thresh)
 
                 # -------- save qubit temps and timestamps ----------------------------------------------
                 all_qubit_temperatures[qid].append(T_mK)  # temperatures in mK
@@ -849,7 +851,7 @@ class SSFTempCalcAndPlots:
         return thresh_results
 
     def plot_gaussians_qtemps(self, q_key, qubit_folder, ig_new, ground_data, excited_data, ground_gaussian, excited_gaussian, pop_threshold, dataset, weights, sigmas, means,
-                              temperature_mk = None, title_ext = ""):
+                              temperature_mk = None, title_ext = "", dontuse_midpt_thresh = False):
         # -----------------PLOTS TO CHECK g-state double gaussian FITS AND THRESHOLDS---------------
         # Plotting double gaussian distributions and fitting
         xlims = [np.min(ig_new), np.max(ig_new)]
@@ -890,7 +892,9 @@ class SSFTempCalcAndPlots:
 
         plt.plot(x, ground_gaussian_fit, label='Ground Gaussian Fit', color='blue', linewidth=2)
         plt.plot(x, excited_gaussian_fit, label='Excited (leakage) Gaussian Fit', color='red', linewidth=2)
-        plt.axvline(pop_threshold, color='black', linestyle='--', linewidth=1,
+
+        if not dontuse_midpt_thresh:
+            plt.axvline(pop_threshold, color='black', linestyle='--', linewidth=1,
                     label=f'Threshold ({pop_threshold:.2f})')
 
         # Add shading for ground and excited state regions
@@ -1816,9 +1820,13 @@ class SSFTempCalcAndPlots:
         """Normalized 1D Gaussian pdf."""
         return np.exp(-0.5 * ((x - mu) / sigma) ** 2) / (np.sqrt(2 * np.pi) * sigma)
 
-    def fit_double_gaussian_midpoint_iminuit(self, iq_data):
+    def fit_double_gaussian_midpoint_iminuit(self, iq_data, dontuse_midpt_thresh = False):
         """
         Iminuit-based version of fit_double_gaussian_midpoint().
+
+        Default: calculates the Pe threshold by finding the midpoint of the two gaussian means.
+        If dontuse_midpt_thresh is set to True, it instead uses the underlying probabilities (weights) found during
+        the iminuit likelihood minimization process.
 
         Returns:
           Pg, Pe, minuit_2g, means, sigmas, weights,
@@ -1919,8 +1927,11 @@ class SSFTempCalcAndPlots:
         sigmas = sigmas[order]
         weights = weights[order]
 
-        # -------------------- Midpoint threshold --------------------
-        threshold_mid = 0.5 * (means[ground_gaussian] + means[excited_gaussian])
+        if dontuse_midpt_thresh:
+            threshold_mid = None
+        else:
+            # -------------------- Midpoint threshold --------------------
+            threshold_mid = 0.5 * (means[ground_gaussian] + means[excited_gaussian])
 
         # -------------------- Responsibilities (probabilitie) & threshold_mid_err --------------------
         g_ground = self.gaussian_pdf(x, means[ground_gaussian], sigmas[ground_gaussian])
@@ -1942,14 +1953,20 @@ class SSFTempCalcAndPlots:
         sigma_mu_g = sigma_g / np.sqrt(N_g) if N_g > 0 else 0.0
         sigma_mu_e = sigma_e / np.sqrt(N_e) if N_e > 0 else 0.0
 
-        threshold_mid_err = 0.5 * np.sqrt(sigma_mu_g ** 2 + sigma_mu_e ** 2)
 
-        # -------------------- Split data and compute populations --------------------
-        ground_data = x[x <= threshold_mid]
-        excited_data = x[x > threshold_mid]
+        if dontuse_midpt_thresh:
+            Pg = weihts[0] #ground gaussian comes first
+            Pe = weights[1]
+            threshold_mid_err = None
+        else:
+            threshold_mid_err = 0.5 * np.sqrt(sigma_mu_g ** 2 + sigma_mu_e ** 2)
 
-        Pg = len(ground_data) / len(x)
-        Pe = len(excited_data) / len(x)
+            # -------------------- Split data and compute populations --------------------
+            ground_data = x[x <= threshold_mid]
+            excited_data = x[x > threshold_mid]
+
+            Pg = len(ground_data) / len(x)
+            Pe = len(excited_data) / len(x)
 
         return (
             Pg,
