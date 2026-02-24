@@ -577,7 +577,7 @@ class SSFTempCalcAndPlots:
                 ts_unix = rec["data_timestamp"]
 
                 # -------- Only using double-Gaussian fit on ground state data, without fallback method --------------------------
-                (Pg, Pe, m2, means, sigmas, weights, threshold_mid, threshold_mid_err,
+                (Pg, Pe, sigma_Pe, m2, means, sigmas, weights, threshold_mid, threshold_mid_err,
                  ground_gaussian, excited_gaussian,
                  ground_data, excited_data, x,
                  lr_stat, nll1, nll2) = self.fit_double_gaussian_midpoint_iminuit(ig_new, dontuse_midpt_thresh)
@@ -639,22 +639,6 @@ class SSFTempCalcAndPlots:
 
                     continue
 
-                # -- 1-σ contribution to Pe from the threshold uncertainty --
-                mask_plus = (ig_new <= threshold_mid + threshold_mid_err)
-                Pe_plus = 1.0 - mask_plus.mean()
-
-                mask_minus = (ig_new <= threshold_mid - threshold_mid_err)
-                Pe_minus = 1.0 - mask_minus.mean()
-
-                sigma_Pe_from_thresh = 0.5 * abs(Pe_plus - Pe_minus)
-
-                # statistical err of Pe
-                Nshots = ig_new.size
-                sigma_Pe_stat = np.sqrt(Pe * (1 - Pe) / Nshots)
-
-                # -- total 1‐σ uncertainty on Pe--
-                sigma_Pe = np.sqrt(sigma_Pe_from_thresh ** 2 + sigma_Pe_stat ** 2)
-
                 pop_threshold = float(pop_threshold)
 
                 #Calculate qubit temps using Pg and Pe
@@ -693,8 +677,8 @@ class SSFTempCalcAndPlots:
                     "ig_new": ig_new,
                     "ground_data": ground_data,
                     "excited_data": excited_data,
-                    "ground_gaussian": ground_gaussian,
-                    "excited_gaussian": excited_gaussian,
+                    "ground_gaussian": ground_gaussian, # index
+                    "excited_gaussian": excited_gaussian, # index
                     "pop_threshold": pop_threshold,
                     "weights": weights,
                     "sigmas": sigmas, # of each gaussian in the double gaussian fit
@@ -1928,63 +1912,93 @@ class SSFTempCalcAndPlots:
         weights = weights[order]
 
         if dontuse_midpt_thresh:
+            Pg = weights[0] #ground gaussian comes first
+            Pe = weights[1]
             threshold_mid = None
+            threshold_mid_err = None
+
+            # --- uncertainty from Minuit on w1 (and thus also on w2=1-w1) ---
+            # Prefer covariance if available; fall back to errors.
+            sigma_w1 = None
+            if m2.covariance is not None:
+                try:
+                    sigma_w1 = float(np.sqrt(m2.covariance["w1", "w1"]))
+                except Exception:
+                    sigma_w1 = None
+            if sigma_w1 is None:
+                sigma_w1 = float(m2.errors["w1"])
+
+            # Pe is either w1 or w2; in both cases sigma is sigma_w1
+            sigma_Pe = sigma_w1
+            sigma_Pg = sigma_w1
+
+            # In weights-mode, "ground_data/excited_data" via a hard cut is not defined.
+            ground_data = None
+            excited_data = None
+
         else:
             # -------------------- Midpoint threshold --------------------
             threshold_mid = 0.5 * (means[ground_gaussian] + means[excited_gaussian])
 
-        # -------------------- Responsibilities (probabilitie) & threshold_mid_err --------------------
-        g_ground = self.gaussian_pdf(x, means[ground_gaussian], sigmas[ground_gaussian])
-        g_excited = self.gaussian_pdf(x, means[excited_gaussian], sigmas[excited_gaussian])
+            g_ground = self.gaussian_pdf(x, means[ground_gaussian], sigmas[ground_gaussian])
+            g_excited = self.gaussian_pdf(x, means[excited_gaussian], sigmas[excited_gaussian])
 
-        pg = weights[ground_gaussian] * g_ground
-        pe = weights[excited_gaussian] * g_excited
-        denom = np.clip(pg + pe, eps, None) # total
+            pg = weights[ground_gaussian] * g_ground
+            pe = weights[excited_gaussian] * g_excited
+            denom = np.clip(pg + pe, eps, None)  # total
 
-        rg = pg / denom  # responsibility for ground
-        re = pe / denom  # responsibility for excited
+            rg = pg / denom  # responsibility for ground
+            re = pe / denom  # responsibility for excited
 
-        N_g = rg.sum()
-        N_e = re.sum()
+            N_g = rg.sum()
+            N_e = re.sum()
 
-        sigma_g = sigmas[ground_gaussian]
-        sigma_e = sigmas[excited_gaussian]
+            sigma_g = sigmas[ground_gaussian]
+            sigma_e = sigmas[excited_gaussian]
 
-        sigma_mu_g = sigma_g / np.sqrt(N_g) if N_g > 0 else 0.0
-        sigma_mu_e = sigma_e / np.sqrt(N_e) if N_e > 0 else 0.0
+            sigma_mu_g = sigma_g / np.sqrt(N_g) if N_g > 0 else 0.0
+            sigma_mu_e = sigma_e / np.sqrt(N_e) if N_e > 0 else 0.0
 
-
-        if dontuse_midpt_thresh:
-            Pg = weihts[0] #ground gaussian comes first
-            Pe = weights[1]
-            threshold_mid_err = None
-        else:
+            # -------------------- Midpoint threshold error -------------------
             threshold_mid_err = 0.5 * np.sqrt(sigma_mu_g ** 2 + sigma_mu_e ** 2)
 
             # -------------------- Split data and compute populations --------------------
             ground_data = x[x <= threshold_mid]
             excited_data = x[x > threshold_mid]
-
             Pg = len(ground_data) / len(x)
             Pe = len(excited_data) / len(x)
+
+            # -------------------- Pe uncertainty -----------------------------
+            # Total 1-sigma uncertainty on Pe
+            mask_plus = (x <= threshold_mid + threshold_mid_err)
+            Pe_plus = 1.0 - mask_plus.mean()
+            mask_minus = (x <= threshold_mid - threshold_mid_err)
+            Pe_minus = 1.0 - mask_minus.mean()
+            sigma_Pe_from_thresh = 0.5 * abs(Pe_plus - Pe_minus)
+
+            Nshots = x.size
+            sigma_Pe_stat = np.sqrt(Pe * (1.0 - Pe) / Nshots)
+
+            sigma_Pe = np.sqrt(sigma_Pe_from_thresh ** 2 + sigma_Pe_stat ** 2)
 
         return (
             Pg,
             Pe,
+            sigma_Pe,
             m2,  # 2-Gaussian Minuit object
-            means,
-            sigmas,
-            weights,
+            means, # of the two gaussians, list
+            sigmas, # of the two gaussians, list
+            weights, # of the two gaussians, list
             threshold_mid,
             threshold_mid_err,
-            ground_gaussian,
-            excited_gaussian,
+            ground_gaussian, # index
+            excited_gaussian, # index
             ground_data,
             excited_data,
-            x,
-            lr_stat,
-            nll_1g_min,
-            nll_2g_min,
+            x, # iq_data
+            lr_stat, # likelihood ratio test score
+            nll_1g_min, # negative-log likelihood, 1 gaussian
+            nll_2g_min, # negative-log likelihood, 2 gaussians
         )
 
 class RPMTempCalcAndPlots:
