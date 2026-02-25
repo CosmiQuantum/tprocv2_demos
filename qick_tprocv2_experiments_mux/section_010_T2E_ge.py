@@ -368,16 +368,17 @@ class T2EMeasurement:
             # ----------------- scale like curve_fit (absolute_sigma=False) -----------------
             N = len(y)  # number of data points (normalized space)
             p = 6  # number of fit params: a0..a5
-            ndof = max(1, N - p)
-
-            # Our objective returns SSE = sum(r^2). This is "chi2" in curve_fit's scaling sense
-            chi2_min = m.fval
-
-            scale = chi2_min / ndof  # reduced chi2 (residual variance estimate)
-            pcov = pcov * scale
-            # ------------------------------------------------------------------------------------------------
+            ndof = N - p
+            if ndof > 0 and np.isfinite(m.fval):
+                # Our objective returns SSE = sum(r^2). This is "chi2" in curve_fit's scaling sense
+                chi2_min = m.fval
+                scale = max(0.0, chi2_min / ndof)  # reduced chi2 (residual variance estimate)
+                pcov = pcov * scale
+            else:
+                pcov[:] = np.nan
 
             perr = np.sqrt(np.diag(pcov))
+            # ------------------------------------------------------------------------------------------------
 
         # Output dictionary (same keys/units logic as other code)
         out = {

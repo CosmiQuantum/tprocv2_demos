@@ -6,23 +6,24 @@ runs6_through_8_rpm = True
 show_text = False
 colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
 
-if runs6_through_8_rpm is False:
+if runs6_through_8_rpm is True:
+    print("runs6_through_8_rpm")
     qubit_temps = [
-        [201.13,  99.22,  81.46,  71.21],  # Qubit 1
-        [302.20,  84.26,  78.32,  75.36],  # Qubit 2
-        [170.90, 106.43,  80.11,  78.82],  # Qubit 3
-        [339.13, 135.15,  91.27, 100.85],  # Qubit 4
-        [174.67,  76.82,  87.88,  74.10],  # Qubit 5
-        [225.68,  91.56,  78.55,  64.90],  # Qubit 6
+        [197.35, 99.22, 81.46, 71.21],  # Qubit 1
+        [361.39, 84.26, 78.32, 75.36],  # Qubit 2
+        [164.24, 106.43, 80.11, 78.82],  # Qubit 3
+        [354.34, 135.15, 91.27, 100.85],  # Qubit 4
+        [169.67, 76.82, 87.88, 74.10],  # Qubit 5
+        [216.55, 91.56, 78.55, 64.90],  # Qubit 6
     ]
 
     qtemp_errs = [
-        [10.98, 9.99, 2.52, 1.26],  # Qubit 1
-        [16.42, 2.74, 1.18, 1.64],  # Qubit 2
-        [7.33, 8.37, 1.37, 2.55],  # Qubit 3,
-        [19.11, 10.16, 2.38, 7.78],  # Qubit 4,
-        [6.17, 5.77, 1.58, 2.07],  # Qubit 5
-        [8.18, 1.65, 1.98, 3.96]   # Qubit 6
+        [12.76, 9.99, 2.52, 1.26],  # Qubit 1
+        [33.57, 2.74, 1.18, 1.64],  # Qubit 2
+        [8.37, 8.37, 1.37, 2.55],  # Qubit 3
+        [23.71, 10.16, 2.38, 7.78],  # Qubit 4
+        [5.94, 5.77, 1.58, 2.07],  # Qubit 5
+        [7.80, 1.65, 1.98, 3.96],  # Qubit 6
     ]
 
     runs = np.array([5, 6, 7, 8])
@@ -67,6 +68,42 @@ if runs6_through_8_rpm is False:
                 if not np.isnan(y):
                     plt.text(x+0.06, y + 2.0, f"{y:.0f}mK", ha='center', va='bottom', fontsize=11, color=color)
 
+    # --- Add run-change "bubbles" (one per run) ---
+    run_notes = {
+        5: "Added eccosorbs\nand LPFs",
+        6: "Added 0dB + copper tape to\n mag can pass-through holes\n and qubit package ",
+        7: "Mag can lid sealing\n with copper tape\n + changed attenuation",
+        8: "HERD1 filter\n+ 0dB",
+    }
+
+    # Convert to array for easy column operations
+    temps_mat = np.array(qubit_temps, dtype=float)  # shape (n_qubits, n_runs)
+
+    # choose an anchor y-value for each run (median across qubits)
+    y_anchor = np.nanmedian(temps_mat, axis=0)
+
+    for i, r in enumerate(runs):
+        note = run_notes.get(int(r), None)
+        if note is None or np.isnan(y_anchor[i]):
+            continue
+
+        # Place bubble slightly above the median point cluster
+        xy = (r, y_anchor[i])
+        xytext = (r + 0.40, y_anchor[i] + 70) # tweak offsets to taste
+
+        plt.annotate(
+            note,
+            xy=xy,
+            xytext=xytext,
+            textcoords="data",
+            ha="left",
+            va="center",
+            fontsize=8,
+            bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="gray", alpha=0.9),
+            arrowprops=dict(arrowstyle="->", lw=0.8, color="gray"),
+            zorder=5
+        )
+
     plt.xlabel("Run Number")
     plt.ylabel("Average Effective Qubit Temperature (mK)")
     plt.title("Average Effective Qubit Temperature vs Run Number")
@@ -76,23 +113,23 @@ if runs6_through_8_rpm is False:
     plt.grid(True)
     plt.tight_layout()
     plt.show()
-else: # Only SSF qubit temps
+else: # Only SSF qubit temps, OUTDATED
     qubit_temps = [
-        [201.13, 100.98, 89.26, 77.21],  # Qubit 1
-        [302.20, None, 85.85, 85.96],  # Qubit 2
-        [170.90, None, 84.47, 85.38],  # Qubit 3
-        [339.13, None, None, None],  # Qubit 4
-        [174.67, 88.59, 93.73, 81.36],  # Qubit 5
-        [225.68, None, None, None],  # Qubit 6
+        [197.35, 100.98, 89.26, 77.21],  # Qubit 1
+        [361.39, None, 85.85, 85.96],  # Qubit 2
+        [164.24, None, 84.47, 85.38],  # Qubit 3
+        [354.34, None, None, None],  # Qubit 4
+        [169.67, 88.59, 93.73, 81.36],  # Qubit 5
+        [216.55, None, None, None],  # Qubit 6
     ]
 
     qtemp_errs = [
-        [10.98, 3.84, 2.26, 1.88],  # Qubit 1
-        [16.42, None, 2.58, 3.09],  # Qubit 2
-        [7.33, None, 2.02, 2.83],  # Qubit 3,
-        [19.11,None, None, None],  # Qubit 4,
-        [6.17, 2.98, 2.29, 1.14],  # Qubit 5
-        [8.18, None,None, None]  # Qubit 6
+        [12.76, 3.84, 2.26, 1.88],  # Qubit 1
+        [33.57, None, 2.58, 3.09],  # Qubit 2
+        [8.37, None, 2.02, 2.83],  # Qubit 3
+        [23.71, None, None, None],  # Qubit 4
+        [5.94, 2.98, 2.29, 1.14],  # Qubit 5
+        [7.80, None, None, None],  # Qubit 6
     ]
 
     runs = np.array([5, 6, 7, 8])
@@ -138,6 +175,42 @@ else: # Only SSF qubit temps
             for x, y in zip(runs[mask], temps_array[mask]):
                 plt.text(x + 0.06, y + 2.0, f"{y:.0f}mK",
                          ha='center', va='bottom', fontsize=11, color=color)
+
+        # --- Add run-change "bubbles" (one per run) ---
+        run_notes = {
+            5: "Added eccosorbs\nand LPFs",
+            6: "Added 0dB + copper tape to\n mag can pass-through holes\n and qubit package ",
+            7: "Mag can lid sealing\n with copper tape\n + changed attenuation",
+            8: "HERD1 filter\n+ 0dB",
+        }
+
+        # Convert to array for easy column operations
+        temps_mat = np.array(qubit_temps, dtype=float)  # shape (n_qubits, n_runs)
+
+        # choose an anchor y-value for each run (median across qubits)
+        y_anchor = np.nanmedian(temps_mat, axis=0)
+
+        for i, r in enumerate(runs):
+            note = run_notes.get(int(r), None)
+            if note is None or np.isnan(y_anchor[i]):
+                continue
+
+            # Place bubble slightly above the median point cluster
+            xy = (r, y_anchor[i])
+            xytext = (r + 0.40, y_anchor[i] + 60)  # tweak offsets to taste
+
+            plt.annotate(
+                note,
+                xy=xy,
+                xytext=xytext,
+                textcoords="data",
+                ha="left",
+                va="center",
+                fontsize=8,
+                bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="gray", alpha=0.9),
+                arrowprops=dict(arrowstyle="->", lw=0.8, color="gray"),
+                zorder=5
+            )
 
     plt.xlabel("Run Number")
     plt.ylabel("Average Effective Qubit Temperature (mK)")

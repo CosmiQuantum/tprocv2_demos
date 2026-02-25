@@ -273,7 +273,7 @@ date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_g
 # t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, FRIDGE)
 # date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True)
-# #
+#
 # t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, FRIDGE)
 # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
@@ -360,12 +360,12 @@ date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_g
 # t2e_vs_time.plot_with_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
 # t2e_vs_time.plot_with_errs_single_plot(date_times_t2e, t2e_vals, t2e_fit_err, show_legends=True)
 ############################################### Qubit Frequency hist Plots #############################################
-qfreq_distribution_plots = QfreqHistPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
-qfreq_distribution_plots.run(q_freqs, qspec_fit_err)
+# qfreq_distribution_plots = QfreqHistPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
+# qfreq_distribution_plots.run(q_freqs, qspec_fit_err)
 # ############################################## 09: T1 hist/cumul/err Plots #############################################
 # t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-#                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, run_notes, run_number, fridge=FRIDGE)
+                                            #save_figs, fit_saved, signal, data_path, plots_path, run_name, run_notes, run_number, fridge=FRIDGE)
 # dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", process_shots = process_shots_t1ge)
 # t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
 

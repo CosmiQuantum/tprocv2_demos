@@ -577,12 +577,10 @@ class SSFTempCalcAndPlots:
                 ts_unix = rec["data_timestamp"]
 
                 # -------- Only using double-Gaussian fit on ground state data, without fallback method --------------------------
-                (Pg, Pe, sigma_Pe, m2, means, sigmas, weights, threshold_mid, threshold_mid_err,
+                (Pg, Pe, sigma_Pe, m2, means, sigmas, weights, pop_threshold, pop_threshold_err,
                  ground_gaussian, excited_gaussian,
                  ground_data, excited_data, x,
                  lr_stat, nll1, nll2) = self.fit_double_gaussian_midpoint_iminuit(ig_new, dontuse_midpt_thresh)
-
-                pop_threshold = threshold_mid # threshold used to determine Pe
 
                 # ---------- quality cut (do 2 gaussians fit the data better than a single one?) ---------------------
 
@@ -639,7 +637,8 @@ class SSFTempCalcAndPlots:
 
                     continue
 
-                pop_threshold = float(pop_threshold)
+                if pop_threshold is not None:
+                    pop_threshold = float(pop_threshold)
 
                 #Calculate qubit temps using Pg and Pe
                 temp_k = self.calculate_qubit_temperature(freq_mhz, Pg, Pe)

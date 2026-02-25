@@ -323,17 +323,26 @@ class T1Measurement:
 
         if cov is not None:
             try:
-                var_c = cov["c", "c"] # Does the covariance exist AND does it contain a variance for T1? Var(T1) = cov[T1,T1]
-            except Exception: # Fallback: in case covariance degenerates to a NumPy array, we can use parameter indexing
+                var_c = cov["c", "c"]  # Var(T1) = C[c,c]
+            except Exception:
+                # Fallback if covariance behaves like a NumPy array
                 params = list(m.parameters)
                 if "c" in params:
                     idx_c = params.index("c")
                     var_c = cov[idx_c, idx_c]
-                else: # nothing worked
+                else:
                     var_c = None
 
-            # We only accept a valid non-negative variance
+            # --- Apply residual scaling if fit was unweighted ---
             if var_c is not None and var_c >= 0:
+                if y_errs is None:
+                    N = len(t)
+                    p = 3  # a, c (T1), d
+                    ndof = N - p
+                    if ndof > 0 and np.isfinite(m.fval):
+                        scale = m.fval / ndof  # residual variance estimate
+                        var_c *= scale
+
                 T1_err = float(np.sqrt(var_c))
 
         T1_est = float(c_fit) # out T1 result
