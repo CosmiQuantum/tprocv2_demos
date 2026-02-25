@@ -255,10 +255,10 @@ run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB
 #                                        save_figs, fit_saved, signal, run_name, FRIDGE)
 # date_times_res_spec, res_freqs = res_spec_vs_time.run()
 # #
-q_spec_vs_time = QubitFreqsVsTime(data_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                  save_figs, fit_saved, signal, run_name, FRIDGE)
-date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
-#
+# q_spec_vs_time = QubitFreqsVsTime(data_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                   save_figs, fit_saved, signal, run_name, FRIDGE)
+# date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
+# #
 # print("qspec fit errs Q1: ", qspec_fit_err[0])
 # print("mean qspec fit err Q1: ", np.mean(qspec_fit_err[0]))
 

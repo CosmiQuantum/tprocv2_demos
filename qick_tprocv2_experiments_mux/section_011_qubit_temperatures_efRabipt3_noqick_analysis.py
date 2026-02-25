@@ -111,11 +111,16 @@ class Temps_EFAmpRabiExperiment:
             # If we want Minuit's errors to be comparable, we apply the same scaling here. Raw Minuit covariance is missing the noise scale
             # estimates the noise variance from the residuals
             N = x.size
-            p = len(names)
-            ndof = N - p
+            # Count how many parameters are actually free in this Minuit run
+            # (fixed params reduce the number of fit dof)
+            p_free = sum(not m.fixed[name] for name in ["a", "b", "c", "d"])
+
+            ndof = N - p_free
             if ndof > 0 and np.isfinite(m.fval):
-                scale = m.fval / ndof
+                scale = m.fval / ndof  # residual variance estimate
                 pcov = pcov * scale
+            else:
+                pcov[:] = np.nan
 
         return popt, pcov
 
