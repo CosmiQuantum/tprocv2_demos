@@ -1698,7 +1698,7 @@ class PlotRR_noQick:
         if plot_rabis_Qtemps:
             list_of_all_qubits = [i for i in range(self.number_of_qubits + 1)]
             self.load_plot_save_rabis_Qtemps(list_of_all_qubits, run_num = self.run_num, save_figs = self.save_figs, filter_out_bad_amp_fits = self.filter_out_bad_amp_fits,
-                                             combine_IQ_signal = combine_rpm_IQ_signal, Pe_dist_err_dict = Pe_dist_err_dict)
+                                             combine_IQ_signal = combine_rpm_IQ_signal)
         # if plot_rabi:
         #     if rabi_rolling_avg:
         #         self.load_plot_save_rabi(rabi_rolling_avg=True)
@@ -2138,9 +2138,12 @@ class PlotRR_noQick:
             },
         }
 
-
-    def update_rpm_errors_with_pe_scatter_inplace(self, combined_qtemp_data, Pe_dist_err_dict=None,
-                                                    rpm_pe_scatter_min_n=5, verbose=True,
+    def update_rpm_errors_with_pe_scatter_inplace(
+            self,
+            combined_qtemp_data,
+            Pe_dist_err_dict=None,
+            rpm_pe_scatter_min_n=5,
+            verbose=True,
     ):
         """
         In-place update of RPM error bars using an optional Pe_dist_err_dict (from the Pe histogram function).
@@ -2163,10 +2166,13 @@ class PlotRR_noQick:
         combined_qtemp_data : same object (mutated)
         stats : dict with counts of updated/skipped
         """
+        import numpy as np
+
         stats = {
             "updated_points": 0,
             "skipped_missing_fields": 0,
             "skipped_bad_numbers": 0,
+            "skipped_bad_qubit_key": 0,
             "skipped_compute_fail": 0,
             "used_pe_dist_err": 0,
         }
@@ -2174,9 +2180,20 @@ class PlotRR_noQick:
         if Pe_dist_err_dict is None:
             Pe_dist_err_dict = {}
 
-        for file_rec in combined_qtemp_data:
-            qubits = file_rec.get("qubits", {})
-            for q_key, d in qubits.items():
+        for file_rec in (combined_qtemp_data or []):
+            qubits = file_rec.get("qubits", {}) if isinstance(file_rec, dict) else {}
+            for q_key, d in (qubits.items() if isinstance(qubits, dict) else []):
+
+                if not isinstance(d, dict):
+                    stats["skipped_missing_fields"] += 1
+                    continue
+
+                # Normalize qubit key for histogram dict lookup
+                try:
+                    q_int = int(q_key)
+                except Exception:
+                    stats["skipped_bad_qubit_key"] += 1
+                    continue
 
                 # --- Required fields to recompute errs (no refits needed) ---
                 A1 = d.get("A1", None)
@@ -2204,10 +2221,10 @@ class PlotRR_noQick:
 
                 # --- Optional histogram-based Pe scatter for this qubit ---
                 Pe_dist_err = None
-                h = Pe_dist_err_dict.get(int(q_key), None)
+                h = Pe_dist_err_dict.get(q_int, None)
                 if h is not None:
                     sigma_w = h.get("sigma_w", np.nan)
-                    n_kept = h.get("n_kept", 0)
+                    n_kept = int(h.get("n_kept", 0) or 0)
                     if np.isfinite(sigma_w) and (sigma_w > 0.0) and (n_kept >= rpm_pe_scatter_min_n):
                         Pe_dist_err = float(sigma_w)
                         stats["used_pe_dist_err"] += 1
@@ -2215,23 +2232,27 @@ class PlotRR_noQick:
                 # --- Recompute only error bars ---
                 try:
                     T_err, Pe_err = self.compute_temperature_error_RPM(
-                        A1=A1, A2=A2,
-                        Pe=Pe,
+                        A1=float(A1),
+                        A2=float(A2),
+                        Pe=float(Pe),
                         Pe_dist_err=Pe_dist_err,  # <- adds extra scatter if provided
-                        T_mK=T_mK,
-                        qubit_freq_MHz=qfreq_MHz,
-                        sigma_A1=sigma_A1,
-                        sigma_A2=sigma_A2,
-                        sigma_qfreq_MHz=qfreq_err,
+                        T_mK=float(T_mK),
+                        qubit_freq_MHz=float(qfreq_MHz),
+                        sigma_A1=float(sigma_A1),
+                        sigma_A2=float(sigma_A2),
+                        sigma_qfreq_MHz=float(qfreq_err),
                     )
                 except Exception:
                     stats["skipped_compute_fail"] += 1
                     continue
 
-                # store back in-place
+                # --- Store back in-place (match your canonical keys) ---
                 d["T_mK_err"] = float(T_err) if np.isfinite(T_err) else np.nan
-                d["P_e_err"] = float(Pe_err) if np.isfinite(Pe_err) else np.nan
-                d["Pe_dist_err_used"] = Pe_dist_err  # optional: useful for debugging
+
+                d["P_e_err_total"] = float(Pe_err) if np.isfinite(Pe_err) else np.nan
+
+                # Update the scatter term field consistently
+                d["Pe_dist_err"] = Pe_dist_err
 
                 stats["updated_points"] += 1
 
@@ -2240,18 +2261,12 @@ class PlotRR_noQick:
 
         return combined_qtemp_data, stats
 
-    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, run_num, save_figs = False, get_qtemp_data = False, filter_out_bad_amp_fits = False, use_png_timestamps = False, combine_IQ_signal = False,
-                                    Pe_dist_err_dict  = None):
+    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, run_num, save_figs = False, get_qtemp_data = False, filter_out_bad_amp_fits = False, use_png_timestamps = False, combine_IQ_signal = False):
         """
         Note: this code assumes that a single h5 file contains ONE dataset for EACH qubit inside.
 
         Creates a dictionary called file_result with two keys: 'filename': a string, e.g. 'my_file.h5' and 'qubits': an empty dictionary, which you populate.
         In other words, at the end of the script, you assign values inside 'qubits'.
-
-        Pe_dist_err_dict : dict or None
-        Optional per-qubit dict like:
-          { q: {"mu_w":..., "sigma_w":..., "n_kept":..., "n_raw":...}, ... }
-        If provided, we will add sigma_w (inverse-variance weighted sigma) in quadrature to the RPM-propagated Pe error.
         """
         if use_png_timestamps:
             # This is a setting used to extract the timestamps in the png file names instead of using the ones
@@ -2639,21 +2654,10 @@ class PlotRR_noQick:
 
                         # Compute propagated 1-sigma error (std) on T_mK
                         try:
-                            Pe_dist_err = None
-                            if Pe_dist_err_dict is not None:
-                                h = Pe_dist_err_dict.get(int(q_key), None)
-                                if h is not None:
-                                    sigma_w = h.get("sigma_w", np.nan)
-                                    n_kept = h.get("n_kept", 0)
-                                    rpm_pe_scatter_min_n = 5 # we should have at least 5 values to get a 1sigma err, anything less is unreliable
-                                    if np.isfinite(sigma_w) and (n_kept >= rpm_pe_scatter_min_n) and (sigma_w > 0):
-                                        Pe_dist_err = float(sigma_w)
-
                             T_err, Pe_err = self.compute_temperature_error_RPM(
                                 A1=A_amp_IQ_Pe,
                                 A2=A_amp_IQ_Pg,
                                 Pe=P_e,
-                                Pe_dist_err = Pe_dist_err, # Pe distribution error (weighted std from histogram)
                                 T_mK=T_mK,
                                 qubit_freq_MHz=qubit_freq_MHz,
                                 sigma_A1=A_amp_IQ_err_Pe,
@@ -2718,7 +2722,7 @@ class PlotRR_noQick:
                                 'T_mK_err': T_err,
                                 'P_e': P_e,
                                 'P_e_err_total': Pe_err,
-                                'Pe_dist_err': Pe_dist_err,
+                                'Pe_dist_err': None, # Placeholder for when we update it later in a diff func, # Pe distribution err (weighted std from hist)
                                 'qubit_freq_MHz': qubit_freq_MHz,
                                 "Qfreq_fit_err" : qfreq_err, #MHz,
                                 "ssf_angle": alpha, # will be None if you don't choose to combine IQ signal

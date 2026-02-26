@@ -523,19 +523,18 @@ elif coh_qtemp_ana_flags["load_coherence_res"] and run_num != 8:
     raise ValueError("You must choose run_num = 8 to load coherence data. Otherwise, define a section for your run of interest.")
 
 ############################################################################### Qubit temperature calculations via rabi population measurements #####################################################
-Pe_dist_err_dict = None  # <-- initialize once, outside
 if qtemp_method_flags["Qtemps_viaRPM"]:
     # FIRST pass. Later on if Pe hists are plotted then RPM errs are updated with std values
     RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits)
     combined_qtemp_data = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
                             outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, filter_out_bad_amp_fits = filter_out_bad_amp_fits,
-                                                  passing_pre_sciencerun_data = False, combine_IQ_signal = rpm_combine_IQ_signal, Pe_dist_err_dict = Pe_dist_err_dict )
+                                                  passing_pre_sciencerun_data = False, combine_IQ_signal = rpm_combine_IQ_signal)
 
     if run_num == 6:
         if pre_sciencerun6_data:
             combined_qtemp_data2 = RPM_calcs.run_RPMqtemps(base_dir2, target_dates_qtemps_RPM2, filter_keywords2, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
                                                           outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, filter_out_bad_amp_fits = filter_out_bad_amp_fits,
-                                                           passing_pre_sciencerun_data = True, combine_IQ_signal = rpm_combine_IQ_signal, Pe_dist_err_dict = Pe_dist_err_dict)
+                                                           passing_pre_sciencerun_data = True, combine_IQ_signal = rpm_combine_IQ_signal)
 
             combined_qtemp_data += combined_qtemp_data2
 
@@ -705,7 +704,7 @@ if qtemp_method_flags["combined_studies_qtemps"]:
                                                   outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data,
                                                   get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps,
                                                   passing_pre_sciencerun_data=False, filter_out_bad_amp_fits = filter_out_bad_amp_fits,
-                                                combine_IQ_signal = rpm_combine_IQ_signal, Pe_dist_err_dict = Pe_dist_err_dict)
+                                                combine_IQ_signal = rpm_combine_IQ_signal)
     if run_num == 6:
         if pre_sciencerun6_data:
             all_files_Qtemp_results_RPMs2 = RPM_calcs.run_RPMqtemps(base_dir2, target_dates_qtemps_RPM2, filter_keywords2, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
