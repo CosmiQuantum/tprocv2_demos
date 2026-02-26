@@ -52,8 +52,8 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_qtemps": False}
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+                      "combined_studies_qtemps": True}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
@@ -61,8 +61,8 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
                   "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps)
-comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": True, "Pe_vs_time_comb_separate_plts": False,
-                       "Pe_vs_time_comb_single_plt": False}
+comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
+                       "Pe_vs_time_comb_single_plt": True}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
@@ -523,17 +523,19 @@ elif coh_qtemp_ana_flags["load_coherence_res"] and run_num != 8:
     raise ValueError("You must choose run_num = 8 to load coherence data. Otherwise, define a section for your run of interest.")
 
 ############################################################################### Qubit temperature calculations via rabi population measurements #####################################################
+Pe_dist_err_dict = None  # <-- initialize once, outside
 if qtemp_method_flags["Qtemps_viaRPM"]:
+    # FIRST pass. Later on if Pe hists are plotted then RPM errs are updated with std values
     RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits)
     combined_qtemp_data = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
                             outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, filter_out_bad_amp_fits = filter_out_bad_amp_fits,
-                                                  passing_pre_sciencerun_data = False, combine_IQ_signal = rpm_combine_IQ_signal)
+                                                  passing_pre_sciencerun_data = False, combine_IQ_signal = rpm_combine_IQ_signal, Pe_dist_err_dict = Pe_dist_err_dict )
 
     if run_num == 6:
         if pre_sciencerun6_data:
             combined_qtemp_data2 = RPM_calcs.run_RPMqtemps(base_dir2, target_dates_qtemps_RPM2, filter_keywords2, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
                                                           outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, filter_out_bad_amp_fits = filter_out_bad_amp_fits,
-                                                           passing_pre_sciencerun_data = True, combine_IQ_signal = rpm_combine_IQ_signal)
+                                                           passing_pre_sciencerun_data = True, combine_IQ_signal = rpm_combine_IQ_signal, Pe_dist_err_dict = Pe_dist_err_dict)
 
             combined_qtemp_data += combined_qtemp_data2
 
@@ -545,6 +547,16 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
     date_string = ""
     RPM_plotter = PlotRR_noQick(date_string, figure_quality, save_figs, fit_saved, signal, run_name, tot_num_of_qubits, outerFolder, outerFolder_qtemps_plots, outerFolder_qtemps_data, run_num, filter_out_bad_amp_fits)
 
+    if analysis_flags["Pe_hists_viaRPM"]:
+        # ----------------------------------------------------------------- Histograms of thermal populations (Pe) via RPMs ----------------------------------------
+        Pe_dist_err_dict = RPM_plotter.plot_qubit_Pe_histograms_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, rel_err_cutoff=None,
+                                                                     only_return_mu_and_sigma=True, make_plot=True, save_plot=True)
+
+        if (Pe_dist_err_dict is None) or (len(Pe_dist_err_dict) == 0):
+            print("[WARN] Pe_dist_err_dict empty; skipping RPM second pass.")
+        else:
+            combined_qtemp_data, stats = RPM_plotter.update_rpm_errors_with_pe_scatter_inplace(combined_qtemp_data, Pe_dist_err_dict=Pe_dist_err_dict)
+
     if analysis_flags["Qtemps_vs_time_viaRPM"]:
         #------------------------------------------------------------------- Qubit temperatures vs time via RPMs ----------------------------------------------------
         RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 10, yaxis_max = 750, rel_err_cutoff = None, restrict_time_xaxis = False,
@@ -554,9 +566,6 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
         #----------------------------------------------------------------- Histograms of Qubit temperatures (via RPMs) -----------------------------------------------
         RPM_plotter.plot_qubit_temperature_histograms_RPMs(combined_qtemp_data, num_qubits=6, rel_err_cutoff = None)
 
-    if analysis_flags["Pe_hists_viaRPM"]:
-        # ----------------------------------------------------------------- Histograms of thermal populations (Pe) via RPMs ----------------------------------------
-        RPM_plotter.plot_qubit_Pe_histograms_RPMs(combined_qtemp_data, num_qubits=6, rel_err_cutoff=None)
     #----------------------------------------------------------------------------------------------------------------------------------------------------------
     if analysis_flags["Pe_vs_time_viaRPM"]:
         #------------------------------------------------------------ Excited state populations (P_e) vs time (via RPMs) ----------------------------------------
@@ -667,7 +676,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
     # Using ground-state double gaussian fit method
     all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=1.0,
-                                                                                                                do_plots = True, save_figs_path = made_on_folder)
+                                                                                                                do_plots = True, save_figs_path = made_on_folder, dontuse_midpt_thresh = True)
 
     # This is for plotting outside of run_ssf_qtemps_iminuit(); when do_plots = False instead of True
     # for q_key, recs in fit_results.items():
@@ -696,12 +705,13 @@ if qtemp_method_flags["combined_studies_qtemps"]:
                                                   outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data,
                                                   get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps,
                                                   passing_pre_sciencerun_data=False, filter_out_bad_amp_fits = filter_out_bad_amp_fits,
-                                                combine_IQ_signal = rpm_combine_IQ_signal)
+                                                combine_IQ_signal = rpm_combine_IQ_signal, Pe_dist_err_dict = Pe_dist_err_dict)
     if run_num == 6:
         if pre_sciencerun6_data:
             all_files_Qtemp_results_RPMs2 = RPM_calcs.run_RPMqtemps(base_dir2, target_dates_qtemps_RPM2, filter_keywords2, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
                                                           outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps,
-                                                                    passing_pre_sciencerun_data = True, filter_out_bad_amp_fits = filter_out_bad_amp_fits, combine_IQ_signal = rpm_combine_IQ_signal)
+                                                                    passing_pre_sciencerun_data = True, filter_out_bad_amp_fits = filter_out_bad_amp_fits, combine_IQ_signal = rpm_combine_IQ_signal,
+                                                                    Pe_dist_err_dict = Pe_dist_err_dict)
             all_files_Qtemp_results_RPMs += all_files_Qtemp_results_RPMs2
 
     # ----------- Get Qubit temperature results via SSF g-e threshold method and SSF g-state double gaussian threshold method
@@ -710,7 +720,7 @@ if qtemp_method_flags["combined_studies_qtemps"]:
 
     if use_iminuit_gdoublegauss_ssf: # Made a special iminuit-based double gaussian fitting function, but for now it is only set up to fit g-state data.
         all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=0.6,
-            do_plots=False)
+            do_plots=False, dontuse_midpt_thresh = True)
 
     else: # uses sklearn.mixture.GaussianMixture for double gaussian fitting
         all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only = False, fallback_to_threshold = False)
@@ -731,19 +741,23 @@ if qtemp_method_flags["combined_studies_qtemps"]:
         # Makes 1 subplot per qubit (and all methods in a single plot). Note: I removed the ge SSF method from being plotted since we haven't been using that one lately.
         # Plots error bars always, unless you pass None instead of all_qubit_temps_errs_g.
         combined_studies.Qtemps_vs_time_comb_allQs_1col(all_qubit_temps_g, all_qubit_times_g, outerFolder_qtemps_plots,
-                                                     all_files_Qtemp_results_RPMs, all_qubit_temps_errs_g, restrict_time_yaxis = True, ylims = [50,120],
+                                                     all_files_Qtemp_results_RPMs, all_qubit_temps_errs_g, restrict_time_yaxis = True, ylims = [55,110],
                                                         rad_events_plot_lines = False, qubits_to_plot = [0,1],
                                                         plot_rpm_I_only=False, plot_rpm_Q_only=False)
 
-    #----------- Thermal Populations vs Time using all three methods
+    #----------- Thermal Populations vs Time using all three methods ----
     if comb_analysis_flags["Pe_vs_time_comb_separate_plts"]:
         # Plots two rows (one for each qubit) and 3 columns (one for each method)
         combined_studies.Pe_vs_time_comb_methods(all_files_Qtemp_results_RPMs, fit_results_g, fit_results_ge, outerFolder_qtemps_plots,
                                                  restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
     if comb_analysis_flags["Pe_vs_time_comb_single_plt"]:
-        # Plots two rows (one for each qubit) and 1 column (all methods in a single plot)
-        combined_studies.Pe_vs_time_comb_2subplts(all_files_Qtemp_results_RPMs, fit_results_g, fit_results_ge, outerFolder_qtemps_plots,
-                                     restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
+        # THREE METHODS VERSION
+        # Plots two rows (one for each qubit) and 1 column (all three methods in a single plot)
+        # combined_studies.Pe_vs_time_comb_2subplts(all_files_Qtemp_results_RPMs, fit_results_g, fit_results_ge, outerFolder_qtemps_plots,
+        #                              restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
+        # TWO METHODS VERSION (new)
+        combined_studies.Pe_vs_time_comb_allQs_1col(fit_results_g, outerFolder_qtemps_plots, all_files_Qtemp_results_RPMs, qubits_to_plot=[0, 1], restrict_time_yaxis = True,
+                                                    ylims=[0.0, 0.16])
 
 #################################################### London Penetration Analysis ##########################################################
 if london_flags["get_qfreqs_resfreqs_qtemps"]: # There was no "pre-science-run" data in run 6 for this analysis, since the relevant data is the science run heater temperature sweep data
@@ -752,7 +766,8 @@ if london_flags["get_qfreqs_resfreqs_qtemps"]: # There was no "pre-science-run" 
     qfreqs_resfreqs_qtemps_data = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal,
                                                   run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
                                                   outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data,
-                                                  figure_quality, save_figsRR, exclude_temp_sweeps, passing_pre_sciencerun_data = False, combine_IQ_signal = rpm_combine_IQ_signal)
+                                                  figure_quality, save_figsRR, exclude_temp_sweeps, passing_pre_sciencerun_data = False, combine_IQ_signal = rpm_combine_IQ_signal,
+                                                  Pe_dist_err_dict = Pe_dist_err_dict)
     # ----------------------------Dump RPM qubit temps, qfreqs and res freqs, etc in excel spreadhseet -----------------------
     # These are not used in the definitions that follow, are just needed to re-initialize the class
     outerFolder = ""
@@ -794,7 +809,8 @@ if coh_qtemp_ana_flags["load_rpm_qtemps"]:
                                                            get_london_data, figure_quality, save_figsRR,
                                                            exclude_temp_sweeps, passing_pre_sciencerun_data=False,
                                                            filter_out_bad_amp_fits = filter_out_bad_amp_fits,
-                                                           use_png_timestamps = use_png_timestamps, combine_IQ_signal = rpm_combine_IQ_signal)
+                                                           use_png_timestamps = use_png_timestamps, combine_IQ_signal = rpm_combine_IQ_signal,
+                                                           Pe_dist_err_dict = Pe_dist_err_dict)
     if run_num == 6:
         if pre_sciencerun6_data:
             all_files_Qtemp_results_RPMs2 = RPM_calcs.run_RPMqtemps(base_dir2, target_dates_qtemps_RPM2,
@@ -805,7 +821,8 @@ if coh_qtemp_ana_flags["load_rpm_qtemps"]:
                                                                     figure_quality, save_figsRR, exclude_temp_sweeps,
                                                                     passing_pre_sciencerun_data=True,
                                                                     filter_out_bad_amp_fits = filter_out_bad_amp_fits,
-                                                                    use_png_timestamps = use_png_timestamps, combine_IQ_signal = rpm_combine_IQ_signal)
+                                                                    use_png_timestamps = use_png_timestamps, combine_IQ_signal = rpm_combine_IQ_signal,
+                                                                    Pe_dist_err_dict = Pe_dist_err_dict)
             all_files_Qtemp_results_RPMs += all_files_Qtemp_results_RPMs2
 
 if coh_qtemp_ana_flags["load_ssf_qtemps"]: # IMPORTANT: have not yet implemented use_png_timestamps. TO DO.

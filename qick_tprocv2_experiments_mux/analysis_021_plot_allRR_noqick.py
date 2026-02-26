@@ -1689,7 +1689,7 @@ class PlotRR_noQick:
 
     def run(self, plot_res_spec=False, plot_q_spec=False, plot_rabi=False, rabi_rolling_avg=False, plot_ss=False,
             plot_ss_hist_only=False, ss_plot_title=None, ss_plot_gef=False, plot_t1=False,
-            plot_t2r=False, plot_t2e=False, plot_rabis_Qtemps=False, combine_rpm_IQ_signal = False):
+            plot_t2r=False, plot_t2e=False, plot_rabis_Qtemps=False, combine_rpm_IQ_signal = False, Pe_dist_err_dict = None):
 
         # if plot_res_spec:
         #     self.load_plot_save_res_spec()
@@ -1698,7 +1698,7 @@ class PlotRR_noQick:
         if plot_rabis_Qtemps:
             list_of_all_qubits = [i for i in range(self.number_of_qubits + 1)]
             self.load_plot_save_rabis_Qtemps(list_of_all_qubits, run_num = self.run_num, save_figs = self.save_figs, filter_out_bad_amp_fits = self.filter_out_bad_amp_fits,
-                                             combine_IQ_signal = combine_rpm_IQ_signal)
+                                             combine_IQ_signal = combine_rpm_IQ_signal, Pe_dist_err_dict = Pe_dist_err_dict)
         # if plot_rabi:
         #     if rabi_rolling_avg:
         #         self.load_plot_save_rabi(rabi_rolling_avg=True)
@@ -2138,12 +2138,120 @@ class PlotRR_noQick:
             },
         }
 
-    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, run_num, save_figs = False, get_qtemp_data = False, filter_out_bad_amp_fits = False, use_png_timestamps = False, combine_IQ_signal = False):
+
+    def update_rpm_errors_with_pe_scatter_inplace(self, combined_qtemp_data, Pe_dist_err_dict=None,
+                                                    rpm_pe_scatter_min_n=5, verbose=True,
+    ):
+        """
+        In-place update of RPM error bars using an optional Pe_dist_err_dict (from the Pe histogram function).
+
+        Parameters
+        ----------
+        combined_qtemp_data : list[dict]
+            Output of run_RPMqtemps / load_plot_save_rabis_Qtemps:
+            each element like {"filename":..., "qubits": {q: {...}}}
+
+        Pe_dist_err_dict : dict or None
+            The slim dict you return from plot_qubit_Pe_histograms_RPMs(only_return_mu_and_sigma=True):
+            { q: {"mu_w":..., "sigma_w":..., "n_kept":..., "n_raw":...}, ... }
+
+        rpm_pe_scatter_min_n : int
+            Require at least this many kept points in the histogram before trusting sigma_w as a 1s scatter.
+
+        Returns
+        -------
+        combined_qtemp_data : same object (mutated)
+        stats : dict with counts of updated/skipped
+        """
+        stats = {
+            "updated_points": 0,
+            "skipped_missing_fields": 0,
+            "skipped_bad_numbers": 0,
+            "skipped_compute_fail": 0,
+            "used_pe_dist_err": 0,
+        }
+
+        if Pe_dist_err_dict is None:
+            Pe_dist_err_dict = {}
+
+        for file_rec in combined_qtemp_data:
+            qubits = file_rec.get("qubits", {})
+            for q_key, d in qubits.items():
+
+                # --- Required fields to recompute errs (no refits needed) ---
+                A1 = d.get("A1", None)
+                A2 = d.get("A2", None)
+                sigma_A1 = d.get("A1_err", None)
+                sigma_A2 = d.get("A2_err", None)
+                Pe = d.get("P_e", None)
+                T_mK = d.get("T_mK", None)
+                qfreq_MHz = d.get("qubit_freq_MHz", None)
+                qfreq_err = d.get("Qfreq_fit_err", None)
+
+                req = [A1, A2, sigma_A1, sigma_A2, Pe, T_mK, qfreq_MHz, qfreq_err]
+                if any(v is None for v in req):
+                    stats["skipped_missing_fields"] += 1
+                    continue
+
+                # numeric sanity
+                vals = np.array([A1, A2, sigma_A1, sigma_A2, Pe, T_mK, qfreq_MHz, qfreq_err], dtype=float)
+                if not np.all(np.isfinite(vals)):
+                    stats["skipped_bad_numbers"] += 1
+                    continue
+                if (Pe <= 0.0) or (Pe >= 1.0) or (qfreq_MHz <= 0.0) or (T_mK <= 0.0):
+                    stats["skipped_bad_numbers"] += 1
+                    continue
+
+                # --- Optional histogram-based Pe scatter for this qubit ---
+                Pe_dist_err = None
+                h = Pe_dist_err_dict.get(int(q_key), None)
+                if h is not None:
+                    sigma_w = h.get("sigma_w", np.nan)
+                    n_kept = h.get("n_kept", 0)
+                    if np.isfinite(sigma_w) and (sigma_w > 0.0) and (n_kept >= rpm_pe_scatter_min_n):
+                        Pe_dist_err = float(sigma_w)
+                        stats["used_pe_dist_err"] += 1
+
+                # --- Recompute only error bars ---
+                try:
+                    T_err, Pe_err = self.compute_temperature_error_RPM(
+                        A1=A1, A2=A2,
+                        Pe=Pe,
+                        Pe_dist_err=Pe_dist_err,  # <- adds extra scatter if provided
+                        T_mK=T_mK,
+                        qubit_freq_MHz=qfreq_MHz,
+                        sigma_A1=sigma_A1,
+                        sigma_A2=sigma_A2,
+                        sigma_qfreq_MHz=qfreq_err,
+                    )
+                except Exception:
+                    stats["skipped_compute_fail"] += 1
+                    continue
+
+                # store back in-place
+                d["T_mK_err"] = float(T_err) if np.isfinite(T_err) else np.nan
+                d["P_e_err"] = float(Pe_err) if np.isfinite(Pe_err) else np.nan
+                d["Pe_dist_err_used"] = Pe_dist_err  # optional: useful for debugging
+
+                stats["updated_points"] += 1
+
+        if verbose:
+            print("[update_rpm_errors_with_pe_scatter_inplace] stats:", stats)
+
+        return combined_qtemp_data, stats
+
+    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, run_num, save_figs = False, get_qtemp_data = False, filter_out_bad_amp_fits = False, use_png_timestamps = False, combine_IQ_signal = False,
+                                    Pe_dist_err_dict  = None):
         """
         Note: this code assumes that a single h5 file contains ONE dataset for EACH qubit inside.
 
         Creates a dictionary called file_result with two keys: 'filename': a string, e.g. 'my_file.h5' and 'qubits': an empty dictionary, which you populate.
         In other words, at the end of the script, you assign values inside 'qubits'.
+
+        Pe_dist_err_dict : dict or None
+        Optional per-qubit dict like:
+          { q: {"mu_w":..., "sigma_w":..., "n_kept":..., "n_raw":...}, ... }
+        If provided, we will add sigma_w (inverse-variance weighted sigma) in quadrature to the RPM-propagated Pe error.
         """
         if use_png_timestamps:
             # This is a setting used to extract the timestamps in the png file names instead of using the ones
@@ -2315,7 +2423,6 @@ class PlotRR_noQick:
                             print(f"[WARN] SSF match found but angle is None for Q{q_key + 1}. Skipping.", flush=True)
                             continue
                     #---------------------------------------------------------------------------------------------
-
                     # If we are saving filtered plots we don't want to save unfiltered ones
                     # But sometimes we want to just look at unfiltered ones
                     save_figs_nonfiltered = False
@@ -2329,7 +2436,7 @@ class PlotRR_noQick:
                         I1 = np.asarray(I1)
                         Q1 = np.asarray(Q1)
                         gains1 = np.asarray(gains1)
-                        A_amp_IQ_Pe, A_amp_IQ_err_Pe, fit_params_Pe = rabi_class_instance.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
+                        A_amp_IQ_Pe, A_amp_IQ_err_Pe, fit_params_Pe = rabi_class_instance.plot_results_IQ_together_iminuit(I1, Q1, gains1, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
                                                                                                         filename_ext = "Pe_", rotate_using_ssf = combine_IQ_signal, ssf_angle = alpha)
                 
                         del rabi_class_instance
@@ -2342,7 +2449,7 @@ class PlotRR_noQick:
                         I2 = np.asarray(I2)
                         Q2 = np.asarray(Q2)
                         gains2 = np.asarray(gains2)
-                        A_amp_IQ_Pg, A_amp_IQ_err_Pg, fit_params_Pg= rabi_class_instance.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
+                        A_amp_IQ_Pg, A_amp_IQ_err_Pg, fit_params_Pg= rabi_class_instance.plot_results_IQ_together_iminuit(I2, Q2, gains2, rabi_cfg, self.figure_quality, use_iminuit_instead = True,
                                                                                                     filename_ext = "Pg_", rotate_using_ssf = combine_IQ_signal, ssf_angle = alpha)
 
                         del rabi_class_instance
@@ -2352,21 +2459,21 @@ class PlotRR_noQick:
                         print(f'\n inside filter_out_bad_amp_fits block for {q_key + 1}')
 
                         # -------------------- pull fit outputs --------------------
-                        I_fit_Pe = fit_params_Pe["I_fit"]
-                        Q_fit_Pe = fit_params_Pe["Q_fit"]
+                        I_fit_Pe = fit_params_Pe.get("I_fit", None)
+                        Q_fit_Pe = fit_params_Pe.get("Q_fit", None)
 
-                        I_fit_Pg = fit_params_Pg["I_fit"]
-                        Q_fit_Pg = fit_params_Pg["Q_fit"]
+                        I_fit_Pg = fit_params_Pg.get("I_fit", None)
+                        Q_fit_Pg = fit_params_Pg.get("Q_fit", None)
 
-                        A_I_Pe = fit_params_Pe["A_I"]
-                        sigma_A_I_Pe = fit_params_Pe["sigma_A_I"]
-                        A_Q_Pe = fit_params_Pe["A_Q"]
-                        sigma_A_Q_Pe = fit_params_Pe["sigma_A_Q"]
+                        A_I_Pe = fit_params_Pe.get("A_I", None)
+                        sigma_A_I_Pe = fit_params_Pe.get("sigma_A_I", None)
+                        A_Q_Pe = fit_params_Pe.get("A_Q", None)
+                        sigma_A_Q_Pe = fit_params_Pe.get("sigma_A_Q", None)
 
-                        A_I_Pg = fit_params_Pg["A_I"]
-                        sigma_A_I_Pg = fit_params_Pg["sigma_A_I"]
-                        A_Q_Pg = fit_params_Pg["A_Q"]
-                        sigma_A_Q_Pg = fit_params_Pg["sigma_A_Q"]
+                        A_I_Pg = fit_params_Pg.get("A_I", None)
+                        sigma_A_I_Pg = fit_params_Pg.get("sigma_A_I", None)
+                        A_Q_Pg = fit_params_Pg.get("A_Q", None)
+                        sigma_A_Q_Pg = fit_params_Pg.get("sigma_A_Q", None)
 
                         # -------------------- BIC filtering: cosine must beat line AND exp in at least one quadrature ------------
                         BIC_THRESH_LINE = 12.0  # adjust as needed
@@ -2429,7 +2536,7 @@ class PlotRR_noQick:
                         saver1 = Temps_EFAmpRabiExperiment(
                             q_key, self.number_of_qubits, list_of_all_qubits,
                             out_dir, round_num, self.signal, save_figs=save_figs)
-                        saver1.plot_results(I1, Q1, gains1, rabi_cfg, self.figure_quality,
+                        saver1.plot_results_IQ_together_iminuit(I1, Q1, gains1, rabi_cfg, self.figure_quality,
                                             use_iminuit_instead=True, filename_ext=pe_tag, rotate_using_ssf = combine_IQ_signal, ssf_angle = alpha)
                         del saver1
 
@@ -2437,7 +2544,7 @@ class PlotRR_noQick:
                         saver2 = Temps_EFAmpRabiExperiment(
                             q_key, self.number_of_qubits, list_of_all_qubits,
                             out_dir, round_num, self.signal, save_figs=save_figs)
-                        saver2.plot_results(I2, Q2, gains2, rabi_cfg, self.figure_quality,
+                        saver2.plot_results_IQ_together_iminuit(I2, Q2, gains2, rabi_cfg, self.figure_quality,
                                             use_iminuit_instead=True, filename_ext=pg_tag, rotate_using_ssf = combine_IQ_signal, ssf_angle = alpha)
                         del saver2
 
@@ -2532,10 +2639,21 @@ class PlotRR_noQick:
 
                         # Compute propagated 1-sigma error (std) on T_mK
                         try:
+                            Pe_dist_err = None
+                            if Pe_dist_err_dict is not None:
+                                h = Pe_dist_err_dict.get(int(q_key), None)
+                                if h is not None:
+                                    sigma_w = h.get("sigma_w", np.nan)
+                                    n_kept = h.get("n_kept", 0)
+                                    rpm_pe_scatter_min_n = 5 # we should have at least 5 values to get a 1sigma err, anything less is unreliable
+                                    if np.isfinite(sigma_w) and (n_kept >= rpm_pe_scatter_min_n) and (sigma_w > 0):
+                                        Pe_dist_err = float(sigma_w)
+
                             T_err, Pe_err = self.compute_temperature_error_RPM(
                                 A1=A_amp_IQ_Pe,
                                 A2=A_amp_IQ_Pg,
                                 Pe=P_e,
+                                Pe_dist_err = Pe_dist_err, # Pe distribution error (weighted std from histogram)
                                 T_mK=T_mK,
                                 qubit_freq_MHz=qubit_freq_MHz,
                                 sigma_A1=A_amp_IQ_err_Pe,
@@ -2599,7 +2717,8 @@ class PlotRR_noQick:
                                 'T_mK': T_mK,
                                 'T_mK_err': T_err,
                                 'P_e': P_e,
-                                'P_e_err': Pe_err,
+                                'P_e_err_total': Pe_err,
+                                'Pe_dist_err': Pe_dist_err,
                                 'qubit_freq_MHz': qubit_freq_MHz,
                                 "Qfreq_fit_err" : qfreq_err, #MHz,
                                 "ssf_angle": alpha, # will be None if you don't choose to combine IQ signal
@@ -2634,25 +2753,41 @@ class PlotRR_noQick:
         T_mK = T_K * 1000  # Convert to millikelvin
         return T_K, T_mK, P_e, qubit_freq_MHz
 
-    def compute_temperature_error_RPM(self, A1, A2, Pe, T_mK, qubit_freq_MHz, sigma_A1, sigma_A2, sigma_qfreq_MHz):
+    def compute_temperature_error_RPM(
+            self,
+            A1, A2, Pe, T_mK, qubit_freq_MHz,
+            sigma_A1, sigma_A2, sigma_qfreq_MHz,
+            Pe_dist_err=None,  # <-- NEW (optional)
+    ):
         """
-        Error propagation formula:
+        Error propagation formula (base):
           sigma_T^2 = (dT/dA1 * sigma_A1)^2 + (dT/dA2 * sigma_A2)^2 + (dT/df_ge * sigma_f_ge)^2
 
         Assumes:
           Pe = |A1| / (|A1| + |A2|)
           T = (h f_ge / kB) / ln((1-Pe)/Pe)
+
+        Optional:
+          Pe_dist_err = extra 1-sigma scatter/uncertainty on Pe (e.g., weighted std from your Pe histogram),
+          added in quadrature to sigma_Pe, and propagated to T via (dT/dPe * Pe_dist_err).
         """
-        # --- dPe/dA1, dPe/dA2 (correct for Pe = |A1|/(|A1|+|A2|)) ---
+
+        # --- dPe/dA1, dPe/dA2 for Pe = |A1|/(|A1|+|A2|) ---
         sum_A = np.abs(A1) + np.abs(A2)
         if np.any(sum_A == 0):
-            return np.nan  # could also raise ValueError("A1 and A2 both zero -> Pe undefined")
+            return np.nan, np.nan
 
-        dPe_dA1 = (np.abs(A2) / sum_A**2) * np.sign(A1)      # includes sgn from d|A|/dA
-        dPe_dA2 = (-np.abs(A1) / sum_A**2) * np.sign(A2)
+        dPe_dA1 = (np.abs(A2) / sum_A ** 2) * np.sign(A1)  # includes sgn from d|A|/dA
+        dPe_dA2 = (-np.abs(A1) / sum_A ** 2) * np.sign(A2)
 
         # --- dT/dPe ---
+        if (Pe is None) or (not np.isfinite(Pe)) or (Pe <= 0.0) or (Pe >= 1.0):
+            return np.nan, np.nan
+
         ln_term = np.log((1.0 - Pe) / Pe)
+        if (not np.isfinite(ln_term)) or (ln_term == 0.0):
+            return np.nan, np.nan
+
         dT_dPe = T_mK / (ln_term * Pe * (1.0 - Pe))
 
         # --- chain rule to get dT/dA1 and dT/dA2 ---
@@ -2660,24 +2795,41 @@ class PlotRR_noQick:
         dT_dA2 = dT_dPe * dPe_dA2
 
         # --- frequency term: dT/df_ge = T / f_ge ---
-        # Hz units
         f0_Hz = qubit_freq_MHz * 1e6
         sigma_f0_Hz = sigma_qfreq_MHz * 1e6
+        if (not np.isfinite(f0_Hz)) or (f0_Hz <= 0):
+            return np.nan, np.nan
         dT_df0 = T_mK / f0_Hz
 
-        # --- Plugging eveyrthing into the sigma formula ---
+        # --- Base sigma_T from A1/A2 and freq ---
         sigma_T_mK = np.sqrt(
-            (dT_dA1 * sigma_A1)**2 +
-            (dT_dA2 * sigma_A2)**2 +
-            (dT_df0 * sigma_f0_Hz)**2)
+            (dT_dA1 * sigma_A1) ** 2 +
+            (dT_dA2 * sigma_A2) ** 2 +
+            (dT_df0 * sigma_f0_Hz) ** 2
+        )
 
-        # --- Additionally we calculate the error associated with Pe ---
-        sigma_Pe = np.sqrt(
+        # --- Base sigma_Pe from A1/A2 propagation ---
+        sigma_Pe_fit = np.sqrt(
             (dPe_dA1 * sigma_A1) ** 2 +
             (dPe_dA2 * sigma_A2) ** 2
         )
 
-        return sigma_T_mK, sigma_Pe # Temperature calculation error via rabi population measurements
+        # --- Optional: add Pe distribution scatter (histogram sigma_w) ---
+        sigma_Pe_dist = 0.0
+        if Pe_dist_err is not None and np.isfinite(Pe_dist_err) and (Pe_dist_err > 0.0):
+            sigma_Pe_dist = float(Pe_dist_err)
+
+        # Optional: propagate ONLY the *extra* Pe scatter into T (avoid double-counting fit part)
+        if sigma_Pe_dist > 0.0 and np.isfinite(sigma_T_mK):
+            # Total Pe uncertainty
+            sigma_Pe_total = float(np.sqrt(float(sigma_Pe_fit) ** 2 + sigma_Pe_dist ** 2))
+            # Total T uncertainty
+            sigma_T_mK_total = float(np.sqrt(float(sigma_T_mK) ** 2 + (float(dT_dPe) * sigma_Pe_dist) ** 2))
+        else:
+            sigma_Pe_total = float(sigma_Pe_fit)
+            sigma_T_mK_total = float(sigma_T_mK)
+
+        return sigma_T_mK_total, sigma_Pe_total
 
     # Helper for fitting & plotting a line on `ax`
     def do_linear_fit_and_plot_qtemps_RPM(self, ax, times_arr, temps_arr, initial_time, final_time, mask, color, label_prefix):
@@ -3281,149 +3433,264 @@ class PlotRR_noQick:
         plt.savefig(save_path, dpi=200)
         plt.close(fig)
 
-    def plot_qubit_Pe_histograms_RPMs(self, all_files_Qtemp_results, num_qubits, rel_err_cutoff = None):
+    def plot_qubit_Pe_histograms_RPMs(self, all_files_Qtemp_results, num_qubits, rel_err_cutoff=None,
+            only_return_mu_and_sigma=False, make_plot=True, save_plot=True, optimal_bin_num=45, mad_k=2.0,
+            err_floor=1e-12, store_pdf_curve=False,  # set True if you want x_vals + scaled_pdf saved per qubit
+            ):
         """
-        Plots histograms for the thermal population (Pe) data of each qubit.
+        Build per-qubit histogram stats for RPM Pe and (optionally) plot histograms.
 
-        Parameters:
-        - all_files_Qtemp_results: list of dicts returned by load_plot_save_rabis_Qtemps
-        - num_qubits: total number of qubits to plot (default is 6)
-
-        # Note: All datetime objects are naive and assumed to be in Central Time (local system time).
-
-        The Gaussian's center and width are determined by the weighted statistics (so smaller-error points pull harder).
-        The histogram shows true counts of samples. The curve is scaled so it aligns visually with the histogram height (counts per bin).
+        Returns
+        -------
+        results_by_qubit : dict
+            results_by_qubit[q] contains fields you can use later to build Pe error bars, e.g.
+            - Pe_vals_used, Pe_errs_used
+            - mu_w, sigma_w (your weighted mean/std)
+            - median, mad, mad_k, keep_mask
+            - n_raw, n_finite, n_kept
+            - hist_counts, hist_bins, bin_width, bin_centers
+            - (optional) pdf_x, pdf_scaled
         """
-        # Set up the subplots grid (2 rows x 3 columns for 6 qubits)
-        ncols = min(num_qubits, 3)
-        nrows = math.ceil(num_qubits / 3)
-        fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(12, 8))
-        axes = axes.flatten() if isinstance(axes, (list, np.ndarray)) else [axes]
-        axes: List[Axes] = axes  # Explicitly tell the IDE that these are Axes objects
+        # -------------------- Prepare plotting --------------------
+        fig = None
+        axes = None
+        if make_plot:
+            ncols = min(num_qubits, 3)
+            nrows = math.ceil(num_qubits / 3)
+            fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(12, 8))
+            axes = axes.flatten() if isinstance(axes, (list, np.ndarray)) else [axes]
 
-        # Define font size and colors (same order as in your temperature-vs-time plots)
-        font = 14
-        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
-        plt.suptitle("Qubit Thermal Population", fontsize=font)
+            font = 14
+            colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+            plt.suptitle("Qubit Thermal Population", fontsize=font)
+            titles = [f"Q{i + 1}" for i in range(num_qubits)]
+        else:
+            font = 14
+            colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+            titles = [f"Q{i + 1}" for i in range(num_qubits)]
 
-        # Titles for each subplot
-        titles = [f"Q{i + 1}" for i in range(num_qubits)]
+        # -------------------- Results dict --------------------
+        results_by_qubit = {}
 
-        # From Gaussian fit
-        mean_values = {}
-        std_values = {}
-
-        # Loop over each qubit / subplot
-        for i, ax in enumerate(axes):
-            # Gather all temperature data for qubit i across all files.
+        # -------------------- Loop over qubits --------------------
+        for q in range(num_qubits):
+            # Gather Pe across all files for this qubit
             Pe_vals = []
             Pe_errs = []
+
             for file_result in all_files_Qtemp_results:
-                qubit_data = file_result['qubits'].get(i)
+                qubit_data = file_result.get("qubits", {}).get(q)
                 if not qubit_data:
                     continue
 
-                Pe = qubit_data.get('P_e')
-                Pe_err = qubit_data.get('P_e_err')
+                Pe = qubit_data.get("P_e", None)
+                Pe_err = qubit_data.get("P_e_err_total", None)
 
-                # skip if either is missing or relative error is larger than threshold
+                # basic validity
                 if Pe is None or Pe_err is None:
                     continue
-                if Pe > 1 or Pe == 0 or Pe == 1 or Pe < 0:
+                if (Pe <= 0.0) or (Pe >= 1.0):
                     continue
 
+                # optional relative-error cutoff
                 if rel_err_cutoff is not None:
-                    if Pe_err / Pe >= rel_err_cutoff: # rel_err_cutoff is a decimal (0.8 = a relative error of 80% and so forth)
+                    if Pe == 0:
+                        continue
+                    if (Pe_err / Pe) >= rel_err_cutoff:
                         continue
 
                 Pe_vals.append(Pe)
                 Pe_errs.append(Pe_err)
 
-            # If no data is present, hide the subplot.
-            if len(Pe_vals) == 0:
-                plt.setp(ax, visible=False)
-                continue
-
-            # === Weighted mean with robust median-MAD clipping===
             Pe_vals = np.asarray(Pe_vals, dtype=float)
             Pe_errs = np.asarray(Pe_errs, dtype=float)
-            n_counts = len(Pe_vals)
+
+            n_raw = int(Pe_vals.size)
+
+            # Default entry even if empty (so caller can see it failed)
+            entry = {
+                "qid": q,
+                "label": f"Q{q + 1}",
+                "n_raw": n_raw,
+                "n_finite": 0,
+                "n_kept": 0,
+                "rel_err_cutoff": rel_err_cutoff,
+                "mad_k": mad_k,
+                "err_floor": err_floor,
+                "Pe_vals_raw": Pe_vals.copy(),
+                "Pe_errs_raw": Pe_errs.copy(),
+                "Pe_vals_used": np.array([], dtype=float),
+                "Pe_errs_used": np.array([], dtype=float),
+                "median": np.nan,
+                "mad": np.nan,
+                "mu_w": np.nan,
+                "sigma_w": np.nan,
+                "weights_used": np.array([], dtype=float),
+                "hist_counts": None,
+                "hist_bins": None,
+                "bin_width": None,
+                "bin_centers": None,
+            }
+
+            # If no data, hide subplot (if plotting) and store entry
+            if n_raw == 0:
+                results_by_qubit[q] = entry
+                if make_plot:
+                    # find corresponding axis index in grid
+                    ax = axes[q] if q < len(axes) else None
+                    if ax is not None:
+                        plt.setp(ax, visible=False)
+                continue
 
             # keep only finite pairs
             finite = np.isfinite(Pe_vals) & np.isfinite(Pe_errs)
-            Pe_vals, Pe_errs = Pe_vals[finite], Pe_errs[finite]
-            if Pe_vals.size == 0:
-                mu_1, std_1 = np.nan, np.nan
+            Pe_vals_f = Pe_vals[finite]
+            Pe_errs_f = Pe_errs[finite]
+            entry["n_finite"] = int(Pe_vals_f.size)
+
+            if Pe_vals_f.size == 0:
+                results_by_qubit[q] = entry
+                if make_plot:
+                    ax = axes[q] if q < len(axes) else None
+                    if ax is not None:
+                        plt.setp(ax, visible=False)
+                continue
+
+            # robust clipping around median using MAD
+            med = float(np.median(Pe_vals_f))
+            mad = float(np.median(np.abs(Pe_vals_f - med)))
+            if mad == 0.0:
+                mad = float(max(np.std(Pe_vals_f), 1e-12))
+
+            keep = np.abs(Pe_vals_f - med) < (mad_k * mad)
+
+            Pe_vals_k = Pe_vals_f[keep]
+            Pe_errs_k = Pe_errs_f[keep]
+
+            entry["median"] = med
+            entry["mad"] = mad
+            entry["n_kept"] = int(Pe_vals_k.size)
+
+            if Pe_vals_k.size == 0:
+                results_by_qubit[q] = entry
+                if make_plot:
+                    ax = axes[q] if q < len(axes) else None
+                    if ax is not None:
+                        plt.setp(ax, visible=False)
+                continue
+
+            # # weights: for 1/sigma choice (less sensitive to outliers with small errs)
+            # safe_errs = np.clip(Pe_errs_k, err_floor, np.inf)
+            # weights = 1.0 / safe_errs
+
+            # weights: inverse-variance (1/sigma^2)
+            safe_errs = np.clip(Pe_errs_k, err_floor, np.inf)
+            weights = 1.0 / (safe_errs ** 2)
+
+            w_sum = float(np.nansum(weights))
+            if (not np.isfinite(w_sum)) or (w_sum <= 0.0):
+                mu_w = np.nan
+                sigma_w = np.nan
             else:
-                # robust outlier clip around the median
-                k = 2.0  # 2-4  is typical; lower = stricter
-                med = np.median(Pe_vals)
-                mad = np.median(np.abs(Pe_vals - med))
-                if mad == 0:
-                    mad = max(np.std(Pe_vals), 1e-12)
-                keep = np.abs(Pe_vals - med) < k * mad
-                Pe_vals, Pe_errs = Pe_vals[keep], Pe_errs[keep]
+                mu_w = float(np.nansum(weights * Pe_vals_k) / w_sum)
+                var_w = float(np.nansum(weights * (Pe_vals_k - mu_w) ** 2) / w_sum)
+                sigma_w = float(np.sqrt(max(var_w, 0.0)))
 
-                if Pe_vals.size == 0:
-                    mu_1, std_1 = np.nan, np.nan
-                else:
-                    # compute weights and weighted mean/std (using 1/err)
-                    err_floor = 1e-12
-                    safe_errs = np.clip(Pe_errs, err_floor, np.inf)
-                    weights = 1.0 / safe_errs
+            entry["Pe_vals_used"] = Pe_vals_k
+            entry["Pe_errs_used"] = Pe_errs_k
+            entry["weights_used"] = weights
+            entry["mu_w"] = mu_w
+            entry["sigma_w"] = sigma_w
 
-                    w_sum = np.nansum(weights)
-                    mu_1 = float(np.nansum(weights * Pe_vals) / w_sum)
+            # histogram stats
+            hist_counts, bins = np.histogram(Pe_vals_k, bins=optimal_bin_num)
+            bin_width = float(np.diff(bins)[0]) if len(bins) > 1 else np.nan
+            bin_centers = bins[:-1] + (bin_width / 2.0) if np.isfinite(bin_width) else None
 
-                    var = float(np.nansum(weights * (Pe_vals - mu_1) ** 2) / w_sum)
-                    std_1 = float(np.sqrt(max(var, 0.0)))
+            entry["hist_counts"] = hist_counts
+            entry["hist_bins"] = bins
+            entry["bin_width"] = bin_width
+            entry["bin_centers"] = bin_centers
 
+            # optional pdf curve storage (for debugging / later plotting)
+            pdf_x = None
+            pdf_scaled = None
+            if store_pdf_curve and np.isfinite(mu_w) and np.isfinite(sigma_w) and sigma_w > 0 and Pe_vals_k.size > 1:
+                pdf_x = np.linspace(float(np.min(Pe_vals_k)), float(np.max(Pe_vals_k)), 400)
+                pdf_vals = norm.pdf(pdf_x, mu_w, sigma_w)
+                scale_factor = Pe_vals_k.size * bin_width if np.isfinite(bin_width) else Pe_vals_k.size
+                pdf_scaled = pdf_vals * scale_factor
+                entry["pdf_x"] = pdf_x
+                entry["pdf_scaled"] = pdf_scaled
 
-                mean_values[f"Qubit {i + 1}"] = mu_1
-                std_values[f"Qubit {i + 1}"] = std_1
+            results_by_qubit[q] = entry
 
-            # --- Histogram in raw counts ---
-            optimal_bin_num = 45
-            hist_data, bins = np.histogram(Pe_vals, bins=optimal_bin_num)
-            bin_width = np.diff(bins)[0]
-            bin_centers = bins[:-1] + bin_width / 2
+            # -------------------- Plot per qubit --------------------
+            if make_plot:
+                ax = axes[q] if q < len(axes) else None
+                if ax is None:
+                    continue
 
-            # --- Weighted Gaussian curve ---
-            x_vals = np.linspace(min(Pe_vals), max(Pe_vals), 400)
-            pdf_vals = norm.pdf(x_vals, mu_1, std_1)
+                ax.hist(
+                    Pe_vals_k,
+                    bins=optimal_bin_num,
+                    alpha=0.7,
+                    color=colors[q % len(colors)],
+                    edgecolor="black",
+                    label="Counts",
+                )
 
-            # # Scale the Gaussian so its peak matches the histogram's maximum height
-            # scale_factor = np.max(hist_data) / np.max(pdf_vals)
-            # scaled_pdf = pdf_vals * scale_factor
+                # overlay gaussian using your weighted mu/sigma (if valid)
+                if np.isfinite(mu_w) and np.isfinite(sigma_w) and sigma_w > 0 and Pe_vals_k.size > 1:
+                    x_vals = np.linspace(float(np.min(Pe_vals_k)), float(np.max(Pe_vals_k)), 400)
+                    pdf_vals = norm.pdf(x_vals, mu_w, sigma_w)
+                    scale_factor = Pe_vals_k.size * bin_width if np.isfinite(bin_width) else Pe_vals_k.size
+                    scaled_pdf = pdf_vals * scale_factor
+                    ax.plot(
+                        x_vals,
+                        scaled_pdf,
+                        linestyle="--",
+                        linewidth=2,
+                        color="black",
+                        label="Weighted Gaussian",
+                    )
 
-            # area-match scaling (robust to sparse/noisy peaks)
-            scale_factor = len(Pe_vals) * bin_width  # total expected counts
-            scaled_pdf = pdf_vals * scale_factor
+                ax.set_title(
+                    f"{titles[q]}  µ={mu_w:.4f},  s={sigma_w:.4f}, n={entry['n_kept']}",
+                    fontsize=font,
+                )
+                ax.set_xlabel("Thermal Population (Pe)", fontsize=font)
+                ax.set_ylabel("Counts", fontsize=font)
+                ax.tick_params(axis="both", which="major", labelsize=font)
 
-            # --- Plot ---
-            ax.hist(Pe_vals, bins=optimal_bin_num, alpha=0.7,
-                    color=colors[i % len(colors)], edgecolor='black', label="Counts")
+        # -------------------- Finish plot --------------------
+        if make_plot:
+            plt.tight_layout()
 
-            ax.plot(x_vals, scaled_pdf, linestyle='--', linewidth=2,
-                    color='black', label=f"Weighted Gaussian fit")
+            if save_plot:
+                hist_dir = os.path.join(self.outerFolder_save_plots, "Pe_hists")
+                os.makedirs(hist_dir, exist_ok=True)
+                timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                save_path = os.path.join(hist_dir, f"QubitPe_RPM__Histograms_{timestp}.png")
+                print("Histogram plot saved to:", save_path)
+                fig.savefig(save_path, dpi=200)
+            plt.close(fig)
 
-            ax.set_title(f"{titles[i]}  µ={mu_1:.4f},  s={std_1:.4f}, c:{n_counts}", fontsize=font)
-            ax.set_xlabel("Thermal Population (Pe)", fontsize=font)
-            ax.set_ylabel("Counts", fontsize=font)
-            # ax.legend(fontsize=font - 2)
-            ax.tick_params(axis='both', which='major', labelsize=font)
+        # -------------------- Return --------------------
+        if only_return_mu_and_sigma:
+            # per-qubit return, short version
+            slim = {
+                q: {
+                    "mu_w": results_by_qubit[q]["mu_w"],
+                    "sigma_w": results_by_qubit[q]["sigma_w"],
+                    "n_kept": results_by_qubit[q]["n_kept"],
+                    "n_raw": results_by_qubit[q]["n_raw"],
+                }
+                for q in range(num_qubits)
+            }
+            return slim
 
-        plt.tight_layout()
-
-        hist_dir = os.path.join(self.outerFolder_save_plots, "Pe_hists")
-        os.makedirs(hist_dir, exist_ok=True)
-
-        timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        save_path = os.path.join(hist_dir, f"QubitPe_RPM__Histograms_{timestp}.png")
-        print("Histogram plot saved to:", save_path)
-        plt.savefig(save_path, dpi=200)
-        plt.close(fig)
-
+        return results_by_qubit
 
     def plot_qubit_pe_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6):
         """

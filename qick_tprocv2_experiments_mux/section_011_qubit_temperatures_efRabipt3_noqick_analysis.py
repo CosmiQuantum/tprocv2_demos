@@ -124,110 +124,100 @@ class Temps_EFAmpRabiExperiment:
 
         return popt, pcov
 
-    def fit_cosine_both_IandQ_iminuit(self, x, I, Q, p0_I, p0_Q, fix_b=None, fix_c=None):
+    def fit_cosine_both_IandQ_iminuit(
+            self, x, I, Q, p0_I, p0_Q, fix_b=None, fix_cI=None, fix_cQ=None
+    ):
         """
-        Joint Iminuit cosine fit to BOTH I and Q simultaneously with shared b and c.
+        Joint iminuit cosine fit to I and Q with shared b but NOT shared phase.
 
         Model:
-          I(x) = aI * cos_model(x; b, c) + dI
-          Q(x) = aQ * cos_model(x; b, c) + dQ
-
-        where cos_model is your existing self.cosine(x, a, b, c, d).
+          I(x) = aI * cos(b*x + cI) + dI
+          Q(x) = aQ * cos(b*x + cQ) + dQ
 
         Parameters
         ----------
         x : array-like
-            Gain axis.
         I, Q : array-like
-            Measured I and Q arrays (same length as x).
-        p0_I, p0_Q : array-like length 4
-            Initial guesses in the SAME format you already use:
-              p0_* = [a_guess, b_guess, c_guess, d_guess]
-            Only b and c from p0_I are used as shared initial guesses.
-        fix_b, fix_c : float or None
-            If provided, hold shared b and/or c fixed.
+        p0_I, p0_Q : [a_guess, b_guess, c_guess, d_guess]
+        fix_b : float or None
+            If provided, hold b fixed.
+        fix_cI, fix_cQ : float or None
+            If provided, hold cI and/or cQ fixed.
 
         Returns
         -------
-        popt : dict
-            {"aI","aQ","b","c","dI","dQ"} best-fit values.
-        pcov : np.ndarray shape (6,6)
-            Approx covariance matrix in the above parameter order:
-            ["aI","aQ","b","c","dI","dQ"]
-            Scaled to match curve_fit absolute_sigma=False behavior.
+        popt_arr : np.ndarray shape (7,)
+            [aI, aQ, b, cI, cQ, dI, dQ]
+        pcov : np.ndarray shape (7,7)
+            covariance matrix in that same order, scaled like curve_fit(abs_sigma=False)
+            (filled with NaNs if unavailable)
         """
-
         x = np.asarray(x, dtype=float)
         I = np.asarray(I, dtype=float)
         Q = np.asarray(Q, dtype=float)
         if x.size != I.size or x.size != Q.size:
             raise ValueError("x, I, and Q must have the same length.")
 
-        # Shared initial guesses for b,c (take from I's p0)
-        b0 = float(p0_I[1])
-        c0 = float(p0_I[2])
+        # Initial guesses
+        aI0, b0, cI0, dI0 = map(float, p0_I)
+        aQ0, _, cQ0, dQ0 = map(float, p0_Q)
 
-        # Separate initial guesses for amplitudes/offsets
-        aI0 = float(p0_I[0])
-        dI0 = float(p0_I[3])
-        aQ0 = float(p0_Q[0])
-        dQ0 = float(p0_Q[3])
+        def sse(aI, aQ, b, cI, cQ, dI, dQ):
+            I_model = self.cosine(x, aI, b, cI, dI)
+            Q_model = self.cosine(x, aQ, b, cQ, dQ)
+            rI = I - I_model
+            rQ = Q - Q_model
+            return np.sum(rI * rI) + np.sum(rQ * rQ)
 
-        def sse(aI, aQ, b, c, dI, dQ):
-            I_model = self.cosine(x, aI, b, c, dI)
-            Q_model = self.cosine(x, aQ, b, c, dQ)
-            return np.sum((I - I_model) ** 2) + np.sum((Q - Q_model) ** 2)
-
-        m = Minuit(sse, aI=aI0, aQ=aQ0, b=b0, c=c0, dI=dI0, dQ=dQ0)
+        m = Minuit(sse, aI=aI0, aQ=aQ0, b=b0, cI=cI0, cQ=cQ0, dI=dI0, dQ=dQ0)
         m.errordef = Minuit.LEAST_SQUARES
 
-        # Same phase limits idea as before (shared phase)
-        m.limits["c"] = (-2 * np.pi, 2 * np.pi)
+        # Phase limits (optional but usually helpful)
+        m.limits["cI"] = (-2 * np.pi, 2 * np.pi)
+        m.limits["cQ"] = (-2 * np.pi, 2 * np.pi)
 
-        # --- optionally fix shared b/c ---
+        # Optional fixing
         if fix_b is not None:
             m.values["b"] = float(fix_b)
             m.fixed["b"] = True
-        if fix_c is not None:
-            m.values["c"] = float(fix_c)
-            m.fixed["c"] = True
+        if fix_cI is not None:
+            m.values["cI"] = float(fix_cI)
+            m.fixed["cI"] = True
+        if fix_cQ is not None:
+            m.values["cQ"] = float(fix_cQ)
+            m.fixed["cQ"] = True
 
-        # Improve robustness (same logic you used)
         m.simplex()
         m.migrad()
         m.hesse()
 
-        # Best-fit values
-        popt = {
-            "aI": float(m.values["aI"]),
-            "aQ": float(m.values["aQ"]),
-            "b": float(m.values["b"]),
-            "c": float(m.values["c"]),
-            "dI": float(m.values["dI"]),
-            "dQ": float(m.values["dQ"]),
-        }
+        names = ["aI", "aQ", "b", "cI", "cQ", "dI", "dQ"]
+        popt_arr = np.array([m.values[k] for k in names], dtype=float)
 
-        # Convert Minuit covariance -> numpy matrix in a stable order
-        names = ["aI", "aQ", "b", "c", "dI", "dQ"]
+        # Covariance
         cov = m.covariance
         if cov is None:
-            pcov = np.full((len(names), len(names)), np.nan)
+            pcov = np.full((len(names), len(names)), np.nan, dtype=float)
+            return popt_arr, pcov
+
+        pcov = np.zeros((len(names), len(names)), dtype=float)
+        for i, ni in enumerate(names):
+            for j, nj in enumerate(names):
+                pcov[i, j] = cov[ni, nj]
+
+        # ---- curve_fit-style scaling (absolute_sigma=False) ----
+        # Total data points = 2*N (I and Q)
+        N = 2 * x.size
+
+        # Effective number of free parameters = number of params not fixed
+        n_free = sum(not m.fixed[k] for k in names)
+
+        ndof = N - n_free
+        if ndof > 0 and np.isfinite(m.fval):
+            scale = m.fval / ndof
+            pcov = pcov * scale
         else:
-            pcov = np.zeros((len(names), len(names)))
-            for i, ni in enumerate(names):
-                for j, nj in enumerate(names):
-                    pcov[i, j] = cov[ni, nj]
-
-            # Match curve_fit absolute_sigma=False scaling
-            # Total data points = 2*N (I and Q)
-            N = 2 * x.size
-            p = len(names)
-            ndof = N - p
-            if ndof > 0 and np.isfinite(m.fval):
-                scale = m.fval / ndof
-                pcov = pcov * scale
-
-            popt_arr = np.array([popt[k] for k in ["aI", "aQ", "b", "c", "dI", "dQ"]])
+            pcov[:] = np.nan
 
         return popt_arr, pcov
 
@@ -245,48 +235,83 @@ class Temps_EFAmpRabiExperiment:
         popt[2] = (popt[2] + np.pi) % (2 * np.pi) - np.pi
         return popt
 
-    def plot_results_IQ_together_iminuit(self, I, Q, gains, config=None, fig_quality=200, use_iminuit_instead = True, filename_ext="", show_mag_fit=True):
+    def plot_results_IQ_together_iminuit(
+            self,
+            I,
+            Q,
+            gains,
+            config=None,
+            fig_quality=200,
+            use_iminuit_instead=True,  # kept for API compatibility; joint iminuit only
+            filename_ext="",
+            show_mag_fit=True,
+            rotate_using_ssf=False,  # kept for API compatibility; NOT used here
+            ssf_angle=None,  # kept for API compatibility; NOT used here
+    ):
         """
-        This was made for a test, and it works alright, but it made no difference in RPM results so it is not in use.
+        Joint-IQ RPM fit (iminuit):
+          - Fits I and Q simultaneously with shared b (frequency), but separate phases cI, cQ.
+          - DOES NOT canonicalize anything (minimize risk).
+          - Returns A_amp_IQ = sqrt(aI^2 + aQ^2) and its uncertainty using full covariance.
+          - Preserves plot layout (I, Q, |IQ|).
 
-        Joint-IQ version of plot_results(): iminuit case
-          - Fits I and Q simultaneously with shared (b, c): oscillation frequency and phase
-          - Returns A_amp_IQ = sqrt(A_I^2 + A_Q^2) and its uncertainty using full covariance
-          - Preserves existing plot layout (I plot, Q plot, Magnitude plot)
-
-        Requires you to have added:
-          self.fit_cosine_both_IandQ_iminuit(gains, I, Q, p0_I, p0_Q) -> (popt6, pcov6)
-        where popt6 order is: [aI, aQ, b, c, dI, dQ]
-        and pcov6 is 6x6 in that same order.
+        Requires:
+          self.fit_cosine_both_IandQ_iminuit(gains, I, Q, p0_I, p0_Q) -> (popt7, pcov7)
+            popt7 order: [aI, aQ, b, cI, cQ, dI, dQ]
+            pcov7 shape: (7,7) in same order (NaNs allowed), already scaled like curve_fit(abs_sigma=False).
         """
         try:
+            import numpy as np
+            import matplotlib.pyplot as plt
+            import os, datetime
+
+            # -------------------- Prep --------------------
+            I = np.asarray(I, dtype=float)
+            Q = np.asarray(Q, dtype=float)
+            gains = np.asarray(gains, dtype=float)
+
             fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
             plt.rcParams.update({"font.size": 18})
 
             plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
 
             # -------------------- Initial guesses --------------------
-            I = np.asarray(I, dtype=float)
-            Q = np.asarray(Q, dtype=float)
-            gains = np.asarray(gains, dtype=float)
+            aI0 = (np.nanmax(I) - np.nanmin(I)) / 2.0
+            dI0 = float(np.nanmean(I))
+            aQ0 = (np.nanmax(Q) - np.nanmin(Q)) / 2.0
+            dQ0 = float(np.nanmean(Q))
 
-            aI0 = (np.max(I) - np.min(I)) / 2
-            dI0 = np.mean(I)
-            aQ0 = (np.max(Q) - np.min(Q)) / 2
-            dQ0 = np.mean(Q)
+            if gains.size > 0 and gains[-1] != 0:
+                b0 = float(1.0 / gains[-1])
+            else:
+                b0 = 1.0
 
-            b0 = 1 / gains[-1] if gains.size and gains[-1] != 0 else 1.0
-            c0 = 0.0
+            cI0 = 0.0
+            cQ0 = 0.0
 
-            p0_I = [aI0, b0, c0, dI0]
-            p0_Q = [aQ0, b0, c0, dQ0]
+            p0_I = [float(aI0), float(b0), float(cI0), float(dI0)]
+            p0_Q = [float(aQ0), float(b0), float(cQ0), float(dQ0)]
 
             # -------------------- Joint fit --------------------
-            popt6, pcov6 = self.fit_cosine_both_IandQ_iminuit(gains, I, Q, p0_I, p0_Q)
-            aI, aQ, b, c, dI, dQ = popt6
+            popt7, pcov7 = self.fit_cosine_both_IandQ_iminuit(gains, I, Q, p0_I, p0_Q)
+            popt7 = np.asarray(popt7, dtype=float).ravel()
 
-            I_fit = self.cosine(gains, aI, b, c, dI)
-            Q_fit = self.cosine(gains, aQ, b, c, dQ)
+            if popt7.size != 7:
+                raise ValueError(f"Expected popt7 of length 7, got {popt7.size}.")
+
+            aI, aQ, b, cI, cQ, dI, dQ = popt7
+
+            # Enforce pcov7 is numeric 7x7 (NaNs allowed)
+            if pcov7 is None:
+                pcov7 = np.full((7, 7), np.nan, dtype=float)
+            else:
+                pcov7 = np.asarray(pcov7, dtype=float)
+                if pcov7.shape != (7, 7):
+                    pcov7 = np.full((7, 7), np.nan, dtype=float)
+
+            # Model curves (NO canonicalization)
+            I_fit = self.cosine(gains, aI, b, cI, dI)
+            Q_fit = self.cosine(gains, aQ, b, cQ, dQ)
 
             # -------------------- Plots: I and Q --------------------
             ax1.plot(gains, I, linewidth=2, label="I")
@@ -300,26 +325,27 @@ class Temps_EFAmpRabiExperiment:
             ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
             ax2.tick_params(axis="both", which="major", labelsize=16)
 
-            # -------------------- Combined amplitude + uncertainty (uses correlation) --------------------
-            A_I = aI # I-curve amplitude
-            A_Q = aQ # Q-curve amplitude
-            A_amp_IQ = float(np.sqrt(A_I ** 2 + A_Q ** 2)) # combined amplitude
+            # -------------------- Combined amplitude + uncertainty --------------------
+            A_I = float(aI)
+            A_Q = float(aQ)
+            A_amp_IQ = float(np.sqrt(A_I ** 2 + A_Q ** 2))
 
-            # diag errors for per-quadrature legends
-            sigma_A_I = float(np.sqrt(pcov6[0, 0])) if np.isfinite(pcov6[0, 0]) else np.nan
-            sigma_A_Q = float(np.sqrt(pcov6[1, 1])) if np.isfinite(pcov6[1, 1]) else np.nan
+            # per-quadrature amplitude errors (for legend display)
+            sigma_A_I = float(np.sqrt(pcov7[0, 0])) if np.isfinite(pcov7[0, 0]) and pcov7[0, 0] >= 0 else np.nan
+            sigma_A_Q = float(np.sqrt(pcov7[1, 1])) if np.isfinite(pcov7[1, 1]) and pcov7[1, 1] >= 0 else np.nan
 
-            # full propagated error for A = sqrt(aI^2 + aQ^2)
-            if pcov6 is None or not np.all(np.isfinite(pcov6[:2, :2])) or A_amp_IQ <= 0:
+            # propagated error for A = sqrt(aI^2 + aQ^2) using 2x2 sub-covariance
+            if (A_amp_IQ <= 0.0) or (not np.all(np.isfinite(pcov7[:2, :2]))):
                 A_amp_IQ_err = np.nan
             else:
                 dA_dAI = A_I / A_amp_IQ
                 dA_dAQ = A_Q / A_amp_IQ
                 varA = (
-                        (dA_dAI ** 2) * pcov6[0, 0]
-                        + (dA_dAQ ** 2) * pcov6[1, 1]
-                        + 2.0 * dA_dAI * dA_dAQ * pcov6[0, 1])
-                A_amp_IQ_err = float(np.sqrt(varA)) if varA > 0 else None
+                        (dA_dAI ** 2) * pcov7[0, 0]
+                        + (dA_dAQ ** 2) * pcov7[1, 1]
+                        + 2.0 * dA_dAI * dA_dAQ * pcov7[0, 1]
+                )
+                A_amp_IQ_err = float(np.sqrt(varA)) if np.isfinite(varA) and varA >= 0.0 else np.nan
 
             ax1.legend([f"A_I={A_I:.4f} ± {sigma_A_I:.4f}"], loc="best")
             ax2.legend([f"A_Q={A_Q:.4f} ± {sigma_A_Q:.4f}"], loc="best")
@@ -335,15 +361,15 @@ class Temps_EFAmpRabiExperiment:
             ax3.tick_params(axis="both", which="major", labelsize=16)
 
             if show_mag_fit:
-                # not used for RPM amplitude
-                a0 = (np.max(magnitude_data) - np.min(magnitude_data)) / 2
-                d0 = np.mean(magnitude_data)
-                b0_mag = 1 / gains[-1] if gains.size and gains[-1] != 0 else 1.0
+                # Diagnostic only (not used for RPM amplitude)
+                a0 = (np.nanmax(magnitude_data) - np.nanmin(magnitude_data)) / 2.0
+                d0 = float(np.nanmean(magnitude_data))
+                b0_mag = float(1.0 / gains[-1]) if gains.size and gains[-1] != 0 else 1.0
                 c0_mag = 0.0
-                mag_guess = [a0, b0_mag, c0_mag, d0]
+                mag_guess = [float(a0), float(b0_mag), float(c0_mag), float(d0)]
 
                 mag_popt, mag_pcov = self.fit_cosine_iminuit(gains, magnitude_data, mag_guess)
-                mag_popt = self.canonicalize_cos_params(mag_popt)
+                # NOTE: still no canonicalization
                 magnitude_fit = self.cosine(gains, *mag_popt)
                 ax3.plot(gains, magnitude_fit, "-", color="green", linewidth=3, label="Fit to |IQ|")
 
@@ -394,11 +420,23 @@ class Temps_EFAmpRabiExperiment:
                 "fit_IQ": fit_IQ,
                 "I_fit": I_fit,
                 "Q_fit": Q_fit,
-                "popt_IQ": popt6,
-                "pcov_IQ": pcov6,
+                "popt_IQ": popt7,  # [aI, aQ, b, cI, cQ, dI, dQ]
+                "pcov_IQ": pcov7,  # 7x7
+                # helpful extras for downstream code (optional):
+                "A_I": A_I,
+                "sigma_A_I": sigma_A_I,
+                "A_Q": A_Q,
+                "sigma_A_Q": sigma_A_Q,
+                "b": float(b),
+                "cI": float(cI),
+                "cQ": float(cQ),
             }
 
             return A_amp_IQ, A_amp_IQ_err, fit_params
+
+        except Exception as e:
+            print("Error fitting cosine (joint IQ):", e)
+            return None, None, None
 
         except Exception as e:
             print("Error fitting cosine (joint IQ):", e)

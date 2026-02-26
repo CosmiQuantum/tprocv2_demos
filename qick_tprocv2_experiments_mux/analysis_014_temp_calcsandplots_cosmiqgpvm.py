@@ -1252,19 +1252,6 @@ class SSFTempCalcAndPlots:
             Pe_vals = np.asarray(Pe_vals, dtype=float)
             Pe_errs = np.asarray(Pe_errs, dtype=float)
 
-            # # --- Weighted mean/std (same recipe as RPMs) ---
-            # err_floor = 1e-12
-            # safe_errs = np.clip(errs, err_floor, np.inf)
-            # # clip tiny errors (robustness)
-            # low_clip_percentile = 1.0
-            # clip_threshold = np.nanpercentile(safe_errs, low_clip_percentile)
-            # safe_errs = np.maximum(safe_errs, clip_threshold)
-            # weights = 1.0 / (safe_errs ** 2)
-            #
-            # mu = np.sum(weights * Pe_vals) / np.sum(weights)
-            # var = np.sum(weights * (Pe_vals - mu) ** 2) / np.sum(weights)
-            # std = np.sqrt(var)
-
             # ---------------------------Weighted mean with robust median-MAD clipping---------------------------
             n_counts = len(Pe_vals)
 
@@ -1286,10 +1273,16 @@ class SSFTempCalcAndPlots:
                 if Pe_vals.size == 0:
                     mu_1, std_1 = np.nan, np.nan
                 else:
-                    # compute weights and weighted mean/std (using 1/err)
+                    # ------------------ compute weights and weighted mean/std -------------------
                     err_floor = 1e-12
+
+                    # for 1/sigma weights choice (less sensitive to outliers with small errs)
+                    # safe_errs = np.clip(Pe_errs, err_floor, np.inf)
+                    # weights = 1.0 / safe_errs
+
+                    # inverse-variance weights (1/sigma^2)
                     safe_errs = np.clip(Pe_errs, err_floor, np.inf)
-                    weights = 1.0 / safe_errs
+                    weights = 1.0 / (safe_errs ** 2)
 
                     w_sum = np.nansum(weights)
                     mu_1 = float(np.nansum(weights * Pe_vals) / w_sum)
@@ -2008,7 +2001,7 @@ class RPMTempCalcAndPlots:
     def run_RPMqtemps(self, base_dir, target_dates, filter_keywords, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
                      outerFolder_RR_plots, replot_RPMs = False, get_qtemp_data = False, get_london_data = False, figure_quality = 200, save_figsRR = False,
                       exclude_temp_sweeps = False, passing_pre_sciencerun_data = False, filter_out_bad_amp_fits = False, use_png_timestamps = False,
-                      combine_IQ_signal = False):
+                      combine_IQ_signal = False, Pe_dist_err_dict = None):
 
         combined_qtemp_data = []  # list of results from different .h5 files
 
@@ -2060,12 +2053,12 @@ class RPMTempCalcAndPlots:
                             # set filter_out_bad_amp_fits to True to save filtered ones, otherwise no quality cuts will be applied
                             # ------------------------------------To re-plot the RPM plots (the rest have been internally commented out)-----------------------------------------------------
                             plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_ss = False,  ss_plot_gef = False, plot_t1 = False,
-                                        plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = True, combine_rpm_IQ_signal = combine_IQ_signal)
+                                        plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = True, combine_rpm_IQ_signal = combine_IQ_signal, Pe_dist_err_dict = Pe_dist_err_dict)
 
                         if get_qtemp_data: # returns RPM qubit temperature data (and qfreqs that were used for the calculations)
                             # ---------------------------------------- Load data and append to list spanning multiple dates --------------------------------------------------
                             qtemp_data = plotter.load_plot_save_rabis_Qtemps(list_of_all_qubits, run_num, save_figs = save_figsRR, get_qtemp_data = get_qtemp_data, filter_out_bad_amp_fits = filter_out_bad_amp_fits,
-                                                                             use_png_timestamps = use_png_timestamps, combine_IQ_signal = combine_IQ_signal)
+                                                                             use_png_timestamps = use_png_timestamps, combine_IQ_signal = combine_IQ_signal, Pe_dist_err_dict = Pe_dist_err_dict)
                             combined_qtemp_data.extend(qtemp_data)
 
                         if get_london_data: # returns RPM qubit temperature data, qfreqs that were used to calculate the temps, and resonator freqs
@@ -2825,6 +2818,246 @@ class combined_Qtemp_studies:
         fig.savefig(fname, dpi=self.figure_quality)
         plt.close(fig)
         print("Saved P_e plot →", fname)
+
+    def Pe_vs_time_comb_allQs_1col(
+            self,
+            ssf_fit_results,
+            out_dir,
+            all_files_Qtemp_results_RPMs,
+            restrict_time_xaxis=False,
+            restrict_time_yaxis=False,
+            ylims=None,
+            rad_events_plot_lines=False,
+            qubits_to_plot=None,
+            sort_by_time=True,
+    ):
+        """
+        Plot P_e vs time for RPM and SSF.
+
+        SSF input format (your fit_results):
+          ssf_fit_results[qid] = list of dicts with keys including:
+            - "timestamp" (datetime)
+            - "Pe" (float)
+            - "total_sigma_Pe" (float)   # optional but recommended
+
+        RPM input format (your existing):
+          all_files_Qtemp_results_RPMs: list of rec dicts where
+            rec["qubits"][q]["P_e"], ["P_e_err"], ["date"] exist.
+
+        Saves a PNG and returns its path.
+        """
+        os.makedirs(out_dir, exist_ok=True)
+
+        num_qubits = self.number_of_qubits
+
+        # -------------------- Build RPM dicts --------------------
+        times_RPM = {q: [] for q in range(num_qubits)}
+        Pe_RPM = {q: [] for q in range(num_qubits)}
+        PeErr_RPM = {q: [] for q in range(num_qubits)}
+
+        for rec in all_files_Qtemp_results_RPMs:
+            qubits_dict = rec.get("qubits", {})
+            if not isinstance(qubits_dict, dict):
+                continue
+
+            for q in range(num_qubits):
+                d = qubits_dict.get(q)
+                if not d:
+                    continue
+
+                pe = d.get("P_e", None)
+                ts = d.get("date", None)  # epoch seconds
+                if pe is None or ts is None:
+                    continue
+
+                try:
+                    pe = float(pe)
+                    ts = float(ts)
+                except Exception:
+                    continue
+
+                if not np.isfinite(pe) or not np.isfinite(ts):
+                    continue
+
+                t = datetime.datetime.fromtimestamp(ts)
+                times_RPM[q].append(t)
+                Pe_RPM[q].append(pe)
+
+                pe_err = d.get("P_e_err", None)
+                try:
+                    pe_err = float(pe_err) if pe_err is not None else np.nan
+                except Exception:
+                    pe_err = np.nan
+                PeErr_RPM[q].append(pe_err)
+
+        # -------------------- Build SSF dicts from fit_results --------------------
+        times_SSF = {q: [] for q in range(num_qubits)}
+        Pe_SSF = {q: [] for q in range(num_qubits)}
+        PeErr_SSF = {q: [] for q in range(num_qubits)}
+
+        if ssf_fit_results is None or not isinstance(ssf_fit_results, dict):
+            raise ValueError("ssf_fit_results must be a dict like fit_results[qid] = [ {...}, ... ]")
+
+        for q in range(num_qubits):
+            entries = ssf_fit_results.get(q, [])
+            if not entries:
+                continue
+
+            for r in entries:
+                if not isinstance(r, dict):
+                    continue
+
+                t = r.get("timestamp", None)
+                pe = r.get("Pe", None)  # note: your key is "Pe" not "P_e"
+                pe_err = r.get("total_sigma_Pe", None)
+
+                if t is None or pe is None:
+                    continue
+                if not isinstance(t, datetime.datetime):
+                    # in case something serialized weirdly
+                    continue
+
+                try:
+                    pe = float(pe)
+                except Exception:
+                    continue
+                if not np.isfinite(pe):
+                    continue
+
+                if pe_err is None:
+                    pe_err = np.nan
+                else:
+                    try:
+                        pe_err = float(pe_err)
+                    except Exception:
+                        pe_err = np.nan
+
+                times_SSF[q].append(t)
+                Pe_SSF[q].append(pe)
+                PeErr_SSF[q].append(pe_err)
+
+        # -------------------- Optional: sort each series by time --------------------
+        def _sort_series(tlist, ylist, elist):
+            if not tlist or not ylist:
+                return tlist, ylist, elist
+            order = np.argsort([tt.timestamp() for tt in tlist])
+            t_sorted = [tlist[i] for i in order]
+            y_sorted = [ylist[i] for i in order]
+            e_sorted = [elist[i] for i in order] if elist is not None and len(elist) == len(ylist) else elist
+            return t_sorted, y_sorted, e_sorted
+
+        if sort_by_time:
+            for q in range(num_qubits):
+                times_RPM[q], Pe_RPM[q], PeErr_RPM[q] = _sort_series(times_RPM[q], Pe_RPM[q], PeErr_RPM[q])
+                times_SSF[q], Pe_SSF[q], PeErr_SSF[q] = _sort_series(times_SSF[q], Pe_SSF[q], PeErr_SSF[q])
+
+        # -------------------- Optional time window --------------------
+        if restrict_time_xaxis:
+            window_start = datetime.datetime(2025, 4, 18, 0, 0)
+            window_end = datetime.datetime(2025, 5, 4, 23, 59)
+
+        # -------------------- Optional radiation events --------------------
+        rad_events = []
+        if rad_events_plot_lines:
+            rad_events = [
+                (datetime.datetime(2025, 4, 21, 12, 35), "Co-60"),
+                (datetime.datetime(2025, 4, 23, 12, 53), "Cs-137"),
+                (datetime.datetime(2025, 4, 28, 9, 40), "Cs-137 closer"),
+                (datetime.datetime(2025, 5, 4, 18, 20), "Cs-137 removed"),
+            ]
+
+        # -------------------- Decide which qubits to plot --------------------
+        if qubits_to_plot is None:
+            qubits_to_plot = list(range(num_qubits))
+        else:
+            qubits_to_plot = sorted(
+                q for q in qubits_to_plot
+                if isinstance(q, int) and 0 <= q < num_qubits
+            )
+        if not qubits_to_plot:
+            raise ValueError("qubits_to_plot is empty after filtering valid indices.")
+
+        # -------------------- Plot --------------------
+        nrows = len(qubits_to_plot)
+        fig, axes = plt.subplots(
+            nrows, 1,
+            figsize=(12, 3.2 * nrows),
+            sharex=True,
+            constrained_layout=True
+        )
+        if nrows == 1:
+            axes = [axes]
+
+        date_fmt = DateFormatter("%m-%d-%H")
+
+        for ax, q in zip(axes, qubits_to_plot):
+            # RPM
+            if times_RPM[q] and Pe_RPM[q]:
+                use_yerr = len(PeErr_RPM[q]) == len(Pe_RPM[q])
+                ax.errorbar(
+                    times_RPM[q], Pe_RPM[q],
+                    yerr=PeErr_RPM[q] if use_yerr else None,
+                    fmt="o", markersize=4, elinewidth=1, capsize=3,
+                    alpha=0.85, color="orange", ecolor="orange",
+                    markeredgecolor="k", label="RPM $P_e$"
+                )
+
+            # SSF
+            if times_SSF[q] and Pe_SSF[q]:
+                use_yerr = len(PeErr_SSF[q]) == len(Pe_SSF[q])
+                ax.errorbar(
+                    times_SSF[q], Pe_SSF[q],
+                    yerr=PeErr_SSF[q] if use_yerr else None,
+                    fmt="o", markersize=4, elinewidth=1, capsize=3,
+                    alpha=0.85, color="blue", ecolor="blue",
+                    markeredgecolor="k", label="SSF $P_e$"
+                )
+
+            ax.set_title(f"Q{q + 1}", loc="left", fontsize=13, fontweight="bold")
+            ax.set_ylabel("$P_e$")
+            ax.grid(False)
+            ax.yaxis.set_major_locator(MaxNLocator(nbins=4, prune=None))
+            ax.xaxis.set_major_formatter(date_fmt)
+            ax.tick_params(axis="x", rotation=45, labelsize=9)
+
+            # y limits
+            if restrict_time_yaxis and ylims is not None and len(ylims) == 2:
+                ax.set_ylim(float(ylims[0]), float(ylims[1]))
+            else:
+                ax.set_ylim(-0.02, 1.02)
+
+            # x limits
+            if restrict_time_xaxis:
+                ax.set_xlim(window_start, window_end)
+
+            for t_evt, lbl in rad_events:
+                ax.axvline(t_evt, color="gray", linestyle="--", linewidth=1)
+                ax.text(t_evt, ax.get_ylim()[1] * 0.9, lbl, rotation=90, va="top", ha="right", fontsize=8)
+
+            # mean difference line in legend
+            mean_diff_str = None
+            if Pe_RPM[q] and Pe_SSF[q]:
+                mean_diff = np.nanmean(Pe_RPM[q]) - np.nanmean(Pe_SSF[q])
+                mean_diff_str = f"<RPM> - <SSF> = {mean_diff:.4f}"
+
+            handles, labels = ax.get_legend_handles_labels()
+            if mean_diff_str is not None:
+                handles.append(plt.Line2D([], [], color="none"))
+                labels.append(mean_diff_str)
+            ax.legend(handles, labels, loc="upper left", fontsize=9, frameon=False)
+
+        axes[-1].set_xlabel("Time")
+        fig.suptitle("Excited-State Population $P_e$ vs Time (RPM vs SSF)", fontsize=15)
+
+        # -------------------- Save --------------------
+        paramvstime_dir = os.path.join(out_dir, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_path = os.path.join(paramvstime_dir, f"Pe_Comparison_RPM_vs_SSF_AllQs_{stamp}.png")
+        fig.savefig(out_path, dpi=self.figure_quality)
+        plt.close(fig)
+        print("Saved Pe comparison plot:", out_path)
+        return out_path
 
     def Qtemps_vs_time_comb_allQs_1col(self, all_qubit_temperatures_ssf_g, all_qubit_timestamps_ssf_g,
                                               out_dir, all_files_Qtemp_results_RPMs, all_qubit_temps_errs_g,
