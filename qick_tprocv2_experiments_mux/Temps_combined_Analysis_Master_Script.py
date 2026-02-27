@@ -61,14 +61,14 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
                   "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps)
-comb_analysis_flags = {"get_Pe_hist_distr_err": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": True, "Pe_vs_time_comb_separate_plts": False,
+comb_analysis_flags = {"get_Pe_hist_distr_err": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": True, "Pe_vs_time_comb_separate_plts": False,
                        "Pe_vs_time_comb_single_plt": True}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 
 # For double-gaussian SSF analysis using alternative methods
-alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False, "get_Pe_hist_distr_err": False,}
+alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False, "get_Pe_hist_distr_err": False}
 
 # For coherence-qubit temps combined analysis
 coh_qtemp_ana_flags = {"load_rpm_qtemps": False, "get_Pe_hist_distr_err": False, "load_ssf_qtemps": False, "load_mcp1_temps": False, "load_coherence_res": False, "plot_qtemps_t1_ftemps_qfreq": False}
@@ -802,7 +802,7 @@ if qtemp_method_flags["combined_studies_qtemps"]:
         # Plots error bars always, unless you pass None instead of all_qubit_temps_errs_g.
         combined_studies.Qtemps_vs_time_comb_allQs_1col(all_qubit_temps_g, all_qubit_times_g, outerFolder_qtemps_plots,
                                                      all_files_Qtemp_results_RPMs, all_qubit_temps_errs_g, restrict_time_yaxis = True, ylims = [55,110],
-                                                        rad_events_plot_lines = False, qubits_to_plot = [0,1],
+                                                        rad_events_plot_lines = False, qubits_to_plot = [0,1,2,4],
                                                         plot_rpm_I_only=False, plot_rpm_Q_only=False)
 
     #----------- Thermal Populations vs Time using all three methods ----
@@ -816,7 +816,7 @@ if qtemp_method_flags["combined_studies_qtemps"]:
         # combined_studies.Pe_vs_time_comb_2subplts(all_files_Qtemp_results_RPMs, fit_results_g, fit_results_ge, outerFolder_qtemps_plots,
         #                              restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
         # TWO METHODS VERSION (new)
-        combined_studies.Pe_vs_time_comb_allQs_1col(fit_results_g, outerFolder_qtemps_plots, all_files_Qtemp_results_RPMs, qubits_to_plot=[0, 1], restrict_time_yaxis = True,
+        combined_studies.Pe_vs_time_comb_allQs_1col(fit_results_g, outerFolder_qtemps_plots, all_files_Qtemp_results_RPMs, qubits_to_plot=[0,1,2,4], restrict_time_yaxis = True,
                                                     ylims=[0.0, 0.16])
 
 #################################################### London Penetration Analysis ##########################################################

@@ -335,7 +335,7 @@ class SSFTempCalcAndPlots:
 
                 # Now call on the function compute_temperature_error_SSF to calculate the errs of the qubit temps
                 T_mK = temp_k * 1e3
-                sigma_TmK = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
+                sigma_TmK, sigma_Pe_total = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
 
                 # -------- save qubit temps and timestamps ----------------------------------------------
                 all_qubit_temperatures[qid].append(T_mK)  # temperatures in mK
@@ -471,7 +471,7 @@ class SSFTempCalcAndPlots:
                     continue
 
                 T_mK = temp_k * 1e3
-                sigma_TmK = self.compute_temperature_error_SSF(
+                sigma_TmK, sigma_Pe_total = self.compute_temperature_error_SSF(
                     Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
 
                 if do_plots:
@@ -653,7 +653,7 @@ class SSFTempCalcAndPlots:
 
                 # Now call on the function compute_temperature_error_SSF to calculate the errs of the qubit temps
                 T_mK = temp_k * 1e3
-                sigma_TmK = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
+                sigma_TmK, sigma_Pe_total = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
 
                 # Plotting
                 if do_plots:
@@ -1006,89 +1006,226 @@ class SSFTempCalcAndPlots:
         print('Plots saved to:', plotting_path)
         return thresh_results
 
-    def plot_gaussians_qtemps(self, q_key, qubit_folder, ig_new, ground_data, excited_data, ground_gaussian, excited_gaussian, pop_threshold, dataset, weights, sigmas, means,
-                              temperature_mk = None, title_ext = "", dontuse_midpt_thresh = False):
-        # -----------------PLOTS TO CHECK g-state double gaussian FITS AND THRESHOLDS---------------
-        # Plotting double gaussian distributions and fitting
-        xlims = [np.min(ig_new), np.max(ig_new)]
+    def plot_gaussians_qtemps(
+            self,
+            q_key,
+            qubit_folder,
+            ig_new,
+            ground_data,
+            excited_data,
+            ground_gaussian,
+            excited_gaussian,
+            pop_threshold,
+            dataset,
+            weights,
+            sigmas,
+            means,
+            temperature_mk=None,
+            title_ext="",
+            dontuse_midpt_thresh=False,
+            numbins=64,
+    ):
+        """
+        Clean SSF double-Gaussian visualization.
+
+        - If dontuse_midpt_thresh=True:
+            Uses mixture weights as Pg/Pe. No hard threshold or shaded regions.
+        - If dontuse_midpt_thresh=False:
+            Shows midpoint threshold and shaded split regions.
+        """
+
+        import os
+        import numpy as np
+        import matplotlib.pyplot as plt
+        import datetime
+        from scipy.stats import norm
+
+        os.makedirs(qubit_folder, exist_ok=True)
+
+        xdata = np.asarray(ig_new, dtype=float).ravel()
+        xdata = xdata[np.isfinite(xdata)]
+        if xdata.size == 0:
+            return
+
+        weights = np.asarray(weights, dtype=float).ravel()
+        means = np.asarray(means, dtype=float).ravel()
+        sigmas = np.asarray(sigmas, dtype=float).ravel()
+
+        # Normalize weights for safety
+        weights = weights / np.sum(weights)
+
+        xlims = [float(np.min(xdata)), float(np.max(xdata))]
+
+        # Histogram
+        counts, edges = np.histogram(xdata, bins=numbins, range=xlims)
+        bin_w = edges[1] - edges[0]
+        N = xdata.size
+
         plt.figure(figsize=(10, 6))
 
-        # Plot histogram for `ig_new`
-        steps = 3000
-        # numbins = round(math.sqrt(steps))
-        numbins = 64
-        n, bins, _ = plt.hist(ig_new, bins=numbins, range=xlims, density=False, alpha=0.5,
-                              label='Histogram of $I_g$',
-                              color='gray')
-        # print(numbins)
-        # Use the midpoints of bins to create boolean masks
-        bin_centers = (bins[:-1] + bins[1:]) / 2
-        ground_region = (bin_centers <= pop_threshold)
-        excited_region = (bin_centers > pop_threshold)
-
-        # Calculate scaling factors for each region
-        scaling_factor_ground = max(n[ground_region]) / max(
-            (weights[ground_gaussian] / (np.sqrt(2 * np.pi) * sigmas[ground_gaussian])) * np.exp(
-                -0.5 * ((bin_centers[ground_region] - means[ground_gaussian]) / sigmas[
-                    ground_gaussian]) ** 2))
-
-        scaling_factor_excited = max(n[excited_region]) / max(
-            (weights[excited_gaussian] / (np.sqrt(2 * np.pi) * sigmas[excited_gaussian])) * np.exp(
-                -0.5 * ((bin_centers[excited_region] - means[excited_gaussian]) / sigmas[
-                    excited_gaussian]) ** 2))
-
-        # Generate x values for plotting Gaussian components
-        x = np.linspace(xlims[0], xlims[1], 1000)
-        ground_gaussian_fit = scaling_factor_ground * (
-                weights[ground_gaussian] / (np.sqrt(2 * np.pi) * sigmas[ground_gaussian])) * np.exp(
-            -0.5 * ((x - means[ground_gaussian]) / sigmas[ground_gaussian]) ** 2)
-        excited_gaussian_fit = scaling_factor_excited * (
-                weights[excited_gaussian] / (np.sqrt(2 * np.pi) * sigmas[excited_gaussian])) * np.exp(
-            -0.5 * ((x - means[excited_gaussian]) / sigmas[excited_gaussian]) ** 2)
-
-        plt.plot(x, ground_gaussian_fit, label='Ground Gaussian Fit', color='blue', linewidth=2)
-        plt.plot(x, excited_gaussian_fit, label='Excited (leakage) Gaussian Fit', color='red', linewidth=2)
-
-        if not dontuse_midpt_thresh:
-            plt.axvline(pop_threshold, color='black', linestyle='--', linewidth=1,
-                    label=f'Threshold ({pop_threshold:.2f})')
-
-        # Add shading for ground and excited state regions
-        x_vals = np.linspace(np.min(ig_new), np.max(ig_new), 1000)
-
-        # Add shading for ground_data points
         plt.hist(
-            ground_data, bins=numbins, range=[np.min(ig_new), np.max(ig_new)], density=False,
-            alpha=0.5, color="blue", label="Ground Data Region", zorder=2
+            xdata,
+            bins=numbins,
+            range=xlims,
+            density=False,
+            alpha=0.5,
+            color="gray",
+            edgecolor="black",
+            label="Histogram of $I_g$",
         )
 
-        # Add shading for excited_data points
-        plt.hist(
-            excited_data, bins=numbins, range=[np.min(ig_new), np.max(ig_new)], density=False,
-            alpha=0.5, color="red", label="Excited Data Region", zorder=3
-        )
+        # Generate smooth curves
+        xplot = np.linspace(xlims[0], xlims[1], 1000)
 
-        # plt.hist(
-        #     iq_data, bins=numbins, range=[np.min(ig_new), np.max(ig_new)], density=False,
-        #     alpha=0.2, color="green", label="All IQ Data Region", zorder=1
-        # )
+        comp0 = N * bin_w * weights[0] * norm.pdf(xplot, loc=means[0], scale=sigmas[0])
+        comp1 = N * bin_w * weights[1] * norm.pdf(xplot, loc=means[1], scale=sigmas[1])
+        mixture = comp0 + comp1
+
+        plt.plot(xplot, comp0, color="blue", linewidth=2,
+                 label=f"Component 0 (w={weights[0]:.3f})")
+
+        plt.plot(xplot, comp1, color="red", linewidth=2,
+                 label=f"Component 1 (w={weights[1]:.3f})")
+
+        plt.plot(xplot, mixture, color="black", linestyle="--", linewidth=2,
+                 label="Mixture")
+
+        # Only draw threshold if using midpoint method
+        if not dontuse_midpt_thresh and pop_threshold is not None:
+            plt.axvline(
+                float(pop_threshold),
+                color="black",
+                linestyle=":",
+                linewidth=2,
+                label=f"Threshold ({float(pop_threshold):.3f})",
+            )
+
+            if ground_data is not None and excited_data is not None:
+                gd = np.asarray(ground_data, dtype=float)
+                ed = np.asarray(excited_data, dtype=float)
+
+                plt.hist(
+                    gd,
+                    bins=numbins,
+                    range=xlims,
+                    alpha=0.25,
+                    color="blue",
+                    label="Ground side (cut)",
+                )
+
+                plt.hist(
+                    ed,
+                    bins=numbins,
+                    range=xlims,
+                    alpha=0.25,
+                    color="red",
+                    label="Excited side (cut)",
+                )
+
+        # Title
+        title = f"SSF double-Gaussian fit ; Q{q_key + 1}"
         if temperature_mk is not None:
-            plt.title(
-                f"G-state double gaussian fit ; Qubit {q_key + 1} ; Temp= {temperature_mk:2f} mK {title_ext}")
-        else:
-            plt.title(
-                f"G-state double gaussian fit ; Qubit {q_key + 1} {title_ext}")
+            title += f" ; T = {temperature_mk:.2f} mK"
+        if title_ext:
+            title += f" {title_ext}"
 
-        plt.xlabel("$I_g$' " , fontsize=14)
-        plt.ylabel('Counts', fontsize=14)
+        plt.title(title)
+        plt.xlabel("$I_g$", fontsize=14)
+        plt.ylabel("Counts", fontsize=14)
         plt.legend()
-        # plt.show()
 
-        # Save the plot to the Temperatures folder
-        plot_filename = os.path.join(qubit_folder, f"Q{q_key + 1}_SSF_gstate_gaussfit_Dataset{dataset}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
-        plt.savefig(plot_filename)
-        # print(f"Plot saved to: {qubit_folder}")
+        plot_filename = os.path.join(
+            qubit_folder,
+            f"Q{q_key + 1}_SSF_gaussfit_Dataset{dataset}_{datetime.datetime.now():%Y%m%d%H%M%S}.png",
+        )
+
+        plt.savefig(plot_filename, dpi=300, bbox_inches="tight")
         plt.close()
+
+    # -------------------------------OLD WAY: MADE FOR MIDPOINT THRESHOLD METHOD ONLY------------
+    # def plot_gaussians_qtemps(self, q_key, qubit_folder, ig_new, ground_data, excited_data, ground_gaussian, excited_gaussian, pop_threshold, dataset, weights, sigmas, means,
+    #                           temperature_mk = None, title_ext = "", dontuse_midpt_thresh = False):
+    #     # -----------------PLOTS TO CHECK g-state double gaussian FITS AND THRESHOLDS---------------
+    #     # Plotting double gaussian distributions and fitting
+    #     xlims = [np.min(ig_new), np.max(ig_new)]
+    #     plt.figure(figsize=(10, 6))
+    #
+    #     # Plot histogram for `ig_new`
+    #     steps = 3000
+    #     # numbins = round(math.sqrt(steps))
+    #     numbins = 64
+    #     n, bins, _ = plt.hist(ig_new, bins=numbins, range=xlims, density=False, alpha=0.5,
+    #                           label='Histogram of $I_g$',
+    #                           color='gray')
+    #     # print(numbins)
+    #     # Use the midpoints of bins to create boolean masks
+    #     bin_centers = (bins[:-1] + bins[1:]) / 2
+    #     ground_region = (bin_centers <= pop_threshold)
+    #     excited_region = (bin_centers > pop_threshold)
+    #
+    #     # Calculate scaling factors for each region
+    #     scaling_factor_ground = max(n[ground_region]) / max(
+    #         (weights[ground_gaussian] / (np.sqrt(2 * np.pi) * sigmas[ground_gaussian])) * np.exp(
+    #             -0.5 * ((bin_centers[ground_region] - means[ground_gaussian]) / sigmas[
+    #                 ground_gaussian]) ** 2))
+    #
+    #     scaling_factor_excited = max(n[excited_region]) / max(
+    #         (weights[excited_gaussian] / (np.sqrt(2 * np.pi) * sigmas[excited_gaussian])) * np.exp(
+    #             -0.5 * ((bin_centers[excited_region] - means[excited_gaussian]) / sigmas[
+    #                 excited_gaussian]) ** 2))
+    #
+    #     # Generate x values for plotting Gaussian components
+    #     x = np.linspace(xlims[0], xlims[1], 1000)
+    #     ground_gaussian_fit = scaling_factor_ground * (
+    #             weights[ground_gaussian] / (np.sqrt(2 * np.pi) * sigmas[ground_gaussian])) * np.exp(
+    #         -0.5 * ((x - means[ground_gaussian]) / sigmas[ground_gaussian]) ** 2)
+    #     excited_gaussian_fit = scaling_factor_excited * (
+    #             weights[excited_gaussian] / (np.sqrt(2 * np.pi) * sigmas[excited_gaussian])) * np.exp(
+    #         -0.5 * ((x - means[excited_gaussian]) / sigmas[excited_gaussian]) ** 2)
+    #
+    #     plt.plot(x, ground_gaussian_fit, label='Ground Gaussian Fit', color='blue', linewidth=2)
+    #     plt.plot(x, excited_gaussian_fit, label='Excited (leakage) Gaussian Fit', color='red', linewidth=2)
+    #
+    #     if not dontuse_midpt_thresh:
+    #         plt.axvline(pop_threshold, color='black', linestyle='--', linewidth=1,
+    #                 label=f'Threshold ({pop_threshold:.2f})')
+    #
+    #     # Add shading for ground and excited state regions
+    #     x_vals = np.linspace(np.min(ig_new), np.max(ig_new), 1000)
+    #
+    #     # Add shading for ground_data points
+    #     plt.hist(
+    #         ground_data, bins=numbins, range=[np.min(ig_new), np.max(ig_new)], density=False,
+    #         alpha=0.5, color="blue", label="Ground Data Region", zorder=2
+    #     )
+    #
+    #     # Add shading for excited_data points
+    #     plt.hist(
+    #         excited_data, bins=numbins, range=[np.min(ig_new), np.max(ig_new)], density=False,
+    #         alpha=0.5, color="red", label="Excited Data Region", zorder=3
+    #     )
+    #
+    #     # plt.hist(
+    #     #     iq_data, bins=numbins, range=[np.min(ig_new), np.max(ig_new)], density=False,
+    #     #     alpha=0.2, color="green", label="All IQ Data Region", zorder=1
+    #     # )
+    #     if temperature_mk is not None:
+    #         plt.title(
+    #             f"G-state double gaussian fit ; Qubit {q_key + 1} ; Temp= {temperature_mk:2f} mK {title_ext}")
+    #     else:
+    #         plt.title(
+    #             f"G-state double gaussian fit ; Qubit {q_key + 1} {title_ext}")
+    #
+    #     plt.xlabel("$I_g$' " , fontsize=14)
+    #     plt.ylabel('Counts', fontsize=14)
+    #     plt.legend()
+    #     # plt.show()
+    #
+    #     # Save the plot to the Temperatures folder
+    #     plot_filename = os.path.join(qubit_folder, f"Q{q_key + 1}_SSF_gstate_gaussfit_Dataset{dataset}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
+    #     plt.savefig(plot_filename)
+    #     # print(f"Plot saved to: {qubit_folder}")
+    #     plt.close()
 
     def timestamp(self, fname):
         """
@@ -2068,6 +2205,7 @@ class SSFTempCalcAndPlots:
         m1 = Minuit(nll_1g, mu=mu0_init, sigma=sigma0_init)
         m1.limits["sigma"] = (1e-6, None)
         m1.errordef = Minuit.LIKELIHOOD
+        m1.simplex()
         m1.migrad()
         m1.hesse()
 
@@ -2098,7 +2236,7 @@ class SSFTempCalcAndPlots:
         m2.limits["sigma2"] = (1e-6, None)
         m2.limits["w1"] = (1e-6, 1.0 - 1e-6)
         m2.errordef = Minuit.LIKELIHOOD
-
+        m2.simplex()
         m2.migrad()
         m2.hesse()
 

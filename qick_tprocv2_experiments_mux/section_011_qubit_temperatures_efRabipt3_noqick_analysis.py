@@ -206,9 +206,8 @@ class Temps_EFAmpRabiExperiment:
                 pcov[i, j] = cov[ni, nj]
 
         # ---- curve_fit-style scaling (absolute_sigma=False) ----
-        # Total data points = 2*N (I and Q)
-        N = 2 * x.size
-
+        # I and Q datapoints
+        N= 2*x.size # datapoints
         # Effective number of free parameters = number of params not fixed
         n_free = sum(not m.fixed[k] for k in names)
 
@@ -261,10 +260,6 @@ class Temps_EFAmpRabiExperiment:
             pcov7 shape: (7,7) in same order (NaNs allowed), already scaled like curve_fit(abs_sigma=False).
         """
         try:
-            import numpy as np
-            import matplotlib.pyplot as plt
-            import os, datetime
-
             # -------------------- Prep --------------------
             I = np.asarray(I, dtype=float)
             Q = np.asarray(Q, dtype=float)
@@ -433,10 +428,6 @@ class Temps_EFAmpRabiExperiment:
             }
 
             return A_amp_IQ, A_amp_IQ_err, fit_params
-
-        except Exception as e:
-            print("Error fitting cosine (joint IQ):", e)
-            return None, None, None
 
         except Exception as e:
             print("Error fitting cosine (joint IQ):", e)
