@@ -21,8 +21,8 @@ from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
 
 class T2rVsTime:
-    def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, fridge):
+    def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs,
+                 fit_saved, signal, run_name, fridge):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -284,7 +284,7 @@ class T2rVsTime:
 
                         if len(I) > 0:
                             T2_class_instance = T2RMeasurement(q_key, self.number_of_qubits,
-                                                               self.outerFolder_save_plots, round_num, self.signal,
+                                                               outerFolder_save_plots, round_num, self.signal,
                                                                self.save_figs, fit_data=True)
                             try:
                                 fitted, t2r_est, t2r_err, plot_sig, out = T2_class_instance.t2_fit_iminuit(delay_times,

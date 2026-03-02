@@ -179,7 +179,8 @@ class T1VsTime:
         timestamp_dir = "" ""
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
-                timestamp_dir = fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\{self.run_name}\{folder_date}"
+                timestamp_dir = f"/data/QICK_data/{self.run_name}/{folder_date}" # qubituser daq01
+                    # fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\{self.run_name}\{folder_date}"
                     #f"/data/QICK_data/{self.run_name}/{folder_date}" # qubituser daq01
                 outerFolder = timestamp_dir + "/study_data/"
                 outerFolder_save_plots = timestamp_dir + "/documentation/"
@@ -285,7 +286,8 @@ class T1VsTime:
 
                             # --- path to the soccfg dump (txt file made with save_run_soccfg_params.py) ---
                             if self.run_number == 8:  # this does work
-                                soccfg_dump_path = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
+                                soccfg_dump_path = "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
+                                    # r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
                                     # "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
                             elif self.run_number == 6:  # this doesn't work yet (shots need to be processed diff for run 6) but the skeleton is set up
                                 soccfg_dump_path = "/data/QICK_data/run6/6transmon/loud2_soccfg_params/soccfg_full_dump_2025-11-04_16-30-54_firmware_during_run6.txt"
@@ -316,6 +318,8 @@ class T1VsTime:
                         else:
                             I = self.process_h5_data(load_data[f't1{exp_extension}'][q_key].get('I', [])[0][dataset].decode())
                             Q = self.process_h5_data(load_data[f't1{exp_extension}'][q_key].get('Q', [])[0][dataset].decode())
+                            I_errs = None
+                            Q_errs = None
 
                         delay_times = self.process_h5_data(load_data[f't1{exp_extension}'][q_key].get('Delay Times', [])[0][dataset].decode())
                         # fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
@@ -339,13 +343,13 @@ class T1VsTime:
                             if T1_est < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            if T1_est > 1000:
-                                print("The value is above 1000 us, this is a bad fit, continuing...")
-                                continue
-                            if T1_err >= 0.8 * T1_est:
-                                print(
-                                    f"Skipping T1 = {T1_est:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
-                                continue
+                            # if T1_est > 1000:
+                            #     print("The value is above 1000 us, this is a bad fit, continuing...")
+                            #     continue
+                            # if T1_err >= 0.8 * T1_est:
+                            #     print(
+                            #         f"Skipping T1 = {T1_est:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
+                            #     continue
 
                             # if (self.run_number == 8) and (q_key != 5) and (T1_est <= 22):  # # QUIET run 8 patch while fitting is fixed
                             #     print(

@@ -5,12 +5,77 @@ import numpy as np
 do_T1 = False
 do_T2R = False
 do_T2E = False
+six_subplts_t1_t2r_t2e_perQ = True
 
 # do you want to join them in a single plot?
 plot_all_together = False
 
 # Plot diagram with changes made per run?
-plot_run_diagram = True
+plot_run_diagram = False
+
+############################################### Data #####################################################################
+t1_vals = [
+        [6.09, 14.94, 64.32, 63.71, 61.14],  # Qubit 1
+        [19.61, 27.73, 59.71, 62.47, 63.60],  # Qubit 2
+        [7.72, 16.43, 73.72, 52.64, 54.17],  # Qubit 3
+        [12.74, 21.53, 59.55, 59.51, 64.76],  # Qubit 4
+        [9.28, 12.31, 32.83, 55.77, 48.78],  # Qubit 5
+        [9.44, 14.82, 41.52, 32.09, 30.45],  # Qubit 6
+    ]
+
+t1_errs = [
+    [0.24, 1.41, 4.20, 5.63, 3.06],  # Qubit 1
+    [2.38, 3.34, 6.54, 3.98, 3.85],  # Qubit 2
+    [0.26, 1.75, 4.18, 1.81, 4.82],  # Qubit 3
+    [0.44, 2.49, 3.72, 6.65, 7.72],  # Qubit 4
+    [0.46, 1.66, 4.19, 2.45, 2.99],  # Qubit 5
+    [0.35, 1.39, 2.98, 2.02, 1.36]   # Qubit 6
+]
+
+t2r_vals = [
+        [11.18, 14.07, 30.08, 31.33, 64.49],  # Qubit 1
+        [18.43, 14.69, 13.27, 60.64, 83.91],  # Qubit 2
+        [8.45, 10.06, 27.58, 52.43, 28.42],   # Qubit 3
+        [15.40, 15.54, 22.40, 58.78, 12.38],  # Qubit 4
+        [13.51, 13.95, 6.33, 58.29, 51.98],   # Qubit 5
+        [14.83, 14.47, 23.41, 25.70, 12.59],  # Qubit 6
+    ]
+
+t2r_errs = [
+    [1.02, 1.57, 3.59, 1.33, 4.71],       # Qubit 1
+    [1.53, 2.03, 1.98, 6.25, 14.01],      # Qubit 2
+    [1.77, 1.21, 3.64, 2.61, 1.90],       # Qubit 3
+    [0.48, 1.78, 1.28, 6.46, 3.05],       # Qubit 4
+    [0.88, 1.33, 1.77, 2.71, 5.53],       # Qubit 5
+    [1.04, 1.09, 2.53, 1.23, 0.91]        # Qubit 6
+]
+
+t2e_vals = [
+        [12.18, 14.13, 44.69, 87.75, 104.29],  # Qubit 1
+        [19.75, 23.61, 43.52, 94.90, 105.93],  # Qubit 2
+        [12.32, 11.10, 36.48, 62.83, 66.75],   # Qubit 3
+        [17.48, 18.56, 46.98, 96.67, 82.34],   # Qubit 4
+        [13.83, 14.06, 11.32, 76.37, 78.07],   # Qubit 5
+        [16.06, 15.64, 39.32, 53.74, 49.81],   # Qubit 6
+    ]
+
+t2e_errs = [
+    [0.82, 1.32, 5.56, 6.58, 6.78],        # Qubit 1
+    [1.48, 2.63, 3.40, 5.85, 9.44],        # Qubit 2
+    [0.72, 1.27, 5.77, 1.37, 7.13],        # Qubit 3
+    [0.67, 2.14, 4.58, 8.28, 9.57],        # Qubit 4
+    [0.83, 1.69, 1.11, 4.09, 8.56],        # Qubit 5
+    [1.04, 1.33, 7.63, 1.63, 4.18]         # Qubit 6
+]
+
+runs = np.array([4, 5, 6, 7, 8])
+run_labels = ['Run 4', 'Run 5', 'Run 6', 'Run 7', 'Run 8']
+run_notes = {
+    5: "Added eccosorbs\nand LPFs",
+    6: "Added 0dB + copper tape to\nmag can pass-through holes\nand qubit package",
+    7: "Mag can lid sealing\nwith copper tape\n+ changed attenuation",
+    8: "HERD1 filter\n+ 0dB",
+}
 
 # set up axes for single plots vs a plot of three plots------------
 def get_ax(i):
@@ -31,26 +96,6 @@ colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
 # -------------------------------------------- T1 -------------------------------------------------------------
 if do_T1:
     ax = get_ax(0)
-
-    t1_vals = [
-        [6.09, 14.94, 64.32, 63.71, 61.14],  # Qubit 1
-        [19.61, 27.73, 59.71, 62.47, 63.60],  # Qubit 2
-        [7.72, 16.43, 73.72, 52.64, 54.17],  # Qubit 3
-        [12.74, 21.53, 59.55, 59.51, 64.76],  # Qubit 4
-        [9.28, 12.31, 32.83, 55.77, 48.78],  # Qubit 5
-        [9.44, 14.82, 41.52, 32.09, 30.45],  # Qubit 6
-    ]
-
-    t1_errs = [
-        [0.24, 1.41, 4.20, 5.63, 3.06],  # Qubit 1
-        [2.38, 3.34, 6.54, 3.98, 3.85],  # Qubit 2
-        [0.26, 1.75, 4.18, 1.81, 4.82],  # Qubit 3
-        [0.44, 2.49, 3.72, 6.65, 7.72],  # Qubit 4
-        [0.46, 1.66, 4.19, 2.45, 2.99],  # Qubit 5
-        [0.35, 1.39, 2.98, 2.02, 1.36]   # Qubit 6
-    ]
-
-    runs = np.array([4, 5, 6, 7, 8])
 
     # Add "Preliminary" text in the background
     if show_text:
@@ -108,26 +153,6 @@ if do_T1:
 if do_T2R:
     ax = get_ax(1)
 
-    t2r_vals = [
-        [11.18, 14.07, 30.08, 31.33, 64.49],  # Qubit 1
-        [18.43, 14.69, 13.27, 60.64, 83.91],  # Qubit 2
-        [8.45, 10.06, 27.58, 52.43, 28.42],   # Qubit 3
-        [15.40, 15.54, 22.40, 58.78, 12.38],  # Qubit 4
-        [13.51, 13.95, 6.33, 58.29, 51.98],   # Qubit 5
-        [14.83, 14.47, 23.41, 25.70, 12.59],  # Qubit 6
-    ]
-
-    t2r_errs = [
-        [1.02, 1.57, 3.59, 1.33, 4.71],       # Qubit 1
-        [1.53, 2.03, 1.98, 6.25, 14.01],      # Qubit 2
-        [1.77, 1.21, 3.64, 2.61, 1.90],       # Qubit 3
-        [0.48, 1.78, 1.28, 6.46, 3.05],       # Qubit 4
-        [0.88, 1.33, 1.77, 2.71, 5.53],       # Qubit 5
-        [1.04, 1.09, 2.53, 1.23, 0.91]        # Qubit 6
-    ]
-
-    runs = np.array([4, 5, 6, 7, 8])
-
     if show_text:
         ax.text(
             0.5, 0.5, 'Preliminary',
@@ -183,26 +208,6 @@ if do_T2R:
 # -------------------------------------------- T2E -------------------------------------------------------------
 if do_T2E:
     ax = get_ax(2)
-
-    t2e_vals = [
-        [12.18, 14.13, 44.69, 87.75, 104.29],  # Qubit 1
-        [19.75, 23.61, 43.52, 94.90, 105.93],  # Qubit 2
-        [12.32, 11.10, 36.48, 62.83, 66.75],   # Qubit 3
-        [17.48, 18.56, 46.98, 96.67, 82.34],   # Qubit 4
-        [13.83, 14.06, 11.32, 76.37, 78.07],   # Qubit 5
-        [16.06, 15.64, 39.32, 53.74, 49.81],   # Qubit 6
-    ]
-
-    t2e_errs = [
-        [0.82, 1.32, 5.56, 6.58, 6.78],        # Qubit 1
-        [1.48, 2.63, 3.40, 5.85, 9.44],        # Qubit 2
-        [0.72, 1.27, 5.77, 1.37, 7.13],        # Qubit 3
-        [0.67, 2.14, 4.58, 8.28, 9.57],        # Qubit 4
-        [0.83, 1.69, 1.11, 4.09, 8.56],        # Qubit 5
-        [1.04, 1.33, 7.63, 1.63, 4.18]         # Qubit 6
-    ]
-
-    runs = np.array([4, 5, 6, 7, 8])
 
     if show_text:
         ax.text(
@@ -405,4 +410,88 @@ if plot_run_diagram:
 
     ax.set_title("QUIET Setup Changes by Run", fontsize=20, fontweight="bold", pad=12)
     plt.tight_layout()
+    plt.show()
+
+if six_subplts_t1_t2r_t2e_perQ:
+    # ----------------------------- Plot -----------------------------
+    fig, axes = plt.subplots(2, 3, figsize=(16, 9), sharex=True, sharey=True, constrained_layout=True)
+    axes = axes.ravel()
+
+    # Style knobs
+    ylims = (0, 120)  # change if you want autoscale
+    yticks = np.arange(0, 121, 20)  # change density if you want
+    show_grid = True
+
+    series = [
+        ("T1", t1_vals, t1_errs, "-o"),
+        #("T2R", t2r_vals, t2r_errs, "-s"),
+        ("T2E", t2e_vals, t2e_errs, "-^"),
+    ]
+
+    series_colors = {
+        "T1": "tab:blue",
+        "T2R": "tab:orange",
+        "T2E": "tab:green",
+    }
+
+    for q in range(6):
+        ax = axes[q]
+        for label, vals, errs, fmt in series:
+            y = np.array(vals[q], dtype=float)
+            ye = np.array(errs[q], dtype=float)
+
+            ax.errorbar(
+                runs, y, yerr=ye,
+                fmt=fmt, color=series_colors[label], capsize=3, elinewidth=1,
+                linewidth=1.8, markersize=5,
+                label=label
+            )
+            # ------------------ TEXT BUBBLES ------------------
+            # stack the three coherence curves for this qubit
+            # coherence_mat = np.array([
+            #     t1_vals[q],
+            #     t2r_vals[q],
+            #     t2e_vals[q]
+            # ], dtype=float)
+            #
+            # # choose an anchor y-value for each run (median of the 3 curves)
+            # y_anchor = np.nanmedian(coherence_mat, axis=0)
+            #
+            # for i, r in enumerate(runs):
+            #     note = run_notes.get(int(r), None)
+            #     if note is None or np.isnan(y_anchor[i]):
+            #         continue
+            #
+            #     xy = (r, y_anchor[i])
+            #     xytext = (r - 0.85, y_anchor[i] + 35)  # adjust offsets if needed
+            #
+            #     ax.annotate(
+            #         note,
+            #         xy=xy,
+            #         xytext=xytext,
+            #         textcoords="data",
+            #         ha="left",
+            #         va="center",
+            #         fontsize=8,
+            #         bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="gray", alpha=0.9),
+            #         arrowprops=dict(arrowstyle="->", lw=0.8, color="gray"),
+            #         zorder=5
+            #     )
+
+        ax.set_title(f"Qubit {q + 1}")
+        ax.set_xticks(runs)
+        ax.set_xticklabels(run_labels)
+        ax.set_ylim(*ylims)
+        ax.set_yticks(yticks)
+        if show_grid:
+            ax.grid(True, alpha=0.4)
+
+        # Keep legends readable: per-subplot is fine since it's only 3 entries
+        ax.legend(fontsize=9, loc="upper left")
+
+    # Shared labels + title
+    fig.suptitle("Coherence vs Run Number (per qubit): T1, T2R, T2E", fontsize=16)
+    fig.supxlabel("Run Number", fontsize=12)
+    fig.supylabel("Coherence time (µs)", fontsize=12)
+
     plt.show()

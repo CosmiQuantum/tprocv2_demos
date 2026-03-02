@@ -294,8 +294,7 @@ class T2rHistCumulErrPlots:
                                                                self.plots_path, round_num, self.signal,
                                                                self.save_figs, fit_data=True)
                             try:
-                                fitted, t2r_est, t2r_err, plot_sig, out = T2_class_instance.t2_fit_iminuit(delay_times,
-                                                                                                           I, Q)
+                                fitted, t2r_est, t2r_err, plot_sig, out = T2_class_instance.t2_fit_iminuit(delay_times, I, Q)
                             except Exception as e:
                                 print('Fit didnt work due to error: ', e)
                                 continue
@@ -394,27 +393,6 @@ class T2rHistCumulErrPlots:
 
             if len(t2r_vals[i]) >1:
                 optimal_bin_num = 45 #self.optimal_bins(t2r_vals[i])
-
-                # Fit a Gaussian to the raw data instead of the histogram
-                # get the mean and standard deviation of the data
-                # mu_1, std_1 = norm.fit(t2r_vals[i])
-
-                # # NEW: WEIGHTED MEANS -------------------------------------------------
-                # # Weighted Gaussian fit (using inverse-variance weights), per-qubit i
-                # t2s = np.asarray(t2r_vals[i], dtype=float)
-                # errs = np.asarray(t2r_errs[i], dtype=float)
-                #
-                # # avoiding infinite weights and NaN pollution
-                # err_floor = 1e-12
-                # safe_errs = np.clip(errs, err_floor, np.inf)
-                # # weights = 1.0 / (safe_errs ** 2)
-                # weights = 1.0 / (safe_errs)
-                #
-                # w_sum = np.nansum(weights)
-                # mu_1 = float(np.nansum(weights * t2s) / w_sum)
-                # var = float(np.nansum(weights * (t2s - mu_1) ** 2) / w_sum)
-                # std_1 = float(np.sqrt(max(var, 0.0)))
-                # # ---------------------------------------------------------------------
                 # --- Weighted mean with robust median-MAD clipping ------------------------
                 t2rs = np.asarray(t2r_vals[i], dtype=float)
                 errs = np.asarray(t2r_errs[i], dtype=float)
@@ -427,7 +405,7 @@ class T2rHistCumulErrPlots:
                     mu_1, std_1 = np.nan, np.nan
                 else:
                     # robust outlier clip around the median (tune k if you like)
-                    k = 2.0  # 2-4 is typical. 2 is stricter
+                    k = 3.0  # 2-4 is typical. 2 is stricter
                     med = np.median(t2rs)
                     mad = np.median(np.abs(t2rs - med))
                     # fallback if MAD is zero (all equal or super-tight); use small epsilon
@@ -440,19 +418,24 @@ class T2rHistCumulErrPlots:
                     if t2rs.size == 0:
                         mu_1, std_1 = np.nan, np.nan
                     else:
-                        # compute weights and weighted mean/std
-                        err_floor = 1e-12
-                        safe_errs = np.clip(errs, err_floor, np.inf)
+                        #--- WEIGHTED mean/std after MAD clipping ---
+                        # # compute weights and weighted mean/std
+                        # err_floor = 1e-12
+                        # safe_errs = np.clip(errs, err_floor, np.inf)
+                        #
+                        # # can also do 1/sigma^2
+                        # weights = 1.0 / safe_errs
+                        #
+                        # w_sum = np.nansum(weights)
+                        # mu_1 = float(np.nansum(weights * t2rs) / w_sum)
+                        #
+                        # # weighted variance (with chosen weights convention)
+                        # var = float(np.nansum(weights * (t2rs - mu_1) ** 2) / w_sum)
+                        # std_1 = float(np.sqrt(max(var, 0.0)))
 
-                        # can also do 1/sigma^2
-                        weights = 1.0 / safe_errs
-
-                        w_sum = np.nansum(weights)
-                        mu_1 = float(np.nansum(weights * t2rs) / w_sum)
-
-                        # weighted variance (with chosen weights convention)
-                        var = float(np.nansum(weights * (t2rs - mu_1) ** 2) / w_sum)
-                        std_1 = float(np.sqrt(max(var, 0.0)))
+                        # --- UNWEIGHTED mean/std after MAD clipping, uncomment if you want this instead---
+                        mu_1 = float(np.mean(t2rs))
+                        std_1 = float(np.std(t2rs, ddof=1))
                 # --------------------------------------------------------------------------
 
                 mean_values[f"Qubit {i + 1}"] = mu_1  # Store the mean value for each qubit

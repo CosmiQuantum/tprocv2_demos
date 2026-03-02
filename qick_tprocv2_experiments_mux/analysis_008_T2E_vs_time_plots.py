@@ -287,7 +287,7 @@ class T2eVsTime:
 
                         if len(I) > 0:
                             T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits,
-                                                                self.outerFolder_save_plots, round_num, self.signal,
+                                                                outerFolder_save_plots, round_num, self.signal,
                                                                 self.save_figs, fit_data=True)
                             try:
                                 fitted, t2e_est, t2e_err, plot_sig, out = T2E_class_instance.t2_fit_iminuit(delay_times,

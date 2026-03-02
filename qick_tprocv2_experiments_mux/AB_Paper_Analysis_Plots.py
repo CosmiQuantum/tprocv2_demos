@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-qtemp_noisetemp_plot = True
+qtemp_noisetemp_plot = False
 
 # ------------------------------------------------------------
 # Measured Pe values (Run 4 column will be dropped)
@@ -310,3 +310,148 @@ if qtemp_noisetemp_plot:
 
     fig.tight_layout(rect=[0, 0.10, 1, 0.95])
     plt.show()
+
+#---------------------------------------- Definitions, additional plotting funcs ----------------------
+
+def boxwhisker_per_qubit_vs_run(
+    run_num_list,
+    t1_vals_by_run=None,
+    t2r_vals_by_run=None,
+    t2e_vals_by_run=None,
+    do_T1=True,
+    do_T2R=True,
+    do_T2E=True,
+    n_qubits=6,
+    ylims=(0, 120),
+    yticks=np.arange(0, 121, 20),
+    showfliers=True,
+    whis=1.5,                 # Tukey whiskers: 1.5*IQR (use (5,95) for percentiles)
+):
+    """
+    Makes 6 subplots (one per qubit). X-axis is run number.
+    At each run, draws box-and-whisker distributions for the enabled metrics.
+
+    Expected dict structure:
+      t1_vals_by_run[run][q]  -> array-like of samples OR scalar
+      t2r_vals_by_run[run][q] -> array-like of samples OR scalar
+      t2e_vals_by_run[run][q] -> array-like of samples OR scalar
+
+    If your entries are scalars (one value per run), the box collapses (still plots).
+
+
+    # ---------------- Example call ----------------
+    # run_num_list = [4,5,6,7,8]
+    # boxwhisker_per_qubit_vs_run(
+    #     run_num_list,
+    #     t1_vals_by_run=t1_vals_by_run,
+    #     t2r_vals_by_run=t2r_vals_by_run,
+    #     t2e_vals_by_run=t2e_vals_by_run,
+    #     do_T1=True, do_T2R=True, do_T2E=True
+    # )
+    """
+
+    # ---------- fixed colors so they never change ----------
+    metric_specs = []
+    if do_T1:
+        if t1_vals_by_run is None:
+            raise ValueError("do_T1=True but t1_vals_by_run is None")
+        metric_specs.append(("T1", t1_vals_by_run, "tab:blue"))
+    if do_T2R:
+        if t2r_vals_by_run is None:
+            raise ValueError("do_T2R=True but t2r_vals_by_run is None")
+        metric_specs.append(("T2R", t2r_vals_by_run, "tab:orange"))
+    if do_T2E:
+        if t2e_vals_by_run is None:
+            raise ValueError("do_T2E=True but t2e_vals_by_run is None")
+        metric_specs.append(("T2E", t2e_vals_by_run, "tab:green"))
+
+    if len(metric_specs) == 0:
+        raise ValueError("Enable at least one of do_T1/do_T2R/do_T2E.")
+
+    # helper: each (run, qubit) cell -> 1D array of finite samples
+    def cell_to_1d(cell):
+        if cell is None:
+            return np.array([], dtype=float)
+        if np.isscalar(cell):
+            arr = np.array([cell], dtype=float)
+        else:
+            arr = np.asarray(cell, dtype=float).ravel()
+        return arr[np.isfinite(arr)]
+
+    # positions: one "cluster" per run, with small offsets per metric
+    n_runs = len(run_num_list)
+    base_pos = np.arange(1, n_runs + 1)  # 1..n_runs
+    n_metrics = len(metric_specs)
+    offsets = np.linspace(-0.25, 0.25, n_metrics) if n_metrics > 1 else np.array([0.0])
+    box_width = 0.22 if n_metrics > 1 else 0.45
+
+    # ---------- figure ----------
+    fig, axes = plt.subplots(2, 3, figsize=(16, 9), sharex=True, sharey=True, constrained_layout=True)
+    axes = axes.ravel()
+
+    for q in range(n_qubits):
+        ax = axes[q]
+
+        for (label, vals_by_run, color), off in zip(metric_specs, offsets):
+            # build list of arrays, one per run, for THIS qubit
+            box_data = []
+            for r in run_num_list:
+                # vals_by_run[r] is list indexed by qubit
+                box_data.append(cell_to_1d(vals_by_run[r][q]))
+
+            positions = base_pos + off
+
+            bp = ax.boxplot(
+                box_data,
+                positions=positions,
+                widths=box_width,
+                patch_artist=True,
+                showfliers=showfliers,
+                whis=whis,
+                manage_ticks=False
+            )
+
+            # style
+            for b in bp["boxes"]:
+                b.set_facecolor(color)
+                b.set_alpha(0.30)
+                b.set_edgecolor(color)
+                b.set_linewidth(1.3)
+
+            for m in bp["medians"]:
+                m.set_color(color)
+                m.set_linewidth(2.0)
+
+            for w in bp["whiskers"]:
+                w.set_color(color)
+                w.set_linewidth(1.2)
+
+            for c in bp["caps"]:
+                c.set_color(color)
+                c.set_linewidth(1.2)
+
+            for f in bp["fliers"]:
+                f.set_marker("o")
+                f.set_markersize(3.5)
+                f.set_markerfacecolor(color)
+                f.set_markeredgecolor(color)
+                f.set_alpha(0.6)
+
+        ax.set_title(f"Qubit {q+1}")
+        ax.set_ylim(*ylims)
+        ax.set_yticks(yticks)
+        ax.grid(True, alpha=0.35)
+
+        ax.set_xticks(base_pos)
+        ax.set_xticklabels([f"Run {r}" for r in run_num_list])
+
+        # legend (manual)
+        handles = [plt.Line2D([0], [0], color=ms[2], lw=6, alpha=0.6) for ms in metric_specs]
+        ax.legend(handles, [ms[0] for ms in metric_specs], loc="upper left", fontsize=9)
+
+    fig.suptitle("Coherence vs Run Number (per qubit): Box & Whisker", fontsize=16)
+    fig.supxlabel("Run Number", fontsize=12)
+    fig.supylabel("Coherence time (µs)", fontsize=12)
+    plt.show()
+
+######################################################################################

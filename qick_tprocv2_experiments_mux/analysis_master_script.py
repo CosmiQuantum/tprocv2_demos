@@ -22,7 +22,8 @@ from analysis_015_plot_all_run_stats import CompareRuns
 from analysis_016_metrics_vs_temp import (ResonatorFreqVsTemp, GetThermData, QubitFreqsVsTemp,
                                           PiAmpsVsTemp, T1VsTemp, T2rVsTemp, T2eVsTemp)
 from analysis_017_plot_metric_dependencies import PlotMetricDependencies
-from analysis_018_box_whisker import PlotBoxWhisker
+#from analysis_018_box_whisker import PlotBoxWhisker
+from AB_Paper_Analysis_Plots import boxwhisker_per_qubit_vs_run
 from analysis_019_allan_welch_stats_plots import AllanWelchStats
 from analysis_022_Qfreq_hist_plots import QfreqHistPlots
 from section_011_qubit_temperatures_efRabi import QubitTemperatureProgram, QubitTemperatureRefProgram
@@ -43,9 +44,10 @@ save_figs = False
 fit_saved = True
 show_legends = False
 signal = 'None'
-run_number = 6
+run_number = 8
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
+per_pt_errs_t1 = False
 
 if run_number == 8:
     process_shots_t1ge = True
@@ -72,9 +74,9 @@ if run_number == 8:
     "2025-10-28_21-57-47",
     "2025-10-29_18-38-25",
     "2025-10-29_23-48-45",
-    "2025-10-31_01-54-57",
-    "2025-10-31_20-40-11",
-    "2025-11-01_12-54-55",
+    #"2025-10-31_01-54-57",
+    #"2025-10-31_20-40-11",
+    #"2025-11-01_12-54-55",
 ]
 
     # # when saving t1 shots + avg IQ data started
@@ -250,33 +252,57 @@ elif run_number == 4:
 
 FRIDGE = "QUIET"
 run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB attenuator ') #please make it brief for the plot
+
+run_num_list = [4,5]
+t1_vals_by_run  = {}
+t2r_vals_by_run = {}
+t2e_vals_by_run = {}
+
+t1_errs_by_run  = {}
+t2r_errs_by_run = {}
+t2e_errs_by_run = {}
 # ################################################ 01: Get all data ######################################################
-# res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-#                                        save_figs, fit_saved, signal, run_name, FRIDGE)
-# date_times_res_spec, res_freqs = res_spec_vs_time.run()
-# #
-# q_spec_vs_time = QubitFreqsVsTime(data_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-#                                   save_figs, fit_saved, signal, run_name, FRIDGE)
-# date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
-# #
-# print("qspec fit errs Q1: ", qspec_fit_err[0])
-# print("mean qspec fit err Q1: ", np.mean(qspec_fit_err[0]))
+for run_num in run_num_list:
+    # res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+    #                                        save_figs, fit_saved, signal, run_name, FRIDGE)
+    # date_times_res_spec, res_freqs = res_spec_vs_time.run()
+    # #
+    q_spec_vs_time = QubitFreqsVsTime(data_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+                                      save_figs, fit_saved, signal, run_name, FRIDGE)
+    date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
+    #
+    # print("qspec fit errs Q1: ", qspec_fit_err[0])
+    # print("mean qspec fit err Q1: ", np.mean(qspec_fit_err[0]))
 
-# pi_amps_vs_time = PiAmpsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
-#                               fit_saved,signal, run_name)
-# date_times_pi_amps, pi_amps = pi_amps_vs_time.run(plot_depths=False)
-#
-# t1_vs_time = T1VsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-#                  signal, run_name, FRIDGE, run_number)
-# date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge)
+    pi_amps_vs_time = PiAmpsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+                                  fit_saved,signal, run_name)
+    date_times_pi_amps, pi_amps = pi_amps_vs_time.run(plot_depths=False)
 
-# t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-#                  signal, run_name, FRIDGE)
-# date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True)
-#
-# t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-#                  signal, run_name, FRIDGE)
-# date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
+    t1_vs_time = T1VsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
+                     signal, run_name, FRIDGE, run_number, per_pt_errs = per_pt_errs_t1)
+
+    if per_pt_errs_t1: # thiswill only work if process_shots_t1ge is set to True too
+        date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge)
+    else:
+        date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge)
+
+    t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+                            fit_saved, signal, run_name, FRIDGE)
+    date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True)
+
+    t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+                            fit_saved, signal, run_name, FRIDGE)
+    date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
+
+    # ---------------- Store results ----------------
+    # stores data like t1_vals_by_run[6][3], where 6=run number and 3=qubit index (0 based)
+    t1_vals_by_run[run_num] = t1_vals
+    t2r_vals_by_run[run_num] = t2r_vals
+    t2e_vals_by_run[run_num] = t2e_vals
+
+    t1_errs_by_run[run_num] = t1_fit_err
+    t2r_errs_by_run[run_num] = t2r_fit_err
+    t2e_errs_by_run[run_num] = t2e_fit_err
 
 ######################################## Print QICK soccfg live ###########################################
 # If you want to print out the soccfg QICK output, uncomment this:
@@ -507,20 +533,29 @@ run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB
 #                             date_times_pi_amps_Q1 = date_times_pi_amps_Q1, pi_amps_Q1 = pi_amps_Q1,
 #                             pi_amps_label = "Pi Amp (a.u.)")
 #
-# ##################################### 17: Box And Whisker Qubit Comparison ############################################
+##################################### 17: Box And Whisker Qubit Comparison ############################################
+# -------------------------- Old way -------------------------------
 # boxwhisker = PlotBoxWhisker(run_name, tot_num_of_qubits, final_figure_quality)
-# # # # boxwhisker.plot(res_freqs, metric_label="Resonator Frequencies (MHz)")
-# # # # boxwhisker.plot(q_freqs, metric_label="Qubit Frequencies (MHz)")
-# # # # boxwhisker.plot(pi_amps, metric_label="Pi Amplitude (a.u.)")
-# # # # boxwhisker.plot(t1_vals, metric_label="T1 (µs)")
-# # # # boxwhisker.plot(t2r_vals, metric_label="T2R (µs)")
-# # # # boxwhisker.plot(t2e_vals, metric_label="T2E (µs)")
-# # # # boxwhisker.plot_three_metrics(t1_vals, t2r_vals, t2e_vals)
+# # # boxwhisker.plot(res_freqs, metric_label="Resonator Frequencies (MHz)")
+# # # boxwhisker.plot(q_freqs, metric_label="Qubit Frequencies (MHz)")
+# # # boxwhisker.plot(pi_amps, metric_label="Pi Amplitude (a.u.)")
+# # # boxwhisker.plot(t1_vals, metric_label="T1 (µs)")
+# # # boxwhisker.plot(t2r_vals, metric_label="T2R (µs)")
+# # # boxwhisker.plot(t2e_vals, metric_label="T2E (µs)")
+# # # boxwhisker.plot_three_metrics(t1_vals, t2r_vals, t2e_vals)
 # means = q_spec_vs_time.plot_hist(q_freqs, show_legends)
-# #boxwhisker.plot_three_metrics_by_freq(means, t1_vals, t2r_vals, t2e_vals)
-# #boxwhisker.plot_three_metrics_by_freq_x_break(means, t1_vals, t2r_vals, t2e_vals)
+#boxwhisker.plot_three_metrics_by_freq(means, t1_vals, t2r_vals, t2e_vals)
+#boxwhisker.plot_three_metrics_by_freq_x_break(means, t1_vals, t2r_vals, t2e_vals)
 # boxwhisker.plot_three_metrics_by_freq_comp_run_x_break(means, t1_vals, t2r_vals, t2e_vals,t1_vals_r2, t2r_vals_r2, t2e_vals_r2, plot_outliers=False)
-#
+
+#------------------------ New way -------------------------------------------
+boxwhisker_per_qubit_vs_run(
+    run_num_list,
+    t1_vals_by_run=t1_vals_by_run,
+    t2r_vals_by_run=t2r_vals_by_run,
+    t2e_vals_by_run=t2e_vals_by_run,
+    do_T1=True, do_T2R=True, do_T2E=True
+)
 # # ################################## 18: Allan Deviation/ Welch Spectral Density #########################################
 # stats = AllanWelchStats(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name)
