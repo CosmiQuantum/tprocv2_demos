@@ -383,23 +383,23 @@ class T1Measurement:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"{date} Q{self.QubitIndex + 1} " + f"T1={T1_est:.2f} +/- {T1_err:.2f} us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         f"Q{self.QubitIndex + 1} " + f"T1={T1_est:.2f} +/- {T1_err:.2f} us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
                          fontsize=24, ha='center',
                          va='top')  # , pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
                 fig.text(plot_middle, 0.98,
-                         f"{date} T1 Q{self.QubitIndex + 1}, T1={T1_est:.2f} +/- {T1_err:.2f}us",
+                         f"T1 Q{self.QubitIndex + 1}, T1={T1_est:.2f} +/- {T1_err:.2f}us",
                          fontsize=24, ha='center', va='top')
 
         else:
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"{date} T1 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         f"T1 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
                          fontsize=24, ha='center',
                          va='top')  # , pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma"   you can put this back once you save configs properly for when replotting
             else:
                 fig.text(plot_middle, 0.98,
-                         f"{date} T1 Q{self.QubitIndex + 1}",
+                         f"T1 Q{self.QubitIndex + 1}",
                          fontsize=24, ha='center', va='top')
             q1_fit_exponential = None
             T1_est = None

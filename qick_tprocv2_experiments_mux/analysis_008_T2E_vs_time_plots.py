@@ -280,7 +280,7 @@ class T2eVsTime:
                         round_num = load_data['T2E'][q_key].get('Round Num', [])[0][dataset]
                         batch_num = load_data['T2E'][q_key].get('Batch Num', [])[0][dataset]
 
-                        exp_config = load_data['T2E'][q_key].get('Exp Config', [])[0][dataset].decode()
+                        #exp_config = load_data['T2E'][q_key].get('Exp Config', [])[0][dataset].decode()
                         safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
 
                         # exp_config = eval(exp_config, safe_globals)

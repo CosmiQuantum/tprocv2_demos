@@ -155,7 +155,7 @@ class T1VsTime:
         Y = y.reshape(N, R)
         return np.median(Y, axis=1) if reducer == "median" else np.mean(Y, axis=1)
 
-    def run(self, return_errs = False, exp_extension='', process_shots = False, use_png_timestamps = False):
+    def run(self, return_errs = False, exp_extension='', process_shots = False, use_png_timestamps = False, outerFolder_save_plots = ""):
         import datetime
 
         if use_png_timestamps:
@@ -183,10 +183,8 @@ class T1VsTime:
                     # fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\{self.run_name}\{folder_date}"
                     #f"/data/QICK_data/{self.run_name}/{folder_date}" # qubituser daq01
                 outerFolder = timestamp_dir + "/study_data/"
-                outerFolder_save_plots = timestamp_dir + "/documentation/"
             elif self.fridge.upper() == 'NEXUS':
                 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
-                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
             else:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
@@ -343,9 +341,11 @@ class T1VsTime:
                             if T1_est < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            # if T1_est > 1000:
-                            #     print("The value is above 1000 us, this is a bad fit, continuing...")
-                            #     continue
+                            #_, _, _, q1_fit_exponential, T1_err, T1_est, plot_sig = T1_class_instance.plot_results(I, Q, delay_times, folder_date, iminuit_fit_instead=True)
+
+                            if T1_est > 1000:
+                                print("The value is above 1000 us, this is a bad fit, continuing...")
+                                continue
                             # if T1_err >= 0.8 * T1_est:
                             #     print(
                             #         f"Skipping T1 = {T1_est:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")

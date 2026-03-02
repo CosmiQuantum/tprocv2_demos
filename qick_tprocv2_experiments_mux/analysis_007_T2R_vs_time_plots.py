@@ -277,10 +277,10 @@ class T2rVsTime:
                         round_num = load_data['t2_ge'][q_key].get('Round Num', [])[0][dataset]
                         batch_num = load_data['t2_ge'][q_key].get('Batch Num', [])[0][dataset]
 
-                        exp_config = load_data['t2_ge'][q_key].get('Exp Config', [])[0][dataset].decode()
+                        #exp_config = load_data['t2_ge'][q_key].get('Exp Config', [])[0][dataset].decode()
                         safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
 
-                        exp_config = eval(exp_config, safe_globals)
+                        #exp_config = eval(exp_config, safe_globals)
 
                         if len(I) > 0:
                             T2_class_instance = T2RMeasurement(q_key, self.number_of_qubits,

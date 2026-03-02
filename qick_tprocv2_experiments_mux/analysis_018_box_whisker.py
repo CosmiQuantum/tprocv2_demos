@@ -5,6 +5,7 @@ from datetime import datetime
 import pytz
 import seaborn as sns
 import pandas as pd
+import matplotlib.patches as mpatches
 
 class PlotBoxWhisker:
     def __init__(self,run_name, number_of_qubits, final_figure_quality):
@@ -301,12 +302,7 @@ class PlotBoxWhisker:
             metric_labels=["T1 (µs)", "T2R (µs)", "T2E (µs)"],
             metric_colors=["skyblue", "lightgreen", "lightcoral"], #"lightblue", "cornflowerblue", "royalblue"
             freq_gap_threshold=5,
-            plot_outliers = True
-    ):
-        import matplotlib.pyplot as plt
-        import matplotlib.patches as mpatches
-        import pandas as pd
-        import numpy as np
+            plot_outliers = True):
 
         # -------------------------------------------------------------------------
         # 1. Use a modern style for a cleaner look
