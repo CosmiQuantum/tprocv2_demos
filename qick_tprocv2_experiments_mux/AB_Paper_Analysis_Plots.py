@@ -314,7 +314,7 @@ if qtemp_noisetemp_plot:
 
 #---------------------------------------- Definitions, additional plotting funcs ----------------------
 
-def boxwhisker_per_qubit_vs_run(
+def boxwhisker_t1t2_per_qubit_vs_run(
     run_num_list,
     t1_vals_by_run=None,
     t2r_vals_by_run=None,
@@ -495,5 +495,231 @@ def boxwhisker_per_qubit_vs_run(
 
     else:
         raise ValueError("mode must be 'together' or 'separate'.")
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
+
+def boxwhisker_qtemps_per_qubit_vs_run_choice(
+    run_num_list,
+    rpm_temps_by_run,
+    ssf_g_temps_by_run,
+    ssf_ge_temps_by_run=None,
+    n_qubits=6,
+    # ----- what to plot -----
+    plot_mode="hybrid",        # "hybrid" (run5=SSF, others=RPM) or "all_ssf"
+    ssf_kind="g",              # "g" (double-gauss) or "ge" (g-e threshold)
+    # ----- styling -----
+    ylims=(0, 600),            # mK
+    yticks=np.arange(0, 601, 100),
+    showfliers=True,
+    whis=1.5,
+    fig_title=None,
+    ylabel="Effective temperature (mK)",
+):
+    """
+    Per-qubit box/whisker vs run, with two high-level modes:
+
+    plot_mode="hybrid":
+        - Run 5 uses SSF (ssf_kind)
+        - All other runs use RPM
+    plot_mode="all_ssf":
+        - All runs use SSF (ssf_kind)
+
+    Dict structure expected:
+      rpm_temps_by_run[run][q]    -> array-like or scalar or []
+      ssf_g_temps_by_run[run][q]  -> array-like or scalar or []
+      ssf_ge_temps_by_run[run][q] -> array-like or scalar or []  (optional unless ssf_kind="ge")
+
+    # -------------------------- Example calls --------------------------
+    # 1) HYBRID: run 5 is SSF (g double-gauss), runs 6-8 are RPM
+    # boxwhisker_qtemps_per_qubit_vs_run_choice(
+    #     run_num_list=[5, 6, 7, 8],
+    #     rpm_temps_by_run=rpm_temps_by_run,
+    #     ssf_g_temps_by_run=ssf_g_temps_by_run,
+    #     ssf_ge_temps_by_run=ssf_ge_temps_by_run,
+    #     plot_mode="hybrid",
+    #     ssf_kind="g",
+    #     ylims=(0, 600),
+    #     yticks=np.arange(0, 601, 100),
+    # )
+
+    # 2) ALL SSF: all runs use SSF (g-e threshold)
+    # boxwhisker_qtemps_per_qubit_vs_run_choice(
+    #     run_num_list=[5, 6, 7, 8],
+    #     rpm_temps_by_run=rpm_temps_by_run,
+    #     ssf_g_temps_by_run=ssf_g_temps_by_run,
+    #     ssf_ge_temps_by_run=ssf_ge_temps_by_run,
+    #     plot_mode="all_ssf",
+    #     ssf_kind="ge",
+    #     ylims=(0, 600),
+    #     yticks=np.arange(0, 601, 100),
+    # )
+    """
+
+    # ---------------- pick which SSF dict we use ----------------
+    ssf_kind = ssf_kind.lower()
+    if ssf_kind not in ("g", "ge"):
+        raise ValueError("ssf_kind must be 'g' or 'ge'.")
+
+    if ssf_kind == "g":
+        ssf_dict = ssf_g_temps_by_run
+        ssf_label = "SSF (g double-gauss)"
+        ssf_color = "tab:orange"
+    else:
+        if ssf_ge_temps_by_run is None:
+            raise ValueError("ssf_kind='ge' requires ssf_ge_temps_by_run.")
+        ssf_dict = ssf_ge_temps_by_run
+        ssf_label = "SSF (g-e thresh)"
+        ssf_color = "tab:green"
+
+    rpm_label = "RPM"
+    rpm_color = "tab:blue"
+
+    plot_mode = plot_mode.lower()
+    if plot_mode not in ("hybrid", "all_ssf"):
+        raise ValueError("plot_mode must be 'hybrid' or 'all_ssf'.")
+
+    # ---------------- helpers ----------------
+    def cell_to_1d(cell):
+        if cell is None:
+            return np.array([], dtype=float)
+
+        # allow empty list
+        try:
+            if not np.isscalar(cell) and len(cell) == 0:
+                return np.array([], dtype=float)
+        except TypeError:
+            pass
+
+        if np.isscalar(cell):
+            arr = np.array([cell], dtype=float)
+        else:
+            arr = np.asarray(cell, dtype=float).ravel()
+
+        return arr[np.isfinite(arr)]
+
+    def get_cell(vals_by_run, run, q):
+        if vals_by_run is None or run not in vals_by_run:
+            return None
+        row = vals_by_run[run]
+        if row is None or q >= len(row):
+            return None
+        return row[q]
+
+    def style_boxplot(bp, color):
+        for b in bp["boxes"]:
+            b.set_facecolor(color)
+            b.set_alpha(0.30)
+            b.set_edgecolor(color)
+            b.set_linewidth(1.3)
+        for m in bp["medians"]:
+            m.set_color(color)
+            m.set_linewidth(2.0)
+        for w in bp["whiskers"]:
+            w.set_color(color)
+            w.set_linewidth(1.2)
+        for c in bp["caps"]:
+            c.set_color(color)
+            c.set_linewidth(1.2)
+        for f in bp["fliers"]:
+            f.set_marker("o")
+            f.set_markersize(3.5)
+            f.set_markerfacecolor(color)
+            f.set_markeredgecolor(color)
+            f.set_alpha(0.6)
+
+    # x positions: one cluster per run
+    n_runs = len(run_num_list)
+    base_pos = np.arange(1, n_runs + 1)
+
+    # ---------------- choose source per run ----------------
+    # returns (cell, label, color) for the given run/qubit
+    def select_source(run, q):
+        if plot_mode == "all_ssf":
+            return get_cell(ssf_dict, run, q), ssf_label, ssf_color
+
+        # hybrid
+        if run == 5:
+            return get_cell(ssf_dict, run, q), ssf_label, ssf_color
+        else:
+            return get_cell(rpm_temps_by_run, run, q), rpm_label, rpm_color
+
+    # ---------------- plot ----------------
+    fig, axes = plt.subplots(2, 3, figsize=(16, 9), sharex=True, sharey=True, constrained_layout=True)
+    axes = axes.ravel()
+
+    for q in range(n_qubits):
+        ax = axes[q]
+
+        # build data + colors per run (one box per run)
+        box_data = []
+        run_colors = []
+        for r in run_num_list:
+            cell, _, color = select_source(r, q)
+            box_data.append(cell_to_1d(cell))
+            run_colors.append(color)
+
+        bp = ax.boxplot(
+            box_data,
+            positions=base_pos,
+            widths=0.55,
+            patch_artist=True,
+            showfliers=showfliers,
+            whis=whis,
+            manage_ticks=False
+        )
+
+        # style each runs box with its own color
+        for i, color in enumerate(run_colors):
+            # boxes, medians, whiskers, caps, fliers are all list-like
+            bp["boxes"][i].set_facecolor(color)
+            bp["boxes"][i].set_alpha(0.30)
+            bp["boxes"][i].set_edgecolor(color)
+            bp["boxes"][i].set_linewidth(1.3)
+
+            bp["medians"][i].set_color(color)
+            bp["medians"][i].set_linewidth(2.0)
+
+            # whiskers and caps have 2 per box
+            for j in (2*i, 2*i+1):
+                bp["whiskers"][j].set_color(color)
+                bp["whiskers"][j].set_linewidth(1.2)
+                bp["caps"][j].set_color(color)
+                bp["caps"][j].set_linewidth(1.2)
+
+            bp["fliers"][i].set_marker("o")
+            bp["fliers"][i].set_markersize(3.5)
+            bp["fliers"][i].set_markerfacecolor(color)
+            bp["fliers"][i].set_markeredgecolor(color)
+            bp["fliers"][i].set_alpha(0.6)
+
+        ax.set_title(f"Qubit {q + 1}")
+        ax.set_ylim(*ylims)
+        ax.set_yticks(yticks)
+        ax.grid(True, alpha=0.35)
+        ax.set_xticks(base_pos)
+        ax.set_xticklabels([f"Run {r}" for r in run_num_list])
+
+        # legend
+        if plot_mode == "hybrid":
+            handles = [
+                Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label=f"Run 5: {ssf_label}"),
+                Patch(facecolor=rpm_color, edgecolor=rpm_color, alpha=0.30, label="Runs ?5: RPM"),
+            ]
+        else:
+            handles = [Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label=ssf_label)]
+        ax.legend(handles=handles, loc="upper left", fontsize=9)
+
+    if fig_title is None:
+        if plot_mode == "hybrid":
+            fig_title = f"Qubit Temps vs Run (per qubit): Run 5 = {ssf_label}, Others = RPM"
+        else:
+            fig_title = f"Qubit Temps vs Run (per qubit): All runs = {ssf_label}"
+
+    fig.suptitle(fig_title, fontsize=16)
+    fig.supxlabel("Run Number", fontsize=12)
+    fig.supylabel(ylabel, fontsize=12)
+    plt.show()
 
 ######################################################################################

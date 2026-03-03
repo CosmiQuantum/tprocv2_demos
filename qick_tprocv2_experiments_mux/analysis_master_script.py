@@ -23,7 +23,7 @@ from analysis_016_metrics_vs_temp import (ResonatorFreqVsTemp, GetThermData, Qub
                                           PiAmpsVsTemp, T1VsTemp, T2rVsTemp, T2eVsTemp)
 from analysis_017_plot_metric_dependencies import PlotMetricDependencies
 #from analysis_018_box_whisker import PlotBoxWhisker
-from AB_Paper_Analysis_Plots import boxwhisker_per_qubit_vs_run
+from AB_Paper_Analysis_Plots import boxwhisker_t1t2_per_qubit_vs_run
 from analysis_019_allan_welch_stats_plots import AllanWelchStats
 from analysis_022_Qfreq_hist_plots import QfreqHistPlots
 from section_011_qubit_temperatures_efRabi import QubitTemperatureProgram, QubitTemperatureRefProgram
@@ -552,7 +552,7 @@ for run_number in run_num_list:
 # boxwhisker.plot_three_metrics_by_freq_comp_run_x_break(means, t1_vals, t2r_vals, t2e_vals,t1_vals_r2, t2r_vals_r2, t2e_vals_r2, plot_outliers=False)
 
 #------------------------ New way -------------------------------------------
-boxwhisker_per_qubit_vs_run(
+boxwhisker_t1t2_per_qubit_vs_run(
     run_num_list,
     t1_vals_by_run=t1_vals_by_run,
     t2r_vals_by_run=t2r_vals_by_run,

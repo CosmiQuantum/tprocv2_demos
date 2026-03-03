@@ -673,6 +673,7 @@ class SSFTempCalcAndPlots:
                     "dataset": idx,
                     "timestamp": datetime.datetime.fromtimestamp(ts_unix),
                     "temperature_mK": T_mK,
+                    "temperature_err_mK": sigma_TmK,
                     "ig_new": ig_new,
                     "ground_data": ground_data,
                     "excited_data": excited_data,
@@ -2435,6 +2436,160 @@ class combined_Qtemp_studies:
     def __init__(self, figure_quality, number_of_qubits):
         self.figure_quality = figure_quality
         self.number_of_qubits = number_of_qubits
+
+    def ssf_fit_results_to_per_qubit_lists(
+        self,
+        fit_results,
+        n_qubits=6,
+        temp_key="temperature_mK",
+        err_key="temperature_err_mK",
+        alt_err_keys=("temperature_mK_err", "T_mK_err", "T_err_mK", "T_err"),
+        keep_nans=False,
+    ):
+        """
+        Converts SSF fit_results into:
+          temps[qid] = [T_mK, ...]
+          errs[qid]  = [T_err_mK (or nan), ...]
+
+        Supports fit_results as:
+          - dict: fit_results[qid] -> list of record dicts
+          - list/tuple: a flat list of record dicts (must include a qubit id key)
+
+        Notes:
+          * If an error key is missing, we append np.nan so temps/errs stay aligned.
+          * If keep_nans=False (default), we skip non-finite temperatures.
+        """
+
+        temps = [[] for _ in range(n_qubits)]
+        errs  = [[] for _ in range(n_qubits)]
+
+        # ---- helper to pick an error value from record with fallbacks ----
+        def _get_err(rec):
+            if err_key in rec:
+                return rec.get(err_key, None)
+            for k in alt_err_keys:
+                if k in rec:
+                    return rec.get(k, None)
+            return None
+
+        # ---- dict form: {qid: [records...]} ----
+        if isinstance(fit_results, dict):
+            for qid in range(n_qubits):
+                records = fit_results.get(qid, []) or []
+                for rec in records:
+                    if not isinstance(rec, dict):
+                        continue
+
+                    T = rec.get(temp_key, None)
+                    Te = _get_err(rec)
+
+                    if T is None or (not np.isfinite(T) and not keep_nans):
+                        continue
+
+                    temps[qid].append(float(T) if T is not None else np.nan)
+
+                    if Te is not None and np.isfinite(Te):
+                        errs[qid].append(float(Te))
+                    else:
+                        errs[qid].append(np.nan)
+
+            return temps, errs
+
+        # ---- flat-list form: [ {qid:..., temperature_mK:...}, ... ] ----
+        if isinstance(fit_results, (list, tuple)):
+            # try common qid keys
+            qid_keys = ("qid", "qubit", "qubit_id", "q_key", "q")
+            for rec in fit_results:
+                if not isinstance(rec, dict):
+                    continue
+
+                # find qid
+                qid = None
+                for k in qid_keys:
+                    if k in rec:
+                        qid = rec.get(k)
+                        break
+                if qid is None:
+                    continue
+
+                try:
+                    qid = int(qid)
+                except Exception:
+                    continue
+                if qid < 0 or qid >= n_qubits:
+                    continue
+
+                T = rec.get(temp_key, None)
+                Te = _get_err(rec)
+
+                if T is None or (not np.isfinite(T) and not keep_nans):
+                    continue
+
+                temps[qid].append(float(T) if T is not None else np.nan)
+                if Te is not None and np.isfinite(Te):
+                    errs[qid].append(float(Te))
+                else:
+                    errs[qid].append(np.nan)
+
+            return temps, errs
+
+        # ---- unknown type -> return empties ----
+        return temps, errs
+
+
+    def rpm_results_to_per_qubit_lists(
+        self,
+        all_files_Qtemp_results_RPMs,
+        n_qubits=6,
+        temp_key="T_mK",
+        err_key="T_mK_err",
+        keep_nans=False,
+    ):
+        """
+        Converts RPM per-file results into:
+          temps[qid] = [T_mK, ...]
+          errs[qid]  = [T_err_mK (or nan), ...]
+
+        Robustness:
+          * file_result["qubits"] may use int keys OR string keys.
+          * If error missing, we append np.nan so temps/errs align.
+        """
+
+        temps = [[] for _ in range(n_qubits)]
+        errs  = [[] for _ in range(n_qubits)]
+
+        file_list = all_files_Qtemp_results_RPMs or []
+        for file_result in file_list:
+            if not isinstance(file_result, dict):
+                continue
+
+            qubits_dict = file_result.get("qubits", {}) or {}
+            if not isinstance(qubits_dict, dict):
+                continue
+
+            for qid in range(n_qubits):
+                # accept both int and str keys
+                qrec = qubits_dict.get(qid, None)
+                if qrec is None:
+                    qrec = qubits_dict.get(str(qid), None)
+
+                if not isinstance(qrec, dict):
+                    continue
+
+                T  = qrec.get(temp_key, None)
+                Te = qrec.get(err_key, None)
+
+                if T is None or (not np.isfinite(T) and not keep_nans):
+                    continue
+
+                temps[qid].append(float(T) if T is not None else np.nan)
+
+                if Te is not None and np.isfinite(Te):
+                    errs[qid].append(float(Te))
+                else:
+                    errs[qid].append(np.nan)
+
+        return temps, errs
 
     def plot_t1t2_vs_qtemps(self, out_dir, all_qubit_temperatures_ssf_g = None, all_qubit_timestamps_ssf_g = None,
                           all_files_Qtemp_results_RPMs = None, t1_vals = None, t1_dates = None, t2r_vals = None, t2r_dates = None,
