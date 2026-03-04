@@ -293,8 +293,7 @@ if qtemp_noisetemp_plot:
             runs, T_qubit_mK[qi],
             yerr=T_qubit_err_mK[qi],
             fmt="o-", capsize=3, elinewidth=1,
-            label=r"$T_{\mathrm{qubit}}$ (from $P_e$)"
-        )
+            label=r"$T_{\mathrm{qubit}}$ (from $P_e$)")
 
         ax.plot(runs, Te_mK[qi], "s--", label=r"$T_e$ (pred. noise)")
 
@@ -313,6 +312,32 @@ if qtemp_noisetemp_plot:
     plt.show()
 
 #---------------------------------------- Definitions, additional plotting funcs ----------------------
+def print_median_spread_table(run_num_list, box_data, q, units="mK", mode="q1q3"):
+    """
+    Prints spread stats for a single qubit q across runs.
+
+    mode="q1q3"  -> prints median (Q1, Q3)  [recommended for papers]
+    mode="iqr2"  -> prints median ± IQR/2
+    """
+    for r, arr in zip(run_num_list, box_data):
+        arr = np.asarray(arr, dtype=float)
+        arr = arr[np.isfinite(arr)]
+
+        if arr.size == 0:
+            print(f"Run {r}, Q{q+1}: no data")
+            continue
+
+        med = np.median(arr)
+        q1  = np.percentile(arr, 25)
+        q3  = np.percentile(arr, 75)
+        iqr = q3 - q1
+
+        if mode.lower() == "iqr2":
+            spread = 0.5 * iqr
+            print(f"Run {r}, Q{q+1}: {med:.2f} ± {spread:.2f} {units}  (IQR={iqr:.2f}, n={arr.size})")
+        else:
+            # default: median (Q1, Q3)
+            print(f"Run {r}, Q{q+1}: {med:.2f} ({q1:.2f}, {q3:.2f}) {units}  [n={arr.size}]")
 
 def boxwhisker_t1t2_per_qubit_vs_run(
     run_num_list,
@@ -433,6 +458,7 @@ def boxwhisker_t1t2_per_qubit_vs_run(
 
             for (label, vals_by_run, color), off in zip(metric_specs, offsets):
                 box_data = [cell_to_1d(vals_by_run[r][q]) for r in run_num_list]
+                print_median_spread_table(run_num_list, box_data, q, units="µs")
                 positions = base_pos + off
 
                 bp = ax.boxplot(
@@ -451,11 +477,11 @@ def boxwhisker_t1t2_per_qubit_vs_run(
 
             # legend: Patch matches box fill
             handles = [Patch(facecolor=ms[2], edgecolor=ms[2], alpha=0.30, label=ms[0]) for ms in metric_specs]
-            ax.legend(handles=handles, loc="upper left", fontsize=9)
+            ax.legend(handles=handles, loc="upper left", fontsize=16)
 
-        fig.suptitle(fig_title_prefix, fontsize=16)
-        fig.supxlabel("Run Number", fontsize=12)
-        fig.supylabel("Coherence time (µs)", fontsize=12)
+        fig.suptitle(fig_title_prefix, fontsize=18)
+        fig.supxlabel("Run Number", fontsize=16)
+        fig.supylabel("Coherence time (µs)", fontsize=16)
         plt.show()
         return  # done
 
@@ -496,10 +522,6 @@ def boxwhisker_t1t2_per_qubit_vs_run(
     else:
         raise ValueError("mode must be 'together' or 'separate'.")
 
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
-
 def boxwhisker_qtemps_per_qubit_vs_run_choice(
     run_num_list,
     rpm_temps_by_run,
@@ -512,6 +534,7 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
     layout="separate",          # "separate" (2x3) or "together" (all qubits in a single plot or not)
     # ----- styling -----
     colors=('orange', 'blue', 'purple', 'green', 'brown', 'palevioletred'),  # per-qubit colors
+    ssf_color="black",
     ylims=(0, 600),            # mK
     yticks=np.arange(0, 601, 100),
     showfliers=True,
@@ -519,11 +542,10 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
     fig_title=None,
     ylabel="Effective temperature (mK)",
     # smaller text than before
-    suptitle_fs=13,
-    title_fs=10,
-    label_fs=10,
-    tick_fs=9,
-):
+    suptitle_fs=18,
+    title_fs=16,
+    label_fs=16,
+    tick_fs=16):
     """
     Per-qubit box/whisker vs run.
 
@@ -606,21 +628,17 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
             return get_cell(ssf_dict, run, q)
         return get_cell(rpm_temps_by_run, run, q)
 
-    # tick labels
-    if plot_mode == "hybrid":
-        xtick_labels = [
-            f"Run {r} ({ssf_label_short})" if r == 5 else f"Run {r} ({rpm_label_short})"
-            for r in run_num_list
-        ]
-    else:
-        xtick_labels = [f"Run {r}" for r in run_num_list]
+    # True if user is using distinct colors per qubit
+    multi_qubit_colors = len(set(colors[:n_qubits])) > 1
 
-    # default title if not provided
-    if fig_title is None:
+    # tick labels
+    xtick_labels = [f"Run {r}" for r in run_num_list]
+
+    if fig_title is None: # in case you want different titles for the hybrid vs only-RPM cases
         if plot_mode == "hybrid":
-            fig_title = f"Qubit Temps vs Run (per qubit): Run 5 = {ssf_label_long}, Others = {rpm_label_long}"
+            fig_title = f"Effective Qubit Temperatures vs Run Number"
         else:
-            fig_title = f"Qubit Temps vs Run (per qubit): All runs = {ssf_label_long}"
+            fig_title = f"Effective Qubit Temperatures vs Run Number"
 
         # ---------------- plot ----------------
         if layout == "separate":
@@ -630,9 +648,8 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
             for q in range(n_qubits):
                 ax = axes[q]
                 q_color = colors[q % len(colors)]
-
                 box_data = [cell_to_1d(select_cell(r, q)) for r in run_num_list]
-
+                print_median_spread_table(run_num_list, box_data, q, units="mK", mode="q1q3")
                 bp = ax.boxplot(
                     box_data,
                     positions=base_pos,
@@ -642,6 +659,20 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
                     whis=whis,
                     manage_ticks=False
                 )
+
+                # recolor Run 5 (SSF) consistently
+                if plot_mode == "hybrid" and 5 in run_num_list:
+                    i0 = run_num_list.index(5)
+
+                    bp["boxes"][i0].set_facecolor(ssf_color)
+                    bp["boxes"][i0].set_edgecolor(ssf_color)
+
+                    bp["medians"][i0].set_color(ssf_color)
+
+                    # whiskers/caps (2 per box)
+                    for j in (2 * i0, 2 * i0 + 1):
+                        bp["whiskers"][j].set_color(ssf_color)
+                        bp["caps"][j].set_color(ssf_color)
 
                 # --- style ALL boxes in this qubit subplot with the qubit color ---
                 for b in bp["boxes"]:
@@ -673,10 +704,33 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
                 ax.set_xticks(base_pos)
                 ax.set_xticklabels(xtick_labels, rotation=0)
 
+                if multi_qubit_colors:
+                    ax.legend(
+                        handles=[
+                            Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 5 (SSF)"),
+                            Patch(facecolor=q_color, edgecolor=q_color, alpha=0.30, label="Runs 6-8 (RPM)")
+                        ],
+                        loc="upper right",
+                        frameon=True,
+                        fontsize=tick_fs
+                    )
+
             fig.suptitle(fig_title, fontsize=suptitle_fs)
             fig.supxlabel("Run Number", fontsize=label_fs)
             fig.supylabel(ylabel, fontsize=label_fs)
-            plt.show()
+            if not multi_qubit_colors:
+                fig.subplots_adjust(right=0.82)
+
+                fig.legend(
+                    handles=[
+                        Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 5 (SSF)"),
+                        Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="Runs 6-8 (RPM)")
+                    ],
+                    loc="center left",
+                    bbox_to_anchor=(0.84, 0.5),
+                    frameon=True,
+                    fontsize=label_fs
+                )
 
         elif layout == "together":
             # One axis: each run is a cluster; each qubit is an offset within the cluster.
@@ -692,7 +746,7 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
                 positions = base_pos + offsets[q]
 
                 box_data = [cell_to_1d(select_cell(r, q)) for r in run_num_list]
-
+                print_median_spread_table(run_num_list, box_data, q, units="mK", mode="q1q3")
                 bp = ax.boxplot(
                     box_data,
                     positions=positions,
@@ -702,6 +756,20 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
                     whis=whis,
                     manage_ticks=False
                 )
+
+                # recolor Run 5 (SSF) consistently
+                if plot_mode == "hybrid" and 5 in run_num_list:
+                    i0 = run_num_list.index(5)
+
+                    bp["boxes"][i0].set_facecolor(ssf_color)
+                    bp["boxes"][i0].set_edgecolor(ssf_color)
+
+                    bp["medians"][i0].set_color(ssf_color)
+
+                    # whiskers/caps (2 per box)
+                    for j in (2 * i0, 2 * i0 + 1):
+                        bp["whiskers"][j].set_color(ssf_color)
+                        bp["caps"][j].set_color(ssf_color)
 
                 # --- style ALL boxes for this qubit with the qubit color ---
                 for b in bp["boxes"]:
@@ -738,6 +806,40 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
 
             ax.set_xlabel("Run Number", fontsize=label_fs)
             ax.set_ylabel(ylabel, fontsize=label_fs)
+
+            if multi_qubit_colors:
+                qubit_handles = [
+                    Patch(facecolor=colors[q % len(colors)],
+                          edgecolor=colors[q % len(colors)],
+                          alpha=0.30,
+                          label=f"Q{q + 1} (RPM)")
+                    for q in range(n_qubits)
+                ]
+
+                method_handles = [
+                    Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 5 (SSF)")
+                ]
+
+                ax.legend(
+                    handles=method_handles + qubit_handles,
+                    loc="upper right",
+                    frameon=True,
+                    fontsize=tick_fs
+                )
+
+            else:
+                fig.subplots_adjust(right=0.80)
+
+                fig.legend(
+                    handles=[
+                        Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 5 (SSF)"),
+                        Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="Runs 6 (RPM)")
+                    ],
+                    loc="center left",
+                    bbox_to_anchor=(0.82, 0.5),
+                    frameon=True,
+                    fontsize=label_fs
+                )
 
             plt.show()
 

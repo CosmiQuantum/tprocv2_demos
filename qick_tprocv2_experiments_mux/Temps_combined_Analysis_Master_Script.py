@@ -63,7 +63,7 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
 
 # For combined analysis (SSF qtemps + RPM qtemps)
 comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
-                       "Pe_vs_time_comb_single_plt": True, "box_whisker_allruns_allQs": True}
+                       "Pe_vs_time_comb_single_plt": False, "box_whisker_allruns_allQs": True}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
@@ -863,6 +863,7 @@ if qtemp_method_flags["combined_studies_qtemps"]:
             plot_mode="hybrid",
             ssf_kind="g",
             layout="together",
+            colors=('palevioletred', 'palevioletred', 'palevioletred', 'palevioletred', 'palevioletred', 'palevioletred'),
             ylims=(0, 600),
             yticks=np.arange(0, 601, 100),
         )

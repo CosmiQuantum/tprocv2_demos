@@ -21,7 +21,6 @@ import datetime
 import pandas as pd
 from pathlib import Path
 from iminuit import Minuit
-import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from bisect import bisect_left
 from matplotlib.dates import DateFormatter
@@ -1034,13 +1033,6 @@ class SSFTempCalcAndPlots:
         - If dontuse_midpt_thresh=False:
             Shows midpoint threshold and shaded split regions.
         """
-
-        import os
-        import numpy as np
-        import matplotlib.pyplot as plt
-        import datetime
-        from scipy.stats import norm
-
         os.makedirs(qubit_folder, exist_ok=True)
 
         xdata = np.asarray(ig_new, dtype=float).ravel()
