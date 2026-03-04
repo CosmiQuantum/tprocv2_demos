@@ -24,7 +24,7 @@ from analysis_003_q_freqs_vs_time_plots import QubitFreqsVsTime
 from analysis_006_T1_vs_time_plots import T1VsTime
 from analysis_007_T2R_vs_time_plots import T2rVsTime
 from analysis_008_T2E_vs_time_plots import T2eVsTime
-from AB_Paper_Analysis_Plots import boxwhisker_qtemps_per_qubit_vs_run
+from AB_Paper_Analysis_Plots import boxwhisker_qtemps_per_qubit_vs_run_choice
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
 run_num = 7
 run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence analysis it's defined in its respective section
@@ -709,7 +709,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
-run_num_list = [5,6]
+run_num_list = [5,6,7,8]
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_errs_by_run  = {}      # matching errors
 ssf_g_temps_by_run  = {}   # ssf ground-double-gauss temps
@@ -717,79 +717,83 @@ ssf_g_errs_by_run  = {}      # matching errors
 ssf_ge_temps_by_run = {}   # ssf g-e threshold temps (if you compute them)
 ssf_ge_errs_by_run  = {}      # matching errors
 
-if run_num == 5:
-    # ---------------- RPM (none) ----------------
-    Science_Qubits = [0, 1, 2, 3, 4, 5]
-    base_dir = ""
-    filter_keywords = []
-    outerFolder_qtemps_plots_RR = ""
-    outerFolder_qtemps_plots = ""
-    target_dates_qtemps_RPM = ""
-    print("There is no RPM data for run 5 (SSF only).")
-
-    # ---------------- SSF ----------------
-    paths_SSFmethods = paths_SSFmethods_run5
-    path_saveplots_fits = path_saveplots_fits_run5
-    path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run5
-
-elif run_num == 6:
-    # ---------------- RPM (science run; optional pre-science add-on) ----------------
-    Science_Qubits = [0, 4]
-    base_dir = base_dir_sciencerun
-    filter_keywords = filter_keywords_sciencerun
-    outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run6
-    outerFolder_qtemps_plots = outerFolder_qtemps_plots_RR_run6
-    target_dates_qtemps_RPM = target_dates_qtemps_RPM_sciencerun
-
-    if pre_sciencerun6_data:
-        base_dir2 = base_dir_pre_sciencerun
-        filter_keywords2 = filter_keywords_presciencerun
-        target_dates_qtemps_RPM2 = target_dates_qtemps_RPM_presciencerun
-
-    # ---------------- SSF (science-run paths; optional pre-science add-on) ----------------
-    paths_SSFmethods = paths_SSFmethods_SR.copy()
-    if pre_sciencerun6_data:
-        # include all qubits since pre-SR SSF was taken for all Qs
-        Science_Qubits = [0, 1, 2, 3, 4, 5]
-        paths_SSFmethods += paths_SSFmethods_preSR
-
-    path_saveplots_fits = path_saveplots_fits_run6
-    path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run6
-
-
-elif run_num == 7:
-    # ---------------- RPM ----------------
-    Science_Qubits = [0, 1, 2, 3, 4, 5]
-    base_dir = base_dir_run7
-    filter_keywords = filter_keywords_run7
-    outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run7
-    outerFolder_qtemps_plots = outerFolder_qtemps_plots_run7
-    target_dates_qtemps_RPM = target_dates_qtemps_RPM_run7
-
-    # ---------------- SSF ----------------
-    paths_SSFmethods = paths_SSFmethods_run7
-    path_saveplots_fits = path_saveplots_fits_run7
-    path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run7
-
-
-elif run_num == 8:
-    # ---------------- RPM ----------------
-    Science_Qubits = [0, 1, 2, 3, 4, 5]
-    base_dir = base_dir_run8
-    filter_keywords = filter_keywords_run8
-    outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run8
-    outerFolder_qtemps_plots = outerFolder_qtemps_plots_run8
-    target_dates_qtemps_RPM = target_dates_qtemps_RPM_run8
-
-    # ---------------- SSF ----------------
-    paths_SSFmethods = paths_SSFmethods_run8
-    path_saveplots_fits = path_saveplots_fits_run8
-    path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run8
-else:
-    raise ValueError(f"Unsupported run_num={run_num}")
-
 if qtemp_method_flags["combined_studies_qtemps"]:
     for run_num in run_num_list:
+        # ---- always reset optional pre-SR variables each iteration ----
+        base_dir2 = None
+        filter_keywords2 = None
+        target_dates_qtemps_RPM2 = None
+        if run_num == 5:
+            # ---------------- RPM (none) ----------------
+            Science_Qubits = [0, 1, 2, 3, 4, 5]
+            base_dir = ""
+            filter_keywords = []
+            outerFolder_qtemps_plots_RR = ""
+            outerFolder_qtemps_plots = ""
+            target_dates_qtemps_RPM = ""
+            print("There is no RPM data for run 5 (SSF only).")
+
+            # ---------------- SSF ----------------
+            paths_SSFmethods = paths_SSFmethods_run5
+            path_saveplots_fits = path_saveplots_fits_run5
+            path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run5
+
+        elif run_num == 6:
+            # ---------------- RPM (science run; optional pre-science add-on) ----------------
+            Science_Qubits = [0, 4]
+            base_dir = base_dir_sciencerun
+            filter_keywords = filter_keywords_sciencerun
+            outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run6
+            outerFolder_qtemps_plots = outerFolder_qtemps_plots_RR_run6
+            target_dates_qtemps_RPM = target_dates_qtemps_RPM_sciencerun
+
+            if pre_sciencerun6_data:
+                base_dir2 = base_dir_pre_sciencerun
+                filter_keywords2 = filter_keywords_presciencerun
+                target_dates_qtemps_RPM2 = target_dates_qtemps_RPM_presciencerun
+
+            # ---------------- SSF (science-run paths; optional pre-science add-on) ----------------
+            paths_SSFmethods = paths_SSFmethods_SR.copy()
+            if pre_sciencerun6_data:
+                # include all qubits since pre-SR SSF was taken for all Qs
+                Science_Qubits = [0, 1, 2, 3, 4, 5]
+                paths_SSFmethods += paths_SSFmethods_preSR
+
+            path_saveplots_fits = path_saveplots_fits_run6
+            path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run6
+
+
+        elif run_num == 7:
+            # ---------------- RPM ----------------
+            Science_Qubits = [0, 1, 2, 3, 4, 5]
+            base_dir = base_dir_run7
+            filter_keywords = filter_keywords_run7
+            outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run7
+            outerFolder_qtemps_plots = outerFolder_qtemps_plots_run7
+            target_dates_qtemps_RPM = target_dates_qtemps_RPM_run7
+
+            # ---------------- SSF ----------------
+            paths_SSFmethods = paths_SSFmethods_run7
+            path_saveplots_fits = path_saveplots_fits_run7
+            path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run7
+
+
+        elif run_num == 8:
+            # ---------------- RPM ----------------
+            Science_Qubits = [0, 1, 2, 3, 4, 5]
+            base_dir = base_dir_run8
+            filter_keywords = filter_keywords_run8
+            outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run8
+            outerFolder_qtemps_plots = outerFolder_qtemps_plots_run8
+            target_dates_qtemps_RPM = target_dates_qtemps_RPM_run8
+
+            # ---------------- SSF ----------------
+            paths_SSFmethods = paths_SSFmethods_run8
+            path_saveplots_fits = path_saveplots_fits_run8
+            path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run8
+        else:
+            raise ValueError(f"Unsupported run_num={run_num}")
+
         # ------------ Initialize class for combined qubit temps analysis ------------------
         combined_studies = combined_Qtemp_studies(figure_quality, tot_num_of_qubits)
 
@@ -849,7 +853,6 @@ if qtemp_method_flags["combined_studies_qtemps"]:
             ssf_ge_temps_by_run[run_num] = all_qubit_temps_ge
             ssf_ge_errs_by_run[run_num] = all_qubit_temps_errs_ge
 
-
     # --------------------- box and whiskers plot. Per run and per qubit. Separate or together options -------------------
     if comb_analysis_flags["box_whisker_allruns_allQs"]:
         boxwhisker_qtemps_per_qubit_vs_run_choice(
@@ -859,6 +862,7 @@ if qtemp_method_flags["combined_studies_qtemps"]:
             ssf_ge_temps_by_run=ssf_ge_temps_by_run,
             plot_mode="hybrid",
             ssf_kind="g",
+            layout="together",
             ylims=(0, 600),
             yticks=np.arange(0, 601, 100),
         )
