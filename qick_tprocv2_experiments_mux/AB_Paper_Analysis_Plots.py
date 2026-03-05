@@ -443,6 +443,7 @@ def boxwhisker_t1t2_per_qubit_vs_run(
         ax.grid(True, alpha=0.35)
         ax.set_xticks(base_pos)
         ax.set_xticklabels([f"Run {r}" for r in run_num_list])
+        ax.tick_params(axis="both", labelsize=16)
 
     # ------------------------- mode: together -------------------------
     if mode.lower() == "together":
@@ -512,11 +513,11 @@ def boxwhisker_t1t2_per_qubit_vs_run(
 
                 # legend with single entry
                 handle = Patch(facecolor=color, edgecolor=color, alpha=0.30, label=label)
-                ax.legend(handles=[handle], loc="upper left", fontsize=9)
+                ax.legend(handles=[handle], loc="upper left", fontsize=16)
 
-            fig.suptitle(f"{label}{fig_title_prefix}", fontsize=16)
-            fig.supxlabel("Run Number", fontsize=12)
-            fig.supylabel("Coherence time (µs)", fontsize=12)
+            fig.suptitle(f"{label}{fig_title_prefix}", fontsize=18)
+            fig.supxlabel("Run Number", fontsize=16)
+            fig.supylabel(f"{label} (µs)", fontsize=16)
             plt.show()
         return
 

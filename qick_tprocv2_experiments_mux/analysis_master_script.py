@@ -48,7 +48,7 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
-run_num_list = [7,8]
+run_num_list = [4,5,6,7,8]
 t1_vals_by_run  = {}
 t2r_vals_by_run = {}
 t2e_vals_by_run = {}
@@ -563,7 +563,7 @@ boxwhisker_t1t2_per_qubit_vs_run(
     t1_vals_by_run=t1_vals_by_run,
     t2r_vals_by_run=t2r_vals_by_run,
     t2e_vals_by_run=t2e_vals_by_run,
-    do_T1=True, do_T2R=False, do_T2E=False,
+    do_T1=True, do_T2R=True, do_T2E=True,
     mode="separate"
 )
 # # ################################## 18: Allan Deviation/ Welch Spectral Density #########################################
