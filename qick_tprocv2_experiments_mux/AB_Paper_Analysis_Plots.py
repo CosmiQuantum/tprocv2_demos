@@ -458,7 +458,7 @@ def boxwhisker_t1t2_per_qubit_vs_run(
 
             for (label, vals_by_run, color), off in zip(metric_specs, offsets):
                 box_data = [cell_to_1d(vals_by_run[r][q]) for r in run_num_list]
-                print_median_spread_table(run_num_list, box_data, q, units="µs")
+                print_median_spread_table(run_num_list, box_data, q, units="µs", mode="iqr2")
                 positions = base_pos + off
 
                 bp = ax.boxplot(
@@ -833,7 +833,7 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
                 fig.legend(
                     handles=[
                         Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 5 (SSF)"),
-                        Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="Runs 6 (RPM)")
+                        Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="Runs 6-8 (RPM)")
                     ],
                     loc="center left",
                     bbox_to_anchor=(0.82, 0.5),

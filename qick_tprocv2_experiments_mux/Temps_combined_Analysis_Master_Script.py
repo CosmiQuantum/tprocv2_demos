@@ -862,7 +862,7 @@ if qtemp_method_flags["combined_studies_qtemps"]:
             ssf_ge_temps_by_run=ssf_ge_temps_by_run,
             plot_mode="hybrid",
             ssf_kind="g",
-            layout="together",
+            layout="separate",
             colors=('palevioletred', 'palevioletred', 'palevioletred', 'palevioletred', 'palevioletred', 'palevioletred'),
             ylims=(0, 600),
             yticks=np.arange(0, 601, 100),

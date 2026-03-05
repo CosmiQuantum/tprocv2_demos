@@ -40,16 +40,15 @@ import h5py
 # from qualang_tools.plot import Fit
 # import visdom
 ###################################################### Set These #######################################################
-save_figs = True
+save_figs = False
 fit_saved = False
 show_legends = False
 signal = 'None'
 # run_number = 8
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
-per_pt_errs_t1 = False
 
-run_num_list = [4,5,6,7,8]
+run_num_list = [7,8]
 t1_vals_by_run  = {}
 t2r_vals_by_run = {}
 t2e_vals_by_run = {}
@@ -62,6 +61,7 @@ for run_number in run_num_list:
     print(f'Processing run {run_number} data.')
     if run_number == 8:
         process_shots_t1ge = True
+        per_pt_errs_t1 = True
         run_name = "run8/6transmon/round_robin/AB_paper_datadump_for_analysis"
         # 'run8/6transmon/round_robin/temperature_sweep_qubit_data'
         # 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis'
@@ -124,6 +124,7 @@ for run_number in run_num_list:
 
     elif run_number == 7:
         process_shots_t1ge = False
+        per_pt_errs_t1 = False
         run_name = 'run7/6transmon/round_robin_benchmark/AB_paper_data'
         data_path = f'/data/QICK_data/{run_name}'
         plots_path = data_path
@@ -137,6 +138,7 @@ for run_number in run_num_list:
 
     elif run_number == 6:
         process_shots_t1ge = False
+        per_pt_errs_t1 = False
         run_name = 'run6/6transmon'
         data_path = f'/data/QICK_data/{run_name}'
         # f'/exp/cosmiq/data/QUIET/QICK_data/{run_name}' # on CEPH
@@ -229,6 +231,7 @@ for run_number in run_num_list:
 
     elif run_number == 5:
         process_shots_t1ge = False
+        per_pt_errs_t1 = False
         run_name = 'run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20'
         data_path = f'/data/QICK_data/{run_name}'
         plots_path = os.path.join(data_path, "benchmark_analysis_plots", f"qspec_ge")
@@ -249,6 +252,7 @@ for run_number in run_num_list:
                             "2024-12-20"]
     elif run_number == 4:
         process_shots_t1ge = False
+        per_pt_errs_t1 = False
         run_name = 'run4/6transmon/Official_run4_RR_Data_which_started_Nov21'
         data_path = f'/data/QICK_data/{run_name}'
         plots_path = data_path
@@ -284,28 +288,28 @@ for run_number in run_num_list:
     t1_vs_time = T1VsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
                      signal, run_name, FRIDGE, run_number, per_pt_errs = per_pt_errs_t1)
 
-    if per_pt_errs_t1: # thiswill only work if process_shots_t1ge is set to True too
+    if per_pt_errs_t1 and process_shots_t1ge: # this will only work if process_shots_t1ge is set to True too
         date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge, outerFolder_save_plots = plots_path)
     else:
         date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge, outerFolder_save_plots = plots_path)
 
-    t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
-                            fit_saved, signal, run_name, FRIDGE)
-    date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True)
-
-    t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
-                            fit_saved, signal, run_name, FRIDGE)
-    date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
+    # t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+    #                         fit_saved, signal, run_name, FRIDGE)
+    # date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True)
+    #
+    # t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+    #                         fit_saved, signal, run_name, FRIDGE)
+    # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
 
     # ---------------- Store results ----------------
     # stores data like t1_vals_by_run[6][3], where 6=run number and 3=qubit index (0 based)
     t1_vals_by_run[run_number] = t1_vals
-    t2r_vals_by_run[run_number] = t2r_vals
-    t2e_vals_by_run[run_number] = t2e_vals
+    # t2r_vals_by_run[run_number] = t2r_vals
+    # t2e_vals_by_run[run_number] = t2e_vals
 
     t1_errs_by_run[run_number] = t1_fit_err
-    t2r_errs_by_run[run_number] = t2r_fit_err
-    t2e_errs_by_run[run_number] = t2e_fit_err
+    # t2r_errs_by_run[run_number] = t2r_fit_err
+    # t2e_errs_by_run[run_number] = t2e_fit_err
 
 ######################################## Print QICK soccfg live ###########################################
 # If you want to print out the soccfg QICK output, uncomment this:
@@ -557,7 +561,7 @@ boxwhisker_t1t2_per_qubit_vs_run(
     t1_vals_by_run=t1_vals_by_run,
     t2r_vals_by_run=t2r_vals_by_run,
     t2e_vals_by_run=t2e_vals_by_run,
-    do_T1=True, do_T2R=True, do_T2E=True,
+    do_T1=True, do_T2R=False, do_T2E=False,
     mode="separate"
 )
 # # ################################## 18: Allan Deviation/ Welch Spectral Density #########################################
