@@ -697,15 +697,9 @@ class SSFTempCalcAndPlots:
             sigma_Pe,
             T_mK,
             qubit_freq_MHz,
-            sigma_qfreq_MHz,
-            Pe_dist_err=None,  # <-- NEW (optional)
-            clip_eps=1e-12,  # <-- NEW (optional safety)
-    ):
+            sigma_qfreq_MHz):
         """
         Propagate 1-sigma uncertainties in Pe and f_ge into a 1-sigma uncertainty on T_mK.
-
-        Now supports an optional distribution scatter term Pe_dist_err (e.g., sigma_w from Pe histogram),
-        combined in quadrature with sigma_Pe inside this function (RPM-style).
 
         Inputs:
           Pe                    : excited-state population (SSF)
@@ -717,10 +711,8 @@ class SSFTempCalcAndPlots:
 
         Returns:
           sigma_T_mK            : propagated 1-sigma error on T_mK (mK)
-          sigma_Pe_total        : total Pe uncertainty actually used (baseline ? dist)  [OPTIONAL but useful]
+          sigma_Pe              : Pe uncertainty from double gauss fitting function
         """
-        import numpy as np
-
         # --- sanitize inputs ---
         Pe = float(Pe)
         sigma_Pe = float(sigma_Pe)
@@ -728,23 +720,9 @@ class SSFTempCalcAndPlots:
         qubit_freq_MHz = float(qubit_freq_MHz)
         sigma_qfreq_MHz = float(sigma_qfreq_MHz)
 
-        # Avoid log/div blowups near 0 or 1
-        Pe = float(np.clip(Pe, clip_eps, 1.0 - clip_eps))
-
         # Convert MHz -> Hz
         f0_Hz = qubit_freq_MHz * 1e6
         sigma_f0_Hz = sigma_qfreq_MHz * 1e6
-
-        # Combine Pe uncertainties inside (RPM-style)
-        sigma_Pe_total = sigma_Pe
-        if Pe_dist_err is not None:
-            try:
-                Pe_dist_err = float(Pe_dist_err)
-            except Exception:
-                Pe_dist_err = None
-
-        if Pe_dist_err is not None and np.isfinite(Pe_dist_err) and Pe_dist_err > 0.0:
-            sigma_Pe_total = float(np.sqrt(sigma_Pe ** 2 + Pe_dist_err ** 2))
 
         # Build the logarithmic term
         ln_arg = np.log((1.0 - Pe) / Pe)
@@ -758,10 +736,10 @@ class SSFTempCalcAndPlots:
 
         sigma_T_mK = np.sqrt(
             (dT_df0 * sigma_f0_Hz) ** 2 +
-            (dT_dPe * sigma_Pe_total) ** 2
+            (dT_dPe * sigma_Pe) ** 2
         )
 
-        return sigma_T_mK, sigma_Pe_total
+        return sigma_T_mK, sigma_Pe
 
     def update_ssf_errors_with_pe_scatter_inplace(self, ssf_fit_results, Pe_dist_err_dict=None, ssf_pe_scatter_min_n=5,
             verbose=True, preserve_base_sigma=True):

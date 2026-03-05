@@ -650,7 +650,7 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
                 ax = axes[q]
                 q_color = colors[q % len(colors)]
                 box_data = [cell_to_1d(select_cell(r, q)) for r in run_num_list]
-                print_median_spread_table(run_num_list, box_data, q, units="mK", mode="q1q3")
+                print_median_spread_table(run_num_list, box_data, q, units="mK", mode="iqr2")
                 bp = ax.boxplot(
                     box_data,
                     positions=base_pos,
@@ -747,7 +747,7 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
                 positions = base_pos + offsets[q]
 
                 box_data = [cell_to_1d(select_cell(r, q)) for r in run_num_list]
-                print_median_spread_table(run_num_list, box_data, q, units="mK", mode="q1q3")
+                print_median_spread_table(run_num_list, box_data, q, units="mK", mode="iqr2")
                 bp = ax.boxplot(
                     box_data,
                     positions=positions,

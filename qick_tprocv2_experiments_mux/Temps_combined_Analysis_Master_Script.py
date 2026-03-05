@@ -709,7 +709,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
-run_num_list = [5,6,7,8]
+run_num_list = [7,8]
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_errs_by_run  = {}      # matching errors
 ssf_g_temps_by_run  = {}   # ssf ground-double-gauss temps
@@ -860,7 +860,7 @@ if qtemp_method_flags["combined_studies_qtemps"]:
             rpm_temps_by_run=rpm_temps_by_run,
             ssf_g_temps_by_run=ssf_g_temps_by_run,
             ssf_ge_temps_by_run=ssf_ge_temps_by_run,
-            plot_mode="hybrid",
+            plot_mode="all_ssf", # or "hybrid"
             ssf_kind="g",
             layout="separate",
             colors=('palevioletred', 'palevioletred', 'palevioletred', 'palevioletred', 'palevioletred', 'palevioletred'),
