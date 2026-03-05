@@ -390,7 +390,7 @@ path_saveplots_fits_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporar
 path_saveplots_ssf_qtemps_vsT_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run6" # to save qubit temps vs time via ssf methods
 
 # ----------------------------------------------------------------------------------------------run 7----------------------------------------------------------------------------------------------------------
-r7_path_prefix = "/data/QICK_data/run7" # daq01
+r7_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run7" # CEPH
                 #"/exp/cosmiq/data/QUIET/QICK_data/run7" # CEPH
                 # "/data/QICK_data/run7" # daq01
 paths_SSFmethods_run7 = [
@@ -401,10 +401,10 @@ paths_SSFmethods_run7 = [
   f"{r7_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data/2025-07-20_06-33-03"
 ]
 
-path_saveplots_fits_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/ssf_qtemps_analysis/GaussFits_r7"
+path_saveplots_fits_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r7" #CEPH
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r7" #CEPH
     # "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/ssf_qtemps_analysis/GaussFits_r7" #daq01 # where to save ssf plots to check gaussian fits
-path_saveplots_ssf_qtemps_vsT_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/ssf_qtemps_analysis/Qtemps_vs_Time_run7"
+path_saveplots_ssf_qtemps_vsT_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run7" #CEPH
     # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run7" #CEPH
     #"/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/ssf_qtemps_analysis/Qtemps_vs_Time_run7" #daq01 # to save qubit temps vs time via ssf methods
 
@@ -414,11 +414,11 @@ path_saveplots_ssf_qtemps_vsT_run7 = "/data/QICK_data/run7/6transmon/round_robin
 # path_saveplots_fits_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\qtemps_ssf_gaussfits" # where to save ssf plots to check gaussian fits
 # path_saveplots_ssf_qtemps_vsT_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\qtemps_ssf_analysis\Qtemps_vs_Time_run8" # to save qubit temps vs time via ssf methods
 
-r8_path_prefix = "/data/QICK_data/run8"
+r8_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run8" # CEPH
                 #"/exp/cosmiq/data/QUIET/QICK_data/run8" # CEPH
                 # "/data/QICK_data/run8" # daq01
 # All AB paper data
-paths_SSFmethods_run8 = [ # for daq01 case
+paths_SSFmethods_run8 = [ # for daq01 case, need to make CEPH version
   f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_11-09-32",
   f"{r8_path_prefix}6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_12-05-25",
   f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_19-43-00",
@@ -439,10 +439,10 @@ paths_SSFmethods_run8 = [ # for daq01 case
   f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-11-01_12-54-55"
 ]
 
-path_saveplots_fits_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_gaussfits"
+path_saveplots_fits_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r8" #CEPH
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r8" #CEPH
     # "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_gaussfits" #daq01 # where to save ssf plots to check gaussian fits
-path_saveplots_ssf_qtemps_vsT_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_analysis"
+path_saveplots_ssf_qtemps_vsT_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run8" #CEPH
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run8" #CEPH
     # "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_analysis" #daq01 # to save qubit temps vs time via ssf methods
 
@@ -715,7 +715,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
-run_num_list = [7,8]
+run_num_list = [5,6,7,8]
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_errs_by_run  = {}      # matching errors
 ssf_g_temps_by_run  = {}   # ssf ground-double-gauss temps
@@ -866,7 +866,7 @@ if qtemp_method_flags["combined_studies_qtemps"]:
             rpm_temps_by_run=rpm_temps_by_run,
             ssf_g_temps_by_run=ssf_g_temps_by_run,
             ssf_ge_temps_by_run=ssf_ge_temps_by_run,
-            plot_mode="all_ssf", # or "hybrid"
+            plot_mode="hybrid", # "hybrid" or "all_ssf"
             ssf_kind="g",
             layout="separate",
             colors=('palevioletred', 'palevioletred', 'palevioletred', 'palevioletred', 'palevioletred', 'palevioletred'),

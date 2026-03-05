@@ -536,7 +536,7 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
     layout="separate",          # "separate" (2x3) or "together" (all qubits in a single plot or not)
     # ----- styling -----
     colors=('orange', 'blue', 'purple', 'green', 'brown', 'palevioletred'),  # per-qubit colors
-    ssf_color="black",
+    ssf_color="brown",
     ylims=(0, 600),            # mK
     yticks=np.arange(0, 601, 100),
     showfliers=True,
@@ -644,7 +644,7 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
 
         # ---------------- plot ----------------
         if layout == "separate":
-            fig, axes = plt.subplots(2, 3, figsize=(16, 9), sharex=True, sharey=True, constrained_layout=True)
+            fig, axes = plt.subplots(2, 3, figsize=(16, 9), sharex=True, sharey=True, constrained_layout=False)
             axes = axes.ravel()
 
             for q in range(n_qubits):
