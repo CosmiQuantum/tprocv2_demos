@@ -733,6 +733,8 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
                     fontsize=label_fs
                 )
 
+            plt.show()
+
         elif layout == "together":
             # One axis: each run is a cluster; each qubit is an offset within the cluster.
             fig, ax = plt.subplots(figsize=(12, 6))

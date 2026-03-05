@@ -173,18 +173,21 @@ filter_keywords_presciencerun = ['q_temperatures_efRabi'] # no source was presen
 
 #-----------------------------------------------------------------------run 7------------------------------------------------------------
 # Base path of where the data is stored up to the Study Name (round_robin_benchmark)
-base_dir_run7 = "/exp/cosmiq/data/QUIET/QICK_data/run7/6transmon/round_robin_benchmark" # CEPH
+base_dir_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark"
+    #"/exp/cosmiq/data/QUIET/QICK_data/run7/6transmon/round_robin_benchmark" # CEPH
     # "/data/QICK_data/run7/6transmon/round_robin_benchmark" # daq01
 
 # for 24hr AB data
 target_dates_qtemps_RPM_run7 = ["2025-07-19", "2025-07-20"]
 
 # To re-make and save RPM RR plots
-outerFolder_qtemps_plots_RR_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r7" # CEPH
+outerFolder_qtemps_plots_RR_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/benchmark_analysis_plots/RPM_RR_plots"
+    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r7" # CEPH
     #"/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/benchmark_analysis_plots/RPM_RR_plots" #daq01
 #
 # For RPM Analysis
-outerFolder_qtemps_plots_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r7"
+outerFolder_qtemps_plots_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/benchmark_analysis_plots/RPM_analysis"
+    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r7"
     # "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/benchmark_analysis_plots/RPM_analysis" # daq01. Inside each analysis function, a subfolder will be defined
 
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name
@@ -192,7 +195,8 @@ filter_keywords_run7 = ['AB_paper_data']
 
 #-----------------------------------------------------------------------run 8------------------------------------------------------------
 # Base path of where the data is stored up to the Study Name (round_robin_benchmark)
-base_dir_run8 = "/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/round_robin" # CEPH
+base_dir_run8 = "/data/QICK_data/run8/6transmon/round_robin"
+    #"/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/round_robin" # CEPH
     #"/data/QICK_data/run8/6transmon/round_robin" # up to study name. # daq01
 
 # Arianna's local analysis
@@ -215,17 +219,13 @@ target_dates_qtemps_RPM_run8 = [
 # target_dates_qtemps_RPM_run8 = ["2025-10-19_20-25-18"]
 
 # To re-make and save RPM RR plots
-# outerFolder_qtemps_plots_RR_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\AB_Paper_Data_24hrs\replotted_RR_data\rpm"
-    # r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\replotted_RR_data\rpm"
-    #"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/run8_analysis/benchmark_analysis_plots/RPM_RR_plots"
-outerFolder_qtemps_plots_RR_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r8" # CEPH
+outerFolder_qtemps_plots_RR_run8 = "/data/QICK_data/run8/6transmon/replotted_RR_data/rabi_pop_meas"
+    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r8" # CEPH
     # "/data/QICK_data/run8/6transmon/replotted_RR_data/rabi_pop_meas" #daq01
 
 # For RPM Analysis
-# outerFolder_qtemps_plots_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\AB_Paper_Data_24hrs/rabi_pop_meas_analysis/" # Inside each analysis function, a subfolder will be defined
-    # r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/rabi_pop_meas_analysis/"
-    #"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/run8_analysis/benchmark_analysis_plots/Qtemps_RPMmethod"
-outerFolder_qtemps_plots_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r8" #CEPH
+outerFolder_qtemps_plots_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/benchmark_analysis_plots/Qtemps_RPMmethod"
+    # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r8" #CEPH
     #"/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/benchmark_analysis_plots/Qtemps_RPMmethod" # daq01
 
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name. THese are substudies.
@@ -390,7 +390,8 @@ path_saveplots_fits_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporar
 path_saveplots_ssf_qtemps_vsT_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run6" # to save qubit temps vs time via ssf methods
 
 # ----------------------------------------------------------------------------------------------run 7----------------------------------------------------------------------------------------------------------
-r7_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run7" # CEPH
+r7_path_prefix = "/data/QICK_data/run7" # daq01
+                #"/exp/cosmiq/data/QUIET/QICK_data/run7" # CEPH
                 # "/data/QICK_data/run7" # daq01
 paths_SSFmethods_run7 = [
   f"{r7_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data/2025-07-19_08-34-39",
@@ -400,9 +401,11 @@ paths_SSFmethods_run7 = [
   f"{r7_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data/2025-07-20_06-33-03"
 ]
 
-path_saveplots_fits_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r7" #CEPH
+path_saveplots_fits_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/ssf_qtemps_analysis/GaussFits_r7"
+    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r7" #CEPH
     # "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/ssf_qtemps_analysis/GaussFits_r7" #daq01 # where to save ssf plots to check gaussian fits
-path_saveplots_ssf_qtemps_vsT_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run7" #CEPH
+path_saveplots_ssf_qtemps_vsT_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/ssf_qtemps_analysis/Qtemps_vs_Time_run7"
+    # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run7" #CEPH
     #"/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/ssf_qtemps_analysis/Qtemps_vs_Time_run7" #daq01 # to save qubit temps vs time via ssf methods
 
 # ----------------------------------------------------------------------------------------------run 8----------------------------------------------------------------------------------------------------------
@@ -411,10 +414,11 @@ path_saveplots_ssf_qtemps_vsT_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1h
 # path_saveplots_fits_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\qtemps_ssf_gaussfits" # where to save ssf plots to check gaussian fits
 # path_saveplots_ssf_qtemps_vsT_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\qtemps_ssf_analysis\Qtemps_vs_Time_run8" # to save qubit temps vs time via ssf methods
 
-r8_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run8" # CEPH
+r8_path_prefix = "/data/QICK_data/run8"
+                #"/exp/cosmiq/data/QUIET/QICK_data/run8" # CEPH
                 # "/data/QICK_data/run8" # daq01
 # All AB paper data
-paths_SSFmethods_run8 = [
+paths_SSFmethods_run8 = [ # for daq01 case
   f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_11-09-32",
   f"{r8_path_prefix}6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_12-05-25",
   f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_19-43-00",
@@ -435,9 +439,11 @@ paths_SSFmethods_run8 = [
   f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-11-01_12-54-55"
 ]
 
-path_saveplots_fits_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r8" #CEPH
+path_saveplots_fits_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_gaussfits"
+    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r8" #CEPH
     # "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_gaussfits" #daq01 # where to save ssf plots to check gaussian fits
-path_saveplots_ssf_qtemps_vsT_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run8" #CEPH
+path_saveplots_ssf_qtemps_vsT_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_analysis"
+    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run8" #CEPH
     # "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_analysis" #daq01 # to save qubit temps vs time via ssf methods
 
 #------------------------------------------------------------------------------ Assign func variables depending on run number ---------------------------------------
