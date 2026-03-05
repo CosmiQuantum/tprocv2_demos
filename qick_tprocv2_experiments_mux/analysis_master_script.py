@@ -77,7 +77,7 @@ for run_number in run_num_list:
         "2025-10-20_12-10-19",
         "2025-10-23_00-49-28",
         "2025-10-23_14-47-22",
-        "2025-10-24_01-41-30",
+        #"2025-10-24_01-41-30", # no shots saved, only QICK averaged IQ data
         "2025-10-24_13-58-37",
         "2025-10-27_14-15-40",
         "2025-10-27_14-24-29",
@@ -284,14 +284,16 @@ for run_number in run_num_list:
     # pi_amps_vs_time = PiAmpsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
     #                               fit_saved,signal, run_name)
     # date_times_pi_amps, pi_amps = pi_amps_vs_time.run(plot_depths=False)
-
+    print(per_pt_errs_t1)
+    print(process_shots_t1ge)
     t1_vs_time = T1VsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
                      signal, run_name, FRIDGE, run_number, per_pt_errs = per_pt_errs_t1)
-
+    print(per_pt_errs_t1)
+    print(process_shots_t1ge)
     if per_pt_errs_t1 and process_shots_t1ge: # this will only work if process_shots_t1ge is set to True too
         date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge, outerFolder_save_plots = plots_path)
     else:
-        date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge, outerFolder_save_plots = plots_path)
+        date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge', outerFolder_save_plots = plots_path)
 
     # t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
     #                         fit_saved, signal, run_name, FRIDGE)

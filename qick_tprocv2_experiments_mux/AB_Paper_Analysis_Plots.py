@@ -494,6 +494,7 @@ def boxwhisker_t1t2_per_qubit_vs_run(
             for q in range(n_qubits):
                 ax = axes[q]
                 box_data = [cell_to_1d(vals_by_run[r][q]) for r in run_num_list]
+                print_median_spread_table(run_num_list, box_data, q, units="µs", mode="iqr2")
 
                 bp = ax.boxplot(
                     box_data,
