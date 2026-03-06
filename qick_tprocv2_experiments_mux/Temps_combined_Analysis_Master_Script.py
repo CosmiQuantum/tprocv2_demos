@@ -31,14 +31,14 @@ run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
-replot_RPMs = False # Do you want to re-plot rabi population measurements from RR data but not extract temps? Only make plots
-save_figsRR = False # Do you want to save (or not save) the RR RPM plots?
+replot_RPMs = True # Do you want to re-plot rabi population measurements from RR data but not extract temps? Only make plots
+save_figsRR = True # Do you want to save (or not save) the RR RPM plots?
 save_figs = False # To be used in general for any function or class to save (or not save) plots.
 save_figs_SSF = False # Do you want to save gaussian fit plots while calculating ssf qtemps? iminuit case only
 fit_saved = False # Not used here, set to false.
 exclude_temp_sweeps = True # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
 filter_out_bad_amp_fits = True # filter out bad rpm fits? this doesn't work perfect but helps a bit
-get_qtemp_data = True # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
+get_qtemp_data = False # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
 get_london_data = False # This returns RPM qubit temperatures, resonator freqs, and qubit freqs for specified dates. Designed for London Penetration analysis.
 
 pre_sciencerun6_data = True # Do you also want to incorporate the run 6 pre-science run data? This only applies when run_num = 6
@@ -53,8 +53,8 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_qtemps": True}
+qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+                      "combined_studies_qtemps": False}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
@@ -63,7 +63,7 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
 
 # For combined analysis (SSF qtemps + RPM qtemps)
 comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
-                       "Pe_vs_time_comb_single_plt": False, "box_whisker_allruns_allQs": True}
+                       "Pe_vs_time_comb_single_plt": False, "box_whisker_allruns_allQs": False}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}

@@ -312,13 +312,13 @@ class Temps_EFAmpRabiExperiment:
             ax1.plot(gains, I, linewidth=2, label="I")
             ax1.plot(gains, I_fit, "-", color="red", linewidth=3, label="Fit")
             ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
-            ax1.tick_params(axis="both", which="major", labelsize=16)
+            ax1.tick_params(axis="both", which="major", labelsize=18)
 
             ax2.plot(gains, Q, linewidth=2, label="Q")
             ax2.plot(gains, Q_fit, "-", color="red", linewidth=3, label="Fit")
             ax2.set_xlabel("Gain (a.u.)", fontsize=20)
             ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
-            ax2.tick_params(axis="both", which="major", labelsize=16)
+            ax2.tick_params(axis="both", which="major", labelsize=18)
 
             # -------------------- Combined amplitude + uncertainty --------------------
             A_I = float(aI)
@@ -350,10 +350,10 @@ class Temps_EFAmpRabiExperiment:
             fit_IQ = np.sqrt(I_fit ** 2 + Q_fit ** 2)
 
             ax3.plot(gains, magnitude_data, "-", linewidth=2, label="|IQ| data")
-            ax3.plot(gains, fit_IQ, "-", color="orange", linewidth=3, label="sqrt(I_fit^2 + Q_fit^2)")
+            #ax3.plot(gains, fit_IQ, "-", color="orange", linewidth=3, label="sqrt(I_fit^2 + Q_fit^2)")
             ax3.set_xlabel("Gain (a.u.)", fontsize=20)
             ax3.set_ylabel("Amplitude (a.u.)", fontsize=20)
-            ax3.tick_params(axis="both", which="major", labelsize=16)
+            ax3.tick_params(axis="both", which="major", labelsize=18)
 
             if show_mag_fit:
                 # Diagnostic only (not used for RPM amplitude)
@@ -374,22 +374,22 @@ class Temps_EFAmpRabiExperiment:
             if config is not None:
                 fig.text(
                     plot_middle,
-                    0.98,
-                    f"e-f RPM Q{self.QubitIndex + 1}: "
-                    f"Pg: {config['reps']}*{config['rounds']} avgs, "
-                    f"Pe: {config['reps2']}*{config['rounds']} avgs, "
-                    f"A=sqrt(aI^2+aQ^2)={A_amp_IQ:.4f}±{A_amp_IQ_err:.4f}",
-                    fontsize=18,
+                    0.95,
+                    rf"$e\!-\!f\ \mathrm{{RPM}}\ Q_{{{self.QubitIndex + 1}}}:$ "
+                    rf"$P_g$: {config['reps']}×{config['rounds']} avgs, "
+                    rf"$P_e$: {config['reps2']}×{config['rounds']} avgs, "
+                    rf"$A=\sqrt{{A_I^2 + A_Q^2}} = {A_amp_IQ:.4f} \pm {A_amp_IQ_err:.4f}$",
+                    fontsize=20,
                     ha="center",
                     va="top",
                 )
             else:
                 fig.text(
                     plot_middle,
-                    0.98,
-                    f"e-f RPM Q{self.QubitIndex + 1}: "
-                    f"A=sqrt(aI^2+aQ^2)={A_amp_IQ:.4f}±{A_amp_IQ_err:.4f}",
-                    fontsize=18,
+                    0.95,
+                    rf"$e\!-\!f\ \mathrm{{RPM}}\ Q_{{{self.QubitIndex + 1}}}: "
+                    rf"A=\sqrt{{A_I^2 + A_Q^2}} = {A_amp_IQ:.4f} \pm {A_amp_IQ_err:.4f}$",
+                    fontsize=20,
                     ha="center",
                     va="top",
                 )

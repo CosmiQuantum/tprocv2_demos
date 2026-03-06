@@ -415,26 +415,30 @@ def boxwhisker_t1t2_per_qubit_vs_run(
     n_runs = len(run_num_list)
     base_pos = np.arange(1, n_runs + 1)  # 1..n_runs
 
-    def style_boxplot(bp, color):
+    def style_boxplot(bp, q_color):
         for b in bp["boxes"]:
-            b.set_facecolor(color)
-            b.set_alpha(0.30)
-            b.set_edgecolor(color)
+            b.set_facecolor(q_color)
+            b.set_edgecolor(q_color)
+            b.set_alpha(0.3)
             b.set_linewidth(1.3)
+
         for m in bp["medians"]:
-            m.set_color(color)
+            m.set_color(q_color)
             m.set_linewidth(2.0)
+
         for w in bp["whiskers"]:
-            w.set_color(color)
+            w.set_color(q_color)
             w.set_linewidth(1.2)
+
         for c in bp["caps"]:
-            c.set_color(color)
+            c.set_color(q_color)
             c.set_linewidth(1.2)
+
         for f in bp["fliers"]:
             f.set_marker("o")
             f.set_markersize(3.5)
-            f.set_markerfacecolor(color)
-            f.set_markeredgecolor(color)
+            f.set_markerfacecolor(q_color)
+            f.set_markeredgecolor(q_color)
             f.set_alpha(0.6)
 
     def add_common_axis_styling(ax):
@@ -442,7 +446,7 @@ def boxwhisker_t1t2_per_qubit_vs_run(
         ax.set_yticks(yticks)
         ax.grid(True, alpha=0.35)
         ax.set_xticks(base_pos)
-        ax.set_xticklabels([f"Run {r}" for r in run_num_list])
+        ax.set_xticklabels([f"{r}" for r in run_num_list])
         ax.tick_params(axis="both", labelsize=16)
 
     # ------------------------- mode: together -------------------------
@@ -451,7 +455,13 @@ def boxwhisker_t1t2_per_qubit_vs_run(
         offsets = np.linspace(-0.25, 0.25, n_metrics) if n_metrics > 1 else np.array([0.0])
         box_width = 0.22 if n_metrics > 1 else 0.45
 
-        fig, axes = plt.subplots(2, 3, figsize=(16, 9), sharex=True, sharey=True, constrained_layout=True)
+        fig, axes = plt.subplots(
+            2, 3,
+            figsize=(18, 9),
+            sharex=True,
+            sharey=True,
+            constrained_layout=False
+        )
         axes = axes.ravel()
 
         for q in range(n_qubits):
@@ -489,7 +499,13 @@ def boxwhisker_t1t2_per_qubit_vs_run(
     # ------------------------- mode: separate (one figure per metric) -------------------------
     elif mode.lower() == "separate":
         for (label, vals_by_run, color) in metric_specs:
-            fig, axes = plt.subplots(2, 3, figsize=(16, 9), sharex=True, sharey=True, constrained_layout=True)
+            fig, axes = plt.subplots(
+                2, 3,
+                figsize=(18, 9),
+                sharex=True,
+                sharey=True,
+                constrained_layout=False
+            )
             axes = axes.ravel()
 
             for q in range(n_qubits):
@@ -513,7 +529,7 @@ def boxwhisker_t1t2_per_qubit_vs_run(
 
                 # legend with single entry
                 handle = Patch(facecolor=color, edgecolor=color, alpha=0.30, label=label)
-                ax.legend(handles=[handle], loc="upper left", fontsize=16)
+                #ax.legend(handles=[handle], loc="upper left", fontsize=16)
 
             fig.suptitle(f"{label}{fig_title_prefix}", fontsize=18)
             fig.supxlabel("Run Number", fontsize=16)
