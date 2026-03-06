@@ -173,7 +173,7 @@ filter_keywords_presciencerun = ['q_temperatures_efRabi'] # no source was presen
 
 #-----------------------------------------------------------------------run 7------------------------------------------------------------
 # Base path of where the data is stored up to the Study Name (round_robin_benchmark)
-base_dir_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark"
+base_dir_run7 = "/exp/cosmiq/data/QUIET/QICK_data/run7/6transmon/round_robin_benchmark" # CEPH
     #"/exp/cosmiq/data/QUIET/QICK_data/run7/6transmon/round_robin_benchmark" # CEPH
     # "/data/QICK_data/run7/6transmon/round_robin_benchmark" # daq01
 
@@ -181,12 +181,12 @@ base_dir_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark"
 target_dates_qtemps_RPM_run7 = ["2025-07-19", "2025-07-20"]
 
 # To re-make and save RPM RR plots
-outerFolder_qtemps_plots_RR_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/benchmark_analysis_plots/RPM_RR_plots"
+outerFolder_qtemps_plots_RR_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r7" # CEPH
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r7" # CEPH
     #"/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/benchmark_analysis_plots/RPM_RR_plots" #daq01
 #
 # For RPM Analysis
-outerFolder_qtemps_plots_run7 = "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/benchmark_analysis_plots/RPM_analysis"
+outerFolder_qtemps_plots_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r7"
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r7"
     # "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/benchmark_analysis_plots/RPM_analysis" # daq01. Inside each analysis function, a subfolder will be defined
 
@@ -195,7 +195,7 @@ filter_keywords_run7 = ['AB_paper_data']
 
 #-----------------------------------------------------------------------run 8------------------------------------------------------------
 # Base path of where the data is stored up to the Study Name (round_robin_benchmark)
-base_dir_run8 = "/data/QICK_data/run8/6transmon/round_robin"
+base_dir_run8 = "/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/round_robin" # CEPH
     #"/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/round_robin" # CEPH
     #"/data/QICK_data/run8/6transmon/round_robin" # up to study name. # daq01
 
@@ -219,12 +219,12 @@ target_dates_qtemps_RPM_run8 = [
 # target_dates_qtemps_RPM_run8 = ["2025-10-19_20-25-18"]
 
 # To re-make and save RPM RR plots
-outerFolder_qtemps_plots_RR_run8 = "/data/QICK_data/run8/6transmon/replotted_RR_data/rabi_pop_meas"
+outerFolder_qtemps_plots_RR_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r8" # CEPH
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r8" # CEPH
     # "/data/QICK_data/run8/6transmon/replotted_RR_data/rabi_pop_meas" #daq01
 
 # For RPM Analysis
-outerFolder_qtemps_plots_run8 = "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/benchmark_analysis_plots/Qtemps_RPMmethod"
+outerFolder_qtemps_plots_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r8" #CEPH
     # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r8" #CEPH
     #"/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/benchmark_analysis_plots/Qtemps_RPMmethod" # daq01
 
