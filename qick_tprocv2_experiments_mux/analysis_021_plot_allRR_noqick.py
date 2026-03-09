@@ -2636,9 +2636,7 @@ class PlotRR_noQick:
     def compute_temperature_error_RPM(
             self,
             A1, A2, Pe, T_mK, qubit_freq_MHz,
-            sigma_A1, sigma_A2, sigma_qfreq_MHz,
-            Pe_dist_err=None,  # <-- NEW (optional)
-    ):
+            sigma_A1, sigma_A2, sigma_qfreq_MHz):
         """
         Error propagation formula (base):
           sigma_T^2 = (dT/dA1 * sigma_A1)^2 + (dT/dA2 * sigma_A2)^2 + (dT/df_ge * sigma_f_ge)^2
@@ -2646,10 +2644,6 @@ class PlotRR_noQick:
         Assumes:
           Pe = |A1| / (|A1| + |A2|)
           T = (h f_ge / kB) / ln((1-Pe)/Pe)
-
-        Optional:
-          Pe_dist_err = extra 1-sigma scatter/uncertainty on Pe (e.g., weighted std from your Pe histogram),
-          added in quadrature to sigma_Pe, and propagated to T via (dT/dPe * Pe_dist_err).
         """
 
         # --- dPe/dA1, dPe/dA2 for Pe = |A1|/(|A1|+|A2|) ---
@@ -2694,20 +2688,8 @@ class PlotRR_noQick:
             (dPe_dA2 * sigma_A2) ** 2
         )
 
-        # --- Optional: add Pe distribution scatter (histogram sigma_w) ---
-        sigma_Pe_dist = 0.0
-        if Pe_dist_err is not None and np.isfinite(Pe_dist_err) and (Pe_dist_err > 0.0):
-            sigma_Pe_dist = float(Pe_dist_err)
-
-        # Optional: propagate ONLY the *extra* Pe scatter into T (avoid double-counting fit part)
-        if sigma_Pe_dist > 0.0 and np.isfinite(sigma_T_mK):
-            # Total Pe uncertainty
-            sigma_Pe_total = float(np.sqrt(float(sigma_Pe_fit) ** 2 + sigma_Pe_dist ** 2))
-            # Total T uncertainty
-            sigma_T_mK_total = float(np.sqrt(float(sigma_T_mK) ** 2 + (float(dT_dPe) * sigma_Pe_dist) ** 2))
-        else:
-            sigma_Pe_total = float(sigma_Pe_fit)
-            sigma_T_mK_total = float(sigma_T_mK)
+        sigma_Pe_total = float(sigma_Pe_fit)
+        sigma_T_mK_total = float(sigma_T_mK)
 
         return sigma_T_mK_total, sigma_Pe_total
 

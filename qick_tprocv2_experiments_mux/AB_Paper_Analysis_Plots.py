@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
-qtemp_noisetemp_plot = False
+qtemp_noisetemp_plot = True
 
 # ------------------------------------------------------------
 # Measured Pe values (Run 4 column will be dropped)
@@ -283,7 +283,7 @@ if qtemp_noisetemp_plot:
     # ------------------------------------------------------------
     # Plot: T_qubit(from Pe) vs Predicted Noise Temperature
     # ------------------------------------------------------------
-    fig, axes = plt.subplots(2, 3, figsize=(14, 8), sharex=True, sharey=True)
+    fig, axes = plt.subplots(2, 3, figsize=(16, 10), sharex=True, sharey=True)
     axes = axes.ravel()
 
     for qi in range(nQ):
@@ -293,20 +293,47 @@ if qtemp_noisetemp_plot:
             runs, T_qubit_mK[qi],
             yerr=T_qubit_err_mK[qi],
             fmt="o-", capsize=3, elinewidth=1,
-            label=r"$T_{\mathrm{qubit}}$ (from $P_e$)")
+            label=r"$T_{\mathrm{qubit}}$ (from $P_e$)"
+        )
 
-        ax.plot(runs, Te_mK[qi], "s--", label=r"$T_e$ (pred. noise)")
+        ax.plot(
+            runs, Te_mK[qi],
+            "s--",
+            label=r"$T_e$ (pred. noise)"
+        )
 
-        ax.set_title(f"Q{qi+1}")
+        ax.set_title(f"Q{qi + 1}", fontsize=16)
+
         ax.set_xticks(runs)
-        ax.set_xticklabels(['Run 5', 'Run 6', 'Run 7', 'Run 8'])
+        ax.set_xticklabels(['5', '6', '7', '8'], fontsize=16)
+        ax.tick_params(axis='y', labelsize=16)
+
+        ax.tick_params(axis='y', labelsize=16)  # y tick labels
+        ax.tick_params(axis='x', labelsize=16)  # x tick labels
+
         ax.grid(True)
 
-    fig.supylabel("Temperature (mK)")
-    fig.suptitle("Qubit Temperature (from $P_e$) vs Predicted Noise Temperature $T_e$", y=0.98)
+    # shared axis label
+    fig.supylabel("Effective Temperature (mK)", fontsize=16)
+    fig.supxlabel("Run Number", fontsize=16)
 
+    # big title
+    fig.suptitle(
+        "Qubit Temperature (from $P_e$) vs Predicted Noise Temperature $T_e$",
+        y=0.98,
+        fontsize=18
+    )
+
+    # legend
     handles, labels = axes[0].get_legend_handles_labels()
-    fig.legend(handles, labels, ncol=2, frameon=True, loc="lower center", bbox_to_anchor=(0.5, -0.02))
+    fig.legend(
+        handles, labels,
+        ncol=2,
+        frameon=True,
+        loc="lower center",
+        bbox_to_anchor=(0.5, -0.05),
+        fontsize=16
+    )
 
     fig.tight_layout(rect=[0, 0.10, 1, 0.95])
     plt.show()
