@@ -333,7 +333,6 @@ class T1VsTime:
                         #     exp_config =None
 
                         if len(I) > 0:
-
                             T1_class_instance = T1Measurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                               fit_data=True)
                             #T1_spec_cfg = exp_config['T1_ge']
@@ -341,11 +340,14 @@ class T1VsTime:
                             if T1_est < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            #_, _, _, q1_fit_exponential, T1_err, T1_est, plot_sig = T1_class_instance.plot_results(I, Q, delay_times, folder_date, iminuit_fit_instead=True)
 
                             if T1_est > 1000:
                                 print("The value is above 1000 us, this is a bad fit, continuing...")
                                 continue
+
+                            # To look at T1 plots of data that made it through:
+                            T1_class_instance.plot_results(I, Q, delay_times, folder_date, iminuit_fit_instead=True)
+
                             # if T1_err >= 0.8 * T1_est:
                             #     print(
                             #         f"Skipping T1 = {T1_est:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
