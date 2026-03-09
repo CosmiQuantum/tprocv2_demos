@@ -342,8 +342,8 @@ class Temps_EFAmpRabiExperiment:
                 )
                 A_amp_IQ_err = float(np.sqrt(varA)) if np.isfinite(varA) and varA >= 0.0 else np.nan
 
-            ax1.legend([f"A_I={A_I:.4f} ± {sigma_A_I:.4f}"], loc="best")
-            ax2.legend([f"A_Q={A_Q:.4f} ± {sigma_A_Q:.4f}"], loc="best")
+            ax1.legend([rf"$A_I = {A_I:.4f} \pm {sigma_A_I:.4f}$"], loc="best")
+            ax2.legend([rf"$A_Q = {A_Q:.4f} \pm {sigma_A_Q:.4f}$"], loc="best")
 
             # -------------------- Third panel: amplitude diagnostics --------------------
             magnitude_data = np.sqrt(I ** 2 + Q ** 2)

@@ -2189,6 +2189,7 @@ class PlotRR_noQick:
                     # print("[WARN] Falling back to HDF5 timestamps instead.")
                     mapping_data = None
 
+        alpha = None  # angle from ssf, will be replaced with real angle if combine_IQ_signal = True
         if get_qtemp_data:
             # --------------------------------------- load qspec data too ---------------------------------------------
             # This function returns a list of dicts with keys like 'filename', 'q_key', 'qfreq_MHz', 'Qfreq_fit_err', etc.
@@ -2205,7 +2206,6 @@ class PlotRR_noQick:
             for qkey in qspec_by_qkey_and_time:
                 qspec_by_qkey_and_time[qkey].sort()
             #-------------------------------------------- optionally load ssf data too --------------------------
-            alpha = None # angle from ssf, will be replaced with real angle if combine_IQ_signal = True
             if combine_IQ_signal:
                 # Load all SSF metadata records (your edited function returns {"records":[...]} )
                 ssf_meta = self.load_plot_save_ss(plot_ss_hist_only=True, plot_title="")  # or whatever args you want
