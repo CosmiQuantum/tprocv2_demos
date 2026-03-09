@@ -289,16 +289,35 @@ if qtemp_noisetemp_plot:
     for qi in range(nQ):
         ax = axes[qi]
 
+        # --- Run 5 -> Run 6 segment (purple) ---
         ax.errorbar(
-            runs, T_qubit_mK[qi],
-            yerr=T_qubit_err_mK[qi],
-            fmt="o-", capsize=3, elinewidth=1,
-            label=r"$T_{\mathrm{qubit}}$ (from $P_e$)"
+            runs[:2], T_qubit_mK[qi][:2],
+            yerr=T_qubit_err_mK[qi][:2],
+            fmt="o-",
+            color="purple",
+            capsize=3,
+            elinewidth=1,
+            label=r"$T_{\mathrm{qubit}}$ (Run 5 SSF)"
         )
 
+        # --- Run 6 -> Run 8 segment (palevioletred) ---
+        ax.errorbar(
+            runs[1:], T_qubit_mK[qi][1:],
+            yerr=T_qubit_err_mK[qi][1:],
+            fmt="o-",
+            color="palevioletred",
+            capsize=3,
+            elinewidth=1,
+            label=r"$T_{\mathrm{qubit}}$ (Runs 6-8 RPM)"
+        )
+
+        # --- Predicted noise temperature ---
         ax.plot(
-            runs, Te_mK[qi],
+            runs,
+            Te_mK[qi],
             "s--",
+            color="slateblue",
+            linewidth=2,
             label=r"$T_e$ (pred. noise)"
         )
 
@@ -306,36 +325,37 @@ if qtemp_noisetemp_plot:
 
         ax.set_xticks(runs)
         ax.set_xticklabels(['5', '6', '7', '8'], fontsize=16)
-        ax.tick_params(axis='y', labelsize=16)
 
-        ax.tick_params(axis='y', labelsize=16)  # y tick labels
-        ax.tick_params(axis='x', labelsize=16)  # x tick labels
+        ax.tick_params(axis='y', labelsize=16)
+        ax.tick_params(axis='x', labelsize=16)
 
         ax.grid(True)
 
-    # shared axis label
-    fig.supylabel("Effective Temperature (mK)", fontsize=16)
-    fig.supxlabel("Run Number", fontsize=16)
+    # ---------------- Axis labels ----------------
+    fig.supylabel("Effective Temperature (mK)", fontsize=16, x=0.04)  # pushes label left
+    fig.supxlabel("Run Number", fontsize=16, y=0.09)  # pulls label closer to plot
 
-    # big title
+    # ---------------- Big title ----------------
     fig.suptitle(
-        "Qubit Temperature (from $P_e$) vs Predicted Noise Temperature $T_e$",
+        "Effective Qubit Temperature (from $P_e$) vs Predicted Noise Temperature $T_e$",
         y=0.98,
         fontsize=18
     )
 
-    # legend
+    # ---------------- Legend ----------------
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(
         handles, labels,
-        ncol=2,
+        ncol=3,
         frameon=True,
         loc="lower center",
-        bbox_to_anchor=(0.5, -0.05),
+        bbox_to_anchor=(0.5, -0.02),  # moved slightly down
         fontsize=16
     )
 
-    fig.tight_layout(rect=[0, 0.10, 1, 0.95])
+    # Leave space at bottom for legend
+    fig.tight_layout(rect=[0.05, 0.12, 1, 0.95])
+
     plt.show()
 
 #---------------------------------------- Definitions, additional plotting funcs ----------------------
