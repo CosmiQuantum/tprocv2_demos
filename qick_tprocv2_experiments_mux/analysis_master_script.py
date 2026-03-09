@@ -40,7 +40,7 @@ import h5py
 # from qualang_tools.plot import Fit
 # import visdom
 ###################################################### Set These #######################################################
-save_figs = False
+save_figs = True
 fit_saved = False
 show_legends = False
 signal = 'None'
@@ -48,7 +48,7 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
-run_num_list = [4]
+run_num_list = [8]
 t1_vals_by_run  = {}
 t2r_vals_by_run = {}
 t2e_vals_by_run = {}
@@ -66,7 +66,7 @@ for run_number in run_num_list:
         # 'run8/6transmon/round_robin/temperature_sweep_qubit_data'
         # 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis'
         data_path = f'/data/QICK_data/{run_name}'
-        plots_path = data_path
+        plots_path = "/data/QICK_data/run8/6transmon/analysis"
 
         # all of run 8 data
         top_folder_dates = [
@@ -127,7 +127,7 @@ for run_number in run_num_list:
         per_pt_errs_t1 = False
         run_name = 'run7/6transmon/round_robin_benchmark/AB_paper_data'
         data_path = f'/data/QICK_data/{run_name}'
-        plots_path = data_path
+        plots_path = "/data/QICK_data/run7/6transmon/analysis"
 
         # all dates:
         top_folder_dates = ["2025-07-19_08-34-39",
@@ -142,7 +142,7 @@ for run_number in run_num_list:
         run_name = 'run6/6transmon'
         data_path = f'/data/QICK_data/{run_name}'
         # f'/exp/cosmiq/data/QUIET/QICK_data/{run_name}' # on CEPH
-        plots_path = f"{data_path}/ge_round_robin_presciencerun_data/T1_analysis/RR_plots"
+        plots_path = "/data/QICK_data/run6/6transmon/analysis"
 
         # all pre-science run data (AB paper data):
         top_folder_dates = [
@@ -234,7 +234,7 @@ for run_number in run_num_list:
         per_pt_errs_t1 = False
         run_name = 'run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20'
         data_path = f'/data/QICK_data/{run_name}'
-        plots_path = os.path.join(data_path, "benchmark_analysis_plots", f"qspec_ge")
+        plots_path = "/data/QICK_data/run5/6transmon/analysis"
 
         # all dates:
         top_folder_dates = [ # Condensing started 12/8/2024
@@ -255,7 +255,7 @@ for run_number in run_num_list:
         per_pt_errs_t1 = False
         run_name = 'run4/6transmon/Official_run4_RR_Data_which_started_Nov21'
         data_path = f'/data/QICK_data/{run_name}'
-        plots_path = data_path
+        plots_path = "/data/QICK_data/run4/6transmon/analysis"
 
         # all dates:
         top_folder_dates = [

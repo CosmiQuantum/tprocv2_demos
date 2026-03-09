@@ -341,8 +341,8 @@ class T1VsTime:
                                 print("The value is negative, continuing...")
                                 continue
 
-                            if T1_est > 1000:
-                                print("The value is above 1000 us, this is a bad fit, continuing...")
+                            if T1_est > 600:
+                                print("The value is above 600 us, this is a bad fit, continuing...")
                                 continue
 
                             # To look at T1 plots of data that made it through:
