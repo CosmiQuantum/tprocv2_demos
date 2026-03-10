@@ -285,19 +285,19 @@ for run_number in run_num_list:
     #                               fit_saved,signal, run_name)
     # date_times_pi_amps, pi_amps = pi_amps_vs_time.run(plot_depths=False)
 
-    t1_vs_time = T1VsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-                     signal, run_name, FRIDGE, run_number, per_pt_errs = per_pt_errs_t1)
+    # t1_vs_time = T1VsTime(plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
+    #                  signal, run_name, FRIDGE, run_number, per_pt_errs = per_pt_errs_t1)
+    #
+    # if per_pt_errs_t1 and process_shots_t1ge: # this will only work if process_shots_t1ge is set to True too
+    #     date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge, outerFolder_save_plots = plots_path)
+    # else:
+    #     date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge')
 
-    if per_pt_errs_t1 and process_shots_t1ge: # this will only work if process_shots_t1ge is set to True too
-        date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge, outerFolder_save_plots = plots_path)
-    else:
-        date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge', outerFolder_save_plots = plots_path)
-
-    # t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+    # t2r_vs_time = T2rVsTime(plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
     #                         fit_saved, signal, run_name, FRIDGE)
     # date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True)
     #
-    t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+    t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
                             fit_saved, signal, run_name, FRIDGE)
     date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
 
@@ -398,10 +398,10 @@ for run_number in run_num_list:
 #                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
 # qfreq_distribution_plots.run(q_freqs, qspec_fit_err)
 # ############################################## 09: T1 hist/cumul/err Plots #############################################
-t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, data_path, plots_path, run_name, run_notes, run_number, fridge=FRIDGE)
-dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", process_shots = process_shots_t1ge)
-t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
+# t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, run_notes, run_number, fridge=FRIDGE)
+# dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", process_shots = process_shots_t1ge)
+# t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
 
 # # # # ############################################## 10: T2R hist/cumul/err Plots ############################################
 # t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
@@ -557,14 +557,14 @@ t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_er
 # boxwhisker.plot_three_metrics_by_freq_comp_run_x_break(means, t1_vals, t2r_vals, t2e_vals,t1_vals_r2, t2r_vals_r2, t2e_vals_r2, plot_outliers=False)
 
 #------------------------ New way -------------------------------------------
-# boxwhisker_t1t2_per_qubit_vs_run(
-#     run_num_list,
-#     t1_vals_by_run=t1_vals_by_run,
-#     t2r_vals_by_run=t2r_vals_by_run,
-#     t2e_vals_by_run=t2e_vals_by_run,
-#     do_T1=True, do_T2R=False, do_T2E=False,
-#     mode="separate"
-# )
+boxwhisker_t1t2_per_qubit_vs_run(
+    run_num_list,
+    t1_vals_by_run=t1_vals_by_run,
+    t2r_vals_by_run=t2r_vals_by_run,
+    t2e_vals_by_run=t2e_vals_by_run,
+    do_T1=False, do_T2R=False, do_T2E=True,
+    mode="separate"
+)
 # # ################################## 18: Allan Deviation/ Welch Spectral Density #########################################
 # stats = AllanWelchStats(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name)

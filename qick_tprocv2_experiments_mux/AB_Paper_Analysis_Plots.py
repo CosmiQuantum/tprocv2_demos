@@ -395,8 +395,8 @@ def boxwhisker_t1t2_per_qubit_vs_run(
     do_T2R=True,
     do_T2E=True,
     n_qubits=6,
-    ylims=(0, 120),
-    yticks=np.arange(0, 121, 20),
+    ylims=(0, 160),
+    yticks=np.arange(0, 161, 20),
     showfliers=True,
     whis=1.5,
     mode="together",          # "together" or "separate"

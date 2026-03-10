@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import sys
+
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
@@ -24,9 +25,11 @@ from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
 
 class T2eVsTime:
-    def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+    def __init__(self, outerFolder_save_plots, run_number, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
                  signal, run_name, fridge):
+        self.outerFolder_save_plots = outerFolder_save_plots
         self.save_figs = save_figs
+        self.run_number = run_number
         self.fit_saved = fit_saved
         self.signal = signal
         self.figure_quality = figure_quality
@@ -287,10 +290,10 @@ class T2eVsTime:
 
                         if len(I) > 0:
                             T2E_class_instance = T2EMeasurement(q_key, self.number_of_qubits,
-                                                                outerFolder_save_plots, round_num, self.signal,
+                                                                self.outerFolder_save_plots, round_num, self.signal,
                                                                 self.save_figs, fit_data=True)
                             try:
-                                fitted, t2e_est, t2e_err, plot_sig, out = T2E_class_instance.t2_fit_iminuit(delay_times,I, Q)
+                                fitted, t2e_est, t2e_err, plot_sig, out = T2E_class_instance.t2_fit_iminuit(delay_times,I, Q, make_plots = False)
                             except Exception as e:
                                 print('Fit didnt work due to error: ', e)
                                 continue
@@ -341,7 +344,8 @@ class T2eVsTime:
                             if not keep_ramsey:
                                 print(f"Rejected by exponential BIC test: ΔBIC = {delta_bic_exp:.2f}")
                                 continue
-                            # ---------------------------------------------------------------
+
+                            # ---------------------- Other cuts ----------------------------
                             if t2e_est < 0:
                                 print("The value is negative, continuing...")
                                 continue
@@ -350,6 +354,20 @@ class T2eVsTime:
                                 if t2e_est > 2 * max_t1:
                                     print(f"The value is above 2*{max_t1} us, this is a bad fit, continuing...")
                                     continue
+
+                            # -------------------- Root Mean Square Error cut ---------------------
+                            # You want to keep data below the threshold. We expect good fits to have small residuals.
+                            # small NRMSE = good fit = keep, and large NRMSE = poor fit = reject
+
+                            nrmse_threshold = 0.14 # tested for QUIET runs 4-8 and it worked well for all!
+
+                            if out["nrmse"] > nrmse_threshold:
+                                print(f"Rejected due to NRMSE cut. Value was above threshold of {nrmse_threshold}")
+                                continue
+
+                            # If you want to plot the data that made it through, uncomment this:
+                            # T2E_class_instance.t2_fit_iminuit(delay_times, I, Q, make_plots = True)
+
                             t2e_vals[q_key].extend([t2e_est])
                             t2e_errs[q_key].extend([t2e_err])
                             date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])

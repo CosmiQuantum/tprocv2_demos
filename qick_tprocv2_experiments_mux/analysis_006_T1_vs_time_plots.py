@@ -29,8 +29,9 @@ from matplotlib.ticker import StrMethodFormatter
 import numpy as np
 
 class T1VsTime:
-    def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+    def __init__(self, outerFolder_save_plots, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
                  signal, run_name, fridge, run_number, exp_name = 'ge', per_pt_errs = False):
+        self.outerFolder_save_plots = outerFolder_save_plots
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.run_number = run_number
@@ -207,7 +208,7 @@ class T1VsTime:
 
         return flat_obj_val, d_fit
 
-    def run(self, return_errs = False, exp_extension='', process_shots = False, use_png_timestamps = False, outerFolder_save_plots = ""):
+    def run(self, return_errs = False, exp_extension='', process_shots = False, use_png_timestamps = False):
         import datetime
 
         if use_png_timestamps:
@@ -385,7 +386,7 @@ class T1VsTime:
                         #     exp_config =None
 
                         if len(I) > 0:
-                            T1_class_instance = T1Measurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
+                            T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                               fit_data=True)
                             #T1_spec_cfg = exp_config['T1_ge']
                             q1_fit_exponential, T1_err, T1_est, fit_info = T1_class_instance.t1_fit_iminuit(I, Q, delay_times)
@@ -427,17 +428,12 @@ class T1VsTime:
                                 continue
                             #---------------------------------------------------------------------------------------------
 
-                            # # To look at T1 plots of data that made it through:
+                            # # To look at T1 plots of data that made it through you can uncomment this:
                             # T1_class_instance.plot_results(I, Q, delay_times, folder_date, iminuit_fit_instead=True)
 
                             # if T1_err >= 0.8 * T1_est:
                             #     print(
                             #         f"Skipping T1 = {T1_est:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
-                            #     continue
-
-                            # if (self.run_number == 8) and (q_key != 5) and (T1_est <= 22):  # # QUIET run 8 patch while fitting is fixed
-                            #     print(
-                            #         f"Skipping T1 = {T1_est:.3f} µs for Q{q_key + 1} because it is presumed to be a bad fit (Run 8 patch).")
                             #     continue
 
                             t1_vals[q_key].extend([T1_est])

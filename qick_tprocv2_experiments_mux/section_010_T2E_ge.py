@@ -237,7 +237,7 @@ class T2EMeasurement:
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2E configuration: ', self.config)
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} T2E configuration: {self.config}')
 
-    def t2_fit_iminuit(self, x_data, I, Q, verbose=False, guess=None, plot=False):
+    def t2_fit_iminuit(self, x_data, I, Q, verbose=False, guess=None, make_plots = False):
         """
         Iminuit-based version of T2 fit function (keeps the same logic + parameter names).
         """
@@ -380,6 +380,14 @@ class T2EMeasurement:
             perr = np.sqrt(np.diag(pcov))
             # ------------------------------------------------------------------------------------------------
 
+        y_fit = fit_type(x, popt) * y_normal
+
+        # Normalized residual root mean square error value (NRMSE) for quality cut
+        residuals = y_data - y_fit
+        rmse = np.sqrt(np.mean(residuals ** 2))
+        signal_range = np.ptp(y_data)  # max(y) - min(y)
+        nrmse = rmse / signal_range if signal_range > 0 else np.nan
+
         # Output dictionary (same keys/units logic as other code)
         out = {
             "fit_func": lambda x_var: fit_type((x_var / x_normal), popt) * y_normal,
@@ -395,6 +403,8 @@ class T2EMeasurement:
                 final_offset * popt[4] * y_normal,
                 perr[4] * final_offset * y_normal,
             ],
+            "residuals": residuals,
+            "nrmse": nrmse
         }
 
         if verbose:
@@ -408,24 +418,14 @@ class T2EMeasurement:
                 f" final_offset = {out['final_offset'][0]:.2f} +/- {out['final_offset'][1]:.3f} a.u."
             )
 
-        # Plot
-        y_fit = fit_type(x, popt) * y_normal
-        if plot:
-            plt.plot(x_data, y_fit)
-            plt.plot(
-                x_data,
-                y_data,
-                ".",
-                label=(
-                    f"T2  = {out['T2'][0]:.1f} +/- {out['T2'][1]:.1f}ns \n"
-                    f"f = {out['f'][0] * 1000:.3f} +/- {out['f'][1] * 1000:.3f} MHz"
-                ),
-            )
-            plt.legend(loc="upper right")
+        t2e_est = out["T2"][0]  # ns
+        t2e_err = out["T2"][1]  # ns
 
-        t2r_est = out["T2"][0]  # ns
-        t2r_err = out["T2"][1]  # ns
-        return y_fit, t2r_est, t2r_err, plot_sig, out
+        # Plot
+        if make_plots:
+            self.plot_results(I, Q, x_data, y_fit, t2e_est, t2e_err, plot_sig, config=None)
+
+        return y_fit, t2e_est, t2e_err, plot_sig, out
 
     def t2_fit(self, x_data, I, Q, verbose = False, guess=None, plot=False):
         #fitting code adapted from https://github.com/qua-platform/py-qua-tools/blob/37c741ade5a8f91888419c6fd23fd34e14372b06/qualang_tools/plot/fitting.py
@@ -649,7 +649,7 @@ class T2EMeasurement:
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-    def plot_results(self, I, Q, delay_times, now, fit, t2e_est, t2e_err, plot_sig, config = None, fig_quality = 100):
+    def plot_results(self, I, Q, delay_times, fit, t2e_est, t2e_err, plot_sig, config = None, fig_quality = 100):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
@@ -665,13 +665,10 @@ class T2EMeasurement:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"Q{self.QubitIndex + 1}" + f" T2E={t2e_est:.2f} us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         f"Q{self.QubitIndex + 1}" + f" T2E={t2e_est:.2f} +/- {t2e_err:.2f} us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
                          fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
-                fig.text(plot_middle, 0.98,
-                         f"T2 Q{self.QubitIndex + 1}, T2E %.2f us" % float(
-                             t2e_est) + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
-                         fontsize=24, ha='center', va='top')
+                fig.text(plot_middle, 0.98, f"Q{self.QubitIndex + 1}" + f" T2E={t2e_est:.2f} +/- {t2e_err:.2f} us", fontsize=24, ha='center', va='top')
 
         else:
             # Add title, centered on the plot area

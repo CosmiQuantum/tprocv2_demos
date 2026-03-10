@@ -229,7 +229,7 @@ class T2RMeasurement:
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration: ', self.config)
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration:{self.config}')
 
-    def t2_fit_iminuit(self, x_data, I, Q, verbose=False, guess=None, plot=False):
+    def t2_fit_iminuit(self, x_data, I, Q, verbose=False, guess=None, make_plots=False):
         """
         Iminuit-based version of T2 fit function (keeps the same logic + parameter names).
         """
@@ -372,6 +372,14 @@ class T2RMeasurement:
             perr = np.sqrt(np.diag(pcov))
             # ------------------------------------------------------------------------------------------------
 
+        y_fit = fit_type(x, popt) * y_normal
+
+        # Normalized residual root mean square error value (NRMSE) for quality cut
+        residuals = y_data - y_fit
+        rmse = np.sqrt(np.mean(residuals ** 2))
+        signal_range = np.ptp(y_data)  # max(y) - min(y)
+        nrmse = rmse / signal_range if signal_range > 0 else np.nan
+
         # Output dictionary (same keys/units logic as other code)
         out = {
             "fit_func": lambda x_var: fit_type((x_var / x_normal), popt) * y_normal,
@@ -387,6 +395,8 @@ class T2RMeasurement:
                 final_offset * popt[4] * y_normal,
                 perr[4] * final_offset * y_normal,
             ],
+            "residuals": residuals,
+            "nrmse": nrmse
         }
 
         if verbose:
@@ -401,19 +411,42 @@ class T2RMeasurement:
             )
 
         # Plot
-        y_fit = fit_type(x, popt) * y_normal
-        if plot:
-            plt.plot(x_data, y_fit)
-            plt.plot(
+        if make_plots:
+            fig, ax = plt.subplots()
+
+            ax.plot(x_data, y_fit, label="Fit")
+            ax.plot(
                 x_data,
                 y_data,
                 ".",
                 label=(
-                    f"T2  = {out['T2'][0]:.1f} +/- {out['T2'][1]:.1f}ns \n"
+                    f"T2 = {out['T2'][0]:.1f} +/- {out['T2'][1]:.1f} ns\n"
                     f"f = {out['f'][0] * 1000:.3f} +/- {out['f'][1] * 1000:.3f} MHz"
                 ),
             )
-            plt.legend(loc="upper right")
+            ax.legend(loc="upper right")
+            ax.set_xlabel("Delay time")
+            ax.set_ylabel(plot_sig)
+            fig.tight_layout()
+
+            if self.save_figs:
+                outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
+                self.create_folder_if_not_exists(outerFolder_expt)
+
+                now = datetime.datetime.now()
+                formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+
+                file_name = os.path.join(
+                    outerFolder_expt,
+                    f"R_{self.round_num}_"
+                    f"{formatted_datetime}_"
+                    f"{self.expt_name}_"
+                    f"{plot_sig}.png"
+                )
+
+                fig.savefig(file_name, bbox_inches="tight")
+
+            plt.close(fig)
 
         t2r_est = out["T2"][0]  # ns
         t2r_err = out["T2"][1]  # ns
