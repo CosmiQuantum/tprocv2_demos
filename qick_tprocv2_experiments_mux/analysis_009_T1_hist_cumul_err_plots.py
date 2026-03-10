@@ -10,8 +10,11 @@ from section_008_save_data_to_h5 import Data_H5
 from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
 import glob
+from pathlib import Path
 from collections import OrderedDict
+from match_h5files_to_pngs_get_timestamps import load_h5_png_map, create_h5_png_map
 import re
+from iminuit import Minuit
 import datetime
 import ast
 import os
@@ -110,60 +113,154 @@ class T1HistCumulErrPlots:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run(self,exp_extension='', process_shots = False):
-        # ----------Load/get data from T1------------------------
+    def fit_flat_model(self, t, signal, sigma=None):
+        """
+        Fits the flat model y(t) = d to the data.
+
+        Automatically handles weighted (chi^2) or unweighted (RSS) cases.
+
+        Parameters
+        ----------
+        t : array-like
+            Time values (not used directly but kept for symmetry with other fits)
+        signal : array-like
+            Measured signal values
+        sigma : array-like or None
+            Uncertainties. If provided, a weighted chi^2 fit is used.
+
+        Returns
+        -------
+        flat_obj_val : float
+            Minimization objective value (chi^2 if weighted, RSS if unweighted)
+
+        d_fit : float
+            Best-fit constant value
+        """
+
+        t = np.asarray(t, float)
+        signal = np.asarray(signal, float)
+
+        if sigma is not None:
+            sigma = np.asarray(sigma, float)
+
+            def flat_obj(d):
+                model = np.full_like(signal, d)
+                r = (signal - model) / sigma
+                return np.sum(r * r)
+
+        else:
+
+            def flat_obj(d):
+                model = np.full_like(signal, d)
+                r = signal - model
+                return np.sum(r * r)
+
+        m = Minuit(flat_obj, d=np.median(signal))
+        m.errordef = Minuit.LEAST_SQUARES
+        m.migrad()
+
+        flat_obj_val = float(m.fval)
+        d_fit = float(m.values["d"])
+
+        return flat_obj_val, d_fit
+
+    def run(self, return_errs=False, exp_extension='', process_shots=False, use_png_timestamps=False,
+            outerFolder_save_plots=""):
+        import datetime
+
+        if use_png_timestamps:
+            # This is a setting used to extract the timestamps in the png file names instead of using the ones
+            # stored inside the h5 files (which mark the time that the file was saved, not when the meas was done).
+            # --- loader for the h5–png map -----------------
+            map_loader = load_h5_png_map()
+
+        # ----------Load/get data------------------------
         t1_vals = {i: [] for i in range(self.number_of_qubits)}
         t1_errs = {i: [] for i in range(self.number_of_qubits)}
-        I_per_pt_errs = {i: [] for i in range(self.number_of_qubits)}  # to store the errors of each point in the I-T1 curve
-        Q_per_pt_errs = {i: [] for i in range(self.number_of_qubits)}  # to store the errors of each point in the Q-T1 curve
+        I_per_pt_errs = {i: [] for i in
+                         range(self.number_of_qubits)}  # to store the errors of each point in the I-T1 curve
+        Q_per_pt_errs = {i: [] for i in
+                         range(self.number_of_qubits)}  # to store the errors of each point in the Q-T1 curve
 
-        qubit_for_this_index = []
         rounds = []
         reps = []
         file_names = []
-        dates = {i: [] for i in range(self.number_of_qubits)}
-
+        date_times = {i: [] for i in range(self.number_of_qubits)}
+        mean_values = {}
+        # print(self.top_folder_dates)
+        timestamp_dir = "" ""
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
-                # Build full paths using the provided base_path and folder_date
-                outerFolder = os.path.join(self.base_data_path, folder_date, "study_data")
-                self.create_folder_if_not_exists(outerFolder)
-
-                outerFolder_save_plots = os.path.join(self.base_data_path, "benchmark_analysis_plots", f"{folder_date}_plots")
-                self.create_folder_if_not_exists(outerFolder_save_plots)
+                timestamp_dir = f"/data/QICK_data/{self.run_name}/{folder_date}"  # qubituser daq01
+                # fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\{self.run_name}\{folder_date}"
+                # f"/data/QICK_data/{self.run_name}/{folder_date}" # qubituser daq01
+                outerFolder = timestamp_dir + "/study_data/"
             elif self.fridge.upper() == 'NEXUS':
                 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
-                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
             else:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
+            if use_png_timestamps:
+                # --- load the mapping HDF5 for this timestamp_dir, if it exists ---
+                map_path = os.path.join(timestamp_dir, "documentation/h5_png_timestamp_map.h5")
+                if os.path.exists(map_path):
+                    mapping_data = map_loader.load_map(map_path)
+
+                else:
+                    print(f"[INFO] Mapping file not found at {map_path}.")
+                    print(f"[INFO] Attempting to create a new mapping...")
+
+                    # Instantiate mapping creator
+                    mapper = create_h5_png_map()
+
+                    try:
+                        # Run mapping creation for this timestamp_dir
+                        records = mapper.collect_matches(Path(timestamp_dir))
+
+                        # Save mapping to the expected path
+                        mapper.save_to_h5(Path(map_path), Path(timestamp_dir), records)
+
+                        # Load the newly created mapping
+                        mapping_data = map_loader.load_map(map_path)
+
+                        print(f"[INFO] Successfully created mapping at {map_path}.")
+
+                    except Exception as e:
+                        print(f"[WARN] Failed to create mapping: {e}")
+                        # print("[WARN] Falling back to HDF5 timestamps instead.")
+                        mapping_data = None
+
+            # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
             if '_' in exp_extension:
                 outerFolder_expt = outerFolder + f"/Data_h5/t1{exp_extension}/"
             else:
                 outerFolder_expt = outerFolder + "/Data_h5/t1_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
-            soc, soccfg = makeProxy()
+            # #print(outerFolder_expt)
+            # soc, soccfg = makeProxy()
+
             for h5_file in h5_files:
-                print(h5_file)
                 save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
                 H5_class_instance = Data_H5(h5_file)
-                load_data = H5_class_instance.load_from_h5(data_type=  f't1{exp_extension}', save_r = int(save_round))
-
+                load_data = H5_class_instance.load_from_h5(data_type=f't1{exp_extension}', save_r=int(save_round))
+                # if '01-27' in outerFolder_expt:
+                #     print(load_data)
                 # Define specific days to exclude
                 exclude_dates = {
-                    datetime.date(2025, 1, 26), #power outage
-                    datetime.date(2025, 1, 29), #HEMT Issues
-                    datetime.date(2025, 1, 30), #HEMT Issues
-                    datetime.date(2025, 1, 31)  #Optimization Issues and non RR work in progress
+                    datetime.date(2025, 1, 26),  # power outage
+                    datetime.date(2025, 1, 29),  # HEMT Issues
+                    datetime.date(2025, 1, 30),  # HEMT Issues
+                    datetime.date(2025, 1, 31)  # Optimization Issues and non RR work in progress
                 }
 
                 for q_key in load_data[f't1{exp_extension}']:
                     for dataset in range(len(load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0])):
                         if 'nan' in str(load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
                             continue
-                        # T1_est_from_h5s= load_data['T1'][q_key].get('T1', [])[0][dataset]
-                        # errors_from_h5s = load_data['T1'][q_key].get('Errors', [])[0][dataset]
-                        date= datetime.datetime.fromtimestamp(load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0][dataset])
+                        # T1 = load_data['T1'][q_key].get('T1', [])[0][dataset]
+                        # errors = load_data['T1'][q_key].get('Errors', [])[0][dataset]
+                        date = datetime.datetime.fromtimestamp(
+                            load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0][dataset])
 
                         # cutoff when we switched to saving both averaged arrays *and* shots under Ishots/Qshots
                         cutoff_dt = datetime.datetime(2025, 10, 24, 13, 58, 37)
@@ -172,9 +269,9 @@ class T1HistCumulErrPlots:
                         if date.date() in exclude_dates:
                             print(f"Skipping data for {date} (excluded date)")
                             continue
-                        
+
                         # run 8 patch to include a dataset with no saved shots
-                        if folder_date == "2025-10-24_01-41-30": # don't change for QUIET analysis, make more general in the future though
+                        if folder_date == "2025-10-24_01-41-30":  # don't change for QUIET analysis, make more general in the future though
                             process_shots = False
 
                         # --- make per-shot data compatible with per-delay fitting --------------------------------
@@ -183,30 +280,28 @@ class T1HistCumulErrPlots:
                             print("Processing shots...")
 
                             # --- load cfg strings from H5 ---
-                            exp_config_str = load_data['t1_ge'][q_key]['Exp Config'][0][dataset].decode()
-                            syst_config_str = load_data['t1_ge'][q_key]['Syst Config'][0][dataset].decode()
+                            exp_config_str = load_data[f't1{exp_extension}'][q_key]['Exp Config'][0][dataset].decode()
+                            syst_config_str = load_data[f't1{exp_extension}'][q_key]['Syst Config'][0][dataset].decode()
 
                             # --- choose which datasets hold the *shots* based on date ---
                             if date < cutoff_dt:
                                 # before 2025-10-24_13-58-37: shots were saved under 'I' and 'Q'
                                 I_key, Q_key = 'I', 'Q'
                             else:
-                                # on/after the cutoff: shots were saved under 'Ishots' and 'Qshots', while averaged Qick IQ arrays were stored in 'I' and 'Q'
+                                # on/after the cutoff: shots were saved under 'Ishots' and 'Qshots'
                                 I_key, Q_key = 'Ishots', 'Qshots'
 
-                            grp = load_data[f't1{exp_extension}'][q_key]
-
-                            if I_key not in grp or Q_key not in grp:
-                                raise KeyError(
-                                    f"{q_key}: HDF5 missing '{I_key}'/'{Q_key}'. Found keys: {list(grp.keys())}. Date: {date}")
-
                             # --- raw shots from H5 ---
-                            Ishots_raw = self.process_h5_data(load_data['t1_ge'][q_key][I_key][0][dataset].decode())
-                            Qshots_raw = self.process_h5_data(load_data['t1_ge'][q_key][Q_key][0][dataset].decode())
+                            Ishots_raw = self.process_h5_data(
+                                load_data[f't1{exp_extension}'][q_key][I_key][0][dataset].decode())
+                            Qshots_raw = self.process_h5_data(
+                                load_data[f't1{exp_extension}'][q_key][Q_key][0][dataset].decode())
 
                             # --- path to the soccfg dump (txt file made with save_run_soccfg_params.py) ---
                             if self.run_number == 8:  # this does work
                                 soccfg_dump_path = "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
+                                # r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
+                                # "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
                             elif self.run_number == 6:  # this doesn't work yet (shots need to be processed diff for run 6) but the skeleton is set up
                                 soccfg_dump_path = "/data/QICK_data/run6/6transmon/loud2_soccfg_params/soccfg_full_dump_2025-11-04_16-30-54_firmware_during_run6.txt"
 
@@ -222,91 +317,148 @@ class T1HistCumulErrPlots:
                             syst_cfg = replica._safe_eval_cfg(syst_config_str)
 
                             # Pull steps/reps from Syst Config first; fall back to Exp Config only if missing. Sys config is the updated one in each measurement during RR
-                            steps = int(syst_cfg.get('steps', exp_cfg['T1_ge']['steps']))
-                            reps = int(syst_cfg.get('reps', exp_cfg['T1_ge']['reps']))
-
-                            # rounds not needed here; T1 H5 holds one round
+                            steps = int(syst_cfg.get('steps', exp_cfg[f'T1{exp_extension}']['steps']))
+                            reps = int(syst_cfg.get('reps', exp_cfg[f'T1{exp_extension}']['reps']))
+                            # rounds not needed here; H5 holds one round
 
                             # --- coerce raw shots to (rounds, N, reps) before averaging ---
                             Ishots = replica.coerce_to_rounds_N_reps(Ishots_raw, steps, reps)
                             Qshots = replica.coerce_to_rounds_N_reps(Qshots_raw, steps, reps)
 
-                            # ------------------ NEW: per-point errors from shots ------------------
-                            # Assume shape (rounds, steps, reps) and that each H5 holds one round
-                            I_round0 = Ishots[0]  # shape: (steps, reps)
-                            Q_round0 = Qshots[0]  # shape: (steps, reps)
-
-                            # standard error of the mean over reps for each step
-                            N_reps = I_round0.shape[-1]
-
-                            if N_reps > 1:
-                                I_errs = np.std(I_round0, axis=-1, ddof=1) / np.sqrt(N_reps)  # shape: (steps,)
-                                Q_errs = np.std(Q_round0, axis=-1, ddof=1) / np.sqrt(N_reps)
-                            else:
-                                # only 1 shot -> then no spread; define errors as 0
-                                I_errs = np.zeros(steps, dtype=float)
-                                Q_errs = np.zeros(steps, dtype=float)
-                            # ---------------------------------------------------------------------
-
                             # --- acquire (software average over a single round) ---
-                            I, Q, I_errs, Q_errs = replica.acquire_offline(Ishots, Qshots, soft_avgs=1, per_pt_errs = self.per_pt_errs)
+                            I, Q, I_errs, Q_errs = replica.acquire_offline(Ishots, Qshots, soft_avgs=1,
+                                                                           per_pt_errs=self.per_pt_errs)
                         # -----------------------------------------------------------------------------------------------
                         else:
-                            I = self.process_h5_data(load_data['t1_ge'][q_key].get('I', [])[0][dataset].decode())
-                            Q = self.process_h5_data(load_data['t1_ge'][q_key].get('Q', [])[0][dataset].decode())
+                            I = self.process_h5_data(
+                                load_data[f't1{exp_extension}'][q_key].get('I', [])[0][dataset].decode())
+                            Q = self.process_h5_data(
+                                load_data[f't1{exp_extension}'][q_key].get('Q', [])[0][dataset].decode())
+                            I_errs = None
+                            Q_errs = None
 
-                        delay_times = self.process_h5_data(load_data[f't1{exp_extension}'][q_key].get('Delay Times', [])[0][dataset].decode())
-                        #fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
+                        delay_times = self.process_h5_data(
+                            load_data[f't1{exp_extension}'][q_key].get('Delay Times', [])[0][dataset].decode())
+                        # fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
                         round_num = load_data[f't1{exp_extension}'][q_key].get('Round Num', [])[0][dataset]
-                        # batch_num = load_data[f't1{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
+
                         # try:
+                        #     batch_num = load_data[f't1{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
+                        #     syst_config = load_data[f't1{exp_extension}'][q_key].get('Syst Config', [])[0][dataset].decode()
                         #     exp_config = load_data[f't1{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
                         #     safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
                         #     exp_config = eval(exp_config, safe_globals)
                         # except:
                         #     exp_config =None
 
-                        if len(I)>0:
-                            T1_class_instance = T1Measurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal,
-                                                              self.save_figs, fit_data = True)
-                            #T1_spec_cfg = exp_config['T1_ge']
-                            try:
-                                q1_fit_exponential, T1_err, T1, plot_sig = T1_class_instance.t1_fit_iminuit(I, Q, delay_times)
-                            except Exception as e:
-                                print('Fit didnt work due to error: ', e)
-                                continue
-                            if T1 < 0:
+                        if len(I) > 0:
+                            T1_class_instance = T1Measurement(q_key, self.number_of_qubits, outerFolder_save_plots,
+                                                              round_num, self.signal, self.save_figs,
+                                                              fit_data=True)
+                            # T1_spec_cfg = exp_config['T1_ge']
+                            q1_fit_exponential, T1_err, T1_est, fit_info = T1_class_instance.t1_fit_iminuit(I, Q,
+                                                                                                            delay_times)
+                            if T1_est < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            if T1 > 500:
-                                print("The value is above 500 us, this is a bad fit, continuing...")
+
+                            if T1_est > 600:
+                                print("The value is above 600 us, this is a bad fit, continuing...")
                                 continue
-                            # if T1_err >= 0.8 * T1:
+
+                            # ------------------------ Quality cut: flat BIC vs exponential BIC test---------------------
+                            t = fit_info["t"]
+                            signal = fit_info["signal"]
+                            sigma = fit_info["sigma"]
+
+                            flat_obj_val, d_flat = self.fit_flat_model(t, signal, sigma)
+
+                            k_flat = 1
+                            n = len(t)
+
+                            # determine correct BIC formula
+                            if sigma is not None:
+                                # weighted case (objective = chi^2)
+                                bic_flat = flat_obj_val + k_flat * np.log(n)
+                            else:
+                                # unweighted case (objective = RSS)
+                                # Smaller RSS = better fit = smaller BIC for that model
+                                bic_flat = n * np.log(flat_obj_val / n) + k_flat * np.log(n)
+
+                            bic_exp = fit_info["bic_score"]
+
+                            # if BIC score is larger than zero -> exponential is better! (good T1 curve)
+                            # if BIC score is less than zero -> data looks flat
+                            delta_bic = bic_flat - bic_exp
+
+                            if delta_bic < 35:
+                                # I verified this BIC score for runs 4-8 and it worked well for ALL of them! No bad fits left.
+                                continue
+                            # ---------------------------------------------------------------------------------------------
+
+                            # # To look at T1 plots of data that made it through:
+                            # T1_class_instance.plot_results(I, Q, delay_times, folder_date, iminuit_fit_instead=True)
+
+                            # if T1_err >= 0.8 * T1_est:
                             #     print(
-                            #         f"Skipping T1 = {T1:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
+                            #         f"Skipping T1 = {T1_est:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
                             #     continue
 
-                            # if (self.run_number == 8) and (q_key != 5) and (T1 <= 22): # # QUIET run 8 patch while fitting is fixed
+                            # if (self.run_number == 8) and (q_key != 5) and (T1_est <= 22):  # # QUIET run 8 patch while fitting is fixed
                             #     print(
-                            #         f"Skipping T1 = {T1:.3f} µs for Q{q_key + 1} because it is presumed to be a bad fit (Run 8 patch).")
+                            #         f"Skipping T1 = {T1_est:.3f} µs for Q{q_key + 1} because it is presumed to be a bad fit (Run 8 patch).")
                             #     continue
 
-                            t1_vals[q_key].extend([T1])  # Store T1 values
-                            t1_errs[q_key].extend([T1_err])  # Store T1 error values
+                            t1_vals[q_key].extend([T1_est])
+                            t1_errs[q_key].extend([T1_err])
 
                             # --- store per-point errors too, only if we had process_shots ---
                             if process_shots:
                                 I_per_pt_errs[int(q_key)].append(I_errs)
                                 Q_per_pt_errs[int(q_key)].append(Q_errs)
 
-                            dates[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])  # Decode bytes to string
+                            if use_png_timestamps:
+                                # --- use PNG filename timestamp from mapping if available ------
+                                # the reason for this is bc the png timestamp is more accurate than the h5 file ones
+                                if mapping_data is not None:
+                                    # mapping uses experiment='t1_ge', qubit as 1-indexed
+                                    qubit_in_map = q_key + 1
+                                    subset = map_loader.filter_by(
+                                        mapping_data,
+                                        experiment=f"t1{exp_extension}",
+                                        qubit=qubit_in_map,
+                                        round=round_num)
 
-                            # You can also append qubit indices if needed
-                            qubit_for_this_index.extend([q_key])
+                                    if len(subset) > 0:
+                                        png_ts = subset[0]["png_timestamp"].decode()
+                                        try:
+                                            png_dt = datetime.datetime.strptime(png_ts, "%Y-%m-%d_%H-%M-%S")
+                                            date_str = png_dt.strftime("%Y-%m-%d %H:%M:%S")  # from png file
+                                        except Exception:
+                                            # in case of weird format, fall back
+                                            # date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
+                                            continue  # skip
+                                    else:
+                                        # no mapping match for this qubit/round, fall back
+                                        # date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
+                                        continue  # skip
+                                else:
+                                    # no mapping file for this timestamp_dir, fall back
+                                    # date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
+                                    continue  # skip
+                                date_times[q_key].append(date_str)
+
+                            else:
+                                date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])  # og way, from h5 file
+
                             del T1_class_instance
 
                 del H5_class_instance
-        return dates, t1_vals, t1_errs
+
+        if return_errs:
+           return date_times, t1_vals, t1_errs
+        else:
+            return date_times, t1_vals
 
     def plot(self, dates, t1_vals, t1_errs, show_legends,exp_extension=''):
         #---------------------------------plot-----------------------------------------------------
@@ -594,6 +746,7 @@ class OfflineAcquireReplica:
                 raise ValueError(f"3D shots second dim {n} != N {N}")
             if rr != reps:
                 print(f"[warn] 3D shots reps={rr} != cfg reps={reps}; using shots value.")
+                print("expt config params don't get updated during experiments, this is a known bug, only syst configs do.")
                 self._reps = rr
             if r != rounds:
                 print(f"[warn] 3D shots rounds={r} != cfg rounds={rounds}; using shots value.")

@@ -290,8 +290,7 @@ class T2eVsTime:
                                                                 outerFolder_save_plots, round_num, self.signal,
                                                                 self.save_figs, fit_data=True)
                             try:
-                                fitted, t2e_est, t2e_err, plot_sig, out = T2E_class_instance.t2_fit_iminuit(delay_times,
-                                                                                                            I, Q)
+                                fitted, t2e_est, t2e_err, plot_sig, out = T2E_class_instance.t2_fit_iminuit(delay_times,I, Q)
                             except Exception as e:
                                 print('Fit didnt work due to error: ', e)
                                 continue

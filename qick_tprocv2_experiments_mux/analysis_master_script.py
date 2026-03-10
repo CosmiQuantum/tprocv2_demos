@@ -297,20 +297,20 @@ for run_number in run_num_list:
     #                         fit_saved, signal, run_name, FRIDGE)
     # date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True)
     #
-    # t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
-    #                         fit_saved, signal, run_name, FRIDGE)
-    # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
+    t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+                            fit_saved, signal, run_name, FRIDGE)
+    date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True)
 
     # ---------------- Store results ----------------
     # stores data like t1_vals_by_run[6][3], where 6=run number and 3=qubit index (0 based)
-    t1_vals_by_run[run_number] = t1_vals
-    t1_errs_by_run[run_number] = t1_fit_err
+    # t1_vals_by_run[run_number] = t1_vals
+    # t1_errs_by_run[run_number] = t1_fit_err
 
     # t2r_vals_by_run[run_number] = t2r_vals
     # t2r_errs_by_run[run_number] = t2r_fit_err
 
-    # t2e_vals_by_run[run_number] = t2e_vals
-    # t2e_errs_by_run[run_number] = t2e_fit_err
+    t2e_vals_by_run[run_number] = t2e_vals
+    t2e_errs_by_run[run_number] = t2e_fit_err
 
 ######################################## Print QICK soccfg live ###########################################
 # If you want to print out the soccfg QICK output, uncomment this:
@@ -398,10 +398,10 @@ for run_number in run_num_list:
 #                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
 # qfreq_distribution_plots.run(q_freqs, qspec_fit_err)
 # ############################################## 09: T1 hist/cumul/err Plots #############################################
-# t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            #save_figs, fit_saved, signal, data_path, plots_path, run_name, run_notes, run_number, fridge=FRIDGE)
-# dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", process_shots = process_shots_t1ge)
-# t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
+t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+                                            save_figs, fit_saved, signal, data_path, plots_path, run_name, run_notes, run_number, fridge=FRIDGE)
+dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", process_shots = process_shots_t1ge)
+t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
 
 # # # # ############################################## 10: T2R hist/cumul/err Plots ############################################
 # t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
@@ -557,14 +557,14 @@ for run_number in run_num_list:
 # boxwhisker.plot_three_metrics_by_freq_comp_run_x_break(means, t1_vals, t2r_vals, t2e_vals,t1_vals_r2, t2r_vals_r2, t2e_vals_r2, plot_outliers=False)
 
 #------------------------ New way -------------------------------------------
-boxwhisker_t1t2_per_qubit_vs_run(
-    run_num_list,
-    t1_vals_by_run=t1_vals_by_run,
-    t2r_vals_by_run=t2r_vals_by_run,
-    t2e_vals_by_run=t2e_vals_by_run,
-    do_T1=True, do_T2R=False, do_T2E=False,
-    mode="separate"
-)
+# boxwhisker_t1t2_per_qubit_vs_run(
+#     run_num_list,
+#     t1_vals_by_run=t1_vals_by_run,
+#     t2r_vals_by_run=t2r_vals_by_run,
+#     t2e_vals_by_run=t2e_vals_by_run,
+#     do_T1=True, do_T2R=False, do_T2E=False,
+#     mode="separate"
+# )
 # # ################################## 18: Allan Deviation/ Welch Spectral Density #########################################
 # stats = AllanWelchStats(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name)
