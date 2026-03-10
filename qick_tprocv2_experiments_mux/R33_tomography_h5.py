@@ -15,6 +15,7 @@ import threading
 import queue
 
 from NetDrivers import E36300
+from NetDrivers import Keithley2400
 
 class VoltageLogger(threading.Thread):
     def __init__(self, log_func):
@@ -230,18 +231,29 @@ class TomographyMeasurement:
             print(f"[Error] Round {round_num} - exception during voltage readback: {e}")
             return -1 #other exception
 
+    def init_bias_source_Keithley(self):
+        bias_source = Keithley2400(server_ip = "192.168.0.45", server_port = 4001)
+        bias_source.clearErrors()
+        bias_source.reset()
+        bias_source.initializeVoltageSource(vrange=0.2, current_limit=2e-2, enable_output=False)
+        return bias_source
+
     def bias_sweep(self, soccfg, soc, vsweep, rounds, plot_data=False, save_data=True):
-        Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44',
-                      '192.168.0.41']  # IP address of bias PS (qubits 1-3 are the same PS)
-        Bias_ch = [1, 2, 3, 1]  # Channel number of qubit 1-4 on associated PS
-        qubit_index = int(self.QubitIndex)
+        # Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44',
+        #               '192.168.0.41']  # IP address of bias PS (qubits 1-3 are the same PS)
+        # Bias_ch = [1, 2, 3, 1]  # Channel number of qubit 1-4 on associated PS
+        # qubit_index = int(self.QubitIndex)
+        #
+        # voltage_logger = VoltageLogger(self.log_voltage_error)
+        #
+        # BiasPS = E36300(Bias_PS_ip[qubit_index], server_port=5025)
+        #
+        # set_v = BiasPS.setVoltage(0, Bias_ch[qubit_index])
+        # BiasPS.enable(Bias_ch[qubit_index])
 
-        voltage_logger = VoltageLogger(self.log_voltage_error)
-
-        BiasPS = E36300(Bias_PS_ip[qubit_index], server_port=5025)
-
-        set_v = BiasPS.setVoltage(0, Bias_ch[qubit_index])
-        BiasPS.enable(Bias_ch[qubit_index])
+        bias_source = self.init_bias_source_Keithley()
+        bias_source.setSourceVoltage(0)
+        bias_source.setOutputState(enable=True)
 
         point_duration = 3.0 #s
 
@@ -269,19 +281,32 @@ class TomographyMeasurement:
 
                 result_queue = queue.Queue()
 
-                try:
-                    set_v = BiasPS.setVoltage(v, Bias_ch[qubit_index])
-                    #time.sleep(1)
-                    voltage_logger.submit(BiasPS, v, set_v, round_num, formatted_datetime, result_queue)
+                # try:
+                #     set_v = BiasPS.setVoltage(v, Bias_ch[qubit_index])
+                #     #time.sleep(1)
+                #     voltage_logger.submit(BiasPS, v, set_v, round_num, formatted_datetime, result_queue)
+                #
+                #     # flag = -3
+                #     # flag = self.log_voltage_error(BiasPS, v, set_v, round_num, formatted_datetime)
+                # except Exception as e:
+                #     with open(self.error_log, "a") as f:
+                #         f.write(
+                #             f"{formatted_datetime} - Round {round_num} - exception during {v} V setpoint: {e} \n")
+                #     print(f"Couldn't bias the qubit: {e}")
+                #     result_queue.put(-1)
 
-                    # flag = -3
-                    # flag = self.log_voltage_error(BiasPS, v, set_v, round_num, formatted_datetime)
+                try:
+                    bias_source.setSourceVoltage(v)
+                    # time.sleep(2)
+                    print(bias_source.measureVoltage())
+                    # print('voltage set')
                 except Exception as e:
                     with open(self.error_log, "a") as f:
                         f.write(
-                            f"{formatted_datetime} - Round {round_num} - exception during {v} V setpoint: {e} \n")
-                    print(f"Couldn't bias the qubit: {e}")
+                                f"{formatted_datetime} - Round {round_num} - exception during {v} V setpoint: {e} \n")
+                    print(f"Couldn't bias qubits: {e}")
                     result_queue.put(-1)
+
                     #flag = -1
                 #flag = result_queue.get()
                 #volt_flags.append(flag)
@@ -349,6 +374,8 @@ class TomographyMeasurement:
             # end_time = time.time()
             # round_time = end_time-start_time
             # print(f"[Info] - Round {round_num} completed in {round_time} sec")
+        bias_source.setSourceVoltage(0)
+        bias_source.setOutputState(enable=False)
         return
 
 

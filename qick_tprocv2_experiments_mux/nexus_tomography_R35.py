@@ -8,16 +8,18 @@ import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
+#impot time
 import json
 
 from NetDrivers import Keithley2400
 
 class AllQubitTomographyMeasurement:
-    def __init__(self, outerFolder, experiment, num_qubits, res_len, freq_offset, measure_qubits=[1, 2, 3, 4], unmasking_resgain = False, progress=True):
+    def __init__(self, outerFolder, experiment, num_qubits, res_len, freq_offset, measure_qubits=[1, 2, 3, 4], unmasking_resgain = True, progress=True):
         self.outerFolder = outerFolder
         ### stuff for bias PS
         self.progress = progress
         self.error_log = os.path.join(self.outerFolder, "errors.log") ##Error log for qick errors (and volt errors if we use them)
+        self.time_log = os.path.join(self.outerFolder, "time.log") ## Log for rnd times - maybe don't need
         self.measure_qubits = measure_qubits
         self.n_qubits = len(measure_qubits)
 
@@ -73,19 +75,20 @@ class AllQubitTomographyMeasurement:
             4: self.q4_config,
         }
 
-    def run_tomography(self, soccfg, soc, start_volt, stop_volt, volt_pts, rounds, plot=False, save=True):
+    def run_tomography(self, soccfg, soc, start_volt, stop_volt, volt_pts, rounds, plot=False, plot_together=False, save=True):
         vsweep = np.linspace(start_volt, stop_volt, volt_pts, endpoint = True)
         vsweep = np.round(vsweep, 3)
 
         if save:
-            self.create_h5_file(vsweep, rounds)
+            file_timestamp = self.create_h5_file(vsweep, rounds)
             self.h5_file = h5py.File(self.h5_path, "a")
 
         bias_source = self.init_bias_source()
         try:
-            self.bias_sweep(soccfg, soc, bias_source, vsweep, rounds, plot_data = plot, save_data = save)
+            self.bias_sweep(soccfg, soc, bias_source, vsweep, rounds, plot_data = plot, plot_together = plot_together, save_data = save)
         except KeyboardInterrupt:
             print(f"User stopped run - data saved through last completed round (R{self.rows_written})")
+            raise
         finally:
             if save:
                 self.h5_file.flush()
@@ -93,6 +96,7 @@ class AllQubitTomographyMeasurement:
                 self.h5_file = None
             bias_source.setSourceVoltage(0)
             bias_source.setOutputState(enable=False)
+        return
 
     def create_h5_file(self, vsweep, rounds):
         folder_data = os.path.join(self.outerFolder, 'study_data')
@@ -103,8 +107,8 @@ class AllQubitTomographyMeasurement:
         now = datetime.datetime.now()
         self.file_timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
 
-        qubits_meas = "".join(str(q) for q in self.measure_qubits)
-        self.h5_path = os.path.join(folder_data, f"Tomography_Qs{qubits_meas}_{self.file_timestamp}.h5")
+        self.qubits_meas = "".join(str(q) for q in self.measure_qubits)
+        self.h5_path = os.path.join(folder_data, f"Tomography_Qs{self.qubits_meas}_{self.file_timestamp}.h5")
 
         npts = len(vsweep)
         configs = {
@@ -143,6 +147,14 @@ class AllQubitTomographyMeasurement:
                 dtype = h5py.string_dtype("ascii")
                 )
 
+            f.create_dataset(
+                "round_duration_sec",
+                shape = (rounds, ),
+                maxshape = (rounds,),
+                chunks=(1,),
+                dtype=float
+            )
+
             f.create_dataset("qubits", data = np.array(self.measure_qubits, dtype=np.int32))
 
             f.attrs['rows_written'] = 0
@@ -151,8 +163,9 @@ class AllQubitTomographyMeasurement:
         self.rows_written = 0
 
         print(f"Created HDF5 file: {self.h5_path}")
-        return
-    def append_round_to_h5(self, qdata, volt_flags, timestamp):
+        return self.file_timestamp
+
+    def append_round_to_h5(self, qdata, volt_flags, timestamp, rnd_time):
         """
         qdata: shape (n_qubits, 2, npts)
         timestamps: "YYYY-MM-DD_HH-MM-SS"
@@ -165,6 +178,7 @@ class AllQubitTomographyMeasurement:
         f["qdata"][row,:,:,:] = qdata
         f["voltage_check"][row, :,:] = volt_flags
         f["timestamps"][row] = timestamp
+        f["round_duration_sec"][row] = rnd_time
 
         self.rows_written += 1
         f.attrs["rows_written"] = self.rows_written
@@ -173,20 +187,31 @@ class AllQubitTomographyMeasurement:
         bias_source = Keithley2400(server_ip = "192.168.0.45", server_port = 4001)
         bias_source.clearErrors()
         bias_source.reset()
-        bias_source.initializeVoltageSource(vrange=0.2, current_limit=1e-6, enable_output=False)
+        bias_source.initializeVoltageSource(vrange=0.2, current_limit=2e-2, enable_output=False)
         return bias_source
 
     def log_voltage_error(self):
         print('hi world')
         #idk if this makes sense anymore with new supply, figure out
 
-    def bias_sweep(self, soccfg, soc, bias_source, vsweep, rounds, plot_data=False, save_data=True):
+    # def moving_avg_check(self, scan_avgs, avg_window, thresholds):
+    #     if len(scan_avgs) < avg_window:
+    #         avg = np.average(scan_avgs)
+    #     else:
+    #         avg = np.average(scan_avgs[-(avg_window):])
+    #     if thresholds[0] < avg or thresholds[1] > avg:
+    #         print("Data average is outside of threshold. Stopping to get new parameters from RR.")
+    #         return 1
+    #     else:
+    #         return 0
+
+    def bias_sweep(self, soccfg, soc, bias_source, vsweep, rounds, plot_data=False, plot_together = False, save_data=True):
         n_pts = len(vsweep)
 
         bias_source.setSourceVoltage(0)
         bias_source.setOutputState(enable=True)
 
-        q1_tomography = TomographyProgram(soccfg, reps = self.q1_config['reps'], final_delay=self.q1_config['relax_delay'],
+        q1_tomography = TomographyProgram(soccfg, reps=self.q1_config['reps'], final_delay=self.q1_config['relax_delay'],
                                           cfg = self.q1_config)
         q2_tomography = TomographyProgram(soccfg, reps=self.q2_config['reps'], final_delay=self.q2_config['relax_delay'],
                                           cfg=self.q2_config)
@@ -194,6 +219,8 @@ class AllQubitTomographyMeasurement:
                                           cfg=self.q3_config)
         q4_tomography = TomographyProgram(soccfg, reps=self.q4_config['reps'], final_delay=self.q4_config['relax_delay'],
                                           cfg=self.q4_config)
+
+        #scan_averages = np.empty_like((self.n_qubits, ))
 
         for round_num in range(rounds):
             print(f"Round {round_num}")
@@ -210,9 +237,11 @@ class AllQubitTomographyMeasurement:
             for index, v in enumerate(vsweep):
                 try:
                     bias_source.setSourceVoltage(v)
+                    #time.sleep(2)
+                    print(bias_source.measureVoltage())
                     #print('voltage set')
                 except Exception as e:
-                    print(f"Couldn't bias a qubit: {e}")
+                    print(f"Couldn't bias qubits: {e}")
 
                 for qi, qid in enumerate(self.measure_qubits):  #qi: index of qubit in measurement list, qid: physical qubit "name" in measurment list
                     try:
@@ -222,16 +251,16 @@ class AllQubitTomographyMeasurement:
                             Q = q1_iq_list[0][0,1]
                         if qid == 2:
                             q2_iq_list = q2_tomography.acquire(soc, soft_avgs=self.q2_config['rounds'], progress=self.progress)
-                            I = q2_iq_list[0][0, 0]
-                            Q = q2_iq_list[0][0, 1]
+                            I = q2_iq_list[1][0, 0]
+                            Q = q2_iq_list[1][0, 1]
                         if qid == 3:
                             q3_iq_list = q3_tomography.acquire(soc, soft_avgs=self.q3_config['rounds'], progress=self.progress)
-                            I = q3_iq_list[0][0, 0]
-                            Q = q3_iq_list[0][0, 1]
+                            I = q3_iq_list[2][0, 0]
+                            Q = q3_iq_list[2][0, 1]
                         if qid == 4:
                             q4_iq_list = q4_tomography.acquire(soc, soft_avgs=self.q4_config['rounds'], progress=self.progress)
-                            I = q4_iq_list[0][0, 0]
-                            Q = q4_iq_list[0][0, 1]
+                            I = q4_iq_list[3][0, 0]
+                            Q = q4_iq_list[3][0, 1]
                         I_arr[qi, index] = I
                         Q_arr[qi, index] = Q
 
@@ -247,22 +276,30 @@ class AllQubitTomographyMeasurement:
             ## put all round data together
             q_data = np.stack([I_arr, Q_arr], axis=1)
 
+            ## Get total round time
+            rnd_end = datetime.datetime.now()
+            rnd_time = (rnd_end - now).total_seconds()
+
             ## Save data
             if save_data:
-                self.append_round_to_h5(q_data, volt_flags, formatted_datetime)
+                self.append_round_to_h5(q_data, volt_flags, formatted_datetime, rnd_time)
 
                 # Flush every 10 rounds
                 if (round_num + 1) % 10 == 0:
                     self.h5_file.flush()
 
+            with open(self.time_log, "a") as f:
+                f.write(f"{formatted_datetime} | Round {round_num} | Duration {rnd_time:.2f} s\n")
+
             ## Plot data
             if plot_data:
-                self.plot_all_tomography(vsweep, q_data, volt_flags, round_num, formatted_datetime)
+                self.plot_all_tomography(vsweep, q_data, volt_flags, round_num, formatted_datetime, plot_together)
+
         bias_source.setSourceVoltage(0)
         bias_source.setOutputState(enable=False)
         return
 
-    def plot_all_tomography(self, vsweep, qdata, volt_flags, round_num, formatted_datetime):
+    def plot_all_tomography(self, vsweep, qdata, volt_flags, round_num, formatted_datetime, plot_together = False):
         ### FIX PLOTTING
         plt.rcParams.update({
             'font.size': 14,  # Base font size
@@ -272,26 +309,44 @@ class AllQubitTomographyMeasurement:
             'ytick.labelsize': 14,  # Y-axis tick label size
             'legend.fontsize': 14,  # Legend font size
         })
-
-        for qi, qid in enumerate(self.measure_qubits):
-            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10,8), sharex='all')
-            ax1.plot(vsweep * 1000, qdata[qi, 0, :])
+        if plot_together:
+            fig, (ax1, ax2) = plt.subplot(2, 1, figzise=(10,8), sharex='all')
             ax1.set_ylabel("I Amplitude (a.u.)", fontsize=16)
             ax1.tick_params(axis='both', which='major', labelsize=14)
-            ax2.plot(vsweep * 1000, qdata[qi, 1, :])
             ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=16)
             ax2.set_xlabel("Applied Voltage Bias (mV)", fontsize=16)
+            for qi, qid in enumerate(self.measure_qubits):
+                ax1.plot(vsweep * 1000, qdata[qi, 0, :], label = f"Q{qid}")
+                ax2.plot(vsweep * 1000, qdata[qi, 1, :], label = f"Q{qid}")
 
-            fig.suptitle(f"Chrage Tomography Q{qid + 1}, Round {round_num} \n {formatted_datetime}", fontsize=20)
+            fig.suptitle(f"Charge Tomography Q{self.qubits_meas}, Round {round_num} \n {formatted_datetime}", fontsize=20)
             plt.tight_layout()
             plt.subplots_adjust(top=0.9)
 
             folder_plots = os.path.join(self.outerFolder, 'documentation')
             self.experiment.create_folder_if_not_exists(folder_plots)
-            file_name = os.path.join(folder_plots, f"Tomography_Q{qid+1}_R{round_num}_{formatted_datetime}.png")
+            file_name = os.path.join(folder_plots, f"Tomography_Q{self.qubits_meas}_R{round_num}_{formatted_datetime}.png")
             fig.savefig(file_name, dpi=300, bbox_inches='tight')
             plt.close(fig)
+        else:
+            for qi, qid in enumerate(self.measure_qubits):
+                fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10,8), sharex='all')
+                ax1.plot(vsweep * 1000, qdata[qi, 0, :])
+                ax1.set_ylabel("I Amplitude (a.u.)", fontsize=16)
+                ax1.tick_params(axis='both', which='major', labelsize=14)
+                ax2.plot(vsweep * 1000, qdata[qi, 1, :])
+                ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=16)
+                ax2.set_xlabel("Applied Voltage Bias (mV)", fontsize=16)
 
+                fig.suptitle(f"Charge Tomography Q{qid}, Round {round_num} \n {formatted_datetime}", fontsize=20)
+                plt.tight_layout()
+                plt.subplots_adjust(top=0.9)
+
+                folder_plots = os.path.join(self.outerFolder, 'documentation')
+                self.experiment.create_folder_if_not_exists(folder_plots)
+                file_name = os.path.join(folder_plots, f"Tomography_Q{qid}_R{round_num}_{formatted_datetime}.png")
+                fig.savefig(file_name, dpi=300, bbox_inches='tight')
+                plt.close(fig)
         return
 
 class TomographyProgram(AveragerProgramV2):
