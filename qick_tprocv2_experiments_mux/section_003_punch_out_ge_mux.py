@@ -42,11 +42,10 @@ class PunchOut:
         self.experiment = experiment
         self.Qubit = 'Q' + str(1)
         self.QubitIndex = QubitIndex
-        self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
 
         if unmasking_resgain:
-            self.exp_cfg["list_of_all_qubits"] = [self.QubitIndex]
+            self.exp_cfg["list_of_all_qubits"] = [2, 3] #[self.QubitIndex]
 
         self.q_config = all_qubit_state(experiment, self.number_of_qubits)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
@@ -133,7 +132,9 @@ class PunchOut:
 
         plt.tight_layout(pad=2.0)
 
-        outerFolder_expt = os.path.join(self.outerFolder, 'punch_out')
+        # outerFolder_expt = os.path.join(self.outerFolder, 'punch_out')
+        # self.experiment.create_folder_if_not_exists(outerFolder_expt)
+        outerFolder_expt = os.path.join(self.outerFolder, 'more_plots')
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
@@ -168,7 +169,9 @@ class PunchOut:
 
         plt.tight_layout(pad=2.0)
 
-        outerFolder_expt = os.path.join(self.outerFolder, "punch_out")
+        # outerFolder_expt = os.path.join(self.outerFolder, "punch_out")
+        # self.experiment.create_folder_if_not_exists(outerFolder_expt)
+        outerFolder_expt = os.path.join(self.outerFolder, 'more_plots')
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
@@ -201,7 +204,9 @@ class PunchOut:
 
         plt.tight_layout(pad=2.0)
 
-        outerFolder_expt = os.path.join(self.outerFolder, "punch_out")
+        # outerFolder_expt = os.path.join(self.outerFolder, "punch_out")
+        # self.experiment.create_folder_if_not_exists(outerFolder_expt)
+        outerFolder_expt = os.path.join(self.outerFolder, 'more_plots')
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
@@ -243,11 +248,11 @@ class PunchOut:
         plt.suptitle(f"Resonance At Various Probe Gains, Q{self.QubitIndex +1}", fontsize=24, y=0.95)
 
         plt.tight_layout(pad=2.0)
-        outerFolder_expt = os.path.join(self.outerFolder, "punch_out")
-        self.experiment.create_folder_if_not_exists(outerFolder_expt)
+        # outerFolder_expt = os.path.join(self.outerFolder, "punch_out")
+        # self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_punch_out_res_sweep_Q{self.QubitIndex+1}.png")
+        file_name = os.path.join(self.outerFolder, f"{formatted_datetime}_punch_out_res_sweep_Q{self.QubitIndex+1}.png")
         plt.savefig(file_name, dpi=300)
         plt.close()
 
@@ -280,7 +285,9 @@ class PunchOut:
         plt.suptitle(f"Resonance At Various Probe Gains Smoothed, Q{self.QubitIndex + 1}", fontsize=24, y=0.95)
 
         plt.tight_layout(pad=2.0)
-        outerFolder_expt = os.path.join(self.outerFolder, "punch_out")
+        # outerFolder_expt = os.path.join(self.outerFolder, "punch_out")
+        # self.experiment.create_folder_if_not_exists(outerFolder_expt)
+        outerFolder_expt = os.path.join(self.outerFolder, 'more_plots')
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
@@ -291,6 +298,414 @@ class PunchOut:
         plt.close()
         return
 
+class PunchOut_MUX:
+    def __init__(self, round_num, qubits, number_of_qubits, outerFolder, experiment, unmasking_resgain=False):
+        self.outerFolder = outerFolder
+        self.expt_name = "res_spec"
+        self.number_of_qubits = number_of_qubits
+        self.experiment = experiment
+        self.Qubit = 'Q' + str(1)
+        self.QubitIndices = qubits
+        self.round_num = round_num
+        self.Qstring = "".join(str(i+1) for i in self.QubitIndices)
+        self.exp_cfg = expt_cfg[self.expt_name]
+
+        if unmasking_resgain:
+            self.exp_cfg["list_of_all_qubits"] = self.QubitIndices
+
+        self.q_config = all_qubit_state(experiment, self.number_of_qubits)
+        self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+        print(f'Punch Out configuration: ', self.config)
+
+    def run(self, soccfg, soc, start_gain, stop_gain, num_points, save_data = True, plot_Center_shift = True, plot_res_sweeps = True, plot_2d = True):
+        fpts = self.exp_cfg["start"] + self.exp_cfg["step_size"] * np.arange(self.exp_cfg["steps"])
+        fcenter = self.config['res_freq_ge']
+
+        self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+        resonance_vals, resonance_vals_filter, power_sweep, frequency_sweeps, filter_freq_sweeps = self.sweep_power(soccfg, soc, fpts, fcenter, start_gain, stop_gain, num_points)
+
+        self.outerFolder_plots = os.path.join(self.outerFolder, 'documentation')
+        self.experiment.create_folder_if_not_exists(self.outerFolder_plots)
+        self.outerFolder_moreplots = os.path.join(self.outerFolder_plots, 'more_plots')
+        self.experiment.create_folder_if_not_exists(self.outerFolder_moreplots)
+
+        self.outerFolder_data = os.path.join(self.outerFolder, 'study_data')
+        self.experiment.create_folder_if_not_exists(self.outerFolder_data)
+
+        if save_data:
+            self.save_data(fpts, fcenter, power_sweep, frequency_sweeps)
+
+        if plot_Center_shift:
+            self.plot_center_shift(resonance_vals, resonance_vals_filter, power_sweep)
+
+        if plot_res_sweeps:
+            self.plot_res_sweeps(fpts, fcenter, frequency_sweeps, filter_freq_sweeps, power_sweep)
+
+        if plot_2d:
+            self.plot_2d_sweeps(fpts, fcenter, frequency_sweeps, filter_freq_sweeps, resonance_vals, power_sweep)
+
+        return
+
+    def sweep_power(self, soccfg, soc, fpts, fcenter, start_gain, stop_gain, num_points):
+        power_sweep = np.linspace(start_gain, stop_gain, num_points)
+
+        resonance_vals = []
+        resonance_vals_filter = []
+        frequency_sweeps = []
+        filter_freq_sweeps = []
+
+        for p in power_sweep:
+            power = round(p, 3)
+            self.config['res_gain_ge'] = [power for i in range(0, self.number_of_qubits)]
+            amps = np.zeros((len(fcenter), len(fpts)))
+            filtered_amps = np.zeros((len(fcenter), len(fpts)))
+            for index, f in enumerate(tqdm(fpts)):
+                self.config["res_freq_ge"] = fcenter + f
+                prog = SingleToneSpectroscopyProgram(soccfg, reps=self.exp_cfg["reps"], final_delay=0.5,
+                                                     cfg=self.config)
+                iq_list = prog.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=False)
+                for i in range(len(self.config['res_freq_ge'])):
+                    amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])
+            amps = np.array(amps)
+            filtered_amps = np.array(savgol_filter(amps, window_length=21, polyorder=3))
+            frequency_sweeps.append(amps)
+            filter_freq_sweeps.append(filtered_amps)
+
+            freq_res = []
+            freq_res_filter = []
+            for i in range(self.number_of_qubits):
+                freq_res.append(round(float(fpts[np.argmin(amps[i])] + fcenter[i]), 3))
+                freq_res_filter.append(round(float(fpts[np.argmin(filtered_amps[i])] + fcenter[i]), 3))
+            resonance_vals.append(freq_res)
+            resonance_vals_filter.append(freq_res_filter)
+        return resonance_vals, resonance_vals_filter, power_sweep, frequency_sweeps, filter_freq_sweeps
+
+    def save_data(self, fpts, fcenter, power_sweep, freq_sweeps):
+        file_name = os.path.join(self.outerFolder_data, f"R{self.round_num}_Res{self.Qstring}_data_{self.timestamp}.npz")
+
+        np.savez(file_name, fpts=fpts, fcenter=fcenter, power_sweep=power_sweep, amps=np.array(freq_sweeps))
+        return
+
+    def plot_center_shift(self, resonance_vals, resonance_vals_filter, power_sweep):
+        plt.figure(figsize=(12, 10))
+
+        # Set larger font sizes
+        plt.rcParams.update({
+            'font.size': 14,  # Base font size
+            'axes.titlesize': 18,  # Title font size
+            'axes.labelsize': 16,  # Axis label font size
+            'xtick.labelsize': 14,  # X-axis tick label size
+            'ytick.labelsize': 14,  # Y-axis tick label size
+            'legend.fontsize': 14,  # Legend font size
+        })
+
+        for i in range(self.number_of_qubits):
+            plt.subplot(2, 2, i + 1)
+            plt.plot(power_sweep, [six_resonance_vals[i] for six_resonance_vals in resonance_vals], '-', linewidth=1.5, label='Raw')
+            plt.plot(power_sweep, [six_resonance_vals[i] for six_resonance_vals in resonance_vals_filter], '-', linewidth=1.5, label='Smoothed')
+
+            plt.xlabel("Probe Gain", fontweight='normal')
+            plt.ylabel("Freq (MHz)", fontweight='normal')
+            plt.legend()
+            plt.title(f"Resonator {i + 1}", pad=10)
+
+        # Add a main title to the figure
+        #plt.suptitle(f"Frequency vs Probe Gain, _DAC_Att_{DAC_att}, ADC_ATT_{ADC_att}", fontsize=24, y=0.95)
+        plt.suptitle(f"R{self.round_num} Frequency vs Probe Gain", fontsize=24, y=0.95)
+        plt.tight_layout(pad=2.0)
+
+        file_name = os.path.join(self.outerFolder_moreplots, f"R{self.round_num}_punch_out_center_shift_Qs{self.Qstring}_{self.timestamp}.png")
+        plt.savefig(file_name, dpi=300)
+        plt.close()
+        return
+
+    def plot_2d_sweeps(self, fpts, fcenter, frequency_sweeps, filter_freq_sweeps, resonance_vals, power_sweep):
+        #Plot raw
+        plt.figure(figsize=(12, 10))
+
+        # Set larger font sizes
+        plt.rcParams.update({
+            'font.size': 14,  # Base font size
+            'axes.titlesize': 18,  # Title font size
+            'axes.labelsize': 16,  # Axis label font size
+            'xtick.labelsize': 14,  # X-axis tick label size
+            'ytick.labelsize': 14,  # Y-axis tick label size
+            'legend.fontsize': 14,  # Legend font size
+        })
+
+        for q in range(self.number_of_qubits):
+            plt.subplot(2, 2, q + 1)
+            amps_qubit = np.array([amps[q, :] for amps in frequency_sweeps]) # get amps for this qubit, shape: (len(power_sweep), len(fpts))
+            mesh = plt.pcolormesh(fpts + fcenter[q], power_sweep, amps_qubit, shading='auto')
+            plt.xlabel("Frequency (MHz)")
+            plt.ylabel("Gain")
+            plt.title(f"Resonator {q+1}")
+
+            cbar = plt.colorbar(mesh)
+            cbar.set_label("Amplitude (a.u.)")
+
+        plt.suptitle(f"R{self.round_num} Resonance at Various Probe Gains, Q{self.Qstring}", fontsize=24)
+        plt.tight_layout(pad=2.0)
+
+        file_name = os.path.join(self.outerFolder_moreplots,
+                                     f"R{self.round_num}_punch_out_2d_res_sweep_Q{self.Qstring}_{self.timestamp}.png")
+        plt.savefig(file_name, dpi=300)
+        plt.close()
+
+        #Plot smoothed
+        plt.figure(figsize=(12, 10))
+
+        # Set larger font sizes
+        plt.rcParams.update({
+            'font.size': 14,  # Base font size
+            'axes.titlesize': 18,  # Title font size
+            'axes.labelsize': 16,  # Axis label font size
+            'xtick.labelsize': 14,  # X-axis tick label size
+            'ytick.labelsize': 14,  # Y-axis tick label size
+            'legend.fontsize': 14,  # Legend font size
+        })
+
+        for q in range(self.number_of_qubits):
+            plt.subplot(2, 2, q + 1)
+            amps_smoothed = np.array([amps[q, :] for amps in filter_freq_sweeps]) # get amps for this qubit, shape: (len(power_sweep), len(fpts))
+            mesh = plt.pcolormesh(fpts + fcenter[q], power_sweep, amps_smoothed, shading='auto')
+            plt.xlabel("Frequency (MHz)")
+            plt.ylabel("Gain")
+            plt.title(f"Resonator {q+1}")
+
+            cbar = plt.colorbar(mesh)
+            cbar.set_label("Amplitude (a.u.)")
+
+        plt.suptitle(f"R{self.round_num} Resonance at Various Probe Gains Smoothed, Q{self.Qstring}", fontsize=24)
+        plt.tight_layout(pad=2.0)
+
+        file_name = os.path.join(self.outerFolder_moreplots,
+                                     f"R{self.round_num}_smoothed_punch_out_2d_res_sweep_Q{self.Qstring}_{self.timestamp}.png")
+        plt.savefig(file_name, dpi=300)
+        plt.close()
+        return
+
+    def plot_res_sweeps(self, fpts, fcenter, frequency_sweeps, filter_freq_sweeps, power_sweep, show_filtered = True):
+        # Plot raw
+        plt.figure(figsize=(12, 10))
+
+        # Set larger font sizes
+        plt.rcParams.update({
+            'font.size': 14,  # Base font size
+            'axes.titlesize': 18,  # Title font size
+            'axes.labelsize': 16,  # Axis label font size
+            'xtick.labelsize': 14,  # X-axis tick label size
+            'ytick.labelsize': 14,  # Y-axis tick label size
+            'legend.fontsize': 14,  # Legend font size
+        })
+        for power_index in range(len(power_sweep)):
+            for i in range(self.number_of_qubits):
+                offset = (max(frequency_sweeps[0][i])-min(frequency_sweeps[0][i]))/2
+                plt.subplot(2, 2, i + 1)
+                plt.plot(fpts + fcenter[i], frequency_sweeps[power_index][i] + offset*power_index, '-', linewidth=1.5,
+                            label=round(power_sweep[power_index], 3))
+
+                plt.xlabel("Frequency (MHz)", fontweight='normal')
+                plt.ylabel("Amplitude (a.u)", fontweight='normal')
+                plt.title(f"Resonator {i + 1}", pad=10)
+                plt.legend(loc='upper left', fontsize='6', title='Gain')
+
+        # Add a main title to the figure
+        plt.suptitle(f"R{self.round_num} Resonance At Various Probe Gains, Q{self.Qstring}", fontsize=24, y=0.95)
+        plt.tight_layout(pad=2.0)
+
+        file_name = os.path.join(self.outerFolder_plots, f"R{self.round_num}_punch_out_res_sweep_Q{self.Qstring}_{self.timestamp}.png")
+        plt.savefig(file_name, dpi=300)
+        plt.close()
+
+        # Plot Smoothed
+        plt.figure(figsize=(12, 10))
+
+        # Set larger font sizes
+        plt.rcParams.update({
+            'font.size': 14,  # Base font size
+            'axes.titlesize': 18,  # Title font size
+            'axes.labelsize': 16,  # Axis label font size
+            'xtick.labelsize': 14,  # X-axis tick label size
+            'ytick.labelsize': 14,  # Y-axis tick label size
+            'legend.fontsize': 14,  # Legend font size
+        })
+        for power_index in range(len(power_sweep)):
+            for i in range(self.number_of_qubits):
+                offset = (max(frequency_sweeps[0][i]) - min(frequency_sweeps[0][i])) / 2
+                plt.subplot(2, 2, i + 1)
+                plt.plot(fpts + fcenter[i], filter_freq_sweeps[power_index][i] + offset * power_index, '-',
+                             linewidth=1.5, alpha=0.7, label=round(power_sweep[power_index], 3))
+
+                plt.xlabel("Frequency (MHz)", fontweight='normal')
+                plt.ylabel("Amplitude (a.u)", fontweight='normal')
+                plt.title(f"Resonator {i + 1}", pad=10)
+                plt.legend(loc='upper left', fontsize='6', title='Gain')
+
+        # Add a main title to the figure
+        plt.suptitle(f"R{self.round_num} Resonance At Various Probe Gains Smoothed, Q{self.Qstring}", fontsize=24, y=0.95)
+        plt.tight_layout(pad=2.0)
+
+        file_name = os.path.join(self.outerFolder_moreplots,
+                                     f"R{self.round_num}_smoothed_punch_out_res_sweep_Q{self.Qstring}_{self.timestamp}.png")
+        plt.savefig(file_name, dpi=300)
+        plt.close()
+        return
+
+class Repeat_Punchout:
+    #Just runs punchout and returns data - no plotting inside
+    def __init__(self, QubitIndex, number_of_qubits, experiment, unmasking_resgain=False):
+        self.expt_name = "res_spec"
+        self.number_of_qubits = number_of_qubits
+        self.experiment = experiment
+        self.Qubit = 'Q' + str(1)
+        self.QubitIndex = QubitIndex
+        self.exp_cfg = expt_cfg[self.expt_name]
+
+        if unmasking_resgain:
+            self.exp_cfg["list_of_all_qubits"] = [self.QubitIndex]
+
+        self.q_config = all_qubit_state(experiment, self.number_of_qubits)
+        self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+        print(f'Punch Out configuration: ', self.config)
+
+    def run(self, soccfg, soc, start_gain, stop_gain, num_points):
+        fpts = self.exp_cfg["start"] + self.exp_cfg["step_size"] * np.arange(self.exp_cfg["steps"])
+        fcenter = self.config['res_freq_ge']
+
+        resonance_vals, resonance_vals_filter, power_sweep, frequency_sweeps, filter_freq_sweeps = self.sweep_power(soccfg, soc, fpts, fcenter, start_gain, stop_gain, num_points)
+
+        q = self.QubitIndex
+
+        amps = np.array([amps[q,:] for amps in frequency_sweeps])
+        amps_smoothed = np.array([amps[q,:] for amps in filter_freq_sweeps])
+
+        return{"fpts": fpts,
+               "fcenter": fcenter[q],
+               "power_sweep": power_sweep,
+               "amps": amps,
+               "amps_smoothed": amps_smoothed,
+               "resonance_raw": [r[q] for r in resonance_vals],
+               "resonance_smooth": [r[q] for r in resonance_vals_filter]}
+
+    def sweep_power(self, soccfg, soc, fpts, fcenter, start_gain, stop_gain, num_points):
+        power_sweep = np.linspace(start_gain, stop_gain, num_points)
+
+        resonance_vals = []
+        resonance_vals_filter = []
+        frequency_sweeps = []
+        filter_freq_sweeps = []
+
+        for p in power_sweep:
+            power = round(p, 3)
+            self.config['res_gain_ge'] = [power for i in range(0, self.number_of_qubits)]
+            amps = np.zeros((len(fcenter), len(fpts)))
+            filtered_amps = np.zeros((len(fcenter), len(fpts)))
+            for index, f in enumerate(tqdm(fpts)):
+                self.config["res_freq_ge"] = fcenter + f
+                prog = SingleToneSpectroscopyProgram(soccfg, reps=self.exp_cfg["reps"], final_delay=0.5,
+                                                     cfg=self.config)
+                iq_list = prog.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=False)
+                for i in range(len(self.config['res_freq_ge'])):
+                    amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])
+            amps = np.array(amps)
+            filtered_amps = np.array(savgol_filter(amps, window_length=21, polyorder=3))
+            frequency_sweeps.append(amps)
+            filter_freq_sweeps.append(filtered_amps)
+
+            freq_res = []
+            freq_res_filter = []
+            for i in range(self.number_of_qubits):
+                freq_res.append(round(float(fpts[np.argmin(amps[i])] + fcenter[i]), 3))
+                freq_res_filter.append(round(float(fpts[np.argmin(filtered_amps[i])] + fcenter[i]), 3))
+            resonance_vals.append(freq_res)
+            resonance_vals_filter.append(freq_res_filter)
+        return resonance_vals, resonance_vals_filter, power_sweep, frequency_sweeps, filter_freq_sweeps
+
+# class Repeat_Punchout_mux:
+#     #Just runs punchout and returns data - no plotting inside
+#     def __init__(self, QubitIndices, number_of_qubits, experiment):
+#         self.expt_name = "res_spec"
+#         self.number_of_qubits = number_of_qubits
+#         self.experiment = experiment
+#         #self.Qubit = 'Q' + str(1)
+#         self.QubitIndices = QubitIndices
+#         self.exp_cfg = expt_cfg[self.expt_name]
+#
+#         # Unmask all qubits for multiplexing
+#         self.exp_cfg["list_of_all_qubits"] = QubitIndices
+#
+#         self.q_config = all_qubit_state(experiment, self.number_of_qubits)
+#
+#         # Build full resonator frequency list
+#         res_freqs = [
+#             self.q_config[f"Q{i+1}"]["res_freq_ge"] for i in QubitIndices
+#         ]
+#
+#         self.config = {**self.exp_cfg}
+#         self.config["res_freq_ge"] = res_freqs
+#
+#         print("Multiplex Punch OUt configuration: ", self.config)
+#         print("Mask: ", self.exp_cfg["list_of_all_qubits"])
+#         print("Res freqs: ", self.config["res_freq_ge"])
+#
+#     def run(self, soccfg, soc, start_gain, stop_gain, num_points):
+#         fpts = self.exp_cfg["start"] + self.exp_cfg["step_size"] * np.arange(self.exp_cfg["steps"])
+#         fcenter = self.config['res_freq_ge']
+#
+#         resonance_vals, resonance_vals_filter, power_sweep, frequency_sweeps, filter_freq_sweeps = self.sweep_power(soccfg, soc, fpts, fcenter, start_gain, stop_gain, num_points)
+#
+#         #q = self.QubitIndex
+#
+#         # amps = np.array([amps[q,:] for amps in frequency_sweeps])
+#         # amps_smoothed = np.array([amps[q,:] for amps in filter_freq_sweeps])
+#
+#         return{"fpts": fpts,
+#                "fcenter": fcenter[q],
+#                "power_sweep": power_sweep,
+#                "amps": amps,
+#                "amps_smoothed": amps_smoothed,
+#                "resonance_raw": [r[q] for r in resonance_vals],
+#                "resonance_smooth": [r[q] for r in resonance_vals_filter]}
+#
+#     def sweep_power(self, soccfg, soc, fpts, fcenter, start_gain, stop_gain, num_points):
+#         power_sweep = np.linspace(start_gain, stop_gain, num_points)
+#
+#         resonance_vals = []
+#         resonance_vals_filter = []
+#         frequency_sweeps = []
+#         filter_freq_sweeps = []
+#
+#         for p in power_sweep:
+#             power = round(p, 3)
+#             self.config['res_gain_ge'] = [power for i in self.QubitIndices]
+#
+#             amps = np.zeros((self.number_of_qubits, len(fpts)))  #len(fcenter), len(fpts)))
+#             filtered_amps = np.zeros((self.number_of_qubits, len(fpts))) #len(fcenter), len(fpts)))
+#             for index, f in enumerate(tqdm(fpts)):
+#                 self.config["res_freq_ge"] = [fcenter[i] + f for i in range(self.number_of_qubits)]
+#
+#                 prog = SingleToneSpectroscopyProgram(soccfg, reps=self.exp_cfg["reps"], final_delay=0.5,
+#                                                      cfg=self.config)
+#                 iq_list = prog.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=False)
+#                 for i in range(self.number_of_qubits):
+#                     amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])
+#
+#             for i in range(self.number_of_qubits):
+#                 filtered_amps[i] = savgol_filter(amps[i], window_length=21, polyorder=3)
+#             frequency_sweeps.append(amps.copy())
+#             filter_freq_sweeps.append(filtered_amps.copy())
+#
+#             freq_res = []
+#             freq_res_filter = []
+#             for i in range(self.number_of_qubits):
+#                 freq_res.append(round(float(fpts[np.argmin(amps[i])] + fcenter[i]), 3))
+#                 freq_res.append(round(float(fpts[np.argmin(filtered_amps[i])] + fcenter[i]), 3))
+#             resonance_vals.append(freq_res)
+#             resonance_vals_filter.append(freq_res_filter)
+#
+#         return resonance_vals, resonance_vals_filter, power_sweep, frequency_sweeps, filter_freq_sweeps
 
 class TWPAConsistency:
     def __init__(self, outerFolder, experiment):

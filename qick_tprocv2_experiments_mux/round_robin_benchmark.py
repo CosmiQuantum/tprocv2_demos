@@ -59,7 +59,7 @@ unmask = True                        # Do you want to use the unmasking feature 
 qubit_to_increase_reps_for = 0       # only has impact if previous line is True
 multiply_qubit_reps_by = 2           # only has impact if the line two above is True
 
-Qs_to_look_at = [3] #[0,1,2,3]    # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,3] #[0,1,2,3]    # only list the qubits you want to do the RR for
 
 #One round take 11.27 minutes for all 4 qubits: Rspec, Qspec, Rabi, SS, and T1
 
@@ -67,20 +67,20 @@ Qs_to_look_at = [3] #[0,1,2,3]    # only list the qubits you want to do the RR f
 print(FRIDGE)
 
 #Data saving info
-run_name = 'run33e'
+run_name = 'run35'
 device_name = '4charge'
-substudy_txt_notes = ('post data taking and end of run check, Q4 biased to degen') #'DD off, rear shield hole closed, no colimator, 0V bias') #'0V bias, ssf edit')#('DD off, rear shield hole closed, 0V bias')
+substudy_txt_notes = ('Checking SSF on all 4 qubits with 4 us res length, 0.3 res gain. No optimization done, degenerate points not found.')
 
 # set which of the following you'd like to run to 'True'
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False, "test_act":False, "fh_rabi":False,
-             "t1": True, "t2r": True, "t2e": True, "ef_res_spec":False, "ef_q_spec": False, "fh_q_spec":False, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
+             "t1": False, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": False, "fh_q_spec":False, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 # run_flags = {"tof": False, "res_spec": False, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False, "test_act":False,
 #              "t1": False, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": True, "fh_q_spec":True, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 
 # optimization outputs from qick board, unmasking set to true
-res_leng_vals = [3, 5.25, 4.5, 4] #[5, 4.75, 5, 4.25] #[9.25, 5.5, 6.25, 7.5] #Q1,~Q2,Q4 opt
-res_gain = [0.625, 0.375, 0.475, 0.475] #[0.6, 0.25, 0.35, 0.5] #[0.116, 0.0935, 0.1162, 0.14] #[0.75, 0.7, 0.8, 0.75] #Q1,~Q2,Q4 optimized
-freq_offsets = [-0.25, 0.2, -0.3, 0] #[0.05, -0.225, -0.2, -0.075] #[-0.1429, -0.1429, 0, -0.1429] #Q1,~Q2,Q4 optimized
+res_leng_vals = [4, 4, 4, 4] #[4.75, 4, 4, 5] #Q4 4
+res_gain = [0.3, 0.3, 0.3, 0.3] #[0.7, 0.375, 0.475, 0.5062] #Q4 0.475
+freq_offsets = [0, 0, 0, 0]
 
 
 qubit_freqs_ef = [None]*4
@@ -91,8 +91,8 @@ number_of_qubits = 4
 figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 #Folders
-study = 'Final Check' #'DDon_SC_HoleClosed_noCol' #'Initial Checkout' #'DDoff_SC_HoleClosed' #'Longtime_Study'
-sub_study = 'RR_Q4' #'RR_Long' #'RR_Long' #'SSF_PostRabi'
+study = 'Initial Checkout' #'Punchout Study'
+sub_study = 'RR_lowgain'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/home/nexusadmin/Documents/Data/{run_name}/"):
@@ -118,9 +118,9 @@ if not os.path.exists(optimizationFolder):
 if not os.path.exists(subStudyDataFolder):
     os.makedirs(subStudyDataFolder)
 
-# file_path = os.path.join(studyDocumentationFolder, 'sub_study_notes.txt')
-# with open(file_path, "w", encoding="utf-8") as file:
-#     file.write(substudy_txt_notes)
+file_path = os.path.join(studyDocumentationFolder, 'sub_study_notes.txt')
+with open(file_path, "w", encoding="utf-8") as file:
+    file.write(substudy_txt_notes)
 
 ################################################## Configure logging ###################################################
 ''' We need to create a custom logger and disable propagation like this

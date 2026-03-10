@@ -59,9 +59,7 @@ class BiasQubitSpectroscopy:
     def sweep_bias_Keithley(self, soccfg, soc, vsweep, timestamp, save_csvs=True):
         qubit_index = int(self.QubitIndex)
         bias = Keithley2400(server_ip="192.168.0.45", server_port=4001)
-        bias.clearErrors()
-        bias.reset()
-        bias.initializeVoltageSource(vrange=0.2, current_limit=1e-6, enable_output=False)
+        bias.initializeVoltageSource(vrange=0.2, current_limit=1e-2, enable_output=False)
         bias.setSourceVoltage(0)
         bias.setOutputState(enable=True)
 
@@ -76,6 +74,10 @@ class BiasQubitSpectroscopy:
             voltage = round(v, 3)
             print(f"Setting bias to {voltage}V")
             bias.setSourceVoltage(voltage)
+            # time.sleep(3)
+            # print(bias._sendCmd("SENS:CURR:PROT?"))
+            print(bias.measureVoltage())
+            print(bias.measureCurrent())
 
             qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'],
                                                   final_delay=self.exp_cfg['relax_delay'], cfg=self.config)
@@ -123,7 +125,7 @@ class BiasQubitSpectroscopy:
     def sweep_bias_E36300(self, soccfg, soc, vsweep, timestamp, save_csvs=True):
 
         Bias_PS_ip = ['192.168.0.44', '192.168.0.44', '192.168.0.44', '192.168.0.41'] #IP address of bias PS (qubits 1-3 are the same PS)
-        Bias_ch = [1, 2, 3, 1] #Channel number of qubit 1-4 on associated PS
+        Bias_ch = [1, 2, 5, 1] # Giving Q3 a nonsense ch # bc that channel on keysight is now for warm amp #Channel number of qubit 1-4 on associated PS
         qubit_index = int(self.QubitIndex)
 
         print(f"Qubit_index {qubit_index}")
@@ -143,7 +145,7 @@ class BiasQubitSpectroscopy:
             voltage = round(v,3)
             print(f"Setting bias to {voltage}V")
             set_v = BiasPS.setVoltage(voltage, Bias_ch[qubit_index])
-            print(set_v)
+            #print(set_v)
 
             qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'], final_delay = self.exp_cfg['relax_delay'], cfg=self.config)
             iq_list = qspec.acquire(soc, soft_avgs = self.exp_cfg["rounds"], progress=True)

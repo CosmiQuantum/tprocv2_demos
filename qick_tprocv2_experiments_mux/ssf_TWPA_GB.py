@@ -24,7 +24,7 @@ FRIDGE = 'NEXUS'
 number_of_qubits = 4
 list_of_all_qubits = [0, 1, 2, 3]
 
-run_name = 'run33e'
+run_name = 'run35'
 device_name = '4charge'
 substudy = 'TWPA_opt_Q4'
 
@@ -45,16 +45,16 @@ n_loops = 4  # Number of ssf repetitions - currently unused
 Qs = [3] #0, 1, 2, 3
 
 # optimization outputs for NEXUS
-res_leng_vals = [5, 4, 4, 3.6] #[9.5, 5.5, 6.25, 7.0] # Q1, Q4 reopt
-res_gain = [0.1, 0.1, 0.15, 0.145] #[0.9, 0.7, 0.8, 0.8] # Q1, Q4 reopt
-freq_offsets = [-0.18, 0, 0, 0.09] #[-0.1429, -0.1429, 0, -0.04] # Q1, Q4 reopt
+res_leng_vals = [6.75, 4, 4, 5] #[9.5, 5.5, 6.25, 7.0] # Q1, Q4 reopt
+res_gain = [0.4875, 0.1, 0.15, 0.5062] #[0.9, 0.7, 0.8, 0.8] # Q1, Q4 reopt
+freq_offsets = [0.1, 0, 0, 0] #[-0.1429, -0.1429, 0, -0.04] # Q1, Q4 reopt
 
 # Define sweeping parameters
-gain_arr = np.linspace(-13.5, -11, 10)
-freq_arr = np.linspace(7.80e9, 7.83e9, 10)  # Don't go above 7.9159 GHz
+gain_arr = np.linspace(-13.25, -11.5, 8)
+freq_arr = np.linspace(7.79e9, 7.82e9, 8)  # Don't go above 7.9159 GHz
 
-prev_TWPA_gain = -12.69
-prev_TWPA_freq = 7.826e9
+prev_TWPA_gain = -11.6
+prev_TWPA_freq = 7.807e9
 
 res_freq_ge = [None] * 4 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
 

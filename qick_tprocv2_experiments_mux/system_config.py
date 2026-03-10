@@ -219,9 +219,9 @@ class QICK_experiment:
                 "trig_time": 0.7, # [Clock ticks] - get this value from TOF experiment, Updated 9/3
                 # Changes related to the resonator output channel
                 "mixer_freq": 5500, # [MHz]
-                "res_freq_ge": [6187.91, 5828.48, 6074.57, 5959.294], #[6187.9 - 0.18, 5828.47 + 0.2, 6074.56 - 0.3375, 5959.284 - 0.09], #Run 34 #[6187.973, 5828.530, 6074.662, 5959.343], #Run 33
-                "res_gain_ge": [0.625, 0.375, 0.475, 0.475], #[0.6, 0.25, 0.35, 0.55], #after adding 13dB atten, not optimized #[0.116, 0.0935, 0.1162, 0.14], # Q1 opt, [0.2, 0.1, 0.15, 0.2], #[0.4, 0.4, 0.4, 0.4],  # [0.15]*4, #[1, 1, 1, 1],
-                "res_length": 4.0, #[9.25, 5.5, 6.25, 7.0], #5 #4.6,  # 10,  # [us] (1.0 for res spec)
+                "res_freq_ge": [6187.9, 5828.48, 6074.57, 5959.294], #[6187.9 - 0.18, 5828.47 + 0.2, 6074.56 - 0.3375, 5959.284 - 0.09], #Run 34 #[6187.973, 5828.530, 6074.662, 5959.343], #Run 33
+                "res_gain_ge": [0.3, 0.3, 0.3, 0.3], #[0.625, 0.375, 0.1, 0.475]
+                "res_length": 4, #5.75, #4.0, #[9.25, 5.5, 6.25, 7.0], #5 #4.6,  # 10,  # [us] (1.0 for res spec)
                 "res_phase": [0] * 4,
                 "ro_phase": [0, 0, 0, 0]  # [0] * 4,  # Rotation Angle From QICK Function
             }
@@ -229,7 +229,7 @@ class QICK_experiment:
             # Qubit Configuration
             self.qubit_cfg = {
                 "qubit_mixer_freq": 4300,  # [MHz]
-                "qubit_freq_ge": [4913.15, 4764.5, 4577, 4782.07], #[4913.6, 4764.5, 4577, 4782], #[4914.05, 4764.5, 4577, 4782], #4912.07, 4763.0,4576.3, 4781.3 #Run 33d now #Run 33d start: [4911.1, 4763.0, 4576.3, 4781.3], #Run 33c start pt #[4921.5, 4761.7, 4575.8, 4784], #Found with QICK, run 33  # Freqs of Qubit g/e Transition
+                "qubit_freq_ge": [4943.4, 4773.45, 4578.95, 4805.35], #[4913.15, 4764.5, 4577, 4782.07],  # Freqs of Qubit g/e Transition
                 "qubit_gain_ge": [0.03, 0.03, 0.03, 0.03],  # [0.008] * 4,#[0.2, 0.2, 0.2, 0.01], #[0.2] * 4,  #0.07
                 "qubit_length_ge": 20,  # [us] for spec Pulse
                 "qubit_phase": 0,  # [deg]
