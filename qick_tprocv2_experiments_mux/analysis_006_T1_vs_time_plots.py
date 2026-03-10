@@ -21,6 +21,7 @@ import ast
 import os
 import matplotlib.pyplot as plt
 import allantools
+from iminuit import Minuit
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 import matplotlib.dates as mdates
@@ -154,6 +155,57 @@ class T1VsTime:
         R = total // N
         Y = y.reshape(N, R)
         return np.median(Y, axis=1) if reducer == "median" else np.mean(Y, axis=1)
+
+    def fit_flat_model(self, t, signal, sigma=None):
+        """
+        Fits the flat model y(t) = d to the data.
+
+        Automatically handles weighted (chi^2) or unweighted (RSS) cases.
+
+        Parameters
+        ----------
+        t : array-like
+            Time values (not used directly but kept for symmetry with other fits)
+        signal : array-like
+            Measured signal values
+        sigma : array-like or None
+            Uncertainties. If provided, a weighted chi^2 fit is used.
+
+        Returns
+        -------
+        flat_obj_val : float
+            Minimization objective value (chi^2 if weighted, RSS if unweighted)
+
+        d_fit : float
+            Best-fit constant value
+        """
+
+        t = np.asarray(t, float)
+        signal = np.asarray(signal, float)
+
+        if sigma is not None:
+            sigma = np.asarray(sigma, float)
+
+            def flat_obj(d):
+                model = np.full_like(signal, d)
+                r = (signal - model) / sigma
+                return np.sum(r * r)
+
+        else:
+
+            def flat_obj(d):
+                model = np.full_like(signal, d)
+                r = signal - model
+                return np.sum(r * r)
+
+        m = Minuit(flat_obj, d=np.median(signal))
+        m.errordef = Minuit.LEAST_SQUARES
+        m.migrad()
+
+        flat_obj_val = float(m.fval)
+        d_fit = float(m.values["d"])
+
+        return flat_obj_val, d_fit
 
     def run(self, return_errs = False, exp_extension='', process_shots = False, use_png_timestamps = False, outerFolder_save_plots = ""):
         import datetime
@@ -336,7 +388,7 @@ class T1VsTime:
                             T1_class_instance = T1Measurement(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                               fit_data=True)
                             #T1_spec_cfg = exp_config['T1_ge']
-                            q1_fit_exponential, T1_err, T1_est, plot_sig = T1_class_instance.t1_fit_iminuit(I, Q, delay_times)
+                            q1_fit_exponential, T1_err, T1_est, fit_info = T1_class_instance.t1_fit_iminuit(I, Q, delay_times)
                             if T1_est < 0:
                                 print("The value is negative, continuing...")
                                 continue
@@ -345,8 +397,38 @@ class T1VsTime:
                                 print("The value is above 600 us, this is a bad fit, continuing...")
                                 continue
 
-                            # To look at T1 plots of data that made it through:
-                            T1_class_instance.plot_results(I, Q, delay_times, folder_date, iminuit_fit_instead=True)
+                            # ------------------------ Quality cut: flat BIC vs exponential BIC test---------------------
+                            t = fit_info["t"]
+                            signal = fit_info["signal"]
+                            sigma = fit_info["sigma"]
+
+                            flat_obj_val, d_flat = self.fit_flat_model(t, signal, sigma)
+
+                            k_flat = 1
+                            n = len(t)
+
+                            # determine correct BIC formula
+                            if sigma is not None:
+                                # weighted case (objective = chi^2)
+                                bic_flat = flat_obj_val + k_flat * np.log(n)
+                            else:
+                                # unweighted case (objective = RSS)
+                                # Smaller RSS = better fit = smaller BIC for that model
+                                bic_flat = n * np.log(flat_obj_val / n) + k_flat * np.log(n)
+
+                            bic_exp = fit_info["bic_score"]
+
+                            # if BIC score is larger than zero -> exponential is better! (good T1 curve)
+                            # if BIC score is less than zero -> data looks flat
+                            delta_bic = bic_flat - bic_exp
+
+                            if delta_bic < 35:
+                                # I verified this BIC score for runs 4-8 and it worked well for ALL of them! No bad fits left.
+                                continue
+                            #---------------------------------------------------------------------------------------------
+
+                            # # To look at T1 plots of data that made it through:
+                            # T1_class_instance.plot_results(I, Q, delay_times, folder_date, iminuit_fit_instead=True)
 
                             # if T1_err >= 0.8 * T1_est:
                             #     print(
@@ -794,6 +876,7 @@ class OfflineAcquireReplica:
                 raise ValueError(f"3D shots second dim {n} != N {N}")
             if rr != reps:
                 print(f"[warn] 3D shots reps={rr} != cfg reps={reps}; using shots value.")
+                print("expt config params don't get updated during experiments, this is a known bug, only syst configs do.")
                 self._reps = rr
             if r != rounds:
                 print(f"[warn] 3D shots rounds={r} != cfg rounds={rounds}; using shots value.")

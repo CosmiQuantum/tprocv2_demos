@@ -44,11 +44,11 @@ save_figs = True
 fit_saved = False
 show_legends = False
 signal = 'None'
-# run_number = 8
+
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
-run_num_list = [8]
+run_num_list = [4,5,6,7,8]
 t1_vals_by_run  = {}
 t2r_vals_by_run = {}
 t2e_vals_by_run = {}
@@ -557,14 +557,14 @@ for run_number in run_num_list:
 # boxwhisker.plot_three_metrics_by_freq_comp_run_x_break(means, t1_vals, t2r_vals, t2e_vals,t1_vals_r2, t2r_vals_r2, t2e_vals_r2, plot_outliers=False)
 
 #------------------------ New way -------------------------------------------
-# boxwhisker_t1t2_per_qubit_vs_run(
-#     run_num_list,
-#     t1_vals_by_run=t1_vals_by_run,
-#     t2r_vals_by_run=t2r_vals_by_run,
-#     t2e_vals_by_run=t2e_vals_by_run,
-#     do_T1=False, do_T2R=False, do_T2E=True,
-#     mode="separate"
-# )
+boxwhisker_t1t2_per_qubit_vs_run(
+    run_num_list,
+    t1_vals_by_run=t1_vals_by_run,
+    t2r_vals_by_run=t2r_vals_by_run,
+    t2e_vals_by_run=t2e_vals_by_run,
+    do_T1=True, do_T2R=False, do_T2E=False,
+    mode="separate"
+)
 # # ################################## 18: Allan Deviation/ Welch Spectral Density #########################################
 # stats = AllanWelchStats(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name)

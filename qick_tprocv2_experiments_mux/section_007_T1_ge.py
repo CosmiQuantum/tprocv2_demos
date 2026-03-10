@@ -302,7 +302,8 @@ class T1Measurement:
 
         m.limits["c"] = (T1_min, T1_max)
 
-        # run minimization
+        # run minimization: first simplex, then migrad
+        #m.simplex() # if fitting is failing often, uncomment this, it can help
         m.migrad()
 
         # try one more time if we get invalid results
@@ -352,7 +353,32 @@ class T1Measurement:
         inv_order = np.argsort(order)
         fit_curve = fit_sorted[inv_order] # putting it back to the original order (should be sorted nonetheless, but this is done to be 100% consistent w original order)
 
-        return fit_curve, T1_err, T1_est, plot_sig
+        # For quality cuts (BIC score calc)
+        n = len(t)
+        k = 3  # a, c, d
+        if y_errs is not None:
+            # objective = chi^2
+            bic_score = m.fval + k * np.log(n)
+        else:
+            # objective = RSS
+            rss = m.fval
+            bic_score = n * np.log(rss / n) + k * np.log(n)
+
+        fit_info = {
+            "t": t.copy(),
+            "plot_sig": plot_sig, # type (I or Q)
+            "signal": signal.copy(), # actual signal data
+            "sigma": sigma.copy() if y_errs is not None else None,
+            "a_fit": float(a_fit),
+            "c_fit": float(c_fit),
+            "d_fit": float(d_fit),
+            "minimization_obj": float(m.fval),
+            "bic_score": float(bic_score),
+            "fit_valid": bool(m.valid),
+            "n_points": int(n),
+        }
+
+        return fit_curve, T1_err, T1_est, fit_info
 
     def plot_results(self, I, Q, delay_times, date, I_errs = None, Q_errs = None, config = None, fig_quality =100, iminuit_fit_instead = False):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
@@ -371,7 +397,8 @@ class T1Measurement:
                     y_err_for_fit = Q_errs
                 # else: no matching errs, leave as None
 
-                q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit_iminuit(I, Q, delay_times, y_err_for_fit)
+                q1_fit_exponential, T1_err, T1_est, fit_info = self.t1_fit_iminuit(I, Q, delay_times, y_err_for_fit)
+                plot_sig = fit_info["plot_sig"]
             else:
                 q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit(I, Q, delay_times)
 
