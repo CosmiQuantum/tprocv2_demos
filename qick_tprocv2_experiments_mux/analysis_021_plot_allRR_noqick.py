@@ -2347,25 +2347,25 @@ class PlotRR_noQick:
                         del rabi_class_instance
 
                     #-------------------------------------------- to filter out bad fits --------------------------------------------
+                    # -------------------- pull fit outputs --------------------
+                    I_fit_Pe = fit_params_Pe.get("I_fit", None)
+                    Q_fit_Pe = fit_params_Pe.get("Q_fit", None)
+
+                    I_fit_Pg = fit_params_Pg.get("I_fit", None)
+                    Q_fit_Pg = fit_params_Pg.get("Q_fit", None)
+
+                    A_I_Pe = fit_params_Pe.get("A_I", None)
+                    sigma_A_I_Pe = fit_params_Pe.get("sigma_A_I", None)
+                    A_Q_Pe = fit_params_Pe.get("A_Q", None)
+                    sigma_A_Q_Pe = fit_params_Pe.get("sigma_A_Q", None)
+
+                    A_I_Pg = fit_params_Pg.get("A_I", None)
+                    sigma_A_I_Pg = fit_params_Pg.get("sigma_A_I", None)
+                    A_Q_Pg = fit_params_Pg.get("A_Q", None)
+                    sigma_A_Q_Pg = fit_params_Pg.get("sigma_A_Q", None)
+
                     if filter_out_bad_amp_fits and len(I1) > 0 and len(I2) > 0:
                         print(f'\n inside filter_out_bad_amp_fits block for {q_key + 1}')
-
-                        # -------------------- pull fit outputs --------------------
-                        I_fit_Pe = fit_params_Pe.get("I_fit", None)
-                        Q_fit_Pe = fit_params_Pe.get("Q_fit", None)
-
-                        I_fit_Pg = fit_params_Pg.get("I_fit", None)
-                        Q_fit_Pg = fit_params_Pg.get("Q_fit", None)
-
-                        A_I_Pe = fit_params_Pe.get("A_I", None)
-                        sigma_A_I_Pe = fit_params_Pe.get("sigma_A_I", None)
-                        A_Q_Pe = fit_params_Pe.get("A_Q", None)
-                        sigma_A_Q_Pe = fit_params_Pe.get("sigma_A_Q", None)
-
-                        A_I_Pg = fit_params_Pg.get("A_I", None)
-                        sigma_A_I_Pg = fit_params_Pg.get("sigma_A_I", None)
-                        A_Q_Pg = fit_params_Pg.get("A_Q", None)
-                        sigma_A_Q_Pg = fit_params_Pg.get("sigma_A_Q", None)
 
                         # -------------------- BIC filtering: cosine must beat line AND exp in at least one quadrature ------------
                         BIC_THRESH_LINE = 12.0  # adjust as needed
