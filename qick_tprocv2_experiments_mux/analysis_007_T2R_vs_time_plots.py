@@ -21,9 +21,10 @@ from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
 
 class T2rVsTime:
-    def __init__(self, outerFolder_save_plots, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs,
+    def __init__(self, outerFolder_save_plots, run_number, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs,
                  fit_saved, signal, run_name, fridge):
         self.outerFolder_save_plots = outerFolder_save_plots
+        self.run_number = run_number
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -325,17 +326,17 @@ class T2rVsTime:
                             # -------------------- flat baseline vs Ramsey shape BIC test -------------------------------
                             y = I if plot_sig == "I" else Q
 
-                            keep_ramsey, delta_bic = self.flat_vs_ramsey_bic(y, fitted, k_fit=6, k0=1, threshold=35)
+                            keep_ramsey, delta_bic = self.flat_vs_ramsey_bic(y, fitted, k_fit=6, k0=1, threshold=35) # threshold is good for runs 4-8
 
                             if not keep_ramsey:
-                                print(f"Rejected by BIC: ΔBIC = {delta_bic:.2f}")
+                                print(f"Rejected by BIC: ΔBIC(line-Ramsey) = {delta_bic:.2f}")
                                 continue
 
                             # ---------------- Exponential vs Ramsey BIC test ----------------
                             y = I if plot_sig == "I" else Q
 
                             keep_ramsey, delta_bic_exp = self.exp_vs_ramsey_bic(
-                                delay_times, y, fitted, k_fit=6, k_exp=3, threshold=10)
+                                delay_times, y, fitted, k_fit=6, k_exp=3, threshold=10) # threshold is good for runs 4-8
 
                             if not keep_ramsey:
                                 print(f"Rejected by exp-BIC: ΔBIC(exp−Ramsey) = {delta_bic_exp:.2f}")
@@ -351,19 +352,26 @@ class T2rVsTime:
                                     print(f"The value is above 2*{max_t1} us, this is a bad fit, continuing...")
                                     continue
 
-                            # -------------------- Root Mean Square Error cut ---------------------
+                            # -------------------- Normalized Root Mean Square Error cut ---------------------
                             # You want to keep data below the threshold. We expect good fits to have small residuals.
                             # small NRMSE = good fit = keep, and large NRMSE = poor fit = reject
 
-                            nrmse_threshold = 0.14  # tested for QUIET runs 4-8 and it worked well for all!
+                            if self.run_number == 8 or self.run_number == 7:
+                                nrmse_threshold = 0.1224
+                            elif self.run_number == 6:
+                                nrmse_threshold = 0.1065
+                            elif self.run_number == 5:
+                                nrmse_threshold = 0.1319
+                            else:
+                                nrmse_threshold = 0.15 # all run 4 plots were good so threshold here is just a dummy that doesn't filter anything
 
-                            if out["nrmse"] > nrmse_threshold:
-                                print(
-                                    f"Rejected due to NRMSE cut. Value was above threshold of {nrmse_threshold}")
+                            nrmse_score = out["nrmse"]
+                            if nrmse_score> nrmse_threshold:
+                                print(f"Rejected due to NRMSE cut. Value was above threshold of {nrmse_threshold}")
                                 continue
 
                             # If you want to plot the data that made it through, uncomment this:
-                            # T2_class_instance.t2_fit_iminuit(delay_times, I, Q, make_plots = True)
+                            #T2_class_instance.t2_fit_iminuit(delay_times, I, Q, make_plots = True, title_ext = f"NRMSE:{nrmse_score:.4f}")
 
                             t2_vals[q_key].extend([t2r_est])
                             t2_errs[q_key].extend([t2r_err])

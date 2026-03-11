@@ -26,7 +26,7 @@ from analysis_007_T2R_vs_time_plots import T2rVsTime
 from analysis_008_T2E_vs_time_plots import T2eVsTime
 from AB_Paper_Analysis_Plots import boxwhisker_qtemps_per_qubit_vs_run_choice
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 7
+run_num = 8
 run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence analysis it's defined in its respective section
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality

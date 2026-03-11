@@ -237,7 +237,7 @@ class T2EMeasurement:
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2E configuration: ', self.config)
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} T2E configuration: {self.config}')
 
-    def t2_fit_iminuit(self, x_data, I, Q, verbose=False, guess=None, make_plots = False):
+    def t2_fit_iminuit(self, x_data, I, Q, verbose=False, guess=None, make_plots = False, title_ext = ""):
         """
         Iminuit-based version of T2 fit function (keeps the same logic + parameter names).
         """
@@ -412,18 +412,18 @@ class T2EMeasurement:
                 f"Fitting results:\n"
                 f" f = {out['f'][0] * 1000:.3f} +/- {out['f'][1] * 1000:.3f} MHz, \n"
                 f" phase = {out['phase'][0]:.3f} +/- {out['phase'][1]:.3f} rad, \n"
-                f" T2 = {out['T2'][0]:.2f} +/- {out['T2'][1]:.3f} ns, \n"
+                f" T2 = {out['T2'][0]:.2f} +/- {out['T2'][1]:.3f} us, \n"
                 f" amp = {out['amp'][0]:.2f} +/- {out['amp'][1]:.3f} a.u., \n"
                 f" initial offset = {out['initial_offset'][0]:.2f} +/- {out['initial_offset'][1]:.3f}, \n"
                 f" final_offset = {out['final_offset'][0]:.2f} +/- {out['final_offset'][1]:.3f} a.u."
             )
 
-        t2e_est = out["T2"][0]  # ns
-        t2e_err = out["T2"][1]  # ns
+        t2e_est = out["T2"][0]
+        t2e_err = out["T2"][1]
 
         # Plot
         if make_plots:
-            self.plot_results(I, Q, x_data, y_fit, t2e_est, t2e_err, plot_sig, config=None)
+            self.plot_results(I, Q, x_data, y_fit, t2e_est, t2e_err, plot_sig, config=None, title_ext = title_ext)
 
         return y_fit, t2e_est, t2e_err, plot_sig, out
 
@@ -649,7 +649,7 @@ class T2EMeasurement:
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-    def plot_results(self, I, Q, delay_times, fit, t2e_est, t2e_err, plot_sig, config = None, fig_quality = 100):
+    def plot_results(self, I, Q, delay_times, fit, t2e_est, t2e_err, plot_sig, config = None, fig_quality = 100, title_ext = ""):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
@@ -665,22 +665,21 @@ class T2EMeasurement:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"Q{self.QubitIndex + 1}" + f" T2E={t2e_est:.2f} +/- {t2e_err:.2f} us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         f"Q{self.QubitIndex + 1}" + f" T2E={t2e_est:.2f} +/- {t2e_err:.2f} us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs, {title_ext}",
                          fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
-                fig.text(plot_middle, 0.98, f"Q{self.QubitIndex + 1}" + f" T2E={t2e_est:.2f} +/- {t2e_err:.2f} us", fontsize=24, ha='center', va='top')
+                fig.text(plot_middle, 0.98, f"Q{self.QubitIndex + 1}" + f" T2E={t2e_est:.2f} +/- {t2e_err:.2f} us, {title_ext}", fontsize=24, ha='center', va='top')
 
         else:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
                          f"T2 Q{self.QubitIndex + 1}, pi gain %.2f" % float(config[
-                             'pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma" + f", {float(config['reps'])}*{float(config['rounds'])} avgs," ,
+                             'pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma" + f", {float(config['reps'])}*{float(config['rounds'])} avgs, {title_ext}" ,
                          fontsize=24, ha='center', va='top')
             else:
                 fig.text(plot_middle, 0.98,
-                         f"T2 Q{self.QubitIndex + 1}, pi gain %.2f" % float(self.config[
-                                                                                'pi_amp']) + f", {float(self.config['sigma']) * 1000} ns sigma" + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
+                         f"T2 Q{self.QubitIndex + 1}, pi gain %.2f" % float(self.config['pi_amp']) + f", {float(self.config['sigma']) * 1000} ns sigma" + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,{title_ext}",
                          fontsize=24, ha='center', va='top')
 
         # I subplot

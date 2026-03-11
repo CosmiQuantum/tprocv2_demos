@@ -229,7 +229,7 @@ class T2RMeasurement:
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration: ', self.config)
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration:{self.config}')
 
-    def t2_fit_iminuit(self, x_data, I, Q, verbose=False, guess=None, make_plots=False):
+    def t2_fit_iminuit(self, x_data, I, Q, verbose=False, guess=None, make_plots=False, title_ext = ""):
         """
         Iminuit-based version of T2 fit function (keeps the same logic + parameter names).
         """
@@ -404,52 +404,19 @@ class T2RMeasurement:
                 f"Fitting results:\n"
                 f" f = {out['f'][0] * 1000:.3f} +/- {out['f'][1] * 1000:.3f} MHz, \n"
                 f" phase = {out['phase'][0]:.3f} +/- {out['phase'][1]:.3f} rad, \n"
-                f" T2 = {out['T2'][0]:.2f} +/- {out['T2'][1]:.3f} ns, \n"
+                f" T2 = {out['T2'][0]:.2f} +/- {out['T2'][1]:.3f} us, \n"
                 f" amp = {out['amp'][0]:.2f} +/- {out['amp'][1]:.3f} a.u., \n"
                 f" initial offset = {out['initial_offset'][0]:.2f} +/- {out['initial_offset'][1]:.3f}, \n"
                 f" final_offset = {out['final_offset'][0]:.2f} +/- {out['final_offset'][1]:.3f} a.u."
             )
 
         # Plot
+        t2r_est = out["T2"][0]
+        t2r_err = out["T2"][1]
         if make_plots:
-            fig, ax = plt.subplots()
+            if make_plots:
+                self.plot_results(I, Q, x_data, y_fit, t2r_est, t2r_err, plot_sig, config=None, title_ext = title_ext)
 
-            ax.plot(x_data, y_fit, label="Fit")
-            ax.plot(
-                x_data,
-                y_data,
-                ".",
-                label=(
-                    f"T2 = {out['T2'][0]:.1f} +/- {out['T2'][1]:.1f} ns\n"
-                    f"f = {out['f'][0] * 1000:.3f} +/- {out['f'][1] * 1000:.3f} MHz"
-                ),
-            )
-            ax.legend(loc="upper right")
-            ax.set_xlabel("Delay time")
-            ax.set_ylabel(plot_sig)
-            fig.tight_layout()
-
-            if self.save_figs:
-                outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
-                self.create_folder_if_not_exists(outerFolder_expt)
-
-                now = datetime.datetime.now()
-                formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-
-                file_name = os.path.join(
-                    outerFolder_expt,
-                    f"R_{self.round_num}_"
-                    f"{formatted_datetime}_"
-                    f"{self.expt_name}_"
-                    f"{plot_sig}.png"
-                )
-
-                fig.savefig(file_name, bbox_inches="tight")
-
-            plt.close(fig)
-
-        t2r_est = out["T2"][0]  # ns
-        t2r_err = out["T2"][1]  # ns
         return y_fit, t2r_est, t2r_err, plot_sig, out
 
     def t2_fit(self, x_data, I, Q, verbose = False, guess=None, plot=False):
@@ -671,7 +638,7 @@ class T2RMeasurement:
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-    def plot_results(self, I, Q, delay_times, now, fit, t2r_est, t2r_err, plot_sig, config = None, fig_quality = 100):
+    def plot_results(self, I, Q, delay_times, fit, t2r_est, t2r_err, plot_sig, config = None, fig_quality = 100, title_ext = ""):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
@@ -686,21 +653,21 @@ class T2RMeasurement:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"T2 Q{self.QubitIndex + 1}: {t2r_est:.2f} +/- {t2r_err:.2f}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         f"T2 Q{self.QubitIndex + 1}: {t2r_est:.2f} +/- {t2r_err:.2f}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs, {title_ext}",
                          fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
                 fig.text(plot_middle, 0.98,
-                         f"T2R Q{self.QubitIndex + 1}: {t2r_est:.2f} +/- {t2r_err:.2f}", fontsize=24, ha='center', va='top')
+                         f"T2R Q{self.QubitIndex + 1}: {t2r_est:.2f} +/- {t2r_err:.2f}, {title_ext}", fontsize=24, ha='center', va='top')
 
         else:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"T2 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs," ,
+                         f"T2 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs, {title_ext}" ,
                          fontsize=24, ha='center', va='top')
             else:
                 fig.text(plot_middle, 0.98,
-                         f"T2 Q{self.QubitIndex + 1}", fontsize=24, ha='center', va='top')
+                         f"T2 Q{self.QubitIndex + 1}, {title_ext}", fontsize=24, ha='center', va='top')
 
         # I subplot
         ax1.plot(delay_times, I, label="Gain (a.u.)", linewidth=2)
