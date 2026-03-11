@@ -305,8 +305,8 @@ class Temps_EFAmpRabiExperiment:
                     pcov7 = np.full((7, 7), np.nan, dtype=float)
 
             # Model curves (NO canonicalization)
-            I_fit = self.cosine(gains, aI, b, cI, dI)
-            Q_fit = self.cosine(gains, aQ, b, cQ, dQ)
+            I_fit = self.cosine(gains, aI, b, cI, dI) # cosine curve formed with the provided params
+            Q_fit = self.cosine(gains, aQ, b, cQ, dQ) # cosine curve formed with the provided params
 
             # -------------------- Plots: I and Q --------------------
             ax1.plot(gains, I, linewidth=2, label="I")
@@ -365,7 +365,7 @@ class Temps_EFAmpRabiExperiment:
 
                 mag_popt, mag_pcov = self.fit_cosine_iminuit(gains, magnitude_data, mag_guess)
                 # NOTE: still no canonicalization
-                magnitude_fit = self.cosine(gains, *mag_popt)
+                magnitude_fit = self.cosine(gains, *mag_popt) # cosine curve with mag data params
                 ax3.plot(gains, magnitude_fit, "-", color="green", linewidth=3, label="Fit to |IQ|")
 
             ax3.legend(loc="best")
@@ -562,7 +562,7 @@ class Temps_EFAmpRabiExperiment:
             A_amp_IQ = np.sqrt(A_I ** 2 + A_Q ** 2) # Combined IQ Amplitude from the amplitudes of the I and Q fits
             sigma_A_I = np.sqrt(np.diag(pcov_I))[0] # I-curve amplitude error
             sigma_A_Q = np.sqrt(np.diag(pcov_Q))[0] # Q-curve amplitude error
-            A_amp_IQ_err = np.sqrt((A_I / A_amp_IQ) ** 2 * sigma_A_I ** 2 +(A_Q / A_amp_IQ) ** 2 * sigma_A_Q ** 2) # Combined IQ Amplitude err
+            A_amp_IQ_err = np.sqrt((A_I / A_amp_IQ) ** 2 * sigma_A_I ** 2 +(A_Q / A_amp_IQ) ** 2 * sigma_A_Q ** 2) # Combined IQ Amplitude err, no covariance term
             # ------------------------------------------------------------------------------------------------------------------------
 
             ax1.legend([f"A={A_I:.4f}+/-{sigma_A_I:.4f}"], loc='best')
@@ -637,9 +637,7 @@ class Temps_EFAmpRabiExperiment:
                 ax3.set_ylabel("Magnitude (a.u.)", fontsize=20)
             ax3.tick_params(axis='both', which='major', labelsize=16)
             ax3.legend(loc='best')
-
             #------------------------------------------------------------------------------
-
             if self.save_figs:
                 today_date = datetime.datetime.now().strftime("%Y-%m-%d")
                 dated_folder_name = f"made_on_{today_date}"
