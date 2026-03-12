@@ -193,7 +193,7 @@ class Data_H5:
                     # Attempt to map HDF5 keys to the target dictionaries' keys.
                     if data_type == 'Res' or data_type == 'Res_ge' or  data_type == 'Res_ef':
                         target_keys = {'Dates': 'Dates', 'freq_pts': 'freq_pts', 'freq_center': 'freq_center',
-                                       'Amps': 'Amps', 'Found Freqs': 'Found Freqs', 'Round Num': 'Round Num',
+                                       'Amps': 'Amps', 'I': 'I', 'Q': 'Q', 'Found Freqs': 'Found Freqs', 'Round Num': 'Round Num',
                                        'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
                                        'Syst Config': 'Syst Config'}
                     elif data_type == 'QSpec' or data_type == 'QSpec_ge' or  data_type == 'QSpec_ef' or data_type == 'qspec_ge':
