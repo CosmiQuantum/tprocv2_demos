@@ -50,9 +50,9 @@ save_figs = True                     # save plots for everything as you go along
 live_plot = False                    # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
 fit_data = True                      # fit the data here and save or plot the fits?
 save_data_h5 = True                  # save all of the data to h5 files?
-verbose = True                      # print everything to the console in real time, good for debugging, bad for memory
+verbose = False                      # print everything to the console in real time, good for debugging, bad for memory
 qick_verbose = False                  # qick verbose prints the progress bar for each qick experiment as it is happening (the red bar that fills out as more experiment rounds/reps are being done)
-debug_mode = False                   # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
+debug_mode = True                   # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 thresholding = False                 # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 increase_qubit_reps = False          # if you want to increase the reps for a qubit, set to True
 unmask = True                        # Do you want to use the unmasking feature to increase resonator gain?
@@ -71,7 +71,7 @@ print(FRIDGE)
 #Data saving info
 run_name = 'run35'
 device_name = '4charge'
-substudy_txt_notes = ('All Q res spec and res spec "ef" with 1000 reps, +/- 1MHz, centered -0.25MHz from ground res, res gain to 0.2, res length 4us. Plotting with I and Q now') #('Checking SSF on all 4 qubits with 4 us res length, 0.3 res gain. No optimization done, degenerate points not found.')
+substudy_txt_notes = ('All Q res spec and res spec "ef" with 100 reps, +/- 1MHz, centered -0.25MHz from ground res, res gain to 0.2, res length 4us. Plotting IQ circle too now for res') #('Checking SSF on all 4 qubits with 4 us res length, 0.3 res gain. No optimization done, degenerate points not found.')
 
 # set which of the following you'd like to run to 'True'
 run_flags = {"tof": False, "res_spec": True, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False, "test_act":False, "fh_rabi":False,

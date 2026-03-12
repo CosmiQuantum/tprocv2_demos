@@ -97,19 +97,20 @@ class ResonanceSpectroscopy:
             'ytick.labelsize': 14,
             'legend.fontsize': 14,
         })
-        if plot_IQ:
-            for i in range(self.number_of_qubits):
-                freq_r = fpts[np.argmin(filtered_amps[i])] + fcenter[i]
-                res_freqs.append(freq_r)
+        for i in range(self.number_of_qubits):
+            freq_r = fpts[np.argmin(filtered_amps[i])] + fcenter[i]
+            res_freqs.append(freq_r)
 
-                plt.figure(figsize=(10, 10))
+        if plot_IQ:
+            plt.figure(figsize=(10, 10))
+            for i in range(self.number_of_qubits):
                 plt.subplot(2, 2, i + 1)
                 plt.plot(Iarr[i], Qarr[i], '.')
                 plt.xlabel("I")
                 plt.ylabel("Q")
 
                 if i == self.QubitIndex:
-                    plt.title(f"Res {i + 1}, {freq_r:.3f} MHz", pad=10)
+                    plt.title(f"Res {i + 1}, {res_freqs[i]:.3f} MHz", pad=10)
                 else:
                     plt.title(f"Res {i + 1}", pad=10)
 
@@ -133,11 +134,8 @@ class ResonanceSpectroscopy:
                 # plt.savefig(file_name + ".pdf", dpi=fig_quality)
             plt.close()
 
+        plt.figure(figsize=(12, 8))
         for i in range(self.number_of_qubits):
-            freq_r = fpts[np.argmin(filtered_amps[i])] + fcenter[i]
-            res_freqs.append(freq_r)
-            plt.figure(figsize=(12, 8))
-
             plt.subplot(2, 2, i + 1)
             # Plot raw and filtered data on the same plot
             plt.plot([f + fcenter[i] for f in fpts], amps[i], '-', linewidth=1.5, label = 'Raw')
@@ -152,8 +150,8 @@ class ResonanceSpectroscopy:
                 # print(fwhm)
                 # print(fit)
                 # plt.plot([f + fcenter[i] for f in fpts], fit, 'r--', label = 'Lor Fit')
-                plt.axvline(freq_r, linestyle='--', color='orange', linewidth=1.5)
-                plt.title(f"Resonator {i + 1} {freq_r:.3f} MHz", pad=10) #, fwhm: {fwhm:.2f} MHz
+                plt.axvline(res_freqs[i], linestyle='--', color='orange', linewidth=1.5)
+                plt.title(f"Resonator {i + 1} {res_freqs[i]:.3f} MHz", pad=10) #, fwhm: {fwhm:.2f} MHz
             else:
                 plt.title(f"Resonator {i + 1}", pad=10)
             #plt.legend()
