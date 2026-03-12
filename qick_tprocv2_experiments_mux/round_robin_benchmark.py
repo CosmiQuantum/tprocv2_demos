@@ -583,7 +583,7 @@ while j < n:
                     ef_res_spec = ResonanceSpectroscopyEF(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, #sample,
                                                           save_figs, experiment=experiment, verbose=verbose,
                                                           logger=rr_logger, qick_verbose=qick_verbose, unmasking_resgain = unmask)
-                    ef_res_freqs, ef_freq_pts, ef_freq_center, ef_Iarr, ef_Qarr, ef_amps, sys_config_rspec_ef = ef_res_spec.run(res_IQ)
+                    ef_res_freqs, ef_freq_pts, ef_freq_center, ef_Iarr, ef_Qarr, ef_amps, sys_config_rspec_ef = ef_res_spec.run(plotIQ = res_IQ)
                     ef_res_freqs_samples.append(ef_res_freqs)
                     rr_logger.info(f"EF ResSpec sample {sample} for qubit {QubitIndex + 1}: {ef_res_freqs}")
 

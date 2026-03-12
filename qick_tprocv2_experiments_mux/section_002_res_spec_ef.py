@@ -98,7 +98,6 @@ class ResonanceSpectroscopyEF:
 
     def plot_results(self, fpts, fcenter, Iarr, Qarr, amps, filtered_amps, plot_IQ = False, reloaded_config=None, fig_quality=100):
         res_freqs = []
-        plt.figure(figsize=(12, 8))
         plt.rcParams.update({
             'font.size': 14,
             'axes.titlesize': 18,
@@ -108,42 +107,56 @@ class ResonanceSpectroscopyEF:
             'legend.fontsize': 14,
         })
 
+        if plot_IQ:
+            for i in range(self.number_of_qubits):
+                freq_r = fpts[np.argmin(filtered_amps[i])] + fcenter[i]
+                res_freqs.append(freq_r)
+
+                plt.figure(figsize=(10,10))
+                plt.subplot(2, 2, i + 1)
+                plt.plot(Iarr[i], Qarr[i], '.')
+                plt.xlabel("I")
+                plt.ylabel("Q")
+
+                if i == self.QubitIndex:
+                    plt.title(f"Res {i + 1}, {freq_r:.3f} MHz", pad=10)
+                else:
+                    plt.title(f"Res {i + 1}", pad=10)
+            if self.experiment is not None:
+                plt.suptitle(f"MUXed resonator spectroscopy IQ circle {self.config['reps']}*{self.config['rounds']} avgs",
+                             fontsize=24, y=0.95)
+            else:
+                plt.suptitle(f"MUXed resonator spectroscopy IQ circle {reloaded_config['reps']}*{reloaded_config['rounds']} avgs",
+                             fontsize=24, y=0.95)
+            plt.tight_layout(pad=2.0)
+
+            if self.save_figs:
+                # outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
+                outerFolder_expt = os.path.join(self.outerFolder, self.expt_name + "_plots")
+                self.create_folder_if_not_exists(outerFolder_expt)
+                now = datetime.datetime.now()
+                formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+                file_name = os.path.join(outerFolder_expt,
+                                             f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + "_EF_IQcirc.png")
+                plt.savefig(file_name, dpi=fig_quality)
+            plt.close()
+
+
         for i in range(self.number_of_qubits):
             freq_r = fpts[np.argmin(filtered_amps[i])] + fcenter[i]
             res_freqs.append(freq_r)
+            plt.figure(figsize=(12,8))
 
-            if plot_IQ:
-                plt.subplot(2, 4, i + 1)
-                plt.plot([f + fcenter[i] for f in fpts], Iarr[i], '-', linewidth=1.5)
+            plt.subplot(2, 2, i + 1)
+            plt.plot([f + fcenter[i] for f in fpts], amps[i], '-', linewidth=1.5)
+            plt.plot([f + fcenter[i] for f in fpts], filtered_amps[i], '-', linewidth=1.5)
 
-                plt.subplot(2, 4, i + 5)
-                plt.plot([f + fcenter[i] for f in fpts], Qarr[i], '-', linewidth=1.5)
-
-                if i == self.QubitIndex:
-                    plt.subplot(2, 4, i + 1)
-                    plt.axvline(freq_r, linestyle="--")
-                    plt.title(f"Res {i + 1} I {freq_r:.3f} MHz", pad=10)
-                    plt.subplot(2, 4, i + 5)
-                    plt.axvline(freq_r, linestyle="--")
-                    plt.title(f"Res {i + 1} Q {freq_r:.3f} MHz", pad=10)
-                else:
-                    plt.subplot(2, 4, i + 1)
-                    plt.title(f"Res {i + 1} I", pad=10)
-                    plt.subplot(2, 4, i + 5)
-                    plt.title(f"Res {i + 1} Q", pad=10)
+            if i == self.QubitIndex:
+                plt.axvline(freq_r, linestyle='--', color='orange', linewidth=1.5)
+                plt.title(f"Resonator {i + 1} {freq_r:.3f} MHz", pad=10)
             else:
-                plt.subplot(2, 2, i + 1)
-                # plt.plot(fpts + fcenter[i], amps[i], '-', linewidth=1.5)
-                plt.plot([f + fcenter[i] for f in fpts], amps[i], '-', linewidth=1.5)
-                plt.plot([f + fcenter[i] for f in fpts], filtered_amps[i], '-', linewidth=1.5)
-                freq_r = fpts[np.argmin(filtered_amps[i])] + fcenter[i]
-                res_freqs.append(freq_r)
-                if i == self.QubitIndex:
-                    plt.axvline(freq_r, linestyle='--', color='orange', linewidth=1.5)
-                    plt.title(f"Resonator {i + 1} {freq_r:.3f} MHz", pad=10)
-                else:
-                    plt.title(f"Resonator {i + 1}", pad=10)
-                #plt.axvline(freq_r, linestyle='--', color='orange', linewidth=1.5)
+                plt.title(f"Resonator {i + 1}", pad=10)
+
             plt.xlabel("Frequency (MHz)")
             plt.ylabel("Amplitude (a.u.)")
             plt.ylim(plt.ylim()[0] - 0.05 * (plt.ylim()[1] - plt.ylim()[0]), plt.ylim()[1])
@@ -162,12 +175,7 @@ class ResonanceSpectroscopyEF:
             self.create_folder_if_not_exists(outerFolder_expt)
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-            if plot_IQ:
-                file_name = os.path.join(outerFolder_expt,
-                                         f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + "_EF_IQ.png")
-
-            else:
-                file_name = os.path.join(outerFolder_expt,
+            file_name = os.path.join(outerFolder_expt,
                                      f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + "_EF.png")
             plt.savefig(file_name, dpi=fig_quality)
         plt.close()

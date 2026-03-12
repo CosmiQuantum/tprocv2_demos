@@ -89,7 +89,6 @@ class ResonanceSpectroscopy:
 
     def plot_results(self, fpts, fcenter, Iarr, Qarr, amps, filtered_amps, plot_IQ = False, reloaded_config = None, fig_quality = 100):
         res_freqs = []
-        plt.figure(figsize=(12, 8))
         plt.rcParams.update({
             'font.size': 14,
             'axes.titlesize': 18,
@@ -98,52 +97,65 @@ class ResonanceSpectroscopy:
             'ytick.labelsize': 14,
             'legend.fontsize': 14,
         })
+        if plot_IQ:
+            for i in range(self.number_of_qubits):
+                freq_r = fpts[np.argmin(filtered_amps[i])] + fcenter[i]
+                res_freqs.append(freq_r)
 
-        for i in range(self.number_of_qubits):
-            freq_r = fpts[np.argmin(filtered_amps[i])] + fcenter[i]
-            res_freqs.append(freq_r)
-
-            if plot_IQ:
                 plt.figure(figsize=(10, 10))
                 plt.subplot(2, 2, i + 1)
                 plt.plot(Iarr[i], Qarr[i], '.')
                 plt.xlabel("I")
                 plt.ylabel("Q")
 
-                # plt.subplot(2, 4, i + 1)
-                # plt.plot([f + fcenter[i] for f in fpts], Iarr[i], '-', linewidth=1.5)
-                # plt.subplot(2, 4, i + 5)
-                # plt.plot([f + fcenter[i] for f in fpts], Qarr[i], '-', linewidth=1.5)
+                if i == self.QubitIndex:
+                    plt.title(f"Res {i + 1}, {freq_r:.3f} MHz", pad=10)
+                else:
+                    plt.title(f"Res {i + 1}", pad=10)
 
-                if i == self.QubitIndex:
-                    # plt.subplot(2, 4, i + 1)
-                    # plt.axvline(freq_r, linestyle="--")
-                    plt.title(f"Res {i + 1} {freq_r:.3f} MHz", pad=10)
-                    # plt.subplot(2, 4, i + 5)
-                    # plt.axvline(freq_r, linestyle="--")
-                    # plt.title(f"Res {i + 1} Q {freq_r:.3f} MHz", pad=10)
-                else:
-                    # plt.subplot(2, 4, i + 1)
-                    plt.title(f"Res {i + 1} ", pad=10)
+            if self.experiment is not None:
+                plt.suptitle(f"MUXed resonator spectroscopy IQ circle {self.config['reps']}*{self.config['rounds']} avgs",
+                             fontsize=24, y=0.95)
             else:
-                plt.subplot(2, 2, i + 1)
-                # Plot raw and filtered data on the same plot
-                plt.plot([f + fcenter[i] for f in fpts], amps[i], '-', linewidth=1.5, label = 'Raw')
-                plt.plot([f + fcenter[i] for f in fpts], filtered_amps[i], '-', linewidth=1.5, alpha = 0.7, label = 'Smoothed')
-                if i == self.QubitIndex:
-                    ##### Uncomment to debug, leave commented if res spec measurment plots needed
-                    # freqs = [f + fcenter[i] for f in fpts]
-                    # print('freqs: ', freqs)
-                    # print('amps: ', amps[i])
-                    # mean, fit, fwhm, error = self.fit_lorentzian(amps[i], freqs, freq_r[-1])
-                    # print('mean', mean)
-                    # print(fwhm)
-                    # print(fit)
-                    # plt.plot([f + fcenter[i] for f in fpts], fit, 'r--', label = 'Lor Fit')
-                    plt.axvline(freq_r, linestyle='--', color='orange', linewidth=1.5)
-                    plt.title(f"Resonator {i + 1} {freq_r:.3f} MHz", pad=10) #, fwhm: {fwhm:.2f} MHz
-                else:
-                    plt.title(f"Resonator {i + 1}", pad=10)
+                plt.suptitle(
+                    f"MUXed resonator spectroscopy IQ circle {reloaded_config['reps']}*{reloaded_config['rounds']} avgs",
+                    fontsize=24, y=0.95)
+            plt.tight_layout(pad=2.0)
+
+            if self.save_figs:
+                outerFolder_expt = os.path.join(self.outerFolder, self.expt_name + "_ge_plots")
+                self.create_folder_if_not_exists(outerFolder_expt)
+                now = datetime.datetime.now()
+                formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+                file_name = os.path.join(outerFolder_expt,
+                                         f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + '_IQcirc')
+                plt.savefig(file_name + ".png", dpi=fig_quality)
+                # plt.savefig(file_name + ".pdf", dpi=fig_quality)
+            plt.close()
+
+        for i in range(self.number_of_qubits):
+            freq_r = fpts[np.argmin(filtered_amps[i])] + fcenter[i]
+            res_freqs.append(freq_r)
+            plt.figure(figsize=(12, 8))
+
+            plt.subplot(2, 2, i + 1)
+            # Plot raw and filtered data on the same plot
+            plt.plot([f + fcenter[i] for f in fpts], amps[i], '-', linewidth=1.5, label = 'Raw')
+            plt.plot([f + fcenter[i] for f in fpts], filtered_amps[i], '-', linewidth=1.5, alpha = 0.7, label = 'Smoothed')
+            if i == self.QubitIndex:
+                ##### Uncomment to debug, leave commented if res spec measurment plots needed
+                # freqs = [f + fcenter[i] for f in fpts]
+                # print('freqs: ', freqs)
+                # print('amps: ', amps[i])
+                # mean, fit, fwhm, error = self.fit_lorentzian(amps[i], freqs, freq_r[-1])
+                # print('mean', mean)
+                # print(fwhm)
+                # print(fit)
+                # plt.plot([f + fcenter[i] for f in fpts], fit, 'r--', label = 'Lor Fit')
+                plt.axvline(freq_r, linestyle='--', color='orange', linewidth=1.5)
+                plt.title(f"Resonator {i + 1} {freq_r:.3f} MHz", pad=10) #, fwhm: {fwhm:.2f} MHz
+            else:
+                plt.title(f"Resonator {i + 1}", pad=10)
             #plt.legend()
             plt.xlabel("Frequency (MHz)")
             plt.ylabel("Amplitude (a.u.)")
@@ -162,11 +174,7 @@ class ResonanceSpectroscopy:
             self.create_folder_if_not_exists(outerFolder_expt)
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-            if plot_IQ:
-                file_name = os.path.join(outerFolder_expt,
-                                         f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + '_IQcirc')
-            else:
-                file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name)
+            file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name)
             plt.savefig(file_name + ".png", dpi=fig_quality)
             #plt.savefig(file_name + ".pdf", dpi=fig_quality)
         plt.close()
