@@ -2368,8 +2368,20 @@ class PlotRR_noQick:
                         print(f'\n inside filter_out_bad_amp_fits block for {q_key + 1}')
 
                         # -------------------- BIC filtering: cosine must beat line AND exp in at least one quadrature ------------
-                        BIC_THRESH_LINE = 12.0  # adjust as needed
-                        BIC_THRESH_EXP = 15.0  # adjust as needed. #20 worked well for QUIET run 8
+                        # sometimes all the oscillation is in I, and sometimes all the oscillation is in Q.
+                        # So requiring both to pass could incorrectly reject good data.
+                        # It's safer to start with filtering out data for which both I and Q fail the BIC tests.
+
+                        # There is no run 4 or 5 RPM data
+                        if run_num == 7:
+                            BIC_THRESH_LINE = 12.0  # adjust as needed
+                            BIC_THRESH_EXP = 14.0  # adjust as needed
+                        elif run_num == 6:
+                            BIC_THRESH_LINE = 12.0  # adjust as needed
+                            BIC_THRESH_EXP = 14.4  # adjust as needed
+                        else:
+                            BIC_THRESH_LINE = 12.0  # adjust as needed
+                            BIC_THRESH_EXP = 19.9  # adjust as needed
 
                         # Pe sequence
                         res_bic_I_Pe = self.bic_line_exp_vs_cosine(gains1, I1, I_fit_Pe)
@@ -2393,6 +2405,27 @@ class PlotRR_noQick:
                                 (res_bic_Q_Pg["dBIC"]["line_minus_cosine"] > BIC_THRESH_LINE and
                                  res_bic_Q_Pg["dBIC"]["exp_minus_cosine"] > BIC_THRESH_EXP))
 
+                        # --- Extract BIC values for labeling ---
+                        bic_I_line_Pe = res_bic_I_Pe["dBIC"]["line_minus_cosine"]
+                        bic_I_exp_Pe = res_bic_I_Pe["dBIC"]["exp_minus_cosine"]
+                        bic_Q_line_Pe = res_bic_Q_Pe["dBIC"]["line_minus_cosine"]
+                        bic_Q_exp_Pe = res_bic_Q_Pe["dBIC"]["exp_minus_cosine"]
+
+                        bic_I_line_Pg = res_bic_I_Pg["dBIC"]["line_minus_cosine"]
+                        bic_I_exp_Pg = res_bic_I_Pg["dBIC"]["exp_minus_cosine"]
+                        bic_Q_line_Pg = res_bic_Q_Pg["dBIC"]["line_minus_cosine"]
+                        bic_Q_exp_Pg = res_bic_Q_Pg["dBIC"]["exp_minus_cosine"]
+
+                        bic_tag_Pe = ( # I
+                            f"I_L{bic_I_line_Pe:.1f}_E{bic_I_exp_Pe:.1f}_"
+                            f"Q_L{bic_Q_line_Pe:.1f}_E{bic_Q_exp_Pe:.1f}_"
+                        )
+
+                        bic_tag_Pg = (
+                            f"I_L{bic_I_line_Pg:.1f}_E{bic_I_exp_Pg:.1f}_"
+                            f"Q_L{bic_Q_line_Pg:.1f}_E{bic_Q_exp_Pg:.1f}_"
+                        )
+
                         # Pairwise decision: flag if either sequence fails BIC
                         flagged = not (Pe_ok and Pg_ok)
 
@@ -2401,20 +2434,20 @@ class PlotRR_noQick:
                         Pg_self_fail = not Pg_ok
 
                         # Pe filename tag
-                        if Pe_self_fail:
-                            pe_tag = "Pe_SELF_FAIL_"
+                        if Pe_self_fail: # example: Pe_SELF_FAIL_dBIC_I_LC12.3_EC9.5_Q_LC10.1_EC7.2_ where LC = line_minus_cosine, EC = exp_minus_cosine
+                            pe_tag = f"Pe_SELF_FAIL_{bic_tag_Pe}_"
                         elif flagged:
-                            pe_tag = "Pe_PAIR_FAIL_"
+                            pe_tag = f"Pe_PAIR_FAIL_{bic_tag_Pe}_"
                         else:
-                            pe_tag = "Pe_CLEAN_"
+                            pe_tag = f"Pe_CLEAN_{bic_tag_Pe}"
 
                         # Pg filename tag
                         if Pg_self_fail:
-                            pg_tag = "Pg_SELF_FAIL_"
+                            pg_tag = f"Pg_SELF_FAIL_{bic_tag_Pg}_"
                         elif flagged:
-                            pg_tag = "Pg_PAIR_FAIL_"
+                            pg_tag = f"Pg_PAIR_FAIL_{bic_tag_Pg}_"
                         else:
-                            pg_tag = "Pg_CLEAN_"
+                            pg_tag = f"Pg_CLEAN_{bic_tag_Pg}_"
 
                         # -----------------------------------------------------------------------------------
                         base_dir = os.path.join(self.outerFolder_save_plots, "filtering_bad_fits")

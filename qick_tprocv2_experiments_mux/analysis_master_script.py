@@ -337,11 +337,11 @@ for run_number in run_num_list:
 # outerFolder_save_plots = fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\19dB_DAC_testdata_allQs/replotted_RR_data/{date}/"
 # # outerFolder_save_plots = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/replotted_RR_data/2025-10-27_22-04-57/t2r_ge/"
 # #C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\19dB_DAC_testdata_allQs
-# plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, run_number, tot_num_of_qubits, outerFolder = outerFolder,
-#                   outerFolder_save_plots = outerFolder_save_plots, unique_folder_path = unique_folder_path, process_shots = process_shots_t1)
-# plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, rabi_rolling_avg=False, plot_ss = False,
-#             plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = False,
-#             plot_t2r = True, plot_t2e = False, plot_rabis_Qtemps = False)
+#plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, run_number, tot_num_of_qubits, outerFolder = outerFolder,
+                  #outerFolder_save_plots = outerFolder_save_plots, unique_folder_path = unique_folder_path, process_shots = process_shots_t1)
+#plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, rabi_rolling_avg=False, plot_ss = False,
+            #plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = False,
+            #plot_t2r = True, plot_t2e = False, plot_rabis_Qtemps = False)
 
 ########################################### 03: Resonator Freqs vs Time Plots ###########################################
 # res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
