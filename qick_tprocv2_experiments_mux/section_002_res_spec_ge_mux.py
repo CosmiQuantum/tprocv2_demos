@@ -61,26 +61,33 @@ class ResonanceSpectroscopy:
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} Res Spec configuration: {self.config}')
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} Res Spec configuration: ', self.config)
 
-    def run(self):
+    def run(self, plotIQ=False):
         fpts = self.exp_cfg["start"] + self.exp_cfg["step_size"] * np.arange(self.exp_cfg["steps"])
         fcenter = self.config['res_freq_ge']
         amps = np.zeros((len(fcenter), len(fpts)))
-        filtered_amps = np.zeros((len(fcenter), len(fpts)))
+        Iarr = np.zeros((len(fcenter), len(fpts)))
+        Qarr = np.zeros((len(fcenter), len(fpts)))
+        #filtered_amps = np.zeros((len(fcenter), len(fpts)))
 
         for index, f in enumerate(tqdm(fpts)):
             self.config["res_freq_ge"] = fcenter + f
             prog = SingleToneSpectroscopyProgram(self.experiment.soccfg, reps=self.exp_cfg["reps"], final_delay=0.5, cfg=self.config)
             iq_list = prog.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=self.qick_verbose)
+            #print(f'freq {f}, {iq_list[0]}')
             for i in range(len(self.config['res_freq_ge'])):
                 #amps[i][index]= iq_list[i][:,0]
+                Iarr[i][index] = iq_list[i][0, 0]
+                Qarr[i][index] = iq_list[i][0, 1]
                 amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])
         amps = np.array(amps)
+        Iarr = np.array(Iarr)
+        Qarr = np.array(Qarr)
         filtered_amps = np.array(savgol_filter(amps, window_length=21, polyorder=3))
-        res_freqs = self.plot_results(fpts, fcenter, amps, filtered_amps) #return freqs from plotting loop so we can use to update experiment
+        res_freqs = self.plot_results(fpts, fcenter, Iarr, Qarr, amps, filtered_amps, plot_IQ = plotIQ) #return freqs from plotting loop so we can use to update experiment
 
-        return res_freqs, fpts, fcenter, amps, self.config
+        return res_freqs, fpts, fcenter, Iarr, Qarr, amps, self.config
 
-    def plot_results(self, fpts, fcenter, amps, filtered_amps, reloaded_config = None, fig_quality = 100):
+    def plot_results(self, fpts, fcenter, Iarr, Qarr, amps, filtered_amps, plot_IQ = False, reloaded_config = None, fig_quality = 100):
         res_freqs = []
         plt.figure(figsize=(12, 8))
         plt.rcParams.update({
@@ -93,27 +100,50 @@ class ResonanceSpectroscopy:
         })
 
         for i in range(self.number_of_qubits):
-            plt.subplot(2, 3, i + 1)
-            #plt.plot(fpts + fcenter[i], amps[i], '-', linewidth=1.5)
-            # Plot raw and filtered data on the same plot
-            plt.plot([f + fcenter[i] for f in fpts], amps[i], '-', linewidth=1.5, label = 'Raw')
-            plt.plot([f + fcenter[i] for f in fpts], filtered_amps[i], '-', linewidth=1.5, alpha = 0.7, label = 'Smoothed')
             freq_r = fpts[np.argmin(filtered_amps[i])] + fcenter[i]
             res_freqs.append(freq_r)
-            if i == self.QubitIndex:
-                ##### Uncomment to debug, leave commented if res spec measurment plots needed
-                # freqs = [f + fcenter[i] for f in fpts]
-                # print('freqs: ', freqs)
-                # print('amps: ', amps[i])
-                # mean, fit, fwhm, error = self.fit_lorentzian(amps[i], freqs, freq_r[-1])
-                # print('mean', mean)
-                # print(fwhm)
-                # print(fit)
-                # plt.plot([f + fcenter[i] for f in fpts], fit, 'r--', label = 'Lor Fit')
-                plt.axvline(freq_r, linestyle='--', color='orange', linewidth=1.5)
-                plt.title(f"Resonator {i + 1} {freq_r:.3f} MHz", pad=10) #, fwhm: {fwhm:.2f} MHz
+
+            if plot_IQ:
+                plt.figure(figsize=(10, 10))
+                plt.subplot(2, 2, i + 1)
+                plt.plot(Iarr[i], Qarr[i], '.')
+                plt.xlabel("I")
+                plt.ylabel("Q")
+
+                # plt.subplot(2, 4, i + 1)
+                # plt.plot([f + fcenter[i] for f in fpts], Iarr[i], '-', linewidth=1.5)
+                # plt.subplot(2, 4, i + 5)
+                # plt.plot([f + fcenter[i] for f in fpts], Qarr[i], '-', linewidth=1.5)
+
+                if i == self.QubitIndex:
+                    # plt.subplot(2, 4, i + 1)
+                    # plt.axvline(freq_r, linestyle="--")
+                    plt.title(f"Res {i + 1} {freq_r:.3f} MHz", pad=10)
+                    # plt.subplot(2, 4, i + 5)
+                    # plt.axvline(freq_r, linestyle="--")
+                    # plt.title(f"Res {i + 1} Q {freq_r:.3f} MHz", pad=10)
+                else:
+                    # plt.subplot(2, 4, i + 1)
+                    plt.title(f"Res {i + 1} ", pad=10)
             else:
-                plt.title(f"Resonator {i + 1}", pad=10)
+                plt.subplot(2, 2, i + 1)
+                # Plot raw and filtered data on the same plot
+                plt.plot([f + fcenter[i] for f in fpts], amps[i], '-', linewidth=1.5, label = 'Raw')
+                plt.plot([f + fcenter[i] for f in fpts], filtered_amps[i], '-', linewidth=1.5, alpha = 0.7, label = 'Smoothed')
+                if i == self.QubitIndex:
+                    ##### Uncomment to debug, leave commented if res spec measurment plots needed
+                    # freqs = [f + fcenter[i] for f in fpts]
+                    # print('freqs: ', freqs)
+                    # print('amps: ', amps[i])
+                    # mean, fit, fwhm, error = self.fit_lorentzian(amps[i], freqs, freq_r[-1])
+                    # print('mean', mean)
+                    # print(fwhm)
+                    # print(fit)
+                    # plt.plot([f + fcenter[i] for f in fpts], fit, 'r--', label = 'Lor Fit')
+                    plt.axvline(freq_r, linestyle='--', color='orange', linewidth=1.5)
+                    plt.title(f"Resonator {i + 1} {freq_r:.3f} MHz", pad=10) #, fwhm: {fwhm:.2f} MHz
+                else:
+                    plt.title(f"Resonator {i + 1}", pad=10)
             #plt.legend()
             plt.xlabel("Frequency (MHz)")
             plt.ylabel("Amplitude (a.u.)")
@@ -132,7 +162,11 @@ class ResonanceSpectroscopy:
             self.create_folder_if_not_exists(outerFolder_expt)
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-            file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name)
+            if plot_IQ:
+                file_name = os.path.join(outerFolder_expt,
+                                         f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + '_IQcirc')
+            else:
+                file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name)
             plt.savefig(file_name + ".png", dpi=fig_quality)
             #plt.savefig(file_name + ".pdf", dpi=fig_quality)
         plt.close()

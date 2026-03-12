@@ -6,7 +6,7 @@ from expt_config import *
 import copy
 import datetime
 import logging
-
+from scipy.signal import savgol_filter
 
 class SingleToneSpectroscopyProgram(AveragerProgramV2):
     def _initialize(self, cfg):
@@ -72,10 +72,12 @@ class ResonanceSpectroscopyEF:
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} Res Spec configuration: ',
                                    self.config)
 
-    def run(self):
+    def run(self, plotIQ=False):
         fpts = self.exp_cfg["start"] + self.exp_cfg["step_size"] * np.arange(self.exp_cfg["steps"])
         fcenter = self.config['res_freq_ge']
         amps = np.zeros((len(fcenter), len(fpts)))
+        Iarr = np.zeros((len(fcenter), len(fpts)))
+        Qarr = np.zeros((len(fcenter), len(fpts)))
 
         for index, f in enumerate(tqdm(fpts)):
             self.config["res_freq_ge"] = fcenter + f
@@ -83,14 +85,18 @@ class ResonanceSpectroscopyEF:
                                                  cfg=self.config)
             iq_list = prog.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=self.qick_verbose)
             for i in range(len(self.config['res_freq_ge'])):
+                Iarr[i][index] = iq_list[i][0, 0]
+                Qarr[i][index] = iq_list[i][0, 1]
                 amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])
         amps = np.array(amps)
-        res_freqs = self.plot_results(fpts, fcenter,
-                                      amps)  # return freqs from plotting loop so we can use to update experiment
+        Iarr = np.array(Iarr)
+        Qarr = np.array(Qarr)
+        filtered_amps = np.array(savgol_filter(amps, window_length=21, polyorder=3))
+        res_freqs = self.plot_results(fpts, fcenter, Iarr, Qarr, amps, filtered_amps)  # return freqs from plotting loop so we can use to update experiment
 
-        return res_freqs, fpts, fcenter, amps, self.config
+        return res_freqs, fpts, fcenter, Iarr, Qarr, amps, self.config
 
-    def plot_results(self, fpts, fcenter, amps, reloaded_config=None, fig_quality=100):
+    def plot_results(self, fpts, fcenter, Iarr, Qarr, amps, filtered_amps, plot_IQ = False, reloaded_config=None, fig_quality=100):
         res_freqs = []
         plt.figure(figsize=(12, 8))
         plt.rcParams.update({
@@ -103,15 +109,43 @@ class ResonanceSpectroscopyEF:
         })
 
         for i in range(self.number_of_qubits):
-            plt.subplot(2, 3, i + 1)
-            # plt.plot(fpts + fcenter[i], amps[i], '-', linewidth=1.5)
-            plt.plot([f + fcenter[i] for f in fpts], amps[i], '-', linewidth=1.5)
-            freq_r = fpts[np.argmin(amps[i])] + fcenter[i]
+            freq_r = fpts[np.argmin(filtered_amps[i])] + fcenter[i]
             res_freqs.append(freq_r)
-            plt.axvline(freq_r, linestyle='--', color='orange', linewidth=1.5)
+
+            if plot_IQ:
+                plt.subplot(2, 4, i + 1)
+                plt.plot([f + fcenter[i] for f in fpts], Iarr[i], '-', linewidth=1.5)
+
+                plt.subplot(2, 4, i + 5)
+                plt.plot([f + fcenter[i] for f in fpts], Qarr[i], '-', linewidth=1.5)
+
+                if i == self.QubitIndex:
+                    plt.subplot(2, 4, i + 1)
+                    plt.axvline(freq_r, linestyle="--")
+                    plt.title(f"Res {i + 1} I {freq_r:.3f} MHz", pad=10)
+                    plt.subplot(2, 4, i + 5)
+                    plt.axvline(freq_r, linestyle="--")
+                    plt.title(f"Res {i + 1} Q {freq_r:.3f} MHz", pad=10)
+                else:
+                    plt.subplot(2, 4, i + 1)
+                    plt.title(f"Res {i + 1} I", pad=10)
+                    plt.subplot(2, 4, i + 5)
+                    plt.title(f"Res {i + 1} Q", pad=10)
+            else:
+                plt.subplot(2, 2, i + 1)
+                # plt.plot(fpts + fcenter[i], amps[i], '-', linewidth=1.5)
+                plt.plot([f + fcenter[i] for f in fpts], amps[i], '-', linewidth=1.5)
+                plt.plot([f + fcenter[i] for f in fpts], filtered_amps[i], '-', linewidth=1.5)
+                freq_r = fpts[np.argmin(filtered_amps[i])] + fcenter[i]
+                res_freqs.append(freq_r)
+                if i == self.QubitIndex:
+                    plt.axvline(freq_r, linestyle='--', color='orange', linewidth=1.5)
+                    plt.title(f"Resonator {i + 1} {freq_r:.3f} MHz", pad=10)
+                else:
+                    plt.title(f"Resonator {i + 1}", pad=10)
+                #plt.axvline(freq_r, linestyle='--', color='orange', linewidth=1.5)
             plt.xlabel("Frequency (MHz)")
             plt.ylabel("Amplitude (a.u.)")
-            plt.title(f"Resonator {i + 1} {freq_r:.3f} MHz", pad=10)
             plt.ylim(plt.ylim()[0] - 0.05 * (plt.ylim()[1] - plt.ylim()[0]), plt.ylim()[1])
 
         if self.experiment is not None:
@@ -128,7 +162,12 @@ class ResonanceSpectroscopyEF:
             self.create_folder_if_not_exists(outerFolder_expt)
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-            file_name = os.path.join(outerFolder_expt,
+            if plot_IQ:
+                file_name = os.path.join(outerFolder_expt,
+                                         f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + "_EF_IQ.png")
+
+            else:
+                file_name = os.path.join(outerFolder_expt,
                                      f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + "_EF.png")
             plt.savefig(file_name, dpi=fig_quality)
         plt.close()

@@ -59,6 +59,8 @@ unmask = True                        # Do you want to use the unmasking feature 
 qubit_to_increase_reps_for = 0       # only has impact if previous line is True
 multiply_qubit_reps_by = 2           # only has impact if the line two above is True
 
+res_IQ = True                        # if True, plots res specs I and Q, False plots amps
+
 Qs_to_look_at = [0,1,2,3] #[0,1,2,3]    # only list the qubits you want to do the RR for
 
 #One round take 11.27 minutes for all 4 qubits: Rspec, Qspec, Rabi, SS, and T1
@@ -69,17 +71,17 @@ print(FRIDGE)
 #Data saving info
 run_name = 'run35'
 device_name = '4charge'
-substudy_txt_notes = ('Checking SSF on all 4 qubits with 4 us res length, 0.3 res gain. No optimization done, degenerate points not found.')
+substudy_txt_notes = ('All Q res spec and res spec "ef" with 1000 reps, +/- 1MHz, centered -0.25MHz from ground res, res gain to 0.2, res length 4us. Plotting with I and Q now') #('Checking SSF on all 4 qubits with 4 us res length, 0.3 res gain. No optimization done, degenerate points not found.')
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False, "test_act":False, "fh_rabi":False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": False, "fh_q_spec":False, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
+run_flags = {"tof": False, "res_spec": True, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False, "test_act":False, "fh_rabi":False,
+             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": False, "fh_q_spec":False, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 # run_flags = {"tof": False, "res_spec": False, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False, "test_act":False,
 #              "t1": False, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": True, "fh_q_spec":True, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 
 # optimization outputs from qick board, unmasking set to true
 res_leng_vals = [4, 4, 4, 4] #[4.75, 4, 4, 5] #Q4 4
-res_gain = [0.3, 0.3, 0.3, 0.3] #[0.7, 0.375, 0.475, 0.5062] #Q4 0.475
+res_gain = [0.2, 0.2, 0.2, 0.2] #[0.3, 0.3, 0.3, 0.3] #[0.7, 0.375, 0.475, 0.5062] #Q4 0.475
 freq_offsets = [0, 0, 0, 0]
 
 
@@ -92,7 +94,7 @@ figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 #Folders
 study = 'Initial Checkout' #'Punchout Study'
-sub_study = 'RR_lowgain'
+sub_study = 'RR_ResSpecGE'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/home/nexusadmin/Documents/Data/{run_name}/"):
@@ -143,7 +145,7 @@ def create_data_dict(keys, save_r, qs):
     return {Q: {key: np.empty(save_r, dtype=object) for key in keys} for Q in range(len(qs))}
 
 # Define what to save to h5 files
-res_keys = ['Dates', 'freq_pts', 'freq_center', 'Amps', 'Found Freqs', 'Round Num', 'Batch Num', 'Exp Config',
+res_keys = ['Dates', 'freq_pts', 'freq_center', 'I', 'Q', 'Amps', 'Found Freqs', 'Round Num', 'Batch Num', 'Exp Config',
             'Syst Config']
 qspec_keys = ['Dates', 'I', 'Q', 'Frequencies', 'I Fit', 'Q Fit', 'Round Num', 'Batch Num','Recycled QFreq',
               'Exp Config', 'Syst Config']
@@ -450,7 +452,7 @@ while j < n:
             try:
                 res_spec   = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
                                                    experiment = experiment, verbose = verbose, logger = rr_logger, unmasking_resgain = unmask)
-                res_freqs, freq_pts, freq_center, amps, sys_config_rspec = res_spec.run()
+                res_freqs, freq_pts, freq_center, res_Iarr, res_Qarr, amps, sys_config_rspec = res_spec.run(plotIQ = res_IQ)
                 offset = freq_offsets[QubitIndex] #use optimized offset values or whats set at top of script based on pre_optimize flag
                 offset_res_freqs = [r + offset for r in res_freqs]
                 experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
@@ -578,10 +580,10 @@ while j < n:
             ef_res_freqs_samples = []
             for sample in range(ef_res_sample_number):
                 try:
-                    ef_res_spec = ResonanceSpectroscopyEF(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, sample,
+                    ef_res_spec = ResonanceSpectroscopyEF(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, #sample,
                                                           save_figs, experiment=experiment, verbose=verbose,
                                                           logger=rr_logger, qick_verbose=qick_verbose, unmasking_resgain = unmask)
-                    ef_res_freqs, ef_freq_pts, ef_freq_center, ef_amps, sys_config_rspec_ef = ef_res_spec.run()
+                    ef_res_freqs, ef_freq_pts, ef_freq_center, ef_Iarr, ef_Qarr, ef_amps, sys_config_rspec_ef = ef_res_spec.run(res_IQ)
                     ef_res_freqs_samples.append(ef_res_freqs)
                     rr_logger.info(f"EF ResSpec sample {sample} for qubit {QubitIndex + 1}: {ef_res_freqs}")
 
@@ -927,6 +929,8 @@ while j < n:
                     time.mktime(datetime.datetime.now().timetuple()))
                 res_data[QubitIndex]['freq_pts'][j - batch_num * save_r - 1] = freq_pts
                 res_data[QubitIndex]['freq_center'][j - batch_num * save_r - 1] = freq_center
+                res_data[QubitIndex]['I'][j - batch_num * save_r - 1] = res_Iarr
+                res_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = res_Qarr
                 res_data[QubitIndex]['Amps'][j - batch_num * save_r - 1] = amps
                 res_data[QubitIndex]['Found Freqs'][j - batch_num * save_r - 1] = res_freqs
                 res_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
@@ -983,6 +987,8 @@ while j < n:
                     time.mktime(datetime.datetime.now().timetuple()))
                 ef_res_data[QubitIndex]['freq_pts'][0] = ef_freq_pts
                 ef_res_data[QubitIndex]['freq_center'][0] = ef_freq_center
+                ef_res_data[QubitIndex]['I'][j - batch_num * save_r - 1] = ef_Iarr
+                ef_res_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = ef_Qarr
                 ef_res_data[QubitIndex]['Amps'][0] = ef_amps
                 ef_res_data[QubitIndex]['Found Freqs'][0] = ef_res_freqs
                 ef_res_data[QubitIndex]['Round Num'][0] = j
