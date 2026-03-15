@@ -1340,15 +1340,15 @@ class SSFTempCalcAndPlots:
                     label=f"Q{q + 1}"
                 )
 
-            ax.set_title(f"Qubit {q + 1} Temperature vs Time")
-            ax.set_xlabel("Time")
-            ax.set_ylabel("Temperature (mK)")
+            ax.set_title(f"Qubit {q + 1}, SSF Method", fontsize=18)
+            ax.set_xlabel("Time", fontsize=16)
+            ax.set_ylabel("Effective Temperature (mK)", fontsize=16)
             # ax.grid(alpha=0.3)
             # ax.legend()
             ax.xaxis.set_major_formatter(date_fmt)
-            plt.setp(ax.get_xticklabels(), rotation=45, fontsize=10)
-            ax.set_yticks(np.linspace(20, 160, 10))
-            plt.setp(ax.get_yticklabels(), fontsize=10)
+            plt.setp(ax.get_xticklabels(), rotation=45, fontsize=16)
+            # ax.set_yticks(np.linspace(20, 160, 10))
+            plt.setp(ax.get_yticklabels(), fontsize=16)
 
         plt.tight_layout()
         fname = os.path.join(
