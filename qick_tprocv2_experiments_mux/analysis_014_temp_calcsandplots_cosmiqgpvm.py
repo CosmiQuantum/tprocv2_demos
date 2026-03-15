@@ -591,7 +591,7 @@ class SSFTempCalcAndPlots:
                         4: 460,
                         5: 645,
                     },
-                    6: {0: 961, #need to improve fitting to lower this. Need to do asap bc good ones are also getting cut
+                    6: {0: 1071.96, #need to improve fitting to lower this asap bc good ones are also getting cut
                         1: 730,
                         2: 684,
                         3: 604,
@@ -624,14 +624,14 @@ class SSFTempCalcAndPlots:
                     print(f'Rejected a fit with Likelihood ratio test score < {lr_stat_limit}')
                     # not convincingly bimodal --> skip this dataset, it is better described by a single gaussian
 
-                    if do_plots:
-                        bad_plots_path = os.path.join(save_figs_path, "bad_fits_LRT_failed")
+                    if do_plots and qid == 4:
+                        bad_plots_path = os.path.join(save_figs_path, f"bad_fits_LRT_failed/Q{qid+1}")
                         os.makedirs(bad_plots_path, exist_ok=True)
                         self.plot_gaussians_qtemps(qid, bad_plots_path, ig_new, ground_data,
                                                             excited_data, ground_gaussian,
                                                             excited_gaussian, pop_threshold,
-                                                            idx, weights,
-                                                            sigmas, means, temperature_mk = None, title_ext = f"LRT val:{lr_stat:.2f}",
+                                                            idx, weights, sigmas, means, temperature_mk = None,
+                                                            title_ext = f"LRT val:{lr_stat:.2f}",
                                                             dontuse_midpt_thresh = dontuse_midpt_thresh)
 
                     continue
@@ -655,8 +655,9 @@ class SSFTempCalcAndPlots:
                 sigma_TmK, sigma_Pe_total = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
 
                 # Plotting
-                if do_plots:
-                    self.plot_gaussians_qtemps(qid, save_figs_path, ig_new, ground_data,
+                if do_plots and qid == 1:
+                    save_figs_path_clean = os.path.join(save_figs_path, f"Q{qid + 1}") # to separate plots by qubit
+                    self.plot_gaussians_qtemps(qid, save_figs_path_clean, ig_new, ground_data,
                                                excited_data, ground_gaussian,
                                                excited_gaussian, pop_threshold,
                                                idx, weights,
@@ -1109,7 +1110,7 @@ class SSFTempCalcAndPlots:
             qubit_folder,
             f"Q{q_key + 1}_SSF_gaussfit_Dataset{dataset}_{datetime.datetime.now():%Y%m%d%H%M%S}.png",
         )
-
+        #print('saved: ', plot_filename)
         plt.savefig(plot_filename, dpi=300, bbox_inches="tight")
         plt.close()
 
@@ -2407,6 +2408,54 @@ class combined_Qtemp_studies:
         self.figure_quality = figure_quality
         self.number_of_qubits = number_of_qubits
 
+    def extract_pe_from_fit_results(self, fit_results_g, n_qubits):
+        """
+        Converts SSF fit_results_g into per-qubit Pe arrays.
+
+        Input
+        -----
+        fit_results_g[qid] = [
+            {"Pe": ..., "total_sigma_Pe": ...},
+            ...
+        ]
+
+        Output
+        ------
+        pe_vals[qid] = [Pe, Pe, ...]
+        pe_errs[qid] = [sigma_Pe, sigma_Pe, ...]
+        """
+
+        pe_vals = [[] for _ in range(n_qubits)]
+        pe_errs = [[] for _ in range(n_qubits)]
+
+        for qid in range(n_qubits):
+
+            entries = fit_results_g.get(qid, []) if isinstance(fit_results_g, dict) else []
+
+            for entry in entries:
+
+                if not isinstance(entry, dict):
+                    continue
+
+                pe = entry.get("Pe", None)
+                pe_err = entry.get("total_sigma_Pe", None)
+
+                try:
+                    pe = float(pe)
+                except Exception:
+                    pe = np.nan
+
+                try:
+                    pe_err = float(pe_err) if pe_err is not None else np.nan
+                except Exception:
+                    pe_err = np.nan
+
+                if np.isfinite(pe):
+                    pe_vals[qid].append(pe)
+                    pe_errs[qid].append(pe_err)
+
+        return pe_vals, pe_errs
+
     def ssf_fit_results_to_per_qubit_lists(
         self,
         fit_results,
@@ -2506,27 +2555,33 @@ class combined_Qtemp_studies:
         # ---- unknown type -> return empties ----
         return temps, errs
 
-
     def rpm_results_to_per_qubit_lists(
-        self,
-        all_files_Qtemp_results_RPMs,
-        n_qubits=6,
-        temp_key="T_mK",
-        err_key="T_mK_err",
-        keep_nans=False,
+            self,
+            all_files_Qtemp_results_RPMs,
+            n_qubits=6,
+            temp_key="T_mK",
+            err_key="T_mK_err",
+            pe_key="P_e",
+            pe_err_key="P_e_err_total",
+            keep_nans=False,
     ):
         """
         Converts RPM per-file results into:
-          temps[qid] = [T_mK, ...]
-          errs[qid]  = [T_err_mK (or nan), ...]
+          temps[qid]   = [T_mK, ...]
+          errs[qid]    = [T_err_mK (or nan), ...]
+          pe_vals[qid] = [P_e, ...]
+          pe_errs[qid] = [P_e_err_total (or nan), ...]
 
         Robustness:
           * file_result["qubits"] may use int keys OR string keys.
-          * If error missing, we append np.nan so temps/errs align.
+          * If an error is missing, np.nan is appended so arrays stay aligned.
+          * Non-finite values are skipped unless keep_nans=True.
         """
 
         temps = [[] for _ in range(n_qubits)]
-        errs  = [[] for _ in range(n_qubits)]
+        errs = [[] for _ in range(n_qubits)]
+        pe_vals = [[] for _ in range(n_qubits)]
+        pe_errs = [[] for _ in range(n_qubits)]
 
         file_list = all_files_Qtemp_results_RPMs or []
         for file_result in file_list:
@@ -2546,20 +2601,45 @@ class combined_Qtemp_studies:
                 if not isinstance(qrec, dict):
                     continue
 
-                T  = qrec.get(temp_key, None)
+                # ---------------- temperature ----------------
+                T = qrec.get(temp_key, None)
                 Te = qrec.get(err_key, None)
 
-                if T is None or (not np.isfinite(T) and not keep_nans):
-                    continue
+                try:
+                    T = float(T) if T is not None else np.nan
+                except Exception:
+                    T = np.nan
 
-                temps[qid].append(float(T) if T is not None else np.nan)
+                try:
+                    Te = float(Te) if Te is not None else np.nan
+                except Exception:
+                    Te = np.nan
 
-                if Te is not None and np.isfinite(Te):
-                    errs[qid].append(float(Te))
-                else:
-                    errs[qid].append(np.nan)
+                # ---------------- Pe ----------------
+                Pe = qrec.get(pe_key, None)
+                Pee = qrec.get(pe_err_key, None)
 
-        return temps, errs
+                try:
+                    Pe = float(Pe) if Pe is not None else np.nan
+                except Exception:
+                    Pe = np.nan
+
+                try:
+                    Pee = float(Pee) if Pee is not None else np.nan
+                except Exception:
+                    Pee = np.nan
+
+                # ---------------- append ----------------
+                # Keep alignment between value/error pairs independently
+                if keep_nans or np.isfinite(T):
+                    temps[qid].append(T)
+                    errs[qid].append(Te if np.isfinite(Te) else np.nan)
+
+                if keep_nans or np.isfinite(Pe):
+                    pe_vals[qid].append(Pe)
+                    pe_errs[qid].append(Pee if np.isfinite(Pee) else np.nan)
+
+        return temps, errs, pe_vals, pe_errs
 
     def plot_t1t2_vs_qtemps(self, out_dir, all_qubit_temperatures_ssf_g = None, all_qubit_timestamps_ssf_g = None,
                           all_files_Qtemp_results_RPMs = None, t1_vals = None, t1_dates = None, t2r_vals = None, t2r_dates = None,

@@ -9,21 +9,21 @@ colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
 if runs6_through_8_rpm is True and not plot_both_SSF_RPM_tog:
     print("runs6_through_8_rpm")
     qubit_temps = [
-        [197.35, 99.22, 81.46, 71.21],  # Qubit 1
-        [361.39, 84.26, 78.32, 75.36],  # Qubit 2
-        [164.24, 106.43, 80.11, 78.82],  # Qubit 3
-        [354.34, 135.15, 91.27, 100.85],  # Qubit 4
-        [169.67, 76.82, 87.88, 74.10],  # Qubit 5
-        [216.55, 91.56, 78.55, 64.90],  # Qubit 6
+        [193.97, 101.66, 81.99, 71.27],  # Qubit 1
+        [374.33, 84.74, 78.19, 75.29],  # Qubit 2
+        [165.50, 108.37, 79.95, 78.89],  # Qubit 3
+        [359.07, 134.76, 91.48, 102.98],  # Qubit 4
+        [170.05, 78.19, 87.87, 73.93],  # Qubit 5
+        [216.89, 91.58, 79.29, 68.69],  # Qubit 6
     ]
 
     qtemp_errs = [
-        [12.76, 9.99, 2.52, 1.26],  # Qubit 1
-        [33.57, 2.74, 1.18, 1.64],  # Qubit 2
-        [8.37, 8.37, 1.37, 2.55],  # Qubit 3
-        [23.71, 10.16, 2.38, 7.78],  # Qubit 4
-        [5.94, 5.77, 1.58, 2.07],  # Qubit 5
-        [7.80, 1.65, 1.98, 3.96],  # Qubit 6
+        [31.59, 9.71, 2.55, 1.24],  # Qubit 1
+        [35.68, 2.13, 1.13, 1.56],  # Qubit 2
+        [8.42, 8.64, 1.30, 2.45],  # Qubit 3
+        [22.06, 10.39, 2.34, 7.60],  # Qubit 4
+        [6.05, 9.91, 1.55, 2.06],  # Qubit 5
+        [7.55, 2.10, 2.02, 2.71],  # Qubit 6
     ]
 
     runs = np.array([5, 6, 7, 8])
@@ -115,21 +115,21 @@ if runs6_through_8_rpm is True and not plot_both_SSF_RPM_tog:
     plt.show()
 elif not runs6_through_8_rpm and not plot_both_SSF_RPM_tog: # Only SSF qubit temps, OUTDATED
     qubit_temps = [
-        [197.35, 100.98, 89.26, 77.21],  # Qubit 1
-        [361.39, None, 85.85, 85.96],  # Qubit 2
-        [164.24, None, 84.47, 85.38],  # Qubit 3
-        [354.34, None, None, None],  # Qubit 4
-        [169.67, 88.59, 93.73, 81.36],  # Qubit 5
-        [216.55, None, None, None],  # Qubit 6
+        [193.97, 100.98, 89.26, 77.21],  # Qubit 1
+        [374.33, None, 85.85, 85.96],  # Qubit 2
+        [165.50, None, 84.47, 85.38],  # Qubit 3
+        [359.07, None, None, None],  # Qubit 4
+        [170.05, 88.59, 93.73, 81.36],  # Qubit 5
+        [216.89, None, None, None],  # Qubit 6
     ]
 
     qtemp_errs = [
-        [12.76, 3.84, 2.26, 1.88],  # Qubit 1
-        [33.57, None, 2.58, 3.09],  # Qubit 2
-        [8.37, None, 2.02, 2.83],  # Qubit 3
-        [23.71, None, None, None],  # Qubit 4
-        [5.94, 2.98, 2.29, 1.14],  # Qubit 5
-        [7.80, None, None, None],  # Qubit 6
+        [31.59, 3.84, 2.26, 1.88],  # Qubit 1
+        [35.68, None, 2.58, 3.09],  # Qubit 2
+        [8.42, None, 2.02, 2.83],  # Qubit 3
+        [22.06, None, None, None],  # Qubit 4
+        [6.05, 2.98, 2.29, 1.14],  # Qubit 5
+        [7.55, None, None, None],  # Qubit 6
     ]
 
     runs = np.array([5, 6, 7, 8])
@@ -233,40 +233,40 @@ if plot_both_SSF_RPM_tog:
 
     # ---------------- RPM DATA ----------------
     rpm_qubit_temps = [
-        [None, 99.22, 81.46, 71.21],  # Qubit 1
-        [None, 84.26, 78.32, 75.36],  # Qubit 2
-        [None, 106.43, 80.11, 78.82],  # Qubit 3
-        [None, 135.15, 91.27, 100.85],  # Qubit 4
-        [None, 76.82, 87.88, 74.10],  # Qubit 5
-        [None, 91.56, 78.55, 64.90],  # Qubit 6
+        [None, 101.66, 81.99, 71.27],  # Qubit 1
+        [None, 84.74, 78.19, 75.29],  # Qubit 2
+        [None, 108.37, 79.95, 78.89],  # Qubit 3
+        [None, 134.76, 91.48, 102.98],  # Qubit 4
+        [None, 78.19, 87.87, 73.93],  # Qubit 5
+        [None, 91.58, 79.29, 68.69],  # Qubit 6
     ]
 
     rpm_qtemp_errs = [
-        [None, 9.99, 2.52, 1.26],  # Qubit 1
-        [None, 2.74, 1.18, 1.64],  # Qubit 2
-        [None, 8.37, 1.37, 2.55],  # Qubit 3
-        [None, 10.16, 2.38, 7.78],  # Qubit 4
-        [None, 5.77, 1.58, 2.07],  # Qubit 5
-        [None, 1.65, 1.98, 3.96],  # Qubit 6
+        [None, 9.71, 2.55, 1.24],  # Qubit 1
+        [None, 2.13, 1.13, 1.56],  # Qubit 2
+        [None, 8.64, 1.30, 2.45],  # Qubit 3
+        [None, 10.39, 2.34, 7.60],  # Qubit 4
+        [None, 9.91, 1.55, 2.06],  # Qubit 5
+        [None, 2.10, 2.02, 2.71],  # Qubit 6
     ]
 
     # ---------------- SSF DATA ----------------
     ssf_qubit_temps = [
-        [197.35, 100.98, 89.26, 77.21],  # Qubit 1
-        [361.39, None, 85.85, 85.96],  # Qubit 2
-        [164.24, None, 84.47, 85.38],  # Qubit 3
-        [354.34, None, None, None],  # Qubit 4
-        [169.67, 88.59, 93.73, 81.36],  # Qubit 5
-        [216.55, None, None, None],  # Qubit 6
+        [193.97, 100.98, 89.26, 77.21],  # Qubit 1
+        [374.33, None, 85.85, 85.96],  # Qubit 2
+        [165.50, None, 84.47, 85.38],  # Qubit 3
+        [359.07, None, None, None],  # Qubit 4
+        [170.05, 88.59, 93.73, 81.36],  # Qubit 5
+        [216.89, None, None, None],  # Qubit 6
     ]
 
     ssf_qtemp_errs = [
-        [12.76, 3.84, 2.26, 1.88],  # Qubit 1
-        [33.57, None, 2.58, 3.09],  # Qubit 2
-        [8.37, None, 2.02, 2.83],  # Qubit 3
-        [23.71, None, None, None],  # Qubit 4
-        [5.94, 2.98, 2.29, 1.14],  # Qubit 5
-        [7.80, None, None, None],  # Qubit 6
+        [31.59, 3.84, 2.26, 1.88],  # Qubit 1
+        [35.68, None, 2.58, 3.09],  # Qubit 2
+        [8.42, None, 2.02, 2.83],  # Qubit 3
+        [22.06, None, None, None],  # Qubit 4
+        [6.05, 2.98, 2.29, 1.14],  # Qubit 5
+        [7.55, None, None, None],  # Qubit 6
     ]
 
     # ---------------- PLOT ----------------

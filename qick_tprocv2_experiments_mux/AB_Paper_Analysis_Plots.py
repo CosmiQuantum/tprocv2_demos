@@ -1,28 +1,32 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
+import math
+import os
+import datetime
 
 qtemp_noisetemp_plot = False
 
 # ------------------------------------------------------------
 # Measured Pe values (Run 4 column will be dropped)
 # ------------------------------------------------------------
+# Updated for APS
 Pe_meas = [
-    [None, 0.2698, 0.1179, 0.0788, 0.0564],
-    [None, 0.3541, 0.1028, 0.0884, 0.0810],
-    [None, 0.2385, 0.1359, 0.0770, 0.0735],
-    [None, 0.3483, 0.1716, 0.0879, 0.1079],
-    [None, 0.2269, 0.0577, 0.0806, 0.0524],
-    [None, 0.2385, 0.0685, 0.0454, 0.0234],
+    [None, 0.262206, 0.122347, 0.080209, 0.056575],  # Qubit 1
+    [None, 0.379916, 0.103899, 0.088050, 0.080829],  # Qubit 2
+    [None, 0.230638, 0.137551, 0.076606, 0.073828],  # Qubit 3
+    [None, 0.355278, 0.170338, 0.088298, 0.111364],  # Qubit 4
+    [None, 0.220639, 0.061004, 0.080564, 0.052125],  # Qubit 5
+    [None, 0.248520, 0.068520, 0.046608, 0.029532],  # Qubit 6
 ]
 
 Pe_err = [
-    [None, 0.0107, 0.0208, 0.0057, 0.0027],
-    [None, 0.0078, 0.0065, 0.0028, 0.0039],
-    [None, 0.0088, 0.0155, 0.0030, 0.0056],
-    [None, 0.0078, 0.0168, 0.0049, 0.0158],
-    [None, 0.0075, 0.0110, 0.0032, 0.0040],
-    [None, 0.0073, 0.0030, 0.0033, 0.0048],
+    [None, 0.038575, 0.020341, 0.005599, 0.002620],  # Qubit 1
+    [None, 0.010940, 0.005009, 0.002714, 0.003743],  # Qubit 2
+    [None, 0.010852, 0.017270, 0.002867, 0.005371],  # Qubit 3
+    [None, 0.008452, 0.016899, 0.004802, 0.015093],  # Qubit 4
+    [None, 0.007670, 0.020126, 0.003180, 0.003983],  # Qubit 5
+    [None, 0.007161, 0.003828, 0.003404, 0.003975],  # Qubit 6
 ]
 
 # ------------------------------------------------------------
@@ -322,7 +326,7 @@ if qtemp_noisetemp_plot:
         )
 
         ax.set_title(f"Q{qi + 1}", fontsize=16)
-
+        ax.set_yticks(np.arange(0, 401, 75))
         ax.set_xticks(runs)
         ax.set_xticklabels(['5', '6', '7', '8'], fontsize=16)
 
@@ -593,35 +597,46 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
     ssf_g_temps_by_run,
     ssf_ge_temps_by_run=None,
     n_qubits=6,
-    plot_mode="hybrid", # "hybrid" (run5=SSF, others=RPM) or "all_ssf"
-    ssf_kind="g", # "g" (double-gauss) or "ge" double gauss
-    layout="separate", # "separate" (2x3) or "together" (all qubits in a single plot or not)
+    qubits_to_plot=None,   # NEW: e.g. [0,1,2] for Q1-Q3, or None for first n_qubits
+    plot_mode="hybrid",    # "hybrid", "all_ssf", or "compare_methods"
+    ssf_kind="g",          # "g" or "ge"
+    layout="separate",     # "separate" or "together"
     colors=('orange', 'blue', 'purple', 'green', 'brown', 'palevioletred'),
     ssf_color="purple",
     ylims=(0, 600),
     yticks=np.arange(0, 601, 100),
-    showfliers=True,
+    showfliers=True, # outliers
     whis=1.5,
     fig_title=None,
     ylabel="Effective temperature (mK)",
     suptitle_fs=18,
-    title_fs=16,
-    label_fs=16,
-    tick_fs=16
+    title_fs=18,
+    label_fs=18,
+    tick_fs=18,
+    save_plt_path = None
 ):
     """
-    Per-qubit box/whisker vs run. plot_mode="hybrid":
-    - Run 5 uses SSF (ssf_kind)
-    - All other runs use RPM
-    - All runs use SSF option (ssf_kind)
-    - X tick labels: "X" where X= run number
-    - Y tick labels: "Y" where Y= effective qubit temperature in mK
+    Per-qubit box/whisker vs run.
+
+    plot_mode options
+    -----------------
+    "hybrid":
+        - Run 5 uses SSF
+        - Other runs use RPM
+
+    "all_ssf":
+        - All runs use SSF
+
+    "compare_methods":
+        - Same as hybrid, BUT also overlays available SSF data (in ssf_color)
+          for runs other than 5, so RPM and SSF can be visually compared.
 
     Dict structure expected:
     rpm_temps_by_run[run][q] -> array-like or scalar or []
     ssf_g_temps_by_run[run][q] -> array-like or scalar or []
     ssf_ge_temps_by_run[run][q] -> array-like or scalar or [] (optional unless ssf_kind="ge")
     """
+
     # ---------------- pick SSF dictionary ----------------
     ssf_kind = ssf_kind.lower()
     if ssf_kind not in ("g", "ge"):
@@ -635,8 +650,22 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
         ssf_dict = ssf_ge_temps_by_run
 
     plot_mode = plot_mode.lower()
-    if plot_mode not in ("hybrid", "all_ssf"):
-        raise ValueError("plot_mode must be 'hybrid' or 'all_ssf'.")
+    if plot_mode not in ("hybrid", "all_ssf", "compare_methods"):
+        raise ValueError("plot_mode must be 'hybrid', 'all_ssf', or 'compare_methods'.")
+
+    layout = layout.lower()
+    if layout not in ("separate", "together"):
+        raise ValueError("layout must be 'separate' or 'together'")
+
+    # ---------------- choose qubits to plot ----------------
+    if qubits_to_plot is None:
+        qubits_to_plot = list(range(n_qubits))
+    else:
+        qubits_to_plot = list(qubits_to_plot)
+
+    n_plot = len(qubits_to_plot)
+    if n_plot == 0:
+        raise ValueError("qubits_to_plot is empty.")
 
     # ---------------- helpers ----------------
     def cell_to_1d(cell):
@@ -664,10 +693,6 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
             return None
         return row[q]
 
-    # ---------------- positions ----------------
-    n_runs = len(run_num_list)
-    base_pos = np.arange(1, n_runs + 1)
-
     def select_cell(run, q):
         if plot_mode == "all_ssf":
             return get_cell(ssf_dict, run, q)
@@ -677,90 +702,143 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
 
         return get_cell(rpm_temps_by_run, run, q)
 
-    multi_qubit_colors = len(set(colors[:n_qubits])) > 1
+    def style_boxplot(bp, color):
+        for b in bp["boxes"]:
+            b.set_facecolor(color)
+            b.set_edgecolor(color)
+            b.set_alpha(0.31)
+            b.set_linewidth(1.3)
+
+        for m in bp["medians"]:
+            m.set_color(color)
+            m.set_linewidth(2.0)
+
+        for w in bp["whiskers"]:
+            w.set_color(color)
+            w.set_linewidth(1.2)
+
+        for c in bp["caps"]:
+            c.set_color(color)
+            c.set_linewidth(1.2)
+
+        for f in bp["fliers"]:
+            f.set_marker("o")
+            f.set_markersize(3.5)
+            f.set_markerfacecolor(color)
+            f.set_markeredgecolor(color)
+            f.set_alpha(0.6)
+
+    # ---------------- positions ----------------
+    n_runs = len(run_num_list)
+    base_pos = np.arange(1, n_runs + 1)
     xtick_labels = [f"{r}" for r in run_num_list]
+    multi_qubit_colors = len(set(colors[:max(qubits_to_plot) + 1])) > 1
 
     # ---------------- title ----------------
     if fig_title is None:
-        fig_title = "Effective Qubit Temperatures vs Run Number"
+        if plot_mode == "compare_methods":
+            fig_title = "Effective Qubit Temperatures vs Run Number"
+        else:
+            fig_title = "Effective Qubit Temperatures vs Run Number"
 
     # =====================================================
     # =================== SEPARATE MODE ===================
     # =====================================================
     if layout == "separate":
 
+        # dynamic subplot grid
+        ncols = min(3, n_plot)
+        nrows = math.ceil(n_plot / ncols)
+        fig_w = 6 * ncols
+        fig_h = 4.5 * nrows
+
         fig, axes = plt.subplots(
-            2, 3,
-            figsize=(18, 9),
+            nrows, ncols,
+            figsize=(fig_w, fig_h),
             sharex=True,
             sharey=True,
             constrained_layout=False
         )
-        axes = axes.ravel()
 
-        for q in range(n_qubits):
+        axes = np.atleast_1d(axes).ravel()
 
-            ax = axes[q]
+        for ax_idx, q in enumerate(qubits_to_plot):
+            ax = axes[ax_idx]
             q_color = colors[q % len(colors)]
 
+            # ---------------- main/hybrid data ----------------
             box_data = [cell_to_1d(select_cell(r, q)) for r in run_num_list]
-            print_median_spread_table(run_num_list, box_data, q, units="mK", mode="iqr2")
+            if plot_mode == "compare_methods":
+                print(f"\nHybrid summary for Qubit {q + 1}:")
+                print_median_spread_table(run_num_list, box_data, q, units="mK", mode="iqr2")
+
+                ssf_box_data = [cell_to_1d(get_cell(ssf_dict, r, q)) for r in run_num_list]
+                print(f"\nSSF-only summary for Qubit {q + 1}:")
+                print_median_spread_table(run_num_list, ssf_box_data, q, units="mK", mode="iqr2")
+                print("\n")
+
+                main_positions = np.array([
+                    p if r == 5 else p - 0.16
+                    for p, r in zip(base_pos, run_num_list)
+                ])
+                main_width = 0.28
+            else:
+                main_positions = base_pos
+                main_width = 0.55
+                print_median_spread_table(run_num_list, box_data, q, units="mK", mode="iqr2")
 
             bp = ax.boxplot(
                 box_data,
-                positions=base_pos,
-                widths=0.55,
+                positions=main_positions,
+                widths=main_width,
                 patch_artist=True,
                 showfliers=showfliers,
                 whis=whis,
                 manage_ticks=False
             )
+            style_boxplot(bp, q_color)
 
-            # ---------- style all boxes ----------
-            for b in bp["boxes"]:
-                b.set_facecolor(q_color)
-                b.set_edgecolor(q_color)
-                b.set_alpha(0.30)
-                b.set_linewidth(1.3)
-
-            for m in bp["medians"]:
-                m.set_color(q_color)
-                m.set_linewidth(2.0)
-
-            for w in bp["whiskers"]:
-                w.set_color(q_color)
-                w.set_linewidth(1.2)
-
-            for c in bp["caps"]:
-                c.set_color(q_color)
-                c.set_linewidth(1.2)
-
-            for f in bp["fliers"]:
-                f.set_marker("o")
-                f.set_markersize(3.5)
-                f.set_markerfacecolor(q_color)
-                f.set_markeredgecolor(q_color)
-                f.set_alpha(0.6)
-
-            # ---------- recolor Run 5 ----------
-            if plot_mode == "hybrid" and 5 in run_num_list:
-
+            # recolor run 5 as SSF in hybrid / compare_methods
+            if plot_mode in ("hybrid", "compare_methods") and 5 in run_num_list:
                 i0 = run_num_list.index(5)
-
                 bp["boxes"][i0].set_facecolor(ssf_color)
                 bp["boxes"][i0].set_edgecolor(ssf_color)
-
                 bp["medians"][i0].set_color(ssf_color)
 
                 for j in (2 * i0, 2 * i0 + 1):
                     bp["whiskers"][j].set_color(ssf_color)
                     bp["caps"][j].set_color(ssf_color)
 
-                bp["fliers"][i0].set_markerfacecolor(ssf_color)
-                bp["fliers"][i0].set_markeredgecolor(ssf_color)
-                bp["fliers"][i0].set_alpha(0.6)
+                if i0 < len(bp["fliers"]):
+                    bp["fliers"][i0].set_markerfacecolor(ssf_color)
+                    bp["fliers"][i0].set_markeredgecolor(ssf_color)
+                    bp["fliers"][i0].set_alpha(0.6)
 
-            # ---------- axis styling ----------
+            # ---------------- overlay SSF for method comparison ----------------
+            if plot_mode == "compare_methods":
+                ssf_overlay_data = []
+                ssf_overlay_positions = []
+
+                for p, r, arr in zip(base_pos, run_num_list, ssf_box_data):
+                    if r == 5:
+                        continue
+                    if arr.size > 0:
+                        ssf_overlay_data.append(arr)
+                        ssf_overlay_positions.append(p + 0.16)
+
+                if len(ssf_overlay_data) > 0:
+                    bp_ssf = ax.boxplot(
+                        ssf_overlay_data,
+                        positions=ssf_overlay_positions,
+                        widths=0.28,
+                        patch_artist=True,
+                        showfliers=showfliers,
+                        whis=whis,
+                        manage_ticks=False
+                    )
+                    style_boxplot(bp_ssf, ssf_color)
+
+            # ---------------- axis styling ----------------
             ax.set_title(f"Qubit {q + 1}", fontsize=title_fs)
             ax.set_ylim(*ylims)
             ax.set_yticks(yticks)
@@ -769,56 +847,83 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
 
             ax.set_xticks(base_pos)
             ax.set_xticklabels(xtick_labels)
+            ax.set_xlim(0.5, len(run_num_list) + 0.5)
 
-            # # ---------- subplot legend ----------
+            # per-subplot legend if qubit colors differ
             # if multi_qubit_colors:
-            #
             #     if plot_mode == "hybrid":
             #         legend_handles = [
             #             Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 5 (SSF)"),
-            #             Patch(facecolor=q_color, edgecolor=q_color, alpha=0.30, label="Runs 6-8 (RPM)")
+            #             Patch(facecolor=q_color, edgecolor=q_color, alpha=0.30, label="Runs >5 (RPM)")
             #         ]
-            #     else:
+            #     elif plot_mode == "all_ssf":
             #         legend_handles = [
-            #             Patch(facecolor=q_color, edgecolor=q_color, alpha=0.30, label="All runs (SSF)")
+            #             Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF")
+            #         ]
+            #     else:  # compare_methods
+            #         legend_handles = [
+            #             Patch(facecolor=q_color, edgecolor=q_color, alpha=0.30, label="RPM / hybrid"),
+            #             Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF")
             #         ]
             #
-            #     ax.legend(
-            #         handles=legend_handles,
-            #         loc="upper right",
-            #         frameon=True,
-            #         fontsize=tick_fs
-            #     )
+            #     ax.legend(handles=legend_handles, loc="upper right", frameon=True, fontsize=tick_fs - 2)
 
-        fig.suptitle(fig_title, fontsize=suptitle_fs)
-        fig.supxlabel("Run Number", fontsize=label_fs)
-        fig.supylabel(ylabel, fontsize=label_fs)
+        # hide unused axes
+        for k in range(n_plot, len(axes)):
+            axes[k].set_visible(False)
 
-        # ---------- figure legend ----------
+        fig.subplots_adjust(
+            left=0.12,  # move axes slightly left
+            bottom=0.12,  # move axes slightly down
+            top=0.90,
+        )
+
+        # fig.suptitle(fig_title, fontsize=suptitle_fs, y=0.965)
+
+        # fig.supxlabel("Run Number", fontsize=label_fs, y=0.03)
+
+        # fig.supylabel(ylabel, fontsize=label_fs, x=0.02)
+
+        # single figure legend if all qubits use same color
         # if not multi_qubit_colors:
-        #
-        #     fig.subplots_adjust(right=0.75)
+        #     fig.subplots_adjust(right=0.84)
         #
         #     if plot_mode == "hybrid":
         #         legend_handles = [
         #             Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 5 (SSF)"),
-        #             Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="Runs 6-8 (RPM)")
+        #             Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="Runs >5 (RPM)")
+        #         ]
+        #     elif plot_mode == "all_ssf":
+        #         legend_handles = [
+        #             Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF")
         #         ]
         #     else:
         #         legend_handles = [
-        #             Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="All runs (SSF)")
+        #             Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="RPM / hybrid"),
+        #             Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF")
         #         ]
         #
         #     fig.legend(
         #         handles=legend_handles,
         #         loc="center left",
-        #         bbox_to_anchor=(0.76, 0.5),
+        #         bbox_to_anchor=(0.86, 0.5),
         #         frameon=True,
         #         fontsize=label_fs
         #     )
 
-        plt.show()
+        if save_plt_path is None:
+            plt.show()
+        else:
+            now = datetime.datetime.now()
+            timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
 
+            fname = os.path.join(
+                save_plt_path,
+                f"boxwhisk_qtemps_vs_run_num_{timestamp}.pdf"
+            )
+
+            fig.savefig(fname, bbox_inches="tight")
+            plt.close(fig)
     # =====================================================
     # ==================== TOGETHER MODE ==================
     # =====================================================
@@ -826,16 +931,31 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
 
         fig, ax = plt.subplots(figsize=(12, 6))
 
-        offsets = np.linspace(-0.30, 0.30, n_qubits) if n_qubits > 1 else np.array([0.0])
-        box_width = 0.80 / max(n_qubits, 1)
+        if plot_mode == "compare_methods":
+            # reserve extra width because we may show two methods
+            offsets = np.linspace(-0.30, 0.00, n_plot) if n_plot > 1 else np.array([-0.15])
+            ssf_extra_shift = 0.16
+            box_width = 0.22
+        else:
+            offsets = np.linspace(-0.30, 0.30, n_plot) if n_plot > 1 else np.array([0.0])
+            ssf_extra_shift = 0.0
+            box_width = 0.80 / max(n_plot, 1)
 
-        for q in range(n_qubits):
-
+        for i, q in enumerate(qubits_to_plot):
             q_color = colors[q % len(colors)]
-            positions = base_pos + offsets[q]
+            positions = base_pos + offsets[i]
 
             box_data = [cell_to_1d(select_cell(r, q)) for r in run_num_list]
-            print_median_spread_table(run_num_list, box_data, q, units="mK", mode="iqr2")
+
+            if plot_mode == "compare_methods":
+                print(f"\nHybrid summary for Qubit {q + 1}:")
+                print_median_spread_table(run_num_list, box_data, q, units="mK", mode="iqr2")
+                ssf_box_data = [cell_to_1d(get_cell(ssf_dict, r, q)) for r in run_num_list]
+                print(f"\nSSF-only summary for Qubit {q + 1}:")
+                print_median_spread_table(run_num_list, ssf_box_data, q, units="mK", mode="iqr2")
+                print("\n")
+            else:
+                print_median_spread_table(run_num_list, box_data, q, units="mK", mode="iqr2")
 
             bp = ax.boxplot(
                 box_data,
@@ -846,41 +966,46 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
                 whis=whis,
                 manage_ticks=False
             )
+            style_boxplot(bp, q_color)
 
-            for b in bp["boxes"]:
-                b.set_facecolor(q_color)
-                b.set_edgecolor(q_color)
-                b.set_alpha(0.30)
-
-            for m in bp["medians"]:
-                m.set_color(q_color)
-
-            for w in bp["whiskers"]:
-                w.set_color(q_color)
-
-            for c in bp["caps"]:
-                c.set_color(q_color)
-
-            for f in bp["fliers"]:
-                f.set_marker("o")
-                f.set_markerfacecolor(q_color)
-
-            if plot_mode == "hybrid" and 5 in run_num_list:
-
+            if plot_mode in ("hybrid", "compare_methods") and 5 in run_num_list:
                 i0 = run_num_list.index(5)
-
                 bp["boxes"][i0].set_facecolor(ssf_color)
                 bp["boxes"][i0].set_edgecolor(ssf_color)
-
                 bp["medians"][i0].set_color(ssf_color)
 
                 for j in (2 * i0, 2 * i0 + 1):
                     bp["whiskers"][j].set_color(ssf_color)
                     bp["caps"][j].set_color(ssf_color)
 
-                bp["fliers"][i0].set_markerfacecolor(ssf_color)
-                bp["fliers"][i0].set_markeredgecolor(ssf_color)
-                bp["fliers"][i0].set_alpha(0.6)
+                if i0 < len(bp["fliers"]):
+                    bp["fliers"][i0].set_markerfacecolor(ssf_color)
+                    bp["fliers"][i0].set_markeredgecolor(ssf_color)
+                    bp["fliers"][i0].set_alpha(0.6)
+
+            # overlay SSF in compare_methods
+            if plot_mode == "compare_methods":
+                ssf_overlay_data = []
+                ssf_overlay_positions = []
+
+                for p, r, arr in zip(positions, run_num_list, ssf_box_data):
+                    if r == 5:
+                        continue
+                    if arr.size > 0:
+                        ssf_overlay_data.append(arr)
+                        ssf_overlay_positions.append(p + ssf_extra_shift)
+
+                if len(ssf_overlay_data) > 0:
+                    bp_ssf = ax.boxplot(
+                        ssf_overlay_data,
+                        positions=ssf_overlay_positions,
+                        widths=box_width,
+                        patch_artist=True,
+                        showfliers=showfliers,
+                        whis=whis,
+                        manage_ticks=False
+                    )
+                    style_boxplot(bp_ssf, ssf_color)
 
         ax.set_title(fig_title, fontsize=suptitle_fs)
         ax.set_ylim(*ylims)
@@ -890,13 +1015,258 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
 
         ax.set_xticks(base_pos)
         ax.set_xticklabels(xtick_labels)
+        ax.set_xlim(0.5, len(run_num_list) + 0.5)
 
         ax.set_xlabel("Run Number", fontsize=label_fs)
         ax.set_ylabel(ylabel, fontsize=label_fs)
 
-        plt.show()
+        if save_plt_path is None:
+            plt.show()
+        else:
+            now = datetime.datetime.now()
+            timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
 
-    else:
-        raise ValueError("layout must be 'separate' or 'together'")
+            fname = os.path.join(
+                save_plt_path,
+                f"boxwhisk_qtemps_vs_run_num_{timestamp}.pdf"
+            )
+
+            fig.savefig(fname, bbox_inches="tight")
+            plt.close(fig)
 
 ######################################################################################
+def boxwhisker_pe_per_qubit_vs_run_hybrid(
+    run_num_list,
+    rpm_pe_by_run,
+    ssf_pe_by_run,
+    n_qubits=6,
+    qubits_to_plot=None,
+    colors=('orange', 'blue', 'purple', 'green', 'brown', 'palevioletred'),
+    ssf_color="purple",
+    ylims=None,
+    yticks=None,
+    showfliers=True,
+    whis=1.5,
+    fig_title="Excited-State Population vs Run Number",
+    ylabel=r"$P_e$",
+    suptitle_fs=18,
+    title_fs=18,
+    label_fs=18,
+    tick_fs=18,
+    save_plt_path=None
+):
+    """
+    Hybrid Pe boxplot, using already-grouped per-run dictionaries.
+
+    Expected input shape
+    --------------------
+    rpm_pe_by_run[run][q] = [Pe, ...]
+    ssf_pe_by_run[run][q] = [Pe, ...]
+
+    Hybrid logic
+    ------------
+    - Run 5 uses SSF Pe data
+    - Runs > 5 use RPM Pe data
+    """
+
+    # ---------------- choose qubits to plot ----------------
+    if qubits_to_plot is None:
+        qubits_to_plot = list(range(n_qubits))
+    else:
+        qubits_to_plot = list(qubits_to_plot)
+
+    n_plot = len(qubits_to_plot)
+    if n_plot == 0:
+        raise ValueError("qubits_to_plot is empty.")
+
+    # ---------------- helpers ----------------
+    def cell_to_1d(cell):
+        if cell is None:
+            return np.array([], dtype=float)
+
+        try:
+            if not np.isscalar(cell) and len(cell) == 0:
+                return np.array([], dtype=float)
+        except TypeError:
+            pass
+
+        if np.isscalar(cell):
+            arr = np.array([cell], dtype=float)
+        else:
+            arr = np.asarray(cell, dtype=float).ravel()
+
+        return arr[np.isfinite(arr)]
+
+    def get_cell(vals_by_run, run, q):
+        if vals_by_run is None or run not in vals_by_run:
+            return None
+
+        row = vals_by_run[run]
+        if row is None or q >= len(row):
+            return None
+
+        return row[q]
+
+    def style_boxplot(bp, color):
+        for b in bp["boxes"]:
+            b.set_facecolor(color)
+            b.set_edgecolor(color)
+            b.set_alpha(0.31)
+            b.set_linewidth(1.3)
+
+        for m in bp["medians"]:
+            m.set_color(color)
+            m.set_linewidth(2.0)
+
+        for w in bp["whiskers"]:
+            w.set_color(color)
+            w.set_linewidth(1.2)
+
+        for c in bp["caps"]:
+            c.set_color(color)
+            c.set_linewidth(1.2)
+
+        for f in bp["fliers"]:
+            f.set_marker("o")
+            f.set_markersize(3.5)
+            f.set_markerfacecolor(color)
+            f.set_markeredgecolor(color)
+            f.set_alpha(0.6)
+
+    def select_cell(run, q):
+        if run == 5:
+            return get_cell(ssf_pe_by_run, run, q)
+        return get_cell(rpm_pe_by_run, run, q)
+
+    def print_pe_median_iqr2_summary(run_nums, data_by_run, q):
+        print(f"\nQubit {q + 1} Pe summary:")
+        for run, arr in zip(run_nums, data_by_run):
+            arr = cell_to_1d(arr)
+
+            if arr.size == 0:
+                print(f"  Run {run}: no data")
+                continue
+
+            q1 = np.percentile(arr, 25)
+            med = np.percentile(arr, 50)
+            q3 = np.percentile(arr, 75)
+            iqr2 = 0.5 * (q3 - q1)
+
+            print(f"  Run {run}: {med:.6f} ± {iqr2:.6f}")
+
+    # ---------------- axis defaults ----------------
+    if ylims is None:
+        ylims = (0, 0.5)
+    if yticks is None:
+        yticks = np.arange(0, 0.51, 0.1)
+
+    n_runs = len(run_num_list)
+    base_pos = np.arange(1, n_runs + 1)
+    xtick_labels = [f"{r}" for r in run_num_list]
+
+    # ---------------- dynamic subplot grid ----------------
+    if n_plot == 1:
+        nrows, ncols = 1, 1
+    elif n_plot == 2:
+        nrows, ncols = 1, 2
+    elif n_plot <= 4:
+        nrows, ncols = 2, 2
+    else:
+        ncols = 3
+        nrows = math.ceil(n_plot / 3)
+
+    fig_w = 5.8 * ncols
+    fig_h = 4.6 * nrows
+
+    fig, axes = plt.subplots(
+        nrows, ncols,
+        figsize=(fig_w, fig_h),
+        sharex=True,
+        sharey=True,
+        constrained_layout=False
+    )
+    axes = np.atleast_1d(axes).ravel()
+
+    summary_store = []
+
+    for ax_idx, q in enumerate(qubits_to_plot):
+        ax = axes[ax_idx]
+        q_color = colors[q % len(colors)]
+
+        box_data = [cell_to_1d(select_cell(r, q)) for r in run_num_list]
+        summary_store.append((q, box_data))
+
+        bp = ax.boxplot(
+            box_data,
+            positions=base_pos,
+            widths=0.55,
+            patch_artist=True,
+            showfliers=showfliers,
+            whis=whis,
+            manage_ticks=False
+        )
+        style_boxplot(bp, q_color)
+
+        # recolor run 5 as SSF
+        if 5 in run_num_list:
+            i0 = run_num_list.index(5)
+
+            bp["boxes"][i0].set_facecolor(ssf_color)
+            bp["boxes"][i0].set_edgecolor(ssf_color)
+            bp["medians"][i0].set_color(ssf_color)
+
+            for j in (2 * i0, 2 * i0 + 1):
+                bp["whiskers"][j].set_color(ssf_color)
+                bp["caps"][j].set_color(ssf_color)
+
+            if i0 < len(bp["fliers"]):
+                bp["fliers"][i0].set_markerfacecolor(ssf_color)
+                bp["fliers"][i0].set_markeredgecolor(ssf_color)
+                bp["fliers"][i0].set_alpha(0.6)
+
+        ax.set_title(f"Qubit {q + 1}", fontsize=title_fs)
+        ax.set_ylim(*ylims)
+        ax.set_yticks(yticks)
+        ax.tick_params(axis="both", labelsize=tick_fs)
+        ax.grid(True, alpha=0.35)
+
+        ax.set_xticks(base_pos)
+        ax.set_xticklabels(xtick_labels)
+        ax.set_xlim(0.5, len(run_num_list) + 0.5)
+
+    # hide unused axes
+    for k in range(n_plot, len(axes)):
+        axes[k].set_visible(False)
+
+    left_margin   = 0.12 + 0.015 * max(nrows - 1, 0)
+    bottom_margin = 0.14 + 0.025 * max(nrows - 1, 0)
+    top_margin    = 0.90 - 0.015 * max(nrows - 1, 0)
+    right_margin  = 0.96
+
+    fig.subplots_adjust(
+        left=left_margin,
+        right=right_margin,
+        bottom=bottom_margin,
+        top=top_margin,
+        wspace=0.25,
+        hspace=0.35
+    )
+
+    fig.suptitle(fig_title, fontsize=suptitle_fs, y=0.975)
+    fig.supxlabel("Run Number", fontsize=label_fs, y=0.04)
+    fig.supylabel(ylabel, fontsize=label_fs, x=0.035)
+
+    if save_plt_path is None:
+        plt.show()
+    else:
+        fname = os.path.join(save_plt_path, "boxwhisk_pe_vs_run_num.pdf")
+        fig.savefig(fname, bbox_inches="tight")
+        plt.close(fig)
+
+    # ---------------- print median Pe ± IQR/2 ----------------
+    print("\n" + "=" * 60)
+    print("Median Pe ± IQR/2 results")
+    print("=" * 60)
+
+    for q, box_data in summary_store:
+        print_pe_median_iqr2_summary(run_num_list, box_data, q)

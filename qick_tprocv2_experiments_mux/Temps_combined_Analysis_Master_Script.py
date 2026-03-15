@@ -1,5 +1,8 @@
 import sys
 import numpy as np
+
+from tprocv2_demos.qick_tprocv2_experiments_mux.analysis_014_temp_calcsandplots_cosmiqgpvm import combined_Qtemp_studies
+
 np.set_printoptions(threshold=int(1e15)) #need this so it saves absolutely everything returned from the classes
 import os
 #sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
@@ -24,15 +27,15 @@ from analysis_003_q_freqs_vs_time_plots import QubitFreqsVsTime
 from analysis_006_T1_vs_time_plots import T1VsTime
 from analysis_007_T2R_vs_time_plots import T2rVsTime
 from analysis_008_T2E_vs_time_plots import T2eVsTime
-from AB_Paper_Analysis_Plots import boxwhisker_qtemps_per_qubit_vs_run_choice
+from AB_Paper_Analysis_Plots import boxwhisker_qtemps_per_qubit_vs_run_choice, boxwhisker_pe_per_qubit_vs_run_hybrid
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 8
+run_num = 5
 run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence analysis it's defined in its respective section
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
-replot_RPMs = True # Do you want to re-plot rabi population measurements from RR data but not extract temps? Only make plots
-save_figsRR = True # Do you want to save (or not save) the RR RPM plots?
+replot_RPMs = False # Do you want to re-plot rabi population measurements from RR data but not extract temps? Only make plots
+save_figsRR = False # Do you want to save (or not save) the RR RPM plots?
 save_figs = False # To be used in general for any function or class to save (or not save) plots.
 save_figs_SSF = False # Do you want to save gaussian fit plots while calculating ssf qtemps? iminuit case only
 fit_saved = False # Not used here, set to false.
@@ -53,7 +56,7 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
                       "combined_studies_qtemps": False}
 
 # What analysis plots do you want to make?
@@ -63,13 +66,13 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
 
 # For combined analysis (SSF qtemps + RPM qtemps)
 comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
-                       "Pe_vs_time_comb_single_plt": False, "box_whisker_allruns_allQs": False}
+                       "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 
 # For double-gaussian SSF analysis using alternative methods
-alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
+alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": True}
 
 # For coherence-qubit temps combined analysis
 coh_qtemp_ana_flags = {"load_rpm_qtemps": False, "load_ssf_qtemps": False, "load_mcp1_temps": False, "load_coherence_res": False, "plot_qtemps_t1_ftemps_qfreq": False}
@@ -370,7 +373,8 @@ paths_SSFmethods_SR = [
     "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_00-36-15",
     "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_03-56-41",
     "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_07-19-10",
-    "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_11-53-46"]
+    "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_11-53-46"
+    ]
 
     # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/",
     # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_detuning_24MHz_Q1_substudy1/",
@@ -419,24 +423,33 @@ r8_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run8" # CEPH
                 # "/data/QICK_data/run8" # daq01
 # All AB paper data
 paths_SSFmethods_run8 = [ # for daq01 case, need to make CEPH version
-  f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_11-09-32",
-  f"{r8_path_prefix}6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_12-05-25",
-  f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_19-43-00",
-  f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-19_20-25-18",
-  f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-20_12-10-19",
-  f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-23_00-49-28",
-  f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-23_14-47-22",
-  f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-24_01-41-30",
-  f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-24_13-58-37",
-  f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-27_14-15-40",
-  f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-27_14-24-29",
-  f"{r8_path_prefix}6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-27_22-04-57",
-  f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-28_21-57-47",
-  f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-29_18-38-25",
-  f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-29_23-48-45",
-  f"{r8_path_prefix}6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-31_01-54-57",
-  f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-10-31_20-40-11",
-  f"{r8_path_prefix}/6transmon/round_robin/AB_paper_datadump_for_analysis/2025-11-01_12-54-55"
+  f"{r8_path_prefix}/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_11-09-32",
+  f"{r8_path_prefix}6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_12-05-25",
+  f"{r8_path_prefix}/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_19-43-00",
+  f"{r8_path_prefix}/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_20-25-18",
+  f"{r8_path_prefix}/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-20_12-10-19",
+
+  f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata2ndbatch_21dB_DACatten_Q1to5/2025-10-23_00-49-28",
+
+  f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5/2025-10-23_14-47-22",
+
+  f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/2025-10-24_01-41-30",
+
+  f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional/2025-10-24_13-58-37",
+
+  f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional/2025-10-27_14-15-40",
+  f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional/2025-10-27_14-24-29",
+
+  f"{r8_path_prefix}6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/2025-10-27_22-04-57",
+
+  f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-28_21-57-47",
+  f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-29_18-38-25",
+  f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-29_23-48-45",
+
+  f"{r8_path_prefix}6transmon/round_robin/18dB_DAC_testdata_allQs_exceptQ4/2025-10-31_01-54-57",
+
+  f"{r8_path_prefix}/6transmon/round_robin/19dB_DAC_testdata_allQs/2025-10-31_20-40-11",
+  f"{r8_path_prefix}/6transmon/round_robin/19dB_DAC_testdata_allQs/2025-11-01_12-54-55"
 ]
 
 path_saveplots_fits_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r8" #CEPH
@@ -717,9 +730,15 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 run_num_list = [5,6,7,8]
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
-rpm_errs_by_run  = {}      # matching errors
+rpm_temps_errs_by_run  = {}      # matching errors
+rpm_Pe_by_run = {}      # rpm_Pe_by_run[run][qid] = [P_e, ...]
+rpm_Pe_errs_by_run  = {}      # matching Pe errors
+
 ssf_g_temps_by_run  = {}   # ssf ground-double-gauss temps
-ssf_g_errs_by_run  = {}      # matching errors
+ssf_g_temp_errs_by_run  = {}      # matching errors
+ssf_g_Pe_by_run  = {}   # ssf ground-double-gauss Pe
+ssf_g_Pe_errs_by_run = {} # matching Pe errors
+
 ssf_ge_temps_by_run = {}   # ssf g-e threshold temps (if you compute them)
 ssf_ge_errs_by_run  = {}      # matching errors
 
@@ -805,9 +824,15 @@ if qtemp_method_flags["combined_studies_qtemps"]:
 
         # ---------------- pre-fill so dict shape is always stable ----------------
         rpm_temps_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
-        rpm_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+        rpm_temps_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+        rpm_Pe_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+        rpm_Pe_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+        
         ssf_g_temps_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
-        ssf_g_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+        ssf_g_temp_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+        ssf_g_Pe_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+        ssf_g_Pe_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+        
         ssf_ge_temps_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
         ssf_ge_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
 
@@ -828,12 +853,14 @@ if qtemp_method_flags["combined_studies_qtemps"]:
                     all_files_Qtemp_results_RPMs += all_files_Qtemp_results_RPMs2
 
             # ---- ADAPT + STORE (RPM) ----
-            rpm_temps, rpm_errs = combined_studies.rpm_results_to_per_qubit_lists(
+            rpm_temps, rpm_temps_errs, rpm_Pe, rpm_Pe_errs = combined_studies.rpm_results_to_per_qubit_lists(
                 all_files_Qtemp_results_RPMs,
                 n_qubits=tot_num_of_qubits
             )
             rpm_temps_by_run[run_num] = rpm_temps
-            rpm_errs_by_run[run_num] = rpm_errs
+            rpm_temps_errs_by_run[run_num] = rpm_temps_errs
+            rpm_Pe_by_run[run_num] = rpm_Pe
+            rpm_Pe_errs_by_run[run_num] = rpm_Pe_errs
 
         # ----------- Get Qubit temperature results via SSF g-e threshold method and SSF g-state double gaussian threshold method
         SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, run_num, save_figs)
@@ -843,36 +870,68 @@ if qtemp_method_flags["combined_studies_qtemps"]:
             all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=0.6,
                 do_plots=False, dontuse_midpt_thresh = True)
             # ---- STORE RESULTS (SSF g) ----
-            # Prefer the direct outputs if they exist and are aligned by qubit
-            ssf_g_temps_by_run[run_num] = all_qubit_temps_g
-            ssf_g_errs_by_run[run_num] = all_qubit_temps_errs_g
+            ssf_g_temps, ssf_g_temp_errs = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
+
+            print(f"\nRUN {run_num} accepted SSF counts:")
+            for q in range(tot_num_of_qubits):
+                print(f"  Q{q + 1}: {len(ssf_g_temps[q])}")
+
+            ssf_g_temps_by_run[run_num] = ssf_g_temps
+            ssf_g_temp_errs_by_run[run_num] = ssf_g_temp_errs
+            pe_vals, pe_errs = combined_studies.extract_pe_from_fit_results(fit_results_g, tot_num_of_qubits)
+            ssf_g_Pe_by_run[run_num] = pe_vals
+            ssf_g_Pe_errs_by_run[run_num] = pe_errs
 
         else: # uses sklearn.mixture.GaussianMixture for double gaussian fitting
             all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only = False, fallback_to_threshold = False)
             all_qubit_temps_ge, all_qubit_times_ge, all_qubit_temps_errs_ge, fit_results_ge = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only=True, fallback_to_threshold=False)
 
             # ---- STORE RESULTS (SSF g) ----
-            ssf_g_temps_by_run[run_num] = all_qubit_temps_g
-            ssf_g_errs_by_run[run_num] = all_qubit_temps_errs_g
+            ssf_g_temps, ssf_g_temp_errs = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
+            ssf_g_temps_by_run[run_num] = ssf_g_temps
+            ssf_g_temp_errs_by_run[run_num] = ssf_g_temp_errs
+            pe_vals, pe_errs = combined_studies.extract_pe_from_fit_results(fit_results_g, tot_num_of_qubits)
+            ssf_g_Pe_by_run[run_num] = pe_vals
+            ssf_g_Pe_errs_by_run[run_num] = pe_errs
 
             # ---- STORE RESULTS (SSF ge) ----
             ssf_ge_temps_by_run[run_num] = all_qubit_temps_ge
             ssf_ge_errs_by_run[run_num] = all_qubit_temps_errs_ge
+            # Pe option has not been added for this case yet
 
     # --------------------- box and whiskers plot. Per run and per qubit. Separate or together options -------------------
-    if comb_analysis_flags["box_whisker_allruns_allQs"]:
+    if comb_analysis_flags["qtemp_box_whisker_allruns_allQs"]:
         boxwhisker_qtemps_per_qubit_vs_run_choice(
             run_num_list=run_num_list,
             rpm_temps_by_run=rpm_temps_by_run,
             ssf_g_temps_by_run=ssf_g_temps_by_run,
             ssf_ge_temps_by_run=ssf_ge_temps_by_run,
-            plot_mode="hybrid", # "hybrid" or "all_ssf"
+            qubits_to_plot = [0],
+            plot_mode="compare_methods", # "hybrid" or "all_ssf" or "compare_methods"
             ssf_kind="g",
             layout="separate",
-            colors=('palevioletred', 'palevioletred', 'palevioletred', 'palevioletred', 'palevioletred', 'palevioletred'),
-            ylims=(0, 600),
-            yticks=np.arange(0, 601, 100),
-        )
+            colors=('palevioletred', 'palevioletred', 'palevioletred',
+                    'palevioletred', 'palevioletred', 'palevioletred'),
+            ylims=(0, 300),
+            yticks=np.arange(0, 301, 100),
+            showfliers=False,  # outliers
+            save_plt_path = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF") # set to 'None' to use plt.show()
+
+    if comb_analysis_flags["Pe_box_whisker_allruns_allQs"]:
+        # This is only set up in 'hybrid' 'separate' mode
+        boxwhisker_pe_per_qubit_vs_run_hybrid(
+            run_num_list=run_num_list,
+            rpm_pe_by_run=rpm_Pe_by_run,
+            ssf_pe_by_run=ssf_g_Pe_by_run,
+            qubits_to_plot=[0, 1, 2, 3, 4, 5],
+            colors=('palevioletred', 'palevioletred', 'palevioletred',
+                    'palevioletred', 'palevioletred', 'palevioletred'),
+            ylims=(0, 0.6),
+            yticks=np.arange(0, 0.61, 0.05),
+            fig_title="Excited-State Population vs Run Number",
+            ylabel=r"$P_e$",
+            save_plt_path="/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF")
+
     # ------------ Qubit temperatures vs Time using all three methods ------------------------
     if comb_analysis_flags["Qtemps_vs_time_comb_separate_plts"]:
         # This func has only been set up to work for 2 qubits.
