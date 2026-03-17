@@ -2,6 +2,7 @@ import copy
 import sys
 import os
 import numpy as np
+from sphinx.addnodes import document
 
 # from tprocv2_demos.qick_tprocv2_experiments_mux.long_qubit_spectroscopy import fh_config
 
@@ -28,7 +29,7 @@ from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 from test_active_reset import Active_Reset_test
 
 
-def RR_IntraTomo(study, substudy, timestamp, rounds):
+def RR_IntraTomo(tsFolder, rounds):
     ################################################ Run Configurations ####################################################
     st = time.time()
     #
@@ -57,8 +58,6 @@ def RR_IntraTomo(study, substudy, timestamp, rounds):
     print(FRIDGE)
 
     #Data saving info
-    run_name = 'run33e'
-    device_name = '4charge'
     substudy_txt_notes = ('Intra-tomography RR') #'DD off, rear shield hole closed, no colimator, 0V bias') #'0V bias, ssf edit')#('DD off, rear shield hole closed, 0V bias')
 
     # set which of the following you'd like to run to 'True'
@@ -76,42 +75,30 @@ def RR_IntraTomo(study, substudy, timestamp, rounds):
     figure_quality = 200
     ################################################ Data Saving Setup ##################################################
     #Folders
-    study = f'{study}'
-    sub_study = f'{substudy}'
-    data_set = timestamp #datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    if not os.path.exists(f"/home/nexusadmin/Documents/Data/{run_name}/"):
-        os.makedirs(f"/home/nexusadmin/Documents/Data/{run_name}/")
-    if not os.path.exists(f"/home/nexusadmin/Documents/Data/{run_name}/{device_name}/"):
-        os.makedirs(f"/home/nexusadmin/Documents/Data/{run_name}/{device_name}/")
-    studyFolder = os.path.join(f"/home/nexusadmin/Documents/Data/{run_name}/{device_name}/", study)
-    if not os.path.exists(studyFolder):
-        os.makedirs(studyFolder)
-    subStudyFolder = os.path.join(studyFolder, sub_study)
-    if not os.path.exists(subStudyFolder):
-        os.makedirs(subStudyFolder)
+    RRfolder = os.path.join(tsFolder, 'RR')
+    RRdatasetFolder = os.path.join(RRfolder, data_set)
+    dataFolder = os.path.join(RRdatasetFolder, 'data')
+    documentationFolder = os.path.join(RRdatasetFolder, 'documentation')
+    if not os.path.exists(RRfolder):
+        os.makedirs(RRfolder)
+    if not os.path.exists(RRdatasetFolder):
+        os.makedirs(RRdatasetFolder)
+    if not os.path.exists(dataFolder):
+        os.makedirs(dataFolder)
+    if not os.path.exists(documentationFolder):
+        os.makedirs(documentationFolder)
 
-    dataSetFolder = os.path.join(subStudyFolder, data_set)
-    optimizationFolder = os.path.join(dataSetFolder, 'optimization')
-    studyDocumentationFolder = os.path.join(dataSetFolder, 'documentation')
-    subStudyDataFolder = os.path.join(dataSetFolder, 'study_data')
-    ## Currently datah5 is saved in study_data. Save in optimization folder instead?
-    if not os.path.exists(studyDocumentationFolder):
-        os.makedirs(studyDocumentationFolder)
-    if not os.path.exists(optimizationFolder):
-        os.makedirs(optimizationFolder)
-    if not os.path.exists(subStudyDataFolder):
-        os.makedirs(subStudyDataFolder)
-
-    # file_path = os.path.join(studyDocumentationFolder, 'sub_study_notes.txt')
-    # with open(file_path, "w", encoding="utf-8") as file:
-    #     file.write(substudy_txt_notes)
+    file_path = os.path.join(documentationFolder, 'sub_study_notes.txt')
+    with open(file_path, "w", encoding="utf-8") as file:
+        file.write(substudy_txt_notes)
 
     ################################################## Configure logging ###################################################
     ''' We need to create a custom logger and disable propagation like this
     to remove the logs from the underlying qick from saving to the log file for RR'''
 
-    log_file = os.path.join(studyDocumentationFolder, "RR_script.log")
+    log_file = os.path.join(documentationFolder, "RR_script.log")
     rr_logger = logging.getLogger("custom_logger_for_rr_only")
     rr_logger.setLevel(logging.DEBUG)
 
@@ -128,7 +115,7 @@ def RR_IntraTomo(study, substudy, timestamp, rounds):
         return {Q: {key: np.empty(save_r, dtype=object) for key in keys} for Q in range(len(qs))}
 
     # Define what to save to h5 files
-    res_keys = ['Dates', 'freq_pts', 'freq_center', 'Amps', 'Found Freqs', 'Round Num', 'Batch Num', 'Exp Config',
+    res_keys = ['Dates', 'freq_pts', 'freq_center', 'I', 'Q', 'Amps', 'Found Freqs', 'Round Num', 'Batch Num', 'Exp Config',
                 'Syst Config']
     qspec_keys = ['Dates', 'I', 'Q', 'Frequencies', 'I Fit', 'Q Fit', 'Round Num', 'Batch Num','Recycled QFreq',
                   'Exp Config', 'Syst Config']
@@ -175,9 +162,9 @@ def RR_IntraTomo(study, substudy, timestamp, rounds):
             recycled_qfreq = False
 
             #Get the config for this qubit
-            experiment = QICK_experiment(optimizationFolder, DAC_attenuator1 = 10, DAC_attenuator2 = 15, qubit_DAC_attenuator1 = 5,
+            experiment = QICK_experiment(documentationFolder, DAC_attenuator1 = 10, DAC_attenuator2 = 15, qubit_DAC_attenuator1 = 5,
                                          qubit_DAC_attenuator2 = 4, ADC_attenuator = 17, fridge=FRIDGE) # ADC_attenuator MUST be above 16dB
-            experiment.create_folder_if_not_exists(optimizationFolder)
+            experiment.create_folder_if_not_exists(documentationFolder)
 
             #Mask out all other resonators except this one
             res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=res_gain[QubitIndex], num_qubits=tot_num_of_qubits)
@@ -187,16 +174,16 @@ def RR_IntraTomo(study, substudy, timestamp, rounds):
 
             ###################################################### TOF #####################################################
             if run_flags["tof"]:
-                tof        = TOFExperiment(QubitIndex, studyDocumentationFolder, experiment, j, save_figs, unmasking_resgain = unmask)
+                tof        = TOFExperiment(QubitIndex, documentationFolder, experiment, j, save_figs, unmasking_resgain = unmask)
                 tof.run()
                 del tof
 
             ################################################# g-e Res spec ####################################################
             if run_flags["res_spec"]:
                 try:
-                    res_spec   = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
+                    res_spec   = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, documentationFolder, j, save_figs,
                                                        experiment = experiment, verbose = verbose, logger = rr_logger, unmasking_resgain = unmask)
-                    res_freqs, freq_pts, freq_center, amps, sys_config_rspec = res_spec.run()
+                    res_freqs, freq_pts, freq_center, res_Iarr, res_Qarr, amps, sys_config_rspec = res_spec.run()
                     offset = freq_offsets[QubitIndex] #use optimized offset values or whats set at top of script based on pre_optimize flag
                     offset_res_freqs = [r + offset for r in res_freqs]
                     experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
@@ -213,7 +200,7 @@ def RR_IntraTomo(study, substudy, timestamp, rounds):
             ################################################## g-e Qubit spec ##################################################
             if run_flags["q_spec"]:
                 try:
-                    q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
+                    q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, documentationFolder, j,
                                                signal, save_figs, plot_fit=True,experiment=experiment,
                                                live_plot=live_plot, verbose=verbose, logger=rr_logger, unmasking_resgain = unmask)
                     (qspec_I, qspec_Q, qspec_freqs, qspec_I_fit,
@@ -254,7 +241,7 @@ def RR_IntraTomo(study, substudy, timestamp, rounds):
             ###################################################### g-e Rabi ####################################################
             if run_flags["rabi"]:
                 # try:
-                rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs=save_figs,save_shots=False,
+                rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, documentationFolder, j, signal, save_figs=save_figs,save_shots=False,
                                                experiment = experiment, live_plot = live_plot,
                                                increase_qubit_reps = increase_qubit_reps,
                                                qubit_to_increase_reps_for = qubit_to_increase_reps_for,
@@ -285,7 +272,7 @@ def RR_IntraTomo(study, substudy, timestamp, rounds):
             ########################################## g-e Single Shot Measurements ############################################
             if run_flags["ss"]:
                 # try:
-                ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs, experiment = experiment,
+                ss = SingleShot(QubitIndex, tot_num_of_qubits, documentationFolder, j, save_figs, experiment = experiment,
                                 verbose = verbose, logger = rr_logger, unmasking_resgain = unmask)
                 fid, angle, iq_list_g, iq_list_e, sys_config_ss = ss.run()
                 print('fid', fid)
@@ -308,7 +295,7 @@ def RR_IntraTomo(study, substudy, timestamp, rounds):
             ###################################################### g-e T1 ######################################################
             if run_flags["t1"]:
                 try:
-                    t1 = T1Measurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
+                    t1 = T1Measurement(QubitIndex, tot_num_of_qubits, documentationFolder, j, signal, save_figs,
                                        experiment = experiment,
                                        live_plot = live_plot, fit_data = fit_data,
                                        increase_qubit_reps = increase_qubit_reps,
@@ -330,7 +317,7 @@ def RR_IntraTomo(study, substudy, timestamp, rounds):
             ###################################################### g-e T2R #####################################################
             if run_flags["t2r"]:
                 try:
-                    t2r = T2RMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
+                    t2r = T2RMeasurement(QubitIndex, tot_num_of_qubits, documentationFolder, j, signal, save_figs,
                                          experiment = experiment, live_plot = live_plot, fit_data = fit_data,
                                          increase_qubit_reps = increase_qubit_reps,
                                          qubit_to_increase_reps_for = qubit_to_increase_reps_for,
@@ -351,7 +338,7 @@ def RR_IntraTomo(study, substudy, timestamp, rounds):
             ##################################################### g-e T2E ######################################################
             if run_flags["t2e"]:
                 try:
-                    t2e = T2EMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
+                    t2e = T2EMeasurement(QubitIndex, tot_num_of_qubits, documentationFolder, j, signal, save_figs,
                                          experiment = experiment, live_plot = live_plot, fit_data = fit_data,
                                          increase_qubit_reps = increase_qubit_reps,
                                          qubit_to_increase_reps_for = qubit_to_increase_reps_for,
@@ -377,6 +364,8 @@ def RR_IntraTomo(study, substudy, timestamp, rounds):
                         time.mktime(datetime.datetime.now().timetuple()))
                     res_data[QubitIndex]['freq_pts'][j - batch_num * save_r - 1] = freq_pts
                     res_data[QubitIndex]['freq_center'][j - batch_num * save_r - 1] = freq_center
+                    res_data[QubitIndex]['I'][j - batch_num * save_r - 1] = res_Iarr
+                    res_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = res_Qarr
                     res_data[QubitIndex]['Amps'][j - batch_num * save_r - 1] = amps
                     res_data[QubitIndex]['Found Freqs'][j - batch_num * save_r - 1] = res_freqs
                     res_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
@@ -483,49 +472,49 @@ def RR_IntraTomo(study, substudy, timestamp, rounds):
 
                 # --------------------------save g-e Res Spec-----------------------
                 if run_flags["res_spec"]:
-                    saver_res = Data_H5(subStudyDataFolder, res_data, batch_num, save_r)
+                    saver_res = Data_H5(dataFolder, res_data, batch_num, save_r)
                     saver_res.save_to_h5('res_ge', ts = RR_timestamp)
                     del saver_res
                     del res_data
 
                 # --------------------------save g-e QSpec-----------------------
                 if run_flags["q_spec"]:
-                    saver_qspec = Data_H5(subStudyDataFolder, qspec_data, batch_num, save_r)
+                    saver_qspec = Data_H5(dataFolder, qspec_data, batch_num, save_r)
                     saver_qspec.save_to_h5('qspec_ge', ts = RR_timestamp)
                     del saver_qspec
                     del qspec_data
 
                 # --------------------------save g-e Rabi-----------------------
                 if run_flags["rabi"]:
-                    saver_rabi = Data_H5(subStudyDataFolder, rabi_data, batch_num, save_r)
+                    saver_rabi = Data_H5(dataFolder, rabi_data, batch_num, save_r)
                     saver_rabi.save_to_h5('rabi_ge', ts = RR_timestamp)
                     del saver_rabi
                     del rabi_data
 
                 # --------------------------save g-e SS-----------------------
                 if run_flags["ss"]:
-                    saver_ss = Data_H5(subStudyDataFolder, ss_data, batch_num, save_r)
+                    saver_ss = Data_H5(dataFolder, ss_data, batch_num, save_r)
                     saver_ss.save_to_h5('ss_ge', ts = RR_timestamp)
                     del saver_ss
                     del ss_data
 
                 # --------------------------save g-e t1-----------------------
                 if run_flags["t1"]:
-                    saver_t1 = Data_H5(subStudyDataFolder, t1_data, batch_num, save_r)
+                    saver_t1 = Data_H5(dataFolder, t1_data, batch_num, save_r)
                     saver_t1.save_to_h5('t1_ge', ts = RR_timestamp)
                     del saver_t1
                     del t1_data
 
                 #--------------------------save g-e t2r-----------------------
                 if run_flags["t2r"]:
-                    saver_t2r = Data_H5(subStudyDataFolder, t2r_data, batch_num, save_r)
+                    saver_t2r = Data_H5(dataFolder, t2r_data, batch_num, save_r)
                     saver_t2r.save_to_h5('t2_ge', ts = RR_timestamp)
                     del saver_t2r
                     del t2r_data
 
                 #--------------------------save g-e t2e-----------------------
                 if run_flags["t2e"]:
-                    saver_t2e = Data_H5(subStudyDataFolder, t2e_data, batch_num, save_r)
+                    saver_t2e = Data_H5(dataFolder, t2e_data, batch_num, save_r)
                     saver_t2e.save_to_h5('t2e_ge', ts = RR_timestamp)
                     del saver_t2e
                     del t2e_data

@@ -8,7 +8,6 @@ import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
-#impot time
 import json
 
 from NetDrivers import Keithley2400
@@ -96,7 +95,8 @@ class AllQubitTomographyMeasurement:
                 self.h5_file = None
             bias_source.setSourceVoltage(0)
             bias_source.setOutputState(enable=False)
-        return
+        if save:
+            return file_timestamp
 
     def create_h5_file(self, vsweep, rounds):
         folder_data = os.path.join(self.outerFolder, 'study_data')
@@ -163,7 +163,6 @@ class AllQubitTomographyMeasurement:
         self.rows_written = 0
 
         print(f"Created HDF5 file: {self.h5_path}")
-        return self.file_timestamp
 
     def append_round_to_h5(self, qdata, volt_flags, timestamp, rnd_time):
         """
@@ -238,7 +237,7 @@ class AllQubitTomographyMeasurement:
                 try:
                     bias_source.setSourceVoltage(v)
                     #time.sleep(2)
-                    print(bias_source.measureVoltage())
+                    bias_source.measureVoltage()
                     #print('voltage set')
                 except Exception as e:
                     print(f"Couldn't bias qubits: {e}")
@@ -288,8 +287,8 @@ class AllQubitTomographyMeasurement:
                 if (round_num + 1) % 10 == 0:
                     self.h5_file.flush()
 
-            with open(self.time_log, "a") as f:
-                f.write(f"{formatted_datetime} | Round {round_num} | Duration {rnd_time:.2f} s\n")
+            # with open(self.time_log, "a") as f:
+            #     f.write(f"{formatted_datetime} | Round {round_num} | Duration {rnd_time:.2f} s\n")
 
             ## Plot data
             if plot_data:
