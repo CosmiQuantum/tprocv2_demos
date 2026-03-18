@@ -40,7 +40,7 @@ import h5py
 # from qualang_tools.plot import Fit
 # import visdom
 ###################################################### Set These #######################################################
-save_figs = True
+save_figs = False
 fit_saved = False
 show_legends = False
 signal = 'None'
@@ -274,9 +274,9 @@ for run_number in run_num_list:
     #                                        save_figs, fit_saved, signal, run_name, FRIDGE)
     # date_times_res_spec, res_freqs = res_spec_vs_time.run()
     # #
-    # q_spec_vs_time = QubitFreqsVsTime(data_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-    #                                   save_figs, fit_saved, signal, run_name, FRIDGE)
-    # date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
+    q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+                                      save_figs, fit_saved, signal, run_name, FRIDGE)
+    date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
     #
     # print("qspec fit errs Q1: ", qspec_fit_err[0])
     # print("mean qspec fit err Q1: ", np.mean(qspec_fit_err[0]))
@@ -297,9 +297,9 @@ for run_number in run_num_list:
     #                         fit_saved, signal, run_name, FRIDGE)
     # date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True, t1_vals = t1_vals)
 
-    t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
-                            fit_saved, signal, run_name, FRIDGE)
-    date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = None)
+    # t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+    #                         fit_saved, signal, run_name, FRIDGE)
+    # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = None)
 
     # ---------------- Store results ----------------
     # stores data like t1_vals_by_run[6][3], where 6=run number and 3=qubit index (0 based)
@@ -309,8 +309,8 @@ for run_number in run_num_list:
     # t2r_vals_by_run[run_number] = t2r_vals
     # t2r_errs_by_run[run_number] = t2r_fit_err
     #
-    t2e_vals_by_run[run_number] = t2e_vals
-    t2e_errs_by_run[run_number] = t2e_fit_err
+    # t2e_vals_by_run[run_number] = t2e_vals
+    # t2e_errs_by_run[run_number] = t2e_fit_err
 
 ######################################## Print QICK soccfg live ###########################################
 # If you want to print out the soccfg QICK output, uncomment this:
@@ -347,10 +347,10 @@ for run_number in run_num_list:
 # res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
 #
 # ######################################### 04: Qubit Freqs vs Time Plots #############################################
-# q_spec_vs_time.plot_without_errs(date_times_q_spec, q_freqs,show_legends)
-# q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends)
-# q_spec_vs_time.plot_with_errs_single_plot(date_times_q_spec, q_freqs, qspec_fit_err, show_legends=True)
-#
+#q_spec_vs_time.plot_without_errs(date_times_q_spec, q_freqs,show_legends)
+q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends)
+#q_spec_vs_time.plot_with_errs_single_plot(date_times_q_spec, q_freqs, qspec_fit_err, show_legends=True)
+
 # ############################################## 05: Pi Amp vs Time Plots ###############################################
 # pi_amps_vs_time.plot(date_times_pi_amps, pi_amps, show_legends)
 
