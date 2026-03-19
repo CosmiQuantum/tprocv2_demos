@@ -6,7 +6,7 @@ import os
 import datetime
 
 qtemp_noisetemp_plot = False
-
+lnPe_vs_qfreq_plots_per_run = True
 # ------------------------------------------------------------
 # Measured Pe values (Run 4 column will be dropped)
 # ------------------------------------------------------------
@@ -360,6 +360,79 @@ if qtemp_noisetemp_plot:
     # Leave space at bottom for legend
     fig.tight_layout(rect=[0.05, 0.12, 1, 0.95])
 
+    plt.show()
+
+if lnPe_vs_qfreq_plots_per_run:
+    run_labels = ["Run 5", "Run 6", "Run 7", "Run 8"]
+
+    n_qubits = len(Pe_meas)
+    n_runs = Pe_meas.shape[1]   # should be 4
+
+    fig, axes = plt.subplots(2, 2, figsize=(12, 9), sharex=True, sharey=True)
+    axes = axes.ravel()
+    colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
+
+    for r in range(n_runs):
+        ax = axes[r]
+
+        f_run = []
+        Pe_run = []
+
+        ax.set_ylim(-4.0, 0)
+
+        for q in range(n_qubits):
+            pei = Pe_meas[q, r]
+            pei_err = Pe_err[q, r]
+            fi = f_ge_MHz[q, r]
+            fi_err = f_ge_err_MHz[q, r]
+
+            if np.isfinite(pei) and np.isfinite(pei_err) and pei > 0:
+                color = colors[q % len(colors)]
+
+                lnPe = np.log(pei)
+                lnPe_err = pei_err / pei
+
+                f_run.append(fi)
+                Pe_run.append(pei)
+
+                ax.errorbar(
+                    fi,
+                    lnPe,
+                    xerr=fi_err,
+                    yerr=lnPe_err,
+                    fmt='o',
+                    capsize=3,
+                    color=color,
+                    ecolor=color
+                )
+
+                if q == 0 or q == 4:
+                    ax.text(fi + 12, lnPe + 0.2, f"Q{q+1}", fontsize=12, color=color)
+                else:
+                    ax.text(fi - 12, lnPe + 0.5, f"Q{q+1}", fontsize=12, color=color)
+
+        f_run = np.array(f_run, dtype=float)
+        Pe_run = np.array(Pe_run, dtype=float)
+
+        # Optional fit
+        # if len(f_run) > 1:
+        #     lnPe_run = np.log(Pe_run)
+        #     coeffs = np.polyfit(f_run, lnPe_run, 1)
+        #     f_fit = np.linspace(np.min(f_run), np.max(f_run), 200)
+        #     ax.plot(f_fit, np.polyval(coeffs, f_fit), '--', color='black')
+        #
+        #     ax.text(
+        #         0.05, 0.90,
+        #         f"slope = {coeffs[0]:.3e} per MHz",
+        #         transform=ax.transAxes,
+        #         fontsize=10
+        #     )
+
+        ax.set_title(run_labels[r])
+        ax.set_xlabel(r"$f_{ge}$ (MHz)")
+        ax.set_ylabel(r"$\ln(P_e)$")
+
+    plt.tight_layout()
     plt.show()
 
 #---------------------------------------- Definitions, additional plotting funcs ----------------------
