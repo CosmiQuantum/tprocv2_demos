@@ -23,7 +23,7 @@ from analysis_016_metrics_vs_temp import (ResonatorFreqVsTemp, GetThermData, Qub
                                           PiAmpsVsTemp, T1VsTemp, T2rVsTemp, T2eVsTemp)
 from analysis_017_plot_metric_dependencies import PlotMetricDependencies
 #from analysis_018_box_whisker import PlotBoxWhisker
-from AB_Paper_Analysis_Plots import boxwhisker_t1t2_per_qubit_vs_run
+from AB_Paper_Analysis_Plots import boxwhisker_t1t2_per_qubit_vs_run, boxwhisker_qfreq_per_qubit_vs_run
 from analysis_019_allan_welch_stats_plots import AllanWelchStats
 from analysis_022_Qfreq_hist_plots import QfreqHistPlots
 from section_011_qubit_temperatures_efRabi import QubitTemperatureProgram, QubitTemperatureRefProgram
@@ -31,7 +31,6 @@ import matplotlib.pyplot as plt
 # from datetime import datetime
 import datetime
 import pytz
-
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
 from system_config import QICK_experiment
 import numpy as np
@@ -48,14 +47,16 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
-run_num_list = [8]
+run_num_list = [4,5,6,7,8]
 t1_vals_by_run  = {}
 t2r_vals_by_run = {}
 t2e_vals_by_run = {}
+qfreq_vals_by_run = {}
 
 t1_errs_by_run  = {}
 t2r_errs_by_run = {}
 t2e_errs_by_run = {}
+qfreq_errs_by_run = {}
 
 for run_number in run_num_list:
     print(f'Processing run {run_number} data.')
@@ -312,6 +313,9 @@ for run_number in run_num_list:
     # t2e_vals_by_run[run_number] = t2e_vals
     # t2e_errs_by_run[run_number] = t2e_fit_err
 
+    qfreq_vals_by_run[run_number] = q_freqs
+    qfreq_errs_by_run[run_number] = qspec_fit_err
+
 ######################################## Print QICK soccfg live ###########################################
 # If you want to print out the soccfg QICK output, uncomment this:
 # from tprocv2_demos.qick_tprocv2_experiments_mux.socProxy import makeProxy
@@ -348,7 +352,7 @@ for run_number in run_num_list:
 #
 # ######################################### 04: Qubit Freqs vs Time Plots #############################################
 #q_spec_vs_time.plot_without_errs(date_times_q_spec, q_freqs,show_legends)
-q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends)
+# q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends)
 #q_spec_vs_time.plot_with_errs_single_plot(date_times_q_spec, q_freqs, qspec_fit_err, show_legends=True)
 
 # ############################################## 05: Pi Amp vs Time Plots ###############################################
@@ -372,7 +376,7 @@ q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_le
 # filtered_pi_amps = temps_class_obj.get_filtered_pi_amps(qubit_ssf_dates, date_times, pi_amps)
 # pi_amps_vs_time.plot_vs_ssf(date_times, filtered_pi_amps, ssf, show_legends)
 
-# ############ 05: Qubit Temp vs time (not working currently, use arianna code at bottom) #############################
+# ############ 05: Qubit Temp vs time (not working currently, ask Arianna what to use, it is a diff script) #############################
 # qtemp_vs_time = QTempsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
 #                                fit_saved,signal, run_name, exp_config)
 #
@@ -556,7 +560,8 @@ q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_le
 #boxwhisker.plot_three_metrics_by_freq_x_break(means, t1_vals, t2r_vals, t2e_vals)
 # boxwhisker.plot_three_metrics_by_freq_comp_run_x_break(means, t1_vals, t2r_vals, t2e_vals,t1_vals_r2, t2r_vals_r2, t2e_vals_r2, plot_outliers=False)
 
-#------------------------ New way -------------------------------------------
+#------------------------ New way for AB Paper, by Arianna -------------------------------------------
+## Coherence box plots
 # boxwhisker_t1t2_per_qubit_vs_run(
 #     run_num_list,
 #     t1_vals_by_run=t1_vals_by_run,
@@ -567,6 +572,17 @@ q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_le
 #     yticks=np.arange(0, 161, 20),
 #     mode="separate"
 # )
+
+## Qubit freq box plots
+ge_qfreq_centers = [4189.8773, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86] # plots will be centered around these vals
+boxwhisker_qfreq_per_qubit_vs_run(
+    run_num_list,
+    qfreq_vals_by_run=qfreq_vals_by_run,
+    qfreq_errs_by_run=qfreq_errs_by_run,
+    qfreq_centers=ge_qfreq_centers,
+    freq_window=30.0,
+    save_plt_path = "/data/QICK_data/multirun_analysis/coherence_analysis") # set to 'None' to use plt.show()
+
 # # ################################## 18: Allan Deviation/ Welch Spectral Density #########################################
 # stats = AllanWelchStats(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name)

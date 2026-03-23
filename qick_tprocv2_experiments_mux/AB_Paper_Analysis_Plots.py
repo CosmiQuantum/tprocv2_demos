@@ -6,7 +6,7 @@ import os
 import datetime
 
 qtemp_noisetemp_plot = False
-lnPe_vs_qfreq_plots_per_run = True
+lnPe_vs_qfreq_plots_per_run = False
 # ------------------------------------------------------------
 # Measured Pe values (Run 4 column will be dropped)
 # ------------------------------------------------------------
@@ -435,8 +435,8 @@ if lnPe_vs_qfreq_plots_per_run:
     plt.tight_layout()
     plt.show()
 
-#---------------------------------------- Definitions, additional plotting funcs ----------------------
-def print_median_spread_table(run_num_list, box_data, q, units="mK", mode="q1q3"):
+################################ Definitions, additional plotting funcs ####################################
+def print_median_spread_table(run_num_list, box_data, q, units="", mode="q1q3"):
     """
     Prints spread stats for a single qubit q across runs.
 
@@ -456,12 +456,20 @@ def print_median_spread_table(run_num_list, box_data, q, units="mK", mode="q1q3"
         q3  = np.percentile(arr, 75)
         iqr = q3 - q1
 
-        if mode.lower() == "iqr2":
-            spread = 0.5 * iqr
-            print(f"Run {r}, Q{q+1}: {med:.2f} ± {spread:.2f} {units}  (IQR={iqr:.2f}, n={arr.size})")
+        if "Hz" in units: # more decimals for qubit freq vals to identify subtle shifts
+            if mode.lower() == "iqr2":
+                spread = 0.5 * iqr
+                print(f"Run {r}, Q{q+1}: {med:.6f} ± {spread:.6f} {units}  (IQR={iqr:.6f}, n={arr.size})")
+            else:
+                # default: median (Q1, Q3)
+                print(f"Run {r}, Q{q+1}: {med:.6f} ({q1:.6f}, {q3:.6f}) {units}  [n={arr.size}]")
         else:
-            # default: median (Q1, Q3)
-            print(f"Run {r}, Q{q+1}: {med:.2f} ({q1:.2f}, {q3:.2f}) {units}  [n={arr.size}]")
+            if mode.lower() == "iqr2":
+                spread = 0.5 * iqr
+                print(f"Run {r}, Q{q+1}: {med:.2f} ± {spread:.2f} {units}  (IQR={iqr:.2f}, n={arr.size})")
+            else:
+                # default: median (Q1, Q3)
+                print(f"Run {r}, Q{q+1}: {med:.2f} ({q1:.2f}, {q3:.2f}) {units}  [n={arr.size}]")
 
 def boxwhisker_t1t2_per_qubit_vs_run(
     run_num_list,
@@ -474,7 +482,7 @@ def boxwhisker_t1t2_per_qubit_vs_run(
     n_qubits=6,
     ylims=(0, 140),
     yticks=np.arange(0, 141, 20),
-    showfliers=True,
+    showfliers=True, # show outliers?
     whis=1.5,
     mode="together",          # "together" or "separate"
     fig_title_prefix=" vs Run Number (per qubit)",
@@ -678,7 +686,7 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
     ssf_color="purple",
     ylims=(0, 600),
     yticks=np.arange(0, 601, 100),
-    showfliers=True, # outliers
+    showfliers=True, # show outliers?
     whis=1.5,
     fig_title=None,
     ylabel="Effective temperature (mK)",
@@ -1118,7 +1126,7 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
     ssf_color="purple",
     ylims=None,
     yticks=None,
-    showfliers=True,
+    showfliers=True, # show outliers?
     whis=1.5,
     fig_title="Excited-State Population vs Run Number",
     ylabel=r"$P_e$",
@@ -1211,22 +1219,6 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
             return get_cell(ssf_pe_by_run, run, q)
         return get_cell(rpm_pe_by_run, run, q)
 
-    def print_pe_median_iqr2_summary(run_nums, data_by_run, q):
-        print(f"\nQubit {q + 1} Pe summary:")
-        for run, arr in zip(run_nums, data_by_run):
-            arr = cell_to_1d(arr)
-
-            if arr.size == 0:
-                print(f"  Run {run}: no data")
-                continue
-
-            q1 = np.percentile(arr, 25)
-            med = np.percentile(arr, 50)
-            q3 = np.percentile(arr, 75)
-            iqr2 = 0.5 * (q3 - q1)
-
-            print(f"  Run {run}: {med:.6f} ± {iqr2:.6f}")
-
     # ---------------- axis defaults ----------------
     if ylims is None:
         ylims = (0, 0.5)
@@ -1260,14 +1252,20 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
     )
     axes = np.atleast_1d(axes).ravel()
 
-    summary_store = []
-
     for ax_idx, q in enumerate(qubits_to_plot):
         ax = axes[ax_idx]
         q_color = colors[q % len(colors)]
 
         box_data = [cell_to_1d(select_cell(r, q)) for r in run_num_list]
-        summary_store.append((q, box_data))
+
+        # summary print
+        print(f"\nQubit {q + 1} Pe summary:")
+        print_median_spread_table(
+            run_num_list,
+            box_data,
+            q,
+            mode="iqr2"  # or "q1q3" if you want paper-style output
+        )
 
         bp = ax.boxplot(
             box_data,
@@ -1336,10 +1334,175 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
         fig.savefig(fname, bbox_inches="tight")
         plt.close(fig)
 
-    # ---------------- print median Pe ± IQR/2 ----------------
-    print("\n" + "=" * 60)
-    print("Median Pe ± IQR/2 results")
-    print("=" * 60)
+def boxwhisker_qfreq_per_qubit_vs_run(
+    run_num_list,
+    qfreq_vals_by_run,
+    qfreq_errs_by_run,
+    qfreq_centers,              # user provides center for each qubit
+    n_qubits=6,
+    freq_window=20.0,           # same total width for every qubit
+    yticks_per_qubit=None,
+    showfliers=True,
+    whis=1.5,
+    rel_err_cutoff=None,
+    fig_title="Qubit Frequency vs Run Number (per qubit)",
+    ylabel="Qubit Frequency (MHz)",
+    save_plt_path = None
+):
+    """
+    Makes 6 subplots (one per qubit). X-axis is run number.
+    At each run, draws a box-and-whisker distribution for qubit frequency.
 
-    for q, box_data in summary_store:
-        print_pe_median_iqr2_summary(run_num_list, box_data, q)
+    Parameters
+    ----------
+    run_num_list : list
+        Example: [5, 6, 7, 8]
+
+    qfreq_vals_by_run : dict
+        qfreq_vals_by_run[run][q] -> array-like of frequency samples OR scalar
+
+    qfreq_errs_by_run : dict
+        qfreq_errs_by_run[run][q] -> array-like of frequency errors OR scalar
+
+    qfreq_centers : list
+        Required. One center frequency per qubit.
+
+    freq_window : float
+        Total y-axis width for every qubit subplot.
+        Example: 20.0 means center ± 10 MHz.
+    """
+    colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+
+    def to_1d_array(cell):
+        if cell is None:
+            return np.array([], dtype=float)
+        if np.isscalar(cell):
+            return np.array([cell], dtype=float)
+        return np.asarray(cell, dtype=float).ravel()
+
+    def filter_freq_cell(freq_cell, err_cell):
+        freqs = to_1d_array(freq_cell)
+        errs = to_1d_array(err_cell)
+
+        if freqs.size == 0 or errs.size == 0:
+            return np.array([], dtype=float)
+
+        n = min(len(freqs), len(errs))
+        freqs = freqs[:n]
+        errs = errs[:n]
+
+        keep = []
+        for f, e in zip(freqs, errs):
+            if not np.isfinite(f) or not np.isfinite(e):
+                continue
+            if f <= 0 or e <= 0:
+                continue
+            if rel_err_cutoff is not None and (e / f) > rel_err_cutoff:
+                continue
+            keep.append(f)
+
+        return np.asarray(keep, dtype=float)
+
+    def style_boxplot(bp, q_color):
+        for b in bp["boxes"]:
+            b.set_facecolor(q_color)
+            b.set_edgecolor(q_color)
+            b.set_alpha(0.30)
+            b.set_linewidth(1.3)
+
+        for m in bp["medians"]:
+            m.set_color(q_color)
+            m.set_linewidth(2.0)
+
+        for w in bp["whiskers"]:
+            w.set_color(q_color)
+            w.set_linewidth(1.2)
+
+        for c in bp["caps"]:
+            c.set_color(q_color)
+            c.set_linewidth(1.2)
+
+        for f in bp["fliers"]:
+            f.set_marker("o")
+            f.set_markersize(3.5)
+            f.set_markerfacecolor(q_color)
+            f.set_markeredgecolor(q_color)
+            f.set_alpha(0.6)
+
+    base_pos = np.arange(1, len(run_num_list) + 1)
+    half_window = freq_window / 2.0
+
+    fig, axes = plt.subplots(
+        2, 3,
+        figsize=(18, 9),
+        sharex=True,
+        sharey=False
+    )
+    axes = axes.ravel()
+
+    for q in range(n_qubits):
+        ax = axes[q]
+        q_color = colors[q % len(colors)]
+
+        box_data = []
+        for run in run_num_list:
+            freq_cell = qfreq_vals_by_run[run][q]
+            err_cell = qfreq_errs_by_run[run][q]
+            freqs_filtered = filter_freq_cell(freq_cell, err_cell)
+            box_data.append(freqs_filtered)
+
+        # summary print
+        print(f"\nQubit {q + 1} frequency summary:")
+        print_median_spread_table(
+            run_num_list,
+            box_data,
+            q,
+            units="MHz",
+            mode="iqr2"  # or "q1q3" if you want paper-style output
+        )
+
+        bp = ax.boxplot(
+            box_data,
+            positions=base_pos,
+            widths=0.55,
+            patch_artist=True,
+            showfliers=showfliers,
+            whis=whis,
+            manage_ticks=False
+        )
+        style_boxplot(bp, q_color)
+
+        # set same-width y-range, centered on user-provided value
+        center = qfreq_centers[q]
+        ax.set_ylim(center - half_window, center + half_window)
+
+        if yticks_per_qubit is not None:
+            ax.set_yticks(yticks_per_qubit[q])
+
+        ax.set_title(f"Qubit {q + 1}", fontsize=16)
+        ax.set_xticks(base_pos)
+        ax.set_xticklabels([f"{r}" for r in run_num_list])
+        ax.tick_params(axis="both", labelsize=14)
+        ax.grid(True, alpha=0.35)
+
+        # handle = Patch(facecolor=q_color, edgecolor=q_color, alpha=0.30, label=f"Q{q+1}")
+        # ax.legend(handles=[handle], loc="upper left", fontsize=12)
+
+    fig.suptitle(fig_title, fontsize=18)
+    fig.supxlabel("Run Number", fontsize=16)
+    fig.supylabel(ylabel, fontsize=16)
+
+    plt.tight_layout(rect=[0.03, 0.03, 1, 0.95])
+    if save_plt_path is None:
+        plt.show()
+    else:
+        now = datetime.datetime.now()
+        timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+
+        fname = os.path.join(
+            save_plt_path,
+            f"boxwhisk_ge_qfreqs_vs_run_num_{timestamp}.pdf"
+        )
+
+        fig.savefig(fname, bbox_inches="tight")
+        plt.close(fig)
