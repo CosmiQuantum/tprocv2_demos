@@ -239,7 +239,7 @@ class QubitFreqsVsTime:
 
                             # -- Quality cuts --
                             # Require the fitted frequency to be near a peak or dip in the raw data that was used to find ge qfreq
-                            # Vertical line should not be farther than 5MHz from found peak/dip (this is being extremely generous)
+                            # Vertical line should not be farther than 0.5MHz from found peak/dip
                             good_center = (
                                     largest_amp_curve_mean is not None
                                     and largest_amp_curve_fwhm is not None
@@ -248,17 +248,17 @@ class QubitFreqsVsTime:
                                     and np.isfinite(largest_amp_curve_fwhm)
                                     and (
                                         min(abs(largest_amp_curve_mean - freqs[np.argmin(I)]),
-                                            abs(largest_amp_curve_mean - freqs[np.argmax(I)]) ) < 5.0 if signal == "I"
+                                            abs(largest_amp_curve_mean - freqs[np.argmax(I)]) ) < 0.5 if signal == "I"
                                         else
                                         min(abs(largest_amp_curve_mean - freqs[np.argmin(Q)]),
-                                            abs(largest_amp_curve_mean - freqs[np.argmax(Q)]) ) < 5.0 )
+                                            abs(largest_amp_curve_mean - freqs[np.argmax(Q)]) ) < 0.5 )
                                         )
 
                             good_fit = (
                                     qspec_fit_err is not None
                                     and np.isfinite(qspec_fit_err)
                                     and qspec_fit_err < 1.0 # above 1 MHz fit err is probably not a good fit
-                                    and largest_amp_curve_fwhm < 10.0 # width of peak
+                                    and 0.01 < largest_amp_curve_fwhm < 10.0 # width of peak
                                     and good_center
                             )
 
@@ -267,8 +267,7 @@ class QubitFreqsVsTime:
                                 qspec_fit_errs[q_key].extend([qspec_fit_err])
 
                                 # # If you want to look at scans that made it through, uncomment this:
-                                if (q_key == 4) and "run6" in self.run_name:
-                                    qspec_class_instance.plot_results(I, Q, freqs)
+                                # qspec_class_instance.plot_results(I, Q, freqs)
 
                                 if use_png_timestamps:
                                     # --- use PNG filename timestamp from mapping if available ------

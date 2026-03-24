@@ -1815,27 +1815,27 @@ class PlotRR_noQick:
 
                         # -- Quality cuts --
                         # Require the fitted frequency to be near a peak or dip in the raw data that was used to find ge qfreq
-                        # Vertical line should not be farther than 5MHz from found peak/dip (this is being extremely generous)
-                        good_center = (
-                                qubit_freq is not None
-                                and largest_amp_curve_fwhm is not None
-                                and signal is not None
-                                and np.isfinite(qubit_freq)
-                                and np.isfinite(largest_amp_curve_fwhm)
-                                and (
-                                    min(abs(qubit_freq - freqs[np.argmin(I)]),
-                                        abs(qubit_freq - freqs[np.argmax(I)])) < 5.0 if signal == "I"
-                                    else
-                                    min(abs(qubit_freq - freqs[np.argmin(Q)]),
-                                        abs(qubit_freq - freqs[np.argmax(Q)])) < 5.0)
-                        )
+                        # Vertical line should not be farther than 0.5MHz from found peak/dip
+                        # good_center = (
+                        #         qubit_freq is not None
+                        #         and largest_amp_curve_fwhm is not None
+                        #         and signal is not None
+                        #         and np.isfinite(qubit_freq)
+                        #         and np.isfinite(largest_amp_curve_fwhm)
+                        #         and (
+                        #             min(abs(qubit_freq - freqs[np.argmin(I)]),
+                        #                 abs(qubit_freq - freqs[np.argmax(I)])) < 0.5 if signal == "I"
+                        #             else
+                        #             min(abs(qubit_freq - freqs[np.argmin(Q)]),
+                        #                 abs(qubit_freq - freqs[np.argmax(Q)])) < 0.5)
+                        # )
 
                         good_fit = (
                                 qspec_fit_err is not None
                                 and np.isfinite(qspec_fit_err)
                                 and qspec_fit_err < 1.0  # above 1 MHz fit err is probably not a good fit
-                                and largest_amp_curve_fwhm < 10.0  # width of peak
-                                and good_center
+                                and largest_amp_curve_fwhm < 10.0  # width of peak, if you also add 0 < largest_amp_curve_fwhm it is stricter
+                                #and good_center
                         )
 
                         if good_fit:

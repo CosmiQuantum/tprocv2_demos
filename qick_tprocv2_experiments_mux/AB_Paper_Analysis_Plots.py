@@ -7,6 +7,7 @@ import datetime
 
 qtemp_noisetemp_plot = False
 lnPe_vs_qfreq_plots_per_run = False
+lnPe_vs_qfreq_plots_per_qubit = False
 # ------------------------------------------------------------
 # Measured Pe values (Run 4 column will be dropped)
 # ------------------------------------------------------------
@@ -435,6 +436,75 @@ if lnPe_vs_qfreq_plots_per_run:
     plt.tight_layout()
     plt.show()
 
+if lnPe_vs_qfreq_plots_per_qubit:
+    run_labels = ["Run 5", "Run 6", "Run 7", "Run 8"]
+
+    n_qubits = len(Pe_meas)
+    n_runs = Pe_meas.shape[1]
+
+    fig, axes = plt.subplots(2, 3, figsize=(14, 10), sharex=True, sharey=True)
+    axes = axes.ravel()
+
+    colors = ['orange', 'blue', 'purple', 'green']  # one color per run
+
+    for q in range(n_qubits):
+        ax = axes[q]
+
+        ax.set_ylim(-4.0, 0)
+
+        f_q = []
+        Pe_q = []
+
+        for r in range(n_runs):
+            pei = Pe_meas[q, r]
+            pei_err = Pe_err[q, r]
+            fi = f_ge_MHz[q, r]
+            fi_err = f_ge_err_MHz[q, r]
+
+            if np.isfinite(pei) and np.isfinite(pei_err) and pei > 0:
+                color = colors[r % len(colors)]
+
+                lnPe = np.log(pei)
+                lnPe_err = pei_err / pei
+
+                f_q.append(fi)
+                Pe_q.append(pei)
+
+                ax.errorbar(
+                    fi,
+                    lnPe,
+                    xerr=fi_err,
+                    yerr=lnPe_err,
+                    fmt='o',
+                    capsize=3,
+                    color=color,
+                    ecolor=color,
+                    label=run_labels[r]
+                )
+
+        # Optional fit per qubit
+        # if len(f_q) > 1:
+        #     lnPe_q = np.log(Pe_q)
+        #     coeffs = np.polyfit(f_q, lnPe_q, 1)
+        #     f_fit = np.linspace(np.min(f_q), np.max(f_q), 200)
+        #     ax.plot(f_fit, np.polyval(coeffs, f_fit), '--', color='black')
+        #
+        #     ax.text(
+        #         0.05, 0.90,
+        #         f"slope = {coeffs[0]:.3e} per MHz",
+        #         transform=ax.transAxes,
+        #         fontsize=10
+        #     )
+
+        ax.set_title(f"Qubit {q+1}")
+        ax.set_xlabel(r"$f_{ge}$ (MHz)")
+        ax.set_ylabel(r"$\ln(P_e)$")
+
+    # Optional legend (only once to avoid clutter)
+    axes[0].legend(fontsize=10)
+
+    plt.tight_layout()
+    plt.show()
 ################################ Definitions, additional plotting funcs ####################################
 def print_median_spread_table(run_num_list, box_data, q, units="", mode="q1q3"):
     """

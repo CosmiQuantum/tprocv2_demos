@@ -39,7 +39,7 @@ import h5py
 # from qualang_tools.plot import Fit
 # import visdom
 ###################################################### Set These #######################################################
-save_figs = True
+save_figs = False
 fit_saved = False
 show_legends = False
 signal = 'None'
@@ -574,14 +574,14 @@ for run_number in run_num_list:
 # )
 
 ## Qubit freq box plots
-ge_qfreq_centers = [4189.8773, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86] # plots will be centered around these vals
-boxwhisker_qfreq_per_qubit_vs_run(
-    run_num_list,
-    qfreq_vals_by_run=qfreq_vals_by_run,
-    qfreq_errs_by_run=qfreq_errs_by_run,
-    qfreq_centers=ge_qfreq_centers,
-    freq_window=30.0,
-    save_plt_path = "/data/QICK_data/multirun_analysis/coherence_analysis") # set to 'None' to use plt.show()
+# ge_qfreq_centers = [4189.8773, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86] # plots will be centered around these vals
+# boxwhisker_qfreq_per_qubit_vs_run(
+#     run_num_list,
+#     qfreq_vals_by_run=qfreq_vals_by_run,
+#     qfreq_errs_by_run=qfreq_errs_by_run,
+#     qfreq_centers=ge_qfreq_centers,
+#     freq_window=50.0,
+#     save_plt_path = "/data/QICK_data/multirun_analysis/coherence_analysis") # set to 'None' to use plt.show()
 
 # # ################################## 18: Allan Deviation/ Welch Spectral Density #########################################
 # stats = AllanWelchStats(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,

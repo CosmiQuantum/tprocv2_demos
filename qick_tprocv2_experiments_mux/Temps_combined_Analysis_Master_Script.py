@@ -558,7 +558,6 @@ elif coh_qtemp_ana_flags["load_coherence_res"] and run_num != 8:
 
 ############################################################################### Qubit temperature calculations via rabi population measurements #####################################################
 if qtemp_method_flags["Qtemps_viaRPM"]:
-    # FIRST pass. Later on if Pe hists are plotted then RPM errs are updated with std values
     RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits)
     combined_qtemp_data = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
                             outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, filter_out_bad_amp_fits = filter_out_bad_amp_fits,
@@ -1003,39 +1002,207 @@ restrict_time = False
 start_time = datetime.datetime(2025, 11, 18, 0, 0)
 end_time = datetime.datetime(2025, 11, 21, 12, 0)
 
+run_num_list = [4,5,6,7,8]
+
+rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
+rpm_temps_errs_by_run  = {}      # matching errors
+rpm_Pe_by_run = {}      # rpm_Pe_by_run[run][qid] = [P_e, ...]
+rpm_Pe_errs_by_run  = {}      # matching Pe errors
+
+ssf_g_temps_by_run  = {}   # ssf ground-double-gauss temps
+ssf_g_temp_errs_by_run  = {}      # matching errors
+ssf_g_Pe_by_run  = {}   # ssf ground-double-gauss Pe
+ssf_g_Pe_errs_by_run = {} # matching Pe errors
+
+ssf_ge_temps_by_run = {}   # ssf g-e threshold temps (if you compute them)
+ssf_ge_errs_by_run  = {}      # matching errors
+
+t1_vals_by_run  = {}
+t2r_vals_by_run = {}
+t2e_vals_by_run = {}
+qfreq_vals_by_run = {}
+
+t1_errs_by_run  = {}
+t2r_errs_by_run = {}
+t2e_errs_by_run = {}
+qfreq_errs_by_run = {}
+
 if coh_qtemp_ana_flags["load_rpm_qtemps"]:
-    # ----------- Get Qubit temperature results via RPMs
-    RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits)
-    all_files_Qtemp_results_RPMs = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords,
-                                                           fit_saved, signal,
-                                                           run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
-                                                           outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data,
-                                                           get_london_data, figure_quality, save_figsRR,
-                                                           exclude_temp_sweeps, passing_pre_sciencerun_data=False,
-                                                           filter_out_bad_amp_fits = filter_out_bad_amp_fits,
-                                                           use_png_timestamps = use_png_timestamps, combine_IQ_signal = rpm_combine_IQ_signal)
+    for run_num in run_num_list:
+        # ---- always reset optional pre-SR variables each iteration ----
+        base_dir2 = None
+        filter_keywords2 = None
+        target_dates_qtemps_RPM2 = None
+        if run_num == 5:
+            # ---------------- RPM (none) ----------------
+            Science_Qubits = [0, 1, 2, 3, 4, 5]
+            base_dir = ""
+            filter_keywords = []
+            outerFolder_qtemps_plots_RR = ""
+            outerFolder_qtemps_plots = ""
+            target_dates_qtemps_RPM = ""
+            print("There is no RPM data for run 5 (SSF only).")
 
-    if run_num == 6:
-        if pre_sciencerun6_data:
-            all_files_Qtemp_results_RPMs2 = RPM_calcs.run_RPMqtemps(base_dir2, target_dates_qtemps_RPM2,
-                                                                    filter_keywords2, fit_saved, signal, run_name,
-                                                                    run_num, list_of_all_qubits, tot_num_of_qubits,
-                                                                    outerFolder_qtemps_plots_RR, replot_RPMs,
-                                                                    get_qtemp_data, get_london_data,
-                                                                    figure_quality, save_figsRR, exclude_temp_sweeps,
-                                                                    passing_pre_sciencerun_data=True,
-                                                                    filter_out_bad_amp_fits = filter_out_bad_amp_fits,
-                                                                    use_png_timestamps = use_png_timestamps, combine_IQ_signal = rpm_combine_IQ_signal)
+            # ---------------- SSF ----------------
+            paths_SSFmethods = paths_SSFmethods_run5
+            path_saveplots_fits = path_saveplots_fits_run5
+            path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run5
 
-            all_files_Qtemp_results_RPMs += all_files_Qtemp_results_RPMs2
+        elif run_num == 6:
+            # ---------------- RPM (science run; optional pre-science add-on) ----------------
+            Science_Qubits = [0, 4]
+            base_dir = base_dir_sciencerun
+            filter_keywords = filter_keywords_sciencerun
+            outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run6
+            outerFolder_qtemps_plots = outerFolder_qtemps_plots_RR_run6
+            target_dates_qtemps_RPM = target_dates_qtemps_RPM_sciencerun
+
+            if pre_sciencerun6_data:
+                base_dir2 = base_dir_pre_sciencerun
+                filter_keywords2 = filter_keywords_presciencerun
+                target_dates_qtemps_RPM2 = target_dates_qtemps_RPM_presciencerun
+
+            # ---------------- SSF (science-run paths; optional pre-science add-on) ----------------
+            paths_SSFmethods = paths_SSFmethods_SR.copy()
+            if pre_sciencerun6_data:
+                # include all qubits since pre-SR SSF was taken for all Qs
+                Science_Qubits = [0, 1, 2, 3, 4, 5]
+                paths_SSFmethods += paths_SSFmethods_preSR
+
+            path_saveplots_fits = path_saveplots_fits_run6
+            path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run6
+
+
+        elif run_num == 7:
+            # ---------------- RPM ----------------
+            Science_Qubits = [0, 1, 2, 3, 4, 5]
+            base_dir = base_dir_run7
+            filter_keywords = filter_keywords_run7
+            outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run7
+            outerFolder_qtemps_plots = outerFolder_qtemps_plots_run7
+            target_dates_qtemps_RPM = target_dates_qtemps_RPM_run7
+
+            # ---------------- SSF ----------------
+            paths_SSFmethods = paths_SSFmethods_run7
+            path_saveplots_fits = path_saveplots_fits_run7
+            path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run7
+
+
+        elif run_num == 8:
+            # ---------------- RPM ----------------
+            Science_Qubits = [0, 1, 2, 3, 4, 5]
+            base_dir = base_dir_run8
+            filter_keywords = filter_keywords_run8
+            outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run8
+            outerFolder_qtemps_plots = outerFolder_qtemps_plots_run8
+            target_dates_qtemps_RPM = target_dates_qtemps_RPM_run8
+
+            # ---------------- SSF ----------------
+            paths_SSFmethods = paths_SSFmethods_run8
+            path_saveplots_fits = path_saveplots_fits_run8
+            path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run8
+        else:
+            raise ValueError(f"Unsupported run_num={run_num}")
+
+        # ------------ Initialize class for combined qubit temps analysis ------------------
+        combined_studies = combined_Qtemp_studies(figure_quality, tot_num_of_qubits)
+
+        # ---------------- pre-fill so dict shape is always stable ----------------
+        rpm_temps_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+        rpm_temps_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+        rpm_Pe_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+        rpm_Pe_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+
+        ssf_g_temps_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+        ssf_g_temp_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+        ssf_g_Pe_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+        ssf_g_Pe_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+
+        ssf_ge_temps_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+        ssf_ge_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+
+        if run_num != 5:  # no rpm data for run 5
+            # ----------- Get Qubit temperature results via RPMs
+            RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits)
+            all_files_Qtemp_results_RPMs = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords,
+                                                                   fit_saved, signal,
+                                                                   run_name, run_num, list_of_all_qubits,
+                                                                   tot_num_of_qubits,
+                                                                   outerFolder_qtemps_plots_RR, replot_RPMs,
+                                                                   get_qtemp_data,
+                                                                   get_london_data, figure_quality, save_figsRR,
+                                                                   exclude_temp_sweeps,
+                                                                   passing_pre_sciencerun_data=False,
+                                                                   filter_out_bad_amp_fits=filter_out_bad_amp_fits,
+                                                                   combine_IQ_signal=rpm_combine_IQ_signal)
+            if run_num == 6:
+                if pre_sciencerun6_data:
+                    all_files_Qtemp_results_RPMs2 = RPM_calcs.run_RPMqtemps(base_dir2, target_dates_qtemps_RPM2,
+                                                                            filter_keywords2, fit_saved, signal,
+                                                                            run_name, run_num, list_of_all_qubits,
+                                                                            tot_num_of_qubits,
+                                                                            outerFolder_qtemps_plots_RR, replot_RPMs,
+                                                                            get_qtemp_data, get_london_data,
+                                                                            figure_quality, save_figsRR,
+                                                                            exclude_temp_sweeps,
+                                                                            passing_pre_sciencerun_data=True,
+                                                                            filter_out_bad_amp_fits=filter_out_bad_amp_fits,
+                                                                            combine_IQ_signal=rpm_combine_IQ_signal)
+                    all_files_Qtemp_results_RPMs += all_files_Qtemp_results_RPMs2
+
+            # ---- ADAPT + STORE (RPM) ----
+            rpm_temps, rpm_temps_errs, rpm_Pe, rpm_Pe_errs = combined_studies.rpm_results_to_per_qubit_lists(
+                all_files_Qtemp_results_RPMs,
+                n_qubits=tot_num_of_qubits
+            )
+            rpm_temps_by_run[run_num] = rpm_temps
+            rpm_temps_errs_by_run[run_num] = rpm_temps_errs
+            rpm_Pe_by_run[run_num] = rpm_Pe
+            rpm_Pe_errs_by_run[run_num] = rpm_Pe_errs
 
 if coh_qtemp_ana_flags["load_ssf_qtemps"]: # IMPORTANT: have not yet implemented use_png_timestamps. TO DO.
-    # ----------- Get Qubit temperature results via SSF g-state double gaussian threshold method, haven't included the g-e method yet here
-    SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, run_num, save_figs)
-    pairs_info = SSF_calcs_obj.process_ssf_and_qfreq_data_qtemps(Science_Qubits, paths_SSFmethods)
+    for run_num in run_num_list:
+        # ----------- Get Qubit temperature results via SSF g-e threshold method and SSF g-state double gaussian threshold method
+        SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, run_num, save_figs)
+        pairs_info = SSF_calcs_obj.process_ssf_and_qfreq_data_qtemps(Science_Qubits, paths_SSFmethods)
 
-    all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps(
-        pairs_info, limit_temp_k=0.95, use_gessf_thresh_only=False, fallback_to_threshold=False)
+        if use_iminuit_gdoublegauss_ssf:  # Made a special iminuit-based double gaussian fitting function, but for now it is only set up to fit g-state data.
+            all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps_iminuit(
+                pairs_info, run_num=run_num, limit_temp_k=0.6,
+                do_plots=False, dontuse_midpt_thresh=True)
+            # ---- STORE RESULTS (SSF g) ----
+            ssf_g_temps, ssf_g_temp_errs = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g,
+                                                                                               n_qubits=tot_num_of_qubits)
+
+            print(f"\nRUN {run_num} accepted SSF counts:")
+            for q in range(tot_num_of_qubits):
+                print(f"  Q{q + 1}: {len(ssf_g_temps[q])}")
+
+            ssf_g_temps_by_run[run_num] = ssf_g_temps
+            ssf_g_temp_errs_by_run[run_num] = ssf_g_temp_errs
+            pe_vals, pe_errs = combined_studies.extract_pe_from_fit_results(fit_results_g, tot_num_of_qubits)
+            ssf_g_Pe_by_run[run_num] = pe_vals
+            ssf_g_Pe_errs_by_run[run_num] = pe_errs
+
+        else:  # uses sklearn.mixture.GaussianMixture for double gaussian fitting
+            all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps(
+                pairs_info, limit_temp_k=1.0, use_gessf_thresh_only=False, fallback_to_threshold=False)
+            all_qubit_temps_ge, all_qubit_times_ge, all_qubit_temps_errs_ge, fit_results_ge = SSF_calcs_obj.run_ssf_qtemps(
+                pairs_info, limit_temp_k=1.0, use_gessf_thresh_only=True, fallback_to_threshold=False)
+
+            # ---- STORE RESULTS (SSF g) ----
+            ssf_g_temps, ssf_g_temp_errs = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g,
+                                                                                               n_qubits=tot_num_of_qubits)
+            ssf_g_temps_by_run[run_num] = ssf_g_temps
+            ssf_g_temp_errs_by_run[run_num] = ssf_g_temp_errs
+            pe_vals, pe_errs = combined_studies.extract_pe_from_fit_results(fit_results_g, tot_num_of_qubits)
+            ssf_g_Pe_by_run[run_num] = pe_vals
+            ssf_g_Pe_errs_by_run[run_num] = pe_errs
+
+            # ---- STORE RESULTS (SSF ge) ----
+            ssf_ge_temps_by_run[run_num] = all_qubit_temps_ge
+            ssf_ge_errs_by_run[run_num] = all_qubit_temps_errs_ge
+            # Pe option has not been added for this case yet
 
 if coh_qtemp_ana_flags["load_mcp1_temps"]:
     mcp1_csv_path = "/data/QICK_data/run8/6transmon/round_robin/temperature_sweep_qubit_data/Mixing chamber stage-data-2025-11-25 09_46_33.csv"
@@ -1045,22 +1212,41 @@ if coh_qtemp_ana_flags["load_mcp1_temps"]:
     del combined_studies
 
 if coh_qtemp_ana_flags["load_coherence_res"]:
-    # q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-    #                                   save_figs, fit_saved, signal, run_name_coh, FRIDGE)
-    # date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = use_png_timestamps)
+    for run_number in run_num_list:
+        q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits,
+                                          top_folder_dates,
+                                          save_figs, fit_saved, signal, run_name, FRIDGE)
+        date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps=False)
 
-    t1_vs_time = T1VsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,signal,
-                          run_name_coh, FRIDGE, run_num)
-    date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension='_ge',process_shots=process_shots_t1ge, use_png_timestamps = use_png_timestamps)
+        # t1_vs_time = T1VsTime(plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
+        #                  signal, run_name, FRIDGE, run_number, per_pt_errs = per_pt_errs_t1)
+        #
+        # if per_pt_errs_t1 and process_shots_t1ge: # this will only work if process_shots_t1ge is set to True too
+        #     date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge)
+        # else:
+        #     date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge')
 
-    # IMPORTANT: have not yet implemented use_png_timestamps for t2r and t2e. TO DO.
-    t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-                     signal, run_name, FRIDGE)
-    date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True, use_png_timestamps = True)
+        # t2r_vs_time = T2rVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+        #                         fit_saved, signal, run_name, FRIDGE)
+        # date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True, t1_vals = t1_vals)
 
-    t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-                     signal, run_name, FRIDGE)
-    date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, use_png_timestamps = True)
+        # t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+        #                         fit_saved, signal, run_name, FRIDGE)
+        # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = None)
+
+        # ---------------- Store results per run ----------------
+        # stores data like t1_vals_by_run[6][3], where 6=run number and 3=qubit index (0 based)
+        # t1_vals_by_run[run_number] = t1_vals
+        # t1_errs_by_run[run_number] = t1_fit_err
+
+        # t2r_vals_by_run[run_number] = t2r_vals
+        # t2r_errs_by_run[run_number] = t2r_fit_err
+        #
+        # t2e_vals_by_run[run_number] = t2e_vals
+        # t2e_errs_by_run[run_number] = t2e_fit_err
+
+        qfreq_vals_by_run[run_number] = q_freqs
+        qfreq_errs_by_run[run_number] = qspec_fit_err
 
 
 if coh_qtemp_ana_flags["plot_qtemps_t1_ftemps_qfreq"]:
