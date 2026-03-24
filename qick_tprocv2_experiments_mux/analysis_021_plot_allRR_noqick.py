@@ -900,7 +900,7 @@ class QubitSpectroscopy:
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
 
-        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, fit_err = self.fit_lorenzian(I, Q, freqs,
+        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, fit_err, signal = self.fit_lorenzian(I, Q, freqs,
                                                                                                           freq_q,sigma_guess)
 
         # Check if the returned values are all None
@@ -985,13 +985,13 @@ class QubitSpectroscopy:
             fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
         plt.close(fig)
         if return_fwhm and return_fit_err: #both set to True
-            return largest_amp_curve_mean, I_fit, Q_fit, largest_amp_curve_fwhm, fit_err
+            return largest_amp_curve_mean, I_fit, Q_fit, largest_amp_curve_fwhm, fit_err, signal
         elif return_fwhm:
-            return largest_amp_curve_mean, I_fit, Q_fit, largest_amp_curve_fwhm
+            return largest_amp_curve_mean, I_fit, Q_fit, largest_amp_curve_fwhm, None, signal
         elif return_fit_err:
-            return largest_amp_curve_mean, I_fit, Q_fit, fit_err
+            return largest_amp_curve_mean, I_fit, Q_fit, None, fit_err, signal
         else:
-            return largest_amp_curve_mean, I_fit, Q_fit
+            return largest_amp_curve_mean, I_fit, Q_fit, None, None, signal
 
     def get_results(self, I, Q, freqs):
         freqs = np.array(freqs)
@@ -1808,11 +1808,37 @@ class PlotRR_noQick:
                                                                  self.outerFolder_save_plots, round_num, self.signal, save_figs = False)
                         q_spec_cfg = exp_config['qubit_spec_ge']
                         # print('q_spec_cfg: ', q_spec_cfg)
-                        qubit_freq, _, _, qspec_fit_err = qspec_class_instance.plot_results(I, Q, freqs, q_spec_cfg,
+                        qubit_freq, _, _, largest_amp_curve_fwhm, qspec_fit_err, signal = qspec_class_instance.plot_results(I, Q, freqs, q_spec_cfg,
                                                         self.figure_quality, return_fit_err = True) # You don’t need to mention every parameter in the call
+
                         del qspec_class_instance
 
-                        if qubit_freq is not None:
+                        # -- Quality cuts --
+                        # Require the fitted frequency to be near a peak or dip in the raw data that was used to find ge qfreq
+                        # Vertical line should not be farther than 5MHz from found peak/dip (this is being extremely generous)
+                        good_center = (
+                                qubit_freq is not None
+                                and largest_amp_curve_fwhm is not None
+                                and signal is not None
+                                and np.isfinite(qubit_freq)
+                                and np.isfinite(largest_amp_curve_fwhm)
+                                and (
+                                    min(abs(qubit_freq - freqs[np.argmin(I)]),
+                                        abs(qubit_freq - freqs[np.argmax(I)])) < 5.0 if signal == "I"
+                                    else
+                                    min(abs(qubit_freq - freqs[np.argmin(Q)]),
+                                        abs(qubit_freq - freqs[np.argmax(Q)])) < 5.0)
+                        )
+
+                        good_fit = (
+                                qspec_fit_err is not None
+                                and np.isfinite(qspec_fit_err)
+                                and qspec_fit_err < 1.0  # above 1 MHz fit err is probably not a good fit
+                                and largest_amp_curve_fwhm < 10.0  # width of peak
+                                and good_center
+                        )
+
+                        if good_fit:
                             extracted_qfreqs.append({
                                 "filename": os.path.basename(h5_file),
                                 "q_key": int(q_key),

@@ -240,18 +240,45 @@ class PlotAllRR:
                         qspec_class_instance = QubitSpectroscopy(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs)
                         q_spec_cfg = exp_config['qubit_spec_ge']
                         #print('q_spec_cfg: ', q_spec_cfg)
-                        qubit_freq, _, _ = qspec_class_instance.plot_results(I, Q, freqs, q_spec_cfg, self.figure_quality)
+                        qubit_freq, _, _, largest_amp_curve_fwhm, qspec_fit_err, signal = qspec_class_instance.plot_results(I, Q, freqs, q_spec_cfg, self.figure_quality)
+
                         del qspec_class_instance
 
-                        extracted_freqs.append({
-                            "filename": os.path.basename(h5_file),
-                            "q_key": int(q_key),
-                            "dataset": dataset,
-                            "round_num": round_num,
-                            "batch_num": batch_num,
-                            "freq_MHz": qubit_freq,
-                            "timestamp": date.timestamp()
-                        })
+                        # -- Quality cuts --
+                        # Require the fitted frequency to be near a peak or dip in the raw data that was used to find ge qfreq
+                        # Vertical line should not be farther than 5MHz from found peak/dip (this is being extremely generous)
+                        good_center = (
+                                qubit_freq is not None
+                                and largest_amp_curve_fwhm is not None
+                                and signal is not None
+                                and np.isfinite(qubit_freq)
+                                and np.isfinite(largest_amp_curve_fwhm)
+                                and (
+                                    min(abs(qubit_freq - freqs[np.argmin(I)]),
+                                        abs(qubit_freq - freqs[np.argmax(I)])) < 5.0 if signal == "I"
+                                    else
+                                    min(abs(qubit_freq - freqs[np.argmin(Q)]),
+                                        abs(qubit_freq - freqs[np.argmax(Q)])) < 5.0)
+                        )
+
+                        good_fit = (
+                                qspec_fit_err is not None
+                                and np.isfinite(qspec_fit_err)
+                                and qspec_fit_err < 1.0  # above 1 MHz fit err is probably not a good fit
+                                and largest_amp_curve_fwhm < 10.0  # width of peak
+                                and good_center
+                        )
+
+                        if good_fit:
+                            extracted_freqs.append({
+                                "filename": os.path.basename(h5_file),
+                                "q_key": int(q_key),
+                                "dataset": dataset,
+                                "round_num": round_num,
+                                "batch_num": batch_num,
+                                "freq_MHz": qubit_freq,
+                                "timestamp": date.timestamp()
+                            })
         
             del H5_class_instance
 

@@ -85,15 +85,15 @@ class QubitSpectroscopy:
 
         if self.fit_data:
             if return_fwhm:
-                largest_amp_curve_mean, I_fit, Q_fit, fwhm = self.plot_results(I, Q, freqs, config=self.config,
+                largest_amp_curve_mean, I_fit, Q_fit, fwhm, fit_err, signal = self.plot_results(I, Q, freqs, config=self.config,
                                                                            return_fwhm=return_fwhm)
-                return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config, fwhm
+                return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, fit_err, signal, self.config, fwhm
             else:
-                largest_amp_curve_mean, I_fit, Q_fit = self.plot_results(I, Q, freqs, config=self.config,
+                largest_amp_curve_mean, I_fit, Q_fit, fit_err, signal = self.plot_results(I, Q, freqs, config=self.config,
                                                                            return_fwhm=return_fwhm)
-                return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config
+                return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, fit_err, signal, self.config
         else:
-            return I, Q, freqs, None, None, None, self.config
+            return I, Q, freqs, None, None, None, None, None, self.config
 
     def run_with_stark_tone(self, wait_for_res_ring_up=False):
 
@@ -115,8 +115,8 @@ class QubitSpectroscopy:
         Q = iq_list[self.QubitIndex][0, :, 1]
         freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
 
-        largest_amp_curve_mean, I_fit, Q_fit, fwhm = self.plot_results(I, Q, freqs, config = self.config, sigma_guess = 10, return_fwhm=True)
-        return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config, fwhm
+        largest_amp_curve_mean, I_fit, Q_fit, fwhm, fit_err, signal = self.plot_results(I, Q, freqs, config = self.config, sigma_guess = 10, return_fwhm=True)
+        return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config, fwhm, fit_err, signal
 
     def live_plotting(self, qspec):
         I = Q = expt_mags = expt_phases = expt_pop = None
@@ -141,11 +141,11 @@ class QubitSpectroscopy:
             viz.line(X=freqs, Y=Q, opts=dict(height=400, width=700, title='Qubit Spectroscopy Q', showlegend=True, xlabel='expt_pts'),win='QSpec_Q')
         return I, Q, freqs
 
-    def plot_results(self, I, Q, freqs, config=None, fig_quality=100, sigma_guess=1, return_fwhm=False):
+    def plot_results(self, I, Q, freqs, config=None, fig_quality=100, sigma_guess=1, return_fwhm=False, return_fit_err = False):
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
 
-        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, fit_err = self.fit_lorenzian(I, Q, freqs,
+        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, fit_err, signal = self.fit_lorenzian(I, Q, freqs,
                                                                                                           freq_q,sigma_guess)
 
         # Check if the returned values are all None
@@ -183,17 +183,14 @@ class QubitSpectroscopy:
 
         if self.plot_fit:
             # Add title, centered on the plot area
-            if config is not None:  # then its been passed to this definition, so use that
+            if config is not None:  # then it has been passed to this definition, so use that
                 fig.text(plot_middle, 0.98,
-                         f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean +
-                         f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
+                         f"Qubit Spectroscopy Q{self.QubitIndex + 1}, {largest_amp_curve_mean:.4f} +/- {fit_err:.4f}, FWHM: {largest_amp_curve_fwhm:.2f}" +
                          f", {config['reps']}*{config['rounds']} avgs",
                          fontsize=24, ha='center', va='top')
             else:
                 fig.text(plot_middle, 0.98,
-                         f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean +
-                         f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
-                         f", {self.config['reps']}*{self.config['rounds']} avgs",
+                         f"Qubit Spectroscopy Q{self.QubitIndex + 1}, {largest_amp_curve_mean:.4f} +/- {fit_err:.4f}, FWHM: {largest_amp_curve_fwhm:.2f}",
                          fontsize=24, ha='center', va='top')
         else:
             # Add title, centered on the plot area
@@ -207,8 +204,6 @@ class QubitSpectroscopy:
                          f"Qubit Spectroscopy Q{self.QubitIndex + 1}",
                          fontsize=24, ha='center', va='top')
 
-
-                # Adjust spacing
         plt.tight_layout()
 
         # Adjust the top margin to make room for the title
@@ -224,18 +219,23 @@ class QubitSpectroscopy:
                                      f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
             fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
         plt.close(fig)
-        if return_fwhm:
-            return largest_amp_curve_mean, I_fit, Q_fit, largest_amp_curve_fwhm
+
+        if return_fwhm and return_fit_err:  # both set to True
+            return largest_amp_curve_mean, I_fit, Q_fit, largest_amp_curve_fwhm, fit_err, signal
+        elif return_fwhm:
+            return largest_amp_curve_mean, I_fit, Q_fit, largest_amp_curve_fwhm, None, signal
+        elif return_fit_err:
+            return largest_amp_curve_mean, I_fit, Q_fit, None, fit_err, signal
         else:
-            return largest_amp_curve_mean, I_fit, Q_fit
+            return largest_amp_curve_mean, I_fit, Q_fit, None, None, signal
 
     def get_results(self, I, Q, freqs):
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
 
-        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, qspec_fit_err = self.fit_lorenzian(I, Q, freqs, freq_q)
+        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, qspec_fit_err, signal = self.fit_lorenzian(I, Q, freqs, freq_q)
 
-        return largest_amp_curve_mean, I_fit, Q_fit, qspec_fit_err
+        return largest_amp_curve_mean, I_fit, Q_fit, qspec_fit_err, largest_amp_curve_fwhm, signal
 
 
     def lorentzian(self, f, f0, gamma, A, B):
@@ -307,29 +307,33 @@ class QubitSpectroscopy:
                     largest_amp_curve_fwhm = fwhm_I
                     # error on the Q fit's center frequency (first parameter):
                     qspec_fit_err = fit_err_I[0]
+                    signal = "I"
                 else:
                     largest_amp_curve_mean = mean_Q
                     largest_amp_curve_fwhm = fwhm_Q
                     qspec_fit_err = fit_err_Q[0]
+                    signal = "Q"
             elif 'I' in self.signal:
                 largest_amp_curve_mean = mean_I
                 largest_amp_curve_fwhm = fwhm_I
                 qspec_fit_err = fit_err_I[0]
+                signal = "I"
             elif 'Q' in self.signal:
                 largest_amp_curve_mean = mean_Q
                 largest_amp_curve_fwhm = fwhm_Q
                 qspec_fit_err = fit_err_Q[0]
+                signal = "Q"
             else:
                 print('Invalid signal passed, please choose "I", "Q", or "None".')
                 return None
 
             # Return all desired results including the error on the Q fit
-            return mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, qspec_fit_err
+            return mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, qspec_fit_err, signal
 
         except Exception as e:
             if self.verbose: print("Error during Lorentzian fit:", e)
             self.logger.info(f'Error during Lorentzian fit: {e}')
-            return None, None,None,None,None,None,None
+            return None, None,None,None,None,None,None, None
 
     def create_folder_if_not_exists(self, folder_path):
         import os

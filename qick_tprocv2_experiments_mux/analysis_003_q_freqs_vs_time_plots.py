@@ -139,11 +139,11 @@ class QubitFreqsVsTime:
                 else:
                     outerFolder = timestamp_dir + "/study_data/"  # where data is stored
 
-                outerFolder_save_plots = timestamp_dir + "/documentation/" # where plots will be stored
+                #outerFolder_save_plots = timestamp_dir + "/documentation/" # where plots will be stored
 
             elif self.fridge.upper() == 'NEXUS':
                 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
-                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
+                #outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
             else:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
@@ -229,16 +229,47 @@ class QubitFreqsVsTime:
                             exp_config =None
 
                         if len(I) > 0:
-                            qspec_class_instance = QubitSpectroscopy(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.signal,
+                            qspec_class_instance = QubitSpectroscopy(q_key, self.number_of_qubits, self.plots_path, round_num, self.signal,
                                                                      self.save_figs)
                             # if '_' in exp_extension:
                             #     q_spec_cfg = exp_config[f'qubit_spec{exp_extension}']
                             # else:
                             #     q_spec_cfg = exp_config['qubit_spec_ge']
-                            largest_amp_curve_mean, I_fit, Q_fit, qspec_fit_err = qspec_class_instance.get_results(I, Q, freqs)
-                            if qspec_fit_err is not None and qspec_fit_err < 1: #above 1 MHz fit err is probably not a good fit
+                            largest_amp_curve_mean, I_fit, Q_fit, qspec_fit_err, largest_amp_curve_fwhm, signal = qspec_class_instance.get_results(I, Q, freqs)
+
+                            # -- Quality cuts --
+                            # Require the fitted frequency to be near a peak or dip in the raw data that was used to find ge qfreq
+                            # Vertical line should not be farther than 5MHz from found peak/dip (this is being extremely generous)
+                            good_center = (
+                                    largest_amp_curve_mean is not None
+                                    and largest_amp_curve_fwhm is not None
+                                    and signal is not None
+                                    and np.isfinite(largest_amp_curve_mean)
+                                    and np.isfinite(largest_amp_curve_fwhm)
+                                    and (
+                                        min(abs(largest_amp_curve_mean - freqs[np.argmin(I)]),
+                                            abs(largest_amp_curve_mean - freqs[np.argmax(I)]) ) < 5.0 if signal == "I"
+                                        else
+                                        min(abs(largest_amp_curve_mean - freqs[np.argmin(Q)]),
+                                            abs(largest_amp_curve_mean - freqs[np.argmax(Q)]) ) < 5.0 )
+                                        )
+
+                            good_fit = (
+                                    qspec_fit_err is not None
+                                    and np.isfinite(qspec_fit_err)
+                                    and qspec_fit_err < 1.0 # above 1 MHz fit err is probably not a good fit
+                                    and largest_amp_curve_fwhm < 10.0 # width of peak
+                                    and good_center
+                            )
+
+                            if good_fit:
                                 qubit_frequencies[q_key].extend([largest_amp_curve_mean])
                                 qspec_fit_errs[q_key].extend([qspec_fit_err])
+
+                                # # If you want to look at scans that made it through, uncomment this:
+                                if (q_key == 4) and "run6" in self.run_name:
+                                    qspec_class_instance.plot_results(I, Q, freqs)
+
                                 if use_png_timestamps:
                                     # --- use PNG filename timestamp from mapping if available ------
                                     # the reason for this is bc the png timestamp is more accurate than the h5 file ones
@@ -272,6 +303,11 @@ class QubitFreqsVsTime:
 
                                 else:
                                     date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])  # og way, from h5 file
+
+                            ## If you want to look at scans that failed quality cuts, uncomment this:
+                            # else:
+                            #     if (q_key == 1 or q_key == 4) and "run6" in self.run_name:
+                            #         qspec_class_instance.plot_results(I, Q, freqs)
 
                             del qspec_class_instance
 

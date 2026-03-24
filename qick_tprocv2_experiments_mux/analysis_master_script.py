@@ -39,7 +39,7 @@ import h5py
 # from qualang_tools.plot import Fit
 # import visdom
 ###################################################### Set These #######################################################
-save_figs = False
+save_figs = True
 fit_saved = False
 show_legends = False
 signal = 'None'
