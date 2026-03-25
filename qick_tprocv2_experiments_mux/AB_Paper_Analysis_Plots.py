@@ -96,7 +96,6 @@ T_qubit_err_mK = 1e3 * np.sqrt((dT_dPe_K * Pe_err)**2 + (dT_df_K_per_Hz * f_ge_e
 # Noise temperature model (MIT supplement style)
 # ------------------------------------------------------------
 if qtemp_noisetemp_plot:
-
     def nbar_thermal(f_hz: float, T_K: float):
         if T_K <= 0:
             return 0.0
@@ -373,7 +372,7 @@ if lnPe_vs_qfreq_plots_per_run:
     fig, axes = plt.subplots(2, 2, figsize=(12, 9), sharex=True, sharey=True)
     axes = axes.ravel()
     colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
-
+    markers = ['o', 's', '^', 'D']  # Run 5, 6, 7, 8
     for r in range(n_runs):
         ax = axes[r]
 
@@ -390,6 +389,7 @@ if lnPe_vs_qfreq_plots_per_run:
 
             if np.isfinite(pei) and np.isfinite(pei_err) and pei > 0:
                 color = colors[q % len(colors)]
+                marker = markers[r % len(markers)]
 
                 lnPe = np.log(pei)
                 lnPe_err = pei_err / pei
@@ -402,7 +402,7 @@ if lnPe_vs_qfreq_plots_per_run:
                     lnPe,
                     xerr=fi_err,
                     yerr=lnPe_err,
-                    fmt='o',
+                    fmt=marker,
                     capsize=3,
                     color=color,
                     ecolor=color
@@ -431,7 +431,8 @@ if lnPe_vs_qfreq_plots_per_run:
         #     )
 
         ax.set_title(run_labels[r])
-        ax.set_xlabel(r"$f_{ge}$ (MHz)")
+        if q >= 3:  # bottom row only
+            ax.set_xlabel(r"$f_{ge}$ (MHz)")
         ax.set_ylabel(r"$\ln(P_e)$")
 
     plt.tight_layout()
@@ -466,6 +467,7 @@ if lnPe_vs_qfreq_plots_per_qubit:
             if np.isfinite(pei) and np.isfinite(pei_err) and pei > 0:
                 color = colors[r % len(colors)]
                 marker = markers[r % len(markers)]
+
                 lnPe = np.log(pei)
                 lnPe_err = pei_err / pei
 
