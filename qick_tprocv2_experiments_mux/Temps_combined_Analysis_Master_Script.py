@@ -56,8 +56,8 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": True, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_qtemps": False}
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+                      "combined_studies_qtemps": True}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": True,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
@@ -66,7 +66,7 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": True,  "Qtemps_vs_time_viaRPM": False
 
 # For combined analysis (SSF qtemps + RPM qtemps)
 comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
-                       "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False}
+                       "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": True}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
@@ -75,7 +75,7 @@ london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
 
 # For coherence-qubit temps combined analysis
-coh_qtemp_ana_flags = {"load_rpm_qtemps": False, "load_ssf_qtemps": False, "load_mcp1_temps": False, "load_coherence_res": False, "plot_qtemps_t1_ftemps_qfreq": False}
+coh_qtemp_ana_flags = {"load_qtemps": False, "load_mcp1_temps": False, "load_coherence_res": False, "plot_qtemps_t1_ftemps_qfreq": False}
 ############################################################################## Set up #######################################################################################################################
 #----------------------------------------------------- For qubit temperature calculations via rabi population measurements --------------------------------------------------------------------------------------
 # Specify which dates you want to loop through. It will process all the files inside all the folders that contain these dates in their title.
@@ -1027,7 +1027,7 @@ t2r_errs_by_run = {}
 t2e_errs_by_run = {}
 qfreq_errs_by_run = {}
 
-if coh_qtemp_ana_flags["load_rpm_qtemps"]:
+if coh_qtemp_ana_flags["load_qtemps"]:
     for run_num in run_num_list:
         # ---- always reset optional pre-SR variables each iteration ----
         base_dir2 = None
@@ -1160,8 +1160,6 @@ if coh_qtemp_ana_flags["load_rpm_qtemps"]:
             rpm_Pe_by_run[run_num] = rpm_Pe
             rpm_Pe_errs_by_run[run_num] = rpm_Pe_errs
 
-if coh_qtemp_ana_flags["load_ssf_qtemps"]: # IMPORTANT: have not yet implemented use_png_timestamps. TO DO.
-    for run_num in run_num_list:
         # ----------- Get Qubit temperature results via SSF g-e threshold method and SSF g-state double gaussian threshold method
         SSF_calcs_obj = SSFTempCalcAndPlots(figure_quality, tot_num_of_qubits, run_num, save_figs)
         pairs_info = SSF_calcs_obj.process_ssf_and_qfreq_data_qtemps(Science_Qubits, paths_SSFmethods)
@@ -1171,8 +1169,7 @@ if coh_qtemp_ana_flags["load_ssf_qtemps"]: # IMPORTANT: have not yet implemented
                 pairs_info, run_num=run_num, limit_temp_k=0.6,
                 do_plots=False, dontuse_midpt_thresh=True)
             # ---- STORE RESULTS (SSF g) ----
-            ssf_g_temps, ssf_g_temp_errs = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g,
-                                                                                               n_qubits=tot_num_of_qubits)
+            ssf_g_temps, ssf_g_temp_errs = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
 
             print(f"\nRUN {run_num} accepted SSF counts:")
             for q in range(tot_num_of_qubits):

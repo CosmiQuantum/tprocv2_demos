@@ -6,7 +6,7 @@ import os
 import datetime
 
 qtemp_noisetemp_plot = False
-lnPe_vs_qfreq_plots_per_run = False
+lnPe_vs_qfreq_plots_per_run = True
 lnPe_vs_qfreq_plots_per_qubit = False
 # ------------------------------------------------------------
 # Measured Pe values (Run 4 column will be dropped)
@@ -33,22 +33,23 @@ Pe_err = [
 # ------------------------------------------------------------
 # Qubit frequencies (MHz) (Run 4 column will be dropped to match Pe data)
 # ------------------------------------------------------------
+# updated to use medians from box plots and IQR/2
 f_ge_MHz = [
-    [4184.1449, 4181.2182, 4189.8486, 4184.0449, 4194.7143],
-    [3821.1544, 3821.1662, 3818.6675, 3823.3575, 3828.6250],
-    [4155.9588, 4154.3727, 4161.4257, 4162.8739, 4173.6868],
-    [4459.1987, 4458.4630, 4462.4391, 4467.3555, 4474.0803],
-    [4471.1153, 4471.3083, 4474.0269, 4475.0307, 4485.2600],
-    [4997.8579, 5000.6202, 4999.5140, 5006.1538, 5018.1472],
+    [4184.144999, 4181.217423, 4189.847610, 4184.045941, 4194.713445],
+    [3821.165184, 3821.165380, 3818.674021, 3823.357495, 3828.615932],
+    [4155.703143, 4154.373711, 4161.427498, 4162.873654, 4173.694786],
+    [4459.199056, 4458.460059, 4462.441896, 4467.354628, 4474.099712],
+    [4471.119418, 4471.311651, 4471.163478, 4475.032108, 4485.260921],
+    [4997.851927, 5000.618976, 4999.514524, 5006.153588, 5018.134399],
 ]
 
 f_ge_err_MHz = [
-    [0.0057, 0.0112, 0.0466, 0.0064, 0.0080],
-    [0.0112, 0.0113, 0.0527, 0.0045, 0.0165],
-    [0.2402, 0.0082, 0.0240, 0.0042, 0.0210],
-    [0.0083, 0.0155, 0.0397, 0.0072, 0.0785],
-    [0.0090, 0.0091, 4.0512, 0.0084, 0.0157],
-    [0.0068, 0.0066, 0.0182, 0.0042, 0.0175],
+    [0.005309, 0.020415, 0.044104, 0.006472, 0.007646],
+    [0.012198, 0.014326, 0.046804, 0.004549, 0.019867],
+    [0.152578, 0.007039, 0.023183, 0.004947, 0.021120],
+    [0.007611, 0.015656, 0.040708, 0.008552, 0.088323],
+    [0.010902, 0.009128, 3.811058, 0.009040, 0.015478],
+    [0.002007, 0.006477, 0.018931, 0.003672, 0.060262],
 ]
 
 # ------------------------------------------------------------
@@ -442,10 +443,11 @@ if lnPe_vs_qfreq_plots_per_qubit:
     n_qubits = len(Pe_meas)
     n_runs = Pe_meas.shape[1]
 
-    fig, axes = plt.subplots(2, 3, figsize=(14, 10), sharex=True, sharey=True)
+    fig, axes = plt.subplots(2, 3, figsize=(14, 10), sharey=True)
     axes = axes.ravel()
 
     colors = ['orange', 'blue', 'purple', 'green']  # one color per run
+    markers = ['o', 's', '^', 'D']  # Run 5, 6, 7, 8
 
     for q in range(n_qubits):
         ax = axes[q]
@@ -463,7 +465,7 @@ if lnPe_vs_qfreq_plots_per_qubit:
 
             if np.isfinite(pei) and np.isfinite(pei_err) and pei > 0:
                 color = colors[r % len(colors)]
-
+                marker = markers[r % len(markers)]
                 lnPe = np.log(pei)
                 lnPe_err = pei_err / pei
 
@@ -475,7 +477,7 @@ if lnPe_vs_qfreq_plots_per_qubit:
                     lnPe,
                     xerr=fi_err,
                     yerr=lnPe_err,
-                    fmt='o',
+                    fmt=marker,
                     capsize=3,
                     color=color,
                     ecolor=color,
@@ -497,8 +499,13 @@ if lnPe_vs_qfreq_plots_per_qubit:
         #     )
 
         ax.set_title(f"Qubit {q+1}")
-        ax.set_xlabel(r"$f_{ge}$ (MHz)")
+        if q >= 3:  # bottom row only
+            ax.set_xlabel(r"$f_{ge}$ (MHz)")
         ax.set_ylabel(r"$\ln(P_e)$")
+
+        center = np.median(f_q)
+        width = 35
+        ax.set_xlim(center - width / 2, center + width / 2)
 
     # Optional legend (only once to avoid clutter)
     axes[0].legend(fontsize=10)
