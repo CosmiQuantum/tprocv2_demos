@@ -200,6 +200,7 @@ class SSFTempCalcAndPlots:
                 ig_new = rec["ig_new"]
                 ie_new = rec["ie_new"]
                 ts_unix = rec["data_timestamp"]
+                ssf_fid = rec["ssf_fid"]
 
                 # Decide which threshold approach to use
                 if use_gessf_thresh_only:
@@ -359,6 +360,7 @@ class SSFTempCalcAndPlots:
                     "Pe": Pe,
                     "qfreq_mhz": freq_mhz,
                     "qfreq_mhz_err": freq_mhz_err,
+                    "ssf_fid": ssf_fid, # single shot fidelity
                     "used_gessf_thresh_only": use_gessf_thresh_only, #True when the user decides to use this method
                     "used_fallback_method": used_fallback, #only True if it goes into effect, regardless of user decision
                 })
@@ -1951,6 +1953,7 @@ class SSFTempCalcAndPlots:
         ig_new_cache = {}  # for ground state roated I data (SSF)
         ie_new_cache = {}  # for first excited state roated I data (SSF)
         timestamp_ssf_cache = {}  # for ssf data time stamps (qubit temperature time stamps)
+        ssf_fid_cache = {} # for single shot fidelity values
 
         if self.run_num == 4 or self.run_num ==5:
             folder_qspec = "study_data"
@@ -2079,7 +2082,7 @@ class SSFTempCalcAndPlots:
                     # iterate through every round (file)
                     for i in range(ssf_n):
                         try:
-                            _, _, _, ig_new, _, ie_new, _, _, _, _, _ = ssf_ge.get_ssf_in_round(I_g, Q_g, I_e, Q_e, i)
+                            _, _, fid, ig_new, _, ie_new, _, _, _, _, _ = ssf_ge.get_ssf_in_round(I_g, Q_g, I_e, Q_e, i)
                         except Exception as e:
                             print(f"rotate-Ig failed ({ssf_paths[i]}): {e}")
                             continue
@@ -2087,6 +2090,7 @@ class SSFTempCalcAndPlots:
                         key = (ssf_paths[i], QubitIndex)
                         ig_new_cache[key] = ig_new
                         ie_new_cache[key] = ie_new
+                        ssf_fid_cache[key] = fid
                         timestamp_ssf_cache[key] = ssf_dates[i]
 
                 except Exception as e:
@@ -2121,6 +2125,7 @@ class SSFTempCalcAndPlots:
                     "qfreq_MHz_err": freq_err_cache[fq_key],  # 1-σ (standard deviation) fit error on "qfreq_MHz_err"
                     "ig_new": ig_new_cache[ss_key],
                     "ie_new": ie_new_cache[ss_key],
+                    "ssf_fid": ssf_fid_cache[ss_key],
                     "data_timestamp": timestamp_ssf_cache[ss_key].timestamp(),  # unix-timestamps
                 })
         return pairs_info
@@ -2457,18 +2462,20 @@ class combined_Qtemp_studies:
         return pe_vals, pe_errs
 
     def ssf_fit_results_to_per_qubit_lists(
-        self,
-        fit_results,
-        n_qubits=6,
-        temp_key="temperature_mK",
-        err_key="temperature_err_mK",
-        alt_err_keys=("temperature_mK_err", "T_mK_err", "T_err_mK", "T_err"),
-        keep_nans=False,
+            self,
+            fit_results,
+            n_qubits=6,
+            temp_key="temperature_mK",
+            err_key="temperature_err_mK",
+            ssf_key="ssf_fid",
+            alt_err_keys=("temperature_mK_err", "T_mK_err", "T_err_mK", "T_err"),
+            keep_nans=False,
     ):
         """
         Converts SSF fit_results into:
-          temps[qid] = [T_mK, ...]
-          errs[qid]  = [T_err_mK (or nan), ...]
+          temps[qid]    = [T_mK, ...]
+          errs[qid]     = [T_err_mK (or nan), ...]
+          ssf_vals[qid] = [ssf_fid (or nan), ...]
 
         Supports fit_results as:
           - dict: fit_results[qid] -> list of record dicts
@@ -2476,11 +2483,13 @@ class combined_Qtemp_studies:
 
         Notes:
           * If an error key is missing, we append np.nan so temps/errs stay aligned.
+          * If the SSF key is missing, we append np.nan so temps/errs/ssf stay aligned.
           * If keep_nans=False (default), we skip non-finite temperatures.
         """
 
         temps = [[] for _ in range(n_qubits)]
-        errs  = [[] for _ in range(n_qubits)]
+        errs = [[] for _ in range(n_qubits)]
+        ssf_vals = [[] for _ in range(n_qubits)]
 
         # ---- helper to pick an error value from record with fallbacks ----
         def _get_err(rec):
@@ -2490,6 +2499,12 @@ class combined_Qtemp_studies:
                 if k in rec:
                     return rec.get(k, None)
             return None
+
+        # ---- helper to safely convert values ----
+        def _to_float_or_nan(val):
+            if val is not None and np.isfinite(val):
+                return float(val)
+            return np.nan
 
         # ---- dict form: {qid: [records...]} ----
         if isinstance(fit_results, dict):
@@ -2501,18 +2516,16 @@ class combined_Qtemp_studies:
 
                     T = rec.get(temp_key, None)
                     Te = _get_err(rec)
+                    ssf = rec.get(ssf_key, None)
 
                     if T is None or (not np.isfinite(T) and not keep_nans):
                         continue
 
                     temps[qid].append(float(T) if T is not None else np.nan)
+                    errs[qid].append(_to_float_or_nan(Te))
+                    ssf_vals[qid].append(_to_float_or_nan(ssf))
 
-                    if Te is not None and np.isfinite(Te):
-                        errs[qid].append(float(Te))
-                    else:
-                        errs[qid].append(np.nan)
-
-            return temps, errs
+            return temps, errs, ssf_vals
 
         # ---- flat-list form: [ {qid:..., temperature_mK:...}, ... ] ----
         if isinstance(fit_results, (list, tuple)):

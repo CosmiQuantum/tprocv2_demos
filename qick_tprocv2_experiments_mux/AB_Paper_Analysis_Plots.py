@@ -6,8 +6,10 @@ import os
 import datetime
 
 qtemp_noisetemp_plot = False
-lnPe_vs_qfreq_plots_per_run = True
+lnPe_vs_qfreq_plots_per_run = False
 lnPe_vs_qfreq_plots_per_qubit = False
+ssf_fid_vs_Pe = False
+Pe_variance_std_vs_run = False
 # ------------------------------------------------------------
 # Measured Pe values (Run 4 column will be dropped)
 # ------------------------------------------------------------
@@ -52,6 +54,29 @@ f_ge_err_MHz = [
     [0.002007, 0.006477, 0.018931, 0.003672, 0.060262],
 ]
 
+# -------------------------------------------------------------------------
+# Single-shot fidelity values (Run 4 column will be dropped to match Pe data)
+# -------------------------------------------------------------------------
+ssf_fid_vals = [
+    [v5, v6, v7, v8],  # Qubit 1
+    [v5, v6, v7, v8],  # Qubit 2
+    [v5, v6, v7, v8],  # Qubit 3
+    [v5, v6, v7, v8],  # Qubit 4
+    [v5, v6, v7, v8],  # Qubit 5
+    [v5, v6, v7, v8],  # Qubit 6
+]
+# -------------------------------------------------------------------------
+# Thermal population variance (spread) values
+# -------------------------------------------------------------------------
+Pe_variance_vals = [
+    [v5, v6, v7, v8],  # Qubit 1
+    [v5, v6, v7, v8],  # Qubit 2
+    [v5, v6, v7, v8],  # Qubit 3
+    [v5, v6, v7, v8],  # Qubit 4
+    [v5, v6, v7, v8],  # Qubit 5
+    [v5, v6, v7, v8],  # Qubit 6
+]
+
 # ------------------------------------------------------------
 # Convert + drop Run 4 so arrays align with Runs 5-8
 # ------------------------------------------------------------
@@ -65,6 +90,8 @@ f_ge_err_MHz = np.array(f_ge_err_MHz, dtype=float)[:, 1:]        # (6,4)
 
 f_ge_Hz     = f_ge_MHz * 1e6
 f_ge_err_Hz = f_ge_err_MHz * 1e6
+
+ssf_fid_vals   = np.array(ssf_fid_vals, dtype=float)[:, 1:]            # (6,4)
 
 if Pe_meas.shape != f_ge_Hz.shape:
     raise ValueError(f"Shape mismatch: Pe_meas {Pe_meas.shape} vs f_ge_Hz {f_ge_Hz.shape}")
@@ -511,6 +538,110 @@ if lnPe_vs_qfreq_plots_per_qubit:
 
     # Optional legend (only once to avoid clutter)
     axes[0].legend(fontsize=10)
+
+    plt.tight_layout()
+    plt.show()
+
+if ssf_fid_vs_Pe:
+    run_labels = ["Run 5", "Run 6", "Run 7", "Run 8"]
+
+    n_qubits = len(Pe_meas)
+    n_runs = Pe_meas.shape[1]
+
+    fig, axes = plt.subplots(2, 3, figsize=(14, 10), sharey=True)
+    axes = axes.ravel()
+
+    colors = ['orange', 'blue', 'purple', 'green']
+    markers = ['o', 's', '^', 'D']
+
+    for q in range(n_qubits):
+        ax = axes[q]
+
+        ssf_q = []
+        Pe_q = []
+
+        for r in range(n_runs):
+            pei = Pe_meas[q, r]
+            pei_err = Pe_err[q, r]
+            ssfi = ssf_fid_vals[q, r]
+
+            if np.isfinite(pei) and np.isfinite(pei_err) and np.isfinite(ssfi):
+                color = colors[r % len(colors)]
+                marker = markers[r % len(markers)]
+
+                ssf_q.append(ssfi)
+                Pe_q.append(pei)
+
+                ax.errorbar(
+                    ssfi,
+                    pei,
+                    yerr=pei_err,
+                    fmt=marker,
+                    capsize=3,
+                    color=color,
+                    ecolor=color,
+                    label=run_labels[r]
+                )
+
+        ax.set_title(f"Qubit {q + 1}")
+
+        if q >= 3:
+            ax.set_xlabel("SSF Fidelity")
+        ax.set_ylabel(r"$P_e$")
+
+        if len(ssf_q) > 0:
+            center = np.median(ssf_q)
+            width = 0.08  # adjust if needed
+            ax.set_xlim(center - width / 2, center + width / 2)
+
+    axes[0].legend(fontsize=10)
+    plt.tight_layout()
+    plt.show()
+
+if Pe_variance_std_vs_run:
+
+    use_std = True   # ?? set False to plot variance instead
+
+    n_qubits = len(Pe_meas)
+
+    fig, axes = plt.subplots(2, 3, figsize=(14, 10), sharex=True, sharey=True)
+    axes = axes.ravel()
+
+    for q in range(n_qubits):
+        ax = axes[q]
+
+        var_q = np.array(Pe_variance_vals[q], dtype=float)
+
+        # ?? switch between variance and std
+        if use_std:
+            yvals = np.sqrt(var_q)
+            ylabel = r"$\sigma(P_e)$"
+        else:
+            yvals = var_q
+            ylabel = r"$\mathrm{Var}(P_e)$"
+
+        ax.plot(
+            runs,
+            yvals,
+            'o-',
+            color='blue',
+            linewidth=2,
+            markersize=6
+        )
+
+        ax.set_title(f"Qubit {q+1}")
+
+        if q >= 3:
+            ax.set_xlabel("Run Number")
+
+        ax.set_ylabel(ylabel)
+
+        ax.set_xticks(runs)
+        ax.grid(alpha=0.3)
+
+    # hide unused axes if needed
+    for k in range(n_qubits, len(axes)):
+        axes[k].set_visible(False)
 
     plt.tight_layout()
     plt.show()
@@ -1337,6 +1468,18 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
 
         box_data = [cell_to_1d(select_cell(r, q)) for r in run_num_list]
 
+        # compute variance and std per run, for this qubit
+        variance_per_run = [np.var(arr, ddof=1) if len(arr) > 1 else np.nan for arr in box_data]
+        std_per_run = [np.std(arr, ddof=1) if len(arr) > 1 else np.nan for arr in box_data]
+
+        print(f"\nQubit {q + 1} noise summary:")
+        for run, arr, var, std in zip(run_num_list, box_data, variance_per_run, std_per_run):
+            n = len(arr)
+            if np.isfinite(var):
+                print(f"Run {run}: std(Pe) = {std:.3e}  (var = {var:.3e}, n = {n})")
+            else:
+                print(f"Run {run}: insufficient data (n = {n})")
+
         # summary print
         print(f"\nQubit {q + 1} Pe summary:")
         print_median_spread_table(
@@ -1583,5 +1726,206 @@ def boxwhisker_qfreq_per_qubit_vs_run(
             f"boxwhisk_ge_qfreqs_vs_run_num_{timestamp}.pdf"
         )
 
+        fig.savefig(fname, bbox_inches="tight")
+        plt.close(fig)
+
+def boxwhisker_ssf_per_qubit_vs_run(
+    run_num_list,
+    ssf_vals_by_run,
+    n_qubits=6,
+    qubits_to_plot=None,
+    colors="navy", # default: same color for all qubits, can pass multiple too: ('orange', 'blue', 'purple', 'green', 'brown', 'palevioletred')
+    ylims=None,
+    yticks=None,
+    showfliers=True,
+    whis=1.5,
+    fig_title="Single-Shot Fidelity vs Run Number",
+    ylabel="Single-Shot Fidelity",
+    suptitle_fs=18,
+    title_fs=18,
+    label_fs=18,
+    tick_fs=18,
+    save_plt_path=None,
+    save_name="boxwhisk_ssf_vs_run_num.pdf"
+):
+    """
+    SSF boxplot, using already-grouped per-run dictionaries.
+
+    Expected input shape
+    --------------------
+    ssf_vals_by_run[run][q] = [ssf, ssf, ...]
+
+    Notes
+    -----
+    - This is the SSF-only version of the hybrid-style plotting function.
+    - Default color is navy for all qubits.
+    - If you want different colors per qubit, pass something like:
+          colors=('orange', 'blue', 'purple', 'green', 'brown', 'palevioletred')
+    """
+
+    # ---------------- choose qubits to plot ----------------
+    if qubits_to_plot is None:
+        qubits_to_plot = list(range(n_qubits))
+    else:
+        qubits_to_plot = list(qubits_to_plot)
+
+    n_plot = len(qubits_to_plot)
+    if n_plot == 0:
+        raise ValueError("qubits_to_plot is empty.")
+
+    # ---------------- helpers ----------------
+    def cell_to_1d(cell):
+        if cell is None:
+            return np.array([], dtype=float)
+
+        try:
+            if not np.isscalar(cell) and len(cell) == 0:
+                return np.array([], dtype=float)
+        except TypeError:
+            pass
+
+        if np.isscalar(cell):
+            arr = np.array([cell], dtype=float)
+        else:
+            arr = np.asarray(cell, dtype=float).ravel()
+
+        return arr[np.isfinite(arr)]
+
+    def get_cell(vals_by_run, run, q):
+        if vals_by_run is None or run not in vals_by_run:
+            return None
+
+        row = vals_by_run[run]
+        if row is None or q >= len(row):
+            return None
+
+        return row[q]
+
+    def style_boxplot(bp, color):
+        for b in bp["boxes"]:
+            b.set_facecolor(color)
+            b.set_edgecolor(color)
+            b.set_alpha(0.31)
+            b.set_linewidth(1.3)
+
+        for m in bp["medians"]:
+            m.set_color(color)
+            m.set_linewidth(2.0)
+
+        for w in bp["whiskers"]:
+            w.set_color(color)
+            w.set_linewidth(1.2)
+
+        for c in bp["caps"]:
+            c.set_color(color)
+            c.set_linewidth(1.2)
+
+        for f in bp["fliers"]:
+            f.set_marker("o")
+            f.set_markersize(3.5)
+            f.set_markerfacecolor(color)
+            f.set_markeredgecolor(color)
+            f.set_alpha(0.6)
+
+    def get_qubit_color(q):
+        if isinstance(colors, str):
+            return colors
+        return colors[q % len(colors)]
+
+    # ---------------- axis defaults ----------------
+    if ylims is None:
+        ylims = (0, 1.0)
+    if yticks is None:
+        yticks = np.arange(0, 1.01, 0.1)
+
+    n_runs = len(run_num_list)
+    base_pos = np.arange(1, n_runs + 1)
+    xtick_labels = [f"{r}" for r in run_num_list]
+
+    # ---------------- dynamic subplot grid ----------------
+    if n_plot == 1:
+        nrows, ncols = 1, 1
+    elif n_plot == 2:
+        nrows, ncols = 1, 2
+    elif n_plot <= 4:
+        nrows, ncols = 2, 2
+    else:
+        ncols = 3
+        nrows = math.ceil(n_plot / 3)
+
+    fig_w = 5.8 * ncols
+    fig_h = 4.6 * nrows
+
+    fig, axes = plt.subplots(
+        nrows, ncols,
+        figsize=(fig_w, fig_h),
+        sharex=True,
+        sharey=True,
+        constrained_layout=False
+    )
+    axes = np.atleast_1d(axes).ravel()
+
+    for ax_idx, q in enumerate(qubits_to_plot):
+        ax = axes[ax_idx]
+        q_color = get_qubit_color(q)
+
+        box_data = [cell_to_1d(get_cell(ssf_vals_by_run, r, q)) for r in run_num_list]
+
+        # summary print
+        print(f"\nQubit {q + 1} SSF summary:")
+        print_median_spread_table(
+            run_num_list,
+            box_data,
+            q,
+            mode="iqr2"
+        )
+
+        bp = ax.boxplot(
+            box_data,
+            positions=base_pos,
+            widths=0.55,
+            patch_artist=True,
+            showfliers=showfliers,
+            whis=whis,
+            manage_ticks=False
+        )
+        style_boxplot(bp, q_color)
+
+        ax.set_title(f"Qubit {q + 1}", fontsize=title_fs)
+        ax.set_ylim(*ylims)
+        ax.set_yticks(yticks)
+        ax.tick_params(axis="both", labelsize=tick_fs)
+        ax.grid(True, alpha=0.35)
+
+        ax.set_xticks(base_pos)
+        ax.set_xticklabels(xtick_labels)
+        ax.set_xlim(0.5, len(run_num_list) + 0.5)
+
+    # ---------------- hide unused axes ----------------
+    for k in range(n_plot, len(axes)):
+        axes[k].set_visible(False)
+
+    left_margin   = 0.12 + 0.015 * max(nrows - 1, 0)
+    bottom_margin = 0.14 + 0.025 * max(nrows - 1, 0)
+    top_margin    = 0.90 - 0.015 * max(nrows - 1, 0)
+    right_margin  = 0.96
+
+    fig.subplots_adjust(
+        left=left_margin,
+        right=right_margin,
+        bottom=bottom_margin,
+        top=top_margin,
+        wspace=0.25,
+        hspace=0.35
+    )
+
+    fig.suptitle(fig_title, fontsize=suptitle_fs, y=0.975)
+    fig.supxlabel("Run Number", fontsize=label_fs, y=0.04)
+    fig.supylabel(ylabel, fontsize=label_fs, x=0.035)
+
+    if save_plt_path is None:
+        plt.show()
+    else:
+        fname = os.path.join(save_plt_path, save_name)
         fig.savefig(fname, bbox_inches="tight")
         plt.close(fig)

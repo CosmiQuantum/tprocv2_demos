@@ -27,7 +27,7 @@ from analysis_003_q_freqs_vs_time_plots import QubitFreqsVsTime
 from analysis_006_T1_vs_time_plots import T1VsTime
 from analysis_007_T2R_vs_time_plots import T2rVsTime
 from analysis_008_T2E_vs_time_plots import T2eVsTime
-from AB_Paper_Analysis_Plots import boxwhisker_qtemps_per_qubit_vs_run_choice, boxwhisker_pe_per_qubit_vs_run_hybrid
+from AB_Paper_Analysis_Plots import boxwhisker_qtemps_per_qubit_vs_run_choice, boxwhisker_pe_per_qubit_vs_run_hybrid, boxwhisker_ssf_per_qubit_vs_run
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
 run_num = 5
 run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence analysis it's defined in its respective section
@@ -57,21 +57,21 @@ tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
 qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_qtemps": True}
+                      "combined_studies_Qtemps": True}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": True,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False, "Pe_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_hists_viaSSF": False, "Pe_vs_time_viaRPM": False,
                   "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
-# For combined analysis (SSF qtemps + RPM qtemps)
+# For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
 comb_analysis_flags = {"Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
-                       "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": True}
+                       "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": True, "ssf_box_whisker_allruns_allQs": True}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 
-# For double-gaussian SSF analysis using alternative methods
+# For double-gaussian SSF analysis using alternative methods (does not require any other flags to be set to True above!)
 alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
 
 # For coherence-qubit temps combined analysis
@@ -636,21 +636,20 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
         all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only = False, fallback_to_threshold = True)
 
     # --------------------------------------------------------- SSF qubit temps analysis --------------------------------------------------------
-    # ---------------------------------------- SSF thermal population (Pe) histograms -------------------------------------------
+    # ---------------------------------------- SSF thermal population (Pe) histograms --------------------------------------------------------------
     if analysis_flags["Pe_hists_viaSSF"]:
-        SSF_calcs_obj.plot_all_Qs_Pe_hists_ssf(fit_results, out_dir=path_saveplots_ssf_qtemps_vsT, bins=45, rel_err_cutoff=None,
-                                                                    only_return_mu_and_sigma=True, make_plot=True, save_plot=True)
+        SSF_calcs_obj.plot_all_Qs_Pe_hists_ssf(fit_results, out_dir=path_saveplots_ssf_qtemps_vsT, bins=45, rel_err_cutoff=None, only_return_mu_and_sigma=True, make_plot=True, save_plot=True)
+    # --------------------------------------------------------------------------- SSF Temperature Histograms --------------------------------------------------------------------------------------
+    if analysis_flags["Qtemps_hists_viaSSF"]:
+        SSF_calcs_obj.plot_all_Qs_qtemps_hists_ssf(all_qubit_temps, all_qubit_temps_errs, path_saveplots_ssf_qtemps_vsT, bins=45)
     #------------------------------------------------------------------ Temperatures vs Time Scatter Plot --------------------------------------------------------------------------
     if analysis_flags["Qtemps_vs_time_viaSSF"]:
         SSF_calcs_obj.plot_qubit_temperatures_vs_time_ssf(all_qubit_temps, all_qubit_times, all_qubit_temps_errs, path_saveplots_ssf_qtemps_vsT, plot_error_bars = True)
-    #--------------------------------------------------------------------------- SSF Temperature Histograms --------------------------------------------------------------------------------------
-    if analysis_flags["Qtemps_hists_viaSSF"]:
-        SSF_calcs_obj.plot_all_Qs_qtemps_hists_ssf(all_qubit_temps, all_qubit_temps_errs, path_saveplots_ssf_qtemps_vsT, bins=45)
     #------------------------------------------------------------ Check General SSF Double Gaussian Fits and g-e threshold ---------------------------------------------------------
     if analysis_flags["ge_thresh_check_ssf"]:
         thresh_results = SSF_calcs_obj.plot_ssf_ge_thresh(pairs_info=pairs_info, plotting_path=path_saveplots_fits)
 
-    #---------------------------------------------------- Check population threshold for Qubit Temperature Calcs via both SSF methods ----------------------------------------------
+    #---------------------------------------------------- Check population threshold for Qubit Temperature Calcs via BOTH SSF methods ----------------------------------------------
     if analysis_flags["Threshold_Check_Qtemps_viaSSF"]:
         for q_key, recs in fit_results.items():
             # path_saveplots/Q1, Q2, etc.
@@ -727,6 +726,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
+#################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
 run_num_list = [5,6,7,8]
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
@@ -741,7 +741,9 @@ ssf_g_Pe_errs_by_run = {} # matching Pe errors
 ssf_ge_temps_by_run = {}   # ssf g-e threshold temps (if you compute them)
 ssf_ge_errs_by_run  = {}      # matching errors
 
-if qtemp_method_flags["combined_studies_qtemps"]:
+ssf_fid_values_by_run = {} # single shot fidelity values
+
+if qtemp_method_flags["combined_studies_Qtemps"]:
     for run_num in run_num_list:
         # ---- always reset optional pre-SR variables each iteration ----
         base_dir2 = None
@@ -835,6 +837,8 @@ if qtemp_method_flags["combined_studies_qtemps"]:
         ssf_ge_temps_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
         ssf_ge_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
 
+        ssf_fid_values_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+
         if run_num != 5: # no rpm data for run 5
             # ----------- Get Qubit temperature results via RPMs
             RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits)
@@ -869,7 +873,7 @@ if qtemp_method_flags["combined_studies_qtemps"]:
             all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=0.6,
                 do_plots=False, dontuse_midpt_thresh = True)
             # ---- STORE RESULTS (SSF g) ----
-            ssf_g_temps, ssf_g_temp_errs = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
+            ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
 
             print(f"\nRUN {run_num} accepted SSF counts:")
             for q in range(tot_num_of_qubits):
@@ -880,25 +884,28 @@ if qtemp_method_flags["combined_studies_qtemps"]:
             pe_vals, pe_errs = combined_studies.extract_pe_from_fit_results(fit_results_g, tot_num_of_qubits)
             ssf_g_Pe_by_run[run_num] = pe_vals
             ssf_g_Pe_errs_by_run[run_num] = pe_errs
+            ssf_fid_values_by_run[run_num] = ssf_fid_vals
 
         else: # uses sklearn.mixture.GaussianMixture for double gaussian fitting
             all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only = False, fallback_to_threshold = False)
             all_qubit_temps_ge, all_qubit_times_ge, all_qubit_temps_errs_ge, fit_results_ge = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only=True, fallback_to_threshold=False)
 
             # ---- STORE RESULTS (SSF g) ----
-            ssf_g_temps, ssf_g_temp_errs = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
+            ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
             ssf_g_temps_by_run[run_num] = ssf_g_temps
             ssf_g_temp_errs_by_run[run_num] = ssf_g_temp_errs
             pe_vals, pe_errs = combined_studies.extract_pe_from_fit_results(fit_results_g, tot_num_of_qubits)
             ssf_g_Pe_by_run[run_num] = pe_vals
             ssf_g_Pe_errs_by_run[run_num] = pe_errs
+            ssf_fid_values_by_run[run_num] = ssf_fid_vals
 
             # ---- STORE RESULTS (SSF ge) ----
-            ssf_ge_temps_by_run[run_num] = all_qubit_temps_ge
-            ssf_ge_errs_by_run[run_num] = all_qubit_temps_errs_ge
-            # Pe option has not been added for this case yet
+            # Not tested yet
+            ssf_ge_temps, ssf_ge_temp_errs, ssf_fid_vals_ge = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_ge, n_qubits=tot_num_of_qubits)
+            ssf_ge_temps_by_run[run_num] = ssf_ge_temps
+            ssf_ge_errs_by_run[run_num] = ssf_ge_temp_errs
 
-    # --------------------- box and whiskers plot. Per run and per qubit. Separate or together options -------------------
+    # --------------------- box and whiskers plots. Per run and per qubit. Separate or together options -------------------
     if comb_analysis_flags["qtemp_box_whisker_allruns_allQs"]:
         boxwhisker_qtemps_per_qubit_vs_run_choice(
             run_num_list=run_num_list,
@@ -913,7 +920,7 @@ if qtemp_method_flags["combined_studies_qtemps"]:
                     'palevioletred', 'palevioletred', 'palevioletred'),
             ylims=(0, 300),
             yticks=np.arange(0, 301, 100),
-            showfliers=False,  # outliers
+            showfliers=True,  # outliers
             save_plt_path = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF") # set to 'None' to use plt.show()
 
     if comb_analysis_flags["Pe_box_whisker_allruns_allQs"]:
@@ -927,18 +934,36 @@ if qtemp_method_flags["combined_studies_qtemps"]:
                     'palevioletred', 'palevioletred', 'palevioletred'),
             ylims=(0, 0.6),
             yticks=np.arange(0, 0.61, 0.05),
+            showfliers=True,  # outliers
             fig_title="Excited-State Population vs Run Number",
             ylabel=r"$P_e$",
             save_plt_path="/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF")
 
+    if comb_analysis_flags["ssf_box_whisker_allruns_allQs"]:
+        boxwhisker_ssf_per_qubit_vs_run(
+                run_num_list,
+                ssf_vals_by_run = ssf_fid_values_by_run,
+                qubits_to_plot=[0, 1, 2, 3, 4, 5],
+                colors="navy", #('orange', 'blue', 'purple', 'green', 'brown', 'palevioletred')
+                ylims=None,
+                yticks=None,
+                showfliers=True,
+                save_plt_path="/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/SSF_fid_analysis")
+
     # ------------ Qubit temperatures vs Time using all three methods ------------------------
     if comb_analysis_flags["Qtemps_vs_time_comb_separate_plts"]:
+        if len(run_num_list) != 1:
+            raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
+                "This section is only set up to process one run at a time.")
         # This func has only been set up to work for 2 qubits.
         # Plots two rows (one for each qubit) and 3 columns (one for each method)
         combined_studies.Qtemps_vs_time_comb_methods_3col(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, all_qubit_temps_ge, all_qubit_times_ge, all_qubit_temps_errs_ge,
                                                      outerFolder_qtemps_plots, all_files_Qtemp_results_RPMs, restrict_time_xaxis = False, plot_extra_event_lines = False,
                                                      rad_events_plot_lines = False, plot_error_bars = True)
     if comb_analysis_flags["Qtemps_vs_time_comb_single_plt"]:
+        if len(run_num_list) != 1:
+            raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
+                "This section is only set up to process one run at a time.")
         # This one works for multiple qubits (has been improved)
         # Makes 1 subplot per qubit (and all methods in a single plot). Note: I removed the ge SSF method from being plotted since we haven't been using that one lately.
         # Plots error bars always, unless you pass None instead of all_qubit_temps_errs_g.
@@ -949,10 +974,16 @@ if qtemp_method_flags["combined_studies_qtemps"]:
 
     #----------- Thermal Populations vs Time using all three methods ----
     if comb_analysis_flags["Pe_vs_time_comb_separate_plts"]:
+        if len(run_num_list) != 1:
+            raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
+                "This section is only set up to process one run at a time.")
         # Plots two rows (one for each qubit) and 3 columns (one for each method)
         combined_studies.Pe_vs_time_comb_methods(all_files_Qtemp_results_RPMs, fit_results_g, fit_results_ge, outerFolder_qtemps_plots,
                                                  restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
     if comb_analysis_flags["Pe_vs_time_comb_single_plt"]:
+        if len(run_num_list) != 1:
+            raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
+                "This section is only set up to process one run at a time.")
         # THREE METHODS VERSION
         # Plots two rows (one for each qubit) and 1 column (all three methods in a single plot)
         # combined_studies.Pe_vs_time_comb_2subplts(all_files_Qtemp_results_RPMs, fit_results_g, fit_results_ge, outerFolder_qtemps_plots,
@@ -1169,7 +1200,7 @@ if coh_qtemp_ana_flags["load_qtemps"]:
                 pairs_info, run_num=run_num, limit_temp_k=0.6,
                 do_plots=False, dontuse_midpt_thresh=True)
             # ---- STORE RESULTS (SSF g) ----
-            ssf_g_temps, ssf_g_temp_errs = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
+            ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
 
             print(f"\nRUN {run_num} accepted SSF counts:")
             for q in range(tot_num_of_qubits):
@@ -1180,6 +1211,7 @@ if coh_qtemp_ana_flags["load_qtemps"]:
             pe_vals, pe_errs = combined_studies.extract_pe_from_fit_results(fit_results_g, tot_num_of_qubits)
             ssf_g_Pe_by_run[run_num] = pe_vals
             ssf_g_Pe_errs_by_run[run_num] = pe_errs
+            ssf_fid_values_by_run[run_num] = ssf_fid_vals
 
         else:  # uses sklearn.mixture.GaussianMixture for double gaussian fitting
             all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps(
@@ -1188,18 +1220,20 @@ if coh_qtemp_ana_flags["load_qtemps"]:
                 pairs_info, limit_temp_k=1.0, use_gessf_thresh_only=True, fallback_to_threshold=False)
 
             # ---- STORE RESULTS (SSF g) ----
-            ssf_g_temps, ssf_g_temp_errs = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g,
+            ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g,
                                                                                                n_qubits=tot_num_of_qubits)
             ssf_g_temps_by_run[run_num] = ssf_g_temps
             ssf_g_temp_errs_by_run[run_num] = ssf_g_temp_errs
             pe_vals, pe_errs = combined_studies.extract_pe_from_fit_results(fit_results_g, tot_num_of_qubits)
             ssf_g_Pe_by_run[run_num] = pe_vals
             ssf_g_Pe_errs_by_run[run_num] = pe_errs
+            ssf_fid_values_by_run[run_num] = ssf_fid_vals
 
             # ---- STORE RESULTS (SSF ge) ----
-            ssf_ge_temps_by_run[run_num] = all_qubit_temps_ge
-            ssf_ge_errs_by_run[run_num] = all_qubit_temps_errs_ge
-            # Pe option has not been added for this case yet
+            # Not tested yet
+            ssf_ge_temps, ssf_ge_temp_errs, ssf_fid_vals_ge = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_ge, n_qubits=tot_num_of_qubits)
+            ssf_ge_temps_by_run[run_num] = ssf_ge_temps
+            ssf_ge_errs_by_run[run_num] = ssf_ge_temp_errs
 
 if coh_qtemp_ana_flags["load_mcp1_temps"]:
     mcp1_csv_path = "/data/QICK_data/run8/6transmon/round_robin/temperature_sweep_qubit_data/Mixing chamber stage-data-2025-11-25 09_46_33.csv"
@@ -1247,6 +1281,10 @@ if coh_qtemp_ana_flags["load_coherence_res"]:
 
 
 if coh_qtemp_ana_flags["plot_qtemps_t1_ftemps_qfreq"]:
+    if len(run_num_list) != 1:
+        raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
+                         "This plotting section is only set up to process one run at a time at the moment.")
+        # This section is set up to process multiple runs, but I have not updated this plotting function to handle more than one.
     comb_plots_path = "/data/QICK_data/run8/6transmon/round_robin/temperature_sweep_qubit_data/analysis_plots/"
     combined_studies = combined_Qtemp_studies(figure_quality, tot_num_of_qubits)
     combined_studies.plot_qtemps_and_coherence_res(comb_plots_path, all_qubit_temperatures_ssf_g=all_qubit_temps_g, all_qubit_timestamps_ssf_g=all_qubit_times_g,
