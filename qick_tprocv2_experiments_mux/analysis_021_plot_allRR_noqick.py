@@ -1071,29 +1071,33 @@ class QubitSpectroscopy:
                     largest_amp_curve_fwhm = fwhm_I
                     # error on the Q fit's center frequency (first parameter):
                     qspec_fit_err = fit_err_I[0]
+                    signal = "I"
                 else:
                     largest_amp_curve_mean = mean_Q
                     largest_amp_curve_fwhm = fwhm_Q
                     qspec_fit_err = fit_err_Q[0]
+                    signal = "Q"
             elif 'I' in self.signal:
                 largest_amp_curve_mean = mean_I
                 largest_amp_curve_fwhm = fwhm_I
                 qspec_fit_err = fit_err_I[0]
+                signal = "I"
             elif 'Q' in self.signal:
                 largest_amp_curve_mean = mean_Q
                 largest_amp_curve_fwhm = fwhm_Q
                 qspec_fit_err = fit_err_Q[0]
+                signal = "Q"
             else:
                 print('Invalid signal passed, please choose "I", "Q", or "None".')
                 return None
 
             # Return all desired results including the error on the Q fit
-            return mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, qspec_fit_err
+            return mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm, qspec_fit_err, signal
 
         except Exception as e:
             if self.verbose: print("Error during Lorentzian fit:", e)
             self.logger.info(f'Error during Lorentzian fit: {e}')
-            return None, None,None,None,None,None,None
+            return None, None,None,None,None,None,None, None
 
     def create_folder_if_not_exists(self, folder_path):
         import os

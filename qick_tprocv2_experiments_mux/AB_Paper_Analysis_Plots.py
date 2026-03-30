@@ -58,25 +58,24 @@ f_ge_err_MHz = [
 # Single-shot fidelity values (Run 4 column will be dropped to match Pe data)
 # -------------------------------------------------------------------------
 ssf_fid_vals = [
-    [v5, v6, v7, v8],  # Qubit 1
-    [v5, v6, v7, v8],  # Qubit 2
-    [v5, v6, v7, v8],  # Qubit 3
-    [v5, v6, v7, v8],  # Qubit 4
-    [v5, v6, v7, v8],  # Qubit 5
-    [v5, v6, v7, v8],  # Qubit 6
+    [0, 0, 0, 0],  # Qubit 1
+    [0, 0, 0, 0],  # Qubit 2
+    [0, 0, 0, 0],  # Qubit 3
+    [0, 0, 0, 0],  # Qubit 4
+    [0, 0, 0, 0],  # Qubit 5
+    [0, 0, 0, 0],  # Qubit 6
 ]
 # -------------------------------------------------------------------------
 # Thermal population variance (spread) values
 # -------------------------------------------------------------------------
 Pe_variance_vals = [
-    [v5, v6, v7, v8],  # Qubit 1
-    [v5, v6, v7, v8],  # Qubit 2
-    [v5, v6, v7, v8],  # Qubit 3
-    [v5, v6, v7, v8],  # Qubit 4
-    [v5, v6, v7, v8],  # Qubit 5
-    [v5, v6, v7, v8],  # Qubit 6
+    [0, 0, 0, 0],  # Qubit 1
+    [0, 0, 0, 0],  # Qubit 2
+    [0, 0, 0, 0],  # Qubit 3
+    [0, 0, 0, 0],  # Qubit 4
+    [0, 0, 0, 0],  # Qubit 5
+    [0, 0, 0, 0],  # Qubit 6
 ]
-
 # ------------------------------------------------------------
 # Convert + drop Run 4 so arrays align with Runs 5-8
 # ------------------------------------------------------------
