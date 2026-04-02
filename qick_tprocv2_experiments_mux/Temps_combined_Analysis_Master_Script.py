@@ -1,12 +1,8 @@
 import sys
 import numpy as np
-
-from tprocv2_demos.qick_tprocv2_experiments_mux.analysis_014_temp_calcsandplots_cosmiqgpvm import combined_Qtemp_studies
-
 np.set_printoptions(threshold=int(1e15)) #need this so it saves absolutely everything returned from the classes
 import os
 #sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
-
 from analysis_021_plot_allRR_noqick import QubitSpectroscopy
 from qicklab.analysis.qspec import AnaQSpec
 from qicklab.analysis.ssf import AnaSSF
