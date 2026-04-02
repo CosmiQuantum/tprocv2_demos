@@ -943,7 +943,8 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             showfliers=True,  # outliers
             fig_title="Excited-State Population vs Run Number",
             ylabel=r"$P_e$",
-            save_plt_path= "/data/QICK_data/multirun_analysis/qubit_temps_analysis/combined") #daq01
+            save_plt_path= "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF")
+            #"/data/QICK_data/multirun_analysis/qubit_temps_analysis/combined") #daq01
             #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF") # CEPH
 
     if comb_analysis_flags["ssf_box_whisker_allruns_allQs"]:
@@ -957,7 +958,8 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                 ylims=None,
                 yticks=None,
                 showfliers=True,
-                save_plt_path= "/data/QICK_data/multirun_analysis/qubit_temps_analysis/SSF" )
+                save_plt_path= "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/SSF_fid_analysis")
+                #"/data/QICK_data/multirun_analysis/qubit_temps_analysis/SSF" )
                 #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/SSF_fid_analysis")
 
     # ------------ Qubit temperatures vs Time using all three methods ------------------------
