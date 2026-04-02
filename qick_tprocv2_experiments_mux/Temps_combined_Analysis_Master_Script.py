@@ -1,33 +1,39 @@
 import sys
-import numpy as np
-
-from tprocv2_demos.qick_tprocv2_experiments_mux.analysis_014_temp_calcsandplots_cosmiqgpvm import combined_Qtemp_studies
-
-np.set_printoptions(threshold=int(1e15)) #need this so it saves absolutely everything returned from the classes
 import os
-#sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
-
-from analysis_021_plot_allRR_noqick import QubitSpectroscopy
-from qicklab.analysis.qspec import AnaQSpec
-from qicklab.analysis.ssf import AnaSSF
-from Arianna_non_prebuilt_SSF_doublegauss_funcs import non_prebuilt_ssf_analysis_class
-from section_008_save_data_to_h5 import Data_H5
-from .analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots, combined_Qtemp_studies, RPMTempCalcAndPlots
 import glob
 import re
 import datetime
 import ast
-from sklearn.mixture import GaussianMixture
-import matplotlib.pyplot as plt
 import math
+
+import numpy as np
+import matplotlib.pyplot as plt
 import h5py
-from expt_config import expt_cfg, list_of_all_qubits, FRIDGE
-from analysis_021_plot_allRR_noqick import PlotRR_noQick
-from analysis_003_q_freqs_vs_time_plots import QubitFreqsVsTime
-from analysis_006_T1_vs_time_plots import T1VsTime
-from analysis_007_T2R_vs_time_plots import T2rVsTime
-from analysis_008_T2E_vs_time_plots import T2eVsTime
-from AB_Paper_Analysis_Plots import boxwhisker_qtemps_per_qubit_vs_run_choice, boxwhisker_pe_per_qubit_vs_run_hybrid, boxwhisker_ssf_per_qubit_vs_run
+from sklearn.mixture import GaussianMixture
+
+from qicklab.analysis.qspec import AnaQSpec
+from qicklab.analysis.ssf import AnaSSF
+
+from .analysis_021_plot_allRR_noqick import QubitSpectroscopy, PlotRR_noQick
+from .Arianna_non_prebuilt_SSF_doublegauss_funcs import non_prebuilt_ssf_analysis_class
+from .section_008_save_data_to_h5 import Data_H5
+from .analysis_014_temp_calcsandplots_cosmiqgpvm import (
+    SSFTempCalcAndPlots,
+    combined_Qtemp_studies,
+    RPMTempCalcAndPlots,
+)
+from .expt_config import expt_cfg, list_of_all_qubits, FRIDGE
+from .analysis_003_q_freqs_vs_time_plots import QubitFreqsVsTime
+from .analysis_006_T1_vs_time_plots import T1VsTime
+from .analysis_007_T2R_vs_time_plots import T2rVsTime
+from .analysis_008_T2E_vs_time_plots import T2eVsTime
+from .AB_Paper_Analysis_Plots import (
+    boxwhisker_qtemps_per_qubit_vs_run_choice,
+    boxwhisker_pe_per_qubit_vs_run_hybrid,
+    boxwhisker_ssf_per_qubit_vs_run,
+)
+
+np.set_printoptions(threshold=int(1e15))  # need this so it saves absolutely everything returned from the classes
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
 run_num = 7
 run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence analysis it's defined in its respective section
