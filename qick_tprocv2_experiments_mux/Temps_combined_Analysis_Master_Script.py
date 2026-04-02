@@ -29,7 +29,7 @@ from analysis_007_T2R_vs_time_plots import T2rVsTime
 from analysis_008_T2E_vs_time_plots import T2eVsTime
 from AB_Paper_Analysis_Plots import boxwhisker_qtemps_per_qubit_vs_run_choice, boxwhisker_pe_per_qubit_vs_run_hybrid, boxwhisker_ssf_per_qubit_vs_run
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 5
+run_num = 7
 run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence analysis it's defined in its respective section
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
@@ -65,7 +65,7 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
                   "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
-comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
+comb_analysis_flags = {"load_rpm": False, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
                        "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": True, "ssf_box_whisker_allruns_allQs": True}
 
 # For London Penetration Depth analysis
@@ -394,7 +394,7 @@ path_saveplots_fits_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporar
 path_saveplots_ssf_qtemps_vsT_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/run6_analysis" # to save qubit temps vs time via ssf methods
 
 # ----------------------------------------------------------------------------------------------run 7----------------------------------------------------------------------------------------------------------
-r7_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run7" # CEPH
+r7_path_prefix = "/data/QICK_data/run7" # CEPH
                 #"/exp/cosmiq/data/QUIET/QICK_data/run7" # CEPH
                 # "/data/QICK_data/run7" # daq01
 paths_SSFmethods_run7 = [
@@ -405,12 +405,11 @@ paths_SSFmethods_run7 = [
   f"{r7_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data/2025-07-20_06-33-03"
 ]
 
-path_saveplots_fits_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r7" #CEPH
+path_saveplots_fits_run7 = "/data/QICK_data/run7/6transmon/analysis/ssf_qtemps_analysis/GaussFits_r7" # daq01
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r7" #CEPH
-    # "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/ssf_qtemps_analysis/GaussFits_r7" #daq01 # where to save ssf plots to check gaussian fits
-path_saveplots_ssf_qtemps_vsT_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run7" #CEPH
-    # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run7" #CEPH
-    #"/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/ssf_qtemps_analysis/Qtemps_vs_Time_run7" #daq01 # to save qubit temps vs time via ssf methods
+
+path_saveplots_ssf_qtemps_vsT_run7 = "/data/QICK_data/run7/6transmon/analysis/ssf_qtemps_analysis/Qtemps_vs_Time_run7" # daq01
+    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run7" #CEPH
 
 # ----------------------------------------------------------------------------------------------run 8----------------------------------------------------------------------------------------------------------
 # Arianna's local analysis:
@@ -418,7 +417,7 @@ path_saveplots_ssf_qtemps_vsT_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1h
 # path_saveplots_fits_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\qtemps_ssf_gaussfits" # where to save ssf plots to check gaussian fits
 # path_saveplots_ssf_qtemps_vsT_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\qtemps_ssf_analysis\Qtemps_vs_Time_run8" # to save qubit temps vs time via ssf methods
 
-r8_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run8" # CEPH
+r8_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run8"
                 #"/exp/cosmiq/data/QUIET/QICK_data/run8" # CEPH
                 # "/data/QICK_data/run8" # daq01
 # All AB paper data
@@ -453,11 +452,11 @@ paths_SSFmethods_run8 = [ # for daq01 case, need to make CEPH version
 ]
 
 path_saveplots_fits_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r8" #CEPH
+    #"/data/QICK_data/run8/6transmon/analysis/ssf_qtemps_analysis/qtemps_ssf_gaussfits" #daq01 # where to save ssf plots to check gaussian fits
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r8" #CEPH
-    # "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_gaussfits" #daq01 # where to save ssf plots to check gaussian fits
 path_saveplots_ssf_qtemps_vsT_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run8" #CEPH
+    # "/data/QICK_data/run8/6transmon/analysis/ssf_qtemps_analysis/qtemps_ssf_analysis" #daq01
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run8" #CEPH
-    # "/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/qtemps_ssf_analysis" #daq01 # to save qubit temps vs time via ssf methods
 
 #------------------------------------------------------------------------------ Assign func variables depending on run number ---------------------------------------
 if run_num == 6:  # We have science-run data as well as pre-science-run data available. Note: we already defined Science_Qubits for the science run above.
@@ -727,7 +726,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
-run_num_list = [5,6,7,8]
+run_num_list = [7]
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
 rpm_Pe_by_run = {}      # rpm_Pe_by_run[run][qid] = [P_e, ...]
@@ -909,6 +908,10 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
 
     # --------------------- box and whiskers plots. Per run and per qubit. Separate or together options -------------------
     if comb_analysis_flags["qtemp_box_whisker_allruns_allQs"]:
+        if not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
+            raise ValueError(
+                'This plot requires both comb_analysis_flags["load_rpm"] and '
+                'comb_analysis_flags["load_ssf"] to be True.')
         boxwhisker_qtemps_per_qubit_vs_run_choice(
             run_num_list=run_num_list,
             rpm_temps_by_run=rpm_temps_by_run,
@@ -926,6 +929,10 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             save_plt_path = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF") # set to 'None' to use plt.show()
 
     if comb_analysis_flags["Pe_box_whisker_allruns_allQs"]:
+        if not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
+            raise ValueError(
+                'This plot requires both comb_analysis_flags["load_rpm"] and '
+                'comb_analysis_flags["load_ssf"] to be True.')
         # This is only set up in 'hybrid' 'separate' mode
         boxwhisker_pe_per_qubit_vs_run_hybrid(
             run_num_list=run_num_list,
@@ -939,9 +946,12 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             showfliers=True,  # outliers
             fig_title="Excited-State Population vs Run Number",
             ylabel=r"$P_e$",
-            save_plt_path="/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF")
+            save_plt_path= "/data/QICK_data/multirun_analysis/qubit_temps_analysis/combined") #daq01
+            #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF") # CEPH
 
     if comb_analysis_flags["ssf_box_whisker_allruns_allQs"]:
+        if not comb_analysis_flags["load_ssf"]:
+            raise ValueError('This plot requires comb_analysis_flags["load_ssf"] to be True.')
         boxwhisker_ssf_per_qubit_vs_run(
                 run_num_list,
                 ssf_vals_by_run = ssf_fid_values_by_run,
@@ -950,13 +960,18 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                 ylims=None,
                 yticks=None,
                 showfliers=True,
-                save_plt_path="/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/SSF_fid_analysis")
+                save_plt_path= "/data/QICK_data/multirun_analysis/qubit_temps_analysis/SSF" )
+                #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/SSF_fid_analysis")
 
     # ------------ Qubit temperatures vs Time using all three methods ------------------------
     if comb_analysis_flags["Qtemps_vs_time_comb_separate_plts"]:
         if len(run_num_list) != 1:
             raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
                 "This section is only set up to process one run at a time.")
+        if not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
+            raise ValueError(
+                'This plot requires both comb_analysis_flags["load_rpm"] and '
+                'comb_analysis_flags["load_ssf"] to be True.')
         # This func has only been set up to work for 2 qubits.
         # Plots two rows (one for each qubit) and 3 columns (one for each method)
         combined_studies.Qtemps_vs_time_comb_methods_3col(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, all_qubit_temps_ge, all_qubit_times_ge, all_qubit_temps_errs_ge,
@@ -966,6 +981,10 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         if len(run_num_list) != 1:
             raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
                 "This section is only set up to process one run at a time.")
+        if not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
+            raise ValueError(
+                'This plot requires both comb_analysis_flags["load_rpm"] and '
+                'comb_analysis_flags["load_ssf"] to be True.')
         # This one works for multiple qubits (has been improved)
         # Makes 1 subplot per qubit (and all methods in a single plot). Note: I removed the ge SSF method from being plotted since we haven't been using that one lately.
         # Plots error bars always, unless you pass None instead of all_qubit_temps_errs_g.
@@ -979,6 +998,10 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         if len(run_num_list) != 1:
             raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
                 "This section is only set up to process one run at a time.")
+        if not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
+            raise ValueError(
+                'This plot requires both comb_analysis_flags["load_rpm"] and '
+                'comb_analysis_flags["load_ssf"] to be True.')
         # Plots two rows (one for each qubit) and 3 columns (one for each method)
         combined_studies.Pe_vs_time_comb_methods(all_files_Qtemp_results_RPMs, fit_results_g, fit_results_ge, outerFolder_qtemps_plots,
                                                  restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
@@ -986,13 +1009,16 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         if len(run_num_list) != 1:
             raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
                 "This section is only set up to process one run at a time.")
+        if not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
+            raise ValueError(
+                'This plot requires both comb_analysis_flags["load_rpm"] and '
+                'comb_analysis_flags["load_ssf"] to be True.')
         # THREE METHODS VERSION
         # Plots two rows (one for each qubit) and 1 column (all three methods in a single plot)
         # combined_studies.Pe_vs_time_comb_2subplts(all_files_Qtemp_results_RPMs, fit_results_g, fit_results_ge, outerFolder_qtemps_plots,
         #                              restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
         # TWO METHODS VERSION (new)
-        combined_studies.Pe_vs_time_comb_allQs_1col(fit_results_g, outerFolder_qtemps_plots, all_files_Qtemp_results_RPMs, qubits_to_plot=[0,1,2,4], restrict_time_yaxis = True,
-                                                    ylims=[0.0, 0.16])
+        combined_studies.Pe_vs_time_comb_allQs_1col(fit_results_g, outerFolder_qtemps_plots, all_files_Qtemp_results_RPMs, qubits_to_plot=[0,1,2,4], restrict_time_yaxis = True,ylims=[0.0, 0.16])
 
 #################################################### London Penetration Analysis ##########################################################
 if london_flags["get_qfreqs_resfreqs_qtemps"]: # There was no "pre-science-run" data in run 6 for this analysis, since the relevant data is the science run heater temperature sweep data

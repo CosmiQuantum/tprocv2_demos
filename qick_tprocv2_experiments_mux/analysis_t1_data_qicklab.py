@@ -11,10 +11,12 @@ import random
 random.seed(1001)
 np.random.seed(1001)
 ############### set values here ###################
-study_dir = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # on Arianna's local pc
+study_dir = "/data/QICK_data/run8/6transmon/round_robin"
+    # r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # on Arianna's local pc
     #"/data/QICK_data/run8/6transmon/round_robin" # on qubituser-daq01
 
-substudy = 'ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional'
+substudy = 'AB_paper_datadump_T1_Analysis'
+    #'ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional'
     #'AB_paper_datadump_T1_Analysis' # on qubituser-daq01
 
 data_dir = os.path.join(study_dir, substudy)
