@@ -263,6 +263,7 @@ class PlotAllRR:
 
                         good_fit = (
                                 qspec_fit_err is not None
+                                and largest_amp_curve_fwhm is not None  # repeated here in case good_center is commented out
                                 and np.isfinite(qspec_fit_err)
                                 and qspec_fit_err < 1.0  # above 1 MHz fit err is probably not a good fit
                                 and largest_amp_curve_fwhm < 10.0  # width of peak, if you also add 0 < largest_amp_curve_fwhm it is stricter

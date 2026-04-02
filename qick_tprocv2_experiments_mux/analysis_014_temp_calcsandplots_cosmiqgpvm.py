@@ -575,6 +575,7 @@ class SSFTempCalcAndPlots:
                 freq_mhz_err = rec["qfreq_MHz_err"]
                 ig_new = rec["ig_new"]
                 ie_new = rec["ie_new"]
+                ssf_fid = rec["ssf_fid"]
                 ts_unix = rec["data_timestamp"]
 
                 # -------- Only using double-Gaussian fit on ground state data, without fallback method --------------------------
@@ -626,7 +627,7 @@ class SSFTempCalcAndPlots:
                     print(f'Rejected a fit with Likelihood ratio test score < {lr_stat_limit}')
                     # not convincingly bimodal --> skip this dataset, it is better described by a single gaussian
 
-                    if do_plots and qid == 4:
+                    if do_plots:
                         bad_plots_path = os.path.join(save_figs_path, f"bad_fits_LRT_failed/Q{qid+1}")
                         os.makedirs(bad_plots_path, exist_ok=True)
                         self.plot_gaussians_qtemps(qid, bad_plots_path, ig_new, ground_data,
@@ -657,7 +658,7 @@ class SSFTempCalcAndPlots:
                 sigma_TmK, sigma_Pe_total = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
 
                 # Plotting
-                if do_plots and qid == 1:
+                if do_plots:
                     save_figs_path_clean = os.path.join(save_figs_path, f"Q{qid + 1}") # to separate plots by qubit
                     self.plot_gaussians_qtemps(qid, save_figs_path_clean, ig_new, ground_data,
                                                excited_data, ground_gaussian,
@@ -688,6 +689,7 @@ class SSFTempCalcAndPlots:
                     "means": means,
                     "Pg": Pg,
                     "Pe": Pe,
+                    "ssf_fid": ssf_fid,
                     "qfreq_mhz": freq_mhz,
                     "qfreq_mhz_err": freq_mhz_err,
                 })

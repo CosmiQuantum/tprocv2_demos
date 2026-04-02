@@ -906,13 +906,7 @@ class QubitSpectroscopy:
         # Check if the returned values are all None
         if (mean_I is None and mean_Q is None and I_fit is None and Q_fit is None
                 and largest_amp_curve_mean is None and largest_amp_curve_fwhm is None):
-            # If so, return None for the values in this definition as well
-            empties = [None, None, None]
-            if return_fwhm:
-                empties.append(None)
-            if return_fit_err:
-                empties.append(None)
-            return tuple(empties)
+            return None, None, None, None, None, None
 
         # If we get here, the fit was successful and we can proceed with plotting
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
@@ -984,14 +978,11 @@ class QubitSpectroscopy:
                                      f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
             fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
         plt.close(fig)
-        if return_fwhm and return_fit_err: #both set to True
-            return largest_amp_curve_mean, I_fit, Q_fit, largest_amp_curve_fwhm, fit_err, signal
-        elif return_fwhm:
-            return largest_amp_curve_mean, I_fit, Q_fit, largest_amp_curve_fwhm, None, signal
-        elif return_fit_err:
-            return largest_amp_curve_mean, I_fit, Q_fit, None, fit_err, signal
-        else:
-            return largest_amp_curve_mean, I_fit, Q_fit, None, None, signal
+
+        fwhm_out = largest_amp_curve_fwhm if return_fwhm else None
+        fit_err_out = fit_err if return_fit_err else None
+
+        return largest_amp_curve_mean, I_fit, Q_fit, fwhm_out, fit_err_out, signal
 
     def get_results(self, I, Q, freqs):
         freqs = np.array(freqs)
@@ -1813,7 +1804,7 @@ class PlotRR_noQick:
                         q_spec_cfg = exp_config['qubit_spec_ge']
                         # print('q_spec_cfg: ', q_spec_cfg)
                         qubit_freq, _, _, largest_amp_curve_fwhm, qspec_fit_err, signal = qspec_class_instance.plot_results(I, Q, freqs, q_spec_cfg,
-                                                        self.figure_quality, return_fit_err = True) # You don’t need to mention every parameter in the call
+                                                        self.figure_quality, return_fwhm = True, return_fit_err = True) # You don’t need to mention every parameter in the call
 
                         del qspec_class_instance
 
@@ -1836,6 +1827,7 @@ class PlotRR_noQick:
 
                         good_fit = (
                                 qspec_fit_err is not None
+                                and largest_amp_curve_fwhm is not None # repeated here in case good_center is commented out
                                 and np.isfinite(qspec_fit_err)
                                 and qspec_fit_err < 1.0  # above 1 MHz fit err is probably not a good fit
                                 and largest_amp_curve_fwhm < 10.0  # width of peak, if you also add 0 < largest_amp_curve_fwhm it is stricter

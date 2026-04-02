@@ -1471,6 +1471,15 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
         variance_per_run = [np.var(arr, ddof=1) if len(arr) > 1 else np.nan for arr in box_data]
         std_per_run = [np.std(arr, ddof=1) if len(arr) > 1 else np.nan for arr in box_data]
 
+        # summary print
+        print(f"\nQubit {q + 1} Pe:")
+        print_median_spread_table(
+            run_num_list,
+            box_data,
+            q,
+            mode="iqr2"  # or "q1q3" if you want paper-style output
+        )
+
         print(f"\nQubit {q + 1} noise summary:")
         for run, arr, var, std in zip(run_num_list, box_data, variance_per_run, std_per_run):
             n = len(arr)
@@ -1478,15 +1487,6 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
                 print(f"Run {run}: std(Pe) = {std:.3e}  (var = {var:.3e}, n = {n})")
             else:
                 print(f"Run {run}: insufficient data (n = {n})")
-
-        # summary print
-        print(f"\nQubit {q + 1} Pe summary:")
-        print_median_spread_table(
-            run_num_list,
-            box_data,
-            q,
-            mode="iqr2"  # or "q1q3" if you want paper-style output
-        )
 
         bp = ax.boxplot(
             box_data,

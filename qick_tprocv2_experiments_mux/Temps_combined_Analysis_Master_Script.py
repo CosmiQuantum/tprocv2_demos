@@ -65,7 +65,7 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
                   "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
-comb_analysis_flags = {"load_rpm": False, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
+comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
                        "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": True, "ssf_box_whisker_allruns_allQs": True}
 
 # For London Penetration Depth analysis
@@ -176,7 +176,7 @@ filter_keywords_presciencerun = ['q_temperatures_efRabi'] # no source was presen
 
 #-----------------------------------------------------------------------run 7------------------------------------------------------------
 # Base path of where the data is stored up to the Study Name (round_robin_benchmark)
-base_dir_run7 = "/exp/cosmiq/data/QUIET/QICK_data/run7/6transmon/round_robin_benchmark" # CEPH
+base_dir_run7 = "/exp/cosmiq/data/QUIET/QICK_data/run7/6transmon/round_robin_benchmark"
     #"/exp/cosmiq/data/QUIET/QICK_data/run7/6transmon/round_robin_benchmark" # CEPH
     # "/data/QICK_data/run7/6transmon/round_robin_benchmark" # daq01
 
@@ -394,7 +394,7 @@ path_saveplots_fits_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporar
 path_saveplots_ssf_qtemps_vsT_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/run6_analysis" # to save qubit temps vs time via ssf methods
 
 # ----------------------------------------------------------------------------------------------run 7----------------------------------------------------------------------------------------------------------
-r7_path_prefix = "/data/QICK_data/run7" # CEPH
+r7_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run7"
                 #"/exp/cosmiq/data/QUIET/QICK_data/run7" # CEPH
                 # "/data/QICK_data/run7" # daq01
 paths_SSFmethods_run7 = [
@@ -405,10 +405,12 @@ paths_SSFmethods_run7 = [
   f"{r7_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data/2025-07-20_06-33-03"
 ]
 
-path_saveplots_fits_run7 = "/data/QICK_data/run7/6transmon/analysis/ssf_qtemps_analysis/GaussFits_r7" # daq01
+path_saveplots_fits_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r7"
+    #"/data/QICK_data/run7/6transmon/analysis/ssf_qtemps_analysis/GaussFits_r7" # daq01
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r7" #CEPH
 
-path_saveplots_ssf_qtemps_vsT_run7 = "/data/QICK_data/run7/6transmon/analysis/ssf_qtemps_analysis/Qtemps_vs_Time_run7" # daq01
+path_saveplots_ssf_qtemps_vsT_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run7"
+    # "/data/QICK_data/run7/6transmon/analysis/ssf_qtemps_analysis/Qtemps_vs_Time_run7" # daq01
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run7" #CEPH
 
 # ----------------------------------------------------------------------------------------------run 8----------------------------------------------------------------------------------------------------------
@@ -726,7 +728,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
-run_num_list = [7]
+run_num_list = [4,5,6,7,8]
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
 rpm_Pe_by_run = {}      # rpm_Pe_by_run[run][qid] = [P_e, ...]
@@ -930,8 +932,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
 
     if comb_analysis_flags["Pe_box_whisker_allruns_allQs"]:
         if not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
-            raise ValueError(
-                'This plot requires both comb_analysis_flags["load_rpm"] and '
+            raise ValueError('This plot requires both comb_analysis_flags["load_rpm"] and '
                 'comb_analysis_flags["load_ssf"] to be True.')
         # This is only set up in 'hybrid' 'separate' mode
         boxwhisker_pe_per_qubit_vs_run_hybrid(
