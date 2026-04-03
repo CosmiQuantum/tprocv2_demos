@@ -61,8 +61,8 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
                   "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
-comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
-                       "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": True, "ssf_box_whisker_allruns_allQs": True}
+comb_analysis_flags = {"load_rpm": False, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
+                       "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": True}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
@@ -294,23 +294,31 @@ path_saveplots_ssf_qtemps_vsT_run4 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1h
 
 # ------------------------------------------------------------------------------------------------run 5----------------------------------------------------------------------------------------------------------
 # All data
+r5_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run5"
+                #"/data/QICK_data/run5" #daq01
+                # "/exp/cosmiq/data/QUIET/QICK_data/run5" # CEPH
+
 paths_SSFmethods_run5 = [
-    "/exp/cosmiq/data/QUIET/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-09",
-    "/exp/cosmiq/data/QUIET/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-10",
-    "/exp/cosmiq/data/QUIET/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-11",
-    "/exp/cosmiq/data/QUIET/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-12",
-    "/exp/cosmiq/data/QUIET/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-13",
-    "/exp/cosmiq/data/QUIET/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-14",
-    "/exp/cosmiq/data/QUIET/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-15",
-    "/exp/cosmiq/data/QUIET/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-16",
-    "/exp/cosmiq/data/QUIET/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-17",
-    "/exp/cosmiq/data/QUIET/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-18",
-    "/exp/cosmiq/data/QUIET/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-19",
-    "/exp/cosmiq/data/QUIET/QICK_data/run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-20"
+    f"{r5_path_prefix}/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-09",
+    f"{r5_path_prefix}/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-10",
+    f"{r5_path_prefix}/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-11",
+    f"{r5_path_prefix}/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-12",
+    f"{r5_path_prefix}/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-13",
+    f"{r5_path_prefix}/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-14",
+    f"{r5_path_prefix}/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-15",
+    f"{r5_path_prefix}/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-16",
+    f"{r5_path_prefix}/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-17",
+    f"{r5_path_prefix}/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-18",
+    f"{r5_path_prefix}/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-19",
+    f"{r5_path_prefix}/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-20"
 ]
 
-path_saveplots_fits_run5 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r5" # where to save ssf plots to check gaussian fits
-path_saveplots_ssf_qtemps_vsT_run5 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/run5_analysis" # to save qubit temps vs time via ssf methods
+path_saveplots_fits_run5 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r5"
+    # "/data/QICK_data/run5/6transmon/analysis/ssf_qtemps_analysis/GaussFits" # daq01
+    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r5" # where to save ssf plots to check gaussian fits
+path_saveplots_ssf_qtemps_vsT_run5 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/run5_analysis"
+    #"/data/QICK_data/run5/6transmon/analysis/ssf_qtemps_analysis/Qtemps_vs_Time_run" # daq01
+    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/run5_analysis" # to save qubit temps vs time via ssf methods
 
 # ------------------------------------------------------------------------------------------------run 6------------------------------------------------------------------------------------------------------------
 # Science-Run Data
@@ -958,9 +966,9 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                 ylims=None,
                 yticks=None,
                 showfliers=True,
-                save_plt_path= "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/SSF_fid_analysis")
-                #"/data/QICK_data/multirun_analysis/qubit_temps_analysis/SSF" )
-                #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/SSF_fid_analysis")
+                save_plt_path= "/data/QICK_data/multirun_analysis/qubit_temps_analysis/SSF" )
+                #"/data/QICK_data/multirun_analysis/qubit_temps_analysis/SSF" ) #daq01
+                #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/SSF_fid_analysis") #CEPH
 
     # ------------ Qubit temperatures vs Time using all three methods ------------------------
     if comb_analysis_flags["Qtemps_vs_time_comb_separate_plts"]:
