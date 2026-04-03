@@ -186,8 +186,9 @@ DAC_att_2=15
 DAC_att=DAC_att_1+DAC_att_2
 ADC_att=17
 
-substudy = 'Punchout_Repeated_check'
-outerFolder = os.path.join(f"/home/nexusadmin/Documents/Data/run35/4charge/Punchout Study/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
+study = 'Initial CHeckout' # 'Punchout Study'
+substudy = 'Punchout_lowgains' #'Punchout_Repeated_Q4'
+outerFolder = os.path.join(f"/home/nexusadmin/Documents/Data/run35/4charge/{study}/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 outerFolder_plots = outerFolder + "/documentation/"
 outerFolder_moreplots = outerFolder_plots + "/other_plots/"
 os.makedirs(outerFolder_moreplots, exist_ok = True)
@@ -198,14 +199,14 @@ experiment = QICK_experiment(outerFolder_plots, DAC_attenuator1 = DAC_att_1, DAC
 qubits_to_meas = [0, 1, 2, 3] #[0, 1, 2, 3]
 Unmask = True #True is single, False is muxed
 
-substudy_txt_notes = ('All Qs, centered in gain around noise point, after noise hunting, 4us res len, TWPA on at -11.6dB, 7.807 GHz (but we added a filter so power to TWPA is lower by ~1dB - need to reoptimize, all warm amps at 6V. 20s wait time between res')
+substudy_txt_notes = ('Q4, 10 reps, centered in gain around noise point, 4us res len, TWPA on at -11.6dB, 7.807 GHz, all warm amps at 6V. 60s wait time between res')
 file_path = os.path.join(outerFolder_plots, 'sub_study_notes.txt')
 with open(file_path, "w", encoding="utf-8") as file:
     file.write(substudy_txt_notes)
 
-start_gain, stop_gain, num_points = 0.15, 0.6, 10 #0.1, 0.8, 5
+start_gain, stop_gain, num_points = 0.1, 0.5, 5 #0.15, 0.6, 10 #0.1, 0.8, 5
 
-total_time = 15 #min
+total_time = 5 #min
 start_time = time.time()
 mux = False
 
@@ -234,7 +235,7 @@ while time.time() < (start_time + total_time*60):
             save_res_data(Q, round_num, formatted_timestamp, data, outerFolder_data)
 
             del punch_out
-            time.sleep(20)
+            #time.sleep(60)
 
         plot_round(round_num, round_data, formatted_round_timestamp, outerFolder_plots, save = True)
         #centerplot_round(round_num, round_data, round_timestamp, outerFolder_moreplots, save = True)

@@ -219,8 +219,8 @@ class QICK_experiment:
                 "trig_time": 0.7, # [Clock ticks] - get this value from TOF experiment, Updated 9/3
                 # Changes related to the resonator output channel
                 "mixer_freq": 5500, # [MHz]
-                "res_freq_ge": [6187.9, 5828.48, 6074.57, 5959.294], #[6187.9 - 0.18, 5828.47 + 0.2, 6074.56 - 0.3375, 5959.284 - 0.09], #Run 34 #[6187.973, 5828.530, 6074.662, 5959.343], #Run 33
-                "res_gain_ge": [0.3, 0.3, 0.3, 0.3], #[0.625, 0.375, 0.1, 0.475]
+                "res_freq_ge": [6187.96, 5828.53, 6074.63, 5959.394], #[6187.9, 5828.48, 6074.57, 5959.294], #[6187.9 - 0.18, 5828.47 + 0.2, 6074.56 - 0.3375, 5959.284 - 0.09], #Run 34 #[6187.973, 5828.530, 6074.662, 5959.343], #Run 33
+                "res_gain_ge": [0.3, 0.3, 0.28, 0.3], #[0.625, 0.375, 0.1, 0.475]
                 "res_length": 4, #5.75, #4.0, #[9.25, 5.5, 6.25, 7.0], #5 #4.6,  # 10,  # [us] (1.0 for res spec)
                 "res_phase": [0] * 4,
                 "ro_phase": [0, 0, 0, 0]  # [0] * 4,  # Rotation Angle From QICK Function
@@ -234,7 +234,7 @@ class QICK_experiment:
                 "qubit_length_ge": 20,  # [us] for spec Pulse
                 "qubit_phase": 0,  # [deg]
                 "sigma": [0.07, 0.05, 0.08, 0.055], #[0.6, 0.4, 0.65, 0.5],
-                "pi_amp": [0.765, 0.624, 0.655, 0.705], #Found 9/3 #[1.0, 0.93, 0.77, 0.846],  # TO DO CHANGE THIS (11/26)
+                "pi_amp": [0.58, 0.59, 0.644, 0.725] #[0.765, 0.624, 0.655, 0.705], #Found 9/3 #[1.0, 0.93, 0.77, 0.846],  # TO DO CHANGE THIS (11/26)
 
                 # "qubit_freqs_ge": [4909, 4749.4, 4569, 4759],  # Freqs of Qubit g/e Transition
                 # "qubit_gains_ge": [1] * 4,  # [0.05] * 4

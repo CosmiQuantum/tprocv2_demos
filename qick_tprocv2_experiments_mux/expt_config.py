@@ -452,20 +452,19 @@ elif FRIDGE == "NEXUS":
         "res_spec": {
             "reps": 1000, #500,
             "rounds": 1,
-            "start": -0.5, #-0.5, #-3.5,  # [MHz]
+            "start": -1.25, #-0.5, #-3.5,  # [MHz]
             "step_size": 0.01, #0.12,  # [MHz]
-            "steps": 101, #101,
+            "steps": 201, #101,
             "relax_delay": 20,  # [us]
-            "relax_delay_ef": 600,
             "list_of_all_qubits": list_of_all_qubits,
         },
         "res_spec_ef": {
             "reps": 1000,
             "rounds": 1,
-            "start": -3.5,  # [MHz]
-            "step_size": 0.12,  # [MHz]
-            "steps": 101,
-            "relax_delay": 600,  # [us]
+            "start": -1.25, #-0.5, #-3.5,  # [MHz]
+            "step_size": 0.01, #0.12,  # [MHz]
+            "steps": 201, #101,
+            "relax_delay": 500,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
@@ -500,7 +499,7 @@ elif FRIDGE == "NEXUS":
         },
 
         "power_rabi_ge": {
-            "reps": 2000,  # 100
+            "reps": 1000,  # 100
             "rounds": 1,  # 5
             "start": [0.0] * 4,  # [DAC units]
             "stop": [1.0] * 4,  # [DAC units]
@@ -510,7 +509,7 @@ elif FRIDGE == "NEXUS":
         },
 
         "Readout_Optimization": {
-            "steps": 3000,  # shots
+            "steps": 3000, #3000,  # shots
             "py_avg": 1,
             "gain_start": [0, 0, 0, 0],
             "gain_stop": [1, 0, 0, 0],

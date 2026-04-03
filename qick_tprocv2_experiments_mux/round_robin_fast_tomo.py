@@ -10,9 +10,7 @@ np.set_printoptions(threshold=int(1e15)) #need this so it saves absolutely every
 import datetime
 import logging
 import visdom
-import gc, copy
 import time
-#sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 sys.path.append(os.path.abspath("/home/nexusadmin/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_001_time_of_flight import TOFExperiment
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
@@ -26,10 +24,10 @@ from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
 from system_config import QICK_experiment
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
-from test_active_reset import Active_Reset_test
 
 
-def RR_IntraTomo(tsFolder, rounds):
+def RR_IntraTomo(tsFolder, rounds, res_leng_vals, res_gain, freq_offsets):
+
     ################################################ Run Configurations ####################################################
     st = time.time()
     #
@@ -65,10 +63,9 @@ def RR_IntraTomo(tsFolder, rounds):
                  "t1": True, "t2r": False, "t2e": False}
 
     # optimization outputs from qick board, unmasking set to true
-    res_leng_vals = [3, 5.25, 4.5, 4] #[5, 4.75, 5, 4.25] #[9.25, 5.5, 6.25, 7.5] #Q1,~Q2,Q4 opt
-    res_gain = [0.625, 0.375, 0.475, 0.475] #[0.6, 0.25, 0.35, 0.5] #[0.116, 0.0935, 0.1162, 0.14] #[0.75, 0.7, 0.8, 0.75] #Q1,~Q2,Q4 optimized
-    freq_offsets = [-0.25, 0.2, -0.3, 0] #[0.05, -0.225, -0.2, -0.075] #[-0.1429, -0.1429, 0, -0.1429] #Q1,~Q2,Q4 optimized
-
+    # res_leng_vals = [3, 5.25, 4.5, 4] #[5, 4.75, 5, 4.25] #[9.25, 5.5, 6.25, 7.5] #Q1,~Q2,Q4 opt
+    # res_gain = [0.625, 0.375, 0.475, 0.475] #[0.6, 0.25, 0.35, 0.5] #[0.116, 0.0935, 0.1162, 0.14] #[0.75, 0.7, 0.8, 0.75] #Q1,~Q2,Q4 optimized
+    # freq_offsets = [-0.25, 0.2, -0.3, 0] #[0.05, -0.225, -0.2, -0.075] #[-0.1429, -0.1429, 0, -0.1429] #Q1,~Q2,Q4 optimized
 
     qubit_freqs_ef = [None]*4
     number_of_qubits = 4
@@ -92,7 +89,7 @@ def RR_IntraTomo(tsFolder, rounds):
 
     file_path = os.path.join(documentationFolder, 'sub_study_notes.txt')
     with open(file_path, "w", encoding="utf-8") as file:
-        file.write(substudy_txt_notes)
+        file.write(substudy_txt_notes + "\n\n")
 
     ################################################## Configure logging ###################################################
     ''' We need to create a custom logger and disable propagation like this
@@ -152,12 +149,14 @@ def RR_IntraTomo(tsFolder, rounds):
     act_data = create_data_dict(act_keys, save_r, list_of_all_qubits)
 
     RR_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    RR_start_time = time.time()
 
     batch_num=0
     j = 0
     angles=[]
     while j < n:
         j += 1
+        round_start_time = time.time()
         for QubitIndex in Qs_to_look_at:
             recycled_qfreq = False
 
@@ -528,7 +527,19 @@ def RR_IntraTomo(tsFolder, rounds):
         t2r_data = create_data_dict(t2r_keys, save_r, list_of_all_qubits)
         t2e_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
 
+        round_end_time = time.time()
+        round_duration_sec = round_end_time - round_start_time
+        round_duration_min = round_duration_sec / 60
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(file_path, "a", encoding="utf-8") as file:
+            file.write(f"[{timestamp}] "
+                       f"Round {j}/{n} completed | "
+                       f"Duration: {round_duration_min:.2f} min"
+                       f"({round_duration_sec:.1f} sec)\n")
     en=time.time()
+    total_runtime = (en - st) / 60
     print('timetaken=',en-st)
+    with open(file_path, "a", encoding="utf-8") as file:
+        file.write(f"\nTotal RR runtime: {total_runtime:.2f} min\n")
 
     return()

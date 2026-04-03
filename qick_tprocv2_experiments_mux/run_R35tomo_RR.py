@@ -10,8 +10,8 @@ from round_robin_fast_tomo import RR_IntraTomo
 
 run_name = 'run35'
 device_name = '4charge'
-study = 'BackgroundTomography' #'HotCsStudy'
-substudy = 'Check 2' #'Dataset1' #'Study1'
+study = 'EndOfRunData' #'PostCsTomography'
+substudy = 'Dataset2_neg' #'Dataset1' #'Study1'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 studyFolder = os.path.join(f"/home/nexusadmin/Documents/Data/{run_name}/{device_name}/", study)
@@ -27,15 +27,16 @@ if not os.path.exists(datasetFolder):
 qs_to_meas = [1, 2, 3, 4] #[1, 2, 3, 4]
 res_len = [4.5, 6, 5, 4.25]
 freq_offset = [-0.15, -0.075, -0.2, -0.05]
+res_gain = [0.3, 0.3, 0.28, 0.3]
 
 
-start_volt = 0 #V
-stop_volt = 0.1 #V #100mV
+start_volt = -0.1 #V #0
+stop_volt = 0 #V #0.1 #100mV
 volt_pts = 30
 
 ## Timing info
-total_runhr = 0.5 #48 #hours
-RR_intervalhr = 0.25 #12 #hours
+total_runhr = 48 #48 #hours
+RR_intervalhr = 12 #12 #hours
 tomo_round_min = 3.23 #min
 RR_rounds = 2 #3 #how many RR rounds to run
 
@@ -69,7 +70,7 @@ print(f"Scheduled to run for {total_runhr} hours")
 
 # Initial RR
 print("Running initial RR")
-RR_IntraTomo(datasetFolder, RR_rounds)
+#RR_IntraTomo(datasetFolder, RR_rounds, res_len, res_gain, freq_offset)
 
 # Main Loop
 while elapsed_sec + tomo_round_sec <= total_runsec:
@@ -93,12 +94,12 @@ while elapsed_sec + tomo_round_sec <= total_runsec:
         break
 
     print("Running RR")
-    RR_IntraTomo(datasetFolder, RR_rounds)
+    RR_IntraTomo(datasetFolder, RR_rounds, res_len, res_gain, freq_offset)
     elapsed_sec = (datetime.datetime.now() - start_time).total_seconds()
 
 # Final RR after loop
 print("Running final RR")
-RR_IntraTomo(datasetFolder, RR_rounds)
+RR_IntraTomo(datasetFolder, RR_rounds, res_len, res_gain, freq_offset)
 
 
 # while datetime.datetime.now() < end_time:

@@ -8,7 +8,7 @@ import datetime
 
 # #For NEXUS
 #outerFolder1 = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/2025-02-08")
-outerFolder_RO = ("/home/nexusadmin/Documents/Data/run35/4charge/Initial Checkout/optimization_Q1/2026-02-24_11-07-38/study_data/Data_h5/2D_Gain_Freq_Sweeps")
+outerFolder_RO = ("/home/nexusadmin/Documents/Data/run35/4charge/Initial Checkout/optimization_Q4/2026-03-13_20-36-08/study_data/Data_h5/2D_Gain_Freq_Sweeps")
                #"2025-09-08_20-55-09/study_data/Data_h5/2D_Gain_Freq_Sweeps")
 outerFolder_TWPA = ("/home/nexusadmin/Documents/Data/run35/4charge/TWPA_optimization/TWPA_opt_Q4/2026-02-23/2026-02-23_19-52-54/study_data/Data_h5/2D_Power_Freq_Sweeps")
 
@@ -152,12 +152,12 @@ def find_configurations_below_threshold(file_path, threshold):
 
 #Now getting results
 TWPA = False #change to True for TWPA opt, False for RO
-Q = 1 #1, 2, 3, 4
+Q = 4 #1, 2, 3, 4
 if TWPA:
     print('For files inside: ', outerFolder_TWPA)
 else:
     print('For files inside: ', outerFolder_RO)
-punchout_thresholds =  [0.48, 0.625, 0.51, 0.55]
+punchout_thresholds =  [0.35, 0.35, 0.35, 0.35]
 
 if TWPA:
     for qubit_index in range(Q, Q+1):

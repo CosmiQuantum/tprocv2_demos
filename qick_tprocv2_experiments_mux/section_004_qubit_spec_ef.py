@@ -306,7 +306,7 @@ class EFPulseProbeSpectroscopyProgram(AveragerProgramV2):
                        mask=cfg["list_of_all_qubits"],
                        )
 
-        # print('FH',cfg['qubit_length_ge'], cfg['qubit_freq_ef'],cfg['qubit_gain_ef'])
+        print('FH',cfg['qubit_length_ge'], cfg['qubit_freq_ef'],cfg['qubit_gain_ef'])
         self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_ch[0],
                        style="const",
                        length=cfg['qubit_length_ge'],

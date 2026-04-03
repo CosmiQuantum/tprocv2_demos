@@ -237,6 +237,7 @@ class AllQubitTomographyMeasurement:
                 try:
                     bias_source.setSourceVoltage(v)
                     #time.sleep(2)
+                    #print(bias_source.measureVoltage())
                     bias_source.measureVoltage()
                     #print('voltage set')
                 except Exception as e:
@@ -317,7 +318,8 @@ class AllQubitTomographyMeasurement:
             for qi, qid in enumerate(self.measure_qubits):
                 ax1.plot(vsweep * 1000, qdata[qi, 0, :], label = f"Q{qid}")
                 ax2.plot(vsweep * 1000, qdata[qi, 1, :], label = f"Q{qid}")
-
+            ax1.legend()
+            ax2.legend()
             fig.suptitle(f"Charge Tomography Q{self.qubits_meas}, Round {round_num} \n {formatted_datetime}", fontsize=20)
             plt.tight_layout()
             plt.subplots_adjust(top=0.9)

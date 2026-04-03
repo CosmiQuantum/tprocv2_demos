@@ -35,7 +35,7 @@ list_of_all_qubits = [0, 1, 2, 3] #for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0, 1
 # outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30", str(datetime.date.today())) #change run number in each new run
 run_name ='run35'
 device_name = '4charge'
-substudy = "optimization_Q1" #unmasking_resgain"
+substudy = "optimization_Q4" #unmasking_resgain"
 outerFolder = os.path.join(f"/home/nexusadmin/Documents/Data/{run_name}/{device_name}/Initial Checkout/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 
 def create_folder_if_not_exists(folder_path):
@@ -56,12 +56,12 @@ n = 1  # Number of rounds
 n_loops = 4  # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [0] #0, 1, 2, 3
+Qs = [3] #0, 1, 2, 3
 
 #Change for NEXUS vs QUIET
-res_leng_vals = [5.75, 5.5, 5, 3.75]
-res_gain = [0.48, 0.475, 0.1, 0.45]
-freq_offsets = [-0.2, -0.1, 0, -0.1] #Q1 -0.1667
+res_leng_vals = [4.5, 6, 5, 4.25]
+res_gain = [0.3, 0.3, 0.3, 0.3] #[0.48, 0.475, 0.1, 0.45]
+freq_offsets = [-0.15, -0.075, 0, 0] #[-0.2, -0.1, 0, -0.1] #Q1 -0.1667
 punch_out_vals = [0.48, 0.625, 0.19, 0.55]
 
 optimal_lengths = [None] * 4 #[None] * 4 # Q2 found, creates list where the script will be storing the optimal readout lengths for each qubit
@@ -90,7 +90,7 @@ for QubitIndex in Qs:
 
     res_spec = ResonanceSpectroscopy(QubitIndex, number_of_qubits, outerfolder_plots, j, True,
                                      experiment, unmasking_resgain = unmask)
-    res_freqs, freq_pts, freq_center, amps, res_spec_config = res_spec.run() #This is the line with the problem
+    res_freqs, freq_pts, freq_center, Iarr, Qarr, amps, res_spec_config = res_spec.run() #This is the line with the problem
     experiment.readout_cfg['res_freq_ge'] = res_freqs
 
     # incorporating offset (if you don't want to, then set all values inside freq_offsets to zero)
@@ -238,7 +238,7 @@ for QubitIndex in Qs:
     # del avg_fids, rms_fids, avg_ground_iq, avg_excited_iq, loop_group, length_group
 
     ##---------------------Res Gain and Res Freq Sweeps------------------------
-    optimal_lengths = [4, 4.25, 4.5, 3.75]
+    optimal_lengths = [4.5, 6, 5, 4.25]
     date_str = str(datetime.date.today())
     output_folder = outerFolder + "/study_data/Data_h5/2D_Gain_Freq_Sweeps/"
     # Ensure the output folder exists
@@ -249,7 +249,7 @@ for QubitIndex in Qs:
     #     gain_range = [0.8, 1.0]
     # elif QubitIndex == 3 or QubitIndex == 4:
     #     gain_range = [0.46,0.66]  # Gain range in a.u.
-    gain_range = [0.2, 0.5]
+    gain_range = [0.1, 0.4]
 
     freq_steps = 8
     gain_steps = 8
@@ -258,7 +258,7 @@ for QubitIndex in Qs:
     # Select the reference frequency for the current resonator
     reference_frequency = res_freq_ge[QubitIndex]
 
-    freq_range = [reference_frequency - 0.4, reference_frequency + 0.4]# Frequency range in MHz
+    freq_range = [reference_frequency - 0.3, reference_frequency + 0.3]# Frequency range in MHz
     #freq_range = [reference_frequency -0.2, (reference_frequency + 0.2) + 1]  # Frequency range in MHz
 
     experiment = copy.deepcopy(tuned_experiment)
