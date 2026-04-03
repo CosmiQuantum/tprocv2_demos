@@ -966,7 +966,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                 ylims=None,
                 yticks=None,
                 showfliers=True,
-                save_plt_path= "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/SSF_fid_analysis")
+                save_plt_path= "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/SSF_fid_analysis")
                 #"/data/QICK_data/multirun_analysis/qubit_temps_analysis/SSF" ) #daq01
                 #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/SSF_fid_analysis") #CEPH
 
