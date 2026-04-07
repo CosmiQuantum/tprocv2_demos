@@ -658,13 +658,13 @@ class SSFTempCalcAndPlots:
                 sigma_TmK, sigma_Pe_total = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
 
                 # Plotting
-                if do_plots and (qid == 1 or qid == 2):
+                if do_plots:
                     save_figs_path_clean = os.path.join(save_figs_path, f"Q{qid + 1}") # to separate plots by qubit
                     self.plot_gaussians_qtemps(qid, save_figs_path_clean, ig_new, ground_data,
                                                excited_data, ground_gaussian,
                                                excited_gaussian, pop_threshold,
                                                idx, weights,
-                                               sigmas, means, T_mK, title_ext=f"{idx}{datetime.datetime.fromtimestamp(ts_unix)} Qfreq:{freq_mhz:.2f}MHz, LRT val:{lr_stat:.2f}",
+                                               sigmas, means, T_mK, title_ext=f"{datetime.datetime.fromtimestamp(ts_unix)} Qfreq:{freq_mhz:.2f}MHz, LRT val:{lr_stat:.2f}",
                                                dontuse_midpt_thresh = dontuse_midpt_thresh)
 
                 # -------- save qubit temps and timestamps ----------------------------------------------
