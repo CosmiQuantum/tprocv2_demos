@@ -79,12 +79,12 @@ ssf_fid_errs = [
 # Thermal population variance (spread) values
 # -------------------------------------------------------------------------
 Pe_variance_vals = [
-    [0, 0, 0, 0],  # Qubit 1
-    [0, 0, 0, 0],  # Qubit 2
-    [0, 0, 0, 0],  # Qubit 3
-    [0, 0, 0, 0],  # Qubit 4
-    [0, 0, 0, 0],  # Qubit 5
-    [0, 0, 0, 0],  # Qubit 6
+    [5.272e-03, 5.005e-04, None, 1.644e-05],  # Qubit 1
+    [3.228e-04, 8.984e-05, None, 4.540e-05],  # Qubit 2
+    [3.802e-04, 4.904e-04, None, 8.596e-05],  # Qubit 3
+    [1.942e-04, 5.477e-04, None, 2.230e-03],  # Qubit 4
+    [1.366e-04, 1.348e-03, None, 8.868e-05],  # Qubit 5
+    [2.145e-04, 3.976e-05, None, 1.842e-03],  # Qubit 6
 ]
 # ------------------------------------------------------------
 # Convert + drop Run 4 so arrays align with Runs 5-8
