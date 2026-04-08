@@ -297,16 +297,6 @@ class Temps_EFAmpRabiExperiment:
             ax2.plot(gains, fit_cosine_Q, '-', color='red', linewidth=3, label="Fit")
             ax1.plot(gains, fit_cosine_I, '-', color='red', linewidth=3, label="Fit")
 
-            # choose the best-fit cosine curve to return
-            if 'Q' in self.signal:
-                best_signal_fit = fit_cosine_Q
-            elif 'I' in self.signal:
-                best_signal_fit = fit_cosine_I
-            elif 'None' in self.signal:
-                best_signal_fit = fit_cosine_Q if span_Q > span_I else fit_cosine_I
-            else:
-                best_signal_fit = fit_cosine_I
-
             # print(len(gains))
             ax1.plot(gains, I, label="Gain (a.u.)", linewidth=2)
             ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
