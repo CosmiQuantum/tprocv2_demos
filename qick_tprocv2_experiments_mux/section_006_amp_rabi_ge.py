@@ -9,6 +9,7 @@ import copy
 import visdom
 import logging
 import time
+from iminuit import Minuit
 import math
 from sklearn import preprocessing
 from scipy import optimize
@@ -228,7 +229,7 @@ class AmplitudeRabiExperiment:
 
         return popt, pcov
 
-    def plot_results(self, I, Q, gains, config=None, fig_quality=100, use_iminuit_instead=False):
+    def plot_results(self, I, Q, gains, config=None, fig_quality=100, use_iminuit_instead=True):
         """
         Updated old-style Rabi plotting function.
 
@@ -238,7 +239,7 @@ class AmplitudeRabiExperiment:
         - original return values: (best_signal_fit, pi_amp)
 
         Adds:
-        - optional iminuit fitting
+        - optional iminuit fitting (the other option is curve fit)
         - fit better quadrature first, then fit the other with shared b
         """
         try:

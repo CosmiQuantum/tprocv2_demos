@@ -1800,7 +1800,7 @@ class PlotRR_noQick:
         return all_files_Qtemp_results
 
     def Qubit_Temperature_Convert(self, A_e, A_g, qubit_freq_MHz):
-        P_e = np.abs(A_e / (A_e + A_g))  # Excited state population (leakage, thermal population)
+        P_e = abs(A_e) / (abs(A_e) + abs(A_g))
         P_g = (1 - P_e)
         if P_e <= 0 or P_g <= 0: #if one of them is zero can't calculate the temp
             print("Warning: Invalid population values encountered (<= 0). Skipping this dataset.")
@@ -1818,56 +1818,65 @@ class PlotRR_noQick:
         T_mK = T_K * 1000  # Convert to millikelvin
         return T_K, T_mK, P_e, qubit_freq_MHz
 
-    def compute_temperature_error_RPM(self, A1, A2, Pe, T_mK, qubit_freq_MHz, sigma_A1, sigma_A2, sigma_qfreq_MHz):
+    def compute_temperature_error_RPM(
+            self,
+            A1, A2, Pe, T_mK, qubit_freq_MHz,
+            sigma_A1, sigma_A2, sigma_qfreq_MHz):
         """
-        Propagate the 1-sigma uncertainties in A1, A2 and f_ge
-        into a 1-sigma uncertainty on T_mK, given you already know
-        Pe and T_mK.
+        Error propagation formula (base):
+          sigma_T^2 = (dT/dA1 * sigma_A1)^2 + (dT/dA2 * sigma_A2)^2 + (dT/df_ge * sigma_f_ge)^2
 
-        Inputs:
-          A1, A2               – fitted amplitudes
-          Pe                   – thermal population associated with T_mK
-          T_mK                 – temperature via rabi pop. meas. in mK
-          qubit_freq_MHz       – fitted g-e qubit frequency (MHz)
-          sigma_A1, sigma_A2   – 1-sigma errors on A1 and A2 (standard deviations)
-          sigma_qfreq_MHz      – 1-sigma error on qubit_freq_MHz (standard deviation)
-
-        Returns:
-          sigma_T_mK           – propagated 1-sigma error on T_mK
+        Assumes:
+          Pe = |A1| / (|A1| + |A2|)
+          T = (h f_ge / kB) / ln((1-Pe)/Pe)
         """
-        # get sigma_Pe from A1,A2 errors
-        sum_A = A1 + A2
-        # ∂Pe/∂A1 =  A2 / (A1+A2)^2
-        # ∂Pe/∂A2 = -A1 / (A1+A2)^2
-        dPe_dA1 = A2 / sum_A ** 2
-        dPe_dA2 = -A1 / sum_A ** 2
 
-        sigma_Pe = np.sqrt(
+        # --- dPe/dA1, dPe/dA2 for Pe = |A1|/(|A1|+|A2|) ---
+        sum_A = np.abs(A1) + np.abs(A2)
+        if np.any(sum_A == 0):
+            return np.nan, np.nan
+
+        dPe_dA1 = (np.abs(A2) / sum_A ** 2) * np.sign(A1)  # includes sgn from d|A|/dA
+        dPe_dA2 = (-np.abs(A1) / sum_A ** 2) * np.sign(A2)
+
+        # --- dT/dPe ---
+        if (Pe is None) or (not np.isfinite(Pe)) or (Pe <= 0.0) or (Pe >= 1.0):
+            return np.nan, np.nan
+
+        ln_term = np.log((1.0 - Pe) / Pe)
+        if (not np.isfinite(ln_term)) or (ln_term == 0.0):
+            return np.nan, np.nan
+
+        dT_dPe = T_mK / (ln_term * Pe * (1.0 - Pe))
+
+        # --- chain rule to get dT/dA1 and dT/dA2 ---
+        dT_dA1 = dT_dPe * dPe_dA1
+        dT_dA2 = dT_dPe * dPe_dA2
+
+        # --- frequency term: dT/df_ge = T / f_ge ---
+        f0_Hz = qubit_freq_MHz * 1e6
+        sigma_f0_Hz = sigma_qfreq_MHz * 1e6
+        if (not np.isfinite(f0_Hz)) or (f0_Hz <= 0):
+            return np.nan, np.nan
+        dT_df0 = T_mK / f0_Hz
+
+        # --- Base sigma_T from A1/A2 and freq ---
+        sigma_T_mK = np.sqrt(
+            (dT_dA1 * sigma_A1) ** 2 +
+            (dT_dA2 * sigma_A2) ** 2 +
+            (dT_df0 * sigma_f0_Hz) ** 2
+        )
+
+        # --- Base sigma_Pe from A1/A2 propagation ---
+        sigma_Pe_fit = np.sqrt(
             (dPe_dA1 * sigma_A1) ** 2 +
             (dPe_dA2 * sigma_A2) ** 2
         )
 
-        # convert MHz → Hz for the qubit frequency and its error
-        f0_Hz = qubit_freq_MHz * 1e6
-        sigma_f0_Hz = sigma_qfreq_MHz * 1e6
+        sigma_Pe_total = float(sigma_Pe_fit)
+        sigma_T_mK_total = float(sigma_T_mK)
 
-        # build the log term (we already know Pe)
-        ln_arg = np.log((1 - Pe) / Pe)
-
-        # partial derivatives of T_mK
-        # ∂T/∂f0  = T_mK / f0_Hz
-        dT_df0 = T_mK / f0_Hz
-
-        # ∂T/∂Pe  = T_mK / [ ln_arg * Pe * (1-Pe) ]
-        dT_dPe = T_mK / (ln_arg * Pe * (1 - Pe))
-
-        # combine in quadrature
-        sigma_T_mK = np.sqrt(
-            (dT_df0 * sigma_f0_Hz) ** 2 +
-            (dT_dPe * sigma_Pe) ** 2
-        )
-
-        return sigma_T_mK # Temperature calculation error via rabi population measurements
+        return sigma_T_mK_total, sigma_Pe_total
 
     # Helper for fitting & plotting a line on `ax`
     def do_linear_fit_and_plot_qtemps_RPM(self, ax, times_arr, temps_arr, initial_time, final_time, mask, color, label_prefix):

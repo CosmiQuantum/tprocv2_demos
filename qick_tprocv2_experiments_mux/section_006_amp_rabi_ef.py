@@ -7,6 +7,7 @@ from build_state import *
 # from expt_config import *
 from expt_config import *
 import copy
+from iminuit import Minuit
 import time
 import logging
 import visdom
@@ -194,7 +195,7 @@ class EF_AmplitudeRabiExperiment:
 
         return popt, pcov
 
-    def plot_results(self, I, Q, gains, config=None, fig_quality=100, use_iminuit_instead=False):
+    def plot_results(self, I, Q, gains, config=None, fig_quality=100, use_iminuit_instead=True):
         """
         Updated old-style Rabi plotting function.
 
@@ -204,7 +205,7 @@ class EF_AmplitudeRabiExperiment:
         - original return values: (best_signal_fit, pi_amp)
 
         Adds:
-        - optional iminuit fitting
+        - optional iminuit fitting (the other option is curve fit)
         - fit better quadrature first, then fit the other with shared b
         """
         try:

@@ -8,6 +8,7 @@ from build_state import *
 # from expt_config import *
 from expt_config import *
 import time
+from iminuit import Minuit
 import copy
 # import visdom
 from scipy.signal import argrelextrema
@@ -204,9 +205,10 @@ class Temps_EFAmpRabiExperiment:
     def plot_results(self, I, Q, gains, config=None, fig_quality=200, use_iminuit_instead=True, filename_ext="",
                      rotate_using_ssf=False, ssf_angle=None):
         """
-        iminuit:
+        iminuit: default
         Figures out which signal is best (I or Q), fits that one first, then uses the found oscillation frequency in the first
         fit to fit the other signal component. Optional: can fix the phase offset too.
+
         Curve fit:
         Same thing but the option to fix the oscillation frequency is not included. Neither is the option to fix the phase offset.
 

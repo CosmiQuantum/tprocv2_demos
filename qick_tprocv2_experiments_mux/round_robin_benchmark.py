@@ -34,7 +34,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 st = time.time()
 
 n = 1 # number of rounds
-use_iminuit_instead = True # for fitting, curve fit is default, but iminuit is another option (often times more consistent)
+use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
 ssf_avgs_per_opt_pt = 5 # ignore
@@ -540,14 +540,14 @@ while j < n:
                      A_amplitude1, A_amplitude2, fit_cosine1_qtemp, fit_cosine2_qtemp,
                      sysconfig_efrabi_Qtemps, meas_timestamp_rpm) = efAmprabi_Qtemps.run(experiment.soccfg, experiment.soc, use_iminuit_instead = use_iminuit_instead)
 
-                    # --------------------- Live temp calc --------------------------------
+                    # --------------------- Live temp calc estimate --------------------------------
                     try:
                         qtemp = PlotRR_noQick(data_set, figure_quality, False, False, signal, run_name, number_of_qubits,
                                               "", "", "")
-                        T_K, T_mK, _, _ = qtemp.Qubit_Temperature_Convert(A_amplitude1, A_amplitude2, qubit_freq)
+                        T_K, T_mK, P_e, _ = qtemp.Qubit_Temperature_Convert(A_amplitude1, A_amplitude2, qubit_freq)
                         with open(file_path, "a", encoding="utf-8") as f:
                             f.write(
-                                f"Q{QubitIndex + 1} Effective Temperature via RPM: {T_mK} mK using A1 = {float(A_amplitude1)}, A2 = {float(A_amplitude2)}, and Qfreq: {qubit_freq} MHz\n")
+                                f"Q{QubitIndex + 1} Effective Temperature via RPM: {T_mK} mK (Pe={P_e}) using A1 = {float(A_amplitude1)}, A2 = {float(A_amplitude2)}, and Qfreq: {qubit_freq} MHz\n")
                     except Exception as e:
                         rr_logger.exception(f"RPM Temp calc/log failed for Q{QubitIndex + 1}: {e}")
                     # -------------------------------------------------------------------------
@@ -581,7 +581,7 @@ while j < n:
                                    multiply_qubit_reps_by=t1_multiply_qubit_reps_by,
                                    verbose=verbose, logger=rr_logger, save_shots = True, unmasking_resgain=unmask)
                 t1_est, t1_err, t1_I, t1_Q, t1_Ishots, t1_Qshots, t1_delay_times, q1_fit_exponential, sys_config_t1, meas_timestamp_t1ge = t1.run(
-                    thresholding=thresholding)
+                    thresholding=thresholding, use_iminuit_instead = use_iminuit_instead)
                 del t1
 
             except Exception as e:
@@ -602,7 +602,7 @@ while j < n:
                                      multiply_qubit_reps_by=multiply_qubit_reps_by,
                                      verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
                 t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey, sys_config_t2r, meas_timestamp_t2r = t2r.run(
-                    thresholding=thresholding)
+                    thresholding=thresholding, use_iminuit_instead = use_iminuit_instead)
                 del t2r
 
             except Exception as e:
@@ -623,7 +623,7 @@ while j < n:
                                      multiply_qubit_reps_by=multiply_qubit_reps_by,
                                      verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
                 (t2e_est, t2e_err, t2e_I, t2e_Q, t2e_delay_times,
-                 fit_t2e, sys_config_t2e, meas_timestamp_t2e) = t2e.run(thresholding=thresholding)
+                 fit_t2e, sys_config_t2e, meas_timestamp_t2e) = t2e.run(thresholding=thresholding, use_iminuit_instead = use_iminuit_instead)
                 del t2e
 
             except Exception as e:

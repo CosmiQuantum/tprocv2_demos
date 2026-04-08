@@ -5,6 +5,7 @@ from build_state import *
 from expt_config import *
 from system_config import *
 import copy
+from iminuit import Minuit
 import time
 import visdom
 import logging
@@ -92,7 +93,7 @@ class T1Measurement:
                 self.config['relax_delay'] = relax_delay
                 print(f'set t1 relax delay to {relax_delay} us')
 
-    def run(self, thresholding=False):
+    def run(self, thresholding=False, use_iminuit_instead = True):
         # now = datetime.datetime.now()
         t1 = T1Program(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
 
@@ -114,7 +115,11 @@ class T1Measurement:
         measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
 
         if self.fit_data:
-            q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit(I, Q, delay_times)
+            if use_iminuit_instead:
+                q1_fit_exponential, T1_err, T1_est, fit_info = self.t1_fit_iminuit(I, Q, delay_times)
+                plot_sig = fit_info["plot_sig"]
+            else:
+                q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit(I, Q, delay_times) # curve fit
         else:
             q1_fit_exponential, T1_est, T1_err = None, None, None
 
@@ -125,7 +130,7 @@ class T1Measurement:
             raw_0 = t1.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
             Ishots = raw_0[self.QubitIndex][:, :, 0, 0]
             Qshots = raw_0[self.QubitIndex][:, :, 0, 1]
-            return T1_est, T1_err, I, Q, Ishots, Qshots, delay_times, q1_fit_exponential, self.config
+            return T1_est, T1_err, I, Q, Ishots, Qshots, delay_times, q1_fit_exponential, self.config, measurement_timestamp
 
         else:
             return  T1_est, T1_err, I, Q, None, None, delay_times, q1_fit_exponential, self.config, measurement_timestamp
@@ -168,6 +173,183 @@ class T1Measurement:
 
     def exponential(self, x, a, b, c, d):
         return a * np.exp(- (x - b) / c) + d
+
+    def t1_fit_iminuit(self, I, Q, delay_times, y_errs=None):
+        """
+        Fits T1 curve using a 3-parameter exponential with a chi^2 or least-squares minimizer depending on whether you provide
+        the errs of each point in the curve or not (iminuit).
+        (3 parameters, no time shift):
+            y(t) = d + a * (1 - exp(-t / c))
+
+            a: amplitude (positive or negative)
+            c: T1 (>0)
+            d: baseline
+        Migrad gives you best-fit parameters.
+        Hesse tells you how uncertain they are.
+        """
+        # ---------------- choose signal (same logic we were using before) ----------------
+        I = np.asarray(I, float)
+        Q = np.asarray(Q, float)
+        t = np.asarray(delay_times, float)
+
+        if 'I' in self.signal:
+            signal = I
+            plot_sig = 'I'
+        elif 'Q' in self.signal:
+            signal = Q
+            plot_sig = 'Q'
+        else:
+            # auto-pick whichever has bigger diff
+            if abs(I[-1] - I[0]) > abs(Q[-1] - Q[0]):
+                signal = I
+                plot_sig = 'I'
+            else:
+                signal = Q
+                plot_sig = 'Q'
+
+        # sort by time just in case
+        order = np.argsort(t)
+        t = t[order]
+        signal = signal[order]
+        if y_errs is not None:
+            sigma = np.asarray(y_errs, float)[order]
+
+        # ---------------- new, simpler 3-parameter model ----------------
+        def t1_model(tvals, a, c, d):
+            return d + a * (1.0 - np.exp(-tvals / c))
+
+        # ---------------- initial guesses ----------------
+        sig_min = float(np.min(signal))
+        sig_max = float(np.max(signal))
+
+        d_guess = float(signal[
+                            0])  # value at t=0. Based on the new function we are using (t1_model above), d is just the starting value
+        a_guess = float(sig_max - sig_min)  # amplitude (can be +/-), this sign decides if the data rises or decays
+        if a_guess == 0.0:  # if the signal is extremely flat or constant
+            a_guess = float(np.ptp(signal) or 1.0)  # peak-to-peak amplitude. If that number is zero, uses 1 instead.
+
+        span = max(float(t[-1] - t[0]), 1e-3)
+        c_guess = max(span / 3.0, 1e-3)  # T1 ~ span/3, and we set a floor of 1e-3 to make sure T>0
+
+        # ---------------- chi^2 function ----------------
+        if y_errs is not None:
+            # Handle zero or negative uncertainties
+            if np.any(sigma > 0):  # Look at only the positive sigmas, and use their median.
+                med_pos = np.median(sigma[sigma > 0])
+                sigma = np.where(sigma <= 0, med_pos, sigma)  # replaces zeros, negative sigmas, NaNs
+            else:
+                raise ValueError("y_errs must contain at least one positive value if y_errs is not set to None.")
+
+            def chi2(a, c, d):
+                model = t1_model(t, a, c, d)
+                r = (signal - model) / sigma
+                return np.sum(r * r)
+
+            minimizer_func = chi2
+
+        else:
+            def lsquares(a, c, d):
+                model = t1_model(t, a, c, d)
+                r = signal - model
+                return np.sum(r * r)
+
+            minimizer_func = lsquares
+
+        # ---------------- run Minuit ----------------
+        m = Minuit(
+            minimizer_func,
+            a=a_guess,
+            c=c_guess,
+            d=d_guess,
+        )
+
+        m.errordef = Minuit.LEAST_SQUARES  # used for chi^2 or least squares method, which we are using
+
+        # limits: we enforce c>0 (for a positive T1 value) and limit it to reasonable values relative to the time window
+        T1_min = max(span / 50.0, 1e-3)
+        T1_max = span * 20.0
+
+        m.limits["c"] = (T1_min, T1_max)
+
+        # run minimization: first simplex, then migrad
+        # m.simplex() # if fitting is failing often, uncomment this, it can help
+        m.migrad()
+
+        # try one more time if we get invalid results
+        if not m.valid:  # If not valid, we try again with opposite a
+            m.values["a"] = -a_guess
+            m.migrad()
+
+        m.hesse()  # computes the covariance matrix after minimization
+
+        # ---------------- we extract the results ----------------
+        a_fit = m.values["a"]
+        c_fit = m.values["c"]  # T1
+        d_fit = m.values["d"]
+
+        # ---------------------- T1 uncertainty from covariance matrix ----------------------
+        cov = m.covariance
+        T1_err = np.nan
+
+        if cov is not None:
+            try:
+                var_c = cov["c", "c"]  # Var(T1) = C[c,c]
+            except Exception:
+                # Fallback if covariance behaves like a NumPy array
+                params = list(m.parameters)
+                if "c" in params:
+                    idx_c = params.index("c")
+                    var_c = cov[idx_c, idx_c]
+                else:
+                    var_c = None
+
+            # --- Apply residual scaling if fit was unweighted ---
+            if var_c is not None and var_c >= 0:
+                if y_errs is None:
+                    N = len(t)
+                    p = 3  # a, c (T1), d
+                    ndof = N - p
+                    if ndof > 0 and np.isfinite(m.fval):
+                        scale = m.fval / ndof  # residual variance estimate
+                        var_c *= scale
+
+                T1_err = float(np.sqrt(var_c))
+
+        T1_est = float(c_fit)  # out T1 result
+
+        # compute fit and unsort back
+        fit_sorted = t1_model(t, a_fit, c_fit,
+                              d_fit)  # since we sorted the data at the beginning just in case it was out of order, the fit is based on sorted data
+        inv_order = np.argsort(order)
+        fit_curve = fit_sorted[
+            inv_order]  # putting it back to the original order (should be sorted nonetheless, but this is done to be 100% consistent w original order)
+
+        # For quality cuts (BIC score calc)
+        n = len(t)
+        k = 3  # a, c, d
+        if y_errs is not None:
+            # objective = chi^2
+            bic_score = m.fval + k * np.log(n)
+        else:
+            # objective = RSS
+            rss = m.fval
+            bic_score = n * np.log(rss / n) + k * np.log(n)
+
+        fit_info = {
+            "t": t.copy(),
+            "plot_sig": plot_sig,  # type (I or Q)
+            "signal": signal.copy(),  # actual signal data
+            "sigma": sigma.copy() if y_errs is not None else None,
+            "a_fit": float(a_fit),
+            "c_fit": float(c_fit),
+            "d_fit": float(d_fit),
+            "minimization_obj": float(m.fval),
+            "bic_score": float(bic_score),
+            "fit_valid": bool(m.valid),
+            "n_points": int(n),
+        }
+
+        return fit_curve, T1_err, T1_est, fit_info
 
     def t1_fit(self, I, Q, delay_times):
         if 'I' in self.signal:
