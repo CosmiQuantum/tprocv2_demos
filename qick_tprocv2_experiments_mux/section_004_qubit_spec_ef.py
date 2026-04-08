@@ -9,6 +9,7 @@ import datetime
 import copy
 import logging
 import visdom
+import time
 
 class EFQubitSpectroscopy:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder,  round_num, signal, save_figs, experiment = None,
@@ -74,9 +75,10 @@ class EFQubitSpectroscopy:
             efQ = efiq_list[self.QubitIndex][0, :, 1]
             effreqs = efqspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
             #print(effreqs)
+        measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
         # self.plot_results(efI, efQ, effreqs, config=self.config)
         largest_amp_curve_mean, efI_fit, efQ_fit = self.plot_results(efI, efQ, effreqs, config = self.config)
-        return efI, efQ, effreqs , self.config, efI_fit, efQ_fit , largest_amp_curve_mean
+        return efI, efQ, effreqs , self.config, efI_fit, efQ_fit , largest_amp_curve_mean, measurement_timestamp
 
     def live_plotting(self, qspec, soc):
         I = Q = expt_mags = expt_phases = expt_pop = None

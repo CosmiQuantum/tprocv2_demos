@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from typing import List, Union
 import itertools
 import json
+import time
 import numpy as np
 import warnings
 from scipy.optimize import OptimizeWarning
@@ -397,6 +398,8 @@ class T2RMeasurement:
             Q = iq_list[self.QubitIndex][0, :, 1]
             delay_times = ramsey.get_time_param('wait', "t", as_array=True)
 
+        measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
+
         if self.fit_data:
             fit, t2r_est, t2r_err, plot_sig = self.t2_fit(delay_times, I, Q)
         else:
@@ -405,7 +408,7 @@ class T2RMeasurement:
         if self.save_figs:
             self.plot_results(I, Q, delay_times, now, fit, t2r_est, t2r_err, plot_sig)
 
-        return  t2r_est, t2r_err, I, Q, delay_times, fit, self.config
+        return  t2r_est, t2r_err, I, Q, delay_times, fit, self.config, measurement_timestamp
 
     def live_plotting(self, ramsey, thresholding):
         I = Q = expt_mags = expt_phases = expt_pop = None

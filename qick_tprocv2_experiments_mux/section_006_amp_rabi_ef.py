@@ -7,6 +7,7 @@ from build_state import *
 # from expt_config import *
 from expt_config import *
 import copy
+import time
 import logging
 import visdom
 
@@ -48,7 +49,7 @@ class EF_AmplitudeRabiExperiment:
                 print(f'Q {self.QubitIndex + 1} Round {self.round_num} EF Rabi configuration: ', self.config)
 
 
-    def run(self, thresholding=False):
+    def run(self, thresholding=False, use_iminuit_instead = True):
         print(self.config)
 
         amp_rabi = EF_AmplitudeRabiProgram(self.experiment.soccfg, reps=self.config['reps'],
@@ -78,9 +79,10 @@ class EF_AmplitudeRabiExperiment:
             # print('gains', gains)
             # print('I: ', I)
             # print('Q: ', Q)
-        q1_fit_cosine, pi_amp = self.plot_results( I, Q, gains, config = self.config)
+        measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
+        q1_fit_cosine, pi_amp = self.plot_results( I, Q, gains, config = self.config, use_iminuit_instead = use_iminuit_instead)
         # self.plot_results(I, Q, gains, config=self.config)
-        return I, Q, gains, q1_fit_cosine, pi_amp, self.config
+        return I, Q, gains, q1_fit_cosine, pi_amp, self.config, measurement_timestamp
         #return I, Q, gains, self.config
 
     def live_plotting(self, amp_rabi, soc):
@@ -109,27 +111,178 @@ class EF_AmplitudeRabiExperiment:
 
         return a * np.cos(2. * np.pi * b * x - c * 2 * np.pi) + d
 
-    def plot_results(self, I, Q, gains, config = None, fig_quality = 100):
+    def fit_cosine_iminuit(self, x, y, p0, fix_b=None, fix_c=None):
+        """
+        Iminuit-based cosine fit that mirrors scipy.curve_fit's output:
+        returns popt and an approximate covariance matrix pcov.
+
+        a: oscillation amplitude (what you use for populations)
+        b: oscillation frequency in gain units (how many cycles per gain)
+        c: phase offset (where the oscillation starts)
+        d: DC offset (baseline of the readout)
+
+        Optional: if we want to fit Q using the same b and c params we used for I
+        fix_b: if not None, hold b fixed at this value
+            Both I and Q are responding to the same driven Rabi oscillation.
+            Fixing b says "These are two quadratures of the same rotation in the IQ plane".
+        fix_c: if not None, hold c fixed at this value
+            The oscillation’s phase should be a property of the qubit drive, not of which quadrature you look at.
+        """
+        x = np.asarray(x, dtype=float)
+        y = np.asarray(y, dtype=float)
+
+        def chi2(a, b, c,
+                 d):  # we don't have sigmas available so this is technically just the sum of squared errors, not chi2, which is fine.
+            model = self.cosine(x, a, b, c, d)
+            return np.sum((y - model) ** 2)
+
+        m = Minuit(chi2, a=p0[0], b=p0[1], c=p0[2], d=p0[3])
+        m.errordef = Minuit.LEAST_SQUARES  # least-squares / chi^2 objective
+
+        # Setting some param limits
+        m.limits["c"] = (-2 * np.pi, 2 * np.pi)  # phase periodic: keep it in a reasonable range
+
+        # --- optionally fix b and/or c ---
+        # We do this, for example, when we want to fit Q using the same b and c params we used for I
+        if fix_b is not None:
+            m.values["b"] = float(fix_b)
+            m.fixed["b"] = True
+
+        if fix_c is not None:
+            m.values["c"] = float(fix_c)
+            m.fixed["c"] = True
+        # -------------------------------------
+
+        # NEW: finds the correct valley. Runs Nelder-Mead simplex minimization. Note this is optional.
+        # It only evaluates your objective function (chi2) at a small set of points.
+        # It works by moving a geometric shape (a simplex) around parameter space until it finds a low point.
+        # Makes fitting less sensitive to initial guesses
+        m.simplex()
+
+        m.migrad()  # Once you're in the correct valley, gradients are reliable and fast (find optimal params)
+        m.hesse()  # Measure how wide the valley is (get errors)
+
+        # Extract best-fit parameter values into a NumPy array
+        popt = np.array([m.values["a"], m.values["b"], m.values["c"], m.values["d"]])
+
+        # Convert Minuit's covariance object to a regular NumPy matrix
+        # Our analysis code expects a NumPy array like the one from curve_fit
+        cov = m.covariance
+        if cov is None:
+            pcov = np.full((4, 4), np.nan)
+        else:
+            names = ["a", "b", "c", "d"]
+            pcov = np.zeros((4, 4))
+            for i, ni in enumerate(names):
+                for j, nj in enumerate(names):
+                    pcov[i, j] = cov[ni, nj]
+
+            # curve_fit default behavior (absolute_sigma=False) rescales covariance by chi2/(N - p)
+            # If we want Minuit's errors to be comparable, we apply the same scaling here. Raw Minuit covariance is missing the noise scale
+            # estimates the noise variance from the residuals
+            N = x.size
+            # Count how many parameters are actually free in this Minuit run
+            # (fixed params reduce the number of fit dof)
+            p_free = sum(not m.fixed[name] for name in ["a", "b", "c", "d"])
+
+            ndof = N - p_free
+            if ndof > 0 and np.isfinite(m.fval):
+                scale = m.fval / ndof  # residual variance estimate
+                pcov = pcov * scale
+            else:
+                pcov[:] = np.nan
+
+        return popt, pcov
+
+    def plot_results(self, I, Q, gains, config=None, fig_quality=100, use_iminuit_instead=False):
+        """
+        Updated old-style Rabi plotting function.
+
+        Keeps:
+        - original 2-panel plot
+        - original title logic
+        - original return values: (best_signal_fit, pi_amp)
+
+        Adds:
+        - optional iminuit fitting
+        - fit better quadrature first, then fit the other with shared b
+        """
         try:
             fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
             plt.rcParams.update({'font.size': 18})
 
             plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
 
+            # Initial guesses
             q1_a_guess_I = (np.max(I) - np.min(I)) / 2
             q1_d_guess_I = np.mean(I)
             q1_a_guess_Q = (np.max(Q) - np.min(Q)) / 2
             q1_d_guess_Q = np.mean(Q)
+
             q1_b_guess = 1 / gains[-1]
             q1_c_guess = 0
 
             q1_guess_I = [q1_a_guess_I, q1_b_guess, q1_c_guess, q1_d_guess_I]
-            q1_popt_I, q1_pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
-            q1_fit_cosine_I = self.cosine(gains, *q1_popt_I)
-
             q1_guess_Q = [q1_a_guess_Q, q1_b_guess, q1_c_guess, q1_d_guess_Q]
-            q1_popt_Q, q1_pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
-            q1_fit_cosine_Q = self.cosine(gains, *q1_popt_Q)
+
+            # Decide which quadrature to fit first
+            span_I = abs(np.mean(I[-3:]) - np.mean(I[:3]))
+            span_Q = abs(np.mean(Q[-3:]) - np.mean(Q[:3]))
+
+            if 'I' in self.signal:
+                fit_first = 'I'
+            elif 'Q' in self.signal:
+                fit_first = 'Q'
+            elif 'None' in self.signal:
+                fit_first = 'Q' if span_Q > span_I else 'I'
+            else:
+                print('Invalid signal passed, please do I Q or None')
+                fit_first = 'I'
+
+            # Fit first signal, then second using shared b if using iminuit
+            if fit_first == 'I':
+                if use_iminuit_instead:
+                    q1_popt_I, q1_pcov_I = self.fit_cosine_iminuit(gains, I, q1_guess_I)
+                else:
+                    q1_popt_I, q1_pcov_I = curve_fit(
+                        self.cosine, gains, I, maxfev=100000, p0=q1_guess_I
+                    )
+
+                q1_fit_cosine_I = self.cosine(gains, *q1_popt_I)
+                b_shared = q1_popt_I[1]
+
+                if use_iminuit_instead:
+                    q1_popt_Q, q1_pcov_Q = self.fit_cosine_iminuit(
+                        gains, Q, q1_guess_Q, fix_b=b_shared
+                    )
+                else:
+                    q1_popt_Q, q1_pcov_Q = curve_fit(
+                        self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q
+                    )
+
+                q1_fit_cosine_Q = self.cosine(gains, *q1_popt_Q)
+
+            else:  # fit_first == 'Q'
+                if use_iminuit_instead:
+                    q1_popt_Q, q1_pcov_Q = self.fit_cosine_iminuit(gains, Q, q1_guess_Q)
+                else:
+                    q1_popt_Q, q1_pcov_Q = curve_fit(
+                        self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q
+                    )
+
+                q1_fit_cosine_Q = self.cosine(gains, *q1_popt_Q)
+                b_shared = q1_popt_Q[1]
+
+                if use_iminuit_instead:
+                    q1_popt_I, q1_pcov_I = self.fit_cosine_iminuit(
+                        gains, I, q1_guess_I, fix_b=b_shared
+                    )
+                else:
+                    q1_popt_I, q1_pcov_I = curve_fit(
+                        self.cosine, gains, I, maxfev=100000, p0=q1_guess_I
+                    )
+
+                q1_fit_cosine_I = self.cosine(gains, *q1_popt_I)
 
             first_three_avg_I = np.mean(q1_fit_cosine_I[:3])
             last_three_avg_I = np.mean(q1_fit_cosine_I[-3:])
@@ -138,32 +291,30 @@ class EF_AmplitudeRabiExperiment:
 
             best_signal_fit = None
             pi_amp = None
+
             if 'Q' in self.signal:
                 best_signal_fit = q1_fit_cosine_Q
-                # figure out if you should take the min or the max value of the fit to say where pi_amp should be
                 if last_three_avg_Q > first_three_avg_Q:
                     pi_amp = gains[np.argmax(best_signal_fit)]
                 else:
                     pi_amp = gains[np.argmin(best_signal_fit)]
-            if 'I' in self.signal:
+
+            elif 'I' in self.signal:
                 best_signal_fit = q1_fit_cosine_I
-                # figure out if you should take the min or the max value of the fit to say where pi_amp should be
                 if last_three_avg_I > first_three_avg_I:
                     pi_amp = gains[np.argmax(best_signal_fit)]
                 else:
                     pi_amp = gains[np.argmin(best_signal_fit)]
-            if 'None' in self.signal:
-                # choose the best signal depending on which has a larger magnitude
+
+            elif 'None' in self.signal:
                 if abs(first_three_avg_Q - last_three_avg_Q) > abs(first_three_avg_I - last_three_avg_I):
                     best_signal_fit = q1_fit_cosine_Q
-                    # figure out if you should take the min or the max value of the fit to say where pi_amp should be
                     if last_three_avg_Q > first_three_avg_Q:
                         pi_amp = gains[np.argmax(best_signal_fit)]
                     else:
                         pi_amp = gains[np.argmin(best_signal_fit)]
                 else:
                     best_signal_fit = q1_fit_cosine_I
-                    # figure out if you should take the min or the max value of the fit to say where pi_amp should be
                     if last_three_avg_I > first_three_avg_I:
                         pi_amp = gains[np.argmax(best_signal_fit)]
                     else:
@@ -171,19 +322,45 @@ class EF_AmplitudeRabiExperiment:
             else:
                 print('Invalid signal passed, please do I Q or None')
 
+            if pi_amp is not None:
+                ax1.axvline(pi_amp, linestyle='--', linewidth=2, color='black', label='pi amp')
+                ax2.axvline(pi_amp, linestyle='--', linewidth=2, color='black', label='pi amp')
 
+            # Plot fits
             ax2.plot(gains, q1_fit_cosine_Q, '-', color='red', linewidth=3, label="Fit")
             ax1.plot(gains, q1_fit_cosine_I, '-', color='red', linewidth=3, label="Fit")
 
+            # Title logic kept from old function
             if config is not None:
-                fig.text(plot_middle, 0.98,
-                         f"e-f Rabi Q{self.QubitIndex + 1}: {pi_amp:.4f} (a.u.) _"  + f", {config['reps']}*{config['rounds']} avgs",
-                         fontsize=24, ha='center', va='top') #f", {config['sigma'] * 1000} ns sigma" need to add in all qqubit sigmas to save exp_cfg before putting htis back
+                if self.QZE:
+                    fig.text(
+                        plot_middle, 0.98,
+                        f"Rabi Q{self.QubitIndex + 1}_"
+                        + f", {config['reps']}*{config['rounds']} avgs"
+                        + f" pi_amp {round(pi_amp, 2)} "
+                        + f"projective readout pulse length: {self.projective_readout_pulse_len_us}"
+                        + f" readout pulse amp: {self.experiment.readout_cfg['res_gain_ge'][self.QubitIndex]} ",
+                        fontsize=24, ha='center', va='top'
+                    )
+                else:
+                    fig.text(
+                        plot_middle, 0.98,
+                        f"Rabi Q{self.QubitIndex + 1}_"
+                        + f", {config['reps']}*{config['rounds']} avgs"
+                        + f" pi_amp {pi_amp} ",
+                        fontsize=24, ha='center', va='top'
+                    )
             else:
-                fig.text(plot_middle, 0.98,
-                         f"e-f Rabi Q{self.QubitIndex + 1}: {pi_amp:.4f} (a.u.)_" f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']}*{self.config['rounds']} avgs",
-                         fontsize=24, ha='center', va='top')
-            # print(len(gains))
+                fig.text(
+                    plot_middle, 0.98,
+                    f"Rabi Q{self.QubitIndex + 1}_"
+                    + f", {self.config['sigma'] * 1000} ns sigma"
+                    + f" pi_amp {pi_amp} "
+                    + f", {self.config['reps']}*{self.config['rounds']} avgs",
+                    fontsize=24, ha='center', va='top'
+                )
+
+            # Plot raw data
             ax1.plot(gains, I, label="Gain (a.u.)", linewidth=2)
             ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
             ax1.tick_params(axis='both', which='major', labelsize=16)
@@ -201,14 +378,17 @@ class EF_AmplitudeRabiExperiment:
                 self.create_folder_if_not_exists(outerFolder_expt)
                 now = datetime.datetime.now()
                 formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-                file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
+                file_name = os.path.join(
+                    outerFolder_expt,
+                    f"R{self.round_num}_Q{self.QubitIndex + 1}_{formatted_datetime}_{self.expt_name}.png")
                 fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
             plt.close(fig)
             return best_signal_fit, pi_amp
 
         except Exception as e:
-            print("Error fitting cosine:", e)
-            # Return None if the fit didn't work
+            if self.verbose:
+                print("Error fitting cosine:", e)
+            self.logger.info(f"Error fitting cosine: {e}")
             return None, None
 
 

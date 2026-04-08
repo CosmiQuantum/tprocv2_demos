@@ -14,6 +14,7 @@ from expt_config import *
 from system_config import QICK_experiment
 import copy
 import os
+import time
 
 # Both g and e during the same experiment.
 class SingleShotProgram(AveragerProgramV2):
@@ -187,9 +188,11 @@ class SingleShot:
         iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=True)
         e_shots= ssp_e.get_raw()
 
+        measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
+
         fid, angle = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
         # fid, angle = self.plot_results(g_shots, e_shots, self.QubitIndex)
-        return fid, angle, iq_list_g, iq_list_e, self.config
+        return fid, angle, iq_list_g, iq_list_e, self.config, measurement_timestamp
 
     def plot_results(self, iq_list_g, iq_list_e, QubitIndex,  fig_quality=100):
         I_g = iq_list_g[QubitIndex][0].T[0]

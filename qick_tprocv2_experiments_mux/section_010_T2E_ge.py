@@ -15,6 +15,7 @@ import itertools
 import json
 import numpy as np
 import warnings
+import time
 from scipy.optimize import OptimizeWarning
 import logging
 
@@ -406,6 +407,7 @@ class T2EMeasurement:
             delay_times2 = echo.get_time_param('wait2', "t", as_array=True)
             delay_times = delay_times1+delay_times2
 
+        measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
         if self.fit_data:
             fit, t2e_est, t2e_err, plot_sig = self.t2_fit(delay_times, I, Q)
         else:
@@ -414,7 +416,7 @@ class T2EMeasurement:
         if self.save_figs:
             self.plot_results(I, Q, delay_times, now, fit, t2e_est, t2e_err, plot_sig)
 
-        return  t2e_est, t2e_err, I, Q, delay_times, fit, self.config
+        return  t2e_est, t2e_err, I, Q, delay_times, fit, self.config, measurement_timestamp
 
     def live_plotting(self, echo,thresholding):
         I = Q = expt_mags = expt_phases = expt_pop = None

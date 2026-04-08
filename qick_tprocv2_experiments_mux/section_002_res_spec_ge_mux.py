@@ -6,7 +6,7 @@ from expt_config import *
 import copy
 import datetime
 import logging
-
+import time
 
 class SingleToneSpectroscopyProgram(AveragerProgramV2):
     def _initialize(self, cfg):
@@ -79,9 +79,9 @@ class ResonanceSpectroscopy:
                 #amps[i][index]= iq_list[i][:,0]
                 amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])
         amps = np.array(amps)
+        measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
         res_freqs = self.plot_results(fpts, fcenter, amps) #return freqs from plotting loop so we can use to update experiment
-
-        return res_freqs, fpts, fcenter, amps, self.config
+        return res_freqs, fpts, fcenter, amps, self.config, measurement_timestamp
 
     def plot_results(self, fpts, fcenter, amps, reloaded_config = None, fig_quality = 100):
         res_freqs = []

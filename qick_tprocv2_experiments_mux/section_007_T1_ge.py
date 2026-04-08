@@ -5,6 +5,7 @@ from build_state import *
 from expt_config import *
 from system_config import *
 import copy
+import time
 import visdom
 import logging
 
@@ -110,6 +111,7 @@ class T1Measurement:
             Q = iq_list[self.QubitIndex][0, :, 1]
             delay_times = t1.get_time_param('wait', "t", as_array=True)
 
+        measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
 
         if self.fit_data:
             q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit(I, Q, delay_times)
@@ -126,7 +128,7 @@ class T1Measurement:
             return T1_est, T1_err, I, Q, Ishots, Qshots, delay_times, q1_fit_exponential, self.config
 
         else:
-            return  T1_est, T1_err, I, Q, None, None, delay_times, q1_fit_exponential, self.config
+            return  T1_est, T1_err, I, Q, None, None, delay_times, q1_fit_exponential, self.config, measurement_timestamp
 
     def live_plotting(self, t1, thresholding):
         I = Q = expt_mags = expt_phases = expt_pop = None

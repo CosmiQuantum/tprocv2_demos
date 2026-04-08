@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
 import datetime
+import time
 import copy
 import visdom
 import logging
@@ -92,20 +93,18 @@ class QubitSpectroscopy:
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
             freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
-            self.plot_results(I, Q, freqs, config=self.config,
-                              return_fwhm=return_fwhm)
+            measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
+            self.plot_results(I, Q, freqs, config=self.config, return_fwhm=return_fwhm)
 
         if self.fit_data:
             if return_fwhm:
-                largest_amp_curve_mean, I_fit, Q_fit, fwhm = self.plot_results(I, Q, freqs, config=self.config,
-                                                                           return_fwhm=return_fwhm)
-                return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config, fwhm
+                largest_amp_curve_mean, I_fit, Q_fit, fwhm = self.plot_results(I, Q, freqs, config=self.config, return_fwhm=return_fwhm)
+                return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config, fwhm, measurement_timestamp
             else:
-                largest_amp_curve_mean, I_fit, Q_fit = self.plot_results(I, Q, freqs, config=self.config,
-                                                                           return_fwhm=return_fwhm)
-                return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config
+                largest_amp_curve_mean, I_fit, Q_fit = self.plot_results(I, Q, freqs, config=self.config, return_fwhm=return_fwhm)
+                return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config, measurement_timestamp
         else:
-            return I, Q, freqs, None, None, None, self.config
+            return I, Q, freqs, None, None, None, self.config, measurement_timestamp
         # return I, Q, freqs, None, None, None, self.config
 
     def run_with_stark_tone(self, wait_for_res_ring_up=False):
