@@ -109,7 +109,7 @@ class QICK_experiment:
 
             # Qubit Configuration
             self.qubit_cfg = {
-                "qubit_freq_ge": [4194.77, 3828.69, 4173.69, 4474.23, 4485.38, 5018.12], # Arianna 10/10, run 8
+                "qubit_freq_ge":  [4225.77, 3854.0, 4197.69, 4506.5, 4515.0, 5050.12], #[4194.77, 3828.69, 4173.69, 4474.23, 4485.38, 5018.12], # Arianna 10/10, run 8
                 "qubit_freq_chevron_detuned_ge": [4189.7582, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86], # Olivia May 17
                 "qubit_freq_ge_starked": [4189.737678, 3820.4723, 4161.3726, 4463.15226, 4471.4469, 4997.86], # Olivia 4/04 for zeno/stark tone
                 "fwhm_w01_starked": None, #for err bars
@@ -118,11 +118,11 @@ class QICK_experiment:
                 #"qubit_freq_ge": [4184.14, 3821.144, 4156.57, 4459.19, 4471.12, 4997.86], #old
                 #"qubit_freq_ge": [4184.13, 3821.142, 4156.58, 4459.19, 4471.10, 4997.87], #old
                 #"qubit_freq_ge": [4184.15, 3821.156, 4156.88, 4459.12, 4471.18, 4998.04],  # Freqs of Qubit g/e Transition, old
-                "qubit_gain_ge":  [0.0135, 0.005, 0.005, 0.005, 0.082, 0.015], # 19 dB: [0.055, 0.135, 0.45, 0.282, 0.295, 0.79],
+                "qubit_gain_ge":  [0.1, 0.1, 0.1, 0.07, 0.2, 0.4], # run 9, # [0.0135, 0.005, 0.005, 0.005, 0.082, 0.015] run 8
                 "qubit_ampl_gain_ge": [0.025] *6,
                 "qubit_pi_len": 0.11, # Olivia May 17th
                 # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
-                "qubit_length_ge": 15,  # 15 [us] for spec Pulse
+                "qubit_length_ge": 15,  # 15 [us] for Qspec Pulse
                 "qubit_freq_ef": [4020.48, 3650.81, 3999.01, 4302.33, 4313.06, 4848.81], # Arianna 10/13
                 # [MHz] Freqs of Qubit e/f Transition
                 "qubit_freq_fh": [4016.3, 3450.8, 3988.44, 4292.73, 4292.73, 4833.17],
