@@ -97,7 +97,6 @@ class TOFExperiment:
             # print("measured phase %f degrees" % (phase_offset))
             phase_offsets.append(phase_offset)
 
-
             # Find indices of the middle three x-values
             mid_index = len(t) // 2
             indices_mid = [mid_index - 15, mid_index, mid_index + 15] #average 7 values
