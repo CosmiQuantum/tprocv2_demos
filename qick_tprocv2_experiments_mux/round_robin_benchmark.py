@@ -77,13 +77,13 @@ substudy_txt_notes = ('Initial qubit checkouts quiet run 9 \n')
 
 # set which of the following you'd like to run to 'True'
 
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": False, "rabi": False, "ss_gef": False,
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": False, "ss": False, "ss_gef": False,
              "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False}
 
 # For 25dB DAC
 res_leng_vals = [5.0, 5, 7.5, 7.0, 7.5, 7.5]
-res_gain = [0.95, 0.62, 0.85, 0.53, 0.9, 0.87]
+res_gain = [0.95, 0.65, 0.85, 0.73, 0.95, 0.87] #0.53
 freq_offsets = [0, 0, 0, 0, 0, 0]
 
 #DO NOT CHANGE THESE:
@@ -262,9 +262,9 @@ while j < n:
                     # increase_qspec_rounds = True
                     # increase_qspec_rounds_to = 2
 
-                # if QubitIndex == 4:
-                #     increase_qubit_reps_qspec = True
-                #     qspecge_increase_reps_to = 1300
+                if QubitIndex == 4:
+                    increase_qubit_reps_qspec = True
+                    qspecge_increase_reps_to = 1300
                     # increase_qspec_rounds = True
                     # increase_qspec_rounds_to = 1
 
@@ -274,9 +274,9 @@ while j < n:
                 #     increase_qspec_rounds = True
                 #     increase_qspec_rounds_to = 3
                 #
-                # if QubitIndex == 2:
-                #     increase_qubit_reps_qspec = True
-                #     qspecge_increase_reps_to = 800
+                if QubitIndex == 2:
+                    increase_qubit_reps_qspec = True
+                    qspecge_increase_reps_to = 800
 
                 q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
                                            signal, save_figs, increase_reps = increase_qubit_reps_qspec, increase_rounds =increase_qspec_rounds,

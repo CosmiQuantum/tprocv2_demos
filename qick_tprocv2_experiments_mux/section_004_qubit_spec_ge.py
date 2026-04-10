@@ -81,7 +81,7 @@ class QubitSpectroscopy:
             self.exp_cfg["rounds"] = self.increase_rounds_to
             self.config['rounds'] = self.increase_rounds_to
 
-        qspec = PulseProbeSpectroscopyProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=0.5, cfg=self.config)
+        qspec = PulseProbeSpectroscopyProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
 
         # iq_lists= []
         if self.live_plot:
