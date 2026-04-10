@@ -83,7 +83,7 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": False, "ss"
 
 # For 25dB DAC
 res_leng_vals = [5.0, 5, 7.5, 7.0, 7.5, 7.5]
-res_gain = [0.95, 0.65, 0.85, 0.73, 0.95, 0.87] #0.53
+res_gain = [0.95, 0.65, 0.85, 0.73, 1.0, 0.87] #0.53
 freq_offsets = [0, 0, 0, 0, 0, 0]
 
 #DO NOT CHANGE THESE:
