@@ -54,7 +54,6 @@ debug_mode = False  # if True, it disables the continuing function of RR if an e
 thresholding = False  # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 
 increase_qubit_reps_t1 = False  # if you want to increase the reps for a qubit, set to True
-increase_qubit_reps_t2r = False  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_t2e = False  # if you want to increase the reps for a qubit, set to True
 increase_qubit_reps_efrabi = False  # if you want to increase the reps for a qubit, set to True
 
@@ -68,7 +67,7 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [5] # only list the qubits you want to do the RR for
+Qs_to_look_at = [3] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run9'
@@ -78,7 +77,7 @@ substudy_txt_notes = ('Initial qubit checkouts quiet run 9 \n')
 # set which of the following you'd like to run to 'True'
 
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": False, "ss_gef": False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": False,
+             "t1": False, "t2r": True, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False}
 
 # For 25dB DAC
@@ -93,7 +92,7 @@ rpm_any = False # and rabi population measurements?
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts
-sub_study = 'initial_ef_checkouts_except_Q5_junk'
+sub_study = 'initial_coh_checkouts_except_Q5_junk'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -595,11 +594,20 @@ while j < n:
         ###################################################### g-e T2R #####################################################
         if run_flags["t2r"]:
             try:
+                increase_qubit_reps_t2r = False  # if you want to increase the reps for a qubit, set to True
+                qubit_to_increase_t2r_reps_for = None
+                multiply_qubit_t2r_reps_by = 1 # doesn't apply unless the above flags are updated and set to True
+
+                if QubitIndex == 3:
+                    increase_qubit_reps_t2r = True
+                    qubit_to_increase_t2r_reps_for = QubitIndex
+                    multiply_qubit_t2r_reps_by = 2 # must be integer
+
                 t2r = T2RMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                      experiment=experiment, live_plot=live_plot, fit_data=fit_data,
                                      increase_qubit_reps=increase_qubit_reps_t2r,
-                                     qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                                     multiply_qubit_reps_by=multiply_qubit_reps_by,
+                                     qubit_to_increase_reps_for=qubit_to_increase_t2r_reps_for,
+                                     multiply_qubit_reps_by=multiply_qubit_t2r_reps_by,
                                      verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
                 t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey, sys_config_t2r, meas_timestamp_t2r = t2r.run(
                     thresholding=thresholding, use_iminuit_instead = use_iminuit_instead)

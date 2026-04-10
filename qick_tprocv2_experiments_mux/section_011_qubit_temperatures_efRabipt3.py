@@ -417,15 +417,15 @@ class Temps_EFAmpRabiExperiment:
             ax3.legend(loc='best')
             # ------------------------------------------------------------------------------
             if self.save_figs:
-                today_date = datetime.datetime.now().strftime("%Y-%m-%d")
-                dated_folder_name = f"made_on_{today_date}"
+                # today_date = datetime.datetime.now().strftime("%Y-%m-%d")
+                # dated_folder_name = f"made_on_{today_date}"
+                # outerFolder_expt = os.path.join(self.outerFolder, dated_folder_name)
                 # outerFolder_expt = os.path.join(self.outerFolder, "q_temperatures", dated_folder_name)
-                outerFolder_expt = os.path.join(self.outerFolder, dated_folder_name)
+                outerFolder_expt = os.path.join(self.outerFolder, "q_temperatures")
                 self.create_folder_if_not_exists(outerFolder_expt)
                 now = datetime.datetime.now()
                 formatted_datetime = now.strftime("%Y%m%d%H%M%S")
-                file_name = os.path.join(outerFolder_expt,
-                                         f"{filename_ext}Q{self.QubitIndex + 1}_" + f"Qtemps_RPM_" + f"{formatted_datetime}.png")
+                file_name = os.path.join(outerFolder_expt,f"{filename_ext}Q{self.QubitIndex + 1}_" + f"Qtemps_RPM_" + f"{formatted_datetime}.png")
                 fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
                 # print('Plots saved to this folder:',outerFolder_expt)
             plt.close(fig)
