@@ -68,17 +68,13 @@ class QICK_experiment:
 
             # Readout Configuration
             self.readout_cfg = {
-                "trig_time": 0.75,  # [Clock ticks] - get this value from TOF experiment (updated by Arianna Oct 9 2025 QICK box)
-
+                "trig_time": 0.75,  # [Clock ticks] - get this value from TOF experiment (updated by Arianna Oct 9 2025 QICK box). Stayed the same for run 9.
                 # Changes related to the resonator output channel
                 "mixer_freq": 6000,  # [MHz]
                 #"res_freq_ge": [6217, 6276, 6335, 6407, 6476, 6538],  # MHz, run 5
-                #'res_freq_ge': [6217.011, 6275.7973, 6335.1068, 6407.052, 6476.1091, 6538], # Arianna 3/27/
-                #'res_freq_ge': [6216.811, 6275.9373, 6335, 6407.0338, 6475.8835, 6538], #Joyce 3/11
-                #'res_freq_ge': [6224.387, 6288.175, 6340.600, 6419.115, 6482.765,6549.100], # run8
+                #'res_freq_ge': [6227.237, 6289.175, 6348.550, 6419.665, 6485.315, 6552.300], # run8
                 'res_freq_ge': [6228.837, 6290.125, 6349.800, 6420.615, 6486.0, 6553.100], # run 9
                 #'res_freq_ge': [6223.097, 6284.55, 6343.95, 6414.934, 6481.4, 6547.250],  # run 7
-
                 # "res_freq_ge": [6191.419, 6216.1, 6292.361, 6405.77, 6432.759, 6468.481],  # MHz, run 4a
                 # "res_gain_ge": [1] + [0]*5,
                 "res_gain_ge": [0.95, 0.9, 0.95, 0.55, 0.55, 0.95], #[1, 1, 1, 1, 1, 1],
@@ -87,7 +83,8 @@ class QICK_experiment:
                 # "res_gain_ge": [1,1,0.7,0.7,0.7,1], #[0.4287450656184295, 0.4903077560386716, 0.4903077560386716, 0.3941941738241592, 0.3941941738241592, 0.4903077560386716],  # DAC units
                 # "res_freq_ef": [7149.44, 0, 0, 0, 0, 0], # [MHz]
                 # "res_gain_ef": [0.6, 0, 0, 0, 0, 0], # [DAC units]
-                "res_freq_ef": [6227.084, 6289.074, 6348.438, 6419.583, 6485.360, 6547.128],  # [MHz] updated by arianna for run 8, 10/2
+                "res_freq_ef": [6228.237, 6289.975, 6349.7, 6420.465, 6485.360, 6553.150], # [MHz] Run 9, after fixing final_delay. Still need to update R5
+                #'res_freq_ef': [6227.076, 6289.092, 6348.423, 6419.612, 6485.195, 6552.256], #Run 8
                 "res_gain_ef": [0.95,0.9,0.95,0.55,0.55,0.95],  # [DAC units]
                 "res_freq_fh": [6223.016, 6284.544, 6343.861, 6414.893, 6414.893, 6546.754],  # [MHz]
                 "res_gain_fh": [0.95,0.9,0.95,0.55,0.55,0.95],  # [DAC units]
@@ -109,16 +106,12 @@ class QICK_experiment:
 
             # Qubit Configuration
             self.qubit_cfg = {
-                "qubit_freq_ge":  [4225.77, 3854.0, 4196.96, 4506.5, 4515.0, 5050.57], #[4194.77, 3828.69, 4173.69, 4474.23, 4485.38, 5018.12], # Arianna 10/10, run 8
+                "qubit_freq_ge":  [4225.77, 3854.0, 4196.96, 4506.5, 4515.0, 5050.57], #run 9, #[4194.77, 3828.69, 4173.69, 4474.23, 4485.38, 5018.12], # Arianna 10/10, run 8
                 "qubit_freq_chevron_detuned_ge": [4189.7582, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86], # Olivia May 17
                 "qubit_freq_ge_starked": [4189.737678, 3820.4723, 4161.3726, 4463.15226, 4471.4469, 4997.86], # Olivia 4/04 for zeno/stark tone
                 "fwhm_w01_starked": None, #for err bars
                 "fwhm_w01": None, #for err bars
-                #"qubit_freq_ge": [4184.14, 3821.149, 4156.53, 4459.20, 4471.12, 4997.86],  # new
-                #"qubit_freq_ge": [4184.14, 3821.144, 4156.57, 4459.19, 4471.12, 4997.86], #old
-                #"qubit_freq_ge": [4184.13, 3821.142, 4156.58, 4459.19, 4471.10, 4997.87], #old
-                #"qubit_freq_ge": [4184.15, 3821.156, 4156.88, 4459.12, 4471.18, 4998.04],  # Freqs of Qubit g/e Transition, old
-                "qubit_gain_ge":  [0.02, 0.015, 0.12, 0.07, 0.25, 0.4], # run 9, # [0.0135, 0.005, 0.005, 0.005, 0.082, 0.015] run 8
+                "qubit_gain_ge":  [0.02, 0.018, 0.15, 0.1, 0.2, 0.43], #0.1 for Q4 # run 9, # [0.0135, 0.005, 0.005, 0.005, 0.082, 0.015] run 8
                 "qubit_ampl_gain_ge": [0.025] *6,
                 "qubit_pi_len": 0.11, # Olivia May 17th
                 # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
