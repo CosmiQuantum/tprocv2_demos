@@ -5,7 +5,7 @@ FRIDGE = "QUIET"  # change to "NEXUS" as needed
 if FRIDGE == "QUIET":
     VNA_res = np.array([6228.837, 6290.125, 6349.800, 6420.615, 6486.0, 6553.100]) # run 9
     VNA_qubit = np.array([4226.11, 3853.61, 4197.05, 4506.61, 4519.0, 5050.78])  # run 9, all updated except Q5
-    ef_qfreqs = np.array([4052.15, 3676.11, 4022.75, 4334.91, 4313.06, 4883.54]) # Qubit freqs e/f Transition, run 9
+    ef_qfreqs = np.array([4052.15, 3676.11, 4022.75, 4334.65, 4313.06, 4883.54]) # Qubit freqs e/f Transition, run 9
     fh_qfreqs = np.array([3820.97, 3450.85, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition
     two_photon_qfreqs=np.array([4107.61, 3739.36, 4086.36, 4388.34, 4399.3, 4933.52]) # qubit freqs, two photon peak between ge and ef qubit freqs
 
@@ -86,9 +86,9 @@ if FRIDGE == "QUIET":
         "qubit_spec_ge": {
             "reps": 600, #300
             "rounds": 1, #10
-            "start": list(VNA_qubit-6), # [MHz] #-300 #-15
-            "stop": list(VNA_qubit+6), # [MHz] #+15
-            "steps": 350, # 350 for -6 + 6
+            "start": list(VNA_qubit-3), # [MHz] #-300 #-15
+            "stop": list(VNA_qubit+3), # [MHz] #+15
+            "steps": 220, # 350 for -6 + 6
             "relax_delay":10,#1000 # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -127,11 +127,11 @@ if FRIDGE == "QUIET":
         },
 
         "qubit_spec_ef": {
-            "reps": 3100,  # 300
+            "reps": 2200,  # 300
             "rounds": 1,  # 10
-            "start": list(ef_qfreqs - 6),  # [MHz] #-300
-            "stop": list(ef_qfreqs + 6),  # [MHz]
-            "steps": 350,
+            "start": list(ef_qfreqs - 3),  # [MHz] #-300
+            "stop": list(ef_qfreqs + 3),  # [MHz]
+            "steps": 200,
             "relax_delay": 1000, #1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -169,7 +169,7 @@ if FRIDGE == "QUIET":
             "rounds": 1,  # 5
             "start": [0] * 6,  # [DAC units]
             "stop": [1] * 6,#[1.0] * 6,  # [DAC units]
-            "steps": 120, #50,
+            "steps": 110, #50,
             "relax_delay": 1000,#1000,#1000,#1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },

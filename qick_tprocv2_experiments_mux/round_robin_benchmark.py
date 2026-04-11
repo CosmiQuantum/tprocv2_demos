@@ -67,7 +67,7 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [3] # only list the qubits you want to do the RR for
+Qs_to_look_at = [3,5] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run9'
@@ -76,8 +76,8 @@ substudy_txt_notes = ('Initial qubit checkouts quiet run 9 \n')
 
 # set which of the following you'd like to run to 'True'
 
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": False, "ss_gef": False,
-             "t1": False, "t2r": True, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": False, "ss": False, "ss_gef": False,
+             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": True,
              "rabi_pop_meas": False, "ef_Rabi": False}
 
 # For 25dB DAC
@@ -92,7 +92,7 @@ rpm_any = False # and rabi population measurements?
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts
-sub_study = 'initial_coh_checkouts_except_Q5_junk'
+sub_study = 'pre_readout_opt_junk'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -261,21 +261,21 @@ while j < n:
                     # increase_qspec_rounds = True
                     # increase_qspec_rounds_to = 2
 
-                if QubitIndex == 4:
-                    increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 1300
+                # if QubitIndex == 4:
+                #     increase_qubit_reps_qspec = True
+                #     qspecge_increase_reps_to = 1300
                     # increase_qspec_rounds = True
                     # increase_qspec_rounds_to = 1
 
-                # if QubitIndex == 3:
-                #     increase_qubit_reps_qspec = True
-                #     qspecge_increase_reps_to = 700
-                #     increase_qspec_rounds = True
-                #     increase_qspec_rounds_to = 3
-                #
-                if QubitIndex == 2:
+                if QubitIndex == 3:
                     increase_qubit_reps_qspec = True
                     qspecge_increase_reps_to = 800
+                    # increase_qspec_rounds = True
+                    # increase_qspec_rounds_to = 3
+                #
+                # if QubitIndex == 2:
+                #     increase_qubit_reps_qspec = True
+                #     qspecge_increase_reps_to = 800
 
                 q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
                                            signal, save_figs, increase_reps = increase_qubit_reps_qspec, increase_rounds =increase_qspec_rounds,
@@ -449,11 +449,11 @@ while j < n:
                         increase_ef_qspec_rounds_to = None
                         increase_reps_to_ef = None
 
-                        # if QubitIndex == 3:
-                        #     increase_qubit_reps_ef = True  # if you want to increase the reps for a qubit, set to True
-                        #     increase_reps_to_ef = 5200  # for ef qspec
-                        #     increase_ef_qspec_rounds = True
-                        #     increase_ef_qspec_rounds_to = 2
+                        if QubitIndex == 3:
+                            increase_qubit_reps_ef = True  # if you want to increase the reps for a qubit, set to True
+                            increase_reps_to_ef = 4000  # for ef qspec, 5200
+                            # increase_ef_qspec_rounds = True
+                            # increase_ef_qspec_rounds_to = 2
 
                         ef_q_spec = EFQubitSpectroscopy(QubitIndex, number_of_qubits, studyDocumentationFolder, j, signal,
                                                         save_figs, experiment, live_plot, increase_reps = increase_qubit_reps_ef,
