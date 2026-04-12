@@ -53,7 +53,7 @@ n_loops = 3 # Number of repetitions per length to average
 Qs = [0,1,2,3,5]
 
 # For 25dB DAC
-res_leng_vals = [5.0, 6.75, 7.25, 6.0, 7.5, 5.0], # updated 4/11 except for Q5
+res_leng_vals = [5.0, 6.75, 7.25, 6.0, 7.5, 5.0] # updated 4/11 except for Q5
 res_gain = [0.95, 0.65, 0.85, 0.73, 1.0, 0.87] #0.53
 freq_offsets = [0, 0, 0, 0, 0, 0]
 
