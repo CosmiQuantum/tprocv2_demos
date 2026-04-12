@@ -105,10 +105,14 @@ for QubitIndex in Qs:
                                      increase_geres_reps,
                                      increase_geres_reps_to, experiment=experiment, unmasking_resgain=unmask)
     res_freqs, freq_pts, freq_center, amps, sys_config_rspec, meas_timestamp_resge = res_spec.run()
-    offset = freq_offsets[
-        QubitIndex]  # use optimized offset values or whats set at top of script based on pre_optimize flag
+    offset = freq_offsets[QubitIndex]  # use optimized offset values or whats set at top of script based on pre_optimize flag
     offset_res_freqs = [r + offset for r in res_freqs]
     experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
+
+    # Used later when optimizing res gains and freqs, decide if you want to set the offsets to zero or not for the first round
+    this_res_freq = offset_res_freqs[QubitIndex]
+    res_freq_ge[QubitIndex] = float(this_res_freq)
+
     del res_spec
 
     ################################################## g-e Qubit spec ##################################################
