@@ -86,9 +86,9 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss":
 # freq_offsets = [-0.1385, -0.1385, -0.2308, -0.0462, 0, -0.1385] # 4/11, 25dB
 
 # For 20dB DAC
-res_leng_vals = [4.25, 5.25, 5.0, 5.0 , 7.5, 4.5 ] # 4/12, 20dB
-res_gain = [0.6800, 0.6300, 0.6000, 0.3125, 1.0, 0.7600] # 4/12, 20dB
-freq_offsets = [-0.2308, -0.1385, -0.2308, -0.2308, 0, -0.1385] # 4/12, 20dB
+res_leng_vals = [4.25, 5.25, 5.0, 5.0, 7.5, 4.5]  # 4/12, 20dB
+res_gain = [0.6400, 0.7300, 0.7800, 0.3750, 1.0, 0.7600]  # 4/12, 20dB
+freq_offsets = [0.2308, 0.1385, 0.0462, 0.1385, 0, 0.1385]  # 4/12, 20dB
 
 #DO NOT CHANGE THESE:
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?

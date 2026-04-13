@@ -58,9 +58,9 @@ Qs = [0,1,2,3,5]
 # freq_offsets = [-0.1385, -0.1385, -0.2308, -0.0462, 0, -0.1385] # 4/11, 25dB
 
 # For 20dB DAC
-res_leng_vals = [4.25, 5.25, 5.0, 5.0 , 7.5, 4.5 ]
-res_gain = [0.6800, 0.6300, 0.6000, 0.3125, 1.0, 0.7600] # 4/12, 20dB
-freq_offsets = [-0.2308, -0.1385, -0.2308, -0.2308, 0, -0.1385] # 4/12, 20dB
+res_leng_vals = [4.25, 5.25, 5.0, 5.0, 7.5, 4.5]  # 4/12, 20dB
+res_gain = [0.6400, 0.7300, 0.7800, 0.3750, 1.0, 0.7600]  # 4/12, 20dB
+freq_offsets = [0.2308, 0.1385, 0.0462, 0.1385, 0, 0.1385]  # 4/12, 20dB
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_freq_ge = [None] * 6 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
