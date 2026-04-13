@@ -67,7 +67,7 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [0] # only list the qubits you want to do the RR for
+Qs_to_look_at = [4] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run9'
@@ -86,9 +86,9 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss":
 # freq_offsets = [-0.1385, -0.1385, -0.2308, -0.0462, 0, -0.1385] # 4/11, 25dB
 
 # For 20dB DAC
-res_leng_vals = [4.25, 5.25, 5.0, 5.0, 7.5, 4.5]  # 4/12, 20dB
-res_gain = [0.6400, 0.7300, 0.7800, 0.3750, 1.0, 0.7600]  # 4/12, 20dB
-freq_offsets = [0.2308, 0.1385, 0.0462, 0.1385, 0, 0.1385]  # 4/12, 20dB
+res_leng_vals = [4.25, 5.25, 5.0, 5.0, 6.25, 4.5]  # 4/12, 20dB
+res_gain = [0.6400, 0.7300, 0.7800, 0.3750, 0.45, 0.7600]  # 4/12, 20dB
+freq_offsets = [0.2308, 0.1385, 0.0462, 0.1385, -0.1385, 0.1385]  # 4/12, 20dB
 
 #DO NOT CHANGE THESE:
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
@@ -97,7 +97,7 @@ rpm_any = False # and rabi population measurements?
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts
-sub_study = 'DACatten_SSF_inv_allQs_20dB'
+sub_study = 'initial_checkouts_searching_for_Q5_junk_20dB'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -266,11 +266,11 @@ while j < n:
                     # increase_qspec_rounds = True
                     # increase_qspec_rounds_to = 2
 
-                # if QubitIndex == 4:
-                #     increase_qubit_reps_qspec = True
-                #     qspecge_increase_reps_to = 1300
-                    # increase_qspec_rounds = True
-                    # increase_qspec_rounds_to = 1
+                if QubitIndex == 4:
+                    increase_qubit_reps_qspec = True
+                    qspecge_increase_reps_to = 900
+                    increase_qspec_rounds = True
+                    increase_qspec_rounds_to = 4
 
                 if QubitIndex == 3:
                     increase_qubit_reps_qspec = True
@@ -332,9 +332,9 @@ while j < n:
                 # if QubitIndex == 3:
                 #     increase_qubit_reps_gerabi = True
                 #     qubit_to_increase_reps_for = QubitIndex
-                # if QubitIndex == 4:
-                #     increase_qubit_reps_gerabi = True
-                #     qubit_to_increase_reps_for = QubitIndex
+                if QubitIndex == 4:
+                    increase_qubit_reps_gerabi = True
+                    qubit_to_increase_reps_for = QubitIndex
                 # if QubitIndex == 5:
                 #     increase_qubit_reps_gerabi = True
                 #     qubit_to_increase_reps_for = QubitIndex

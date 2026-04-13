@@ -106,12 +106,12 @@ class QICK_experiment:
 
             # Qubit Configuration
             self.qubit_cfg = {
-                "qubit_freq_ge":  [4226.11, 3853.61, 4197.05, 4506.61, 4519.0, 5050.78], #run 9, #[4194.77, 3828.69, 4173.69, 4474.23, 4485.38, 5018.12], # Arianna 10/10, run 8
+                "qubit_freq_ge":  [4226.11, 3853.61, 4197.05, 4506.61, 4519.0, 5050.78], #run 9, # Run 8:[4194.77, 3828.69, 4173.69, 4474.23, 4485.38, 5018.12]
                 "qubit_freq_chevron_detuned_ge": [4189.7582, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86], # Olivia May 17
                 "qubit_freq_ge_starked": [4189.737678, 3820.4723, 4161.3726, 4463.15226, 4471.4469, 4997.86], # Olivia 4/04 for zeno/stark tone
                 "fwhm_w01_starked": None, #for err bars
                 "fwhm_w01": None, #for err bars
-                "qubit_gain_ge":  [0.02, 0.0165, 0.06, 0.05, 0.2, 0.25], #0.1 for Q4 # run 9, # [0.0135, 0.005, 0.005, 0.005, 0.082, 0.015] run 8
+                "qubit_gain_ge":  [0.02, 0.0165, 0.06, 0.05, 0.085, 0.25], #0.1 for Q4 # run 9, # [0.0135, 0.005, 0.005, 0.005, 0.082, 0.015] run 8
                 "qubit_ampl_gain_ge": [0.025] *6,
                 "qubit_pi_len": 0.11, # Olivia May 17th
                 # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
@@ -129,7 +129,7 @@ class QICK_experiment:
                 "qubit_phase": 0,  # [deg]
                 #"sigma": [0.15]*6,  # [us] for Gaussian Pulse (5+10 DAC atten for qubit)
                 "sigma_ampl": [0.03, 0.03, 0.05, 0.04, 0.05, 0.05], #DAC 0 04/07
-                "sigma": [0.11, 0.07, 0.22, 0.22, 0.22, 0.85], # 19dB: [0.26, 0.43, 0.46, 0.42, 0.385, 1.01], # DAC 2 04/07 [us] for Gaussian Pulse (5+10 DAC atten for qubit). Updated on 7/17 by Arianna
+                "sigma": [0.11, 0.07, 0.22, 0.22, 0.42, 0.85], # 19dB: [0.26, 0.43, 0.46, 0.42, 0.385, 1.01], # DAC 2 04/07 [us] for Gaussian Pulse (5+10 DAC atten for qubit). Updated on 7/17 by Arianna
                 #"sigma": [0.05, 0.09, 0.07, 0.065, 0.09, 0.3],  # Goal: cut sigma in half [us] for Gaussian Pulse (5+4 DAC atten for qubit)
                 # "pi_amp": [0.92, 0.87, 0.75, 0.73, 0.77, 0.78], # old RR values
                 "sigma_ef": [0.08, 0.13, 0.28, 0.16, 0.22, 0.41], #run 9: updated all except Q5 # run 8: [0.1, 0.25, 0.2, 0.25, 0.17, 0.28],

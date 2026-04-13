@@ -28,7 +28,7 @@ number_of_qubits = 6 # for QUIET 6, for NEXUS 4
 list_of_all_qubits = [0,1,2,3,4,5] # for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0, 1, 2, 3]
 
 # For Quiet
-substudy = "opt_allQs_noQ5_20dBDAC"
+substudy = "opt_Q5_20dBDAC"
 outerFolder = os.path.join(f"/data/QICK_data/run9/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 
 opt_flags = {"res_leng_sweep": False, "2d_sweep": True}
@@ -50,7 +50,7 @@ n = 1  # Number of rounds
 n_loops = 3 # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [0,1,2,3,5]
+Qs = [4]
 
 # For 25dB DAC
 # res_leng_vals = [5.0, 6.75, 7.25, 6.0, 7.5, 5.0] # updated 4/11 except for Q5
@@ -58,9 +58,9 @@ Qs = [0,1,2,3,5]
 # freq_offsets = [-0.1385, -0.1385, -0.2308, -0.0462, 0, -0.1385] # 4/11, 25dB
 
 # For 20dB DAC
-res_leng_vals = [4.25, 5.25, 5.0, 5.0, 7.5, 4.5]  # 4/12, 20dB
-res_gain = [0.6400, 0.7300, 0.7800, 0.3750, 1.0, 0.7600]  # 4/12, 20dB
-freq_offsets = [0.2308, 0.1385, 0.0462, 0.1385, 0, 0.1385]  # 4/12, 20dB
+res_leng_vals = [4.25, 5.25, 5.0, 5.0, 6.25, 4.5]  # 4/12, 20dB
+res_gain = [0.6400, 0.7300, 0.7800, 0.3750, 0.45, 0.7600]  # 4/12, 20dB
+freq_offsets = [0.2308, 0.1385, 0.0462, 0.1385, -0.1385, 0.1385]  # 4/12, 20dB
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_freq_ge = [None] * 6 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
@@ -132,11 +132,11 @@ for QubitIndex in Qs:
     # increase_qspec_rounds = True
     # increase_qspec_rounds_to = 2
 
-    # if QubitIndex == 4:
-    #     increase_qubit_reps_qspec = True
-    #     qspecge_increase_reps_to = 1300
-    # increase_qspec_rounds = True
-    # increase_qspec_rounds_to = 1
+    if QubitIndex == 4:
+        increase_qubit_reps_qspec = True
+        qspecge_increase_reps_to = 1100
+        increase_qspec_rounds = True
+        increase_qspec_rounds_to = 3
 
     if QubitIndex == 3:
         increase_qubit_reps_qspec = True
@@ -172,9 +172,9 @@ for QubitIndex in Qs:
     # if QubitIndex == 3:
     #     increase_qubit_reps_gerabi = True
     #     qubit_to_increase_reps_for = QubitIndex
-    # if QubitIndex == 4:
-    #     increase_qubit_reps_gerabi = True
-    #     qubit_to_increase_reps_for = QubitIndex
+    if QubitIndex == 4:
+        increase_qubit_reps_gerabi = True
+        qubit_to_increase_reps_for = QubitIndex
     # if QubitIndex == 5:
     #     increase_qubit_reps_gerabi = True
     #     qubit_to_increase_reps_for = QubitIndex
@@ -325,8 +325,8 @@ for QubitIndex in Qs:
             gain_range = [0.25, 0.5] # 0.8
             gain_steps = 8
         elif QubitIndex == 4: # 0.725
-            gain_range = [0.3, 1.0]
-            gain_steps = 16
+            gain_range = [0.3, 0.6]
+            gain_steps = 8
         elif QubitIndex == 5:
             gain_range = [0.4, 0.8] #1.0
             gain_steps = 20
