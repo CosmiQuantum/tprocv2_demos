@@ -28,7 +28,7 @@ number_of_qubits = 6 # for QUIET 6, for NEXUS 4
 list_of_all_qubits = [0,1,2,3,4,5] # for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0, 1, 2, 3]
 
 # For Quiet
-substudy = "initial_res_leng_sweep_allQs_noQ5_25dBDAC"
+substudy = "opt_allQs_noQ5_20dBDAC"
 outerFolder = os.path.join(f"/data/QICK_data/run9/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 
 opt_flags = {"res_leng_sweep": False, "2d_sweep": True}
@@ -53,9 +53,14 @@ n_loops = 3 # Number of repetitions per length to average
 Qs = [0,1,2,3,5]
 
 # For 25dB DAC
-res_leng_vals = [5.0, 6.75, 7.25, 6.0, 7.5, 5.0] # updated 4/11 except for Q5
-res_gain = [0.95, 0.65, 0.85, 0.73, 1.0, 0.87] #0.53
-freq_offsets = [0, 0, 0, 0, 0, 0]
+# res_leng_vals = [5.0, 6.75, 7.25, 6.0, 7.5, 5.0] # updated 4/11 except for Q5
+# res_gain = [0.9571, 0.6700, 0.8583, 0.6821, 1.0, 0.9571] #4/11, 25dB
+# freq_offsets = [-0.1385, -0.1385, -0.2308, -0.0462, 0, -0.1385] # 4/11, 25dB
+
+# For 20dB DAC
+res_leng_vals = [4.25, 5.25, 5.0, 5.0 , 7.5, 4.5 ]
+res_gain = [0.6800, 0.6300, 0.6000, 0.3125, 1.0, 0.7600] # 4/12, 20dB
+freq_offsets = [-0.2308, -0.1385, -0.2308, -0.2308, 0, -0.1385] # 4/12, 20dB
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_freq_ge = [None] * 6 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
@@ -73,7 +78,7 @@ for QubitIndex in Qs:
     ef_qspec_survived = False
 
     # Get the config for this qubit
-    DAC_attenuator1 = 15
+    DAC_attenuator1 = 10
     DAC_attenuator2 = 10
     experiment = QICK_experiment(outerFolder, DAC_attenuator1=DAC_attenuator1, DAC_attenuator2=DAC_attenuator2,
                                  qubit_DAC_attenuator1=5,
@@ -305,26 +310,26 @@ for QubitIndex in Qs:
         # Ensure the output folder exists
         os.makedirs(output_folder, exist_ok=True)
 
-        ## punchout thresholds: [1.0, 0.886, 1.0, 0.771, 1.0, 1.0]
+        ## punchout thresholds: [1.0, 0.886, 1.0, 0.771, 1.0, 1.0] 25dB, [0.8, 0.75, 0.8, 0.5, 0.65, 0.8] 20dB
         # Define sweeping parameters
         if QubitIndex == 0:
-            gain_range = [0.4, 1.0]
-            gain_steps = 14
+            gain_range = [0.4, 0.8] #1.0
+            gain_steps = 20
         elif QubitIndex == 1:
             gain_range = [0.35, 0.75]
-            gain_steps = 10
+            gain_steps = 20
         elif QubitIndex == 2:
-            gain_range = [0.4, 0.9]
-            gain_steps = 12
+            gain_range = [0.4, 0.8] # 0.9
+            gain_steps = 20
         elif QubitIndex == 3:
-            gain_range = [0.25, 0.8]
-            gain_steps = 14
+            gain_range = [0.25, 0.5] # 0.8
+            gain_steps = 8
         elif QubitIndex == 4: # 0.725
             gain_range = [0.3, 1.0]
             gain_steps = 16
         elif QubitIndex == 5:
-            gain_range = [0.4, 1.0]
-            gain_steps = 14
+            gain_range = [0.4, 0.8] #1.0
+            gain_steps = 20
 
         freq_steps = 13
 

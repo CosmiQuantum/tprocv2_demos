@@ -50,7 +50,7 @@ fit_data = True  # fit the data here and save or plot the fits?
 save_data_h5 = True  # save all of the data to h5 files?
 verbose = True  # print everything to the console in real time, good for debugging, bad for memory
 qick_verbose = True  # qick verbose prints the progress bar for each qick experiment as it is happening (the red bar that fills out as more experiment rounds/reps are being done)
-debug_mode = False  # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
+debug_mode = True  # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 thresholding = False  # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 
 increase_qubit_reps_t1 = False  # if you want to increase the reps for a qubit, set to True
@@ -67,7 +67,7 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [3,5] # only list the qubits you want to do the RR for
+Qs_to_look_at = [0] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run9'
@@ -76,14 +76,19 @@ substudy_txt_notes = ('Initial qubit checkouts quiet run 9 \n')
 
 # set which of the following you'd like to run to 'True'
 
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": False, "ss": False, "ss_gef": False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": True,
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
+             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False}
 
 # For 25dB DAC
-res_leng_vals = [5.0, 6.75, 7.25, 6.0, 7.5, 5.0], # updated 4/11 except for Q5
-res_gain = [0.95, 0.65, 0.85, 0.73, 1.0, 0.87] #0.53
-freq_offsets = [0, 0, 0, 0, 0, 0]
+# res_leng_vals = [5.0, 6.75, 7.25, 6.0, 7.5, 5.0] # updated 4/11 except for Q5
+# res_gain = [0.9571, 0.6700, 0.8583, 0.6821, 1.0, 0.9571] #4/11, 25dB
+# freq_offsets = [-0.1385, -0.1385, -0.2308, -0.0462, 0, -0.1385] # 4/11, 25dB
+
+# For 20dB DAC
+res_leng_vals = [4.25, 5.25, 5.0, 5.0 , 7.5, 4.5 ] # 4/12, 20dB
+res_gain = [0.6800, 0.6300, 0.6000, 0.3125, 1.0, 0.7600] # 4/12, 20dB
+freq_offsets = [-0.2308, -0.1385, -0.2308, -0.2308, 0, -0.1385] # 4/12, 20dB
 
 #DO NOT CHANGE THESE:
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
@@ -92,7 +97,7 @@ rpm_any = False # and rabi population measurements?
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts
-sub_study = 'pre_readout_opt_junk'
+sub_study = 'DACatten_SSF_inv_allQs_20dB'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -194,7 +199,7 @@ while j < n:
         ef_qspec_survived = False
 
         # Get the config for this qubit
-        DAC_attenuator1 = 15
+        DAC_attenuator1 = 10
         DAC_attenuator2 = 10
         experiment = QICK_experiment(optimizationFolder, DAC_attenuator1=DAC_attenuator1, DAC_attenuator2=DAC_attenuator2,
                                      qubit_DAC_attenuator1=5,

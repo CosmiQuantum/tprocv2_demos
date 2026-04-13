@@ -15,19 +15,20 @@ number_of_qubits = 6  #currently 4 for NEXUS, 6 for QUIET
 
 print('Fridge: ', FRIDGE)
 
-substudy = 'initial_punchout_25dBDAC'
-outerFolder = os.path.join(f"/data/QICK_data/run9/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
-outerfolder_plots = outerFolder + "/documentation/"
-
-os.makedirs(outerfolder_plots, exist_ok=True)
-
 Unmask = True
-DAC_att_1=15
+DAC_att_1=10
 DAC_att_2=10
 DAC_att=DAC_att_1+DAC_att_2
 print('DAC atten: ', DAC_att)
 ADC_att=17
 print('ADC atten: ', ADC_att)
+
+substudy = f'punchout_{DAC_att}dBDAC'
+
+outerFolder = os.path.join(f"/data/QICK_data/run9/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
+outerfolder_plots = outerFolder + "/documentation/"
+
+os.makedirs(outerfolder_plots, exist_ok=True)
 
 experiment = QICK_experiment(outerfolder_plots, DAC_attenuator1 = DAC_att_1, DAC_attenuator2 = DAC_att_2, qubit_DAC_attenuator1 = 5 , qubit_DAC_attenuator2 = 4 ,ADC_attenuator = ADC_att, fridge=FRIDGE)
 
