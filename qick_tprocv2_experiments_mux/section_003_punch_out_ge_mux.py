@@ -33,11 +33,13 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
 class PunchOut:
-    def __init__(self, QubitIndex, number_of_qubits, outerFolder, experiment, unmasking_resgain=False):
+    def __init__(self, QubitIndex, number_of_qubits, outerFolder, experiment, unmasking_resgain=False, increase_res_reps = False, increase_res_reps_to = 500):
         self.outerFolder = outerFolder
         self.expt_name = "res_spec"
         self.number_of_qubits = number_of_qubits
         self.experiment = experiment
+        self.increase_res_reps = increase_res_reps
+        self.increase_res_reps_to = increase_res_reps_to
         self.Qubit = 'Q' + str(1)
         self.QubitIndex = QubitIndex
         self.experiment = experiment
@@ -45,6 +47,9 @@ class PunchOut:
 
         if unmasking_resgain:
             self.exp_cfg["list_of_all_qubits"] = [self.QubitIndex]
+
+        if self.increase_res_reps:
+            self.exp_cfg['reps'] = self.increase_res_reps_to
 
         self.q_config = all_qubit_state(experiment, self.number_of_qubits)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}

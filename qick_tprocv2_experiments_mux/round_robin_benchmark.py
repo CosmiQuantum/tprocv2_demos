@@ -76,19 +76,19 @@ substudy_txt_notes = ('Initial qubit checkouts quiet run 9 \n')
 
 # set which of the following you'd like to run to 'True'
 
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": False, "ss": False, "ss_gef": False,
              "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False}
 
 # For 25dB DAC
-# res_leng_vals = [5.0, 6.75, 7.25, 6.0, 7.5, 5.0] # updated 4/11 except for Q5
-# res_gain = [0.9571, 0.6700, 0.8583, 0.6821, 1.0, 0.9571] #4/11, 25dB
-# freq_offsets = [-0.1385, -0.1385, -0.2308, -0.0462, 0, -0.1385] # 4/11, 25dB
+res_leng_vals = [7.75, 6.6, 7.0, 8.65, 7.0, 7.0]  # 25dB , 4/14
+res_gain = [0.85, 0.914, 0.925, 0.7048, 0.5, 0.98]  # 25dB, 4/14
+freq_offsets = [0.0, 0.0455, -0.0455, 0.0455, -0.0455, -0.18]  # 25dB, 4/14, 0.1364 Q1, -0.0455 Q3, 0.0455 Q6
 
 # For 20dB DAC
-res_leng_vals = [4.25, 5.25, 5.0, 5.0, 6.25, 4.5]  # 4/12, 20dB
-res_gain = [0.6400, 0.7300, 0.7800, 0.3750, 0.45, 0.7600]  # 4/12, 20dB
-freq_offsets = [0.2308, 0.1385, 0.0462, 0.1385, -0.1385, 0.1385]  # 4/12, 20dB
+# res_leng_vals = [4.25, 5.25, 5.0, 5.0, 6.25, 4.5]  # 4/12, 20dB
+# res_gain = [0.6400, 0.7300, 0.7800, 0.3750, 0.45, 0.7600]  # 4/12, 20dB,
+# freq_offsets = [0.2308, 0.1385, 0.0462, 0.1385, -0.1385, 0.1385]  # 4/12, 20dB
 
 #DO NOT CHANGE THESE:
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
@@ -97,7 +97,7 @@ rpm_any = False # and rabi population measurements?
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts
-sub_study = 'initial_checkouts_searching_for_Q5_junk_20dB'
+sub_study = 'DACatten_SSF_inv_allQs_25dB_junk' # Q1_2_3_4_25dB_DACatten_test_junk, initial_checkouts_searching_for_Q5_25dB_junk
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -199,7 +199,7 @@ while j < n:
         ef_qspec_survived = False
 
         # Get the config for this qubit
-        DAC_attenuator1 = 10
+        DAC_attenuator1 = 15
         DAC_attenuator2 = 10
         experiment = QICK_experiment(optimizationFolder, DAC_attenuator1=DAC_attenuator1, DAC_attenuator2=DAC_attenuator2,
                                      qubit_DAC_attenuator1=5,
@@ -226,6 +226,8 @@ while j < n:
             try:
                 increase_geres_reps = False
                 increase_geres_reps_to = None
+                use_savgol_smoothing_rspec = False
+
                 # if QubitIndex == 5:
                 #     increase_geres_reps = True
                 #     increase_geres_reps_to = 500 #400
@@ -233,11 +235,13 @@ while j < n:
                 #     increase_geres_reps = True
                 #     increase_geres_reps_to = 600
                 # if QubitIndex == 4:
+                #     use_savgol_smoothing_rspec = True
                 #     increase_geres_reps = True
-                #     increase_geres_reps_to = 500
+                #     increase_geres_reps_to = 1800
 
                 res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs, increase_geres_reps,
-                                                 increase_geres_reps_to, experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
+                                                 increase_geres_reps_to, experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
+                                                 use_savgol_smoothing = use_savgol_smoothing_rspec)
                 res_freqs, freq_pts, freq_center, amps, sys_config_rspec, meas_timestamp_resge = res_spec.run()
                 offset = freq_offsets[QubitIndex]  # use optimized offset values or whats set at top of script based on pre_optimize flag
                 offset_res_freqs = [r + offset for r in res_freqs]
@@ -261,16 +265,16 @@ while j < n:
                 increase_qspec_rounds_to = None
 
                 # if QubitIndex == 5:
-                #     increase_qubit_reps_qspec = True
-                #     qspecge_increase_reps_to = 1600
+                    # increase_qubit_reps_qspec = True
+                    # qspecge_increase_reps_to = 650
                     # increase_qspec_rounds = True
                     # increase_qspec_rounds_to = 2
 
                 if QubitIndex == 4:
                     increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 900
+                    qspecge_increase_reps_to = 1400
                     increase_qspec_rounds = True
-                    increase_qspec_rounds_to = 4
+                    increase_qspec_rounds_to = 2
 
                 if QubitIndex == 3:
                     increase_qubit_reps_qspec = True
@@ -278,9 +282,9 @@ while j < n:
                     # increase_qspec_rounds = True
                     # increase_qspec_rounds_to = 3
                 #
-                # if QubitIndex == 2:
-                #     increase_qubit_reps_qspec = True
-                #     qspecge_increase_reps_to = 800
+                if QubitIndex == 2:
+                    increase_qubit_reps_qspec = True
+                    qspecge_increase_reps_to = 800
 
                 q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
                                            signal, save_figs, increase_reps = increase_qubit_reps_qspec, increase_rounds =increase_qspec_rounds,
@@ -520,9 +524,9 @@ while j < n:
                     increase_qubit_reps_rpm_to = None
                     increase_qubit_reps2_rpm_to = None
 
-                    # if QubitIndex == 5:
-                    #     increase_qubit_reps2_rpm = True
-                    #     increase_qubit_reps2_rpm_to = 3500
+                    if QubitIndex == 5:
+                        increase_qubit_reps2_rpm = True
+                        increase_qubit_reps2_rpm_to = 2500
                     #
                     # if QubitIndex == 4:
                     #     increase_qubit_reps2_rpm = True
@@ -540,8 +544,9 @@ while j < n:
                                                                  increase_qubit_reps = increase_qubit_reps_rpm, increase_qubit_reps_to = increase_qubit_reps_rpm_to,
                                                                  increase_qubit_reps2 = increase_qubit_reps2_rpm, increase_qubit_reps2_to = increase_qubit_reps2_rpm_to,
                                                                  unmasking_resgain=unmask)
+
                     (I1_qtemp, Q1_qtemp, gains1_qtemp, I2_qtemp, Q2_qtemp, gains2_qtemp,
-                     A_amplitude1, A_amplitude2, fit_cosine1_qtemp, fit_cosine2_qtemp,
+                     A_amplitude1, A_amplitude2, A_amplitude_err1, A_amplitude_err2, fit_cosine1_qtemp, fit_cosine2_qtemp,
                      sysconfig_efrabi_Qtemps, meas_timestamp_rpm) = efAmprabi_Qtemps.run(experiment.soccfg, experiment.soc, use_iminuit_instead = use_iminuit_instead)
 
                     # --------------------- Live temp calc estimate --------------------------------

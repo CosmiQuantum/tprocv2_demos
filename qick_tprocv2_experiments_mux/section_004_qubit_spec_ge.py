@@ -172,12 +172,14 @@ class QubitSpectroscopy:
 
         # I subplot
         ax1.plot(freqs, I, label='I', linewidth=2)
+        #ax1.axvline(x=4345.67, linewidth=2, color='black')
         ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
         ax1.tick_params(axis='both', which='major', labelsize=16)
         ax1.legend()
 
         # Q subplot
         ax2.plot(freqs, Q, label='Q', linewidth=2)
+        #ax2.axvline(x=4345.67, linewidth=2, color='black')
         ax2.set_xlabel("Qubit Frequency (MHz)", fontsize=20)
         ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
         ax2.tick_params(axis='both', which='major', labelsize=16)

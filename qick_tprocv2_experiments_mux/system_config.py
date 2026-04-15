@@ -38,8 +38,8 @@ class QICK_experiment:
             ### NEW for the RF board
             self.qubit_center_freq = 4225 #4400  # To be in the middle of the qubit freqs.
             self.res_center_freq   = 6330  # To be in the middle of the res freqs. 3000-5000 see nothing,6000 and 7000 see something, 8000+ see nothing
-            self.soc.rfb_set_gen_filter(self.MIXMUXGEN_CH, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0)
-            self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.7) # 4225 + 1650/2 = 5050 MHz, so freqs above that get filtered out
+            self.soc.rfb_set_gen_filter(self.MIXMUXGEN_CH, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0) # bw is in units of GHz
+            self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.7) # 4225 + 1700/2 = 5075 MHz, so freqs above that get filtered out
             self.soc.rfb_set_ro_filter(self.MUXRO_CH[0], fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0) #readout ADC
             # Set attenuator on DAC.
             self.soc.rfb_set_gen_rf(self.MIXMUXGEN_CH, self.DAC_attenuator1, self.DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
@@ -111,7 +111,7 @@ class QICK_experiment:
                 "qubit_freq_ge_starked": [4189.737678, 3820.4723, 4161.3726, 4463.15226, 4471.4469, 4997.86], # Olivia 4/04 for zeno/stark tone
                 "fwhm_w01_starked": None, #for err bars
                 "fwhm_w01": None, #for err bars
-                "qubit_gain_ge":  [0.02, 0.0165, 0.06, 0.05, 0.085, 0.25], #0.1 for Q4 # run 9, # [0.0135, 0.005, 0.005, 0.005, 0.082, 0.015] run 8
+                "qubit_gain_ge":  [0.01, 0.0158, 0.04, 0.043, 1.0, 0.075], #0.04 Q5 [0.0135, 0.005, 0.005, 0.005, 0.082, 0.015] run 8
                 "qubit_ampl_gain_ge": [0.025] *6,
                 "qubit_pi_len": 0.11, # Olivia May 17th
                 # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
@@ -120,7 +120,7 @@ class QICK_experiment:
                 # "qubit_freq_ef": [4020.48, 3650.81, 3999.01, 4302.33, 4313.06, 4848.81], # run 8 # [MHz] Freqs of Qubit e/f Transition
                 "qubit_freq_fh": [4016.3, 3450.8, 3988.44, 4292.73, 4292.73, 4833.17],
                 "qubit_freq_ftores": [4016.3, 3644.76, 3988.44, 4292.73, 4303.18, 4833.17],
-                "qubit_gain_ef":  [0.008, 0.018, 0.06, 0.03, 0.2, 0.16], # run 8: [0.0053, 0.01, 0.0077, 0.0045, 0.00955, 0.02],
+                "qubit_gain_ef":  [0.008, 0.016, 0.05, 0.028, 0.06, 0.16], # run 8: [0.0053, 0.01, 0.0077, 0.0045, 0.00955, 0.02],
                 "qubit_gain_fh": [0.001, 0.015, 0.0075, 0.1, 0.15, 0.005],
                 'qubit_gain_ftores': [1]*6,#[0.2, 0.14, 0.04, 0.17, 0.13, 0.08],
                 # [0.01, 0.05, 0.05, 0.05, 0.01, 0.5], # [DAC units] Pulse Gain
@@ -129,10 +129,10 @@ class QICK_experiment:
                 "qubit_phase": 0,  # [deg]
                 #"sigma": [0.15]*6,  # [us] for Gaussian Pulse (5+10 DAC atten for qubit)
                 "sigma_ampl": [0.03, 0.03, 0.05, 0.04, 0.05, 0.05], #DAC 0 04/07
-                "sigma": [0.11, 0.07, 0.22, 0.22, 0.42, 0.85], # 19dB: [0.26, 0.43, 0.46, 0.42, 0.385, 1.01], # DAC 2 04/07 [us] for Gaussian Pulse (5+10 DAC atten for qubit). Updated on 7/17 by Arianna
+                "sigma": [0.11, 0.07, 0.22, 0.22, 0.265, 0.85], # 19dB: [0.26, 0.43, 0.46, 0.42, 0.385, 1.01], # DAC 2 04/07 [us] for Gaussian Pulse (5+10 DAC atten for qubit). Updated on 7/17 by Arianna
                 #"sigma": [0.05, 0.09, 0.07, 0.065, 0.09, 0.3],  # Goal: cut sigma in half [us] for Gaussian Pulse (5+4 DAC atten for qubit)
                 # "pi_amp": [0.92, 0.87, 0.75, 0.73, 0.77, 0.78], # old RR values
-                "sigma_ef": [0.08, 0.13, 0.28, 0.16, 0.22, 0.41], #run 9: updated all except Q5 # run 8: [0.1, 0.25, 0.2, 0.25, 0.17, 0.28],
+                "sigma_ef": [0.08, 0.13, 0.29, 0.16, 0.22, 0.41], #run 9: updated all except Q5 # run 8: [0.1, 0.25, 0.2, 0.25, 0.17, 0.28],
                 "sigma_fh": [0.15, 0.21, 0.25, 0.29, 0.28, 0.5],  # [us] for Gaussian Pulse, #Arianna 3/27
                 "pi_amp": [0.66, 0.68, 0.65, 0.65, 0.66, 0.69], # Arianna 10/10, run 8
                 "pi_amp_ampl": [0.5942, 0.634499, 0.76542, 0.7754, 0.55393, 0.9], # Joyce 04/07 DAC 0

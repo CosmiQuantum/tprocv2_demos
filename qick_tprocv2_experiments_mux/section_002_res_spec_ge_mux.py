@@ -4,6 +4,7 @@ from tqdm import tqdm
 from build_state import *
 from expt_config import *
 import copy
+from scipy.signal import savgol_filter
 import datetime
 import logging
 import time
@@ -36,9 +37,10 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
 class ResonanceSpectroscopy:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, save_figs, increase_res_reps = False,
                  increase_res_reps_to = None, experiment = None, verbose = False, logger = None, qick_verbose=True,
-                 unmasking_resgain = False):
+                 unmasking_resgain = False, use_savgol_smoothing = False):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
+        self.use_savgol_smoothing = use_savgol_smoothing
         self.number_of_qubits = number_of_qubits
         self.outerFolder = outerFolder
         self.expt_name = "res_spec"
@@ -80,10 +82,17 @@ class ResonanceSpectroscopy:
                 amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])
         amps = np.array(amps)
         measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
-        res_freqs = self.plot_results(fpts, fcenter, amps) #return freqs from plotting loop so we can use to update experiment
+
+        # New, can comment out (optional). Smooths out res spec amps curve to extract the minima
+        if self.use_savgol_smoothing:
+            filtered_amps = np.array(savgol_filter(amps, window_length=21, polyorder=3))
+            res_freqs = self.plot_results(fpts, fcenter, filtered_amps, smoothed_amps = True)  # return freqs from plotting loop so we can use to update experiment
+        else:
+            res_freqs = self.plot_results(fpts, fcenter, amps) #return freqs from plotting loop so we can use to update experiment
+
         return res_freqs, fpts, fcenter, amps, self.config, measurement_timestamp
 
-    def plot_results(self, fpts, fcenter, amps, reloaded_config = None, fig_quality = 100):
+    def plot_results(self, fpts, fcenter, amps, reloaded_config = None, fig_quality = 100, smoothed_amps = False):
         res_freqs = []
         plt.figure(figsize=(12, 8))
         plt.rcParams.update({
@@ -112,10 +121,15 @@ class ResonanceSpectroscopy:
             plt.ylim(plt.ylim()[0] - 0.05 * (plt.ylim()[1] - plt.ylim()[0]), plt.ylim()[1])
 
         if self.experiment is not None:
-            plt.suptitle(f"MUXed resonator spectroscopy {self.config['reps']}*{self.config['rounds']} avgs", fontsize=24, y=0.95)
+            if smoothed_amps:
+                plt.suptitle(f"Smoothed MUXed resonator spectroscopy {self.config['reps']}*{self.config['rounds']} avgs",fontsize=24, y=0.95)
+            else:
+                plt.suptitle(f"MUXed resonator spectroscopy {self.config['reps']}*{self.config['rounds']} avgs", fontsize=24, y=0.95)
         else:
-            plt.suptitle(f"MUXed resonator spectroscopy {reloaded_config ['reps']}*{reloaded_config ['rounds']} avgs",
-                         fontsize=24, y=0.95)
+            if smoothed_amps:
+                plt.suptitle(f"Smoothed MUXed resonator spectroscopy {reloaded_config['reps']}*{reloaded_config['rounds']} avgs", fontsize=24, y=0.95)
+            else:
+                plt.suptitle(f"MUXed resonator spectroscopy {reloaded_config ['reps']}*{reloaded_config ['rounds']} avgs", fontsize=24, y=0.95)
         plt.tight_layout(pad=2.0)
 
         if self.save_figs:

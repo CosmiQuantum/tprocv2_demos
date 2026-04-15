@@ -28,10 +28,10 @@ number_of_qubits = 6 # for QUIET 6, for NEXUS 4
 list_of_all_qubits = [0,1,2,3,4,5] # for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0, 1, 2, 3]
 
 # For Quiet
-substudy = "opt_Q5_20dBDAC"
+substudy = "opt_allQs_25dBDAC"
 outerFolder = os.path.join(f"/data/QICK_data/run9/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 
-opt_flags = {"res_leng_sweep": False, "2d_sweep": True}
+opt_flags = {"res_leng_sweep": True, "2d_sweep": False}
 
 def create_folder_if_not_exists(folder_path):
     """Creates a folder at the given path if it doesn't already exist."""
@@ -47,27 +47,27 @@ create_folder_if_not_exists(output_folder_length)
 outerfolder_plots = outerFolder + "/documentation/"
 
 n = 1  # Number of rounds
-n_loops = 3 # Number of repetitions per length to average
+n_loops = 1 # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [4]
+Qs = [5]
 
 # For 25dB DAC
-# res_leng_vals = [5.0, 6.75, 7.25, 6.0, 7.5, 5.0] # updated 4/11 except for Q5
-# res_gain = [0.9571, 0.6700, 0.8583, 0.6821, 1.0, 0.9571] #4/11, 25dB
-# freq_offsets = [-0.1385, -0.1385, -0.2308, -0.0462, 0, -0.1385] # 4/11, 25dB
+res_leng_vals = [7.75, 6.6, 7.0, 8.65, 7.0, 7.0]  # 25dB , 4/14
+res_gain = [0.85, 0.914, 0.925, 0.7048, 0.657, 0.98]  # 25dB, 4/14
+freq_offsets = [0.0, 0.0455, -0.0455, 0.0455, -0.0455, -0.18]  # 25dB, 4/14, 0.1364 Q1, -0.0455 Q3, 0.0455 Q6
 
 # For 20dB DAC
-res_leng_vals = [4.25, 5.25, 5.0, 5.0, 6.25, 4.5]  # 4/12, 20dB
-res_gain = [0.6400, 0.7300, 0.7800, 0.3750, 0.45, 0.7600]  # 4/12, 20dB
-freq_offsets = [0.2308, 0.1385, 0.0462, 0.1385, -0.1385, 0.1385]  # 4/12, 20dB
+# res_leng_vals = [4.25, 5.25, 5.0, 5.0, 6.25, 4.5]  # 4/12, 20dB
+# res_gain = [0.6400, 0.7300, 0.7800, 0.3750, 0.45, 0.7600]  # 4/12, 20dB
+# freq_offsets = [0.2308, 0.1385, 0.0462, 0.1385, -0.1385, 0.1385]  # 4/12, 20dB
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_freq_ge = [None] * 6 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
 
 j=0 # round number, from RR code. Not really used here since we just run it once for each qubit
 
-lengs = np.arange(2.0, 8.0, 0.25)
+lengs = np.arange(5.0, 9.0, 0.25)
 start=time.time()
 
 for QubitIndex in Qs:
@@ -78,7 +78,7 @@ for QubitIndex in Qs:
     ef_qspec_survived = False
 
     # Get the config for this qubit
-    DAC_attenuator1 = 10
+    DAC_attenuator1 = 15
     DAC_attenuator2 = 10
     experiment = QICK_experiment(outerFolder, DAC_attenuator1=DAC_attenuator1, DAC_attenuator2=DAC_attenuator2,
                                  qubit_DAC_attenuator1=5,
@@ -127,16 +127,16 @@ for QubitIndex in Qs:
     increase_qspec_rounds_to = None
 
     # if QubitIndex == 5:
-    #     increase_qubit_reps_qspec = True
-    #     qspecge_increase_reps_to = 1600
+    # increase_qubit_reps_qspec = True
+    # qspecge_increase_reps_to = 650
     # increase_qspec_rounds = True
     # increase_qspec_rounds_to = 2
 
     if QubitIndex == 4:
         increase_qubit_reps_qspec = True
-        qspecge_increase_reps_to = 1100
+        qspecge_increase_reps_to = 1200
         increase_qspec_rounds = True
-        increase_qspec_rounds_to = 3
+        increase_qspec_rounds_to = 4
 
     if QubitIndex == 3:
         increase_qubit_reps_qspec = True
@@ -144,9 +144,9 @@ for QubitIndex in Qs:
         # increase_qspec_rounds = True
         # increase_qspec_rounds_to = 3
     #
-    # if QubitIndex == 2:
-    #     increase_qubit_reps_qspec = True
-    #     qspecge_increase_reps_to = 800
+    if QubitIndex == 2:
+        increase_qubit_reps_qspec = True
+        qspecge_increase_reps_to = 800
 
     q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, outerfolder_plots, j,
                                signal, save_figs, increase_reps=increase_qubit_reps_qspec,
@@ -238,8 +238,8 @@ for QubitIndex in Qs:
                     res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=gain)
                     experiment.readout_cfg['res_gain_ge'] = res_gains
 
-                    save_figs_ss = False
-                    ss = SingleShot(QubitIndex, number_of_qubits, outerFolder,  j, save_figs_ss, experiment, unmasking_resgain = unmask)  # updated way
+                    save_figs_ss = True
+                    ss = SingleShot(QubitIndex, number_of_qubits, outerfolder_plots,  j, save_figs_ss, experiment, unmasking_resgain = unmask)  # updated way
                     fid, angle, iq_list_g, iq_list_e, ss_config, _ = ss.run()
                     print(ss_config)
                     fids.append(fid)
@@ -313,35 +313,35 @@ for QubitIndex in Qs:
         ## punchout thresholds: [1.0, 0.886, 1.0, 0.771, 1.0, 1.0] 25dB, [0.8, 0.75, 0.8, 0.5, 0.65, 0.8] 20dB
         # Define sweeping parameters
         if QubitIndex == 0:
-            gain_range = [0.4, 0.8] #1.0
-            gain_steps = 20
+            gain_range = [0.6, 1.0]
+            gain_steps = 17
         elif QubitIndex == 1:
-            gain_range = [0.35, 0.75]
-            gain_steps = 20
+            gain_range = [0.45, 0.75]
+            gain_steps = 13
         elif QubitIndex == 2:
-            gain_range = [0.4, 0.8] # 0.9
-            gain_steps = 20
+            gain_range = [0.5, 0.9]
+            gain_steps = 17
         elif QubitIndex == 3:
-            gain_range = [0.25, 0.5] # 0.8
-            gain_steps = 8
-        elif QubitIndex == 4: # 0.725
-            gain_range = [0.3, 0.6]
-            gain_steps = 8
+            gain_range = [0.3, 0.8]
+            gain_steps = 21
+        elif QubitIndex == 4:
+            gain_range = [0.35, 0.95]
+            gain_steps = 25
         elif QubitIndex == 5:
-            gain_range = [0.4, 0.8] #1.0
-            gain_steps = 20
+            gain_range = [0.9, 1.0]
+            gain_steps = 11
 
-        freq_steps = 13
+        freq_steps = 11
 
         print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')
         # Select the reference frequency for the current resonator
         reference_frequency = res_freq_ge[QubitIndex]
 
-        freq_range = [reference_frequency - 0.6, reference_frequency + 0.6] # Frequency range in MHz
+        freq_range = [reference_frequency - 0.5, reference_frequency + 0.5] # Frequency range in MHz
 
         experiment = copy.deepcopy(tuned_experiment)
         save_figs_ss = False
-        sweep = GainFrequencySweep(QubitIndex, number_of_qubits, list_of_all_qubits, experiment, optimal_lengths=optimal_lengths, output_folder=output_folder, unmasking_resgain = unmask,
+        sweep = GainFrequencySweep(QubitIndex, number_of_qubits, list_of_all_qubits, experiment, optimal_lengths=optimal_lengths, output_folder=outerfolder_plots, unmasking_resgain = unmask,
                                    save_figs = save_figs_ss)
         results = sweep.run_sweep(freq_range, gain_range, freq_steps, gain_steps)
         results = np.array(results)

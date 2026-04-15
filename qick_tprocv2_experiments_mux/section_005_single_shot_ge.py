@@ -172,10 +172,16 @@ class SingleShot:
         iq_list_e = ssp_e.acquire(soc, soft_avgs=1, progress=False)
 
         # Use the fidelity calculation from SingleShotGE
+
+        this_resgain = self.config['res_gain_ge'][self.QubitIndex]
+        this_resgain = f"{this_resgain:.2f}"
+        this_res_freq = self.config['res_freq_ge'][self.QubitIndex]
+        this_res_freq = f"{this_res_freq:.2f}"
+
         fidelity, _, _, _,_ = self.hist_ssf(self.QubitIndex,
             data=[iq_list_g[self.QubitIndex][0].T[0], iq_list_g[self.QubitIndex][0].T[1],
                   iq_list_e[self.QubitIndex][0].T[0], iq_list_e[self.QubitIndex][0].T[1]],
-            cfg=self.config, plot=False)
+            cfg=self.config, plot=self.save_figs, file_ext = f"{this_resgain}_{this_res_freq}")
 
         return fidelity
 
@@ -211,7 +217,7 @@ class SingleShot:
         self.logger.info('Optimal angle after rotation = %f' % angle)
         return fid, angle
 
-    def hist_ssf(self, QubitIndex, data=None, cfg=None, plot=True,  fig_quality = 100):
+    def hist_ssf(self, QubitIndex, data=None, cfg=None, plot=True,  fig_quality = 100, file_ext=""):
 
         ig = data[0]
         qg = data[1]
@@ -286,7 +292,7 @@ class SingleShot:
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
             file_name = os.path.join(outerFolder_expt,
-                                     f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
+                                     f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_{file_ext}.png")
 
             axs[2].set_title(f"Q{QubitIndex + 1} Fidelity = {fid * 100:.2f}%")
             fig.savefig(file_name,  dpi=fig_quality, bbox_inches='tight')
@@ -434,7 +440,8 @@ class GainFrequencySweep:
 
                 # Initialize SingleShotGE instance for fidelity calculation
                 round_num = 0
-                single_shot = SingleShot(self.qubit_index, self.number_of_qubits,  self.output_folder, round_num, self.save_figs, fresh_experiment, unmasking_resgain = self.unmasking_resgain)
+                plots_path = self.output_folder + "/documentation/"
+                single_shot = SingleShot(self.qubit_index, self.number_of_qubits,  plots_path, round_num, self.save_figs, fresh_experiment, unmasking_resgain = self.unmasking_resgain)
                 fidelity = single_shot.fidelity_test(fresh_experiment.soccfg, fresh_experiment.soc)
                 fid_results.append(fidelity)
                 del fresh_experiment
