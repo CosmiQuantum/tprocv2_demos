@@ -57,8 +57,8 @@ for QubitIndex in Qs:
         start_gain, stop_gain, num_points = 0.7, 0.81, 6# 0.45, 0.47, 3
     elif QubitIndex == 4:
         start_gain, stop_gain, num_points = 0.2, 1.0, 8 # 0.5, 1.0, 5
-        increase_geres_reps = True
-        increase_geres_reps_to = 1200
+        # increase_geres_reps = True
+        # increase_geres_reps_to = 1200
     elif QubitIndex == 5:
         start_gain, stop_gain, num_points = 0.96, 1.0, 5 # 0.85,0.9, 4
     else:

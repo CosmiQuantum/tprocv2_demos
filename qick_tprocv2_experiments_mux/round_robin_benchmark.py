@@ -33,14 +33,14 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1 # number of rounds
+n = 1000 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
 ssf_avgs_per_opt_pt = 5 # ignore
 ef_res_sample_number = 1 # keep this as one
 save_r = 1  # how many rounds to save after. KEEP THIS AS ONE!!!!!!!!
-qubit_freqs_ef = [None] * 6 # don't change this. These get updated later on in the code.
+qubit_freqs_ef = [None] * 6 # don't change this!!! These get updated later on in the code.
 number_of_qubits = 6 # total
 figure_quality = 200
 signal = 'None'  # 'I', or 'Q' depending on where the signal is (after optimization). Keep as None
@@ -50,7 +50,7 @@ fit_data = True  # fit the data here and save or plot the fits?
 save_data_h5 = True  # save all of the data to h5 files?
 verbose = True  # print everything to the console in real time, good for debugging, bad for memory
 qick_verbose = True  # qick verbose prints the progress bar for each qick experiment as it is happening (the red bar that fills out as more experiment rounds/reps are being done)
-debug_mode = True  # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
+debug_mode = False  # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 thresholding = False  # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 
 increase_qubit_reps_t1 = False  # if you want to increase the reps for a qubit, set to True
@@ -81,9 +81,9 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": False, "ss"
              "rabi_pop_meas": False, "ef_Rabi": False}
 
 # For 25dB DAC
-res_leng_vals = [7.75, 6.6, 7.0, 8.65, 7.0, 7.0]  # 25dB , 4/14
-res_gain = [0.85, 0.914, 0.925, 0.7048, 0.5, 0.98]  # 25dB, 4/14
-freq_offsets = [0.0, 0.0455, -0.0455, 0.0455, -0.0455, -0.18]  # 25dB, 4/14, 0.1364 Q1, -0.0455 Q3, 0.0455 Q6
+res_leng_vals = [7.75, 6.6, 7.0, 8.65, 6.5, 7.0]  # 25dB , 4/14
+res_gain = [0.85, 0.914, 0.925, 0.7048, 0.82, 0.98]  # 25dB, 4/14
+freq_offsets = [0.0, 0.0455, -0.0455, 0.0455, 0.0455, -0.18]  # 25dB, 4/14, 0.1364 Q1, -0.0455 Q3, 0.0455 Q6
 
 # For 20dB DAC
 # res_leng_vals = [4.25, 5.25, 5.0, 5.0, 6.25, 4.5]  # 4/12, 20dB
@@ -97,7 +97,7 @@ rpm_any = False # and rabi population measurements?
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts
-sub_study = 'DACatten_SSF_inv_allQs_25dB_junk' # Q1_2_3_4_25dB_DACatten_test_junk, initial_checkouts_searching_for_Q5_25dB_junk
+sub_study = 'Q5_Qfreq_TLS_inv_25db_DACatten' # Q1_2_3_4_25dB_DACatten_test_junk, initial_checkouts_searching_for_Q5_25dB_junk, DACatten_SSF_inv_allQs_25dB_junk
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -528,9 +528,9 @@ while j < n:
                         increase_qubit_reps2_rpm = True
                         increase_qubit_reps2_rpm_to = 2500
                     #
-                    # if QubitIndex == 4:
-                    #     increase_qubit_reps2_rpm = True
-                    #     increase_qubit_reps2_rpm_to = 4000
+                    if QubitIndex == 4:
+                        increase_qubit_reps2_rpm = True
+                        increase_qubit_reps2_rpm_to = 3400
                     #
                     # if QubitIndex == 3:
                     #     increase_qubit_reps_rpm = True
@@ -612,6 +612,11 @@ while j < n:
                     increase_qubit_reps_t2r = True
                     qubit_to_increase_t2r_reps_for = QubitIndex
                     multiply_qubit_t2r_reps_by = 2 # must be integer
+
+                if QubitIndex == 4:
+                    increase_qubit_reps_t2r = True
+                    qubit_to_increase_t2r_reps_for = QubitIndex
+                    multiply_qubit_t2r_reps_by = 3 # must be integer
 
                 t2r = T2RMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                      experiment=experiment, live_plot=live_plot, fit_data=fit_data,
@@ -741,7 +746,7 @@ while j < n:
                 ef_qspec_data[QubitIndex]['Q Fit'][j - batch_num * save_r - 1] = efqspec_Q_fit
                 ef_qspec_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
                 ef_qspec_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-                ef_qspec_data[QubitIndex]['Recycled QFreq'][j - batch_num * save_r - 1] = False  # no rr so no recycling here
+                ef_qspec_data[QubitIndex]['Recycled QFreq'][j - batch_num * save_r - 1] = False  # no recycling here
                 ef_qspec_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
                 ef_qspec_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_qspec_ef
                 ef_qspec_any = True
