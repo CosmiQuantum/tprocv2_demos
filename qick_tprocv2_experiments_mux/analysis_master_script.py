@@ -47,7 +47,7 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
-run_num_list = [4,5,6,7,8]
+run_num_list = [9]
 t1_vals_by_run  = {}
 t2r_vals_by_run = {}
 t2e_vals_by_run = {}
@@ -60,6 +60,15 @@ qfreq_errs_by_run = {}
 
 for run_number in run_num_list:
     print(f'Processing run {run_number} data.')
+    if run_number == 9:
+        process_shots_t1ge = True
+        per_pt_errs_t1 = True
+        run_name = "run9/6transmon/round_robin_benchmark/Q5_Qfreq_TLS_inv_25db_DACatten"
+        data_path = f'/data/QICK_data/{run_name}'
+        plots_path = "/data/QICK_data/run9/6transmon/analysis"
+
+        top_folder_dates = ["2026-04-15_17-40-22"]
+
     if run_number == 8:
         process_shots_t1ge = True
         per_pt_errs_t1 = True
@@ -352,7 +361,7 @@ for run_number in run_num_list:
 #
 # ######################################### 04: Qubit Freqs vs Time Plots #############################################
 #q_spec_vs_time.plot_without_errs(date_times_q_spec, q_freqs,show_legends)
-# q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends)
+q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends)
 #q_spec_vs_time.plot_with_errs_single_plot(date_times_q_spec, q_freqs, qspec_fit_err, show_legends=True)
 
 # ############################################## 05: Pi Amp vs Time Plots ###############################################
@@ -574,14 +583,14 @@ for run_number in run_num_list:
 # )
 
 ## Qubit freq box plots
-ge_qfreq_centers = [4189.8773, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86] # plots will be centered around these vals
-boxwhisker_qfreq_per_qubit_vs_run(
-    run_num_list,
-    qfreq_vals_by_run=qfreq_vals_by_run,
-    qfreq_errs_by_run=qfreq_errs_by_run,
-    qfreq_centers=ge_qfreq_centers,
-    freq_window=50.0,
-    save_plt_path = "/data/QICK_data/multirun_analysis/coherence_analysis") # set to 'None' to use plt.show()
+# ge_qfreq_centers = [4189.8773, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86] # plots will be centered around these vals
+# boxwhisker_qfreq_per_qubit_vs_run(
+#     run_num_list,
+#     qfreq_vals_by_run=qfreq_vals_by_run,
+#     qfreq_errs_by_run=qfreq_errs_by_run,
+#     qfreq_centers=ge_qfreq_centers,
+#     freq_window=50.0,
+#     save_plt_path = "/data/QICK_data/multirun_analysis/coherence_analysis") # set to 'None' to use plt.show()
 
 # # ################################## 18: Allan Deviation/ Welch Spectral Density #########################################
 # stats = AllanWelchStats(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
