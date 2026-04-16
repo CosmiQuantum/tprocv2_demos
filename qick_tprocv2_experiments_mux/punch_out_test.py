@@ -48,19 +48,19 @@ for QubitIndex in Qs:
     increase_geres_reps = False
     increase_geres_reps_to = None
     if QubitIndex == 0:
-        start_gain, stop_gain, num_points = 0.9, 1.0, 5 # 0.8, 0.97, 5
+        start_gain, stop_gain, num_points = 0.8, 1.0, 5 # 0.8, 0.97, 5
     elif QubitIndex == 1:
-        start_gain, stop_gain, num_points = 0.9, 1.0, 5 # 0.74, 0.79, 5
+        start_gain, stop_gain, num_points = 0.8, 1.0, 5 # 0.74, 0.79, 5
     elif QubitIndex == 2:
-        start_gain, stop_gain, num_points = 0.9, 1.0, 5 # 0.95, 0.99, 4
+        start_gain, stop_gain, num_points = 0.8, 1.0, 5 # 0.95, 0.99, 4
     elif QubitIndex == 3:
-        start_gain, stop_gain, num_points = 0.7, 0.81, 6# 0.45, 0.47, 3
+        start_gain, stop_gain, num_points = 0.4, 1.0, 5# 0.45, 0.47, 3
     elif QubitIndex == 4:
-        start_gain, stop_gain, num_points = 0.2, 1.0, 8 # 0.5, 1.0, 5
+        start_gain, stop_gain, num_points = 0.4, 1.0, 5# 0.5, 1.0, 5
         # increase_geres_reps = True
         # increase_geres_reps_to = 1200
     elif QubitIndex == 5:
-        start_gain, stop_gain, num_points = 0.96, 1.0, 5 # 0.85,0.9, 4
+        start_gain, stop_gain, num_points = 0.8, 1.0, 5 # 0.85,0.9, 4
     else:
         raise ValueError(f"Invalid QubitIndex {QubitIndex} for 6transmon chip at QUIET.")
 

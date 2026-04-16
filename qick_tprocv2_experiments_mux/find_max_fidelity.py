@@ -6,8 +6,7 @@ import datetime
 
 # Directory where your HDF5 files are stored
 #For QUIET
-outerFolder = "/data/QICK_data/run9/6transmon/readout_optimization/opt_Q5_25dBDAC/2026-04-15_15-50-32/study_data/Data_h5/2D_Gain_Freq_Sweeps"
-
+outerFolder = "/data/QICK_data/run9/6transmon/readout_optimization/opt_Q5_25dBDAC/2026-04-15_21-50-04/study_data/Data_h5/2D_Gain_Freq_Sweeps"
 
 print('For files inside: ', outerFolder)
 
@@ -120,7 +119,7 @@ def find_configurations_below_threshold(file_path, threshold):
     return valid_configurations
 
 # Now getting results
-punchout_thresholds =  [0.91, 0.914, 1.0, 0.771, 0.886, 1.0]
+punchout_thresholds =  [0.8, 0.9, 1.0, 0.771, 0.886, 1.0]
 for qubit_index in range(1, 7):
     file_pattern = os.path.join(outerFolder, f"*_Qubit_{qubit_index}_*.h5")
     file_list = glob.glob(file_pattern)

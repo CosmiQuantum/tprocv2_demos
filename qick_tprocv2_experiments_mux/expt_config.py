@@ -74,11 +74,11 @@ if FRIDGE == "QUIET":
         # },
 
         "qubit_spec_ge": {
-            "reps": 500, #300
+            "reps": 600, #300
             "rounds": 1, #10
             "start": list(VNA_qubit-2.0), # [MHz]
             "stop": list(VNA_qubit+2.0), # [MHz]
-            "steps": 205, # 220 for -3 +3, 400 for -40, +40, 320 for -6 +6
+            "steps": 210, # 220 for -3 +3, 400 for -40, +40, 320 for -6 +6
             "relax_delay":10,#1000 # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -214,7 +214,7 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ef": {
-            "reps": 320,#400, # for Pg pulse sequence during rpm, or regular ef rabi
+            "reps": 290,#400, # for Pg pulse sequence during rpm, or regular ef rabi
             "reps2": 1500, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures (rpm). Pe pulse sequence
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
@@ -367,7 +367,7 @@ if FRIDGE == "QUIET":
         },
 
         "Ramsey_ge": {
-            "reps": 400, #300
+            "reps": 500, #300
             "rounds": 1,#10
             "start": [0.0] * 6, # [us]
             "stop":  [60] * 6, # [us]

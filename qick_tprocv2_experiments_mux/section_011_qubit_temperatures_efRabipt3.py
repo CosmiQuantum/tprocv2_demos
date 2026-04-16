@@ -16,7 +16,7 @@ from scipy.signal import argrelextrema
 class Temps_EFAmpRabiExperiment:
     def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits,  outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
                  increase_qubit_reps = False, increase_qubit_reps_to = 400, increase_qubit_reps2 = False,
-                 increase_qubit_reps2_to = 1000, unmasking_resgain = False):
+                 increase_qubit_reps2_to = 1000, unmasking_resgain = False, save_shots = False):
 
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
@@ -27,6 +27,7 @@ class Temps_EFAmpRabiExperiment:
         self.round_num = round_num
         self.live_plot = live_plot
         self.signal = signal
+        self.save_shots = save_shots # not implemented yet
         self.save_figs = save_figs
         self.experiment = experiment
         self.list_of_all_qubits = list_of_all_qubits

@@ -33,7 +33,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1000 # number of rounds
+n = 100000000 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -67,23 +67,23 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [4] # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,3,5] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run9'
 device_name = '6transmon'
-substudy_txt_notes = ('Initial qubit checkouts quiet run 9 \n')
+substudy_txt_notes = ('Initial test data for AB paper. All qubits minus Q5. Quiet run 9 \n')
 
 # set which of the following you'd like to run to 'True'
 
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": False, "ss": False, "ss_gef": False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
-             "rabi_pop_meas": False, "ef_Rabi": False}
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
+             "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
+             "rabi_pop_meas": True, "ef_Rabi": False}
 
-# For 25dB DAC
-res_leng_vals = [7.75, 6.6, 7.0, 8.65, 6.5, 7.0]  # 25dB , 4/14
-res_gain = [0.85, 0.914, 0.925, 0.7048, 0.82, 0.98]  # 25dB, 4/14
-freq_offsets = [0.0, 0.0455, -0.0455, 0.0455, 0.0455, -0.18]  # 25dB, 4/14, 0.1364 Q1, -0.0455 Q3, 0.0455 Q6
+# For 25dB DAC, 4/15
+res_leng_vals = [6.0, 6.75, 5.75, 7.25, 6.5, 7.5]  # 25dB
+res_gain = [0.72, 0.7800, 0.9200, 0.7200, 0.82, 0.9800]  # 25dB
+freq_offsets = [-0.1286, -0.1286, -0.3000, -0.3000, 0.0455, 0.1286]  # 25dB
 
 # For 20dB DAC
 # res_leng_vals = [4.25, 5.25, 5.0, 5.0, 6.25, 4.5]  # 4/12, 20dB
@@ -97,7 +97,7 @@ rpm_any = False # and rabi population measurements?
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts
-sub_study = 'Q5_Qfreq_TLS_inv_25db_DACatten' # Q1_2_3_4_25dB_DACatten_test_junk, initial_checkouts_searching_for_Q5_25dB_junk, DACatten_SSF_inv_allQs_25dB_junk
+sub_study = 'AB_paper_test_data_25dB_DACatten_noQ5' # Q1_2_3_4_25dB_DACatten_test_junk, initial_checkouts_searching_for_Q5_25dB_junk, DACatten_SSF_inv_allQs_25dB_junk
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -276,15 +276,19 @@ while j < n:
                     increase_qspec_rounds = True
                     increase_qspec_rounds_to = 2
 
-                if QubitIndex == 3:
-                    increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 800
-                    # increase_qspec_rounds = True
-                    # increase_qspec_rounds_to = 3
+                # if QubitIndex == 3:
+                #     increase_qubit_reps_qspec = True
+                #     qspecge_increase_reps_to = 600
+                #     # increase_qspec_rounds = True
+                #     # increase_qspec_rounds_to = 3
                 #
                 if QubitIndex == 2:
                     increase_qubit_reps_qspec = True
                     qspecge_increase_reps_to = 800
+
+                if QubitIndex == 1:
+                    increase_qubit_reps_qspec = True
+                    qspecge_increase_reps_to = 650
 
                 q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
                                            signal, save_figs, increase_reps = increase_qubit_reps_qspec, increase_rounds =increase_qspec_rounds,
