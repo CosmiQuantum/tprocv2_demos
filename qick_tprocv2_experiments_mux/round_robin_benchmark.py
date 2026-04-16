@@ -67,7 +67,7 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [0,1,2,3,5] # only list the qubits you want to do the RR for
+Qs_to_look_at = [0, 5] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run9'
@@ -82,7 +82,7 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss":
 
 # For 25dB DAC, 4/15
 res_leng_vals = [6.0, 6.75, 5.75, 7.25, 6.5, 7.5]  # 25dB
-res_gain = [0.72, 0.7800, 0.9200, 0.7200, 0.82, 0.9800]  # 25dB
+res_gain = [0.72, 0.7800, 0.9200, 0.7100, 0.82, 0.9800]  # 25dB
 freq_offsets = [-0.1286, -0.1286, -0.3000, -0.3000, 0.0455, 0.1286]  # 25dB
 
 # For 20dB DAC
@@ -97,7 +97,7 @@ rpm_any = False # and rabi population measurements?
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts
-sub_study = 'AB_paper_test_data_25dB_DACatten_noQ5' # Q1_2_3_4_25dB_DACatten_test_junk, initial_checkouts_searching_for_Q5_25dB_junk, DACatten_SSF_inv_allQs_25dB_junk
+sub_study = 'DACatten_SSF_inv_allQs_25dB_junk' # AB_paper_test_data_25dB_DACatten_noQ5, initial_checkouts_searching_for_Q5_25dB_junk, DACatten_SSF_inv_allQs_25dB_junk
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -610,23 +610,28 @@ while j < n:
             try:
                 increase_qubit_reps_t2r = False  # if you want to increase the reps for a qubit, set to True
                 qubit_to_increase_t2r_reps_for = None
-                multiply_qubit_t2r_reps_by = 1 # doesn't apply unless the above flags are updated and set to True
+                increase_t2r_qubit_reps_to = 1 # doesn't apply unless the above flags are updated and set to True
+
+                if QubitIndex == 2:
+                    increase_qubit_reps_t2r = True
+                    qubit_to_increase_t2r_reps_for = QubitIndex
+                    increase_t2r_qubit_reps_to = 600 # must be integer
 
                 if QubitIndex == 3:
                     increase_qubit_reps_t2r = True
                     qubit_to_increase_t2r_reps_for = QubitIndex
-                    multiply_qubit_t2r_reps_by = 2 # must be integer
+                    increase_t2r_qubit_reps_to = 1500 # must be integer
 
                 if QubitIndex == 4:
                     increase_qubit_reps_t2r = True
                     qubit_to_increase_t2r_reps_for = QubitIndex
-                    multiply_qubit_t2r_reps_by = 3 # must be integer
+                    increase_t2r_qubit_reps_to = 1500 # must be integer
 
                 t2r = T2RMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                      experiment=experiment, live_plot=live_plot, fit_data=fit_data,
                                      increase_qubit_reps=increase_qubit_reps_t2r,
                                      qubit_to_increase_reps_for=qubit_to_increase_t2r_reps_for,
-                                     multiply_qubit_reps_by=multiply_qubit_t2r_reps_by,
+                                     increase_qubit_reps_to=increase_t2r_qubit_reps_to,
                                      verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
                 t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey, sys_config_t2r, meas_timestamp_t2r = t2r.run(
                     thresholding=thresholding, use_iminuit_instead = use_iminuit_instead)

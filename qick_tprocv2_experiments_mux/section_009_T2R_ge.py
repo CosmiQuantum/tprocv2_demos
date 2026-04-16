@@ -200,7 +200,8 @@ class T2RProgram(AveragerProgramV2):
 class T2RMeasurement:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_figs, experiment = None,
                  live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
-                 multiply_qubit_reps_by = 1, verbose = False, logger = None, qick_verbose=True, unmasking_resgain = False):
+                 multiply_qubit_reps_by = 1, increase_qubit_reps_to = 500, verbose = False, logger = None, qick_verbose=True,
+                 unmasking_resgain = False):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
@@ -210,6 +211,7 @@ class T2RMeasurement:
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
         self.round_num = round_num
+        self.increase_qubit_reps_to = increase_qubit_reps_to
         self.signal = signal
         self.number_of_qubits = number_of_qubits
         self.save_figs = save_figs
@@ -226,10 +228,16 @@ class T2RMeasurement:
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
             if increase_qubit_reps:
                     if self.QubitIndex==qubit_to_increase_reps_for:
-                        if self.verbose: print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
-                        self.logger.info(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
-                        self.config["reps"] *=multiply_qubit_reps_by
-                        #self.config['ramsey_freq'] = 2 * self.config['ramsey_freq']
+                        ## If you are using multiplication
+                        #if self.verbose: print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
+                        #self.logger.info(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
+                        #self.config["reps"] *=multiply_qubit_reps_by
+
+                        ## If you are specifying the new number of reps instead:
+                        if increase_qubit_reps:
+                            print(f"Increasing reps for {self.QubitIndex + 1} to {increase_qubit_reps_to}")
+                            self.config["reps"] = increase_qubit_reps_to
+
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration: ', self.config)
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration:{self.config}')
 
