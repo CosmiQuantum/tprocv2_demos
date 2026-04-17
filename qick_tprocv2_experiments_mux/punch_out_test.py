@@ -42,21 +42,21 @@ experiment = QICK_experiment(outerfolder_plots, DAC_attenuator1 = DAC_att_1, DAC
 # [1.0, 0.9, 1.0, 0.65, 0.95, 1.0]  from 10/22/2025
 
 # ------------------------------------ Loops over desired resonators ---------------------------------------------------
-Qs = [4] #starts at 0
+Qs = [3] #starts at 0
 
 for QubitIndex in Qs:
     increase_geres_reps = False
     increase_geres_reps_to = None
     if QubitIndex == 0:
-        start_gain, stop_gain, num_points = 0.8, 1.0, 5 # 0.8, 0.97, 5
+        start_gain, stop_gain, num_points = 0.75, 0.85, 5 # 0.8, 0.97, 5
     elif QubitIndex == 1:
         start_gain, stop_gain, num_points = 0.8, 1.0, 5 # 0.74, 0.79, 5
     elif QubitIndex == 2:
         start_gain, stop_gain, num_points = 0.8, 1.0, 5 # 0.95, 0.99, 4
     elif QubitIndex == 3:
-        start_gain, stop_gain, num_points = 0.4, 1.0, 5# 0.45, 0.47, 3
+        start_gain, stop_gain, num_points = 0.8, 0.85, 5# 0.45, 0.47, 3
     elif QubitIndex == 4:
-        start_gain, stop_gain, num_points = 0.4, 1.0, 5# 0.5, 1.0, 5
+        start_gain, stop_gain, num_points = 0.6, 0.9, 5# 0.5, 1.0, 5
         # increase_geres_reps = True
         # increase_geres_reps_to = 1200
     elif QubitIndex == 5:

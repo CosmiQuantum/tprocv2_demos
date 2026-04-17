@@ -33,7 +33,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 100000000 # number of rounds
+n = 10000 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -67,7 +67,7 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [0, 5] # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,3,5] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run9'
@@ -75,15 +75,18 @@ device_name = '6transmon'
 substudy_txt_notes = ('Initial test data for AB paper. All qubits minus Q5. Quiet run 9 \n')
 
 # set which of the following you'd like to run to 'True'
-
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
              "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
              "rabi_pop_meas": True, "ef_Rabi": False}
 
-# For 25dB DAC, 4/15
-res_leng_vals = [6.0, 6.75, 5.75, 7.25, 6.5, 7.5]  # 25dB
-res_gain = [0.72, 0.7800, 0.9200, 0.7100, 0.82, 0.9800]  # 25dB
-freq_offsets = [-0.1286, -0.1286, -0.3000, -0.3000, 0.0455, 0.1286]  # 25dB
+# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
+#              "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
+#              "rabi_pop_meas": False, "ef_Rabi": False}
+
+# For 25dB DAC, 4/16
+res_leng_vals = [5.6, 6.75, 5.75, 7.25, 7.0, 7.75]  # 25dB
+res_gain = [0.825, 0.7800, 0.9200, 0.813, 0.720, 0.920]  # 25dB
+freq_offsets = [-0.0214, -0.1286, -0.3000, -0.2000, -0.0667, -0.0222]  # 25dB
 
 # For 20dB DAC
 # res_leng_vals = [4.25, 5.25, 5.0, 5.0, 6.25, 4.5]  # 4/12, 20dB
@@ -94,10 +97,14 @@ freq_offsets = [-0.1286, -0.1286, -0.3000, -0.3000, 0.0455, 0.1286]  # 25dB
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
 ef_qspec_any = False # what about ef qspec?
 rpm_any = False # and rabi population measurements?
+
+# To save how long each measurement took for each qubit
+meas_time_RR = {}
+
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts
-sub_study = 'DACatten_SSF_inv_allQs_25dB_junk' # AB_paper_test_data_25dB_DACatten_noQ5, initial_checkouts_searching_for_Q5_25dB_junk, DACatten_SSF_inv_allQs_25dB_junk
+sub_study = 'AB_paper_data_25dB_DACatten_noQ5_batch1' # AB_paper_test_data_25dB_DACatten_noQ5, initial_checkouts_searching_for_Q5_25dB_junk, DACatten_SSF_inv_allQs_25dB_junk
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -192,6 +199,8 @@ angles = []
 while j < n:
     j += 1
     for QubitIndex in Qs_to_look_at:
+        meas_time_RR[QubitIndex] = {}
+
         recycled_qfreq = False # don't change
 
         # keep these as False
@@ -223,6 +232,7 @@ while j < n:
 
         ################################################# g-e Res spec ####################################################
         if run_flags["res_spec"]:
+            t0 = time.perf_counter()
             try:
                 increase_geres_reps = False
                 increase_geres_reps_to = None
@@ -256,8 +266,12 @@ while j < n:
                     if verbose: print(f'Got the following error during ge res spec, continuing: {e}')
                     continue  # skip the rest of this qubit
 
+            end_time = time.perf_counter()
+            meas_time_RR[QubitIndex]["res_spec_ge"] = end_time - t0
+
         ################################################## g-e Qubit spec ##################################################
         if run_flags["q_spec"]:
+            t0 = time.perf_counter()
             try:
                 increase_qubit_reps_qspec = False
                 increase_qspec_rounds = False
@@ -286,9 +300,9 @@ while j < n:
                     increase_qubit_reps_qspec = True
                     qspecge_increase_reps_to = 800
 
-                if QubitIndex == 1:
-                    increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 650
+                # if QubitIndex == 1:
+                #     increase_qubit_reps_qspec = True
+                #     qspecge_increase_reps_to = 700
 
                 q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
                                            signal, save_figs, increase_reps = increase_qubit_reps_qspec, increase_rounds =increase_qspec_rounds,
@@ -332,17 +346,21 @@ while j < n:
                         print(f"g-e QSpec error on qubit {QubitIndex}: {e}")
                     continue
 
+            end_time = time.perf_counter()
+            meas_time_RR[QubitIndex]["qspec_ge"] = end_time - t0
+
         ###################################################### g-e Rabi ####################################################
         if run_flags["rabi"]:
+            t0 = time.perf_counter()
             try:
                 increase_qubit_reps_gerabi = False  # if you want to increase the reps for a qubit, set to True
                 qubit_to_increase_reps_for = None  # only has impact if previous line is True
                 # if QubitIndex == 3:
                 #     increase_qubit_reps_gerabi = True
                 #     qubit_to_increase_reps_for = QubitIndex
-                if QubitIndex == 4:
-                    increase_qubit_reps_gerabi = True
-                    qubit_to_increase_reps_for = QubitIndex
+                # if QubitIndex == 4:
+                #     increase_qubit_reps_gerabi = True
+                #     qubit_to_increase_reps_for = QubitIndex
                 # if QubitIndex == 5:
                 #     increase_qubit_reps_gerabi = True
                 #     qubit_to_increase_reps_for = QubitIndex
@@ -375,8 +393,12 @@ while j < n:
                     if verbose: print(f'Got the following error in ge rabi, continuing: {e}')
                     continue  # skip the rest of this qubit
 
+            end_time = time.perf_counter()
+            meas_time_RR[QubitIndex]["power_rabi_ge"] = end_time - t0
+
         ########################################## g-e Single Shot Measurements ############################################
         if run_flags["ss"]:
+            t0 = time.perf_counter()
             try:
                 ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
                                 experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
@@ -405,8 +427,12 @@ while j < n:
                 rr_logger.exception(f"SSF Temp calc/log failed for Q{QubitIndex + 1}: {e}")
             # -------------------------------------------------------------------------------------------------------------
 
+            end_time = time.perf_counter()
+            meas_time_RR[QubitIndex]["ss_ge"] = end_time - t0
+
         ############################################## res spec ef ####################################################
         if run_flags["ef_res_spec"]:
+            t0 = time.perf_counter()
             ef_res_freqs_samples = []
             for sample in range(ef_res_sample_number):
                 try:
@@ -452,9 +478,13 @@ while j < n:
             else:
                 rr_logger.error(f"No ef resonator spectroscopy data collected for qubit {QubitIndex + 1}.")
 
+            end_time = time.perf_counter()
+            meas_time_RR[QubitIndex]["res_spec_ef"] = end_time - t0
+
             ################################################ Qubit Spec EF ################################################
             if run_flags["ef_q_spec"]:
                 if ef_res_spec_survived:
+                    t0 = time.perf_counter()
                     try:
                         # Qubit 4 usually needs more reps for e-f spec
                         increase_qubit_reps_ef = False
@@ -490,10 +520,14 @@ while j < n:
                         rr_logger.exception(f"EF qspec error on qubit {QubitIndex + 1}: {e}")
                         # we don't skip the qubit if this throws an err because we want to save the rest of the data that was taken
 
+                    end_time = time.perf_counter()
+                    meas_time_RR[QubitIndex]["qspec_ef"] = end_time - t0
+
         ################################################ e-f rabi ################################################
         # NOT needed for rpm qubit temps, rpm itself is an ef rabi experiment. It is ran separately.
         if run_flags["ef_Rabi"]:
             if ef_qspec_survived and ef_res_spec_survived:
+                t0 = time.perf_counter()
                 try:
                     efrabi = EF_AmplitudeRabiExperiment(QubitIndex, number_of_qubits, studyDocumentationFolder, j,
                                                         signal, save_shots_efrabi, experiment=experiment,
@@ -517,6 +551,9 @@ while j < n:
                     rr_logger.exception(f"ef rabi error on qubit {QubitIndex + 1}: {e}")
                     if verbose: print(f'Got the following error in ef rabi: {e}')
                     # we don't skip the qubit if this throws an err because we want to save the rest of the data that was taken
+
+                end_time = time.perf_counter()
+                meas_time_RR[QubitIndex]["power_rabi_ef"] = end_time - t0
 
         ################################################ e-f amp rabi pop meas. ################################################
         if run_flags["rabi_pop_meas"]:
@@ -580,11 +617,12 @@ while j < n:
                     if verbose: print(f'Got the following error in ef rpm measurements: {e}')
                     # we don't skip the qubit if this throws an err because we want to save the rest of the data that was taken
 
-                t1_time = time.perf_counter()
-                print(f"RPM took {t1_time - t0:.4f} seconds")
+                end_time = time.perf_counter()
+                meas_time_RR[QubitIndex]["rabi_pop_meas"] = end_time - t0
 
         ###################################################### g-e T1 ######################################################
         if run_flags["t1"]:
+            t0 = time.perf_counter()
             try:
                 t1 = T1Measurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                    experiment=experiment,
@@ -605,8 +643,12 @@ while j < n:
                     if verbose: print(f'Got the following error in ge T1, continuing: {e}')
                     # we don't skip the qubit if this throws an err because we want to save the rest of the data that was taken
 
+            end_time = time.perf_counter()
+            meas_time_RR[QubitIndex]["t1_ge"] = end_time - t0
+
         ###################################################### g-e T2R #####################################################
         if run_flags["t2r"]:
+            t0 = time.perf_counter()
             try:
                 increase_qubit_reps_t2r = False  # if you want to increase the reps for a qubit, set to True
                 qubit_to_increase_t2r_reps_for = None
@@ -645,8 +687,12 @@ while j < n:
                     if verbose: print(f'Got the following error in t2r, continuing: {e}')
                     # we don't skip the qubit if this throws an err because we want to save the rest of the data that was taken
 
+            end_time = time.perf_counter()
+            meas_time_RR[QubitIndex]["t2r_ge"] = end_time - t0
+
         ##################################################### g-e T2E ######################################################
         if run_flags["t2e"]:
+            t0 = time.perf_counter()
             try:
                 t2e = T2EMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                      experiment=experiment, live_plot=live_plot, fit_data=fit_data,
@@ -665,6 +711,9 @@ while j < n:
                     rr_logger.exception(f'Got the following error in ge t2e: {e}')
                     if verbose: print(f'Got the following error in ge t2e: {e}')
                     # we don't skip the qubit if this throws an err because we want to save the rest of the data that was taken
+
+            end_time = time.perf_counter()
+            meas_time_RR[QubitIndex]["t2e_ge"] = end_time - t0
 
         ############################################### Collect Results ################################################
         if save_data_h5:
@@ -845,6 +894,12 @@ while j < n:
                 t2e_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
                 t2e_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t2e
 
+        with open(file_path, "a", encoding="utf-8") as f:
+            f.write(f"\nTiming summary for Q{QubitIndex + 1}, round {j}:\n")
+
+            for meas_name, elapsed_time in meas_time_RR[QubitIndex].items():
+                f.write(f"    {meas_name}: {elapsed_time:.4f} seconds\n")
+
         del experiment
 
     ################################################## Potentially Save ################################################
@@ -947,4 +1002,10 @@ while j < n:
     rpm_any = False
 
 en = time.time()
-print('timetaken=', en - st)
+print('total timetaken=', en - st)
+
+print("\nAll measurement times:")
+for q, q_times in meas_time_RR.items():
+    print(f"\nQ{q + 1}:")
+    for meas_name, elapsed_time in q_times.items():
+        print(f"    {meas_name}: {elapsed_time:.4f} seconds")
