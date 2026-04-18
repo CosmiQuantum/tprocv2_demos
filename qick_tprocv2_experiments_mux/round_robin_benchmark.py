@@ -33,7 +33,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1000 # number of rounds
+n = 1000000 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -67,7 +67,7 @@ save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge r
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_fhrabi = False  # save IQ shots instead of averaged IQ data? for fh rabi
 
-Qs_to_look_at = [3] # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,3,5] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run9'
@@ -84,9 +84,9 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss":
 #              "rabi_pop_meas": False, "ef_Rabi": False}
 
 # For 25dB DAC, 4/16
-res_leng_vals = [5.6, 6.0, 5.75, 6.9, 7.0, 7.6]  # 25dB
-res_gain = [0.825, 0.82, 0.92, 0.635, 0.720, 0.920]  # 25dB,
-freq_offsets = [-0.0214, -0.1286, -0.3000, -0.2000, -0.0667, -0.0222]  # 25dB
+res_leng_vals = [5.6, 6.0, 5.75, 6.9, 6.5, 7.6]  # 25dB
+res_gain = [0.825, 0.82, 0.92, 0.635, 0.72, 0.920]  # 25dB,
+freq_offsets = [-0.0214, -0.1286, -0.3000, -0.2000, 0.0667, -0.0222]  # 25dB
 
 # For 20dB DAC
 # res_leng_vals = [4.25, 5.25, 5.0, 5.0, 6.25, 4.5]  # 4/12, 20dB
@@ -104,7 +104,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts
-sub_study = 'AB_paper_data_25dB_DACatten_onlyQ4_batch2' # DACatten_SSF_inv_allQs_25dB_junk, AB_paper_data_25dB_DACatten_noQ5_batch1
+sub_study = 'AB_paper_data_batch3_25dB_DACatten_noQ5' # DACatten_SSF_inv_allQs_25dB_junk, AB_paper_data_25dB_DACatten_noQ5_batch1, AB_paper_data_25dB_DACatten_onlyQ4_batch2
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
