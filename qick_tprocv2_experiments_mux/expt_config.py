@@ -63,17 +63,17 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
         },
 
-        # "qubit_spec_ge": { # broad two-photon peak search
-        #     "reps": 4000,  # 300
+        # "qubit_spec_ge": { # broad search
+        #     "reps": 600,  # 300
         #     "rounds": 1,  # 10
-        #     "start": list(VNA_qubit - 200),  # [MHz] #-300 #-15
-        #     "stop": list(VNA_qubit + 6),  # [MHz] #+15
-        #     "steps": 4000,  # 100
+        #     "start": list(VNA_qubit - 50),  # [MHz] #-300 #-15
+        #     "stop": list(VNA_qubit + 50),  # [MHz] #+15
+        #     "steps": 400,  # 100
         #     "relax_delay": 10,  # 1000 # [us]
         #     "list_of_all_qubits": list_of_all_qubits,
         # },
 
-        "qubit_spec_ge": {
+        "qubit_spec_ge": { # RR
             "reps": 600, #300
             "rounds": 1, #10
             "start": list(VNA_qubit-1.8), # [MHz]
@@ -215,7 +215,7 @@ if FRIDGE == "QUIET":
 
         "power_rabi_ef": {
             "reps": 170,#400, # for Pg pulse sequence during rpm, or regular ef rabi
-            "reps2": 1700, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures (rpm). Pe pulse sequence
+            "reps2": 1800, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures (rpm). Pe pulse sequence
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
             "stop": [1.0] * 6,  # [DAC units]
