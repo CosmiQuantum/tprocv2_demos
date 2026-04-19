@@ -704,7 +704,8 @@ def boxwhisker_t1t2_per_qubit_vs_run(
     showfliers=True, # show outliers?
     whis=1.5,
     mode="together",          # "together" or "separate"
-    fig_title_prefix=" vs Run Number (per qubit)",
+    fig_title_prefix=" vs Run Number",
+    save_plt_path = None # string
 ):
     """
     mode="together": each qubit subplot contains multiple metrics (offset boxplots)
@@ -885,7 +886,20 @@ def boxwhisker_t1t2_per_qubit_vs_run(
             fig.suptitle(f"{label}{fig_title_prefix}", fontsize=18)
             fig.supxlabel("Run Number", fontsize=16)
             fig.supylabel(f"{label} (µs)", fontsize=16)
-            plt.show()
+
+            if save_plt_path is None:
+                plt.show()
+            else:
+                now = datetime.datetime.now()
+                timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+
+                fname = os.path.join(
+                    save_plt_path,
+                    f"boxwhisk_{label}_vs_run_num_{timestamp}.pdf"
+                )
+
+                fig.savefig(fname, bbox_inches="tight")
+                plt.close(fig)
         return
 
     else:
