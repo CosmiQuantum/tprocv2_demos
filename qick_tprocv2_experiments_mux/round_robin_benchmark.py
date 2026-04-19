@@ -296,9 +296,9 @@ while j < n:
                 #     # increase_qspec_rounds = True
                 #     # increase_qspec_rounds_to = 3
                 #
-                if QubitIndex == 2:
-                    increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 800
+                # if QubitIndex == 2:
+                #     increase_qubit_reps_qspec = True
+                #     qspecge_increase_reps_to = 700
 
                 # if QubitIndex == 1:
                 #     increase_qubit_reps_qspec = True
@@ -567,7 +567,7 @@ while j < n:
 
                     if QubitIndex == 5:
                         increase_qubit_reps2_rpm = True
-                        increase_qubit_reps2_rpm_to = 2500
+                        increase_qubit_reps2_rpm_to = 4600
                     #
                     if QubitIndex == 4:
                         increase_qubit_reps2_rpm = True
