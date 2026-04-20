@@ -6,6 +6,19 @@ import os
 from datetime import datetime
 import json
 
+def decode_time(timestamps, rows_written):
+    # Decode bytes, strings, datetime objects
+    dt = np.array([
+        datetime.strptime(ts.decode("utf-8"), "%Y-%m-%d_%H-%M-%S")
+        for ts in timestamps[:rows_written]
+    ])
+    # Convert to minutes since start
+    time_minutes = np.array([
+        (t - dt[0]).total_seconds() / 60.0
+        for t in dt
+    ])
+    return time_minutes
+
 def load_singleh5(filepath):
     with h5py.File(filepath, "r") as f:
         vsweep = f["vsweep"][:]         #npts
@@ -16,7 +29,7 @@ def load_singleh5(filepath):
 
     return vsweep, qubits, qdata[:rows_written], timestamps[:rows_written], rows_written
 
-def tomo_colorplot(vsweep, qindex, qid, qdata, rows_written, use_time = False, timestamps = None):
+def tomo_colorplot(vsweep, qindex, qid, qdata, rows_written, timestamps = None):
     '''
     qubit : [q_index, q_id (name)]
     '''
@@ -24,21 +37,30 @@ def tomo_colorplot(vsweep, qindex, qid, qdata, rows_written, use_time = False, t
     I_data = qdata[:, qindex, 0, :].T
     Q_data = qdata[:, qindex, 1, :].T
 
-    rounds = np.arange(rows_written)
     vsweep_mV = vsweep * 1000
+
+    # X-axis handling
+    if timestamps is not None:
+        time_min = decode_time(timestamps, rows_written)
+
+        x_vals = time_min
+        x_label = "Time (min)"
+    else:
+        x_vals = np.arange(rows_written)
+        x_label = "Round"
 
     fig, (axI, axQ) = plt.subplots(2, 1, figsize=(10,8), sharex=True)
 
     imI = axI.imshow(I_data, aspect='auto', origin='lower',
-                     extent = [rounds[0], rounds[-1], vsweep_mV[0], vsweep_mV[-1]])
+                     extent = [x_vals[0], x_vals[-1], vsweep_mV[0], vsweep_mV[-1]])
     axI.set_ylabel('Voltage Bias (mV)')
     cbarI = fig.colorbar(imI, ax=axI)
     cbarI.set_label("I Amplitude (a.u.)")
 
     imQ = axQ.imshow(Q_data, aspect='auto', origin='lower',
-                     extent=[rounds[0], rounds[-1], vsweep_mV[0], vsweep_mV[-1]])
+                     extent=[x_vals[0], x_vals[-1], vsweep_mV[0], vsweep_mV[-1]])
     axQ.set_ylabel('Applied Voltage Bias (mV)')
-    axQ.set_xlabel('Round')
+    axQ.set_xlabel(x_label)
     cbarQ = fig.colorbar(imQ, ax=axQ)
     cbarQ.set_label("Q Amplitude (a.u.)")
 
@@ -47,6 +69,52 @@ def tomo_colorplot(vsweep, qindex, qid, qdata, rows_written, use_time = False, t
     plt.subplots_adjust(top=0.92)
 
     plt.show()
+
+
+def tomo_colorplot_amp(vsweep, qindex, qid, qdata, rows_written, timestamps = None):
+    '''
+    qubit : [q_index, q_id (name)]
+    '''
+
+    I_data = qdata[:, qindex, 0, :].T
+    Q_data = qdata[:, qindex, 1, :].T
+
+    amps = np.sqrt(I_data**2 + Q_data**2)
+
+    vsweep_mV = vsweep * 1000
+
+    # X-axis handling
+    if timestamps is not None:
+        time_min = decode_time(timestamps, rows_written)
+
+        x_vals = time_min
+        x_label = "Time (min)"
+    else:
+        x_vals = np.arange(rows_written)
+        x_label = "Round"
+
+    # Single plot
+    fig, ax = plt.subplots(figsize=(10, 5))
+
+    im = ax.imshow(
+        amps,
+        aspect='auto',
+        origin='lower',
+        extent=[x_vals[0], x_vals[-1], vsweep_mV[0], vsweep_mV[-1]]
+    )
+
+    ax.set_xlabel(x_label)
+    ax.set_ylabel('Applied Voltage Bias (mV)')
+
+    cbar = fig.colorbar(im, ax=ax)
+    cbar.set_label('Amplitude (a.u.)')
+
+    ax.set_title(f'Charge Tomography Q{qid}', fontsize=14)
+
+    plt.tight_layout()
+    fig_name = os.path.join('/home/nexusadmin/Documents/Data/run35/4charge/PostCsTomography/Dataset2/2026-03-23_16-15-38/analysis_plots/', 'Tomography_Qs1234_2026-03-24_17-06-21_plot.png') #Hardcode, fix
+    plt.savefig(fig_name)
+
 
 def tomo_rndplot(vsweep, qindex, qid, qdata, round):
     fig, (axI, axQ) = plt.subplots(2, 1, figsize=(10,8), sharex='all')
@@ -143,19 +211,21 @@ def fitdata(fit_params, vsweep, qindex, qid, qdata, rd, signal = "amp", plot = F
 #def fit_single_scan()
 
 run = 'run35'
-study = 'EndOfRunData' #'PostCsTomography' #'BackgroundTomography'
-substudy = 'Dataset2_neg'
-timestamp = '2026-04-03_11-55-28'
-file = 'Tomography_Qs1234_2026-04-03_11-55-28.h5' #'Tomography_Qs1234_2026-03-13_21-12-14.h5'
+study = 'PostCsTomography' #'EndOfRunData' #'PostCsTomography' #'BackgroundTomography'
+substudy = 'Dataset2' #'Dataset2_neg'
+timestamp = '2026-03-23_16-15-38' #'2026-04-03_11-55-28'
+file = 'Tomography_Qs1234_2026-03-24_17-06-21.h5' #'Tomography_Qs1234_2026-04-03_11-55-28.h5' #'Tomography_Qs1234_2026-03-13_21-12-14.h5'
 path = f'/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}/{timestamp}/study_data/{file}'
 
 vsweep, qubits, qdata, timestamps, rounds = load_singleh5(path)
 print(rounds)
+#print(timestamps)
 qindex = 0
 qid = 1
 rd = 0
 #guess_params = guessfit(qdata) #Need to fix which data to look (which rd, which qubit, etc) before trying
 #full_fitparams = fitdata(guess_params, vsweep, qindex, qid, qdata, rd, signal = "amp", plot = True)
-for qindex in range(0, 4):
-    tomo_colorplot(vsweep, qindex, qindex+1, qdata, rounds)
+#for qindex in range(0, 4):
+qindex = 3
+tomo_colorplot_amp(vsweep, qindex, qindex+1, qdata, rounds, timestamps = timestamps)
 #tomo_rndplot(vsweep, qindex, qid, qdata, [10, 30])
