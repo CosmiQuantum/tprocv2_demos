@@ -576,11 +576,18 @@ boxwhisker_t1t2_per_qubit_vs_run(
     t1_vals_by_run=t1_vals_by_run,
     t2r_vals_by_run=t2r_vals_by_run,
     t2e_vals_by_run=t2e_vals_by_run,
+<<<<<<< Updated upstream
     do_T1=True, do_T2R=False, do_T2E=False,
     ylims=(0, 120),
     yticks=np.arange(0, 121, 20),
     mode="separate",
     save_plt_path = '/data/QICK_data/multirun_analysis/coherence_analysis'
+=======
+    do_T1=False, do_T2R=False, do_T2E=True,
+    ylims=(0, 160),
+    yticks=np.arange(0, 161, 20),
+    mode="separate"
+>>>>>>> Stashed changes
 )
 
 ## Qubit freq box plots
