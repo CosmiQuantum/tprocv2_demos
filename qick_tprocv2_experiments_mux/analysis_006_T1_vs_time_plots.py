@@ -295,6 +295,12 @@ class T1VsTime:
                 }
 
                 for q_key in load_data[f't1{exp_extension}']:
+                    # Run 9 patch, accidentally took punched out data for Q4, bad.
+                    if (self.run_name == "AB_paper_data_batch1_25dB_DACatten_noQ5"
+                        and folder_date == "2026-04-17_00-34-47"
+                        and int(q_key) == 3):
+                        print(f"Skipping Q4 data due to punchout in {self.run_name}/{folder_date}")
+                        continue
                     for dataset in range(len(load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0])):
                         if 'nan' in str(load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
                             continue
@@ -336,6 +342,8 @@ class T1VsTime:
                             Qshots_raw = self.process_h5_data(load_data[f't1{exp_extension}'][q_key][Q_key][0][dataset].decode())
 
                             # --- path to the soccfg dump (txt file made with save_run_soccfg_params.py) ---
+                            if self.run_number == 9:
+                                soccfg_dump_path = ""
                             if self.run_number == 8:  # this does work
                                 soccfg_dump_path = "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
                                     # r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"

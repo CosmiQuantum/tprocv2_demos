@@ -260,6 +260,12 @@ class T2eVsTime:
                 load_data = H5_class_instance.load_from_h5(data_type='T2E', save_r=int(save_round))
                 populated_keys = []
                 for q_key in load_data['T2E']:
+                    # Run 9 patch, accidentally took punched out data for Q4, bad.
+                    if (self.run_name == "AB_paper_data_batch1_25dB_DACatten_noQ5"
+                            and folder_date == "2026-04-17_00-34-47"
+                            and int(q_key) == 3):
+                        print(f"Skipping Q4 data due to punchout in {self.run_name}/{folder_date}")
+                        continue
                     # Access 'Dates' for the current q_key
                     dates_list = load_data['T2E'][q_key].get('Dates', [[]])
 

@@ -68,7 +68,7 @@ for run_number in run_num_list:
         plots_path = "/data/QICK_data/run9/6transmon/analysis"
 
         top_folder_dates = [
-                            "AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47",
+                            "AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47", # ignore Q4 in this data, punched out too much!!
                             
                             "AB_paper_data_batch2_25dB_DACatten_onlyQ4/2026-04-17_16-47-30",
 
@@ -303,10 +303,10 @@ for run_number in run_num_list:
     #                                        save_figs, fit_saved, signal, run_name, FRIDGE)
     # date_times_res_spec, res_freqs = res_spec_vs_time.run()
     # #
-    # q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-    #                                   save_figs, fit_saved, signal, run_name, FRIDGE)
-    # date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
-    #
+    q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+                                      save_figs, fit_saved, signal, run_name, FRIDGE)
+    date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
+
     # print("qspec fit errs Q1: ", qspec_fit_err[0])
     # print("mean qspec fit err Q1: ", np.mean(qspec_fit_err[0]))
 
@@ -322,13 +322,13 @@ for run_number in run_num_list:
     else:
         date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge')
 
-    # t2r_vs_time = T2rVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
-    #                         fit_saved, signal, run_name, FRIDGE)
-    # date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True, t1_vals = t1_vals)
+    t2r_vs_time = T2rVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+                            fit_saved, signal, run_name, FRIDGE)
+    date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True, t1_vals = t1_vals)
 
-    # t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
-    #                         fit_saved, signal, run_name, FRIDGE)
-    # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = None)
+    t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+                            fit_saved, signal, run_name, FRIDGE)
+    date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = None)
 
     # ---------------- Store results ----------------
     ## stores data like t1_vals_by_run[6][3], where 6=run number and 3=qubit index (0 based)
@@ -596,8 +596,30 @@ boxwhisker_t1t2_per_qubit_vs_run(
     t2r_vals_by_run=t2r_vals_by_run,
     t2e_vals_by_run=t2e_vals_by_run,
     do_T1=True, do_T2R=False, do_T2E=False,
-    ylims=(0, 120),
-    yticks=np.arange(0, 121, 20),
+    ylims=(0, 140),
+    yticks=np.arange(0, 141, 20),
+    mode="separate",
+    save_plt_path = '/data/QICK_data/multirun_analysis/coherence_analysis'
+)
+boxwhisker_t1t2_per_qubit_vs_run(
+    run_num_list,
+    t1_vals_by_run=t1_vals_by_run,
+    t2r_vals_by_run=t2r_vals_by_run,
+    t2e_vals_by_run=t2e_vals_by_run,
+    do_T1=False, do_T2R=True, do_T2E=False,
+    ylims=(0, 160),
+    yticks=np.arange(0, 161, 20),
+    mode="separate",
+    save_plt_path = '/data/QICK_data/multirun_analysis/coherence_analysis'
+)
+boxwhisker_t1t2_per_qubit_vs_run(
+    run_num_list,
+    t1_vals_by_run=t1_vals_by_run,
+    t2r_vals_by_run=t2r_vals_by_run,
+    t2e_vals_by_run=t2e_vals_by_run,
+    do_T1=False, do_T2R=False, do_T2E=True,
+    ylims=(0, 180),
+    yticks=np.arange(0, 181, 20),
     mode="separate",
     save_plt_path = '/data/QICK_data/multirun_analysis/coherence_analysis'
 )

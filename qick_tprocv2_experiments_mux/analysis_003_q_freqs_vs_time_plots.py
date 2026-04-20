@@ -203,6 +203,12 @@ class QubitFreqsVsTime:
                 }
 
                 for q_key in load_data[f'qspec{exp_extension}']:
+                    # Run 9 patch, accidentally took punched out data for Q4, bad.
+                    if (self.run_name == "AB_paper_data_batch1_25dB_DACatten_noQ5"
+                        and folder_date == "2026-04-17_00-34-47"
+                        and int(q_key) == 3):
+                        print(f"Skipping Q4 data due to punchout in {self.run_name}/{folder_date}")
+                        continue
                     for dataset in range(len(load_data[f'qspec{exp_extension}'][q_key].get('Dates', [])[0])):
                         if 'nan' in str(load_data[f'qspec{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
                             continue

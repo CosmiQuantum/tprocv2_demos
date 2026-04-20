@@ -256,6 +256,12 @@ class T2rVsTime:
 
                 populated_keys = []
                 for q_key in load_data['t2_ge']:
+                    # Run 9 patch, accidentally took punched out data for Q4, bad.
+                    if (self.run_name == "AB_paper_data_batch1_25dB_DACatten_noQ5"
+                            and folder_date == "2026-04-17_00-34-47"
+                            and int(q_key) == 3):
+                        print(f"Skipping Q4 data due to punchout in {self.run_name}/{folder_date}")
+                        continue
                     # Access 'Dates' for the current q_key
                     dates_list = load_data['t2_ge'][q_key].get('Dates', [[]])
 
