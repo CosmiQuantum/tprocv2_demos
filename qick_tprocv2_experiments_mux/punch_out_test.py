@@ -42,7 +42,7 @@ experiment = QICK_experiment(outerfolder_plots, DAC_attenuator1 = DAC_att_1, DAC
 # [1.0, 0.9, 1.0, 0.65, 0.95, 1.0]  from 10/22/2025
 
 # ------------------------------------ Loops over desired resonators ---------------------------------------------------
-Qs = [4] #starts at 0
+Qs = [1] #starts at 0
 
 for QubitIndex in Qs:
     increase_geres_reps = False
