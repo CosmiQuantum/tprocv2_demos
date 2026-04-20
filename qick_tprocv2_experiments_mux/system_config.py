@@ -216,7 +216,7 @@ class QICK_experiment:
 
             # Readout Configuration
             self.readout_cfg = {
-                "trig_time": 0.7, # [Clock ticks] - get this value from TOF experiment, Updated 9/3
+                "trig_time": 0.75, # [Clock ticks] - get this value from TOF experiment, Updated 9/3
                 # Changes related to the resonator output channel
                 "mixer_freq": 5500, # [MHz]
                 "res_freq_ge": [6187.96, 5828.53, 6074.63, 5959.394], #[6187.9, 5828.48, 6074.57, 5959.294], #[6187.9 - 0.18, 5828.47 + 0.2, 6074.56 - 0.3375, 5959.284 - 0.09], #Run 34 #[6187.973, 5828.530, 6074.662, 5959.343], #Run 33

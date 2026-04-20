@@ -45,7 +45,7 @@ class TOFExperiment:
                 )
                 for ch, f, ph in zip(cfg['ro_ch'], [f+1 for f in cfg['res_freq_ge']], cfg['ro_phase']):
                     self.declare_readout(
-                        ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch
+                        ch=ch, length=cfg['res_length']+2, freq=f, phase=ph, gen_ch=gen_ch
                     )
 
                 self.add_pulse(
@@ -91,7 +91,7 @@ class TOFExperiment:
             plot.legend()
             plot.set_ylabel("a.u.")
             plot.set_xlabel("us")
-            plot.axvline(0.7, c='r')
+            plot.axvline(0.75, c='r')
 
             phase_offset = np.angle(iq_list[i].dot([1, 1j]).sum(), deg=True)
             # print("measured phase %f degrees" % (phase_offset))

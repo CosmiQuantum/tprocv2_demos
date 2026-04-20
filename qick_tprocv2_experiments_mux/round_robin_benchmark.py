@@ -40,7 +40,7 @@ from analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
 ################################################ Run Configurations ####################################################
 st = time.time()
 #
-n= 3
+n= 1
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
@@ -69,14 +69,14 @@ Qs_to_look_at = [0,1,2,3] #[0,1,2,3]    # only list the qubits you want to do th
 print(FRIDGE)
 
 #Data saving info
-run_name = 'run35'
+run_name = 'run36'
 device_name = '4charge'
 substudy_txt_notes = ('Testing res sepc and ef again with relax delay 500us, running q meas too for good pi pulse. Shorter readout pulse, 1us (4us previously)')
 #('All Q res spec and res spec "ef" with 1000 rep, +/- 1MHz, centered -0.25MHz from ground res, res gain to 0.3, res length 4us. Doing qspec, Rabi, and SSF (1000 shots) before res ef to make sure good pi pulse') #('Checking SSF on all 4 qubits with 4 us res length, 0.3 res gain. No optimization done, degenerate points not found.')
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False, "test_act":False, "fh_rabi":False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": False, "fh_q_spec":False, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
+run_flags = {"tof": True, "res_spec": False, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False, "test_act":False, "fh_rabi":False,
+             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False, "fh_q_spec":False, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 # run_flags = {"tof": False, "res_spec": False, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False, "test_act":False,
 #              "t1": False, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": True, "fh_q_spec":True, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 
@@ -95,7 +95,7 @@ figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 #Folders
 study = 'Initial Checkout' #'Punchout Study'
-sub_study = 'RR_ResSpecGE'
+sub_study = 'ToF'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/home/nexusadmin/Documents/Data/{run_name}/"):
