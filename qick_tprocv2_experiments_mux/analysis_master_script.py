@@ -63,11 +63,30 @@ for run_number in run_num_list:
     if run_number == 9:
         process_shots_t1ge = True
         per_pt_errs_t1 = True
-        run_name = "run9/6transmon/round_robin_benchmark/Q5_Qfreq_TLS_inv_25db_DACatten"
+        run_name = "run9/6transmon/round_robin_benchmark"
         data_path = f'/data/QICK_data/{run_name}'
         plots_path = "/data/QICK_data/run9/6transmon/analysis"
 
-        top_folder_dates = ["2026-04-15_17-40-22"]
+        top_folder_dates = [
+                            "AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47",
+                            
+                            "AB_paper_data_batch2_25dB_DACatten_onlyQ4/2026-04-17_16-47-30",
+
+                            "AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_20-54-40",
+                            "AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_21-53-52",
+                            "AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_22-51-33",
+                            "AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_23-47-15",
+                            "AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_00-42-05",
+                            "AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_11-24-10",
+                            " AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_13-25-28",
+
+                            "AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-18_23-06-45",
+                            "AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_00-16-08",
+                            "AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_01-18-51",
+                            "AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_17-54-48",
+
+                            "AB_paper_does_no_rpm_fromRR_affect_coh_25dBDAC/2026-04-18_20-58-30"
+                            ]
 
     if run_number == 8:
         process_shots_t1ge = True
@@ -307,9 +326,9 @@ for run_number in run_num_list:
     #                         fit_saved, signal, run_name, FRIDGE)
     # date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True, t1_vals = t1_vals)
 
-    t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
-                            fit_saved, signal, run_name, FRIDGE)
-    date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = None)
+    # t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+    #                         fit_saved, signal, run_name, FRIDGE)
+    # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = None)
 
     # ---------------- Store results ----------------
     ## stores data like t1_vals_by_run[6][3], where 6=run number and 3=qubit index (0 based)
@@ -319,8 +338,8 @@ for run_number in run_num_list:
     # t2r_vals_by_run[run_number] = t2r_vals
     # t2r_errs_by_run[run_number] = t2r_fit_err
     #
-    t2e_vals_by_run[run_number] = t2e_vals
-    t2e_errs_by_run[run_number] = t2e_fit_err
+    # t2e_vals_by_run[run_number] = t2e_vals
+    # t2e_errs_by_run[run_number] = t2e_fit_err
 
     # qfreq_vals_by_run[run_number] = q_freqs
     # qfreq_errs_by_run[run_number] = qspec_fit_err
