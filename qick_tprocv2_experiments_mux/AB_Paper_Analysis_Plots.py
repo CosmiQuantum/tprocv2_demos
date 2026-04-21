@@ -28,7 +28,7 @@ Pe_err = [
     [None, 0.010940, 0.005009, 0.002714, 0.003743, None],  # Qubit 2
     [None, 0.010852, 0.017270, 0.002867, 0.005371, None],  # Qubit 3
     [None, 0.008452, 0.016899, 0.004802, 0.015093, None],  # Qubit 4
-    [None, 0.007670, 0.020126, 0.003180, 0.003983, None],      # Qubit 5
+    [None, 0.007670, 0.020126, 0.003180, 0.003983, None],  # Qubit 5
     [None, 0.007161, 0.003828, 0.003404, 0.003975, None],  # Qubit 6
 ]
 
@@ -91,16 +91,16 @@ Pe_variance_vals = [
 # ------------------------------------------------------------
 runs = np.array([5, 6, 7, 8, 9], dtype=int)
 
-Pe_meas = np.array(Pe_meas, dtype=object).astype(float)[:, 1:]   # (6,5)
-Pe_err  = np.array(Pe_err,  dtype=object).astype(float)[:, 1:]   # (6,5)
+Pe_meas = np.array(Pe_meas, dtype=object).astype(float)[:, 1:]  # (6,5)
+Pe_err = np.array(Pe_err, dtype=object).astype(float)[:, 1:]  # (6,5)
 
-f_ge_MHz     = np.array(f_ge_MHz, dtype=object).astype(float)[:, 1:]
+f_ge_MHz = np.array(f_ge_MHz, dtype=object).astype(float)[:, 1:]
 f_ge_err_MHz = np.array(f_ge_err_MHz, dtype=object).astype(float)[:, 1:]
 
-f_ge_Hz      = f_ge_MHz * 1e6
-f_ge_err_Hz  = f_ge_err_MHz * 1e6
+f_ge_Hz = f_ge_MHz * 1e6
+f_ge_err_Hz = f_ge_err_MHz * 1e6
 
-ssf_fid_vals   = np.array(ssf_fid_vals, dtype=float)[:, 1:]            # (6,4)
+ssf_fid_vals = np.array(ssf_fid_vals, dtype=float)[:, 1:]  # (6,4)
 
 if Pe_meas.shape != f_ge_Hz.shape:
     raise ValueError(f"Shape mismatch: Pe_meas {Pe_meas.shape} vs f_ge_Hz {f_ge_Hz.shape}")
@@ -109,13 +109,15 @@ if Pe_meas.shape != f_ge_Hz.shape:
 # Infer T_qubit from Pe
 # T = hf / (kB * ln((1-Pe)/Pe))
 # ------------------------------------------------------------
-h  = 6.62607015e-34
+h = 6.62607015e-34
 kB = 1.380649e-23
+
 
 def T_from_Pe(Pe, f_Hz):
     return (h * f_Hz) / (kB * np.log((1 - Pe) / Pe))  # Kelvin
 
-T_qubit_K  = T_from_Pe(Pe_meas, f_ge_Hz)
+
+T_qubit_K = T_from_Pe(Pe_meas, f_ge_Hz)
 T_qubit_mK = 1e3 * T_qubit_K
 
 # ------------------------------------------------------------
@@ -123,10 +125,10 @@ T_qubit_mK = 1e3 * T_qubit_K
 # ------------------------------------------------------------
 L = np.log((1 - Pe_meas) / Pe_meas)
 
-dT_dPe_K = (h * f_ge_Hz / kB) * (1.0 / (L**2)) * (1.0 / (1 - Pe_meas) + 1.0 / Pe_meas)
+dT_dPe_K = (h * f_ge_Hz / kB) * (1.0 / (L ** 2)) * (1.0 / (1 - Pe_meas) + 1.0 / Pe_meas)
 dT_df_K_per_Hz = h / (kB * L)
 
-T_qubit_err_mK = 1e3 * np.sqrt((dT_dPe_K * Pe_err)**2 + (dT_df_K_per_Hz * f_ge_err_Hz)**2)
+T_qubit_err_mK = 1e3 * np.sqrt((dT_dPe_K * Pe_err) ** 2 + (dT_df_K_per_Hz * f_ge_err_Hz) ** 2)
 
 # ------------------------------------------------------------
 # Noise temperature model (MIT supplement style)
@@ -140,11 +142,13 @@ if qtemp_noisetemp_plot:
             return 0.0
         return 1.0 / (np.exp(x) - 1.0)
 
+
     def Te_from_nbar(f_hz: float, nbar: float):
         if nbar <= 0:
             return 0.0
         x = np.log(1.0 + 1.0 / nbar)
         return (h * f_hz) / (kB * x)
+
 
     def Te_from_stages(f_hz: float, stage_temps_K: dict, A_after_stage_dB: dict):
         n_eff = 0.0
@@ -155,12 +159,14 @@ if qtemp_noisetemp_plot:
             n_eff += A_lin * nbar_thermal(f_hz, T)
         return Te_from_nbar(f_hz, n_eff)
 
+
     def cumulative_after_stage(config_dB: dict, order):
         cfg = {k: float(config_dB.get(k, 0.0)) for k in order}
         A_after = {}
         for i, stage in enumerate(order):
             A_after[stage] = sum(cfg[order[j]] for j in range(i + 1, len(order)))
         return A_after
+
 
     order = ["300K", "4K", "1K", "100mK", "10mK"]
     stage_temps_K = {"300K": 300.0, "4K": 4.0, "1K": 1.0, "100mK": 0.100, "10mK": 0.010}
@@ -216,7 +222,7 @@ if qtemp_noisetemp_plot:
     print("\nPredicted Te (mK) by qubit & run (using per-run f_ge):")
     for qi in range(nQ):
         vals = ", ".join([f"R{int(runs[i])}:{Te_mK[qi, i]:.4f}" for i in range(nRuns)])
-        print(f"  Q{qi+1}: {vals}")
+        print(f"  Q{qi + 1}: {vals}")
 
 
     # ------------------------------------------------------------
@@ -314,7 +320,6 @@ if qtemp_noisetemp_plot:
     # Common choices: 0.1 (very small) or 0.01 (tiny). I'll show both.
     meas_lt_0p1 = np.all(n_meas < 0.1)
     meas_lt_0p01 = np.all(n_meas < 0.01)
-    
 
     print("\nInequality checks:")
     print(f"  0 < n_model: {all_pos_model}")
@@ -409,7 +414,7 @@ if lnPe_vs_qfreq_plots_per_run:
     run_labels = ["Run 5", "Run 6", "Run 7", "Run 8"]
 
     n_qubits = len(Pe_meas)
-    n_runs = Pe_meas.shape[1]   # should be 4
+    n_runs = Pe_meas.shape[1]  # should be 4
 
     fig, axes = plt.subplots(2, 2, figsize=(12, 9), sharex=True, sharey=True)
     axes = axes.ravel()
@@ -451,9 +456,9 @@ if lnPe_vs_qfreq_plots_per_run:
                 )
 
                 if q == 0 or q == 4:
-                    ax.text(fi + 12, lnPe + 0.2, f"Q{q+1}", fontsize=12, color=color)
+                    ax.text(fi + 12, lnPe + 0.2, f"Q{q + 1}", fontsize=12, color=color)
                 else:
-                    ax.text(fi - 12, lnPe + 0.5, f"Q{q+1}", fontsize=12, color=color)
+                    ax.text(fi - 12, lnPe + 0.5, f"Q{q + 1}", fontsize=12, color=color)
 
         f_run = np.array(f_run, dtype=float)
         Pe_run = np.array(Pe_run, dtype=float)
@@ -542,7 +547,7 @@ if lnPe_vs_qfreq_plots_per_qubit:
         #         fontsize=10
         #     )
 
-        ax.set_title(f"Qubit {q+1}")
+        ax.set_title(f"Qubit {q + 1}")
         if q >= 3:  # bottom row only
             ax.set_xlabel(r"$f_{ge}$ (MHz)")
         ax.set_ylabel(r"$\ln(P_e)$")
@@ -615,7 +620,7 @@ if ssf_fid_vs_Pe:
 
 if Pe_variance_std_vs_run:
 
-    use_std = True   # ?? set False to plot variance instead
+    use_std = True  # ?? set False to plot variance instead
 
     n_qubits = len(Pe_meas)
 
@@ -644,7 +649,7 @@ if Pe_variance_std_vs_run:
             markersize=6
         )
 
-        ax.set_title(f"Qubit {q+1}")
+        ax.set_title(f"Qubit {q + 1}")
 
         if q >= 3:
             ax.set_xlabel("Run Number")
@@ -660,6 +665,8 @@ if Pe_variance_std_vs_run:
 
     plt.tight_layout()
     plt.show()
+
+
 ################################ Definitions, additional plotting funcs ####################################
 def print_median_spread_table(run_num_list, box_data, q, units="", mode="q1q3"):
     """
@@ -673,45 +680,46 @@ def print_median_spread_table(run_num_list, box_data, q, units="", mode="q1q3"):
         arr = arr[np.isfinite(arr)]
 
         if arr.size == 0:
-            print(f"Run {r}, Q{q+1}: no data")
+            print(f"Run {r}, Q{q + 1}: no data")
             continue
 
         med = np.median(arr)
-        q1  = np.percentile(arr, 25)
-        q3  = np.percentile(arr, 75)
+        q1 = np.percentile(arr, 25)
+        q3 = np.percentile(arr, 75)
         iqr = q3 - q1
 
-        if "Hz" in units: # more decimals for qubit freq vals to identify subtle shifts
+        if "Hz" in units:  # more decimals for qubit freq vals to identify subtle shifts
             if mode.lower() == "iqr2":
                 spread = 0.5 * iqr
-                print(f"Run {r}, Q{q+1}: {med:.6f} ± {spread:.6f} {units}  (IQR={iqr:.6f}, n={arr.size})")
+                print(f"Run {r}, Q{q + 1}: {med:.6f} ± {spread:.6f} {units}  (IQR={iqr:.6f}, n={arr.size})")
             else:
                 # default: median (Q1, Q3)
-                print(f"Run {r}, Q{q+1}: {med:.6f} ({q1:.6f}, {q3:.6f}) {units}  [n={arr.size}]")
+                print(f"Run {r}, Q{q + 1}: {med:.6f} ({q1:.6f}, {q3:.6f}) {units}  [n={arr.size}]")
         else:
             if mode.lower() == "iqr2":
                 spread = 0.5 * iqr
-                print(f"Run {r}, Q{q+1}: {med:.4f} ± {spread:.4f} {units}  (IQR={iqr:.4f}, n={arr.size})")
+                print(f"Run {r}, Q{q + 1}: {med:.4f} ± {spread:.4f} {units}  (IQR={iqr:.4f}, n={arr.size})")
             else:
                 # default: median (Q1, Q3)
-                print(f"Run {r}, Q{q+1}: {med:.4f} ({q1:.4f}, {q3:.4f}) {units}  [n={arr.size}]")
+                print(f"Run {r}, Q{q + 1}: {med:.4f} ({q1:.4f}, {q3:.4f}) {units}  [n={arr.size}]")
+
 
 def boxwhisker_t1t2_per_qubit_vs_run(
-    run_num_list,
-    t1_vals_by_run=None,
-    t2r_vals_by_run=None,
-    t2e_vals_by_run=None,
-    do_T1=True,
-    do_T2R=True,
-    do_T2E=True,
-    n_qubits=6,
-    ylims=(0, 140),
-    yticks=np.arange(0, 141, 20),
-    showfliers=True, # show outliers?
-    whis=1.5,
-    mode="together",          # "together" or "separate"
-    fig_title_prefix=" vs Run Number",
-    save_plt_path = None # string
+        run_num_list,
+        t1_vals_by_run=None,
+        t2r_vals_by_run=None,
+        t2e_vals_by_run=None,
+        do_T1=True,
+        do_T2R=True,
+        do_T2E=True,
+        n_qubits=6,
+        ylims=(0, 140),
+        yticks=np.arange(0, 141, 20),
+        showfliers=True,  # show outliers?
+        whis=1.5,
+        mode="together",  # "together" or "separate"
+        fig_title_prefix=" vs Run Number",
+        save_plt_path=None  # string
 ):
     """
     mode="together": each qubit subplot contains multiple metrics (offset boxplots)
@@ -887,7 +895,7 @@ def boxwhisker_t1t2_per_qubit_vs_run(
 
                 # legend with single entry
                 handle = Patch(facecolor=color, edgecolor=color, alpha=0.30, label=label)
-                #ax.legend(handles=[handle], loc="upper left", fontsize=16)
+                # ax.legend(handles=[handle], loc="upper left", fontsize=16)
 
             fig.suptitle(f"{label}{fig_title_prefix}", fontsize=18)
             fig.supxlabel("Run Number", fontsize=16)
@@ -911,29 +919,30 @@ def boxwhisker_t1t2_per_qubit_vs_run(
     else:
         raise ValueError("mode must be 'together' or 'separate'.")
 
+
 def boxwhisker_qtemps_per_qubit_vs_run_choice(
-    run_num_list,
-    rpm_temps_by_run,
-    ssf_g_temps_by_run,
-    ssf_ge_temps_by_run=None,
-    n_qubits=6,
-    qubits_to_plot=None,   # NEW: e.g. [0,1,2] for Q1-Q3, or None for first n_qubits
-    plot_mode="hybrid",    # "hybrid", "all_ssf", or "compare_methods"
-    ssf_kind="g",          # "g" or "ge"
-    layout="separate",     # "separate" or "together"
-    colors=('orange', 'blue', 'purple', 'green', 'brown', 'palevioletred'),
-    ssf_color="purple",
-    ylims=(0, 600),
-    yticks=np.arange(0, 601, 100),
-    showfliers=True, # show outliers?
-    whis=1.5,
-    fig_title=None,
-    ylabel="Effective temperature (mK)",
-    suptitle_fs=18,
-    title_fs=18,
-    label_fs=18,
-    tick_fs=18,
-    save_plt_path = None
+        run_num_list,
+        rpm_temps_by_run,
+        ssf_g_temps_by_run,
+        ssf_ge_temps_by_run=None,
+        n_qubits=6,
+        qubits_to_plot=None,  # NEW: e.g. [0,1,2] for Q1-Q3, or None for first n_qubits
+        plot_mode="hybrid",  # "hybrid", "all_ssf", or "compare_methods"
+        ssf_kind="g",  # "g" or "ge"
+        layout="separate",  # "separate" or "together"
+        colors=('orange', 'blue', 'purple', 'green', 'brown', 'palevioletred'),
+        ssf_color="purple",
+        ylims=(0, 600),
+        yticks=np.arange(0, 601, 100),
+        showfliers=True,  # show outliers?
+        whis=1.5,
+        fig_title=None,
+        ylabel="Effective temperature (mK)",
+        suptitle_fs=18,
+        title_fs=18,
+        label_fs=18,
+        tick_fs=18,
+        save_plt_path=None
 ):
     """
     Per-qubit box/whisker vs run.
@@ -1354,26 +1363,27 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
             fig.savefig(fname, bbox_inches="tight")
             plt.close(fig)
 
+
 ######################################################################################
 def boxwhisker_pe_per_qubit_vs_run_hybrid(
-    run_num_list,
-    rpm_pe_by_run,
-    ssf_pe_by_run,
-    n_qubits=6,
-    qubits_to_plot=None,
-    colors=('orange', 'blue', 'purple', 'green', 'brown', 'palevioletred'),
-    ssf_color="purple",
-    ylims=None,
-    yticks=None,
-    showfliers=True, # show outliers?
-    whis=1.5,
-    fig_title="Excited-State Population vs Run Number",
-    ylabel=r"$P_e$",
-    suptitle_fs=18,
-    title_fs=18,
-    label_fs=18,
-    tick_fs=18,
-    save_plt_path=None
+        run_num_list,
+        rpm_pe_by_run,
+        ssf_pe_by_run,
+        n_qubits=6,
+        qubits_to_plot=None,
+        colors=('orange', 'blue', 'purple', 'green', 'brown', 'palevioletred'),
+        ssf_color="purple",
+        ylims=None,
+        yticks=None,
+        showfliers=True,  # show outliers?
+        whis=1.5,
+        fig_title="Excited-State Population vs Run Number",
+        ylabel=r"$P_e$",
+        suptitle_fs=18,
+        title_fs=18,
+        label_fs=18,
+        tick_fs=18,
+        save_plt_path=None
 ):
     """
     Hybrid Pe boxplot, using already-grouped per-run dictionaries.
@@ -1560,10 +1570,10 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
     for k in range(n_plot, len(axes)):
         axes[k].set_visible(False)
 
-    left_margin   = 0.12 + 0.015 * max(nrows - 1, 0)
+    left_margin = 0.12 + 0.015 * max(nrows - 1, 0)
     bottom_margin = 0.14 + 0.025 * max(nrows - 1, 0)
-    top_margin    = 0.90 - 0.015 * max(nrows - 1, 0)
-    right_margin  = 0.96
+    top_margin = 0.90 - 0.015 * max(nrows - 1, 0)
+    right_margin = 0.96
 
     fig.subplots_adjust(
         left=left_margin,
@@ -1585,20 +1595,21 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
         fig.savefig(fname, bbox_inches="tight")
         plt.close(fig)
 
+
 def boxwhisker_qfreq_per_qubit_vs_run(
-    run_num_list,
-    qfreq_vals_by_run,
-    qfreq_errs_by_run,
-    qfreq_centers,              # user provides center for each qubit
-    n_qubits=6,
-    freq_window=20.0,           # same total width for every qubit
-    yticks_per_qubit=None,
-    showfliers=True,
-    whis=1.5,
-    rel_err_cutoff=None,
-    fig_title="Qubit Frequency vs Run Number (per qubit)",
-    ylabel="Qubit Frequency (MHz)",
-    save_plt_path = None
+        run_num_list,
+        qfreq_vals_by_run,
+        qfreq_errs_by_run,
+        qfreq_centers,  # user provides center for each qubit
+        n_qubits=6,
+        freq_window=20.0,  # same total width for every qubit
+        yticks_per_qubit=None,
+        showfliers=True,
+        whis=1.5,
+        rel_err_cutoff=None,
+        fig_title="Qubit Frequency vs Run Number (per qubit)",
+        ylabel="Qubit Frequency (MHz)",
+        save_plt_path=None
 ):
     """
     Makes 6 subplots (one per qubit). X-axis is run number.
@@ -1758,24 +1769,26 @@ def boxwhisker_qfreq_per_qubit_vs_run(
         fig.savefig(fname, bbox_inches="tight")
         plt.close(fig)
 
+
 def boxwhisker_ssf_per_qubit_vs_run(
-    run_num_list,
-    ssf_vals_by_run,
-    n_qubits=6,
-    qubits_to_plot=None,
-    colors="navy", # default: same color for all qubits, can pass multiple too: ('orange', 'blue', 'purple', 'green', 'brown', 'palevioletred')
-    ylims=None,
-    yticks=None,
-    showfliers=True,
-    whis=1.5,
-    fig_title="Single-Shot Fidelity vs Run Number",
-    ylabel="Single-Shot Fidelity",
-    suptitle_fs=18,
-    title_fs=18,
-    label_fs=18,
-    tick_fs=18,
-    save_plt_path=None,
-    save_name="boxwhisk_ssf_vs_run_num.pdf"
+        run_num_list,
+        ssf_vals_by_run,
+        n_qubits=6,
+        qubits_to_plot=None,
+        colors="navy",
+        # default: same color for all qubits, can pass multiple too: ('orange', 'blue', 'purple', 'green', 'brown', 'palevioletred')
+        ylims=None,
+        yticks=None,
+        showfliers=True,
+        whis=1.5,
+        fig_title="Single-Shot Fidelity vs Run Number",
+        ylabel="Single-Shot Fidelity",
+        suptitle_fs=18,
+        title_fs=18,
+        label_fs=18,
+        tick_fs=18,
+        save_plt_path=None,
+        save_name="boxwhisk_ssf_vs_run_num.pdf"
 ):
     """
     SSF boxplot, using already-grouped per-run dictionaries.
@@ -1934,10 +1947,10 @@ def boxwhisker_ssf_per_qubit_vs_run(
     for k in range(n_plot, len(axes)):
         axes[k].set_visible(False)
 
-    left_margin   = 0.12 + 0.015 * max(nrows - 1, 0)
+    left_margin = 0.12 + 0.015 * max(nrows - 1, 0)
     bottom_margin = 0.14 + 0.025 * max(nrows - 1, 0)
-    top_margin    = 0.90 - 0.015 * max(nrows - 1, 0)
-    right_margin  = 0.96
+    top_margin = 0.90 - 0.015 * max(nrows - 1, 0)
+    right_margin = 0.96
 
     fig.subplots_adjust(
         left=left_margin,
