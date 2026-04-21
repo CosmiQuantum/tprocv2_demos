@@ -67,13 +67,13 @@ device_name = '6transmon'
 substudy_txt_notes = ('All qubits minus Q5. Quiet run 9 AB paper data \n')
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
-             "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
-             "rabi_pop_meas": True, "ef_Rabi": False}
-
 # run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
-#              "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
-#              "rabi_pop_meas": False, "ef_Rabi": False}
+#              "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
+#              "rabi_pop_meas": True, "ef_Rabi": False}
+
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
+             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
+             "rabi_pop_meas": False, "ef_Rabi": False}
 
 # For 25dB DAC, 4/16
 res_leng_vals = [5.6, 6.0, 5.75, 6.9, 6.5, 7.6]  # 25dB
