@@ -493,7 +493,7 @@ paths_SSFmethods_run8 = [ # for daq01 case, need to make CEPH version
   f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-29_18-38-25",
   f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-29_23-48-45",
 
-  f"{r8_path_prefix}6transmon/round_robin/18dB_DAC_testdata_allQs_exceptQ4/2025-10-31_01-54-57",
+  f"{r8_path_prefix}/6transmon/round_robin/18dB_DAC_testdata_allQs_exceptQ4/2025-10-31_01-54-57",
 
   f"{r8_path_prefix}/6transmon/round_robin/19dB_DAC_testdata_allQs/2025-10-31_20-40-11",
   f"{r8_path_prefix}/6transmon/round_robin/19dB_DAC_testdata_allQs/2025-11-01_12-54-55"
