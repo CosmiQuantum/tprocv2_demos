@@ -374,7 +374,10 @@ if qtemp_noisetemp_plot:
         )
 
         ax.set_title(f"Q{qi + 1}", fontsize=16)
-        ax.set_yticks(np.arange(0, 401, 75))
+        # ax.set_ylim(0, 120)
+        # ax.set_yticks(np.arange(0, 121, 20))
+        ax.set_ylim(0, 400)
+        ax.set_yticks(np.arange(0, 401, 50))
         ax.set_xticks(runs)
         ax.set_xticklabels(['5', '6', '7', '8', '9'], fontsize=16)
 
