@@ -360,7 +360,7 @@ if qtemp_noisetemp_plot:
             color="palevioletred",
             capsize=3,
             elinewidth=1,
-            label=r"$T_{\mathrm{qubit}}$ (Runs 6-8 RPM)"
+            label=r"$T_{\mathrm{qubit}}$ (Runs 6-9 RPM)"
         )
 
         # --- Predicted noise temperature ---
