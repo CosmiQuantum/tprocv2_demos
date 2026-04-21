@@ -47,7 +47,7 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
-run_num_list = [4,5,6,7,8]
+run_num_list = [4,5,6,7,8,9]
 t1_vals_by_run  = {}
 t2r_vals_by_run = {}
 t2e_vals_by_run = {}
@@ -85,7 +85,11 @@ for run_number in run_num_list:
                             "AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_01-18-51",
                             "AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_17-54-48",
 
-                            "AB_paper_does_no_rpm_fromRR_affect_coh_25dBDAC/2026-04-18_20-58-30"
+                            "AB_paper_does_no_rpm_fromRR_affect_coh_25dBDAC/2026-04-18_20-58-30",
+
+                            "AB_paper_data_batch5_25dBDAC_onlyQ1_onlySSF/2026-04-20_18-43-20",
+
+                            "AB_paper_data_batch6_25dB_DACatten_onlyQ1/2026-04-20_18-50-54"
                             ]
 
     if run_number == 8:
@@ -303,9 +307,9 @@ for run_number in run_num_list:
     #                                        save_figs, fit_saved, signal, run_name, FRIDGE)
     # date_times_res_spec, res_freqs = res_spec_vs_time.run()
     # #
-    q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                      save_figs, fit_saved, signal, run_name, FRIDGE)
-    date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
+    # q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+    #                                   save_figs, fit_saved, signal, run_name, FRIDGE)
+    # date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
 
     # print("qspec fit errs Q1: ", qspec_fit_err[0])
     # print("mean qspec fit err Q1: ", np.mean(qspec_fit_err[0]))
@@ -335,11 +339,11 @@ for run_number in run_num_list:
     t1_vals_by_run[run_number] = t1_vals
     t1_errs_by_run[run_number] = t1_fit_err
 
-    # t2r_vals_by_run[run_number] = t2r_vals
-    # t2r_errs_by_run[run_number] = t2r_fit_err
-    #
-    # t2e_vals_by_run[run_number] = t2e_vals
-    # t2e_errs_by_run[run_number] = t2e_fit_err
+    t2r_vals_by_run[run_number] = t2r_vals
+    t2r_errs_by_run[run_number] = t2r_fit_err
+
+    t2e_vals_by_run[run_number] = t2e_vals
+    t2e_errs_by_run[run_number] = t2e_fit_err
 
     # qfreq_vals_by_run[run_number] = q_freqs
     # qfreq_errs_by_run[run_number] = qspec_fit_err

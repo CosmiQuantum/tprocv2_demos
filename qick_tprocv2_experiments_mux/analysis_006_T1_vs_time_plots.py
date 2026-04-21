@@ -343,7 +343,7 @@ class T1VsTime:
 
                             # --- path to the soccfg dump (txt file made with save_run_soccfg_params.py) ---
                             if self.run_number == 9:
-                                soccfg_dump_path = ""
+                                soccfg_dump_path = "/data/QICK_data/run9/6transmon/run9_soccfg_params/soccfg_full_dump_2026-04-20_21-30-15_firmware_during_run9.txt"
                             if self.run_number == 8:  # this does work
                                 soccfg_dump_path = "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
                                     # r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
