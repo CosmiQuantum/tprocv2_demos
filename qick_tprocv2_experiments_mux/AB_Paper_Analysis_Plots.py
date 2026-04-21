@@ -1178,24 +1178,24 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
             ax.set_xticklabels(xtick_labels)
             ax.set_xlim(0.5, len(run_num_list) + 0.5)
 
-            # per-subplot legend if qubit colors differ
-            # if multi_qubit_colors:
-            #     if plot_mode == "hybrid":
-            #         legend_handles = [
-            #             Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 5 (SSF)"),
-            #             Patch(facecolor=q_color, edgecolor=q_color, alpha=0.30, label="Runs >5 (RPM)")
-            #         ]
-            #     elif plot_mode == "all_ssf":
-            #         legend_handles = [
-            #             Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF")
-            #         ]
-            #     else:  # compare_methods
-            #         legend_handles = [
-            #             Patch(facecolor=q_color, edgecolor=q_color, alpha=0.30, label="RPM / hybrid"),
-            #             Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF")
-            #         ]
-            #
-            #     ax.legend(handles=legend_handles, loc="upper right", frameon=True, fontsize=tick_fs - 2)
+            #per-subplot legend if qubit colors differ
+            if multi_qubit_colors:
+                if plot_mode == "hybrid":
+                    legend_handles = [
+                        Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 5 (SSF)"),
+                        Patch(facecolor=q_color, edgecolor=q_color, alpha=0.30, label="Runs >5 (RPM)")
+                    ]
+                elif plot_mode == "all_ssf":
+                    legend_handles = [
+                        Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF")
+                    ]
+                else:  # compare_methods
+                    legend_handles = [
+                        Patch(facecolor=q_color, edgecolor=q_color, alpha=0.30, label="RPM / hybrid"),
+                        Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF")
+                    ]
+
+                ax.legend(handles=legend_handles, loc="upper right", frameon=True, fontsize=tick_fs - 2)
 
         # hide unused axes
         for k in range(n_plot, len(axes)):
@@ -1207,38 +1207,38 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
             top=0.90,
         )
 
-        # fig.suptitle(fig_title, fontsize=suptitle_fs, y=0.965)
+        fig.suptitle(fig_title, fontsize=suptitle_fs, y=0.965)
 
-        # fig.supxlabel("Run Number", fontsize=label_fs, y=0.03)
+        fig.supxlabel("Run Number", fontsize=label_fs, y=0.03)
 
-        # fig.supylabel(ylabel, fontsize=label_fs, x=0.02)
+        fig.supylabel(ylabel, fontsize=label_fs, x=0.02)
 
         # single figure legend if all qubits use same color
-        # if not multi_qubit_colors:
-        #     fig.subplots_adjust(right=0.84)
-        #
-        #     if plot_mode == "hybrid":
-        #         legend_handles = [
-        #             Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 5 (SSF)"),
-        #             Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="Runs >5 (RPM)")
-        #         ]
-        #     elif plot_mode == "all_ssf":
-        #         legend_handles = [
-        #             Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF")
-        #         ]
-        #     else:
-        #         legend_handles = [
-        #             Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="RPM / hybrid"),
-        #             Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF")
-        #         ]
-        #
-        #     fig.legend(
-        #         handles=legend_handles,
-        #         loc="center left",
-        #         bbox_to_anchor=(0.86, 0.5),
-        #         frameon=True,
-        #         fontsize=label_fs
-        #     )
+        if not multi_qubit_colors:
+            fig.subplots_adjust(right=0.84)
+
+            if plot_mode == "hybrid":
+                legend_handles = [
+                    Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 5 (SSF)"),
+                    Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="Runs >5 (RPM)")
+                ]
+            elif plot_mode == "all_ssf":
+                legend_handles = [
+                    Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF")
+                ]
+            else:
+                legend_handles = [
+                    Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="RPM / hybrid"),
+                    Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF")
+                ]
+
+            fig.legend(
+                handles=legend_handles,
+                loc="center left",
+                bbox_to_anchor=(0.86, 0.5),
+                frameon=True,
+                fontsize=label_fs
+            )
 
         if save_plt_path is None:
             plt.show()

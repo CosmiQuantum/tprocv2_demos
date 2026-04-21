@@ -1026,8 +1026,8 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             layout="separate",
             colors=('palevioletred', 'palevioletred', 'palevioletred',
                     'palevioletred', 'palevioletred', 'palevioletred'),
-            ylims=(0, 300),
-            yticks=np.arange(0, 301, 100),
+            ylims=(0, 600),
+            yticks=np.arange(0, 601, 100),
             showfliers=True,  # outliers
             save_plt_path = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF") # set to 'None' to use plt.show()
 
@@ -1043,8 +1043,8 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             qubits_to_plot=[0, 1, 2, 3, 5],
             colors=('palevioletred', 'palevioletred', 'palevioletred',
                     'palevioletred', 'palevioletred', 'palevioletred'),
-            ylims=(0, 0.6),
-            yticks=np.arange(0, 0.61, 0.05),
+            ylims=(0, 0.55),
+            yticks=np.arange(0, 0.551, 0.05),
             showfliers=True,  # outliers
             fig_title="Excited-State Population vs Run Number",
             ylabel=r"$P_e$",
