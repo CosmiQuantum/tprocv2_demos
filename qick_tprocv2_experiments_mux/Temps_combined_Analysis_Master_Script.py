@@ -25,7 +25,7 @@ from analysis_007_T2R_vs_time_plots import T2rVsTime
 from analysis_008_T2E_vs_time_plots import T2eVsTime
 from AB_Paper_Analysis_Plots import boxwhisker_qtemps_per_qubit_vs_run_choice, boxwhisker_pe_per_qubit_vs_run_hybrid, boxwhisker_ssf_per_qubit_vs_run
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 5
+run_num = 9
 run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence analysis it's defined in its respective section
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
@@ -244,7 +244,8 @@ filter_keywords_run8 = ["AB_Paper_Data_24hrs", "ABpaperdata2ndbatch_21dB_DACatte
 # filter_keywords_run8 = ["AB_Paper_Data_24hrs"]
 #-----------------------------------------------------------------------run 9------------------------------------------------------------
 #Base path of where the data is stored up to the Study Name (round_robin_benchmark)
-base_dir_run9 = "/exp/cosmiq/data/QUIET/QICK_data/run9/6transmon/round_robin_benchmark" # CEPH
+base_dir_run9 = "/exp/cosmiq/data/QUIET/QICK_data/run9/6transmon/round_robin_benchmark"
+    #"/exp/cosmiq/data/QUIET/QICK_data/run9/6transmon/round_robin_benchmark" # CEPH
     #"/data/QICK_data/run9/6transmon/round_robin_benchmark" # up to study name. # daq01
 
 # AB paper data so far: (specify up to the day only)
@@ -256,11 +257,13 @@ target_dates_qtemps_RPM_run9 = [
 ]
 
 # To re-make and save RPM RR plots
-outerFolder_qtemps_plots_RR_run9 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r9" # CEPH
+outerFolder_qtemps_plots_RR_run9 =  "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r9"
+    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r9" # CEPH
     # "/data/QICK_data/run9/6transmon/analysis/replotted_RR_data/rabi_pop_meas" #daq01
 
 # For RPM Analysis
-outerFolder_qtemps_plots_run9 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r9" #CEPH
+outerFolder_qtemps_plots_run9 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r9"
+    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r9" #CEPH
     #"/data/QICK_data/run9/6transmon/analysis/Qtemps_RPMmethod" # daq01
 
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name. These are substudies.
@@ -304,7 +307,7 @@ elif run_num == 8:
 elif run_num == 9:
     Science_Qubits = [0, 1, 2, 3, 4, 5]
     base_dir = base_dir_run9
-    filter_keywords = filter_keywords_run8
+    filter_keywords = filter_keywords_run9
     outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run9
     outerFolder_qtemps_plots = outerFolder_qtemps_plots_run9
     target_dates_qtemps_RPM = target_dates_qtemps_RPM_run9
@@ -504,7 +507,7 @@ path_saveplots_ssf_qtemps_vsT_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1h
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run8" #CEPH
 
 # ----------------------------------------------------------------------------------------------run 9----------------------------------------------------------------------------------------------------------
-r9_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run9"
+r9_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run9" # CEPH
                 #"/exp/cosmiq/data/QUIET/QICK_data/run9" # CEPH
                 # "/data/QICK_data/run9" # daq01
 # AB paper data
@@ -533,10 +536,10 @@ paths_SSFmethods_run9 = [
     f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch6_25dB_DACatten_onlyQ1/2026-04-20_18-50-54",
 ]
 
-path_saveplots_fits_run9 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r9" #CEPH
+path_saveplots_fits_run9 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r9"
     #"/data/QICK_data/run9/6transmon/analysis/ssf_qtemps_analysis/qtemps_ssf_gaussfits" #daq01 # where to save ssf plots to check gaussian fits
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r9" #CEPH
-path_saveplots_ssf_qtemps_vsT_run9 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run9" #CEPH
+path_saveplots_ssf_qtemps_vsT_run9 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run9"
     # "/data/QICK_data/run9/6transmon/analysis/ssf_qtemps_analysis/qtemps_ssf_analysis" #daq01
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run9" #CEPH
 #------------------------------------------------------------------------------ Assign func variables depending on run number ---------------------------------------
@@ -811,7 +814,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
-run_num_list = [5, 6, 7, 8, 9] # for quiet, start at 5. no qtemp data for run 4
+run_num_list = [5,6,7,8,9] # for quiet, start at 5. no qtemp data for run 4
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
 rpm_Pe_by_run = {}      # rpm_Pe_by_run[run][qid] = [P_e, ...]
@@ -906,7 +909,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             # ---------------- RPM ----------------
             Science_Qubits = [0, 1, 2, 3, 4, 5]
             base_dir = base_dir_run9
-            filter_keywords = filter_keywords_run8
+            filter_keywords = filter_keywords_run9
             outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run9
             outerFolder_qtemps_plots = outerFolder_qtemps_plots_run9
             target_dates_qtemps_RPM = target_dates_qtemps_RPM_run9
@@ -1162,7 +1165,7 @@ restrict_time = False
 start_time = datetime.datetime(2025, 11, 18, 0, 0)
 end_time = datetime.datetime(2025, 11, 21, 12, 0)
 
-run_num_list = [4,5,6,7,8]
+run_num_list = [4,5,6,7,8,9]
 
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
@@ -1266,7 +1269,7 @@ if coh_qtemp_ana_flags["load_qtemps"]:
             # ---------------- RPM ----------------
             Science_Qubits = [0, 1, 2, 3, 4, 5]
             base_dir = base_dir_run9
-            filter_keywords = filter_keywords_run8
+            filter_keywords = filter_keywords_run9
             outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run9
             outerFolder_qtemps_plots = outerFolder_qtemps_plots_run9
             target_dates_qtemps_RPM = target_dates_qtemps_RPM_run9
