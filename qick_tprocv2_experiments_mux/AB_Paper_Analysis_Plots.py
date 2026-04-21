@@ -5,7 +5,7 @@ import math
 import os
 import datetime
 
-qtemp_noisetemp_plot = False
+qtemp_noisetemp_plot = True
 lnPe_vs_qfreq_plots_per_run = False
 lnPe_vs_qfreq_plots_per_qubit = False
 ssf_fid_vs_Pe = False
@@ -15,21 +15,21 @@ Pe_variance_std_vs_run = False
 # ------------------------------------------------------------
 # Updated for APS
 Pe_meas = [
-    [None, 0.262206, 0.122347, 0.080209, 0.056575],  # Qubit 1
-    [None, 0.379916, 0.103899, 0.088050, 0.080829],  # Qubit 2
-    [None, 0.230638, 0.137551, 0.076606, 0.073828],  # Qubit 3
-    [None, 0.355278, 0.170338, 0.088298, 0.111364],  # Qubit 4
-    [None, 0.220639, 0.061004, 0.080564, 0.052125],  # Qubit 5
-    [None, 0.248520, 0.068520, 0.046608, 0.029532],  # Qubit 6
+    [None, 0.262206, 0.122347, 0.080209, 0.056575, 0.021310],  # Qubit 1
+    [None, 0.379916, 0.103899, 0.088050, 0.080829, 0.036615],  # Qubit 2
+    [None, 0.230638, 0.137551, 0.076606, 0.073828, 0.045079],  # Qubit 3
+    [None, 0.355278, 0.170338, 0.088298, 0.111364, 0.039099],  # Qubit 4
+    [None, 0.220639, 0.061004, 0.080564, 0.052125, None],      # Qubit 5
+    [None, 0.248520, 0.068520, 0.046608, 0.029532, 0.012933],  # Qubit 6
 ]
 
 Pe_err = [
-    [None, 0.038575, 0.020341, 0.005599, 0.002620],  # Qubit 1
-    [None, 0.010940, 0.005009, 0.002714, 0.003743],  # Qubit 2
-    [None, 0.010852, 0.017270, 0.002867, 0.005371],  # Qubit 3
-    [None, 0.008452, 0.016899, 0.004802, 0.015093],  # Qubit 4
-    [None, 0.007670, 0.020126, 0.003180, 0.003983],  # Qubit 5
-    [None, 0.007161, 0.003828, 0.003404, 0.003975],  # Qubit 6
+    [None, 0.038575, 0.020341, 0.005599, 0.002620, 0.003424],  # Qubit 1
+    [None, 0.010940, 0.005009, 0.002714, 0.003743, 0.002534],  # Qubit 2
+    [None, 0.010852, 0.017270, 0.002867, 0.005371, 0.003569],  # Qubit 3
+    [None, 0.008452, 0.016899, 0.004802, 0.015093, 0.001957],  # Qubit 4
+    [None, 0.007670, 0.020126, 0.003180, 0.003983, None],      # Qubit 5
+    [None, 0.007161, 0.003828, 0.003404, 0.003975, 0.000948],  # Qubit 6
 ]
 
 # ------------------------------------------------------------
@@ -37,21 +37,21 @@ Pe_err = [
 # ------------------------------------------------------------
 # updated to use medians from box plots and IQR/2
 f_ge_MHz = [
-    [4184.144999, 4181.217423, 4189.847610, 4184.045941, 4194.713445],
-    [3821.165184, 3821.165380, 3818.674021, 3823.357495, 3828.615932],
-    [4155.703143, 4154.373711, 4161.427498, 4162.873654, 4173.694786],
-    [4459.199056, 4458.460059, 4462.441896, 4467.354628, 4474.099712],
-    [4471.119418, 4471.311651, 4471.163478, 4475.032108, 4485.260921],
-    [4997.851927, 5000.618976, 4999.514524, 5006.153588, 5018.134399],
+    [4184.144999, 4181.217423, 4189.847610, 4184.045941, 4194.713445, 4226.11],
+    [3821.165184, 3821.165380, 3818.674021, 3823.357495, 3828.615932, 3853.61],
+    [4155.703143, 4154.373711, 4161.427498, 4162.873654, 4173.694786, 4197.05],
+    [4459.199056, 4458.460059, 4462.441896, 4467.354628, 4474.099712, 4506.61],
+    [4471.119418, 4471.311651, 4471.163478, 4475.032108, 4485.260921, None],
+    [4997.851927, 5000.618976, 4999.514524, 5006.153588, 5018.134399, 5050.78],
 ]
 
 f_ge_err_MHz = [
-    [0.005309, 0.020415, 0.044104, 0.006472, 0.007646],
-    [0.012198, 0.014326, 0.046804, 0.004549, 0.019867],
-    [0.152578, 0.007039, 0.023183, 0.004947, 0.021120],
-    [0.007611, 0.015656, 0.040708, 0.008552, 0.088323],
-    [0.010902, 0.009128, 3.811058, 0.009040, 0.015478],
-    [0.002007, 0.006477, 0.018931, 0.003672, 0.060262],
+    [0.005309, 0.020415, 0.044104, 0.006472, 0.007646, None],
+    [0.012198, 0.014326, 0.046804, 0.004549, 0.019867, None],
+    [0.152578, 0.007039, 0.023183, 0.004947, 0.021120, None],
+    [0.007611, 0.015656, 0.040708, 0.008552, 0.088323, None],
+    [0.010902, 0.009128, 3.811058, 0.009040, 0.015478, None],
+    [0.002007, 0.006477, 0.018931, 0.003672, 0.060262, None],
 ]
 
 # -------------------------------------------------------------------------
@@ -87,18 +87,18 @@ Pe_variance_vals = [
     [2.145e-04, 3.976e-05, None, 1.842e-03],  # Qubit 6
 ]
 # ------------------------------------------------------------
-# Convert + drop Run 4 so arrays align with Runs 5-8
+# Convert + drop Run 4 so arrays align with Runs 5-9
 # ------------------------------------------------------------
-runs = np.array([5, 6, 7, 8], dtype=int)
+runs = np.array([5, 6, 7, 8, 9], dtype=int)
 
-Pe_meas = np.array(Pe_meas, dtype=object).astype(float)[:, 1:]   # (6,4)
-Pe_err  = np.array(Pe_err,  dtype=object).astype(float)[:, 1:]   # (6,4)
+Pe_meas = np.array(Pe_meas, dtype=object).astype(float)[:, 1:]   # (6,5)
+Pe_err  = np.array(Pe_err,  dtype=object).astype(float)[:, 1:]   # (6,5)
 
-f_ge_MHz     = np.array(f_ge_MHz, dtype=float)[:, 1:]            # (6,4)
-f_ge_err_MHz = np.array(f_ge_err_MHz, dtype=float)[:, 1:]        # (6,4)
+f_ge_MHz     = np.array(f_ge_MHz, dtype=object).astype(float)[:, 1:]
+f_ge_err_MHz = np.array(f_ge_err_MHz, dtype=object).astype(float)[:, 1:]
 
-f_ge_Hz     = f_ge_MHz * 1e6
-f_ge_err_Hz = f_ge_err_MHz * 1e6
+f_ge_Hz      = f_ge_MHz * 1e6
+f_ge_err_Hz  = f_ge_err_MHz * 1e6
 
 ssf_fid_vals   = np.array(ssf_fid_vals, dtype=float)[:, 1:]            # (6,4)
 
@@ -192,6 +192,12 @@ if qtemp_noisetemp_plot:
             "100mK": 10,
             "10mK": 30 + 3 * IL_eccosorb + IL_marki,
         },
+        9: {
+            "4K": 20,
+            "1K": 6,
+            "100mK": 10,
+            "10mK": 30 + 3 * IL_eccosorb + IL_marki,
+        }
     }
 
     nQ, nRuns = Pe_meas.shape
@@ -209,7 +215,7 @@ if qtemp_noisetemp_plot:
 
     print("\nPredicted Te (mK) by qubit & run (using per-run f_ge):")
     for qi in range(nQ):
-        vals = ", ".join([f"R{int(runs[i])}:{Te_mK[qi, i]:.2f}" for i in range(nRuns)])
+        vals = ", ".join([f"R{int(runs[i])}:{Te_mK[qi, i]:.4f}" for i in range(nRuns)])
         print(f"  Q{qi+1}: {vals}")
 
 
@@ -297,7 +303,7 @@ if qtemp_noisetemp_plot:
             nm = n_model[qi, ri]
             nM = n_meas[qi, ri]
             print(
-                f"  R{int(r)} | n_model={nm:.3e}  n_meas={nM:.3e}  ratio(meas/model)={(nM / nm if nm > 0 else np.inf):.2f}")
+                f"  R{int(r)} | n_model={nm:.3e}  n_meas={nM:.3e}  ratio(meas/model)={(nM / nm if nm > 0 else np.inf):.4f}")
 
     # Checks
     all_pos_model = np.all(n_model > 0)
@@ -365,7 +371,7 @@ if qtemp_noisetemp_plot:
         ax.set_title(f"Q{qi + 1}", fontsize=16)
         ax.set_yticks(np.arange(0, 401, 75))
         ax.set_xticks(runs)
-        ax.set_xticklabels(['5', '6', '7', '8'], fontsize=16)
+        ax.set_xticklabels(['5', '6', '7', '8', '9'], fontsize=16)
 
         ax.tick_params(axis='y', labelsize=16)
         ax.tick_params(axis='x', labelsize=16)
@@ -685,10 +691,10 @@ def print_median_spread_table(run_num_list, box_data, q, units="", mode="q1q3"):
         else:
             if mode.lower() == "iqr2":
                 spread = 0.5 * iqr
-                print(f"Run {r}, Q{q+1}: {med:.2f} ± {spread:.2f} {units}  (IQR={iqr:.2f}, n={arr.size})")
+                print(f"Run {r}, Q{q+1}: {med:.4f} ± {spread:.4f} {units}  (IQR={iqr:.4f}, n={arr.size})")
             else:
                 # default: median (Q1, Q3)
-                print(f"Run {r}, Q{q+1}: {med:.2f} ({q1:.2f}, {q3:.2f}) {units}  [n={arr.size}]")
+                print(f"Run {r}, Q{q+1}: {med:.4f} ({q1:.4f}, {q3:.4f}) {units}  [n={arr.size}]")
 
 def boxwhisker_t1t2_per_qubit_vs_run(
     run_num_list,
