@@ -32,8 +32,8 @@ list_of_all_qubits = [0,1,2,3,4,5] # for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0,
 substudy = "opt_Q5_25dBDAC"
 outerFolder = os.path.join(f"/data/QICK_data/run9/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 
-opt_flags = {"res_leng_sweep": False, "2d_sweep": True}
-save_figs_ss = False # do you want to save SSF pics as you run the readout optimization sweeps?
+opt_flags = {"res_leng_sweep": True, "2d_sweep": False}
+save_figs_ss = True # do you want to save SSF pics as you run the readout optimization sweeps?
 
 def create_folder_if_not_exists(folder_path):
     """Creates a folder at the given path if it doesn't already exist."""
@@ -49,14 +49,14 @@ create_folder_if_not_exists(output_folder_length)
 outerfolder_plots = outerFolder + "/documentation/"
 
 n = 1  # Number of rounds
-n_loops = 2 # Number of repetitions per length to average
+n_loops = 1 # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [0]
+Qs = [1]
 
 # For 25dB DAC, 4/16
 res_leng_vals = [5.6, 6.0, 5.75, 6.9, 6.5, 7.6]  # 25dB
-res_gain = [0.825, 0.84, 0.92, 0.635, 0.95, 0.920]  # 25dB,
+res_gain = [0.825, 0.835, 0.912, 0.635, 0.95, 1.0]  # 25dB,
 freq_offsets = [-0.0214, -0.1286, -0.3000, -0.2000, 0.0, -0.0222]  # 25dB
 
 # For 20dB DAC
@@ -69,7 +69,7 @@ res_freq_ge = [None] * 6 # creates list where the script will be storing the fre
 
 j=0 # round number, from RR code. Not really used here since we just run it once for each qubit
 
-lengs = np.arange(3.0, 9.0, 0.5)
+lengs = np.arange(3.0, 8.0, 0.5)
 
 start=time.time()
 
