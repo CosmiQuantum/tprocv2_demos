@@ -47,7 +47,7 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
-run_num_list = [4,5,6,7,8,9]
+run_num_list = [9] # options: 4,5,6,7,8,9
 t1_vals_by_run  = {}
 t2r_vals_by_run = {}
 t2e_vals_by_run = {}
@@ -594,28 +594,6 @@ for run_number in run_num_list:
 
 #------------------------ New way for AB Paper, by Arianna -------------------------------------------
 ## Coherence box plots
-boxwhisker_t1t2_per_qubit_vs_run(
-    run_num_list,
-    t1_vals_by_run=t1_vals_by_run,
-    t2r_vals_by_run=t2r_vals_by_run,
-    t2e_vals_by_run=t2e_vals_by_run,
-    do_T1=True, do_T2R=False, do_T2E=False,
-    ylims=(0, 140),
-    yticks=np.arange(0, 141, 20),
-    mode="separate",
-    save_plt_path = '/data/QICK_data/multirun_analysis/coherence_analysis'
-)
-boxwhisker_t1t2_per_qubit_vs_run(
-    run_num_list,
-    t1_vals_by_run=t1_vals_by_run,
-    t2r_vals_by_run=t2r_vals_by_run,
-    t2e_vals_by_run=t2e_vals_by_run,
-    do_T1=False, do_T2R=True, do_T2E=False,
-    ylims=(0, 160),
-    yticks=np.arange(0, 161, 20),
-    mode="separate",
-    save_plt_path = '/data/QICK_data/multirun_analysis/coherence_analysis'
-)
 boxwhisker_t1t2_per_qubit_vs_run(
     run_num_list,
     t1_vals_by_run=t1_vals_by_run,

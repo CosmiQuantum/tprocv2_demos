@@ -242,6 +242,37 @@ filter_keywords_run8 = ["AB_Paper_Data_24hrs", "ABpaperdata2ndbatch_21dB_DACatte
 # For Arianna's local analysis
 #filter_keywords_run8 = ['ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional']
 # filter_keywords_run8 = ["AB_Paper_Data_24hrs"]
+#-----------------------------------------------------------------------run 9------------------------------------------------------------
+#Base path of where the data is stored up to the Study Name (round_robin_benchmark)
+base_dir_run9 = "/exp/cosmiq/data/QUIET/QICK_data/run9/6transmon/round_robin_benchmark" # CEPH
+    #"/data/QICK_data/run9/6transmon/round_robin_benchmark" # up to study name. # daq01
+
+# AB paper data so far: (specify up to the day only)
+target_dates_qtemps_RPM_run9 = [
+    "2026-04-17",
+    "2026-04-18",
+    "2026-04-19",
+    "2026-04-20",
+]
+
+# To re-make and save RPM RR plots
+outerFolder_qtemps_plots_RR_run9 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r9" # CEPH
+    # "/data/QICK_data/run9/6transmon/analysis/replotted_RR_data/rabi_pop_meas" #daq01
+
+# For RPM Analysis
+outerFolder_qtemps_plots_run9 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r9" #CEPH
+    #"/data/QICK_data/run9/6transmon/analysis/Qtemps_RPMmethod" # daq01
+
+# Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name. These are substudies.
+filter_keywords_run9 = [
+    "AB_paper_data_batch1_25dB_DACatten_noQ5",
+    "AB_paper_data_batch2_25dB_DACatten_onlyQ4",
+    "AB_paper_data_batch3_25dB_DACatten_noQ5",
+    "AB_paper_data_batch4_25dB_DACatten_noQ5",
+    "AB_paper_data_batch5_25dBDAC_onlyQ1_onlySSF",
+    "AB_paper_data_batch6_25dB_DACatten_onlyQ1",
+    "AB_paper_does_no_rpm_fromRR_affect_coh_25dBDAC",
+]
 #-------------------------------------------------------------------------------- Assign func variables depending on run number ---------------------------------------------------------------------------
 if run_num == 6: # We have science-run data as well as pre-science-run data available
     Science_Qubits = [0, 4]
@@ -269,6 +300,14 @@ elif run_num == 8:
     outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run8
     outerFolder_qtemps_plots = outerFolder_qtemps_plots_run8
     target_dates_qtemps_RPM = target_dates_qtemps_RPM_run8
+
+elif run_num == 9:
+    Science_Qubits = [0, 1, 2, 3, 4, 5]
+    base_dir = base_dir_run9
+    filter_keywords = filter_keywords_run8
+    outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run9
+    outerFolder_qtemps_plots = outerFolder_qtemps_plots_run9
+    target_dates_qtemps_RPM = target_dates_qtemps_RPM_run9
 
 elif run_num == 5: # No RPM data for this run, only ssf analysis can be done
     Science_Qubits = [0, 1, 2, 3, 4, 5]
@@ -464,6 +503,42 @@ path_saveplots_ssf_qtemps_vsT_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1h
     # "/data/QICK_data/run8/6transmon/analysis/ssf_qtemps_analysis/qtemps_ssf_analysis" #daq01
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run8" #CEPH
 
+# ----------------------------------------------------------------------------------------------run 9----------------------------------------------------------------------------------------------------------
+r9_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run9"
+                #"/exp/cosmiq/data/QUIET/QICK_data/run9" # CEPH
+                # "/data/QICK_data/run9" # daq01
+# AB paper data
+paths_SSFmethods_run9 = [
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47",  # ignore Q4 in this data, punched out too much!!
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch2_25dB_DACatten_onlyQ4/2026-04-17_16-47-30",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_20-54-40",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_21-53-52",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_22-51-33",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_23-47-15",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_00-42-05",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_11-24-10",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_13-25-28",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-18_23-06-45",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_00-16-08",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_01-18-51",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_17-54-48",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_does_no_rpm_fromRR_affect_coh_25dBDAC/2026-04-18_20-58-30",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch5_25dBDAC_onlyQ1_onlySSF/2026-04-20_18-43-20",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch6_25dB_DACatten_onlyQ1/2026-04-20_18-50-54",
+]
+
+path_saveplots_fits_run9 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r9" #CEPH
+    #"/data/QICK_data/run9/6transmon/analysis/ssf_qtemps_analysis/qtemps_ssf_gaussfits" #daq01 # where to save ssf plots to check gaussian fits
+    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r9" #CEPH
+path_saveplots_ssf_qtemps_vsT_run9 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run9" #CEPH
+    # "/data/QICK_data/run9/6transmon/analysis/ssf_qtemps_analysis/qtemps_ssf_analysis" #daq01
+    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run9" #CEPH
 #------------------------------------------------------------------------------ Assign func variables depending on run number ---------------------------------------
 if run_num == 6:  # We have science-run data as well as pre-science-run data available. Note: we already defined Science_Qubits for the science run above.
     paths_SSFmethods = paths_SSFmethods_SR.copy()
@@ -480,6 +555,10 @@ elif run_num == 8: # already defined Science_Qubits above
     paths_SSFmethods = paths_SSFmethods_run8
     path_saveplots_fits = path_saveplots_fits_run8
     path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run8
+elif run_num == 9: # already defined Science_Qubits above
+    paths_SSFmethods = paths_SSFmethods_run9
+    path_saveplots_fits = path_saveplots_fits_run9
+    path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run9
 elif run_num == 4:
     Science_Qubits = [2,3] # we only have ssf data for Q3 and Q4 for this run.
     paths_SSFmethods = paths_SSFmethods_run4
@@ -491,7 +570,7 @@ elif run_num == 5:
     path_saveplots_fits = path_saveplots_fits_run5
     path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run5
 else:
-    raise ValueError("You must choose run_num = 4, 5, 6, 7 or 8. Otherwise, define a section for your run of interest.")
+    raise ValueError("You must choose run_num = 4, 5, 6, 7, 8 or 9. Otherwise, define a section for your run of interest.")
 
 #-------------------------------------------------------- For coherence data -------------------------------------------
 if coh_qtemp_ana_flags["load_coherence_res"] and run_num == 8:
@@ -822,6 +901,21 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             paths_SSFmethods = paths_SSFmethods_run8
             path_saveplots_fits = path_saveplots_fits_run8
             path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run8
+
+        elif run_num == 9:
+            # ---------------- RPM ----------------
+            Science_Qubits = [0, 1, 2, 3, 4, 5]
+            base_dir = base_dir_run9
+            filter_keywords = filter_keywords_run8
+            outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run9
+            outerFolder_qtemps_plots = outerFolder_qtemps_plots_run9
+            target_dates_qtemps_RPM = target_dates_qtemps_RPM_run9
+
+            # ---------------- SSF ----------------
+            paths_SSFmethods = paths_SSFmethods_run8
+            path_saveplots_fits = path_saveplots_fits_run8
+            path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run8
+
         else:
             raise ValueError(f"Unsupported run_num={run_num}")
 
@@ -1167,6 +1261,21 @@ if coh_qtemp_ana_flags["load_qtemps"]:
             paths_SSFmethods = paths_SSFmethods_run8
             path_saveplots_fits = path_saveplots_fits_run8
             path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run8
+
+        elif run_num == 9:
+            # ---------------- RPM ----------------
+            Science_Qubits = [0, 1, 2, 3, 4, 5]
+            base_dir = base_dir_run9
+            filter_keywords = filter_keywords_run8
+            outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run9
+            outerFolder_qtemps_plots = outerFolder_qtemps_plots_run9
+            target_dates_qtemps_RPM = target_dates_qtemps_RPM_run9
+
+            # ---------------- SSF ----------------
+            paths_SSFmethods = paths_SSFmethods_run9
+            path_saveplots_fits = path_saveplots_fits_run9
+            path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run9
+
         else:
             raise ValueError(f"Unsupported run_num={run_num}")
 
