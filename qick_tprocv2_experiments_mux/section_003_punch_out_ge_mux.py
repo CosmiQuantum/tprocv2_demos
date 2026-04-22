@@ -83,7 +83,7 @@ class PunchOut:
             filtered_amps = np.zeros((len(fcenter), len(fpts)))
             for index, f in enumerate(tqdm(fpts)):
                 self.config["res_freq_ge"] = fcenter + f
-                prog = SingleToneSpectroscopyProgram(soccfg, reps=self.exp_cfg["reps"], final_delay=0.5,
+                prog = SingleToneSpectroscopyProgram(soccfg, reps=self.exp_cfg["reps"], final_delay=self.config["relax_delay"],
                                                      cfg=self.config)
                 iq_list = prog.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=False)
                 for i in range(len(self.config['res_freq_ge'])):

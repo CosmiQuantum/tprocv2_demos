@@ -8,7 +8,7 @@ import datetime
 
 # #For NEXUS
 #outerFolder1 = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/2025-02-08")
-outerFolder_RO = ("/home/nexusadmin/Documents/Data/run35/4charge/Initial Checkout/optimization_Q4/2026-03-13_20-36-08/study_data/Data_h5/2D_Gain_Freq_Sweeps")
+outerFolder_RO = ("/home/nexusadmin/Documents/Data/run36/4charge/readout_optimization/opt_Q4/2026-04-22_12-00-59/study_data/Data_h5/2D_Gain_Freq_Sweeps")
                #"2025-09-08_20-55-09/study_data/Data_h5/2D_Gain_Freq_Sweeps")
 outerFolder_TWPA = ("/home/nexusadmin/Documents/Data/run35/4charge/TWPA_optimization/TWPA_opt_Q4/2026-02-23/2026-02-23_19-52-54/study_data/Data_h5/2D_Power_Freq_Sweeps")
 
@@ -108,8 +108,7 @@ def find_max_fidelity_TWPAopt(file_path):
 #     else:
 #         print(f"File for Qubit {qubit_index} not found.")
 
-#-------------------------------When you want results below a specific res gain threshold for each resonator-------------------
-
+#-------------------------------When you want results below a specific res gain threshold for each resonator-------------------4
 def find_configurations_below_threshold(file_path, threshold):
     """
     Returns *all* (fidelity, gain, freq_offset, optimal_length) points for which
@@ -157,7 +156,7 @@ if TWPA:
     print('For files inside: ', outerFolder_TWPA)
 else:
     print('For files inside: ', outerFolder_RO)
-punchout_thresholds =  [0.35, 0.35, 0.35, 0.35]
+punchout_thresholds = [0.48, 0.4, 0.4, 0.45] #NR35 due to noise: [0.35, 0.35, 0.35, 0.35]
 
 if TWPA:
     for qubit_index in range(Q, Q+1):

@@ -186,9 +186,10 @@ DAC_att_2=15
 DAC_att=DAC_att_1+DAC_att_2
 ADC_att=17
 
-study = 'Initial CHeckout' # 'Punchout Study'
-substudy = 'Punchout_lowgains' #'Punchout_Repeated_Q4'
-outerFolder = os.path.join(f"/home/nexusadmin/Documents/Data/run35/4charge/{study}/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
+run = 'run36'
+study = 'Initial Checkout' # 'Punchout Study'
+substudy = 'Punchout_Q4' #'Punchout_Repeated_Q4'
+outerFolder = os.path.join(f"/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 outerFolder_plots = outerFolder + "/documentation/"
 outerFolder_moreplots = outerFolder_plots + "/other_plots/"
 os.makedirs(outerFolder_moreplots, exist_ok = True)
@@ -196,17 +197,17 @@ outerFolder_data = outerFolder + "/study_data/"
 
 from expt_config import FRIDGE
 experiment = QICK_experiment(outerFolder_plots, DAC_attenuator1 = DAC_att_1, DAC_attenuator2 = DAC_att_2, qubit_DAC_attenuator1 = 5 , qubit_DAC_attenuator2 = 4 ,ADC_attenuator = ADC_att, fridge=FRIDGE)
-qubits_to_meas = [0, 1, 2, 3] #[0, 1, 2, 3]
+qubits_to_meas = [3] #[0, 1, 2, 3]
 Unmask = True #True is single, False is muxed
 
-substudy_txt_notes = ('Q4, 10 reps, centered in gain around noise point, 4us res len, TWPA on at -11.6dB, 7.807 GHz, all warm amps at 6V. 60s wait time between res')
+substudy_txt_notes = ('Q4 6uss ro len (r1 res length optimal)')#('All Qs around 0.4-0.5 to get cutoff, 4us res len, TWPA on at -11.6dB, 7.807 GHz, all warm amps 6V')
 file_path = os.path.join(outerFolder_plots, 'sub_study_notes.txt')
 with open(file_path, "w", encoding="utf-8") as file:
     file.write(substudy_txt_notes)
 
-start_gain, stop_gain, num_points = 0.1, 0.5, 5 #0.15, 0.6, 10 #0.1, 0.8, 5
+start_gain, stop_gain, num_points = 0.2, 0.55, 8 #0.15, 0.6, 10 #0.1, 0.8, 5
 
-total_time = 5 #min
+total_time = 2 #min
 start_time = time.time()
 mux = False
 
@@ -238,8 +239,8 @@ while time.time() < (start_time + total_time*60):
             #time.sleep(60)
 
         plot_round(round_num, round_data, formatted_round_timestamp, outerFolder_plots, save = True)
-        #centerplot_round(round_num, round_data, round_timestamp, outerFolder_moreplots, save = True)
-        #sweep2d_round(round_num, round_data, round_timestamp, outerFolder_moreplots, plot_smooth = True, save = True)
+        centerplot_round(round_num, round_data, round_timestamp, outerFolder_moreplots, save = True)
+        sweep2d_round(round_num, round_data, round_timestamp, outerFolder_moreplots, plot_smooth = True, save = True)
 
 #del punch_out
 ### Used with old punchout class with all the plots

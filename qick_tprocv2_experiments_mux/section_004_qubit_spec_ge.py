@@ -74,7 +74,7 @@ class QubitSpectroscopy:
         if self.increase_reps:
             self.config['reps'] = self.increase_reps_to
 
-        qspec = PulseProbeSpectroscopyProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=0.5, cfg=self.config)
+        qspec = PulseProbeSpectroscopyProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config["relax_delay"], cfg=self.config)
 
         # iq_lists= []
         if self.live_plot:

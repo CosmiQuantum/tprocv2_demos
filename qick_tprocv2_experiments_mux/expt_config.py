@@ -435,7 +435,7 @@ if FRIDGE == "QUIET":
 
 elif FRIDGE == "NEXUS":
     VNA_res = np.array([6187.9, 5828.4, 6074.59, 5959.2]) #Run 34 #[6187.9, 5828.5, 6074.6, 5959.3]) #Run 33 VNA low power   # Old [6187.8, 5828.3, 6074.6, 5959.3])
-    VNA_qubit =np.array([4943.5, 4773, 4579, 4805]) #4913., 4764.2, 4577, 4782
+    VNA_qubit =np.array([4928.5, 4779.98, 4586.61, 4802.8]) #NR35: [4943.5, 4773, 4579, 4805]) #4913., 4764.2, 4577, 4782
     # #np.array([4909, 4749.4, 4569, 4759])  # Found on NR25 with the QICK
 
     tot_num_of_qubits = 4
@@ -455,7 +455,7 @@ elif FRIDGE == "NEXUS":
             "start": -1.25, #-0.5, #-3.5,  # [MHz]
             "step_size": 0.01, #0.12,  # [MHz]
             "steps": 201, #101,
-            "relax_delay": 20,  # [us]
+            "relax_delay": 10,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
         "res_spec_ef": {
@@ -484,17 +484,17 @@ elif FRIDGE == "NEXUS":
             "start": list(VNA_qubit - 15), #70),  # [MHz]
             "stop": list(VNA_qubit + 15), #70),  # [MHz]
             "steps": 300,
-            "relax_delay": 0.5,  # [us]
+            "relax_delay": 10,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
         "bias_qubit_spec_ge": {
-            "reps": 1800,  # 100
+            "reps": 2100,  # 100
             "rounds": 1,  # 10
-            "start": list(VNA_qubit - 3),  # [MHz]
-            "stop": list(VNA_qubit + 3),  # [MHz]
-            "steps": 100,
-            "relax_delay": 0.5,  # [us]
+            "start": list(VNA_qubit - 2),  # [MHz]
+            "stop": list(VNA_qubit + 2),  # [MHz]
+            "steps": 80,
+            "relax_delay": 10,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
@@ -535,7 +535,7 @@ elif FRIDGE == "NEXUS":
         },
 
         "T1_ge": {
-            "reps": 1500,  # 300
+            "reps": 1200,  # 300
             "rounds": 1,  # 1
             "start": [0.0] * 4,  # [us]
             "stop": [150] * 4,  # [250.0] * 4,  # [us] ### Should be ~10x T1! Should change this per qubit.

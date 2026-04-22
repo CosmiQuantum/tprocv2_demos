@@ -13,7 +13,7 @@ start_voltage = [0.055] #[0.0]*4 #0.06 #V
 stop_voltage = [0.075] #[0.15]*4 #0.08 #0.15 max!!! #V
 voltage_pts = [10] #*]4
 
-outerFolder = os.path.join(f"/home/nexusadmin/Documents/Data/run35/4charge/Initial Checkout/Q{qubit[0]}_BiasSpec", str(datetime.date.today()))
+outerFolder = os.path.join(f"/home/nexusadmin/Documents/Data/run36/4charge/Initial Checkout/Q{qubit[0]}_BiasSpec", str(datetime.date.today()))
 
 experiment = QICK_experiment(outerFolder, fridge=FRIDGE)
 #resGs=np.linspace(0.1,0.5,11)
