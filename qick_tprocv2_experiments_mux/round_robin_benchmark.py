@@ -33,7 +33,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1000000 # number of rounds
+n = 1 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -59,7 +59,7 @@ unmask = True  # Do you want to use the unmasking feature to increase resonator 
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi ?
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 
-Qs_to_look_at = [0,1,2,3,5] # only list the qubits you want to do the RR for
+Qs_to_look_at = [4] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run9'
@@ -77,7 +77,7 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss":
 
 # For 25dB DAC, 4/21
 res_leng_vals = [5.6, 6.0, 5.7, 6.85, 6.5, 8.5]  # 25dB [5.6, 6.0, 5.75, 6.9, 6.5, 7.6]
-res_gain = [0.825, 0.835, 0.915, 0.635, 0.95, 0.97]  # 25dB, [0.825, 0.835, 0.912, 0.635, 0.95, 1.0]
+res_gain = [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]  # 25dB, [0.825, 0.835, 0.912, 0.635, 0.95, 1.0]
 freq_offsets = [-0.0214, -0.1286, -0.3000, -0.2000, 0.0, -0.0222]  # 25dB
 
 # For 20dB DAC
@@ -96,7 +96,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts
-sub_study = 'AB_paper_data_batch7_25dB_DACatten_noQ5' # DACatten_SSF_inv_allQs_25dB_junk, AB_paper_data_batch3_25dB_DACatten_noQ5, AB_paper_data_25dB_DACatten_noQ5_batch1, AB_paper_data_25dB_DACatten_onlyQ4_batch2
+sub_study = 'AB_paper_data_batch8_25dB_DACatten_noQ5' # DACatten_SSF_inv_allQs_25dB_junk, AB_paper_data_batch3_25dB_DACatten_noQ5, AB_paper_data_25dB_DACatten_noQ5_batch1, AB_paper_data_25dB_DACatten_onlyQ4_batch2
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -565,7 +565,7 @@ while j < n:
 
                     if QubitIndex == 5:
                         increase_qubit_reps2_rpm = True
-                        increase_qubit_reps2_rpm_to = 5000
+                        increase_qubit_reps2_rpm_to = 5500
                     #
                     if QubitIndex == 4:
                         increase_qubit_reps2_rpm = True
