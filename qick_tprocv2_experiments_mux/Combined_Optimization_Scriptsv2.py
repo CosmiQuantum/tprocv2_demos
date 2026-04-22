@@ -52,12 +52,12 @@ n = 1  # Number of rounds
 n_loops = 1 # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [1]
+Qs = [3]
 
 # For 25dB DAC, 4/16
-res_leng_vals = [5.6, 6.0, 5.75, 6.9, 6.5, 7.6]  # 25dB
-res_gain = [0.825, 0.835, 0.912, 0.635, 0.95, 1.0]  # 25dB,
-freq_offsets = [-0.0214, -0.1286, -0.3000, -0.2000, 0.0, -0.0222]  # 25dB
+res_leng_vals = [5.6, 6.0, 5.7, 6.85, 7.0, 8.5]  # 25dB [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
+res_gain = [0.825, 0.836, 0.915, 0.634, 0.95, 0.97]  # 25dB, [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
+freq_offsets = [-0.0214, -0.1286, -0.3000, 0.0, 0.0, -0.0222]  # 25dB
 
 # For 20dB DAC
 # res_leng_vals = [4.25, 5.25, 5.0, 5.0, 6.25, 4.5]  # 4/12, 20dB
@@ -69,7 +69,7 @@ res_freq_ge = [None] * 6 # creates list where the script will be storing the fre
 
 j=0 # round number, from RR code. Not really used here since we just run it once for each qubit
 
-lengs = np.arange(3.0, 8.0, 0.5)
+lengs = np.arange(5.5, 8.0, 0.10)
 
 start=time.time()
 
@@ -324,8 +324,8 @@ for QubitIndex in Qs:
             gain_range = [0.8, 1.0]
             gain_steps = 10
         elif QubitIndex == 3:
-            gain_range = [0.7, 0.85]
-            gain_steps = 8
+            gain_range = [0.6, 0.64]
+            gain_steps = 11
         elif QubitIndex == 4:
             gain_range = [0.7, 1.0]
             gain_steps = 15

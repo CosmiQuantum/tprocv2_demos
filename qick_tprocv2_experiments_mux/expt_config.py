@@ -4,7 +4,7 @@ FRIDGE = "QUIET"  # change to "NEXUS" as needed
 
 if FRIDGE == "QUIET":
     VNA_res = np.array([6228.487, 6290.125, 6349.800, 6420.615, 6486.0, 6553.600]) # run 9
-    VNA_qubit = np.array([4226.11, 3853.61, 4197.05, 4506.61, 4498.26, 5050.78])  # run 9, all updated except Q5 (run 8: 4485.38 for Q5 and 4474.23 for Q4)
+    VNA_qubit = np.array([4226.11, 3853.61, 4197.05, 4506.61, 4499.0, 5050.78])  # run 9, all updated except Q5 (run 8: 4485.38 for Q5 and 4474.23 for Q4)
     ef_qfreqs = np.array([4052.15, 3676.11, 4022.75, 4334.65, 4345.33, 4883.54]) # Qubit freqs e/f Transition, run 9
     fh_qfreqs = np.array([3820.97, 3450.85, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition
     two_photon_qfreqs=np.array([4107.61, 3739.36, 4086.36, 4388.34, 4399.3, 4933.52]) # qubit freqs, two photon peak between ge and ef qubit freqs
@@ -66,8 +66,8 @@ if FRIDGE == "QUIET":
         # "qubit_spec_ge": { # broad search
         #     "reps": 600,  # 300
         #     "rounds": 1,  # 10
-        #     "start": list(VNA_qubit - 50),  # [MHz] #-300 #-15
-        #     "stop": list(VNA_qubit + 50),  # [MHz] #+15
+        #     "start": list(VNA_qubit - 100),  # [MHz] #-300 #-15
+        #     "stop": list(VNA_qubit + 100),  # [MHz] #+15
         #     "steps": 400,  # 100
         #     "relax_delay": 10,  # 1000 # [us]
         #     "list_of_all_qubits": list_of_all_qubits,
@@ -86,8 +86,8 @@ if FRIDGE == "QUIET":
         "qubit_spec_ge": { # RR
             "reps": 600, #300
             "rounds": 1, #10
-            "start": list(VNA_qubit-1.8), # [MHz]
-            "stop": list(VNA_qubit+1.8), # [MHz]
+            "start": list(VNA_qubit-2.0), # [MHz]
+            "stop": list(VNA_qubit+2.0), # [MHz]
             "steps": 215, # 220 for -3 +3, 400 for -40, +40, 320 for -6 +6
             "relax_delay":10,#1000 # [us]
             "list_of_all_qubits": list_of_all_qubits,
@@ -224,8 +224,8 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ef": {
-            "reps": 155,#400, # for Pg pulse sequence during rpm, or regular ef rabi
-            "reps2": 2000, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures (rpm). Pe pulse sequence
+            "reps": 150,#400, # for Pg pulse sequence during rpm, or regular ef rabi
+            "reps2": 2300, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures (rpm). Pe pulse sequence
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
             "stop": [1.0] * 6,  # [DAC units]
