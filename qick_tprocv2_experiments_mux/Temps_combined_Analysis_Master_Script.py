@@ -52,11 +52,11 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
                       "combined_studies_Qtemps": True}
 
 # What analysis plots do you want to make?
-analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
+analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False, "Pe_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_hists_viaSSF": False, "Pe_vs_time_viaRPM": False,
                   "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
@@ -244,7 +244,7 @@ filter_keywords_run8 = ["AB_Paper_Data_24hrs", "ABpaperdata2ndbatch_21dB_DACatte
 # filter_keywords_run8 = ["AB_Paper_Data_24hrs"]
 #-----------------------------------------------------------------------run 9------------------------------------------------------------
 #Base path of where the data is stored up to the Study Name (round_robin_benchmark)
-base_dir_run9 = "/exp/cosmiq/data/QUIET/QICK_data/run9/6transmon/round_robin_benchmark"
+base_dir_run9 = "/data/QICK_data/run9/6transmon/round_robin_benchmark" # up to study name.
     #"/exp/cosmiq/data/QUIET/QICK_data/run9/6transmon/round_robin_benchmark" # CEPH
     #"/data/QICK_data/run9/6transmon/round_robin_benchmark" # up to study name. # daq01
 
@@ -254,15 +254,16 @@ target_dates_qtemps_RPM_run9 = [
     "2026-04-18",
     "2026-04-19",
     "2026-04-20",
+    "2026-04-21",
 ]
 
 # To re-make and save RPM RR plots
-outerFolder_qtemps_plots_RR_run9 =  "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r9"
+outerFolder_qtemps_plots_RR_run9 =  "/data/QICK_data/run9/6transmon/analysis/replotted_RR_data/rabi_pop_meas"
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r9" # CEPH
     # "/data/QICK_data/run9/6transmon/analysis/replotted_RR_data/rabi_pop_meas" #daq01
 
 # For RPM Analysis
-outerFolder_qtemps_plots_run9 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r9"
+outerFolder_qtemps_plots_run9 = "/data/QICK_data/run9/6transmon/analysis/Qtemps_RPMmethod"
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r9" #CEPH
     #"/data/QICK_data/run9/6transmon/analysis/Qtemps_RPMmethod" # daq01
 
@@ -275,6 +276,8 @@ filter_keywords_run9 = [
     "AB_paper_data_batch5_25dBDAC_onlyQ1_onlySSF",
     "AB_paper_data_batch6_25dB_DACatten_onlyQ1",
     "AB_paper_does_no_rpm_fromRR_affect_coh_25dBDAC",
+    "AB_paper_data_batch7_25dB_DACatten_noQ5",
+    "AB_paper_data_batch8_25dB_DACatten_noQ5"
 ]
 #-------------------------------------------------------------------------------- Assign func variables depending on run number ---------------------------------------------------------------------------
 if run_num == 6: # We have science-run data as well as pre-science-run data available
@@ -507,7 +510,7 @@ path_saveplots_ssf_qtemps_vsT_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1h
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run8" #CEPH
 
 # ----------------------------------------------------------------------------------------------run 9----------------------------------------------------------------------------------------------------------
-r9_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run9" # CEPH
+r9_path_prefix = "/data/QICK_data/run9" # daq01
                 #"/exp/cosmiq/data/QUIET/QICK_data/run9" # CEPH
                 # "/data/QICK_data/run9" # daq01
 # AB paper data
@@ -534,12 +537,16 @@ paths_SSFmethods_run9 = [
     f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch5_25dBDAC_onlyQ1_onlySSF/2026-04-20_18-43-20",
 
     f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch6_25dB_DACatten_onlyQ1/2026-04-20_18-50-54",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch7_25dB_DACatten_noQ5/2026-04-21_02-55-23",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch8_25dB_DACatten_noQ5/2026-04-21_11-34-57"
 ]
 
-path_saveplots_fits_run9 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r9"
+path_saveplots_fits_run9 = "/data/QICK_data/run9/6transmon/analysis/ssf_qtemps_analysis/qtemps_ssf_gaussfits"
     #"/data/QICK_data/run9/6transmon/analysis/ssf_qtemps_analysis/qtemps_ssf_gaussfits" #daq01 # where to save ssf plots to check gaussian fits
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r9" #CEPH
-path_saveplots_ssf_qtemps_vsT_run9 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run9"
+path_saveplots_ssf_qtemps_vsT_run9 = "/data/QICK_data/run9/6transmon/analysis/ssf_qtemps_analysis/qtemps_ssf_analysis"
     # "/data/QICK_data/run9/6transmon/analysis/ssf_qtemps_analysis/qtemps_ssf_analysis" #daq01
     #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run9" #CEPH
 #------------------------------------------------------------------------------ Assign func variables depending on run number ---------------------------------------
@@ -674,7 +681,7 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
 
     if analysis_flags["Qtemps_vs_time_viaRPM"]:
         #------------------------------------------------------------------- Qubit temperatures vs time via RPMs ----------------------------------------------------
-        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 10, yaxis_max = 750, rel_err_cutoff = None, restrict_time_xaxis = False,
+        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 20, yaxis_max = 80, rel_err_cutoff = None, restrict_time_xaxis = False,
                                                          plot_extra_event_lines = False, rad_events_plot_lines = False, plot_error_bars = True, fit_to_line=False, average_per_heater_step=False)
 
     if analysis_flags["Qtemps_hists_viaRPM"]:
@@ -814,7 +821,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
-run_num_list = [5,6,7,8,9] # for quiet, start at 5. no qtemp data for run 4
+run_num_list = [9] # for quiet, start at 5. no qtemp data for run 4
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
 rpm_Pe_by_run = {}      # rpm_Pe_by_run[run][qid] = [P_e, ...]
@@ -1029,7 +1036,8 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             ylims=(0, 600),
             yticks=np.arange(0, 601, 100),
             showfliers=True,  # outliers
-            save_plt_path = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF") # set to 'None' to use plt.show()
+            save_plt_path = "/data/QICK_data/multirun_analysis/qubit_temps_analysis/combined")
+            #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF") # set to 'None' to use plt.show()
 
     if comb_analysis_flags["Pe_box_whisker_allruns_allQs"]:
         if not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
@@ -1048,7 +1056,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             showfliers=True,  # outliers
             fig_title="Excited-State Population vs Run Number",
             ylabel=r"$P_e$",
-            save_plt_path= "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF")
+            save_plt_path= "/data/QICK_data/multirun_analysis/qubit_temps_analysis/combined")
             #"/data/QICK_data/multirun_analysis/qubit_temps_analysis/combined") #daq01
             #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF") # CEPH
 
