@@ -479,7 +479,7 @@ if FRIDGE == "QUIET":
     # #
 
         "Readout_Optimization":{
-            "steps": 3000, # shots
+            "steps": 5500, # shots
             "py_avg": 1,
             "gain_start" : [0, 0, 0, 0],
             "gain_stop" : [1, 0, 0, 0],
@@ -569,7 +569,7 @@ elif FRIDGE == "NEXUS":
         },
 
         "Readout_Optimization": {
-            "steps": 3000,  # shots
+            "steps": 5000,  # shots
             "py_avg": 1,
             "gain_start": [0, 0, 0, 0],
             "gain_stop": [1, 0, 0, 0],
