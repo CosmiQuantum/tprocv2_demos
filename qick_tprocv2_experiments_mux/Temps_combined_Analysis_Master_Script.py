@@ -842,24 +842,22 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
     all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=1.0,
                                                                                                                 do_plots = True, save_figs_path = made_on_folder, dontuse_midpt_thresh = True)
 
+    # Heat map thermal pops
+    for qid in [0]:
+        if len(fit_results[qid]) == 0:
+            print(f"Skipping Q{qid + 1}: no valid SSF fit results.")
+            continue
 
-    # This is for plotting outside of run_ssf_qtemps_iminuit(); when do_plots = False instead of True
-    # for q_key, recs in fit_results.items():
-    #     qubit_folder = os.path.join(path_saveplots_fits, "Iminuit_method")
-    #     os.makedirs(qubit_folder, exist_ok=True)
-    #     # Make a date‐stamped subfolder
-    #     date_str = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
-    #     made_on_folder = os.path.join(qubit_folder, f"made_on_{date_str}")
-    #     os.makedirs(made_on_folder, exist_ok=True)
-    #
-    #     for rec in recs:
-    #         # plots the double-gaussian fits on the ground state data and shows where the population threshold was set (midpoint of the two means)
-    #         SSF_calcs_obj.plot_gaussians_qtemps(q_key, made_on_folder, rec["ig_new"], rec["ground_data"],
-    #                                             rec["excited_data"], rec["ground_gaussian"],
-    #                                             rec["excited_gaussian"], rec["pop_threshold"],
-    #                                             rec["temperature_mK"], rec["dataset"], rec["weights"],
-    #                                             rec["sigmas"], rec["means"])
-
+        SSF_calcs_obj.plot_2D_ssf_thermal_pop(
+            fit_results=fit_results,
+            qid=qid,
+            save_figs_path=os.path.join(made_on_folder, "thermal_pop_2D"),
+            bins=np.linspace(-0.75, 1.75, 180),
+            normalize_each_row=True,
+            title=f"Run 9 Q{qid + 1} SSF thermal population trend",
+            filename=f"Run9_Q{qid + 1}_SSF_thermal_population_2D.png",
+            show=False,
+        )
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################

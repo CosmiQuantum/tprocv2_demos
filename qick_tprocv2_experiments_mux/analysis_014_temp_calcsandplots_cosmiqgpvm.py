@@ -746,6 +746,260 @@ class SSFTempCalcAndPlots:
 
         return sigma_T_mK, sigma_Pe
 
+    def plot_2D_ssf_thermal_pop(
+            self,
+            fit_results,
+            qid,
+            save_figs_path=None,
+            bins=np.linspace(-0.75, 1.75, 180),
+            normalize_each_row=True,
+            sort_by_time=True,
+            cmap="viridis",
+            fig_quality=300,
+            title=None,
+            filename=None,
+            show=True,
+    ):
+        """
+        Make a 2D heatmap of SSF ground-state data over time.
+
+        Each row is one SSF dataset. The x-axis is normalized so that:
+            main ground Gaussian mean  -> 0
+            thermal/excited Gaussian mean -> 1
+
+        This makes it easier to visually compare the thermal excitation population
+        across many SSF datasets in one plot.
+
+        Parameters
+        ----------
+        fit_results : dict
+            Output from run_ssf_qtemps_iminuit().
+            Expected format:
+                fit_results[qid] = [
+                    {
+                        "timestamp": datetime,
+                        "ig_new": np.ndarray,
+                        "means": np.ndarray(shape=(2,)),
+                        "ground_gaussian": int,
+                        "excited_gaussian": int,
+                        "Pe": float,
+                        "temperature_mK": float,
+                        ...
+                    },
+                    ...
+                ]
+
+        qid : int
+            Zero-indexed qubit index.
+
+        save_figs_path : str or None
+            Folder where figure should be saved. If None, figure is not saved.
+
+        bins : np.ndarray
+            Bins for the normalized readout axis.
+
+        normalize_each_row : bool
+            If True, divide each histogram by its own max count.
+            This helps compare shape/thermal shoulder instead of total counts.
+
+        sort_by_time : bool
+            If True, sort datasets by timestamp before plotting.
+
+        cmap : str
+            Matplotlib colormap.
+
+        fig_quality : int
+            DPI for saved figure.
+
+        title : str or None
+            Optional plot title.
+
+        filename : str or None
+            Optional filename.
+
+        show : bool
+            Whether to call plt.show().
+
+        Returns
+        -------
+        fig, ax, heatmap, centers, records_used
+        """
+        if qid not in fit_results:
+            raise KeyError(f"Qubit index {qid} not found in fit_results.")
+
+        records = fit_results[qid]
+
+        if len(records) == 0:
+            raise ValueError(f"No fit_results found for Q{qid + 1}.")
+
+        # Remove records missing needed information
+        records_used = []
+        for rec in records:
+            needed_keys = ["ig_new", "means", "ground_gaussian", "excited_gaussian"]
+            if not all(k in rec for k in needed_keys):
+                continue
+
+            if rec["ig_new"] is None or rec["means"] is None:
+                continue
+
+            records_used.append(rec)
+
+        if len(records_used) == 0:
+            raise ValueError(f"No valid records found for Q{qid + 1}.")
+
+        if sort_by_time and "timestamp" in records_used[0]:
+            records_used = sorted(records_used, key=lambda r: r["timestamp"])
+
+        heatmap = []
+        Pe_vals = []
+        T_vals = []
+        timestamps = []
+
+        for rec in records_used:
+            ig_new = np.asarray(rec["ig_new"]).ravel()
+
+            means = np.asarray(rec["means"])
+            ground_idx = int(rec["ground_gaussian"])
+            excited_idx = int(rec["excited_gaussian"])
+
+            ground_mean = means[ground_idx]
+            excited_mean = means[excited_idx]
+
+            separation = excited_mean - ground_mean
+
+            if np.isclose(separation, 0):
+                print(f"Skipping dataset {rec.get('dataset', 'unknown')} because means overlap.")
+                continue
+
+            # Normalize so ground peak -> 0 and excited/thermal peak -> 1
+            ig_norm = (ig_new - ground_mean) / separation
+
+            # If the excited peak lands at x = -1, flip the axis
+            # so thermal population is always near x = +1.
+            if excited_mean < ground_mean:
+                ig_norm = -ig_norm
+
+            counts, edges = np.histogram(ig_norm, bins=bins)
+
+            if normalize_each_row:
+                row_max = np.max(counts)
+                if row_max > 0:
+                    counts = counts / row_max
+
+            heatmap.append(counts)
+            Pe_vals.append(rec.get("Pe", np.nan))
+            T_vals.append(rec.get("temperature_mK", np.nan))
+            timestamps.append(rec.get("timestamp", None))
+
+        heatmap = np.asarray(heatmap)
+
+        if heatmap.size == 0:
+            raise ValueError(f"No histograms were generated for Q{qid + 1}.")
+
+        centers = 0.5 * (bins[:-1] + bins[1:])
+
+        fig, ax = plt.subplots(figsize=(10, 7))
+
+        im = ax.imshow(
+            heatmap,
+            aspect="auto",
+            origin="lower",
+            extent=[centers[0], centers[-1], 0, len(heatmap) - 1],
+            cmap=cmap,
+            interpolation="nearest",
+        )
+
+        ax.axvline(0, linestyle="--", linewidth=1.5, color="white", alpha=0.85)
+        ax.axvline(1, linestyle="--", linewidth=1.5, color="red", alpha=0.85)
+
+        ax.text(
+            0,
+            len(heatmap) - 1,
+            "  |g> peak",
+            color="white",
+            fontsize=11,
+            va="top",
+            ha="left",
+        )
+
+        ax.text(
+            1,
+            len(heatmap) - 1,
+            "  |e>/thermal peak",
+            color="red",
+            fontsize=11,
+            va="top",
+            ha="left",
+        )
+
+        ax.set_xlabel(
+            "Normalized rotated SSF axis\nmain |g> peak = 0, thermal/excited peak = 1",
+            fontsize=14,
+        )
+        ax.set_ylabel("SSF dataset / time index", fontsize=14)
+
+        if title is None:
+            title = f"Run 9 Q{qid + 1} SSF thermal population trend"
+
+        ax.set_title(title, fontsize=16)
+
+        cbar = fig.colorbar(im, ax=ax)
+        if normalize_each_row:
+            cbar.set_label("Counts normalized to each row maximum", fontsize=12)
+        else:
+            cbar.set_label("Counts", fontsize=12)
+
+        # Add sparse timestamp labels
+        if all(ts is not None for ts in timestamps):
+            n = len(timestamps)
+            tick_idx = np.linspace(0, n - 1, min(6, n), dtype=int)
+            tick_labels = [timestamps[i].strftime("%m-%d %H:%M") for i in tick_idx]
+
+            ax.set_yticks(tick_idx)
+            ax.set_yticklabels(tick_labels)
+
+        # Optional second y-axis showing Pe or temperature at a few points
+        ax2 = ax.twinx()
+        ax2.set_ylim(ax.get_ylim())
+
+        n = len(Pe_vals)
+        tick_idx = np.linspace(0, n - 1, min(6, n), dtype=int)
+
+        pe_labels = []
+        for i in tick_idx:
+            pe = Pe_vals[i]
+            temp = T_vals[i]
+
+            if np.isfinite(pe) and np.isfinite(temp):
+                pe_labels.append(f"Pe={pe:.3f}, T={temp:.0f} mK")
+            elif np.isfinite(pe):
+                pe_labels.append(f"Pe={pe:.3f}")
+            elif np.isfinite(temp):
+                pe_labels.append(f"T={temp:.0f} mK")
+            else:
+                pe_labels.append("")
+
+        ax2.set_yticks(tick_idx)
+        ax2.set_yticklabels(pe_labels, fontsize=9)
+        ax2.set_ylabel("Extracted Pe / T", fontsize=12)
+
+        plt.tight_layout()
+
+        if save_figs_path is not None:
+            os.makedirs(save_figs_path, exist_ok=True)
+
+            if filename is None:
+                filename = f"Q{qid + 1}_SSF_thermal_population_2D_heatmap.png"
+
+            full_path = os.path.join(save_figs_path, filename)
+            fig.savefig(full_path, dpi=fig_quality, bbox_inches="tight")
+            print(f"Saved: {full_path}")
+
+        if show:
+            plt.show()
+
+        return fig, ax, heatmap, centers, records_used
+
     def update_ssf_errors_with_pe_scatter_inplace(self, ssf_fit_results, Pe_dist_err_dict=None, ssf_pe_scatter_min_n=5,
             verbose=True, preserve_base_sigma=True):
         """
