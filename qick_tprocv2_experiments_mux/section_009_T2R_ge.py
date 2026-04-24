@@ -201,7 +201,7 @@ class T2RMeasurement:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_figs, experiment = None,
                  live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
                  multiply_qubit_reps_by = 1, increase_qubit_reps_to = 500, verbose = False, logger = None, qick_verbose=True,
-                 unmasking_resgain = False):
+                 unmasking_resgain = False, reduce_rlx_delay = False, reduce_rlx_delay_to = 1000):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
@@ -211,6 +211,8 @@ class T2RMeasurement:
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
         self.round_num = round_num
+        self.reduce_rlx_delay = reduce_rlx_delay
+        self.reduce_rlx_delay_to = reduce_rlx_delay_to
         self.increase_qubit_reps_to = increase_qubit_reps_to
         self.signal = signal
         self.number_of_qubits = number_of_qubits
@@ -237,6 +239,11 @@ class T2RMeasurement:
                         if increase_qubit_reps:
                             print(f"Increasing reps for {self.QubitIndex + 1} to {increase_qubit_reps_to}")
                             self.config["reps"] = increase_qubit_reps_to
+
+            if reduce_rlx_delay:
+                print(f"Reducing relax_delay for {self.QubitIndex + 1} to {reduce_rlx_delay_to}.")
+                self.config["relax_delay"] = reduce_rlx_delay_to
+                self.logger.info(f"Reducing relax_delay for {self.QubitIndex + 1} to {reduce_rlx_delay_to}")
 
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration: ', self.config)
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration:{self.config}')

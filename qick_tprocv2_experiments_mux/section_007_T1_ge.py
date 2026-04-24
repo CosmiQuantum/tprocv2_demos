@@ -54,7 +54,8 @@ class T1Measurement:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, signal, save_figs, experiment = None,
                  live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
                  multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, save_shots=True,
-                 set_relax_delay=False, relax_delay=1000, unmasking_resgain = False, adjust_reps_to = None):
+                 set_relax_delay=False, relax_delay=1000, unmasking_resgain = False, adjust_reps_to = None,
+                 reduce_rlx_delay = False, reduce_rlx_delay_to = 1000):
 
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
@@ -66,6 +67,8 @@ class T1Measurement:
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
         self.round_num = round_num
+        self.reduce_rlx_delay = reduce_rlx_delay
+        self.reduce_rlx_delay_to = reduce_rlx_delay_to
         self.live_plot = live_plot
         self.signal = signal
         self.save_figs = save_figs
@@ -87,6 +90,12 @@ class T1Measurement:
                         self.logger.info(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
                         if self.verbose: print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
                         self.config["reps"] *= multiply_qubit_reps_by
+
+            if reduce_rlx_delay:
+                print(f"Reducing relax_delay for {self.QubitIndex + 1} to {reduce_rlx_delay_to}.")
+                self.config["relax_delay"] = reduce_rlx_delay_to
+                self.logger.info(f"Reducing relax_delay for {self.QubitIndex + 1} to {reduce_rlx_delay_to}")
+
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} T1 configuration: {self.config}')
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} T1 configuration: {self.config}')
             if self.set_relax_delay:

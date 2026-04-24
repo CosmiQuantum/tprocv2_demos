@@ -9,6 +9,7 @@ from build_state import *
 from expt_config import *
 import time
 from iminuit import Minuit
+import logging
 import copy
 # import visdom
 from scipy.signal import argrelextrema
@@ -16,7 +17,8 @@ from scipy.signal import argrelextrema
 class Temps_EFAmpRabiExperiment:
     def __init__(self, QubitIndex, number_of_qubits, list_of_all_qubits,  outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
                  increase_qubit_reps = False, increase_qubit_reps_to = 400, increase_qubit_reps2 = False,
-                 increase_qubit_reps2_to = 1000, unmasking_resgain = False, save_shots = False):
+                 increase_qubit_reps2_to = 1000, unmasking_resgain = False, save_shots = False, reduce_rlx_delay = False, reduce_rlx_delay_to = 1000,
+                 logger = None):
 
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
@@ -26,11 +28,14 @@ class Temps_EFAmpRabiExperiment:
         self.exp_cfg = expt_cfg[self.expt_name]
         self.round_num = round_num
         self.live_plot = live_plot
+        self.reduce_rlx_delay = reduce_rlx_delay
+        self.reduce_rlx_delay_to = reduce_rlx_delay_to # can help speed up meas for qubits with lower T1s
         self.signal = signal
         self.save_shots = save_shots # not implemented yet
         self.save_figs = save_figs
         self.experiment = experiment
         self.list_of_all_qubits = list_of_all_qubits
+        self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
 
         if unmasking_resgain:
             self.exp_cfg["list_of_all_qubits"] = [QubitIndex]
@@ -42,10 +47,18 @@ class Temps_EFAmpRabiExperiment:
             if increase_qubit_reps:
                     print(f"Increasing reps for {self.QubitIndex + 1} to {increase_qubit_reps_to}")
                     self.config["reps"] = increase_qubit_reps_to
+                    self.logger.info(f"Increasing Pg reps for {self.QubitIndex + 1} to {increase_qubit_reps_to}.")
             if increase_qubit_reps2:
                     print(f"Increasing reps for {self.QubitIndex + 1} to {increase_qubit_reps2_to}.")
                     self.config["reps2"] = increase_qubit_reps2_to
-            print(f'Q {self.QubitIndex + 1} Round {self.round_num} EF Rabi configuration: ', self.config)
+                    self.logger.info(f"Increasing Pe reps2 for {self.QubitIndex + 1} to {increase_qubit_reps2_to}.")
+            if reduce_rlx_delay:
+                print(f"Reducing relax_delay for {self.QubitIndex + 1} to {reduce_rlx_delay_to}.")
+                self.config["relax_delay"] = reduce_rlx_delay_to
+                self.logger.info(f"Reducing relax_delay for {self.QubitIndex + 1} to {reduce_rlx_delay_to}")
+
+            print(f'Q {self.QubitIndex + 1} Round {self.round_num} EF Rabi (RPM) configuration: ', self.config)
+            self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} EF Rabi (RPM) configuration:  {self.config}')
 
 
     def run(self, soccfg, soc, use_iminuit_instead = True):

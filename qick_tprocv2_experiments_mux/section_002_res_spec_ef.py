@@ -48,8 +48,8 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
 
 class ResonanceSpectroscopyEF:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, save_figs, increase_res_reps, increase_res_reps_to,
-                 experiment=None,
-                 verbose=False, logger=None, qick_verbose=True, unmasking_resgain = False):
+                 experiment=None, verbose=False, logger=None, qick_verbose=True, unmasking_resgain = False, reduce_rlx_delay = False,
+                 reduce_rlx_delay_to = 1000):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
@@ -57,6 +57,8 @@ class ResonanceSpectroscopyEF:
         self.expt_name = "res_spec_ef"
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.round_num = round_num
+        self.reduce_rlx_delay = reduce_rlx_delay
+        self.reduce_rlx_delay_to = reduce_rlx_delay_to
         self.increase_res_reps = increase_res_reps
         self.increase_res_reps_to = increase_res_reps_to
         self.save_figs = save_figs
@@ -74,6 +76,12 @@ class ResonanceSpectroscopyEF:
         if experiment is not None:
             self.q_config = all_qubit_state(experiment, self.number_of_qubits)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+
+            if reduce_rlx_delay:
+                print(f"Reducing relax_delay for {self.QubitIndex + 1} to {reduce_rlx_delay_to}.")
+                self.config["relax_delay"] = reduce_rlx_delay_to
+                self.logger.info(f"Reducing relax_delay for {self.QubitIndex + 1} to {reduce_rlx_delay_to}")
+
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} Res Spec configuration: {self.config}')
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} Res Spec configuration: ',
                                    self.config)

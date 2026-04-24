@@ -15,7 +15,7 @@ class EFQubitSpectroscopy:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder,  round_num, signal, save_figs, experiment = None,
                  live_plot = None, verbose = False, logger = None, qick_verbose=True, increase_reps = False,
                  increase_reps_to = 500, increase_ef_qspec_rounds = False, increase_ef_qspec_rounds_to = 2, plot_fit=True, zeno_stark=False, zeno_stark_pulse_gain=None,
-                 ext_q_spec=False, high_gain_q_spec=False, fit_data=True, unmasking_resgain = False):
+                 ext_q_spec=False, high_gain_q_spec=False, fit_data=True, unmasking_resgain = False, reduce_rlx_delay = False, reduce_rlx_delay_to = 1000):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
@@ -35,6 +35,8 @@ class EFQubitSpectroscopy:
         self.expt_name = "qubit_spec_ef"
         self.signal = signal
         self.save_figs = save_figs
+        self.reduce_rlx_delay =reduce_rlx_delay
+        self.reduce_rlx_delay_to = reduce_rlx_delay_to
         self.experiment = experiment
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.exp_cfg = expt_cfg[self.expt_name]
@@ -56,7 +58,13 @@ class EFQubitSpectroscopy:
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
 
+            if reduce_rlx_delay:
+                print(f"Reducing relax_delay for {self.QubitIndex + 1} to {reduce_rlx_delay_to}.")
+                self.config["relax_delay"] = reduce_rlx_delay_to
+                self.logger.info(f"Reducing relax_delay for {self.QubitIndex + 1} to {reduce_rlx_delay_to}")
+
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} EF Qubit Spec configuration: ', self.config)
+            self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} EF Qubit Spec configuration:  {self.config}')
 
     def run(self, return_fwhm=False):
         if self.increase_reps:

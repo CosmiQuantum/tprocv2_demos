@@ -27,7 +27,8 @@ class AmplitudeRabiExperiment:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_shots=False, save_figs = True, experiment = None,
                  live_plot = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
                  multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, QZE=False,
-                 projective_readout_pulse_len_us=9,  time_between_projective_readout_pulses=None, expt_name = "power_rabi_ge", unmasking_resgain = False):
+                 projective_readout_pulse_len_us=9,  time_between_projective_readout_pulses=None, expt_name = "power_rabi_ge", unmasking_resgain = False,
+                 reduce_rlx_delay = False, reduce_rlx_delay_to = 1000):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.number_of_qubits = number_of_qubits
@@ -40,6 +41,8 @@ class AmplitudeRabiExperiment:
         self.signal = signal
         self.save_figs = save_figs
         self.save_shots = save_shots
+        self.reduce_rlx_delay = reduce_rlx_delay
+        self.reduce_rlx_delay_to = reduce_rlx_delay_to
         self.experiment = experiment
         self.verbose = verbose
         self.QZE = QZE
@@ -59,6 +62,11 @@ class AmplitudeRabiExperiment:
                         if self.verbose: print(f"Increasing reps for {self.QubitIndex + 1} by {multiply_qubit_reps_by} times")
                         self.logger.info(f"Increasing reps for {self.QubitIndex + 1} by {multiply_qubit_reps_by} times")
                         self.config["reps"] *= multiply_qubit_reps_by
+            if reduce_rlx_delay:
+                print(f"Reducing relax_delay for {self.QubitIndex + 1} to {reduce_rlx_delay_to}.")
+                self.config["relax_delay"] = reduce_rlx_delay_to
+                self.logger.info(f"Reducing relax_delay for {self.QubitIndex + 1} to {reduce_rlx_delay_to}")
+
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} Rabi configuration: {self.config}')
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} Rabi configuration: ', self.config)
 

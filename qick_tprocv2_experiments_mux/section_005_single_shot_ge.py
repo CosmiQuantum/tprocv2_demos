@@ -132,7 +132,7 @@ class SingleShotProgram_e(AveragerProgramV2):
 
 class SingleShot:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, save_figs=False, experiment = None,
-                 verbose = False, logger = None, qick_verbose=True, unmasking_resgain = False):
+                 verbose = False, logger = None, qick_verbose=True, unmasking_resgain = False, reduce_rlx_delay = False, reduce_rlx_delay_to = False):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
@@ -141,6 +141,8 @@ class SingleShot:
         self.round_num = round_num
         self.save_figs = save_figs
         self.experiment = experiment
+        self.reduce_rlx_delay = reduce_rlx_delay
+        self.reduce_rlx_delay_to = reduce_rlx_delay_to
         self.number_of_qubits = number_of_qubits
         self.verbose = verbose
         self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
@@ -153,6 +155,12 @@ class SingleShot:
             self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+
+            if reduce_rlx_delay:
+                print(f"Reducing relax_delay for {self.QubitIndex + 1} to {reduce_rlx_delay_to}.")
+                self.config["relax_delay"] = reduce_rlx_delay_to
+                self.logger.info(f"Reducing relax_delay for {self.QubitIndex + 1} to {reduce_rlx_delay_to}")
+
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} Single Shot configuration: ', self.config)
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} Single Shot configuration: {self.config}')
 
