@@ -89,7 +89,41 @@ for run_number in run_num_list:
 
                             "AB_paper_data_batch5_25dBDAC_onlyQ1_onlySSF/2026-04-20_18-43-20",
 
-                            "AB_paper_data_batch6_25dB_DACatten_onlyQ1/2026-04-20_18-50-54"
+                            "AB_paper_data_batch6_25dB_DACatten_onlyQ1/2026-04-20_18-50-54",
+
+                            "AB_paper_data_batch7_25dB_DACatten_noQ5/2026-04-21_02-55-23",
+
+                            "AB_paper_data_batch8_25dB_DACatten_noQ5/2026-04-21_11-34-57",
+
+                            "AB_paper_data_batch9_25dB_DACatten_noQ5Q4/2026-04-22_03-09-46",
+
+                            "AB_paper_data_batch10_25dB_DACatten_onlyQ4/2026-04-22_11-48-15",
+
+                            "AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_16-37-14",
+                            "AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_16-54-54",
+                            "AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_17-06-49",
+                            "AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_17-22-15",
+                            "AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_17-35-15",
+                            "AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_18-11-40",
+                            "AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_19-55-31",
+
+                            "AB_paper_data_batch12_25dB_DACatten_noQ5/2026-04-22_20-53-08",
+
+                            "AB_paper_data_batch13_25dB_DACatten_noQ5noQ6/2026-04-23_06-22-14",
+
+                            "AB_paper_data_batch14_25dB_DACatten_noQ5noQ6/2026-04-23_12-20-26",
+
+                            "AB_paper_data_batch15_25dB_DACatten_onlyQ6/2026-04-23_16-59-52",
+                            "AB_paper_data_batch15_25dB_DACatten_onlyQ6/2026-04-23_17-25-33",
+                            "AB_paper_data_batch15_25dB_DACatten_onlyQ6/2026-04-23_18-49-54",
+                            "AB_paper_data_batch15_25dB_DACatten_onlyQ6/2026-04-23_19-06-16",
+                            "AB_paper_data_batch15_25dB_DACatten_onlyQ6/2026-04-23_19-24-51",
+
+                            "AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_20-14-15",
+                            "AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_20-17-04",
+                            "AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_21-22-18",
+                            "AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_22-29-25",
+                            "AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_23-40-11"
                             ]
 
     if run_number == 8:

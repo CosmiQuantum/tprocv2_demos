@@ -255,6 +255,9 @@ target_dates_qtemps_RPM_run9 = [
     "2026-04-19",
     "2026-04-20",
     "2026-04-21",
+    "2026-04-22",
+    "2026-04-23",
+    "2026-04-24"
 ]
 
 # To re-make and save RPM RR plots
@@ -277,7 +280,16 @@ filter_keywords_run9 = [
     "AB_paper_data_batch6_25dB_DACatten_onlyQ1",
     "AB_paper_does_no_rpm_fromRR_affect_coh_25dBDAC",
     "AB_paper_data_batch7_25dB_DACatten_noQ5",
-    "AB_paper_data_batch8_25dB_DACatten_noQ5"
+    "AB_paper_data_batch8_25dB_DACatten_noQ5",
+    "AB_paper_data_batch9_25dB_DACatten_noQ5Q4",
+    "AB_paper_data_batch10_25dB_DACatten_onlyQ4",
+    "AB_paper_data_batch11_25dB_DACatten_noQ5",
+    "AB_paper_data_batch12_25dB_DACatten_noQ5",
+    "AB_paper_data_batch13_25dB_DACatten_noQ5noQ6",
+    "AB_paper_data_batch14_25dB_DACatten_noQ5noQ6",
+    "AB_paper_data_batch15_25dB_DACatten_onlyQ6",
+    "AB_paper_data_batch16_25dB_DACatten_noQ5",
+    "AB_paper_data_batch16_25dB_DACatten_noQ5",
 ]
 #-------------------------------------------------------------------------------- Assign func variables depending on run number ---------------------------------------------------------------------------
 if run_num == 6: # We have science-run data as well as pre-science-run data available
@@ -540,7 +552,37 @@ paths_SSFmethods_run9 = [
 
     f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch7_25dB_DACatten_noQ5/2026-04-21_02-55-23",
 
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch8_25dB_DACatten_noQ5/2026-04-21_11-34-57"
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch8_25dB_DACatten_noQ5/2026-04-21_11-34-57",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch9_25dB_DACatten_noQ5Q4/2026-04-22_03-09-46",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch10_25dB_DACatten_onlyQ4/2026-04-22_11-48-15",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_16-37-14",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_16-54-54",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_17-06-49",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_17-22-15",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_17-35-15",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_18-11-40",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_19-55-31",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch12_25dB_DACatten_noQ5/2026-04-22_20-53-08",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch13_25dB_DACatten_noQ5noQ6/2026-04-23_06-22-14",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch14_25dB_DACatten_noQ5noQ6/2026-04-23_12-20-26",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch15_25dB_DACatten_onlyQ6/2026-04-23_16-59-52",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch15_25dB_DACatten_onlyQ6/2026-04-23_17-25-33",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch15_25dB_DACatten_onlyQ6/2026-04-23_18-49-54",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch15_25dB_DACatten_onlyQ6/2026-04-23_19-06-16",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch15_25dB_DACatten_onlyQ6/2026-04-23_19-24-51",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_20-14-15",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_20-17-04",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_21-22-18",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_22-29-25",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_23-40-11"
 ]
 
 path_saveplots_fits_run9 = "/data/QICK_data/run9/6transmon/analysis/ssf_qtemps_analysis/qtemps_ssf_gaussfits"
