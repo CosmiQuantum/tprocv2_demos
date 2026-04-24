@@ -47,7 +47,7 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
-run_num_list = [9] # options: 4,5,6,7,8,9
+run_num_list = [4,5,6,7,8,9] # options: 4,5,6,7,8,9
 t1_vals_by_run  = {}
 t2r_vals_by_run = {}
 t2e_vals_by_run = {}
@@ -61,8 +61,8 @@ qfreq_errs_by_run = {}
 for run_number in run_num_list:
     print(f'Processing run {run_number} data.')
     if run_number == 9:
-        process_shots_t1ge = True
-        per_pt_errs_t1 = True
+        process_shots_t1ge = False
+        per_pt_errs_t1 = False
         run_name = "run9/6transmon/round_robin_benchmark"
         data_path = f'/data/QICK_data/{run_name}'
         plots_path = "/data/QICK_data/run9/6transmon/analysis"
@@ -633,9 +633,31 @@ boxwhisker_t1t2_per_qubit_vs_run(
     t1_vals_by_run=t1_vals_by_run,
     t2r_vals_by_run=t2r_vals_by_run,
     t2e_vals_by_run=t2e_vals_by_run,
+    do_T1=True, do_T2R=False, do_T2E=False,
+    ylims=(0, 140),
+    yticks=np.arange(0, 141, 20),
+    mode="separate",
+    save_plt_path = '/data/QICK_data/multirun_analysis/coherence_analysis'
+)
+boxwhisker_t1t2_per_qubit_vs_run(
+    run_num_list,
+    t1_vals_by_run=t1_vals_by_run,
+    t2r_vals_by_run=t2r_vals_by_run,
+    t2e_vals_by_run=t2e_vals_by_run,
     do_T1=False, do_T2R=False, do_T2E=True,
     ylims=(0, 180),
     yticks=np.arange(0, 181, 20),
+    mode="separate",
+    save_plt_path = '/data/QICK_data/multirun_analysis/coherence_analysis'
+)
+boxwhisker_t1t2_per_qubit_vs_run(
+    run_num_list,
+    t1_vals_by_run=t1_vals_by_run,
+    t2r_vals_by_run=t2r_vals_by_run,
+    t2e_vals_by_run=t2e_vals_by_run,
+    do_T1=False, do_T2R=True, do_T2E=False,
+    ylims=(0, 140),
+    yticks=np.arange(0, 141, 20),
     mode="separate",
     save_plt_path = '/data/QICK_data/multirun_analysis/coherence_analysis'
 )

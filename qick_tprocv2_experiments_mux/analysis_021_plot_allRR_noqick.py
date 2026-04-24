@@ -2937,6 +2937,19 @@ class PlotRR_noQick:
 
                     # if T_mK > 800:
                     #     print(f"High Temperature ({T_mK:.1f} mK) in file {qubit_data['filepath']} for Q{q + 1}. A1={qubit_data['A1']}, A2={qubit_data['A2']}, Qfreq={qubit_data['qubit_freq_MHz']}.")
+            if len(temps) > 0:
+                temps_arr = np.asarray(temps)
+                times_arr = np.asarray(times)
+                temps_err_arr = np.asarray(errs)
+
+                min_idx = np.argmin(temps_arr)
+                min_temp = temps_arr[min_idx]
+                min_time = times_arr[min_idx]
+                min_err = temps_err_arr[min_idx]
+
+                print(f"Q{q + 1} minimum temperature: {min_temp:.4f} +/- {min_err:.4f} mK at {min_time}")
+            else:
+                print(f"Q{q + 1} minimum temperature: no valid data")
 
             ax = axes[q]
 

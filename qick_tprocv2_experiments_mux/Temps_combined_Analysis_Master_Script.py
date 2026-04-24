@@ -52,7 +52,7 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
                       "combined_studies_Qtemps": True}
 
 # What analysis plots do you want to make?
@@ -250,11 +250,11 @@ base_dir_run9 = "/data/QICK_data/run9/6transmon/round_robin_benchmark" # up to s
 
 # AB paper data so far: (specify up to the day only)
 target_dates_qtemps_RPM_run9 = [
-    "2026-04-17",
-    "2026-04-18",
-    "2026-04-19",
-    "2026-04-20",
-    "2026-04-21",
+    # "2026-04-17",
+    # "2026-04-18",
+    # "2026-04-19",
+    # "2026-04-20",
+    # "2026-04-21",
     "2026-04-22",
     "2026-04-23",
     "2026-04-24"
@@ -527,32 +527,32 @@ r9_path_prefix = "/data/QICK_data/run9" # daq01
                 # "/data/QICK_data/run9" # daq01
 # AB paper data
 paths_SSFmethods_run9 = [
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47",  # ignore Q4 in this data, punched out too much!!
-
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch2_25dB_DACatten_onlyQ4/2026-04-17_16-47-30",
-
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_20-54-40",
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_21-53-52",
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_22-51-33",
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_23-47-15",
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_00-42-05",
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_11-24-10",
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_13-25-28",
-
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-18_23-06-45",
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_00-16-08",
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_01-18-51",
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_17-54-48",
-
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_does_no_rpm_fromRR_affect_coh_25dBDAC/2026-04-18_20-58-30",
-
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch5_25dBDAC_onlyQ1_onlySSF/2026-04-20_18-43-20",
-
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch6_25dB_DACatten_onlyQ1/2026-04-20_18-50-54",
-
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch7_25dB_DACatten_noQ5/2026-04-21_02-55-23",
-
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch8_25dB_DACatten_noQ5/2026-04-21_11-34-57",
+    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47",  # ignore Q4 in this data, punched out too much!!
+    #
+    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch2_25dB_DACatten_onlyQ4/2026-04-17_16-47-30",
+    #
+    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_20-54-40",
+    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_21-53-52",
+    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_22-51-33",
+    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_23-47-15",
+    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_00-42-05",
+    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_11-24-10",
+    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_13-25-28",
+    #
+    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-18_23-06-45",
+    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_00-16-08",
+    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_01-18-51",
+    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_17-54-48",
+    #
+    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_does_no_rpm_fromRR_affect_coh_25dBDAC/2026-04-18_20-58-30",
+    #
+    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch5_25dBDAC_onlyQ1_onlySSF/2026-04-20_18-43-20",
+    #
+    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch6_25dB_DACatten_onlyQ1/2026-04-20_18-50-54",
+    #
+    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch7_25dB_DACatten_noQ5/2026-04-21_02-55-23",
+    #
+    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch8_25dB_DACatten_noQ5/2026-04-21_11-34-57",
 
     f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch9_25dB_DACatten_noQ5Q4/2026-04-22_03-09-46",
 
