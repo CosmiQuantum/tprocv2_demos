@@ -61,14 +61,15 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True
                   "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
-comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
-                       "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": True, "Pe_box_whisker_allruns_allQs": True, "ssf_box_whisker_allruns_allQs": False}
+comb_analysis_flags = {"load_rpm": False, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
+                       "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
+                       "plot_ssf_log_curves": True}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 
 # For double-gaussian SSF analysis using alternative methods (does not require any other flags to be set to True above!)
-alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
+alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": True}
 
 # For coherence-qubit temps combined analysis
 coh_qtemp_ana_flags = {"load_qtemps": False, "load_mcp1_temps": False, "load_coherence_res": False, "plot_qtemps_t1_ftemps_qfreq": False}
@@ -250,11 +251,11 @@ base_dir_run9 = "/data/QICK_data/run9/6transmon/round_robin_benchmark" # up to s
 
 # AB paper data so far: (specify up to the day only)
 target_dates_qtemps_RPM_run9 = [
-    # "2026-04-17",
-    # "2026-04-18",
-    # "2026-04-19",
-    # "2026-04-20",
-    # "2026-04-21",
+    "2026-04-17",
+    "2026-04-18",
+    "2026-04-19",
+    "2026-04-20",
+    "2026-04-21",
     "2026-04-22",
     "2026-04-23",
     "2026-04-24"
@@ -527,32 +528,32 @@ r9_path_prefix = "/data/QICK_data/run9" # daq01
                 # "/data/QICK_data/run9" # daq01
 # AB paper data
 paths_SSFmethods_run9 = [
-    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47",  # ignore Q4 in this data, punched out too much!!
-    #
-    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch2_25dB_DACatten_onlyQ4/2026-04-17_16-47-30",
-    #
-    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_20-54-40",
-    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_21-53-52",
-    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_22-51-33",
-    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_23-47-15",
-    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_00-42-05",
-    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_11-24-10",
-    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_13-25-28",
-    #
-    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-18_23-06-45",
-    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_00-16-08",
-    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_01-18-51",
-    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_17-54-48",
-    #
-    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_does_no_rpm_fromRR_affect_coh_25dBDAC/2026-04-18_20-58-30",
-    #
-    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch5_25dBDAC_onlyQ1_onlySSF/2026-04-20_18-43-20",
-    #
-    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch6_25dB_DACatten_onlyQ1/2026-04-20_18-50-54",
-    #
-    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch7_25dB_DACatten_noQ5/2026-04-21_02-55-23",
-    #
-    # f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch8_25dB_DACatten_noQ5/2026-04-21_11-34-57",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47",  # ignore Q4 in this data, punched out too much!!
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch2_25dB_DACatten_onlyQ4/2026-04-17_16-47-30",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_20-54-40",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_21-53-52",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_22-51-33",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_23-47-15",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_00-42-05",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_11-24-10",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_13-25-28",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-18_23-06-45",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_00-16-08",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_01-18-51",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_17-54-48",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_does_no_rpm_fromRR_affect_coh_25dBDAC/2026-04-18_20-58-30",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch5_25dBDAC_onlyQ1_onlySSF/2026-04-20_18-43-20",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch6_25dB_DACatten_onlyQ1/2026-04-20_18-50-54",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch7_25dB_DACatten_noQ5/2026-04-21_02-55-23",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch8_25dB_DACatten_noQ5/2026-04-21_11-34-57",
 
     f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch9_25dB_DACatten_noQ5Q4/2026-04-22_03-09-46",
 
@@ -842,23 +843,6 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
     all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=1.0,
                                                                                                                 do_plots = True, save_figs_path = made_on_folder, dontuse_midpt_thresh = True)
 
-    # Heat map thermal pops
-    for qid in [0]:
-        if len(fit_results[qid]) == 0:
-            print(f"Skipping Q{qid + 1}: no valid SSF fit results.")
-            continue
-
-        SSF_calcs_obj.plot_2D_ssf_thermal_pop(
-            fit_results=fit_results,
-            qid=qid,
-            save_figs_path=os.path.join(made_on_folder, "thermal_pop_2D"),
-            bins=np.linspace(-0.75, 1.75, 180),
-            normalize_each_row=True,
-            title=f"Run 9 Q{qid + 1} SSF thermal population trend",
-            filename=f"Run9_Q{qid + 1}_SSF_thermal_population_2D.png",
-            show=False,
-        )
-
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
 run_num_list = [9] # for quiet, start at 5. no qtemp data for run 4
@@ -871,6 +855,7 @@ ssf_g_temps_by_run  = {}   # ssf ground-double-gauss temps
 ssf_g_temp_errs_by_run  = {}      # matching errors
 ssf_g_Pe_by_run  = {}   # ssf ground-double-gauss Pe
 ssf_g_Pe_errs_by_run = {} # matching Pe errors
+fit_results_g_by_run = {}  # fit_results_g_by_run[run][qid] = list of accepted SSF fit records
 
 ssf_ge_temps_by_run = {}   # ssf g-e threshold temps (if you compute them)
 ssf_ge_errs_by_run  = {}      # matching errors
@@ -962,9 +947,9 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             target_dates_qtemps_RPM = target_dates_qtemps_RPM_run9
 
             # ---------------- SSF ----------------
-            paths_SSFmethods = paths_SSFmethods_run8
-            path_saveplots_fits = path_saveplots_fits_run8
-            path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run8
+            paths_SSFmethods = paths_SSFmethods_run9
+            path_saveplots_fits = path_saveplots_fits_run9
+            path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run9
 
         else:
             raise ValueError(f"Unsupported run_num={run_num}")
@@ -982,6 +967,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         ssf_g_temp_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
         ssf_g_Pe_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
         ssf_g_Pe_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+        fit_results_g_by_run[run_num] = {qid: [] for qid in range(tot_num_of_qubits)}
         
         ssf_ge_temps_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
         ssf_ge_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
@@ -1023,6 +1009,10 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             if use_iminuit_gdoublegauss_ssf: # Made a special iminuit-based double gaussian fitting function, but for now it is only set up to fit g-state data.
                 all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=0.6,
                     do_plots=False, dontuse_midpt_thresh = True)
+
+                # ---- STORE FULL FIT RESULTS FOR SSF LOG OVERLAY PLOTS ----
+                fit_results_g_by_run[run_num] = fit_results_g
+
                 # ---- STORE RESULTS (SSF g) ----
                 ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
 
@@ -1041,6 +1031,9 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                 all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only = False, fallback_to_threshold = False)
                 all_qubit_temps_ge, all_qubit_times_ge, all_qubit_temps_errs_ge, fit_results_ge = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only=True, fallback_to_threshold=False)
 
+                # ---- STORE FULL FIT RESULTS FOR SSF LOG OVERLAY PLOTS ----
+                fit_results_g_by_run[run_num] = fit_results_g
+
                 # ---- STORE RESULTS (SSF g) ----
                 ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
                 ssf_g_temps_by_run[run_num] = ssf_g_temps
@@ -1056,6 +1049,36 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                 ssf_ge_temps_by_run[run_num] = ssf_ge_temps
                 ssf_ge_errs_by_run[run_num] = ssf_ge_temp_errs
 
+    if comb_analysis_flags["plot_ssf_log_curves"]:
+        if not comb_analysis_flags["load_ssf"]:
+            raise ValueError('This plot requires comb_analysis_flags["load_ssf"] to be True.')
+        ssf_overlay_save_path = "/data/QICK_data/run9/6transmon/analysis/ssf_qtemps_analysis/ssf_log_curves"
+        for qid in range(tot_num_of_qubits):
+            has_any_data = any(
+                run_num in fit_results_g_by_run
+                and qid in fit_results_g_by_run[run_num]
+                and len(fit_results_g_by_run[run_num][qid]) > 0
+                for run_num in fit_results_g_by_run)
+
+            if not has_any_data:
+                print(f"Skipping Q{qid + 1}: no accepted SSF fit results.")
+                continue
+
+            combined_studies.plot_ssf_log_overlay_by_run(
+                fit_results_by_run=fit_results_g_by_run,
+                qid=qid,
+                save_figs_path=ssf_overlay_save_path,
+                bins=np.linspace(-0.75, 1.75, 220),
+                cmap_name="Blues",
+                plot_individual=False,
+                plot_run_median=True,
+                smooth_window=3,
+                ymin=1e-4,
+                ymax=1.3,
+                title=f"Q{qid + 1} SSF thermal population across runs",
+                filename=f"Q{qid + 1}_SSF_log_overlay_by_run.png",
+                show=True,
+            )
     # --------------------- box and whiskers plots. Per run and per qubit. Separate or together options -------------------
     if comb_analysis_flags["qtemp_box_whisker_allruns_allQs"]:
         if not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):

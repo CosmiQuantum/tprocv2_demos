@@ -2923,6 +2923,278 @@ class combined_Qtemp_studies:
 
         return temps, errs, pe_vals, pe_errs
 
+
+    def plot_ssf_log_overlay_by_run(
+            self,
+            fit_results_by_run,
+            qid,
+            save_figs_path=None,
+            bins=np.linspace(-0.75, 1.75, 220),
+            run_order=None,
+            cmap_name="Blues",
+            plot_individual=False,
+            plot_run_median=True,
+            individual_alpha=0.22,
+            individual_lw=1.0,
+            median_lw=2.8,
+            smooth_window=1,
+            ymin=1e-4,
+            ymax=1.5,
+            title=None,
+            filename=None,
+            fig_quality=300,
+            show=True,
+    ):
+        """
+        Overlay SSF ground-state histograms from multiple runs on one log-y plot.
+
+        Each dataset is normalized so that:
+            main |g> / 0-state peak -> x = 0
+            thermal/excited / 1-state peak -> x = 1
+            histogram maximum -> y = 1
+
+        This is meant to show whether the thermal-excitation shoulder near x=1
+        decreases from run to run.
+
+        Parameters
+        ----------
+        fit_results_by_run : dict
+            Example:
+                {
+                    5: fit_results_run5,
+                    6: fit_results_run6,
+                    7: fit_results_run7,
+                    8: fit_results_run8,
+                    9: fit_results_run9,
+                }
+
+            where each fit_results_runX has the format returned by
+            run_ssf_qtemps_iminuit():
+                fit_results[qid] = [record1, record2, ...]
+
+        qid : int
+            Zero-indexed qubit index.
+
+        bins : np.ndarray
+            Bins for normalized SSF axis.
+
+        cmap_name : str
+            Matplotlib colormap name. Good options:
+                "Blues", "Reds", "Purples", "viridis", "plasma"
+
+        plot_individual : bool
+            If True, plot every valid SSF histogram faintly.
+
+        plot_run_median : bool
+            If True, plot the median histogram for each run as a thicker line.
+
+        smooth_window : int
+            Optional moving-average smoothing window.
+            Use 1 for no smoothing.
+
+        Returns
+        -------
+        fig, ax, run_histograms
+            run_histograms[run_num] contains normalized histograms and metadata.
+        """
+
+        def _smooth(y, window):
+            if window is None or window <= 1:
+                return y
+
+            kernel = np.ones(window) / window
+            return np.convolve(y, kernel, mode="same")
+
+        if run_order is None:
+            run_order = sorted(fit_results_by_run.keys())
+
+        centers = 0.5 * (bins[:-1] + bins[1:])
+
+        cmap = plt.get_cmap(cmap_name)
+
+        # Use lighter colors for earlier runs and darker colors for later runs
+        color_vals = np.linspace(0.35, 0.95, len(run_order))
+        run_colors = {
+            run: cmap(color_vals[i])
+            for i, run in enumerate(run_order)
+        }
+
+        fig, ax = plt.subplots(figsize=(9.5, 6.5))
+
+        run_histograms = {}
+
+        for run_num in run_order:
+            fit_results = fit_results_by_run[run_num]
+
+            if qid not in fit_results or len(fit_results[qid]) == 0:
+                print(f"Skipping Run {run_num}, Q{qid + 1}: no fit results.")
+                continue
+
+            records = fit_results[qid]
+
+            hists_this_run = []
+            records_used = []
+
+            for rec in records:
+                needed_keys = ["ig_new", "means", "ground_gaussian", "excited_gaussian"]
+
+                if not all(k in rec for k in needed_keys):
+                    continue
+
+                if rec["ig_new"] is None or rec["means"] is None:
+                    continue
+
+                ig_new = np.asarray(rec["ig_new"]).ravel()
+                means = np.asarray(rec["means"])
+
+                ground_idx = int(rec["ground_gaussian"])
+                excited_idx = int(rec["excited_gaussian"])
+
+                ground_mean = means[ground_idx]
+                excited_mean = means[excited_idx]
+
+                separation = excited_mean - ground_mean
+
+                if np.isclose(separation, 0):
+                    print(
+                        f"Skipping Run {run_num}, Q{qid + 1}, "
+                        f"dataset {rec.get('dataset', 'unknown')}: means overlap."
+                    )
+                    continue
+
+                # Important:
+                # This maps ground_mean -> 0 and excited_mean -> 1.
+                # Even if separation is negative, this still correctly maps the excited mean to +1.
+                ig_norm = (ig_new - ground_mean) / separation
+
+                counts, _ = np.histogram(ig_norm, bins=bins)
+
+                counts = counts.astype(float)
+
+                # Normalize main histogram maximum to 1
+                max_count = np.max(counts)
+                if max_count <= 0:
+                    continue
+
+                counts = counts / max_count
+
+                # Optional smoothing
+                counts = _smooth(counts, smooth_window)
+
+                # Avoid plotting zeros on log scale
+                counts[counts <= 0] = np.nan
+
+                hists_this_run.append(counts)
+                records_used.append(rec)
+
+                if plot_individual:
+                    ax.plot(
+                        centers,
+                        counts,
+                        color=run_colors[run_num],
+                        alpha=individual_alpha,
+                        linewidth=individual_lw,
+                    )
+
+            if len(hists_this_run) == 0:
+                print(f"Skipping Run {run_num}, Q{qid + 1}: no valid histograms.")
+                continue
+
+            hists_this_run = np.asarray(hists_this_run)
+
+            run_histograms[run_num] = {
+                "histograms": hists_this_run,
+                "records": records_used,
+                "color": run_colors[run_num],
+            }
+
+            if plot_run_median:
+                median_hist = np.nanmedian(hists_this_run, axis=0)
+                median_hist = _smooth(median_hist, smooth_window)
+                median_hist[median_hist <= 0] = np.nan
+
+                # Helpful summary for legend
+                pe_vals = np.array([r.get("Pe", np.nan) for r in records_used], dtype=float)
+                temp_vals = np.array([r.get("temperature_mK", np.nan) for r in records_used], dtype=float)
+
+                med_pe = np.nanmedian(pe_vals)
+                med_temp = np.nanmedian(temp_vals)
+
+                label = f"Run {run_num}"
+
+                if np.isfinite(med_pe):
+                    label += f", med Pe={med_pe:.3f}"
+
+                if np.isfinite(med_temp):
+                    label += f", med T={med_temp:.0f} mK"
+
+                ax.plot(
+                    centers,
+                    median_hist,
+                    color=run_colors[run_num],
+                    alpha=1.0,
+                    linewidth=median_lw,
+                    label=label,
+                )
+
+        ax.axvline(0, linestyle="--", linewidth=1.4, color="gray", alpha=0.8)
+        ax.axvline(1, linestyle="--", linewidth=1.4, color="red", alpha=0.8)
+
+        ax.text(
+            0.02,
+            0.94,
+            r"$|g\rangle$ peak aligned",
+            transform=ax.transAxes,
+            fontsize=11,
+            color="gray",
+        )
+
+        ax.text(
+            0.58,
+            0.94,
+            r"thermal / $|e\rangle$ peak aligned",
+            transform=ax.transAxes,
+            fontsize=11,
+            color="red",
+        )
+
+        ax.set_yscale("log")
+        ax.set_ylim(ymin, ymax)
+        ax.set_xlim(bins[0], bins[-1])
+
+        ax.set_xlabel(
+            "Normalized rotated SSF axis\n"
+            r"main $|g\rangle$ peak = 0, thermal/$|e\rangle$ peak = 1",
+            fontsize=13,
+        )
+
+        ax.set_ylabel("Normalized counts", fontsize=13)
+
+        if title is None:
+            title = f"Q{qid + 1} SSF thermal population comparison across runs"
+
+        ax.set_title(title, fontsize=16)
+
+        ax.legend(fontsize=9, frameon=True)
+        ax.grid(True, which="both", alpha=0.25)
+
+        plt.tight_layout()
+
+        if save_figs_path is not None:
+            os.makedirs(save_figs_path, exist_ok=True)
+
+            if filename is None:
+                filename = f"Q{qid + 1}_SSF_log_overlay_by_run.png"
+
+            full_path = os.path.join(save_figs_path, filename)
+            fig.savefig(full_path, dpi=fig_quality, bbox_inches="tight")
+            print(f"Saved: {full_path}")
+
+        if show:
+            plt.show()
+
+        return fig, ax, run_histograms
+
     def plot_t1t2_vs_qtemps(self, out_dir, all_qubit_temperatures_ssf_g = None, all_qubit_timestamps_ssf_g = None,
                           all_files_Qtemp_results_RPMs = None, t1_vals = None, t1_dates = None, t2r_vals = None, t2r_dates = None,
                             t2e_vals=None, t2e_dates=None, restrict_time_xaxis=False, start_time = None, end_time = None,
