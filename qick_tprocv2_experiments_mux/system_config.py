@@ -219,9 +219,9 @@ class QICK_experiment:
                 "trig_time": 0.75, # [Clock ticks] - get this value from TOF experiment, Updated 9/3
                 # Changes related to the resonator output channel
                 "mixer_freq": 5500, # [MHz]
-                "res_freq_ge": [6187.96, 5828.53, 6074.63, 5959.394], #[6187.9, 5828.48, 6074.57, 5959.294], #[6187.9 - 0.18, 5828.47 + 0.2, 6074.56 - 0.3375, 5959.284 - 0.09], #Run 34 #[6187.973, 5828.530, 6074.662, 5959.343], #Run 33
+                "res_freq_ge": [6187.72, 5828.52, 6074.58, 5959.364], #[6187.9, 5828.48, 6074.57, 5959.294], #[6187.9 - 0.18, 5828.47 + 0.2, 6074.56 - 0.3375, 5959.284 - 0.09], #Run 34 #[6187.973, 5828.530, 6074.662, 5959.343], #Run 33
                 "res_gain_ge": [0.3, 0.3, 0.28, 0.3], #[0.625, 0.375, 0.1, 0.475]
-                "res_length": 6, #5.75, #4.0, #[9.25, 5.5, 6.25, 7.0], #5 #4.6,  # 10,  # [us] (1.0 for res spec)
+                "res_length": 5.75, #4.0, #[9.25, 5.5, 6.25, 7.0], #5 #4.6,  # 10,  # [us] (1.0 for res spec)
                 "res_phase": [0] * 4,
                 "ro_phase": [0, 0, 0, 0]  # [0] * 4,  # Rotation Angle From QICK Function
             }
@@ -229,12 +229,12 @@ class QICK_experiment:
             # Qubit Configuration
             self.qubit_cfg = {
                 "qubit_mixer_freq": 4300,  # [MHz]
-                "qubit_freq_ge": [4929, 4779, 4586, 4802.8], #NR35: [4943.4, 4773.45, 4578.95, 4805.35], #[4913.15, 4764.5, 4577, 4782.07],  # Freqs of Qubit g/e Transition
+                "qubit_freq_ge": [4928.55, 4779.97, 4586.65, 4802.87], #NR35: [4943.4, 4773.45, 4578.95, 4805.35], #[4913.15, 4764.5, 4577, 4782.07],  # Freqs of Qubit g/e Transition
                 "qubit_gain_ge": [0.03, 0.03, 0.03, 0.03],  # [0.008] * 4,#[0.2, 0.2, 0.2, 0.01], #[0.2] * 4,  #0.07
                 "qubit_length_ge": 20,  # [us] for spec Pulse
                 "qubit_phase": 0,  # [deg]
                 "sigma": [0.06, 0.04, 0.065, 0.05], #[0.6, 0.4, 0.65, 0.5],
-                "pi_amp": [0.58, 0.59, 0.644, 0.725] #[0.765, 0.624, 0.655, 0.705], #Found 9/3 #[1.0, 0.93, 0.77, 0.846]
+                "pi_amp": [0.77, 0.785, 0.77, 0.795] #[0.765, 0.624, 0.655, 0.705], #Found 9/3 #[1.0, 0.93, 0.77, 0.846]
 
                 # "qubit_freqs_ge": [4909, 4749.4, 4569, 4759],  # Freqs of Qubit g/e Transition
                 # "qubit_gains_ge": [1] * 4,  # [0.05] * 4

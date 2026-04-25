@@ -112,8 +112,9 @@ def tomo_colorplot_amp(vsweep, qindex, qid, qdata, rows_written, timestamps = No
     ax.set_title(f'Charge Tomography Q{qid}', fontsize=14)
 
     plt.tight_layout()
-    fig_name = os.path.join('/home/nexusadmin/Documents/Data/run35/4charge/PostCsTomography/Dataset2/2026-03-23_16-15-38/analysis_plots/', 'Tomography_Qs1234_2026-03-24_17-06-21_plot.png') #Hardcode, fix
-    plt.savefig(fig_name)
+    plt.show()
+    #fig_name = os.path.join('/home/nexusadmin/Documents/Data/run35/4charge/PostCsTomography/Dataset2/2026-03-23_16-15-38/analysis_plots/', 'Tomography_Qs1234_2026-03-24_17-06-21_plot.png') #Hardcode, fix
+    #plt.savefig(fig_name)
 
 
 def tomo_rndplot(vsweep, qindex, qid, qdata, round):
@@ -210,11 +211,11 @@ def fitdata(fit_params, vsweep, qindex, qid, qdata, rd, signal = "amp", plot = F
 
 #def fit_single_scan()
 
-run = 'run35'
-study = 'PostCsTomography' #'EndOfRunData' #'PostCsTomography' #'BackgroundTomography'
-substudy = 'Dataset2' #'Dataset2_neg'
-timestamp = '2026-03-23_16-15-38' #'2026-04-03_11-55-28'
-file = 'Tomography_Qs1234_2026-03-24_17-06-21.h5' #'Tomography_Qs1234_2026-04-03_11-55-28.h5' #'Tomography_Qs1234_2026-03-13_21-12-14.h5'
+run = 'run36'
+study = 'Tomography_Check' #'PostCsTomography' #'EndOfRunData' #'PostCsTomography' #'BackgroundTomography'
+substudy = 'HighgainOpt' #'Dataset2' #'Dataset2_neg'
+timestamp = '2026-04-23_19-27-04' #'2026-03-23_16-15-38' #'2026-04-03_11-55-28'
+file = 'Tomography_Qs1234_2026-04-23_19-36-26.h5' #'Tomography_Qs1234_2026-03-24_17-06-21.h5'
 path = f'/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}/{timestamp}/study_data/{file}'
 
 vsweep, qubits, qdata, timestamps, rounds = load_singleh5(path)
@@ -225,7 +226,7 @@ qid = 1
 rd = 0
 #guess_params = guessfit(qdata) #Need to fix which data to look (which rd, which qubit, etc) before trying
 #full_fitparams = fitdata(guess_params, vsweep, qindex, qid, qdata, rd, signal = "amp", plot = True)
-#for qindex in range(0, 4):
-qindex = 3
-tomo_colorplot_amp(vsweep, qindex, qindex+1, qdata, rounds, timestamps = timestamps)
+for qindex in range(0, 4):
+    tomo_colorplot(vsweep, qindex, qindex+1, qdata, rounds, timestamps = timestamps)
+    #tomo_colorplot_amp(vsweep, qindex, qindex+1, qdata, rounds, timestamps = timestamps)
 #tomo_rndplot(vsweep, qindex, qid, qdata, [10, 30])

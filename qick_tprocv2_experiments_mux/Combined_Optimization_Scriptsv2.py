@@ -35,7 +35,7 @@ list_of_all_qubits = [0, 1, 2, 3] #for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0, 1
 # outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30", str(datetime.date.today())) #change run number in each new run
 run_name ='run36'
 device_name = '4charge'
-substudy = "opt_Q4" #unmasking_resgain"
+substudy = "opt_Q4_lowgain" #unmasking_resgain"
 outerFolder = os.path.join(f"/home/nexusadmin/Documents/Data/{run_name}/{device_name}/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 
 def create_folder_if_not_exists(folder_path):
@@ -60,9 +60,9 @@ opt_flags = {"res_len_sweep": False, "2d_sweep": True}
 Qs = [3] #0, 1, 2, 3
 
 #Change for NEXUS vs QUIET
-res_leng_vals = [5.75, 5, 6.25, 4.75]
-res_gain = [0.45, 0.36, 0.36, 0.425]  #NR35: [0.3, 0.3, 0.3, 0.3] #[0.48, 0.475, 0.1, 0.45]
-freq_offsets = [0.15, -0.075, 0, -0.15]  #NR35: [-0.15, -0.075, 0, 0] #[-0.2, -0.1, 0, -0.1] #Q1 -0.1667
+res_leng_vals = [6, 6.5, 6, 6] #[5.75, 5, 6.25, 4.75]
+res_gain = [0.25, 0.25, 0.25, 0.3] #[0.45, 0.36, 0.36, 0.425]  #NR35: [0.3, 0.3, 0.3, 0.3] #[0.48, 0.475, 0.1, 0.45]
+freq_offsets = [-0.225, 0, 0, 0] #[0.15, -0.075, 0, -0.15]  #NR35: [-0.15, -0.075, 0, 0] #[-0.2, -0.1, 0, -0.1] #Q1 -0.1667
 punch_out_vals = [0.48, 0.4, 0.19, 0.4]
 
 optimal_lengths = [None] * 4 #[None] * 4 # Q2 found, creates list where the script will be storing the optimal readout lengths for each qubit
@@ -73,7 +73,7 @@ len_sweep = True
 j=0 #round number, from RR code. Not really used here since we just run it once for each qubit
 
 # lengs = np.arange(0.1, 6, 0.5)
-lengs = np.arange(2.5, 7.0, 0.25) #0.1, 7, 0.5)
+lengs = np.arange(3, 7.0, 0.25) #0.1, 7, 0.5)
 #lengs = [0.1, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11, 11.5, 12]
 start=time.time()
 for QubitIndex in Qs:
@@ -254,7 +254,7 @@ for QubitIndex in Qs:
         #     gain_range = [0.8, 1.0]
         # elif QubitIndex == 3 or QubitIndex == 4:
         #     gain_range = [0.46,0.66]  # Gain range in a.u.
-        gain_range = [0.2, 0.5]
+        gain_range = [0.15, 0.4]
 
         freq_steps = 8
         gain_steps = 8

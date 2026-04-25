@@ -8,10 +8,10 @@ from nexus_tomography_R35 import AllQubitTomographyMeasurement
 from expt_config import tot_num_of_qubits, FRIDGE
 from round_robin_fast_tomo import RR_IntraTomo
 
-run_name = 'run35'
+run_name = 'run36'
 device_name = '4charge'
-study = 'EndOfRunData' #'PostCsTomography'
-substudy = 'Dataset2_neg' #'Dataset1' #'Study1'
+study = 'BackgroundTomography' #'EndOfRunData' #'PostCsTomography'
+substudy = 'Dataset1' #'HighgainOpt' #'Dataset2_neg' #'Dataset1' #'Study1'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 studyFolder = os.path.join(f"/home/nexusadmin/Documents/Data/{run_name}/{device_name}/", study)
@@ -25,13 +25,12 @@ if not os.path.exists(datasetFolder):
     os.makedirs(datasetFolder)
 
 qs_to_meas = [1, 2, 3, 4] #[1, 2, 3, 4]
-res_len = [4.5, 6, 5, 4.25]
-freq_offset = [-0.15, -0.075, -0.2, -0.05]
-res_gain = [0.3, 0.3, 0.28, 0.3]
+res_len = [5.75, 5, 6.25, 4.75] #[4.5, 6, 5, 4.25]
+freq_offset = [-0.15, -0.075, 0, -0.075] #[-0.15, -0.075, -0.2, -0.05]
+res_gain = [0.35, 0.3625, 0.3625, 0.425] #[0.3, 0.3, 0.28, 0.3]
 
-
-start_volt = -0.1 #V #0
-stop_volt = 0 #V #0.1 #100mV
+start_volt = 0 #V #0
+stop_volt = 0.1 #V #0.1 #100mV
 volt_pts = 30
 
 ## Timing info
@@ -70,7 +69,7 @@ print(f"Scheduled to run for {total_runhr} hours")
 
 # Initial RR
 print("Running initial RR")
-#RR_IntraTomo(datasetFolder, RR_rounds, res_len, res_gain, freq_offset)
+RR_IntraTomo(datasetFolder, RR_rounds, res_len, res_gain, freq_offset)
 
 # Main Loop
 while elapsed_sec + tomo_round_sec <= total_runsec:

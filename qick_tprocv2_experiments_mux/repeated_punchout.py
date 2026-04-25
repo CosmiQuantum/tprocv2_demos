@@ -187,8 +187,8 @@ DAC_att=DAC_att_1+DAC_att_2
 ADC_att=17
 
 run = 'run36'
-study = 'Initial Checkout' # 'Punchout Study'
-substudy = 'Punchout_Q4' #'Punchout_Repeated_Q4'
+study = 'Initial Checkout' #'Initial Checkout' # 'Punchout Study'
+substudy = 'Punchout_Q1' #'Punchout_Repeated_Q4'
 outerFolder = os.path.join(f"/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 outerFolder_plots = outerFolder + "/documentation/"
 outerFolder_moreplots = outerFolder_plots + "/other_plots/"
@@ -197,15 +197,17 @@ outerFolder_data = outerFolder + "/study_data/"
 
 from expt_config import FRIDGE
 experiment = QICK_experiment(outerFolder_plots, DAC_attenuator1 = DAC_att_1, DAC_attenuator2 = DAC_att_2, qubit_DAC_attenuator1 = 5 , qubit_DAC_attenuator2 = 4 ,ADC_attenuator = ADC_att, fridge=FRIDGE)
-qubits_to_meas = [3] #[0, 1, 2, 3]
+qubits_to_meas = [0] #[0, 1, 2, 3]
 Unmask = True #True is single, False is muxed
 
-substudy_txt_notes = ('Q4 6uss ro len (r1 res length optimal)')#('All Qs around 0.4-0.5 to get cutoff, 4us res len, TWPA on at -11.6dB, 7.807 GHz, all warm amps 6V')
+substudy_txt_notes = ('Q1 at 6us, low gains for optimization pt 2, low gains') #('All Qs at optimal lengths from r1 optimization, 90 sec wait between scans. Lets try lower gains, short repeat' ) #Q1 5.75uss ro len (r2 res length optimal)')#('All Qs around 0.4-0.5 to get cutoff, 4us res len, TWPA on at -11.6dB, 7.807 GHz, all warm amps 6V')
 file_path = os.path.join(outerFolder_plots, 'sub_study_notes.txt')
 with open(file_path, "w", encoding="utf-8") as file:
     file.write(substudy_txt_notes)
 
-start_gain, stop_gain, num_points = 0.2, 0.55, 8 #0.15, 0.6, 10 #0.1, 0.8, 5
+res_len = [6, 5, 6.25, 4.75] #[5.75, 5, 6.25, 4.75]
+
+start_gain, stop_gain, num_points = 0.05, 0.3, 8 #0.15, 0.6, 10 #0.1, 0.8, 5
 
 total_time = 2 #min
 start_time = time.time()
@@ -225,9 +227,11 @@ while time.time() < (start_time + total_time*60):
         round_timestamp = datetime.datetime.now()
         formatted_round_timestamp = round_timestamp.strftime("%Y-%m-%d_%H-%M-%S")
 
-        for Q in qubits_to_meas:
+        for i, Q in enumerate(qubits_to_meas):
             timestamp = datetime.datetime.now()
             formatted_timestamp = timestamp.strftime("%Y-%m-%d_%H-%M-%S")
+
+            experiment.readout_cfg['res_length'] = res_len[i]
 
             punch_out = Repeat_Punchout(Q, number_of_qubits, experiment, Unmask)
             data = punch_out.run(experiment.soccfg, experiment.soc, start_gain, stop_gain, num_points)
@@ -236,7 +240,7 @@ while time.time() < (start_time + total_time*60):
             save_res_data(Q, round_num, formatted_timestamp, data, outerFolder_data)
 
             del punch_out
-            #time.sleep(60)
+            #time.sleep(90)
 
         plot_round(round_num, round_data, formatted_round_timestamp, outerFolder_plots, save = True)
         centerplot_round(round_num, round_data, round_timestamp, outerFolder_moreplots, save = True)
