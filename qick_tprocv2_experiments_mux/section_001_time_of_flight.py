@@ -38,12 +38,12 @@ class TOFExperiment:
 
                 self.declare_gen(
                     ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
-                    mux_freqs=[f+1 for f in cfg['res_freq_ge']],
+                    mux_freqs=[f for f in cfg['res_freq_ge']],
                     mux_gains= cfg['res_gain_ge'], #[1,0,0,0,0,0],#cfg['res_gain_ge'], #[1,0,0,0,0,0]
                     mux_phases=cfg['res_phase'],
                     mixer_freq=cfg['mixer_freq']
                 )
-                for ch, f, ph in zip(cfg['ro_ch'], [f+1 for f in cfg['res_freq_ge']], cfg['ro_phase']):
+                for ch, f, ph in zip(cfg['ro_ch'], [f for f in cfg['res_freq_ge']], cfg['ro_phase']):
                     self.declare_readout(
                         ch=ch, length=cfg['res_length']+2, freq=f, phase=ph, gen_ch=gen_ch
                     )
@@ -88,6 +88,7 @@ class TOFExperiment:
             plot.plot(t, iq_list[i][:, 1], label="Q value")
             magnitude = np.abs(iq_list[i].dot([1, 1j]))
             plot.plot(t, magnitude, label="magnitude")
+            plot.set_title(self.config['res_freq_ge'][i])
             plot.legend()
             plot.set_ylabel("a.u.")
             plot.set_xlabel("us")
@@ -149,7 +150,7 @@ class TOFExperiment:
             else:
                 file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + ".png")
             plt.savefig(file_name, dpi=50)
-            plt.show()
+            #plt.show()
             plt.close(fig)
 
         return average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, self.experiment.DAC_attenuator1, self.experiment.DAC_attenuator2, self.experiment.ADC_attenuator
