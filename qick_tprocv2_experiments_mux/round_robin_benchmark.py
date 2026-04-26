@@ -33,7 +33,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 100000 # number of rounds
+n = 1000000 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -76,9 +76,9 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss":
 #              "rabi_pop_meas": False, "ef_Rabi": False}
 
 # For 25dB DAC, 4/21
-res_leng_vals = [5.63, 6.0, 5.7, 6.8, 7.0, 8.0]  # 25dB [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
-res_gain = [0.81, 0.836, 0.915, 0.6218, 0.95, 0.97]  # 25dB, [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
-freq_offsets = [-0.0300, -0.1286, -0.3000, -0.1556, 0.0, -0.0222]  # 25dB [-0.0214, -0.1286, -0.3000, -0.1556, 0.0, -0.0222]
+res_leng_vals = [5.5, 6.0, 5.7, 6.8, 7.0, 8.0]  # 5.63, 25dB [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
+res_gain = [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97]  # 0.8125,25dB, [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
+freq_offsets = [-0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222]  #-0.1500, 0.04, -0.0300 25dB [-0.0214, -0.1286, -0.3000, -0.1556, 0.0, -0.0222]
 
 # For 20dB DAC
 # res_leng_vals = [4.25, 5.25, 5.0, 5.0, 6.25, 4.5]  # 4/12, 20dB
@@ -412,7 +412,7 @@ while j < n:
                 try_num = 0
                 fid_check = 0
 
-                ssf_thresholds = [0.85, 0.80, 0.80, 0.8, 0.20, 0.75]
+                ssf_thresholds = [0.85, 0.80, 0.80, 0.8, 0.20, 0.75] # all Qs are generally above these unless something is wrong
                 ssf_threshold = ssf_thresholds[QubitIndex]
 
                 while fid_check < ssf_threshold and try_num < max_tries:
@@ -632,7 +632,7 @@ while j < n:
 
                     if QubitIndex == 0:
                         increase_qubit_reps2_rpm = True
-                        increase_qubit_reps2_rpm_to = 8000
+                        increase_qubit_reps2_rpm_to = 12000
 
                     efAmprabi_Qtemps = Temps_EFAmpRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits,
                                                                  studyDocumentationFolder,

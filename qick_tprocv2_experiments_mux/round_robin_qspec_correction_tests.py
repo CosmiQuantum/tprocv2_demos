@@ -33,7 +33,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 10000 # number of rounds
+n = 1000000 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -55,8 +55,6 @@ qick_verbose = True  # qick verbose prints the progress bar for each qick experi
 debug_mode = False  # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 
 thresholding = False  # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
-qspec_correction = False # do you want to use t2 ramsey to correct qubit frequency? helpful for ssf and optimization
-qspec_correction_round = 1
 unmask = True  # Do you want to use the unmasking feature to increase resonator gain? This may not apply to LOUD
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi ?
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
@@ -66,7 +64,7 @@ Qs_to_look_at = [0] # only list the qubits you want to do the RR for
 # Data saving info
 run_name = 'run9'
 device_name = '6transmon'
-substudy_txt_notes = ('Only Q4. Quiet run 9 AB paper data \n')
+substudy_txt_notes = ('All qubits except Q5. Quiet run 9 AB paper data \n')
 
 # set which of the following you'd like to run to 'True'
 # run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
@@ -74,13 +72,13 @@ substudy_txt_notes = ('Only Q4. Quiet run 9 AB paper data \n')
 #              "rabi_pop_meas": True, "ef_Rabi": False}
 
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
-             "t1": False, "t2r": True, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
+             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False}
 
 # For 25dB DAC, 4/21
-res_leng_vals = [5.6, 6.0, 5.7, 6.8, 7.0, 8.5]  # 25dB [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
-res_gain = [0.825, 0.836, 0.915, 0.6218, 0.95, 0.97]  # 25dB, [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
-freq_offsets = [-0.0214, -0.1286, -0.3000, -0.1556, 0.0, -0.0222]  # 25dB
+res_leng_vals = [5.5, 6.0, 5.7, 6.8, 7.0, 8.0]  # 5.63, 25dB [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
+res_gain = [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97]  # 0.8125,25dB, [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
+freq_offsets = [-0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222]  #-0.1500, 0.04, -0.0300 25dB [-0.0214, -0.1286, -0.3000, -0.1556, 0.0, -0.0222]
 
 # For 20dB DAC
 # res_leng_vals = [4.25, 5.25, 5.0, 5.0, 6.25, 4.5]  # 4/12, 20dB
@@ -98,7 +96,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts
-sub_study = 'qspec_correction_using_t2r_junk' # DACatten_SSF_inv_allQs_25dB_junk, AB_paper_data_batch3_25dB_DACatten_noQ5, AB_paper_data_25dB_DACatten_noQ5_batch1, AB_paper_data_25dB_DACatten_onlyQ4_batch2
+sub_study = 'DACatten_SSF_inv_allQs_25dB_junk' # DACatten_SSF_inv_allQs_25dB_junk, AB_paper_data_batch19_25dB_DACatten_noQ5, AB_paper_data_25dB_DACatten_noQ5_batch1, AB_paper_data_25dB_DACatten_onlyQ4_batch2
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -296,7 +294,7 @@ while j < n:
 
                 if QubitIndex == 1:
                     increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 700
+                    qspecge_increase_reps_to = 650
 
                 q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
                                            signal, save_figs, increase_reps = increase_qubit_reps_qspec, increase_rounds =increase_qspec_rounds,
@@ -350,16 +348,23 @@ while j < n:
                 increase_qubit_reps_gerabi = False  # if you want to increase the reps for a qubit, set to True
                 qubit_to_increase_gerabi_reps_for = None  # only has impact if previous line is True
                 multiply_gerabi_reps_by = 1
+                reduce_rlx_delay_gerabi = False
+                reduce_rlx_delay_gerabi_to = None
+
                 # if QubitIndex == 3:
                 #     increase_qubit_reps_gerabi = True
                 #     qubit_to_increase_gerabi_reps_for = QubitIndex
+
                 if QubitIndex == 4:
                     increase_qubit_reps_gerabi = True
                     qubit_to_increase_gerabi_reps_for = QubitIndex
                     multiply_gerabi_reps_by = 2
-                # if QubitIndex == 5:
+
+                if QubitIndex == 5:
                 #     increase_qubit_reps_gerabi = True
                 #     qubit_to_increase_gerabi_reps_for = QubitIndex
+                    reduce_rlx_delay_gerabi = True
+                    reduce_rlx_delay_gerabi_to = 650
 
                 rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
                                                save_figs=save_figs, save_shots=save_shots_gerabi,
@@ -367,7 +372,8 @@ while j < n:
                                                increase_qubit_reps=increase_qubit_reps_gerabi,
                                                qubit_to_increase_reps_for=qubit_to_increase_gerabi_reps_for,
                                                multiply_qubit_reps_by=multiply_gerabi_reps_by,
-                                               verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
+                                               verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
+                                               reduce_rlx_delay = reduce_rlx_delay_gerabi, reduce_rlx_delay_to = reduce_rlx_delay_gerabi_to)
                 (rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_rabi, meas_timestamp_rabige) = rabi.run(thresholding=thresholding, use_iminuit_instead = use_iminuit_instead)
 
                 # if these are None, fit didnt work
@@ -396,9 +402,37 @@ while j < n:
         if run_flags["ss"]:
             t0 = time.perf_counter()
             try:
-                ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
-                                experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
-                fid, angle, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge = ss.run()
+                reduce_rlx_delay_ssf = False
+                reduce_rlx_delay_ssf_to = None
+                if QubitIndex == 5:
+                    reduce_rlx_delay_ssf = True
+                    reduce_rlx_delay_ssf_to = 650
+
+                max_tries = 5
+                try_num = 0
+                fid_check = 0
+
+                ssf_thresholds = [0.85, 0.80, 0.80, 0.8, 0.20, 0.75]
+                ssf_threshold = ssf_thresholds[QubitIndex]
+
+                while fid_check < ssf_threshold and try_num < max_tries:
+                    ## after the loop finishes, the code only keeps the data from the last attempt that ran
+                    try_num += 1
+
+                    ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
+                                    experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
+                                    reduce_rlx_delay = reduce_rlx_delay_ssf, reduce_rlx_delay_to = reduce_rlx_delay_ssf_to)
+                    fid, angle, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge = ss.run()
+
+                    fid_check = fid
+                    if fid_check < ssf_threshold: # checks if SSF is bad, if it is it tries again
+                        rr_logger.warning(
+                            f"Q{QubitIndex + 1} SSF fid={fid_check:.3f} below {ssf_threshold}, retrying "
+                            f"({try_num}/{max_tries})")
+
+                if fid_check < ssf_threshold:
+                    rr_logger.warning(f"Q{QubitIndex + 1} SSF never reached {ssf_threshold}. Keeping last attempt.")
+
                 I_g = iq_list_g[QubitIndex][0].T[0]
                 Q_g = iq_list_g[QubitIndex][0].T[1]
                 I_e = iq_list_e[QubitIndex][0].T[0]
@@ -434,6 +468,9 @@ while j < n:
                 try:
                     increase_efres_reps = False
                     increase_efres_reps_to = None
+                    reduce_rlx_delay_efrspec = False
+                    reduce_rlx_delay_efrspec_to = None
+
                     # if QubitIndex == 3:
                     #     increase_efres_reps = True
                     #     increase_efres_reps_to = 600
@@ -441,13 +478,17 @@ while j < n:
                     # if QubitIndex == 4:
                     #     increase_efres_reps = True
                     #     increase_efres_reps_to = 700
+                    if QubitIndex == 5:
+                        reduce_rlx_delay_efrspec = True
+                        reduce_rlx_delay_efrspec_to = 650
 
                     ef_res_spec = ResonanceSpectroscopyEF(QubitIndex, tot_num_of_qubits, studyDocumentationFolder,
                                                           sample,
                                                           save_figs, increase_efres_reps, increase_efres_reps_to,
                                                           experiment=experiment, verbose=verbose,
                                                           logger=rr_logger, qick_verbose=qick_verbose,
-                                                          unmasking_resgain=unmask)
+                                                          unmasking_resgain=unmask, reduce_rlx_delay = reduce_rlx_delay_efrspec,
+                                                          reduce_rlx_delay_to = reduce_rlx_delay_efrspec_to)
                     ef_res_freqs, ef_freq_pts, ef_freq_center, ef_amps, sys_config_rspec_ef, meas_timestamp_resef = ef_res_spec.run()
                     ef_res_freqs_samples.append(ef_res_freqs)
                     rr_logger.info(f"EF ResSpec sample {sample} for qubit {QubitIndex + 1}: {ef_res_freqs}")
@@ -487,6 +528,8 @@ while j < n:
                         increase_ef_qspec_rounds = False
                         increase_ef_qspec_rounds_to = None
                         increase_reps_to_ef = None
+                        reduce_rlx_delay_efqspec = False
+                        reduce_rlx_delay_efqspec_to = None
 
                         if QubitIndex == 3:
                             increase_qubit_reps_ef = True  # if you want to increase the reps for a qubit, set to True
@@ -494,10 +537,15 @@ while j < n:
                             # increase_ef_qspec_rounds = True
                             # increase_ef_qspec_rounds_to = 2
 
+                        if QubitIndex == 5:
+                            reduce_rlx_delay_efqspec = True
+                            reduce_rlx_delay_efqspec_to = 650
+
                         ef_q_spec = EFQubitSpectroscopy(QubitIndex, number_of_qubits, studyDocumentationFolder, j, signal,
-                                                        save_figs, experiment, live_plot, increase_reps = increase_qubit_reps_ef,
+                                                        save_figs, experiment, live_plot, logger=rr_logger, increase_reps = increase_qubit_reps_ef,
                                                         increase_reps_to = increase_reps_to_ef, increase_ef_qspec_rounds = increase_ef_qspec_rounds,
-                                                        increase_ef_qspec_rounds_to = increase_ef_qspec_rounds_to, unmasking_resgain=unmask)
+                                                        increase_ef_qspec_rounds_to = increase_ef_qspec_rounds_to, unmasking_resgain=unmask,
+                                                        reduce_rlx_delay = reduce_rlx_delay_efqspec, reduce_rlx_delay_to = reduce_rlx_delay_efqspec_to)
 
                         efqspec_I, efqspec_Q, efqspec_freqs, sys_config_qspec_ef, efqspec_I_fit, efqspec_Q_fit, efqubit_freq, meas_timestamp_qspecef = ef_q_spec.run()
                         qubit_freqs_ef[QubitIndex] = efqubit_freq
@@ -528,6 +576,7 @@ while j < n:
                     increase_qubit_reps_efrabi = False  # if you want to increase the reps for a qubit, set to True
                     qubit_to_increase_efrabi_reps_for = None
                     multiply_efrabi_reps_by = 1
+                    ## have not incorporated reduce_rlx_delay feature yet
 
                     efrabi = EF_AmplitudeRabiExperiment(QubitIndex, number_of_qubits, studyDocumentationFolder, j,
                                                         signal, save_shots_efrabi, experiment=experiment,
@@ -564,10 +613,14 @@ while j < n:
                     increase_qubit_reps2_rpm = False
                     increase_qubit_reps_rpm_to = None
                     increase_qubit_reps2_rpm_to = None
+                    reduce_rlx_delay_rpm = False
+                    reduce_rlx_delay_rpm_to = None
 
                     if QubitIndex == 5:
                         increase_qubit_reps2_rpm = True
-                        increase_qubit_reps2_rpm_to = 5800
+                        increase_qubit_reps2_rpm_to = 23000
+                        reduce_rlx_delay_rpm = True
+                        reduce_rlx_delay_rpm_to = 650
                     #
                     if QubitIndex == 4:
                         increase_qubit_reps2_rpm = True
@@ -577,6 +630,10 @@ while j < n:
                     #     increase_qubit_reps_rpm = True
                     #     increase_qubit_reps_rpm_to = 600
 
+                    if QubitIndex == 0:
+                        increase_qubit_reps2_rpm = True
+                        increase_qubit_reps2_rpm_to = 10000
+
                     efAmprabi_Qtemps = Temps_EFAmpRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits,
                                                                  studyDocumentationFolder,
                                                                  j,
@@ -584,7 +641,8 @@ while j < n:
                                                                  experiment, live_plot,
                                                                  increase_qubit_reps = increase_qubit_reps_rpm, increase_qubit_reps_to = increase_qubit_reps_rpm_to,
                                                                  increase_qubit_reps2 = increase_qubit_reps2_rpm, increase_qubit_reps2_to = increase_qubit_reps2_rpm_to,
-                                                                 unmasking_resgain=unmask)
+                                                                 unmasking_resgain=unmask, reduce_rlx_delay = reduce_rlx_delay_rpm, reduce_rlx_delay_to = reduce_rlx_delay_rpm_to,
+                                                                 logger=rr_logger)
 
                     (I1_qtemp, Q1_qtemp, gains1_qtemp, I2_qtemp, Q2_qtemp, gains2_qtemp,
                      A_amplitude1, A_amplitude2, A_amplitude_err1, A_amplitude_err2, fit_cosine1_qtemp, fit_cosine2_qtemp,
@@ -627,10 +685,17 @@ while j < n:
                 increase_qubit_reps_t1 = False
                 t1_qubit_to_increase_reps_for = None
                 t1_multiply_qubit_reps_by = 1
+                reduce_rlx_delay_geT1= False
+                reduce_rlx_delay_geT1_to = None
+
                 if QubitIndex == 4:
                     increase_qubit_reps_t1 = True
                     t1_qubit_to_increase_reps_for = QubitIndex
                     t1_multiply_qubit_reps_by = 2
+
+                if QubitIndex == 5:
+                    reduce_rlx_delay_geT1 = True
+                    reduce_rlx_delay_geT1_to = 650
 
                 t1 = T1Measurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                    experiment=experiment,
@@ -638,7 +703,8 @@ while j < n:
                                    increase_qubit_reps=increase_qubit_reps_t1,
                                    qubit_to_increase_reps_for=t1_qubit_to_increase_reps_for,
                                    multiply_qubit_reps_by=t1_multiply_qubit_reps_by,
-                                   verbose=verbose, logger=rr_logger, save_shots = True, unmasking_resgain=unmask)
+                                   verbose=verbose, logger=rr_logger, save_shots = True, unmasking_resgain=unmask,
+                                   reduce_rlx_delay = reduce_rlx_delay_geT1, reduce_rlx_delay_to = reduce_rlx_delay_geT1_to)
                 t1_est, t1_err, t1_I, t1_Q, t1_Ishots, t1_Qshots, t1_delay_times, q1_fit_exponential, sys_config_t1, meas_timestamp_t1ge = t1.run(
                     thresholding=thresholding, use_iminuit_instead = use_iminuit_instead)
                 del t1
@@ -661,6 +727,8 @@ while j < n:
                 increase_qubit_reps_t2r = False  # if you want to increase the reps for a qubit, set to True
                 qubit_to_increase_t2r_reps_for = None
                 increase_t2r_qubit_reps_to = 1 # doesn't apply unless the above flags are updated and set to True
+                reduce_rlx_delay_geT2R = False
+                reduce_rlx_delay_geT2R_to = None
 
                 if QubitIndex == 2:
                     increase_qubit_reps_t2r = True
@@ -677,12 +745,17 @@ while j < n:
                     qubit_to_increase_t2r_reps_for = QubitIndex
                     increase_t2r_qubit_reps_to = 1500 # must be integer
 
+                if QubitIndex == 5:
+                    reduce_rlx_delay_geT2R = True
+                    reduce_rlx_delay_geT2R_to = 650
+
                 t2r = T2RMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                      experiment=experiment, live_plot=live_plot, fit_data=fit_data,
                                      increase_qubit_reps=increase_qubit_reps_t2r,
                                      qubit_to_increase_reps_for=qubit_to_increase_t2r_reps_for,
                                      increase_qubit_reps_to=increase_t2r_qubit_reps_to,
-                                     verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
+                                     verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
+                                     reduce_rlx_delay = reduce_rlx_delay_geT2R, reduce_rlx_delay_to = reduce_rlx_delay_geT2R_to)
 
                 t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey, sys_config_t2r, meas_timestamp_t2r = t2r.run(
                     thresholding=thresholding, use_iminuit_instead = use_iminuit_instead)
@@ -706,13 +779,20 @@ while j < n:
                 qubit_to_increase_t2e_reps_for = None
                 multiply_qubit_t2e_reps_by = 1
                 increase_qubit_reps_t2e = False
+                reduce_rlx_delay_geT2E = False
+                reduce_rlx_delay_geT2E_to = None
+
+                if QubitIndex == 5:
+                    reduce_rlx_delay_geT2E = True
+                    reduce_rlx_delay_geT2E_to = 650
 
                 t2e = T2EMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                      experiment=experiment, live_plot=live_plot, fit_data=fit_data,
                                      increase_qubit_reps=increase_qubit_reps_t2e,
                                      qubit_to_increase_reps_for=qubit_to_increase_t2e_reps_for,
                                      multiply_qubit_reps_by=multiply_qubit_t2e_reps_by,
-                                     verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
+                                     verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
+                                     reduce_rlx_delay = reduce_rlx_delay_geT2E, reduce_rlx_delay_to = reduce_rlx_delay_geT2E_to)
                 (t2e_est, t2e_err, t2e_I, t2e_Q, t2e_delay_times,
                  fit_t2e, sys_config_t2e, meas_timestamp_t2e) = t2e.run(thresholding=thresholding, use_iminuit_instead = use_iminuit_instead)
                 del t2e
