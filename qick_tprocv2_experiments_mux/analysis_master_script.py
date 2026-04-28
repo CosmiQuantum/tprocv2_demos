@@ -47,7 +47,7 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
-run_num_list = [4,5,6,7,8,9] # options: 4,5,6,7,8,9
+run_num_list = [9] # options: 4,5,6,7,8,9
 t1_vals_by_run  = {}
 t2r_vals_by_run = {}
 t2e_vals_by_run = {}
