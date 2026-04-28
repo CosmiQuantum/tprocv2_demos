@@ -117,30 +117,6 @@ target_dates_qtemps_RPM_sciencerun = [
     "2025-06-01" # Last Science run data
     ]
 
-# For data before heater temperature steps, run 6
-# target_dates_qtemps_RPM_sciencerun = [
-#     "2025-04-16",
-#     "2025-04-17",
-#     "2025-04-18",
-#     "2025-04-19",
-#     "2025-04-20",
-#     "2025-04-21", #starts source on (Co)
-#     "2025-04-22",
-#     "2025-04-23", #switched source (to Cs)
-#     "2025-04-24",
-#     "2025-04-25",
-#     "2025-04-26",
-#     "2025-04-27",
-#     "2025-04-28", #Cs source moved closer
-#     "2025-04-29",
-#     "2025-04-30",
-#     "2025-05-01",
-#     "2025-05-02",
-#     "2025-05-03",
-#     "2025-05-04", # Cs source removed. No sources in Cleanroom.
-#     "2025-05-05",
-#     "2025-05-06"]
-
 # For data during Heater temperature steps, run 6 (20mK to 160mK)
 # target_dates_qtemps_RPM_sciencerun = ["2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14"]
 
@@ -149,16 +125,25 @@ target_dates_qtemps_RPM_presciencerun = ['2025-04-11', '2025-04-12']
 
 # Base path of where the data is stored up to the Study Name (TLS_Comprehensive_Study or ef_studies_pre_science_run)
 base_dir_sciencerun = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study" # for QUIET run 6 science run data
+                    # Options:
+                    # "/data/QICK_data/run6/6transmon/round_robin_benchmark" # daq01
+                    # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study" #CEPH
 base_dir_pre_sciencerun = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ef_studies_pre_science_run" # for run 6 pre-science run data
+                    # Options: No other path options available. Science run data is only on CEPH.
+# To save plots
+r6_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
+# Options:
+# "/home/acolonce/Documents/analysis" #cosmiqserver01
+# "/data/QICK_data/run9/6transmon/analysis" #daq01
+# "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run6" #1hw
 
-# To re-make and save RPM RR plots
-# outerFolder_qtemps_plots_RR_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots/Plots_RR"
-outerFolder_qtemps_plots_RR_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r6"
-# For RPM Analysis
-# outerFolder_qtemps_plots_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/Plots" # Inside each analysis function, a subfolder will be defined
-outerFolder_qtemps_plots_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r6" # Inside each analysis function, a subfolder will be defined
+# For round robin plots:
+outerFolder_qtemps_plots_RR_run6 =  f"{r6_plts_prefix}/replotted_RR_data/rabi_pop_meas"
+#For analysis:
+outerFolder_qtemps_plots_run6 = f"{r6_plts_prefix}/Qtemps_RPMmethod"
+
 # For London Penetration Depth analysis, which is done on run 6 temperature sweep data. This is where we save the plots:
-outerFolder_london_path = "/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/QTemperatures/London_Penetration_Depth_r6"
+outerFolder_london_path = f"{r6_plts_prefix}/London_Penetration_Depth"
 
 # Which RPM qubit temperature data do you want to look at? List here key words in the substudy name
 # For the heater temperature sweep:
@@ -174,33 +159,36 @@ filter_keywords_presciencerun = ['q_temperatures_efRabi'] # no source was presen
 #-----------------------------------------------------------------------run 7------------------------------------------------------------
 # Base path of where the data is stored up to the Study Name (round_robin_benchmark)
 base_dir_run7 = "/exp/cosmiq/data/QUIET/QICK_data/run7/6transmon/round_robin_benchmark"
+    # Options:
     #"/exp/cosmiq/data/QUIET/QICK_data/run7/6transmon/round_robin_benchmark" # CEPH
     # "/data/QICK_data/run7/6transmon/round_robin_benchmark" # daq01
 
-# for 24hr AB data
+# For all AB paper data:
 target_dates_qtemps_RPM_run7 = ["2025-07-19", "2025-07-20"]
 
-# To re-make and save RPM RR plots
-outerFolder_qtemps_plots_RR_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r7" # CEPH
-    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r7" # CEPH
-    #"/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/benchmark_analysis_plots/RPM_RR_plots" #daq01
-#
-# For RPM Analysis
-outerFolder_qtemps_plots_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r7"
-    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r7"
-    # "/data/QICK_data/run7/6transmon/round_robin_benchmark/AB_paper_data/benchmark_analysis_plots/RPM_analysis" # daq01. Inside each analysis function, a subfolder will be defined
+# To save plots
+r7_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
+# Options:
+# "/home/acolonce/Documents/analysis" #cosmiqserver01
+# "/data/QICK_data/run9/6transmon/analysis" #daq01
+# "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run7" #1hw
+
+# For round robin plots:
+outerFolder_qtemps_plots_RR_run7 =  f"{r7_plts_prefix}/replotted_RR_data/rabi_pop_meas"
+#For analysis:
+outerFolder_qtemps_plots_run7 = f"{r7_plts_prefix}/Qtemps_RPMmethod"
 
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name
+# All AB paper data:
 filter_keywords_run7 = ['AB_paper_data']
 
 #-----------------------------------------------------------------------run 8------------------------------------------------------------
 # Base path of where the data is stored up to the Study Name (round_robin_benchmark)
 base_dir_run8 = "/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/round_robin" # CEPH
+    # Options:
     #"/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/round_robin" # CEPH
     #"/data/QICK_data/run8/6transmon/round_robin" # up to study name. # daq01
-
-# Arianna's local analysis
-# base_dir_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # up to study name
+    #r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # Arianna's pc
 
 # all AB paper data: (specify up to the day only)
 target_dates_qtemps_RPM_run8 = [
@@ -215,18 +203,17 @@ target_dates_qtemps_RPM_run8 = [
   "2025-11-01"
 ]
 
-# for Arianna's local analysis: (specify date folder)
-# target_dates_qtemps_RPM_run8 = ["2025-10-19_20-25-18"]
+# To save plots
+r8_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
+# Options:
+# "/home/acolonce/Documents/analysis" #cosmiqserver01
+# "/data/QICK_data/run9/6transmon/analysis" #daq01
+# "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run8" #1hw
 
-# To re-make and save RPM RR plots
-outerFolder_qtemps_plots_RR_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r8" # CEPH
-    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r8" # CEPH
-    # "/data/QICK_data/run8/6transmon/replotted_RR_data/rabi_pop_meas" #daq01
-
-# For RPM Analysis
-outerFolder_qtemps_plots_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r8" #CEPH
-    # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r8" #CEPH
-    #"/data/QICK_data/run8/6transmon/round_robin/AB_paper_datadump_for_analysis/benchmark_analysis_plots/Qtemps_RPMmethod" # daq01
+# For round robin plots:
+outerFolder_qtemps_plots_RR_run8 =  f"{r8_plts_prefix}/replotted_RR_data/rabi_pop_meas"
+#For analysis:
+outerFolder_qtemps_plots_run8 = f"{r8_plts_prefix}/Qtemps_RPMmethod"
 
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name. THese are substudies.
 # For all AB paper data:
@@ -240,16 +227,17 @@ filter_keywords_run8 = ["AB_Paper_Data_24hrs", "ABpaperdata2ndbatch_21dB_DACatte
 # filter_keywords_run8 = ["temperature_sweep_run8_25dBDAC_onechan_day1", "temperature_sweep_run8_25dBDAC_onechan_day2",
 #                         "temperature_sweep_run8_25dBDAC_onechan_day3", "temp_sweep_run8_25dBDAC_onechan_day4_175mK"]
 
-# For Arianna's local analysis
+# For Arianna's local pc analysis
 #filter_keywords_run8 = ['ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional']
 # filter_keywords_run8 = ["AB_Paper_Data_24hrs"]
 #-----------------------------------------------------------------------run 9------------------------------------------------------------
 #Base path of where the data is stored up to the Study Name (round_robin_benchmark)
-base_dir_run9 = "/data/QICK_data/run9/6transmon/round_robin_benchmark" # up to study name.
+base_dir_run9 = "/exp/cosmiq/data/QUIET/QICK_data/run9/6transmon/round_robin_benchmark"
+    # Options:
     #"/exp/cosmiq/data/QUIET/QICK_data/run9/6transmon/round_robin_benchmark" # CEPH
     #"/data/QICK_data/run9/6transmon/round_robin_benchmark" # up to study name. # daq01
 
-# AB paper data so far: (specify up to the day only)
+# All AB paper data:
 target_dates_qtemps_RPM_run9 = [
     "2026-04-17",
     "2026-04-18",
@@ -258,18 +246,22 @@ target_dates_qtemps_RPM_run9 = [
     "2026-04-21",
     "2026-04-22",
     "2026-04-23",
-    "2026-04-24"
-]
+    "2026-04-24",
+    "2026-04-25",
+    "2026-04-26",
+    "2026-04-27"]
 
-# To re-make and save RPM RR plots
-outerFolder_qtemps_plots_RR_run9 =  "/data/QICK_data/run9/6transmon/analysis/replotted_RR_data/rabi_pop_meas"
-    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/Plots_RR_r9" # CEPH
-    # "/data/QICK_data/run9/6transmon/analysis/replotted_RR_data/rabi_pop_meas" #daq01
+# To save plots
+r9_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
+# Options:
+# "/home/acolonce/Documents/analysis" #cosmiqserver01
+# "/data/QICK_data/run9/6transmon/analysis" #daq01
+# "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run9" #1hw
 
-# For RPM Analysis
-outerFolder_qtemps_plots_run9 = "/data/QICK_data/run9/6transmon/analysis/Qtemps_RPMmethod"
-    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/RPM_QTemps/RPM_analysis_r9" #CEPH
-    #"/data/QICK_data/run9/6transmon/analysis/Qtemps_RPMmethod" # daq01
+# For round robin plots:
+outerFolder_qtemps_plots_RR_run9 =  f"{r9_plts_prefix}/replotted_RR_data/rabi_pop_meas"
+#For analysis:
+outerFolder_qtemps_plots_run9 = f"{r9_plts_prefix}/Qtemps_RPMmethod"
 
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name. These are substudies.
 filter_keywords_run9 = [
@@ -290,8 +282,11 @@ filter_keywords_run9 = [
     "AB_paper_data_batch14_25dB_DACatten_noQ5noQ6",
     "AB_paper_data_batch15_25dB_DACatten_onlyQ6",
     "AB_paper_data_batch16_25dB_DACatten_noQ5",
-    "AB_paper_data_batch16_25dB_DACatten_noQ5",
-]
+    "AB_paper_data_batch17_25dB_DACatten_noQ",
+    "AB_paper_data_batch18_25dB_DACatten_noQ5noQ1",
+    "AB_paper_data_batch19_25dB_DACatten_noQ5",
+    "AB_paper_data_batch20_25dB_DACatten_noQ5",
+    "AB_paper_data_batch21_25dB_DACatten_noQ5"]
 #-------------------------------------------------------------------------------- Assign func variables depending on run number ---------------------------------------------------------------------------
 if run_num == 6: # We have science-run data as well as pre-science-run data available
     Science_Qubits = [0, 4]
