@@ -672,36 +672,12 @@ boxwhisker_t1t2_per_qubit_vs_run(
     t1_vals_by_run=t1_vals_by_run,
     t2r_vals_by_run=t2r_vals_by_run,
     t2e_vals_by_run=t2e_vals_by_run,
-    do_T1=True, do_T2R=False, do_T2E=False,
-    ylims=(0, 140),
-    yticks=np.arange(0, 141, 20),
-    mode="separate",
-    save_plt_path = "/home/acolonce/Documents/analysis/multirun/coherence" #cosmiqserver01
-                    # '/data/QICK_data/multirun_analysis/coherence_analysis' #daq01
-)
-boxwhisker_t1t2_per_qubit_vs_run(
-    run_num_list,
-    t1_vals_by_run=t1_vals_by_run,
-    t2r_vals_by_run=t2r_vals_by_run,
-    t2e_vals_by_run=t2e_vals_by_run,
     do_T1=False, do_T2R=False, do_T2E=True,
     ylims=(0, 180),
     yticks=np.arange(0, 181, 20),
     mode="separate",
     save_plt_path = "/home/acolonce/Documents/analysis/multirun/coherence" #cosmiqserver01
                     # '/data/QICK_data/multirun_analysis/coherence_analysis' #daq01
-)
-boxwhisker_t1t2_per_qubit_vs_run(
-    run_num_list,
-    t1_vals_by_run=t1_vals_by_run,
-    t2r_vals_by_run=t2r_vals_by_run,
-    t2e_vals_by_run=t2e_vals_by_run,
-    do_T1=False, do_T2R=True, do_T2E=False,
-    ylims=(0, 140),
-    yticks=np.arange(0, 141, 20),
-    mode="separate",
-    save_plt_path = "/home/acolonce/Documents/analysis/multirun/coherence" #cosmiqserver01
-    # '/data/QICK_data/multirun_analysis/coherence_analysis' # daq01
 )
 
 ## Qubit freq box plots
