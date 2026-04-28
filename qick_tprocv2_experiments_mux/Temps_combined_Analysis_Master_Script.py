@@ -24,6 +24,14 @@ from analysis_006_T1_vs_time_plots import T1VsTime
 from analysis_007_T2R_vs_time_plots import T2rVsTime
 from analysis_008_T2E_vs_time_plots import T2eVsTime
 from AB_Paper_Analysis_Plots import boxwhisker_qtemps_per_qubit_vs_run_choice, boxwhisker_pe_per_qubit_vs_run_hybrid, boxwhisker_ssf_per_qubit_vs_run
+from pathlib import Path
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+def make_paths(base_prefix, relative_batches):
+    paths = []
+    for folder, timestamps in relative_batches.items():
+        for ts in timestamps:
+            paths.append(str(Path(base_prefix) / folder / ts))
+    return paths
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
 run_num = 9
 run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence analysis it's defined in its respective section
@@ -134,7 +142,7 @@ base_dir_pre_sciencerun = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ef_st
 r6_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # Options:
 # "/home/acolonce/Documents/analysis" #cosmiqserver01
-# "/data/QICK_data/run9/6transmon/analysis" #daq01
+# "/data/QICK_data/run6/6transmon/analysis" #daq01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run6" #1hw
 
 # For round robin plots:
@@ -170,7 +178,7 @@ target_dates_qtemps_RPM_run7 = ["2025-07-19", "2025-07-20"]
 r7_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # Options:
 # "/home/acolonce/Documents/analysis" #cosmiqserver01
-# "/data/QICK_data/run9/6transmon/analysis" #daq01
+# "/data/QICK_data/run7/6transmon/analysis" #daq01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run7" #1hw
 
 # For round robin plots:
@@ -207,7 +215,7 @@ target_dates_qtemps_RPM_run8 = [
 r8_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # Options:
 # "/home/acolonce/Documents/analysis" #cosmiqserver01
-# "/data/QICK_data/run9/6transmon/analysis" #daq01
+# "/data/QICK_data/run8/6transmon/analysis" #daq01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run8" #1hw
 
 # For round robin plots:
