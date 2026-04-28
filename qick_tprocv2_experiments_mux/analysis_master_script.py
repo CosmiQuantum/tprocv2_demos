@@ -166,7 +166,7 @@ for run_number in run_num_list:
     if run_number == 8:
         process_shots_t1ge = True
         per_pt_errs_t1 = True
-        run_name = "run8/6transmon/round_robin" 
+        run_name = "run8/6transmon/round_robin"
         # 'run8/6transmon/round_robin/temperature_sweep_qubit_data'
         # 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis'
         data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
@@ -185,7 +185,7 @@ for run_number in run_num_list:
             "ABpaperdata2ndbatch_21dB_DACatten_Q1to5/2025-10-23_00-49-28",  # only T1 shots, no T1 QICK-averaged IQ data
 
             "ABpaperdata3rdbatch_21dB_DACatten_Q1to5/2025-10-23_14-47-22",  # only T1 shots, no T1 QICK-averaged IQ data
-            # "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/2025-10-24_01-41-30",  # no T1 shots saved, only QICK averaged IQ data
+            # "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/2025-10-24_01-41-30",  # no T1 shots saved, only QICK averaged IQ data. Leave commented out. Need to debug script to incorporate this
             "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional/2025-10-24_13-58-37", # From this point forward, both T1 shots and averaged IQ arrays were saved
             "ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional/2025-10-27_14-15-40",
             "ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional/2025-10-27_14-24-29",
