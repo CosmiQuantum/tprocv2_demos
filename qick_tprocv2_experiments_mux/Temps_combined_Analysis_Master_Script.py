@@ -343,19 +343,27 @@ else:
     raise ValueError("You must choose run_num = 6, 7 or 8. Otherwise, define a section for your run of interest.")
 
 #-------------------------------------- For qubit temperature calculations via SSF methods (double gaussian over g-state data and double gaussian over g and e-state data ---------------------------------------------
-# Note: you must write paths in this form: "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_03-03-40"
+# Note: ssf qtemps analysis scripts expect paths in this form: "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_03-03-40"
 # If you want to loop through all the data corresponding to 1 day, you must list all the paths for that day. This method does not accept just a single date as a path.
 # I have included examples for how the paths are structured for each run
 
 # ------------------------------------------------------------------------------------------------run 4--------------------------------------------------------------------------------------------------------------
-paths_SSFmethods_run4 = ["/exp/cosmiq/data/QUIET/QICK_data/run4/6transmon/folders_with_SSF_data_entire_run4/ssf_data_and_readoutopt/2024-11-13_08-23-41"] # this is the only folder with "usable" data for this run
-path_saveplots_fits_run4 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/Qtemps_SSFmethod/Gaussian_Fits_run4" # where to save ssf plots to check gaussian fits
-# path_saveplots_fits = f"/exp/cosmiq/data/home/cosmiq/Analysis/acolonce/RR_metrics/Plots/Qtemps_SSFmethod/geSSF_Fits" # to check g-e SSF Double Gaussian Fits and g-e threshold
-path_saveplots_ssf_qtemps_vsT_run4 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/Qtemps_SSFmethod/Qtemps_vs_Time_run4" # to save qubit temps vs time via ssf methods
+# NOT AB paper data: this is the only folder with "usable" data for this run and there is so little we can't doa  proper analysis.
+paths_SSFmethods_run4 = ["/exp/cosmiq/data/QUIET/QICK_data/run4/6transmon/folders_with_SSF_data_entire_run4/ssf_data_and_readoutopt/2024-11-13_08-23-41"]
 
+# To save plots
+r4_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
+# Options:
+# "/home/acolonce/Documents/analysis" #cosmiqserver01
+# "/data/QICK_data/run4/6transmon/analysis" #daq01
+# "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run4" #1hw
+
+path_saveplots_fits_run4 = f"{r4_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_gaussfits"
+path_saveplots_ssf_qtemps_vsT_run4 = f"{r4_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_analysis"
 # ------------------------------------------------------------------------------------------------run 5----------------------------------------------------------------------------------------------------------
 # All data
 r5_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run5"
+                # Options:
                 #"/data/QICK_data/run5" #daq01
                 # "/exp/cosmiq/data/QUIET/QICK_data/run5" # CEPH
 
@@ -374,15 +382,17 @@ paths_SSFmethods_run5 = [
     f"{r5_path_prefix}/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20/2024-12-20"
 ]
 
-path_saveplots_fits_run5 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r5"
-    # "/data/QICK_data/run5/6transmon/analysis/ssf_qtemps_analysis/GaussFits" # daq01
-    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r5" # where to save ssf plots to check gaussian fits
-path_saveplots_ssf_qtemps_vsT_run5 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/run5_analysis"
-    #"/data/QICK_data/run5/6transmon/analysis/ssf_qtemps_analysis/Qtemps_vs_Time_run" # daq01
-    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/run5_analysis" # to save qubit temps vs time via ssf methods
+# To save plots
+r5_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
+# Options:
+# "/home/acolonce/Documents/analysis" #cosmiqserver01
+# "/data/QICK_data/run5/6transmon/analysis" #daq01
+# "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run5" #1hw
 
+path_saveplots_fits_run5 = f"{r5_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_gaussfits"
+path_saveplots_ssf_qtemps_vsT_run5 = f"{r5_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_analysis"
 # ------------------------------------------------------------------------------------------------run 6------------------------------------------------------------------------------------------------------------
-# Science-Run Data
+# Science-Run Data (only exists on CEPH)
 paths_SSFmethods_SR = [
     "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy1/2025-04-15_21-24-46",
 
@@ -445,7 +455,7 @@ paths_SSFmethods_SR = [
     # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_detuning_24MHz_Q1_substudy1/",
     #"/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/"
 
-# All pre-Science-Run Data
+# All pre-Science-Run Data (also exists on daq01, you can find it here: /data/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data)
 paths_SSFmethods_preSR = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-21",
                         "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-22",
                         "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-23",
@@ -455,11 +465,18 @@ paths_SSFmethods_preSR = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_ro
                         "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-01",
                         "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-02"]
 
-path_saveplots_fits_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r6" # where to save ssf plots to check gaussian fits
-path_saveplots_ssf_qtemps_vsT_run6 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/run6_analysis" # to save qubit temps vs time via ssf methods
+# To save plots
+r6_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
+# Options:
+# "/home/acolonce/Documents/analysis" #cosmiqserver01
+# "/data/QICK_data/run6/6transmon/analysis" #daq01
+# "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run6" #1hw
 
+path_saveplots_fits_run6 = f"{r6_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_gaussfits"
+path_saveplots_ssf_qtemps_vsT_run6 = f"{r6_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_analysis"
 # ----------------------------------------------------------------------------------------------run 7----------------------------------------------------------------------------------------------------------
 r7_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run7"
+                # Options:
                 #"/exp/cosmiq/data/QUIET/QICK_data/run7" # CEPH
                 # "/data/QICK_data/run7" # daq01
 paths_SSFmethods_run7 = [
@@ -470,23 +487,22 @@ paths_SSFmethods_run7 = [
   f"{r7_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data/2025-07-20_06-33-03"
 ]
 
-path_saveplots_fits_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r7"
-    #"/data/QICK_data/run7/6transmon/analysis/ssf_qtemps_analysis/GaussFits_r7" # daq01
-    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r7" #CEPH
+# To save plots
+r7_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
+# Options:
+# "/home/acolonce/Documents/analysis" #cosmiqserver01
+# "/data/QICK_data/run7/6transmon/analysis" #daq01
+# "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run7" #1hw
 
-path_saveplots_ssf_qtemps_vsT_run7 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run7"
-    # "/data/QICK_data/run7/6transmon/analysis/ssf_qtemps_analysis/Qtemps_vs_Time_run7" # daq01
-    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run7" #CEPH
+path_saveplots_fits_run7 = f"{r7_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_gaussfits"
+path_saveplots_ssf_qtemps_vsT_run7 = f"{r7_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_analysis"
 
 # ----------------------------------------------------------------------------------------------run 8----------------------------------------------------------------------------------------------------------
-# Arianna's local analysis:
-# paths_SSFmethods_run8 = [r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\2025-10-27_22-04-57"]
-# path_saveplots_fits_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\qtemps_ssf_gaussfits" # where to save ssf plots to check gaussian fits
-# path_saveplots_ssf_qtemps_vsT_run8 = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional\qtemps_ssf_analysis\Qtemps_vs_Time_run8" # to save qubit temps vs time via ssf methods
-
 r8_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run8"
                 #"/exp/cosmiq/data/QUIET/QICK_data/run8" # CEPH
                 # "/data/QICK_data/run8" # daq01
+                # r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # Arianna's local pc
+
 # All AB paper data
 paths_SSFmethods_run8 = [ # for daq01 case, need to make CEPH version
   f"{r8_path_prefix}/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_11-09-32",
@@ -518,17 +534,23 @@ paths_SSFmethods_run8 = [ # for daq01 case, need to make CEPH version
   f"{r8_path_prefix}/6transmon/round_robin/19dB_DAC_testdata_allQs/2025-11-01_12-54-55"
 ]
 
-path_saveplots_fits_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r8" #CEPH
-    #"/data/QICK_data/run8/6transmon/analysis/ssf_qtemps_analysis/qtemps_ssf_gaussfits" #daq01 # where to save ssf plots to check gaussian fits
-    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r8" #CEPH
-path_saveplots_ssf_qtemps_vsT_run8 = "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run8" #CEPH
-    # "/data/QICK_data/run8/6transmon/analysis/ssf_qtemps_analysis/qtemps_ssf_analysis" #daq01
-    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run8" #CEPH
+# To save plots
+r8_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
+# Options:
+# "/home/acolonce/Documents/analysis" #cosmiqserver01
+# "/data/QICK_data/run8/6transmon/analysis" #daq01
+# "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run8" #1hw
+# r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # Arianna's local pc
+
+path_saveplots_fits_run8 = f"{r8_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_gaussfits"
+path_saveplots_ssf_qtemps_vsT_run8 = f"{r8_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_analysis"
 
 # ----------------------------------------------------------------------------------------------run 9----------------------------------------------------------------------------------------------------------
 r9_path_prefix = "/data/QICK_data/run9" # daq01
+                # Options:
                 #"/exp/cosmiq/data/QUIET/QICK_data/run9" # CEPH
                 # "/data/QICK_data/run9" # daq01
+                # r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run9" # Arianna's local pc
 # AB paper data
 paths_SSFmethods_run9 = [
     f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47",  # ignore Q4 in this data, punched out too much!!
@@ -586,15 +608,53 @@ paths_SSFmethods_run9 = [
     f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_20-17-04",
     f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_21-22-18",
     f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_22-29-25",
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_23-40-11"
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_23-40-11",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch17_25dB_DACatten_noQ/2026-04-24_00-51-38",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch18_25dB_DACatten_noQ5noQ1/2026-04-24_14-37-30",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-24_18-51-32",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-24_21-13-58",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-24_23-27-19",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-21-18",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-22-27",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-30-29",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-33-26",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-34-54",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-36-30",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-48-04",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-57-26",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_00-04-04",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_00-35-21",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_12-49-11",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_12-55-00",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_12-57-51",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_12-59-36",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_13-02-45",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_13-04-33",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_13-25-03",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_13-27-10",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_13-39-30",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_13-41-18",
+    
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch20_25dB_DACatten_noQ5/2026-04-26_13-45-45",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch20_25dB_DACatten_noQ5/2026-04-26_20-58-39",
+
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch21_25dB_DACatten_noQ5/2026-04-27_08-07-32",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch21_25dB_DACatten_noQ5/2026-04-27_11-41-29",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch21_25dB_DACatten_noQ5/2026-04-27_13-07-15"
 ]
 
-path_saveplots_fits_run9 = "/data/QICK_data/run9/6transmon/analysis/ssf_qtemps_analysis/qtemps_ssf_gaussfits"
-    #"/data/QICK_data/run9/6transmon/analysis/ssf_qtemps_analysis/qtemps_ssf_gaussfits" #daq01 # where to save ssf plots to check gaussian fits
-    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/GaussFits_r9" #CEPH
-path_saveplots_ssf_qtemps_vsT_run9 = "/data/QICK_data/run9/6transmon/analysis/ssf_qtemps_analysis/qtemps_ssf_analysis"
-    # "/data/QICK_data/run9/6transmon/analysis/ssf_qtemps_analysis/qtemps_ssf_analysis" #daq01
-    #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/Qtemps_SSFmethod/Qtemps_vs_Time_run9" #CEPH
+# To save plots
+r9_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
+# Options:
+# "/home/acolonce/Documents/analysis" #cosmiqserver01
+# "/data/QICK_data/run9/6transmon/analysis" #daq01
+# "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run9" #1hw
+
+path_saveplots_fits_run9 = f"{r9_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_gaussfits"
+path_saveplots_ssf_qtemps_vsT_run9 = f"{r9_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_analysis"
 #------------------------------------------------------------------------------ Assign func variables depending on run number ---------------------------------------
 if run_num == 6:  # We have science-run data as well as pre-science-run data available. Note: we already defined Science_Qubits for the science run above.
     paths_SSFmethods = paths_SSFmethods_SR.copy()

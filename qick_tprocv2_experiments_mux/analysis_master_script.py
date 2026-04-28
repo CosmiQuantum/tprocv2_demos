@@ -64,8 +64,10 @@ for run_number in run_num_list:
         process_shots_t1ge = False
         per_pt_errs_t1 = False
         run_name = "run9/6transmon/round_robin_benchmark"
-        data_path = f'/data/QICK_data/{run_name}'
-        plots_path = "/data/QICK_data/run9/6transmon/analysis"
+        data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
+                    # f'/data/QICK_data/{run_name}' #daq01
+        plots_path = "/home/acolonce/Documents/analysis" #cosmiqserver01
+                    # "/data/QICK_data/run9/6transmon/analysis" #daq01
 
         top_folder_dates = [
                             "AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47", # ignore Q4 in this data, punched out too much!!
@@ -123,52 +125,81 @@ for run_number in run_num_list:
                             "AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_20-17-04",
                             "AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_21-22-18",
                             "AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_22-29-25",
-                            "AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_23-40-11"
-                            ]
+                            "AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_23-40-11",
+
+                            "AB_paper_data_batch17_25dB_DACatten_noQ/2026-04-24_00-51-38",
+
+                            "AB_paper_data_batch18_25dB_DACatten_noQ5noQ1/2026-04-24_14-37-30",
+
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-24_18-51-32",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-24_21-13-58",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-24_23-27-19",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-21-18",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-22-27",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-30-29",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-33-26",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-34-54",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-36-30",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-48-04",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-57-26",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_00-04-04",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_00-35-21",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_12-49-11",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_12-55-00",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_12-57-51",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_12-59-36",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_13-02-45",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_13-04-33",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_13-25-03",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_13-27-10",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_13-39-30",
+                            "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_13-41-18",
+
+                            "AB_paper_data_batch20_25dB_DACatten_noQ5/2026-04-26_13-45-45",
+                            "AB_paper_data_batch20_25dB_DACatten_noQ5/2026-04-26_20-58-39",
+
+                            "AB_paper_data_batch21_25dB_DACatten_noQ5/2026-04-27_08-07-32",
+                            "AB_paper_data_batch21_25dB_DACatten_noQ5/2026-04-27_11-41-29",
+                            "AB_paper_data_batch21_25dB_DACatten_noQ5/2026-04-27_13-07-15"
+]
 
     if run_number == 8:
         process_shots_t1ge = True
         per_pt_errs_t1 = True
-        run_name = "run8/6transmon/round_robin/AB_paper_datadump_for_analysis"
+        run_name = "run8/6transmon/round_robin" 
         # 'run8/6transmon/round_robin/temperature_sweep_qubit_data'
         # 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis'
-        data_path = f'/data/QICK_data/{run_name}'
-        plots_path = "/data/QICK_data/run8/6transmon/analysis"
+        data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
+            # f'/data/QICK_data/{run_name}' # daq01
+        plots_path = "/home/acolonce/Documents/analysis" #cosmiqserver01
+            #"/data/QICK_data/run8/6transmon/analysis" #daq01
 
         # all of run 8 data
         top_folder_dates = [
-        "2025-10-19_11-09-32",
-        "2025-10-19_12-05-25",
-        "2025-10-19_19-43-00",
-        "2025-10-19_20-25-18",
-        "2025-10-20_12-10-19",
-        "2025-10-23_00-49-28",
-        "2025-10-23_14-47-22",
-        #"2025-10-24_01-41-30", # no shots saved, only QICK averaged IQ data
-        "2025-10-24_13-58-37",
-        "2025-10-27_14-15-40",
-        "2025-10-27_14-24-29",
-        "2025-10-27_22-04-57",
-        "2025-10-28_21-57-47",
-        "2025-10-29_18-38-25",
-        "2025-10-29_23-48-45",
-        "2025-10-31_01-54-57",
-        "2025-10-31_20-40-11",
-        "2025-11-01_12-54-55",
-    ]
+            "AB_Paper_Data_24hrs/2025-10-19_11-09-32",  # only T1 shots, no T1 QICK-averaged IQ data
+            "AB_Paper_Data_24hrs/2025-10-19_12-05-25",  # only T1 shots, no T1 QICK-averaged IQ data
+            "AB_Paper_Data_24hrs/2025-10-19_19-43-00",  # only T1 shots, no T1 QICK-averaged IQ data
+            "AB_Paper_Data_24hrs/2025-10-19_20-25-18",  # only T1 shots, no T1 QICK-averaged IQ data
+            "AB_Paper_Data_24hrs/2025-10-20_12-10-19",  # only T1 shots, no T1 QICK-averaged IQ data
 
-        # # when saving t1 shots + avg IQ data started
-        # top_folder_dates = [
-        #     "2025-10-24_13-58-37",
-        #     "2025-10-27_14-15-40",
-        #     "2025-10-27_14-24-29",
-        #     "2025-10-27_22-04-57",
-        #     "2025-10-28_21-57-47",
-        #     "2025-10-29_18-38-25",
-        #     "2025-10-29_23-48-45",
-        #     "2025-10-31_01-54-57",
-        #     "2025-10-31_20-40-11",
-        #     "2025-11-01_12-54-55"]
+            "ABpaperdata2ndbatch_21dB_DACatten_Q1to5/2025-10-23_00-49-28",  # only T1 shots, no T1 QICK-averaged IQ data
+
+            "ABpaperdata3rdbatch_21dB_DACatten_Q1to5/2025-10-23_14-47-22",  # only T1 shots, no T1 QICK-averaged IQ data
+            # "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/2025-10-24_01-41-30",  # no T1 shots saved, only QICK averaged IQ data
+            "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional/2025-10-24_13-58-37", # From this point forward, both T1 shots and averaged IQ arrays were saved
+            "ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional/2025-10-27_14-15-40",
+            "ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional/2025-10-27_14-24-29",
+            "ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/2025-10-27_22-04-57",
+
+            "ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-28_21-57-47",
+            "ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-29_18-38-25",
+            "ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-29_23-48-45",
+
+            "18dB_DAC_testdata_allQs_exceptQ4/2025-10-31_01-54-57",
+
+            "19dB_DAC_testdata_allQs/2025-10-31_20-40-11",
+            "19dB_DAC_testdata_allQs/2025-11-01_12-54-55",
+        ]
 
         # All run 8 qubit temperature sweep data except the 200mK dataset bc no qubits visible
         # top_folder_dates = [
@@ -193,8 +224,10 @@ for run_number in run_num_list:
         process_shots_t1ge = False
         per_pt_errs_t1 = False
         run_name = 'run7/6transmon/round_robin_benchmark/AB_paper_data'
-        data_path = f'/data/QICK_data/{run_name}'
-        plots_path = "/data/QICK_data/run7/6transmon/analysis"
+        data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
+            # f'/data/QICK_data/{run_name}' #daq01
+        plots_path = "/home/acolonce/Documents/analysis" #cosmiqserver01
+            #"/data/QICK_data/run7/6transmon/analysis" #daq01
 
         # all dates:
         top_folder_dates = ["2025-07-19_08-34-39",
@@ -207,11 +240,13 @@ for run_number in run_num_list:
         process_shots_t1ge = False
         per_pt_errs_t1 = False
         run_name = 'run6/6transmon'
-        data_path = f'/data/QICK_data/{run_name}'
-        # f'/exp/cosmiq/data/QUIET/QICK_data/{run_name}' # on CEPH
-        plots_path = "/data/QICK_data/run6/6transmon/analysis"
+        data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
+            #f'/data/QICK_data/{run_name}' #daq01
+        plots_path = "/home/acolonce/Documents/analysis" #cosmiqserver01
+            #"/data/QICK_data/run6/6transmon/analysis" #daq01
 
         # all pre-science run data (AB paper data):
+        # Can be found oth locally in daq01 or on CEPH
         top_folder_dates = [
         "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-21",
         "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-22",
@@ -222,7 +257,7 @@ for run_number in run_num_list:
         "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-01",
         "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-02"]
 
-
+        # Science run data: can ONLY be found on CEPH!!
         # If you want to process all "science run" data
         # "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-15_14-47-38",
         # "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-15_18-08-15",
@@ -300,8 +335,10 @@ for run_number in run_num_list:
         process_shots_t1ge = False
         per_pt_errs_t1 = False
         run_name = 'run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20'
-        data_path = f'/data/QICK_data/{run_name}'
-        plots_path = "/data/QICK_data/run5/6transmon/analysis"
+        data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
+            #f'/data/QICK_data/{run_name}' #daq01
+        plots_path = "/home/acolonce/Documents/analysis" #cosmiqserver01
+            #"/data/QICK_data/run5/6transmon/analysis" #daq01
 
         # all dates:
         top_folder_dates = [ # Condensing started 12/8/2024
@@ -321,8 +358,10 @@ for run_number in run_num_list:
         process_shots_t1ge = False
         per_pt_errs_t1 = False
         run_name = 'run4/6transmon/Official_run4_RR_Data_which_started_Nov21'
-        data_path = f'/data/QICK_data/{run_name}'
-        plots_path = "/data/QICK_data/run4/6transmon/analysis"
+        data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
+            #f'/data/QICK_data/{run_name}' #daq01
+        plots_path = "/home/acolonce/Documents/analysis" #cosmiqserver01
+            #"/data/QICK_data/run4/6transmon/analysis" #daq01
 
         # all dates:
         top_folder_dates = [
