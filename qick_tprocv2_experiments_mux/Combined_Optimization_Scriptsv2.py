@@ -52,12 +52,12 @@ n = 1  # Number of rounds
 n_loops = 1 # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [0]
+Qs = [5]
 
 # For 25dB DAC, 4/16
-res_leng_vals = [5.63, 6.0, 5.7, 6.8, 7.0, 8.0]  # 5.63, 25dB [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
-res_gain = [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97]  # 0.8125,25dB, [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
-freq_offsets = [-0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222]  #-0.1500, 0.04, -0.0300 25dB [-0.0214, -0.1286, -0.3000, -0.1556, 0.0, -0.0222]
+res_leng_vals = [5.5, 5.6, 5.7, 6.75, 7.0, 7.7]  # 5.63, 25dB [5.5, 6.0, 5.7, 6.8, 7.0, 8.0] , [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
+res_gain = [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97]  # 0.8125,25dB, [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97], [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
+freq_offsets = [-0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222]  #0.04, -0.0300 25dB [-0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222]
 
 # For 20dB DAC
 # res_leng_vals = [4.25, 5.25, 5.0, 5.0, 6.25, 4.5]  # 4/12, 20dB
@@ -69,7 +69,7 @@ res_freq_ge = [None] * 6 # creates list where the script will be storing the fre
 
 j=0 # round number, from RR code. Not really used here since we just run it once for each qubit
 
-lengs = np.arange(5.0, 6.0, 0.10)
+lengs = np.arange(7.5, 8.2, 0.10)
 
 start=time.time()
 
@@ -324,8 +324,8 @@ for QubitIndex in Qs:
             gain_range = [0.8, 1.0]
             gain_steps = 10
         elif QubitIndex == 3:
-            gain_range = [0.6, 0.64]
-            gain_steps = 11
+            gain_range = [0.6, 0.622]
+            gain_steps = 6
         elif QubitIndex == 4:
             gain_range = [0.7, 1.0]
             gain_steps = 15
@@ -339,7 +339,7 @@ for QubitIndex in Qs:
         # Select the reference frequency for the current resonator
         reference_frequency = res_freq_ge[QubitIndex]
 
-        freq_range = [reference_frequency - 0.15, reference_frequency + 0.15] # Frequency range in MHz
+        freq_range = [reference_frequency - 0.2, reference_frequency + 0.2] # Frequency range in MHz
 
         experiment = copy.deepcopy(tuned_experiment)
 

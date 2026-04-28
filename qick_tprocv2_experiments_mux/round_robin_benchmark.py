@@ -76,9 +76,9 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss":
 #              "rabi_pop_meas": False, "ef_Rabi": False}
 
 # For 25dB DAC, 4/21
-res_leng_vals = [5.5, 6.0, 5.7, 6.8, 7.0, 8.0]  # 5.63, 25dB [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
-res_gain = [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97]  # 0.8125,25dB, [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
-freq_offsets = [-0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222]  #-0.1500, 0.04, -0.0300 25dB [-0.0214, -0.1286, -0.3000, -0.1556, 0.0, -0.0222]
+res_leng_vals = [5.5, 5.6, 5.7, 6.75, 7.0, 7.65]  # 5.63, 25dB [5.5, 6.0, 5.7, 6.8, 7.0, 8.0] , [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
+res_gain = [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97]  # 0.8125,25dB, [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97], [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
+freq_offsets = [-0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222]  #0.04, -0.0300 25dB [-0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222]
 
 # For 20dB DAC
 # res_leng_vals = [4.25, 5.25, 5.0, 5.0, 6.25, 4.5]  # 4/12, 20dB
@@ -96,7 +96,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts
-sub_study = 'AB_paper_data_batch19_25dB_DACatten_noQ5' # DACatten_SSF_inv_allQs_25dB_junk, AB_paper_data_batch19_25dB_DACatten_noQ5, AB_paper_data_25dB_DACatten_noQ5_batch1, AB_paper_data_25dB_DACatten_onlyQ4_batch2
+sub_study = 'AB_paper_data_batch21_25dB_DACatten_noQ5' # DACatten_SSF_inv_allQs_25dB_junk, AB_paper_data_batch20_25dB_DACatten_noQ5, AB_paper_data_25dB_DACatten_noQ5_batch1, AB_paper_data_25dB_DACatten_onlyQ4_batch2
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -618,7 +618,7 @@ while j < n:
 
                     if QubitIndex == 5:
                         increase_qubit_reps2_rpm = True
-                        increase_qubit_reps2_rpm_to = 23000
+                        increase_qubit_reps2_rpm_to = 28000
                         reduce_rlx_delay_rpm = True
                         reduce_rlx_delay_rpm_to = 650
                     #
@@ -632,7 +632,7 @@ while j < n:
 
                     if QubitIndex == 0:
                         increase_qubit_reps2_rpm = True
-                        increase_qubit_reps2_rpm_to = 12000
+                        increase_qubit_reps2_rpm_to = 15000
 
                     efAmprabi_Qtemps = Temps_EFAmpRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits,
                                                                  studyDocumentationFolder,

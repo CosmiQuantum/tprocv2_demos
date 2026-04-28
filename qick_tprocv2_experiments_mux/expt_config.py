@@ -225,7 +225,7 @@ if FRIDGE == "QUIET":
 
         "power_rabi_ef": {
             "reps": 120,#400, # for Pg pulse sequence during rpm, or regular ef rabi
-            "reps2": 5000, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures (rpm). Pe pulse sequence
+            "reps2": 5500, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures (rpm). Pe pulse sequence
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
             "stop": [1.0] * 6,  # [DAC units]
@@ -479,7 +479,7 @@ if FRIDGE == "QUIET":
     # #
 
         "Readout_Optimization":{
-            "steps": 10000, # shots
+            "steps": 15000, # shots
             "py_avg": 1,
             "gain_start" : [0, 0, 0, 0],
             "gain_stop" : [1, 0, 0, 0],
@@ -569,7 +569,7 @@ elif FRIDGE == "NEXUS":
         },
 
         "Readout_Optimization": {
-            "steps": 10000,  # shots
+            "steps": 15000,  # shots
             "py_avg": 1,
             "gain_start": [0, 0, 0, 0],
             "gain_stop": [1, 0, 0, 0],
