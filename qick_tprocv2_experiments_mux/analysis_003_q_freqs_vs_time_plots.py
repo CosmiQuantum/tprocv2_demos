@@ -140,6 +140,7 @@ class QubitFreqsVsTime:
                     outerFolder = timestamp_dir + "/study_data/"  # where data is stored
 
                 #outerFolder_save_plots = timestamp_dir + "/documentation/" # where plots will be stored
+                print("Looking inside: ", outerFolder)
 
             elif self.fridge.upper() == 'NEXUS':
                 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
@@ -204,8 +205,7 @@ class QubitFreqsVsTime:
 
                 for q_key in load_data[f'qspec{exp_extension}']:
                     # Run 9 patch, accidentally took punched out data for Q4, bad.
-                    if (self.run_name == "AB_paper_data_batch1_25dB_DACatten_noQ5"
-                        and folder_date == "2026-04-17_00-34-47"
+                    if ("AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47" in folder_date
                         and int(q_key) == 3):
                         print(f"Skipping Q4 data due to punchout in {self.run_name}/{folder_date}")
                         continue
@@ -313,7 +313,6 @@ class QubitFreqsVsTime:
                             # else:
                             #     if (q_key == 1 or q_key == 4) and "run6" in self.run_name:
                             #         qspec_class_instance.plot_results(I, Q, freqs)
-
                             del qspec_class_instance
 
                 del H5_class_instance
@@ -322,7 +321,7 @@ class QubitFreqsVsTime:
     def plot_without_errs(self, date_times, qubit_frequencies, show_legends):
         # ---------------------------------plot-----------------------------------------------------
         self.create_folder_if_not_exists(self.plots_path)
-        analysis_folder = os.path.join(self.plots_path, "benchmark_analysis_plots/features_vs_time/")
+        analysis_folder = os.path.join(self.plots_path, "features_vs_time/")
         self.create_folder_if_not_exists(analysis_folder)
         
         # ----------------To Plot a specific timeframe------------------
@@ -402,18 +401,8 @@ class QubitFreqsVsTime:
 
     def plot_hist(self,  qubit_frequencies, show_legends):
         # ---------------------------------Setup Analysis Folder-----------------------------------------------------
-        if self.fridge.upper() == 'QUIET':
-            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
-            self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
-            self.create_folder_if_not_exists(analysis_folder)
-        elif self.fridge.upper() == 'NEXUS':
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
-            self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
-            self.create_folder_if_not_exists(analysis_folder)
-        else:
-            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+        analysis_folder = f"{self.plots_path}/histograms/"
+        self.create_folder_if_not_exists(analysis_folder)
 
         # ----------------Histogram Plotting of Qubit Frequencies------------------
         font = 14
@@ -477,7 +466,7 @@ class QubitFreqsVsTime:
     def plot_with_errs(self, date_times, qubit_frequencies, qspec_fit_err, show_legends, exp_extension=''):
         # ---------------------------------plot path-----------------------------------------------------
         self.create_folder_if_not_exists(self.plots_path)
-        analysis_folder = os.path.join(self.plots_path, "benchmark_analysis_plots/features_vs_time/")
+        analysis_folder = os.path.join(self.plots_path, "features_vs_time/")
         self.create_folder_if_not_exists(analysis_folder)
 
         font = 18
@@ -581,7 +570,7 @@ class QubitFreqsVsTime:
     def plot_with_errs_single_plot(self, date_times, qubit_frequencies, qspec_fit_err, show_legends):
         # ---------------------------------folder setup-----------------------------------------------------
         self.create_folder_if_not_exists(self.plots_path)
-        analysis_folder = os.path.join(self.plots_path, "benchmark_analysis_plots/features_vs_time/")
+        analysis_folder = os.path.join(self.plots_path, "features_vs_time/")
         self.create_folder_if_not_exists(analysis_folder)
 
         from datetime import datetime

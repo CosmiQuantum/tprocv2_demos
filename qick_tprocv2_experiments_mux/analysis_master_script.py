@@ -1,7 +1,7 @@
 # from syspurpose.files import three_way_merge
 import sys
 import os
-sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+#sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_008_save_data_to_h5 import Data_H5
 from analysis_000_load_configs import LoadConfigs
 from analysis_001_plot_all_RR_h5 import PlotAllRR
@@ -66,7 +66,7 @@ for run_number in run_num_list:
         run_name = "run9/6transmon/round_robin_benchmark"
         data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
                     # f'/data/QICK_data/{run_name}' #daq01
-        plots_path = "/home/acolonce/Documents/analysis" #cosmiqserver01
+        plots_path = "/home/acolonce/Documents/analysis/coherence" #cosmiqserver01
                     # "/data/QICK_data/run9/6transmon/analysis" #daq01
 
         top_folder_dates = [
@@ -80,7 +80,7 @@ for run_number in run_num_list:
                             "AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_23-47-15",
                             "AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_00-42-05",
                             "AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_11-24-10",
-                            " AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_13-25-28",
+                            "AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_13-25-28",
 
                             "AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-18_23-06-45",
                             "AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_00-16-08",
@@ -127,7 +127,7 @@ for run_number in run_num_list:
                             "AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_22-29-25",
                             "AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_23-40-11",
 
-                            "AB_paper_data_batch17_25dB_DACatten_noQ/2026-04-24_00-51-38",
+                            "AB_paper_data_batch17_25dB_DACatten_noQ5/2026-04-24_00-51-38",
 
                             "AB_paper_data_batch18_25dB_DACatten_noQ5noQ1/2026-04-24_14-37-30",
 
@@ -160,8 +160,10 @@ for run_number in run_num_list:
 
                             "AB_paper_data_batch21_25dB_DACatten_noQ5/2026-04-27_08-07-32",
                             "AB_paper_data_batch21_25dB_DACatten_noQ5/2026-04-27_11-41-29",
-                            "AB_paper_data_batch21_25dB_DACatten_noQ5/2026-04-27_13-07-15"
-]
+                            "AB_paper_data_batch21_25dB_DACatten_noQ5/2026-04-27_13-07-15"]
+        print("data_path =", repr(data_path))
+        print("exists?", os.path.isdir(data_path))
+        print("first few folders:", os.listdir(data_path)[:5])
 
     if run_number == 8:
         process_shots_t1ge = True
@@ -171,7 +173,7 @@ for run_number in run_num_list:
         # 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis'
         data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
             # f'/data/QICK_data/{run_name}' # daq01
-        plots_path = "/home/acolonce/Documents/analysis" #cosmiqserver01
+        plots_path = "/home/acolonce/Documents/analysis/coherence" #cosmiqserver01
             #"/data/QICK_data/run8/6transmon/analysis" #daq01
 
         # all of run 8 data
@@ -226,7 +228,7 @@ for run_number in run_num_list:
         run_name = 'run7/6transmon/round_robin_benchmark/AB_paper_data'
         data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
             # f'/data/QICK_data/{run_name}' #daq01
-        plots_path = "/home/acolonce/Documents/analysis" #cosmiqserver01
+        plots_path = "/home/acolonce/Documents/analysis/coherence" #cosmiqserver01
             #"/data/QICK_data/run7/6transmon/analysis" #daq01
 
         # all dates:
@@ -242,7 +244,7 @@ for run_number in run_num_list:
         run_name = 'run6/6transmon'
         data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
             #f'/data/QICK_data/{run_name}' #daq01
-        plots_path = "/home/acolonce/Documents/analysis" #cosmiqserver01
+        plots_path = "/home/acolonce/Documents/analysis/coherence" #cosmiqserver01
             #"/data/QICK_data/run6/6transmon/analysis" #daq01
 
         # all pre-science run data (AB paper data):
@@ -337,7 +339,7 @@ for run_number in run_num_list:
         run_name = 'run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20'
         data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
             #f'/data/QICK_data/{run_name}' #daq01
-        plots_path = "/home/acolonce/Documents/analysis" #cosmiqserver01
+        plots_path = "/home/acolonce/Documents/analysis/coherence" #cosmiqserver01
             #"/data/QICK_data/run5/6transmon/analysis" #daq01
 
         # all dates:
@@ -360,7 +362,7 @@ for run_number in run_num_list:
         run_name = 'run4/6transmon/Official_run4_RR_Data_which_started_Nov21'
         data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
             #f'/data/QICK_data/{run_name}' #daq01
-        plots_path = "/home/acolonce/Documents/analysis" #cosmiqserver01
+        plots_path = "/home/acolonce/Documents/analysis/coherence" #cosmiqserver01
             #"/data/QICK_data/run4/6transmon/analysis" #daq01
 
         # all dates:
@@ -380,24 +382,24 @@ for run_number in run_num_list:
     #                                        save_figs, fit_saved, signal, run_name, FRIDGE)
     # date_times_res_spec, res_freqs = res_spec_vs_time.run()
     # #
-    # q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-    #                                   save_figs, fit_saved, signal, run_name, FRIDGE)
-    # date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
+    q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+                                      save_figs, fit_saved, signal, run_name, FRIDGE)
+    date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
 
-    # print("qspec fit errs Q1: ", qspec_fit_err[0])
-    # print("mean qspec fit err Q1: ", np.mean(qspec_fit_err[0]))
+    #print("qspec fit errs Q1: ", qspec_fit_err[0])
+    #print("mean qspec fit err Q1: ", np.mean(qspec_fit_err[0]))
 
     # pi_amps_vs_time = PiAmpsVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
     #                               fit_saved,signal, run_name)
     # date_times_pi_amps, pi_amps = pi_amps_vs_time.run(plot_depths=False)
 
-    # t1_vs_time = T1VsTime(plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-    #                  signal, run_name, FRIDGE, run_number, per_pt_errs = per_pt_errs_t1)
-    #
-    # if per_pt_errs_t1 and process_shots_t1ge: # this will only work if process_shots_t1ge is set to True too
-    #     date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge)
-    # else:
-    #     date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge')
+    t1_vs_time = T1VsTime(plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
+                     signal, run_name, FRIDGE, run_number, per_pt_errs = per_pt_errs_t1)
+
+    if per_pt_errs_t1 and process_shots_t1ge: # this will only work if process_shots_t1ge is set to True too
+        date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge)
+    else:
+        date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge')
 
     t2r_vs_time = T2rVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
                             fit_saved, signal, run_name, FRIDGE)
@@ -409,8 +411,8 @@ for run_number in run_num_list:
 
     # ---------------- Store results ----------------
     ## stores data like t1_vals_by_run[6][3], where 6=run number and 3=qubit index (0 based)
-    # t1_vals_by_run[run_number] = t1_vals
-    # t1_errs_by_run[run_number] = t1_fit_err
+    t1_vals_by_run[run_number] = t1_vals
+    t1_errs_by_run[run_number] = t1_fit_err
 
     t2r_vals_by_run[run_number] = t2r_vals
     t2r_errs_by_run[run_number] = t2r_fit_err
@@ -418,8 +420,8 @@ for run_number in run_num_list:
     t2e_vals_by_run[run_number] = t2e_vals
     t2e_errs_by_run[run_number] = t2e_fit_err
 
-    # qfreq_vals_by_run[run_number] = q_freqs
-    # qfreq_errs_by_run[run_number] = qspec_fit_err
+    qfreq_vals_by_run[run_number] = q_freqs
+    qfreq_errs_by_run[run_number] = qspec_fit_err
 
 ######################################## Print QICK soccfg live ###########################################
 # If you want to print out the soccfg QICK output, uncomment this:
@@ -427,7 +429,7 @@ for run_number in run_num_list:
 # soc, soccfg = makeProxy()
 # print(soccfg)
 
-######################################## 02: Plot All Individual Data Plots ###########################################
+######################################## 02: Plot All Individual RR Plots ###########################################
 # date = "2025-10-31_20-40-11"
 # #date = "2025-10-27_22-04-57"  #only plot all of the data for one date at a time because there is a lot
 # process_shots_t1 = False # only for analyzing T1 data
@@ -441,7 +443,7 @@ for run_number in run_num_list:
 #outerFolder = f"/data/QICK_data/run8/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/{date}/study_data"
 # outerFolder = fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\19dB_DAC_testdata_allQs\{date}\study_data"
 
-# # ---------------------------------------------- For saving plots ---------------------------------------------
+# # ---------------------------------------------- For saving RR plots ---------------------------------------------
 # outerFolder_save_plots = f"/data/QICK_data/run8/6transmon/replotted_RR_data/{date}/"
 # outerFolder_save_plots = fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\19dB_DAC_testdata_allQs/replotted_RR_data/{date}/"
 # # outerFolder_save_plots = r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/replotted_RR_data/2025-10-27_22-04-57/t2r_ge/"
@@ -457,7 +459,7 @@ for run_number in run_num_list:
 #
 # ######################################### 04: Qubit Freqs vs Time Plots #############################################
 #q_spec_vs_time.plot_without_errs(date_times_q_spec, q_freqs,show_legends)
-#q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends)
+q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends) # shows error bars, do this one!!
 #q_spec_vs_time.plot_with_errs_single_plot(date_times_q_spec, q_freqs, qspec_fit_err, show_legends=True)
 
 # ############################################## 05: Pi Amp vs Time Plots ###############################################
@@ -490,41 +492,42 @@ for run_number in run_num_list:
 #
 # ################################################ 06: T1 vs Time Plots #################################################
 # t1_vs_time.plot_without_errs(date_times_t1, t1_vals, show_legends)
-# t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends)
+t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends) # shows error bars, do thi sone!!
 # t1_vs_time.plot_with_errs_single_plot(date_times_t1, t1_vals, t1_fit_err, show_legends=True)
 #
 # ################################################# 07: T2R vs Time Plots ################################################
 # #t2r_vs_time.plot_without_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends)
-# t2r_vs_time.plot_with_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends)
+t2r_vs_time.plot_with_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends) # shows error bars, do this one!!
 # t2r_vs_time.plot_with_errs_single_plot(date_times_t2r, t2r_vals, t2r_fit_err, show_legends=True)
 #
 # ################################################# 08: T2E vs Time Plots ################################################
 # #t2e_vs_time.plot_without_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
-# t2e_vs_time.plot_with_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
+t2e_vs_time.plot_with_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends) # shows error bars, do this one!!
 # t2e_vs_time.plot_with_errs_single_plot(date_times_t2e, t2e_vals, t2e_fit_err, show_legends=True)
 ############################################### Qubit Frequency hist Plots #############################################
 # qfreq_distribution_plots = QfreqHistPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
 #                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
 # qfreq_distribution_plots.run(q_freqs, qspec_fit_err)
-# ############################################## 09: T1 hist/cumul/err Plots #############################################
+# ######################################### 09: T1 hist/cumul/err Plots (not in use anymore; we use box and whisker plots for medians) #############################################
 # t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
 #                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, run_notes, run_number, fridge=FRIDGE)
 # dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", process_shots = process_shots_t1ge)
 # t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
 
-# # # # ############################################## 10: T2R hist/cumul/err Plots ############################################
+# # # # ###################################### 10: T2R hist/cumul/err Plots (not in use anymore; we use box and whisker plots for medians) ############################################
 # t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
 #                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
 # dates, t2r_vals, t2r_errs = t2r_distribution_plots.run(t1_vals = t1_vals)
 # t2r_std_values, t2r_mean_values = t2r_distribution_plots.plot(dates, t2r_vals, t2r_errs, show_legends)
 # # # # #
-# # # ############################################## 11: T2E hist/cumul/err Plots ############################################
+# # # ####################################### 11: T2E hist/cumul/err Plots (not in use anymore; we use box and whisker plots for medians) ############################################
 # t2e_distribution_plots = T2eHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
 #                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
 # dates, t2e_vals, t2e_errs = t2e_distribution_plots.run(t1_vals = t1_vals)
 # t2e_std_values, t2e_mean_values = t2e_distribution_plots.plot(dates, t2e_vals, t2e_errs, show_legends)
 
 # ############################ 12: Save the Key Statistics for This Run to Compare Later #################################
+# May or may not still work. THis was added by Olivia and used to work before, but Arianna hasn't used it in a while.
 #need to run 00,01, and 08-10 before this to get all of the variables
 # saver = SaveRunData(run_number,FRIDGE, run_notes)
 # saver.run(date_times_res_spec, date_times_q_spec, date_times_pi_amps, date_times_t1, date_times_t2r, date_times_t2e,

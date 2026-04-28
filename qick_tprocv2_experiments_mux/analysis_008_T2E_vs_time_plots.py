@@ -242,11 +242,11 @@ class T2eVsTime:
 
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
-                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
-                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "/documentation/"
+                outerFolder = f"/exp/cosmiq/data/QUIET/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
+                            # f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/" #daq01
+                print('Looking inside: ', outerFolder)
             elif self.fridge.upper() == 'NEXUS':
                 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
-                outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
             else:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
@@ -261,8 +261,7 @@ class T2eVsTime:
                 populated_keys = []
                 for q_key in load_data['T2E']:
                     # Run 9 patch, accidentally took punched out data for Q4, bad.
-                    if (self.run_name == "AB_paper_data_batch1_25dB_DACatten_noQ5"
-                            and folder_date == "2026-04-17_00-34-47"
+                    if ("AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47" in folder_date
                             and int(q_key) == 3):
                         print(f"Skipping Q4 data due to punchout in {self.run_name}/{folder_date}")
                         continue
@@ -387,18 +386,8 @@ class T2eVsTime:
 
     def plot_without_errs(self, date_times, t2e_vals, show_legends):
         # ---------------------------------plot-----------------------------------------------------
-        if self.fridge.upper() == 'QUIET':
-            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
-            self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
-            self.create_folder_if_not_exists(analysis_folder)
-        elif self.fridge.upper() == 'NEXUS':
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
-            self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
-            self.create_folder_if_not_exists(analysis_folder)
-        else:
-            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+        analysis_folder = f"{self.outerFolder_save_plots}/features_vs_time/"
+        self.create_folder_if_not_exists(analysis_folder)
 
         # ----------------To Plot a specific timeframe------------------
         from datetime import datetime
@@ -477,18 +466,8 @@ class T2eVsTime:
 
     def plot_with_errs(self, date_times, t2e_vals, t2e_fit_err, show_legends):
         # ---------------------------------plot-----------------------------------------------------
-        if self.fridge.upper() == 'QUIET':
-            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
-            self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
-            self.create_folder_if_not_exists(analysis_folder)
-        elif self.fridge.upper() == 'NEXUS':
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
-            self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
-            self.create_folder_if_not_exists(analysis_folder)
-        else:
-            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+        analysis_folder = f"{self.outerFolder_save_plots}/features_vs_time/"
+        self.create_folder_if_not_exists(analysis_folder)
 
         # ----------------To Plot a specific timeframe------------------
         from datetime import datetime
@@ -567,18 +546,8 @@ class T2eVsTime:
         plt.close()
 
     def plot_with_errs_single_plot(self, date_times, t2e_vals, t2e_fit_err, show_legends):
-        if self.fridge.upper() == 'QUIET':
-            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
-            self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
-            self.create_folder_if_not_exists(analysis_folder)
-        elif self.fridge.upper() == 'NEXUS':
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
-            self.create_folder_if_not_exists(analysis_folder)
-            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
-            self.create_folder_if_not_exists(analysis_folder)
-        else:
-            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+        analysis_folder = f"{self.outerFolder_save_plots}/features_vs_time/"
+        self.create_folder_if_not_exists(analysis_folder)
         from datetime import datetime
         year = 2025
         month = 1
