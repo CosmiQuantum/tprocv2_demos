@@ -391,13 +391,13 @@ for run_number in run_num_list:
     #                               fit_saved,signal, run_name)
     # date_times_pi_amps, pi_amps = pi_amps_vs_time.run(plot_depths=False)
 
-    t1_vs_time = T1VsTime(plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-                     signal, run_name, FRIDGE, run_number, per_pt_errs = per_pt_errs_t1)
-
-    if per_pt_errs_t1 and process_shots_t1ge: # this will only work if process_shots_t1ge is set to True too
-        date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge)
-    else:
-        date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge')
+    # t1_vs_time = T1VsTime(plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
+    #                  signal, run_name, FRIDGE, run_number, per_pt_errs = per_pt_errs_t1)
+    #
+    # if per_pt_errs_t1 and process_shots_t1ge: # this will only work if process_shots_t1ge is set to True too
+    #     date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge)
+    # else:
+    #     date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge')
 
     t2r_vs_time = T2rVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
                             fit_saved, signal, run_name, FRIDGE)
@@ -409,8 +409,8 @@ for run_number in run_num_list:
 
     # ---------------- Store results ----------------
     ## stores data like t1_vals_by_run[6][3], where 6=run number and 3=qubit index (0 based)
-    t1_vals_by_run[run_number] = t1_vals
-    t1_errs_by_run[run_number] = t1_fit_err
+    # t1_vals_by_run[run_number] = t1_vals
+    # t1_errs_by_run[run_number] = t1_fit_err
 
     t2r_vals_by_run[run_number] = t2r_vals
     t2r_errs_by_run[run_number] = t2r_fit_err
@@ -676,7 +676,8 @@ boxwhisker_t1t2_per_qubit_vs_run(
     ylims=(0, 140),
     yticks=np.arange(0, 141, 20),
     mode="separate",
-    save_plt_path = '/data/QICK_data/multirun_analysis/coherence_analysis'
+    save_plt_path = "/home/acolonce/Documents/analysis/multirun/coherence" #cosmiqserver01
+                    # '/data/QICK_data/multirun_analysis/coherence_analysis' #daq01
 )
 boxwhisker_t1t2_per_qubit_vs_run(
     run_num_list,
@@ -687,7 +688,8 @@ boxwhisker_t1t2_per_qubit_vs_run(
     ylims=(0, 180),
     yticks=np.arange(0, 181, 20),
     mode="separate",
-    save_plt_path = '/data/QICK_data/multirun_analysis/coherence_analysis'
+    save_plt_path = "/home/acolonce/Documents/analysis/multirun/coherence" #cosmiqserver01
+                    # '/data/QICK_data/multirun_analysis/coherence_analysis' #daq01
 )
 boxwhisker_t1t2_per_qubit_vs_run(
     run_num_list,
@@ -698,7 +700,8 @@ boxwhisker_t1t2_per_qubit_vs_run(
     ylims=(0, 140),
     yticks=np.arange(0, 141, 20),
     mode="separate",
-    save_plt_path = '/data/QICK_data/multirun_analysis/coherence_analysis'
+    save_plt_path = "/home/acolonce/Documents/analysis/multirun/coherence" #cosmiqserver01
+    # '/data/QICK_data/multirun_analysis/coherence_analysis' # daq01
 )
 
 ## Qubit freq box plots
