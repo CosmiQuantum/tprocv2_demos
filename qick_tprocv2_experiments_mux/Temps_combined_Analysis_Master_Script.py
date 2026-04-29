@@ -53,6 +53,9 @@ pre_sciencerun6_data = True # Do you also want to incorporate the run 6 pre-scie
 
 use_iminuit_gdoublegauss_ssf = True # do you want to fit the g-state to a double gaussian using iminuit? The default is GMM instead
 
+#Double gaussian fitting is optimized for lower thermal pops (<2%) if this is set to true:
+low_thermal_pops = True if run_num == 9 else False # This run number is specific to QUIET.
+
 rpm_combine_IQ_signal = False # uses ssf angle to rotate rabi population measurement data into a combined IQ signal lying on the same axis
 
 figure_quality = 200
@@ -359,8 +362,8 @@ r4_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # "/data/QICK_data/run4/6transmon/analysis" #daq01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run4" #1hw
 
-path_saveplots_fits_run4 = f"{r4_plts_prefix}/ssf_qtemps_analysis/gaussfits"
-path_saveplots_ssf_qtemps_vsT_run4 = f"{r4_plts_prefix}/ssf_qtemps_analysis"
+path_saveplots_fits_run4 = f"{r4_plts_prefix}/ssf_qtemps/gaussfits"
+path_saveplots_ssf_qtemps_vsT_run4 = f"{r4_plts_prefix}/ssf_qtemps"
 # ------------------------------------------------------------------------------------------------run 5----------------------------------------------------------------------------------------------------------
 # All data
 r5_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run5"
@@ -390,8 +393,8 @@ r5_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # "/data/QICK_data/run5/6transmon/analysis" #daq01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run5" #1hw
 
-path_saveplots_fits_run5 = f"{r5_plts_prefix}/ssf_qtemps_analysis/gaussfits"
-path_saveplots_ssf_qtemps_vsT_run5 = f"{r5_plts_prefix}/ssf_qtemps_analysis"
+path_saveplots_fits_run5 = f"{r5_plts_prefix}/ssf_qtemps/gaussfits"
+path_saveplots_ssf_qtemps_vsT_run5 = f"{r5_plts_prefix}/ssf_qtemps"
 # ------------------------------------------------------------------------------------------------run 6------------------------------------------------------------------------------------------------------------
 # Science-Run Data (only exists on CEPH)
 paths_SSFmethods_SR = [
@@ -473,8 +476,8 @@ r6_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # "/data/QICK_data/run6/6transmon/analysis" #daq01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run6" #1hw
 
-path_saveplots_fits_run6 = f"{r6_plts_prefix}/ssf_qtemps_analysis/gaussfits"
-path_saveplots_ssf_qtemps_vsT_run6 = f"{r6_plts_prefix}/ssf_qtemps_analysis"
+path_saveplots_fits_run6 = f"{r6_plts_prefix}/ssf_qtemps/gaussfits"
+path_saveplots_ssf_qtemps_vsT_run6 = f"{r6_plts_prefix}/ssf_qtemps"
 # ----------------------------------------------------------------------------------------------run 7----------------------------------------------------------------------------------------------------------
 r7_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run7"
                 # Options:
@@ -495,8 +498,8 @@ r7_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # "/data/QICK_data/run7/6transmon/analysis" #daq01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run7" #1hw
 
-path_saveplots_fits_run7 = f"{r7_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_gaussfits"
-path_saveplots_ssf_qtemps_vsT_run7 = f"{r7_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_analysis"
+path_saveplots_fits_run7 = f"{r7_plts_prefix}/ssf_qtemps/qtemps_ssf_gaussfits"
+path_saveplots_ssf_qtemps_vsT_run7 = f"{r7_plts_prefix}/ssf_qtemps/qtemps_ssf_analysis"
 
 # ----------------------------------------------------------------------------------------------run 8----------------------------------------------------------------------------------------------------------
 r8_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run8"
@@ -543,8 +546,8 @@ r8_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run8" #1hw
 # r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # Arianna's local pc
 
-path_saveplots_fits_run8 = f"{r8_plts_prefix}/ssf_qtemps_analysis/gaussfits"
-path_saveplots_ssf_qtemps_vsT_run8 = f"{r8_plts_prefix}/ssf_qtemps_analysis"
+path_saveplots_fits_run8 = f"{r8_plts_prefix}/ssf_qtemps/gaussfits"
+path_saveplots_ssf_qtemps_vsT_run8 = f"{r8_plts_prefix}/ssf_qtemps"
 
 # ----------------------------------------------------------------------------------------------run 9----------------------------------------------------------------------------------------------------------
 r9_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run9"
@@ -654,8 +657,8 @@ r9_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # "/data/QICK_data/run9/6transmon/analysis" #daq01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run9" #1hw
 
-path_saveplots_fits_run9 = f"{r9_plts_prefix}/ssf_qtemps_analysis/gaussfits"
-path_saveplots_ssf_qtemps_vsT_run9 = f"{r9_plts_prefix}/ssf_qtemps_analysis"
+path_saveplots_fits_run9 = f"{r9_plts_prefix}/ssf_qtemps/gaussfits"
+path_saveplots_ssf_qtemps_vsT_run9 = f"{r9_plts_prefix}/ssf_qtemps"
 #------------------------------------------------------------------------------ Assign func variables depending on run number ---------------------------------------
 if run_num == 6:  # We have science-run data as well as pre-science-run data available. Note: we already defined Science_Qubits for the science run above.
     paths_SSFmethods = paths_SSFmethods_SR.copy()
@@ -828,7 +831,8 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
         if use_iminuit_gdoublegauss_ssf:
             # Made a special iminuit-based double gaussian fitting function. For now it is only set up to fit g-state data.
             # optionally saves fitted data and shows which scans were filtered out and which were kept
-            all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=1.0, do_plots=save_figs_SSF, save_figs_path = path_saveplots_fits, dontuse_midpt_thresh = True)
+            all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=1.0, do_plots=save_figs_SSF, save_figs_path = path_saveplots_fits, dontuse_midpt_thresh = True,
+                                                                                                                        low_leakage_mode = low_thermal_pops)
         else:
             all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only = False, fallback_to_threshold = False)
     elif qtemp_method_flags["Qtemps_viaSSF_ge_thresh"]: # Fits both GROUND STATE and PREPARED EXCITED STATE SSF data to a double gaussian ; threshold = midpoint of the two gaussian means
@@ -1116,7 +1120,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
     if comb_analysis_flags["plot_ssf_log_curves"]:
         if not comb_analysis_flags["load_ssf"]:
             raise ValueError('This plot requires comb_analysis_flags["load_ssf"] to be True.')
-        ssf_overlay_save_path = "/data/QICK_data/run9/6transmon/analysis/ssf_qtemps_analysis/ssf_log_curves"
+        ssf_overlay_save_path = "/data/QICK_data/run9/6transmon/analysis/ssf_qtemps/ssf_log_curves"
         for qid in range(tot_num_of_qubits):
             has_any_data = any(
                 run_num in fit_results_g_by_run

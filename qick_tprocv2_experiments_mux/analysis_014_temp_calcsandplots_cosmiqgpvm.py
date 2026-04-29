@@ -523,17 +523,19 @@ class SSFTempCalcAndPlots:
 
         return all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs, fit_results
 
-    def run_ssf_qtemps_iminuit(self, pairs_info, run_num, limit_temp_k=0.8, do_plots = False, save_figs_path = "", dontuse_midpt_thresh = False):
+    def run_ssf_qtemps_iminuit(self, pairs_info, run_num, limit_temp_k=0.8, do_plots = False, save_figs_path = "", dontuse_midpt_thresh = False, low_leakage_mode = False):
         """
         Uses iminuit instead of GMM for double gaussian fitting and minimization.
 
         Parameters
         ----------
-        pairs_info : dict
+        pairs_info : dict of matched up SSF and Qspec files based on timestamps.
             {qubit: [ {"qspec":..., "ssf":..., "qfreq_MHz":<MHz>,
                         "ig_new":<np.ndarray>, "ie_new":<np.ndarray>, "data_timestamp":<unix-time> }, … ]}
         limit_temp_k : float
         Discard temperatures above this value (default 0.8 K → 800 mK).
+        low_leakage_mode: used when fitting SSF data with very smalll thermal populations (example QUIET run 9)
+        dontuse_midpt_thresh: when set to False, uses threshold method. When set to True, uses weights of gaussian mixture as Pg and Pe.
 
         Returns
         -------
@@ -582,7 +584,7 @@ class SSFTempCalcAndPlots:
                 (Pg, Pe, sigma_Pe, m2, means, sigmas, weights, pop_threshold, pop_threshold_err,
                  ground_gaussian, excited_gaussian,
                  ground_data, excited_data, x,
-                 lr_stat, nll1, nll2) = self.fit_double_gaussian_midpoint_iminuit(ig_new, dontuse_midpt_thresh)
+                 lr_stat, nll1, nll2) = self.fit_double_gaussian_midpoint_iminuit(ig_new, dontuse_midpt_thresh, low_leakage_mode)
 
                 # ---------- quality cut (do 2 gaussians fit the data better than a single one?) ---------------------
 
@@ -615,12 +617,12 @@ class SSFTempCalcAndPlots:
                         4: 645,
                         5: 645,  # No good data for this qubit in this run
                         },
-                    9: {0: 1, # not optimized yet for any of the Qs
-                        1: 1,
-                        2: 1,
-                        3: 1,
-                        4: 1,
-                        5: 1,
+                    9: {0: 0, # not optimized yet for any of the Qs
+                        1: 0,
+                        2: 0,
+                        3: 0,
+                        4: 0,
+                        5: 0,
                         }
                 }
 
@@ -665,7 +667,7 @@ class SSFTempCalcAndPlots:
                 sigma_TmK, sigma_Pe_total = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
 
                 # Plotting
-                if do_plots:
+                if do_plots and T_mK < 45:
                     save_figs_path_clean = os.path.join(save_figs_path, f"Q{qid + 1}") # to separate plots by qubit
                     self.plot_gaussians_qtemps(qid, save_figs_path_clean, ig_new, ground_data,
                                                excited_data, ground_gaussian,
@@ -2408,13 +2410,15 @@ class SSFTempCalcAndPlots:
         """Normalized 1D Gaussian pdf."""
         return np.exp(-0.5 * ((x - mu) / sigma) ** 2) / (np.sqrt(2 * np.pi) * sigma)
 
-    def fit_double_gaussian_midpoint_iminuit(self, iq_data, dontuse_midpt_thresh = False):
+    def fit_double_gaussian_midpoint_iminuit(self, iq_data, dontuse_midpt_thresh = False, low_leakage_mode = False):
         """
         Iminuit-based version of fit_double_gaussian_midpoint().
 
         Default: calculates the Pe threshold by finding the midpoint of the two gaussian means.
         If dontuse_midpt_thresh is set to True, it instead uses the underlying probabilities (weights) found during
         the iminuit likelihood minimization process.
+
+        low_leakage_mode is for runs where the thermal population is estimated to be < 2%
 
         Returns:
           Pg, Pe, minuit_2g, means, sigmas, weights,
@@ -2431,18 +2435,25 @@ class SSFTempCalcAndPlots:
         eps = 1e-300  # to avoid log(0)
 
         # -------------------- Initial guesses (shared) --------------------
-        # we always have a dominant left cluster and a smaller excited/leakage Gaussian (tail shifting right)
-        q25, q75 = np.percentile(x, [25, 75])
+        # Usually: dominant left cluster + smaller excited/leakage Gaussian shifted right.
+        q25, q50, q75, q95, q99 = np.percentile(x, [25, 50, 75, 95, 99])
+
         std_all = np.std(x)
         if std_all <= 0:
             std_all = 1.0  # fallback
 
         # ---- initial guesses for 2-Gaussian mixture ----
-        mu1_init = q25
-        mu2_init = q75
+        if low_leakage_mode: # when thermal populations are really low
+            mu1_init = np.percentile(x, 50)
+            mu2_init = np.percentile(x, 99)
+            w1_init = 0.99
+        else:
+            mu1_init = q25
+            mu2_init = q75
+            w1_init = 0.5
+
         sigma1_init = std_all / 2.0
         sigma2_init = std_all / 2.0
-        w1_init = 0.5
 
         # -------------------- 1-Gaussian (null model) --------------------
         def nll_1g(mu, sigma):
