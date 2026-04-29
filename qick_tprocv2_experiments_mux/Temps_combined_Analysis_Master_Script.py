@@ -909,7 +909,8 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
     # Using ground-state double gaussian fit method
     all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=1.0,
-                                                                                                                do_plots = True, save_figs_path = made_on_folder, dontuse_midpt_thresh = True)
+                                                                                                                do_plots = True, save_figs_path = made_on_folder, dontuse_midpt_thresh = True,
+                                                                                                               low_leakage_mode = low_thermal_pops)
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
@@ -1076,7 +1077,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
 
             if use_iminuit_gdoublegauss_ssf: # Made a special iminuit-based double gaussian fitting function, but for now it is only set up to fit g-state data.
                 all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=0.6,
-                    do_plots=False, dontuse_midpt_thresh = True)
+                    do_plots=False, dontuse_midpt_thresh = True, low_leakage_mode = low_thermal_pops)
 
                 # ---- STORE FULL FIT RESULTS FOR SSF LOG OVERLAY PLOTS ----
                 fit_results_g_by_run[run_num] = fit_results_g
@@ -1488,7 +1489,7 @@ if coh_qtemp_ana_flags["load_qtemps"]:
         if use_iminuit_gdoublegauss_ssf:  # Made a special iminuit-based double gaussian fitting function, but for now it is only set up to fit g-state data.
             all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps_iminuit(
                 pairs_info, run_num=run_num, limit_temp_k=0.6,
-                do_plots=False, dontuse_midpt_thresh=True)
+                do_plots=False, dontuse_midpt_thresh=True, low_leakage_mode = low_thermal_pops)
             # ---- STORE RESULTS (SSF g) ----
             ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
 
