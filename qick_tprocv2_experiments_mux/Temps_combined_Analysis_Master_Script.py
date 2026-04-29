@@ -26,6 +26,7 @@ from analysis_008_T2E_vs_time_plots import T2eVsTime
 from AB_Paper_Analysis_Plots import boxwhisker_qtemps_per_qubit_vs_run_choice, boxwhisker_pe_per_qubit_vs_run_hybrid, boxwhisker_ssf_per_qubit_vs_run
 from pathlib import Path
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+# To do: implement this to make SSF paths sections shorter
 def make_paths(base_prefix, relative_batches):
     paths = []
     for folder, timestamps in relative_batches.items():
@@ -61,7 +62,7 @@ tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
 qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_Qtemps": True}
+                      "combined_studies_Qtemps": False}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
@@ -358,8 +359,8 @@ r4_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # "/data/QICK_data/run4/6transmon/analysis" #daq01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run4" #1hw
 
-path_saveplots_fits_run4 = f"{r4_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_gaussfits"
-path_saveplots_ssf_qtemps_vsT_run4 = f"{r4_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_analysis"
+path_saveplots_fits_run4 = f"{r4_plts_prefix}/ssf_qtemps_analysis/gaussfits"
+path_saveplots_ssf_qtemps_vsT_run4 = f"{r4_plts_prefix}/ssf_qtemps_analysis"
 # ------------------------------------------------------------------------------------------------run 5----------------------------------------------------------------------------------------------------------
 # All data
 r5_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run5"
@@ -389,8 +390,8 @@ r5_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # "/data/QICK_data/run5/6transmon/analysis" #daq01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run5" #1hw
 
-path_saveplots_fits_run5 = f"{r5_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_gaussfits"
-path_saveplots_ssf_qtemps_vsT_run5 = f"{r5_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_analysis"
+path_saveplots_fits_run5 = f"{r5_plts_prefix}/ssf_qtemps_analysis/gaussfits"
+path_saveplots_ssf_qtemps_vsT_run5 = f"{r5_plts_prefix}/ssf_qtemps_analysis"
 # ------------------------------------------------------------------------------------------------run 6------------------------------------------------------------------------------------------------------------
 # Science-Run Data (only exists on CEPH)
 paths_SSFmethods_SR = [
@@ -472,8 +473,8 @@ r6_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # "/data/QICK_data/run6/6transmon/analysis" #daq01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run6" #1hw
 
-path_saveplots_fits_run6 = f"{r6_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_gaussfits"
-path_saveplots_ssf_qtemps_vsT_run6 = f"{r6_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_analysis"
+path_saveplots_fits_run6 = f"{r6_plts_prefix}/ssf_qtemps_analysis/gaussfits"
+path_saveplots_ssf_qtemps_vsT_run6 = f"{r6_plts_prefix}/ssf_qtemps_analysis"
 # ----------------------------------------------------------------------------------------------run 7----------------------------------------------------------------------------------------------------------
 r7_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run7"
                 # Options:
@@ -542,8 +543,8 @@ r8_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run8" #1hw
 # r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # Arianna's local pc
 
-path_saveplots_fits_run8 = f"{r8_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_gaussfits"
-path_saveplots_ssf_qtemps_vsT_run8 = f"{r8_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_analysis"
+path_saveplots_fits_run8 = f"{r8_plts_prefix}/ssf_qtemps_analysis/gaussfits"
+path_saveplots_ssf_qtemps_vsT_run8 = f"{r8_plts_prefix}/ssf_qtemps_analysis"
 
 # ----------------------------------------------------------------------------------------------run 9----------------------------------------------------------------------------------------------------------
 r9_path_prefix = "/data/QICK_data/run9" # daq01
@@ -653,8 +654,8 @@ r9_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # "/data/QICK_data/run9/6transmon/analysis" #daq01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run9" #1hw
 
-path_saveplots_fits_run9 = f"{r9_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_gaussfits"
-path_saveplots_ssf_qtemps_vsT_run9 = f"{r9_plts_prefix}/ssf_qtemps_analysis/qtemps_ssf_analysis"
+path_saveplots_fits_run9 = f"{r9_plts_prefix}/ssf_qtemps_analysis/gaussfits"
+path_saveplots_ssf_qtemps_vsT_run9 = f"{r9_plts_prefix}/ssf_qtemps_analysis"
 #------------------------------------------------------------------------------ Assign func variables depending on run number ---------------------------------------
 if run_num == 6:  # We have science-run data as well as pre-science-run data available. Note: we already defined Science_Qubits for the science run above.
     paths_SSFmethods = paths_SSFmethods_SR.copy()

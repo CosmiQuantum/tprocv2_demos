@@ -614,6 +614,13 @@ class SSFTempCalcAndPlots:
                         3: 645,  # No good data for this qubit in this run
                         4: 645,
                         5: 645,  # No good data for this qubit in this run
+                        },
+                    9: {0: 1, # not optimized yet for any of the Qs
+                        1: 1,
+                        2: 1,
+                        3: 1,
+                        4: 1,
+                        5: 1,
                         }
                 }
 
