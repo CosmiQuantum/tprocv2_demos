@@ -617,12 +617,12 @@ class SSFTempCalcAndPlots:
                         4: 645,
                         5: 645,  # No good data for this qubit in this run
                         },
-                    9: {0: 0, # not optimized yet for any of the Qs
-                        1: 0,
-                        2: 0,
-                        3: 0,
-                        4: 0,
-                        5: 0,
+                    9: {0: 749, # not optimized yet for any of the Qs
+                        1: 200,
+                        2: 200,
+                        3: 200,
+                        4: 200,
+                        5: 200,
                         }
                 }
 
@@ -646,6 +646,27 @@ class SSFTempCalcAndPlots:
                                                             title_ext = f"LRT val:{lr_stat:.2f}",
                                                             dontuse_midpt_thresh = dontuse_midpt_thresh, ylim = ssf_hist_ylim)
 
+                    continue
+
+                # ---------------- Run 9 (low_leakage_mode) small-leakage Gaussian spread cut ----------------
+                sigma_g, sigma_e = sigmas
+                sigma_ratio = sigma_e / sigma_g if sigma_g > 0 else np.inf
+                bad_leakage_spread = (
+                        sigma_e <= 0
+                        or sigma_g <= 0
+                        or sigma_ratio > 3.0)
+
+                if low_leakage_mode and bad_leakage_spread:
+                    print(f'low_leakage_mode: Rejected a fit with sigma_e/sigma_g > {sigma_ratio}')
+                    if do_plots and qid == 0:
+                        bad_plots_path = os.path.join(save_figs_path, f"bad_fits_LRT_failed/Q{qid+1}")
+                        os.makedirs(bad_plots_path, exist_ok=True)
+                        self.plot_gaussians_qtemps(qid, bad_plots_path, ig_new, ground_data,
+                                                            excited_data, ground_gaussian,
+                                                            excited_gaussian, pop_threshold,
+                                                            idx, weights, sigmas, means, temperature_mk = None,
+                                                            title_ext = f"sigma_ratio:{sigma_ratio:.2f}",
+                                                            dontuse_midpt_thresh = dontuse_midpt_thresh, ylim = ssf_hist_ylim)
                     continue
 
                 if pop_threshold is not None:

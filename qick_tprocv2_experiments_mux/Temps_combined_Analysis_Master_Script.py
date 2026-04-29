@@ -66,7 +66,7 @@ tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
 qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_Qtemps": False}
+                      "combined_studies_Qtemps": True}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
@@ -74,15 +74,15 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True
                   "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
-comb_analysis_flags = {"load_rpm": False, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
+comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": True, "Pe_vs_time_comb_separate_plts": False,
                        "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
-                       "plot_ssf_log_curves": True}
+                       "plot_ssf_log_curves": False}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 
 # For double-gaussian SSF analysis using alternative methods (does not require any other flags to be set to True above!)
-alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": True}
+alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
 
 # For coherence-qubit temps combined analysis
 coh_qtemp_ana_flags = {"load_qtemps": False, "load_mcp1_temps": False, "load_coherence_res": False, "plot_qtemps_t1_ftemps_qfreq": False}
@@ -153,7 +153,7 @@ r6_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # For round robin plots:
 outerFolder_qtemps_plots_RR_run6 =  f"{r6_plts_prefix}/replotted_RR_data/rabi_pop_meas"
 #For analysis:
-outerFolder_qtemps_plots_run6 = f"{r6_plts_prefix}/Qtemps_RPMmethod"
+outerFolder_qtemps_plots_run6 = f"{r6_plts_prefix}/rpm_qtemps"
 
 # For London Penetration Depth analysis, which is done on run 6 temperature sweep data. This is where we save the plots:
 outerFolder_london_path = f"{r6_plts_prefix}/London_Penetration_Depth"
@@ -189,7 +189,7 @@ r7_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # For round robin plots:
 outerFolder_qtemps_plots_RR_run7 =  f"{r7_plts_prefix}/replotted_RR_data/rabi_pop_meas"
 #For analysis:
-outerFolder_qtemps_plots_run7 = f"{r7_plts_prefix}/Qtemps_RPMmethod"
+outerFolder_qtemps_plots_run7 = f"{r7_plts_prefix}/rpm_qtemps"
 
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name
 # All AB paper data:
@@ -226,7 +226,7 @@ r8_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # For round robin plots:
 outerFolder_qtemps_plots_RR_run8 =  f"{r8_plts_prefix}/replotted_RR_data/rabi_pop_meas"
 #For analysis:
-outerFolder_qtemps_plots_run8 = f"{r8_plts_prefix}/Qtemps_RPMmethod"
+outerFolder_qtemps_plots_run8 = f"{r8_plts_prefix}/rpm_qtemps"
 
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name. THese are substudies.
 # For all AB paper data:
@@ -274,7 +274,7 @@ r9_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # For round robin plots:
 outerFolder_qtemps_plots_RR_run9 =  f"{r9_plts_prefix}/replotted_RR_data/rabi_pop_meas"
 #For analysis:
-outerFolder_qtemps_plots_run9 = f"{r9_plts_prefix}/Qtemps_RPMmethod"
+outerFolder_qtemps_plots_run9 = f"{r9_plts_prefix}/rpm_qtemps"
 
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name. These are substudies.
 filter_keywords_run9 = [
@@ -1122,7 +1122,8 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
     if comb_analysis_flags["plot_ssf_log_curves"]:
         if not comb_analysis_flags["load_ssf"]:
             raise ValueError('This plot requires comb_analysis_flags["load_ssf"] to be True.')
-        ssf_overlay_save_path = "/data/QICK_data/run9/6transmon/analysis/ssf_qtemps/ssf_log_curves"
+        ssf_overlay_save_path = "/home/acolonce/Documents/analysis/ssf_qtemps/ssf_log_curves" # cosmiqserver01
+            #"/data/QICK_data/run9/6transmon/analysis/ssf_qtemps/ssf_log_curves" #daq01
         for qid in range(tot_num_of_qubits):
             has_any_data = any(
                 run_num in fit_results_g_by_run
@@ -1238,8 +1239,8 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         # Makes 1 subplot per qubit (and all methods in a single plot). Note: I removed the ge SSF method from being plotted since we haven't been using that one lately.
         # Plots error bars always, unless you pass None instead of all_qubit_temps_errs_g.
         combined_studies.Qtemps_vs_time_comb_allQs_1col(all_qubit_temps_g, all_qubit_times_g, outerFolder_qtemps_plots,
-                                                     all_files_Qtemp_results_RPMs, all_qubit_temps_errs_g, restrict_time_yaxis = True, ylims = [55,110],
-                                                        rad_events_plot_lines = False, qubits_to_plot = [0,1,2,4],
+                                                     all_files_Qtemp_results_RPMs, all_qubit_temps_errs_g, restrict_time_yaxis = True, ylims = [20,80],
+                                                        rad_events_plot_lines = False, qubits_to_plot = [0],
                                                         plot_rpm_I_only=False, plot_rpm_Q_only=False)
 
     #----------- Thermal Populations vs Time using all three methods ----
