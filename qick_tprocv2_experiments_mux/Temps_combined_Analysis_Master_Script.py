@@ -610,7 +610,7 @@ paths_SSFmethods_run9 = [
     f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_22-29-25",
     f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_23-40-11",
 
-    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch17_25dB_DACatten_noQ/2026-04-24_00-51-38",
+    f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch17_25dB_DACatten_noQ5/2026-04-24_00-51-38",
 
     f"{r9_path_prefix}/6transmon/round_robin_benchmark/AB_paper_data_batch18_25dB_DACatten_noQ5noQ1/2026-04-24_14-37-30",
 
