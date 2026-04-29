@@ -636,7 +636,7 @@ class SSFTempCalcAndPlots:
                     print(f'Rejected a fit with Likelihood ratio test score < {lr_stat_limit}')
                     # not convincingly bimodal --> skip this dataset, it is better described by a single gaussian
 
-                    if do_plots:
+                    if do_plots and qid == 0:
                         bad_plots_path = os.path.join(save_figs_path, f"bad_fits_LRT_failed/Q{qid+1}")
                         os.makedirs(bad_plots_path, exist_ok=True)
                         self.plot_gaussians_qtemps(qid, bad_plots_path, ig_new, ground_data,
@@ -667,7 +667,7 @@ class SSFTempCalcAndPlots:
                 sigma_TmK, sigma_Pe_total = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
 
                 # Plotting
-                if do_plots and T_mK < 45: # run 9 test
+                if do_plots and qid == 0 and T_mK < 45: # run 9 test
                     save_figs_path_clean = os.path.join(save_figs_path, f"Q{qid + 1}") # to separate plots by qubit
                     self.plot_gaussians_qtemps(qid, save_figs_path_clean, ig_new, ground_data,
                                                excited_data, ground_gaussian,
