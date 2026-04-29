@@ -907,6 +907,7 @@ def boxwhisker_t1t2_per_qubit_vs_run(
             if save_plt_path is None:
                 plt.show()
             else:
+                os.makedirs(save_plt_path, exist_ok=True)
                 now = datetime.datetime.now()
                 timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -1246,6 +1247,7 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
         if save_plt_path is None:
             plt.show()
         else:
+            os.makedirs(save_plt_path, exist_ok=True)
             now = datetime.datetime.now()
             timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -1594,6 +1596,7 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
     if save_plt_path is None:
         plt.show()
     else:
+        os.makedirs(save_plt_path, exist_ok=True)
         fname = os.path.join(save_plt_path, "boxwhisk_pe_vs_run_num.pdf")
         fig.savefig(fname, bbox_inches="tight")
         plt.close(fig)
@@ -1761,6 +1764,7 @@ def boxwhisker_qfreq_per_qubit_vs_run(
     if save_plt_path is None:
         plt.show()
     else:
+        os.makedirs(save_plt_path, exist_ok=True)
         now = datetime.datetime.now()
         timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -1971,6 +1975,7 @@ def boxwhisker_ssf_per_qubit_vs_run(
     if save_plt_path is None:
         plt.show()
     else:
+        os.makedirs(save_plt_path, exist_ok=True)
         fname = os.path.join(save_plt_path, save_name)
         fig.savefig(fname, bbox_inches="tight")
         plt.close(fig)

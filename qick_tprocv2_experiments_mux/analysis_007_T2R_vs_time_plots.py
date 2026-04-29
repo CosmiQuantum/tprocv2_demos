@@ -475,6 +475,9 @@ class T2rVsTime:
 
             combined = list(zip(datetime_objects, y, err))
             combined.sort(key=lambda tup: tup[0])
+            if len(combined) == 0:
+                ax.set_visible(False)
+                continue
             sorted_x, sorted_y, sorted_err = zip(*combined)
             sorted_x = np.array(sorted_x)
 
