@@ -547,7 +547,7 @@ path_saveplots_fits_run8 = f"{r8_plts_prefix}/ssf_qtemps_analysis/gaussfits"
 path_saveplots_ssf_qtemps_vsT_run8 = f"{r8_plts_prefix}/ssf_qtemps_analysis"
 
 # ----------------------------------------------------------------------------------------------run 9----------------------------------------------------------------------------------------------------------
-r9_path_prefix = "/data/QICK_data/run9" # daq01
+r9_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run9"
                 # Options:
                 #"/exp/cosmiq/data/QUIET/QICK_data/run9" # CEPH
                 # "/data/QICK_data/run9" # daq01
