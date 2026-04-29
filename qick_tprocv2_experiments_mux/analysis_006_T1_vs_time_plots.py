@@ -343,13 +343,14 @@ class T1VsTime:
                             Qshots_raw = self.process_h5_data(load_data[f't1{exp_extension}'][q_key][Q_key][0][dataset].decode())
 
                             # --- path to the soccfg dump (txt file made with save_run_soccfg_params.py) ---
-                            if self.run_number == 9:
-                                soccfg_dump_path = "/data/QICK_data/run9/6transmon/run9_soccfg_params/soccfg_full_dump_2026-04-20_21-30-15_firmware_during_run9.txt"
-                            if self.run_number == 8:  # this does work
+                            if self.run_number == 9: #This works
+                                soccfg_dump_path = "/exp/cosmiq/data/QUIET/QICK_data/run9/6transmon/run9_soccfg_params/soccfg_full_dump_2026-04-20_21-30-15_firmware_during_run9.txt"
+                                    #"/data/QICK_data/run9/6transmon/run9_soccfg_params/soccfg_full_dump_2026-04-20_21-30-15_firmware_during_run9.txt" #daq01
+                            if self.run_number == 8:  # This works
                                 soccfg_dump_path = "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
                                     # r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
                                     # "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
-                            elif self.run_number == 6:  # this doesn't work yet (shots need to be processed diff for run 6) but the skeleton is set up
+                            elif self.run_number == 6:  # This doesn't work yet (shots need to be processed diff for run 6) but the skeleton is set up
                                 soccfg_dump_path = "/data/QICK_data/run6/6transmon/loud2_soccfg_params/soccfg_full_dump_2025-11-04_16-30-54_firmware_during_run6.txt"
 
                             # --- init offline replica (no live soccfg) and set it up from strings + dump ---
@@ -437,8 +438,9 @@ class T1VsTime:
                                 continue
                             #---------------------------------------------------------------------------------------------
 
-                            # # To look at T1 plots of data that made it through you can uncomment this:
-                            # T1_class_instance.plot_results(I, Q, delay_times, folder_date, iminuit_fit_instead=True)
+                            ## To look at T1 plots of data that made it through you can uncomment this:
+                            ## and remember to set save figs to true in analysis master script
+                            #T1_class_instance.plot_results(I, Q, delay_times, folder_date, iminuit_fit_instead=True)
 
                             # if T1_err >= 0.8 * T1_est:
                             #     print(
