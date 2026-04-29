@@ -245,7 +245,7 @@ for run_number in run_num_list:
             #"/data/QICK_data/run6/6transmon/analysis" #daq01
 
         # all pre-science run data (AB paper data):
-        # Can be found oth locally in daq01 or on CEPH
+        # Can be found both locally in daq01 or on CEPH
         top_folder_dates = [
         "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-21",
         "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-22",

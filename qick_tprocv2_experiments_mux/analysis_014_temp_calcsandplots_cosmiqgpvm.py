@@ -667,7 +667,7 @@ class SSFTempCalcAndPlots:
                 sigma_TmK, sigma_Pe_total = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
 
                 # Plotting
-                if do_plots and T_mK < 45:
+                if do_plots and T_mK < 45: # run 9 test
                     save_figs_path_clean = os.path.join(save_figs_path, f"Q{qid + 1}") # to separate plots by qubit
                     self.plot_gaussians_qtemps(qid, save_figs_path_clean, ig_new, ground_data,
                                                excited_data, ground_gaussian,

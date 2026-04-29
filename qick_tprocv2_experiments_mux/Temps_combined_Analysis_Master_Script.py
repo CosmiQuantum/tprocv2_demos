@@ -55,7 +55,7 @@ use_iminuit_gdoublegauss_ssf = True # do you want to fit the g-state to a double
 #Double gaussian fitting is optimized for lower thermal pops (<2%) if this is set to true:
 low_thermal_pops = True if run_num == 9 else False # This run number is specific to QUIET.
 # When re-plotting SSF g-state histograms using iminuit, do you want to limit y-axis to see thermal pop region better?:
-ssf_hist_ylim = 30 
+ssf_hist_ylim = 30
 
 rpm_combine_IQ_signal = False # uses ssf angle to rotate rabi population measurement data into a combined IQ signal lying on the same axis
 
@@ -138,11 +138,11 @@ target_dates_qtemps_RPM_presciencerun = ['2025-04-11', '2025-04-12']
 
 # Base path of where the data is stored up to the Study Name (TLS_Comprehensive_Study or ef_studies_pre_science_run)
 base_dir_sciencerun = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study" # for QUIET run 6 science run data
-                    # Options:
-                    # "/data/QICK_data/run6/6transmon/round_robin_benchmark" # daq01
-                    # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study" #CEPH
+                    # Options: no other options. Science run data is only on CEPH
 base_dir_pre_sciencerun = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ef_studies_pre_science_run" # for run 6 pre-science run data
-                    # Options: No other path options available. Science run data is only on CEPH.
+                    # Options:
+                    # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ef_studies_pre_science_run" # CEPH
+                    # "/data/QICK_data/run6/6transmon/ef_studies_pre_science_run" # daq01
 # To save plots
 r6_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # Options:
