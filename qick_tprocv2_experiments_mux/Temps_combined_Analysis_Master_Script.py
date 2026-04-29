@@ -52,9 +52,10 @@ get_london_data = False # This returns RPM qubit temperatures, resonator freqs, 
 pre_sciencerun6_data = True # Do you also want to incorporate the run 6 pre-science run data? This only applies when run_num = 6
 
 use_iminuit_gdoublegauss_ssf = True # do you want to fit the g-state to a double gaussian using iminuit? The default is GMM instead
-
 #Double gaussian fitting is optimized for lower thermal pops (<2%) if this is set to true:
 low_thermal_pops = True if run_num == 9 else False # This run number is specific to QUIET.
+# When re-plotting SSF g-state histograms using iminuit, do you want to limit y-axis to see thermal pop region better?:
+ssf_hist_ylim = 30 
 
 rpm_combine_IQ_signal = False # uses ssf angle to rotate rabi population measurement data into a combined IQ signal lying on the same axis
 
@@ -832,7 +833,7 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
             # Made a special iminuit-based double gaussian fitting function. For now it is only set up to fit g-state data.
             # optionally saves fitted data and shows which scans were filtered out and which were kept
             all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=1.0, do_plots=save_figs_SSF, save_figs_path = path_saveplots_fits, dontuse_midpt_thresh = True,
-                                                                                                                        low_leakage_mode = low_thermal_pops)
+                                                                                                                        low_leakage_mode = low_thermal_pops, ssf_hist_ylim = ssf_hist_ylim)
         else:
             all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only = False, fallback_to_threshold = False)
     elif qtemp_method_flags["Qtemps_viaSSF_ge_thresh"]: # Fits both GROUND STATE and PREPARED EXCITED STATE SSF data to a double gaussian ; threshold = midpoint of the two gaussian means
@@ -910,7 +911,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
     # Using ground-state double gaussian fit method
     all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=1.0,
                                                                                                                 do_plots = True, save_figs_path = made_on_folder, dontuse_midpt_thresh = True,
-                                                                                                               low_leakage_mode = low_thermal_pops)
+                                                                                                               low_leakage_mode = low_thermal_pops, ssf_hist_ylim = ssf_hist_ylim)
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
@@ -1077,7 +1078,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
 
             if use_iminuit_gdoublegauss_ssf: # Made a special iminuit-based double gaussian fitting function, but for now it is only set up to fit g-state data.
                 all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=0.6,
-                    do_plots=False, dontuse_midpt_thresh = True, low_leakage_mode = low_thermal_pops)
+                    do_plots=False, dontuse_midpt_thresh = True, low_leakage_mode = low_thermal_pops, ssf_hist_ylim = ssf_hist_ylim)
 
                 # ---- STORE FULL FIT RESULTS FOR SSF LOG OVERLAY PLOTS ----
                 fit_results_g_by_run[run_num] = fit_results_g
@@ -1489,7 +1490,7 @@ if coh_qtemp_ana_flags["load_qtemps"]:
         if use_iminuit_gdoublegauss_ssf:  # Made a special iminuit-based double gaussian fitting function, but for now it is only set up to fit g-state data.
             all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps_iminuit(
                 pairs_info, run_num=run_num, limit_temp_k=0.6,
-                do_plots=False, dontuse_midpt_thresh=True, low_leakage_mode = low_thermal_pops)
+                do_plots=False, dontuse_midpt_thresh=True, low_leakage_mode = low_thermal_pops, ssf_hist_ylim = ssf_hist_ylim)
             # ---- STORE RESULTS (SSF g) ----
             ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
 

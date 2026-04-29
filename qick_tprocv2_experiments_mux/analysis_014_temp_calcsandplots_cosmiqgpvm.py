@@ -523,7 +523,7 @@ class SSFTempCalcAndPlots:
 
         return all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs, fit_results
 
-    def run_ssf_qtemps_iminuit(self, pairs_info, run_num, limit_temp_k=0.8, do_plots = False, save_figs_path = "", dontuse_midpt_thresh = False, low_leakage_mode = False):
+    def run_ssf_qtemps_iminuit(self, pairs_info, run_num, limit_temp_k=0.8, do_plots = False, save_figs_path = "", dontuse_midpt_thresh = False, low_leakage_mode = False, ssf_hist_ylim = None):
         """
         Uses iminuit instead of GMM for double gaussian fitting and minimization.
 
@@ -644,7 +644,7 @@ class SSFTempCalcAndPlots:
                                                             excited_gaussian, pop_threshold,
                                                             idx, weights, sigmas, means, temperature_mk = None,
                                                             title_ext = f"LRT val:{lr_stat:.2f}",
-                                                            dontuse_midpt_thresh = dontuse_midpt_thresh)
+                                                            dontuse_midpt_thresh = dontuse_midpt_thresh, ylim = ssf_hist_ylim)
 
                     continue
 
@@ -674,7 +674,7 @@ class SSFTempCalcAndPlots:
                                                excited_gaussian, pop_threshold,
                                                idx, weights,
                                                sigmas, means, T_mK, title_ext=f"{datetime.datetime.fromtimestamp(ts_unix)} Qfreq:{freq_mhz:.2f}MHz, LRT val:{lr_stat:.2f}",
-                                               dontuse_midpt_thresh = dontuse_midpt_thresh)
+                                               dontuse_midpt_thresh = dontuse_midpt_thresh, ylim = ssf_hist_ylim)
 
                 # -------- save qubit temps and timestamps ----------------------------------------------
                 all_qubit_temperatures[qid].append(T_mK)  # temperatures in mK
@@ -1270,6 +1270,7 @@ class SSFTempCalcAndPlots:
             title_ext="",
             dontuse_midpt_thresh=False,
             numbins=64,
+            ylim = None
     ):
         """
         Clean SSF double-Gaussian visualization.
@@ -1371,6 +1372,10 @@ class SSFTempCalcAndPlots:
         plt.title(title)
         plt.xlabel("$I_g$", fontsize=14)
         plt.ylabel("Counts", fontsize=14)
+
+        if ylim is not None:
+            plt.ylim(0, ylim)
+
         plt.legend()
 
         plot_filename = os.path.join(
