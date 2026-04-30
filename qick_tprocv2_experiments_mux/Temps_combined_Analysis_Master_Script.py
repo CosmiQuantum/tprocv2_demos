@@ -54,6 +54,7 @@ pre_sciencerun6_data = True # Do you also want to incorporate the run 6 pre-scie
 use_iminuit_gdoublegauss_ssf = True # do you want to fit the g-state to a double gaussian using iminuit? The default is GMM instead
 #Double gaussian fitting is optimized for lower thermal pops (<2%) if this is set to true:
 low_thermal_pops = True if run_num == 9 else False # This run number is specific to QUIET.
+
 # When re-plotting SSF g-state histograms using iminuit, do you want to limit y-axis to see thermal pop region better?:
 ssf_hist_ylim = 30
 
@@ -65,13 +66,13 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_Qtemps": False}
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+                      "combined_studies_Qtemps": True}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False, "Pe_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_hists_viaSSF": False, "Pe_vs_time_viaRPM": False,
-                  "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False}
+                  "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": True}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
 comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": True, "Pe_vs_time_comb_separate_plts": False,
@@ -82,7 +83,7 @@ comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "Qtemps_vs_time_comb_
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 
 # For double-gaussian SSF analysis using alternative methods (does not require any other flags to be set to True above!)
-alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
+alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": True}
 
 # For coherence-qubit temps combined analysis
 coh_qtemp_ana_flags = {"load_qtemps": False, "load_mcp1_temps": False, "load_coherence_res": False, "plot_qtemps_t1_ftemps_qfreq": False}
@@ -794,7 +795,7 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
         #------------------------------------------------------------------- Qubit temperatures vs time via RPMs ----------------------------------------------------
         RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 20, yaxis_max = 80, rel_err_cutoff = None, restrict_time_xaxis = False,
                                                          plot_extra_event_lines = False, rad_events_plot_lines = False, plot_error_bars = True, fit_to_line=False, average_per_heater_step=False,
-                                                         fit_to_exp = True)
+                                                         fit_to_exp = False)
 
     if analysis_flags["Qtemps_hists_viaRPM"]:
         #----------------------------------------------------------------- Histograms of Qubit temperatures (via RPMs) -----------------------------------------------
@@ -843,9 +844,13 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
         all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only = False, fallback_to_threshold = True)
 
     # --------------------------------------------------------- SSF qubit temps analysis --------------------------------------------------------
+
+    # --------------------------------------------------------- SSF vs time for each qubit --------------------------------------------------------------
+    if analysis_flags["SSF_vs_time"]:
+        SSF_calcs_obj.plot_ssf_vs_time(fit_results, path_saveplots_ssf_qtemps_vsT, n_qubits =6)
     # ---------------------------------------- SSF thermal population (Pe) histograms --------------------------------------------------------------
     if analysis_flags["Pe_hists_viaSSF"]:
-        SSF_calcs_obj.plot_all_Qs_Pe_hists_ssf(fit_results, out_dir=path_saveplots_ssf_qtemps_vsT, bins=45, rel_err_cutoff=None, only_return_mu_and_sigma=True, make_plot=True, save_plot=True)
+        SSF_calcs_obj.plot_all_Qs_Pe_hists_ssf(fit_results, out_dir=path_saveplots_ssf_qtemps_vsT, bins=45, rel_err_cutoff=None, only_return_mu_and_sigma=True)
     # --------------------------------------------------------------------------- SSF Temperature Histograms --------------------------------------------------------------------------------------
     if analysis_flags["Qtemps_hists_viaSSF"]:
         SSF_calcs_obj.plot_all_Qs_qtemps_hists_ssf(all_qubit_temps, all_qubit_temps_errs, path_saveplots_ssf_qtemps_vsT, bins=45)
@@ -1241,7 +1246,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         # Plots error bars always, unless you pass None instead of all_qubit_temps_errs_g.
         combined_studies.Qtemps_vs_time_comb_allQs_1col(all_qubit_temps_g, all_qubit_times_g, outerFolder_qtemps_plots,
                                                      all_files_Qtemp_results_RPMs, all_qubit_temps_errs_g, restrict_time_yaxis = True, ylims = [20,80],
-                                                        rad_events_plot_lines = False, qubits_to_plot = [0],
+                                                        rad_events_plot_lines = False, qubits_to_plot = [0,1,2,3,5], # 0-based indexing
                                                         plot_rpm_I_only=False, plot_rpm_Q_only=False)
 
     #----------- Thermal Populations vs Time using all three methods ----

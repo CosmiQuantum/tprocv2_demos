@@ -3749,10 +3749,10 @@ class PlotRR_noQick:
             ax.scatter(times, pe_values, marker='o', color=colors[q % len(colors)], label=f"Q{q + 1}")
             ax.set_title(f"Q{q + 1}", fontsize=font)
             ax.set_ylabel("$P_e$", fontsize=font)
-            ax.set_ylim(0, 0.6)
+            ax.set_ylim(0, 0.3)
 
-            start_time = datetime.datetime(2025, 4, 11, 12, 30)
-            ax.set_xlim(left=start_time)
+            # start_time = datetime.datetime(2025, 4, 11, 12, 30)
+            # ax.set_xlim(left=start_time)
 
             ax.xaxis.set_major_locator(mdates.AutoDateLocator())
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))

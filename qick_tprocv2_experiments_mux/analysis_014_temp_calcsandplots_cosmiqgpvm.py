@@ -621,8 +621,8 @@ class SSFTempCalcAndPlots:
                         1: 200,
                         2: 200,
                         3: 200,
-                        4: 200,
-                        5: 200,
+                        4: 0, # no data for Q5 in this run
+                        5: 100,
                         }
                 }
 
@@ -636,7 +636,7 @@ class SSFTempCalcAndPlots:
                     print(f'Rejected a fit with Likelihood ratio test score < {lr_stat_limit}')
                     # not convincingly bimodal --> skip this dataset, it is better described by a single gaussian
 
-                    if do_plots and qid == 0:
+                    if do_plots and qid == 5:
                         bad_plots_path = os.path.join(save_figs_path, f"bad_fits_LRT_failed/Q{qid+1}")
                         os.makedirs(bad_plots_path, exist_ok=True)
                         self.plot_gaussians_qtemps(qid, bad_plots_path, ig_new, ground_data,
@@ -651,24 +651,35 @@ class SSFTempCalcAndPlots:
                 # ---- Run 9 (low_leakage_mode) small-thermal-pop Gaussian spread cut and/or gaussians overlap cut ----------------
                 sigma_g, sigma_e = sigmas[0], sigmas[1]
                 sigma_ratio = sigma_e / sigma_g if sigma_g > 0 else np.inf
-                sig_ratio_thresh = 3.0 # much larger than 1 = excited Gaussian is very broad -> suspicious
+                sig_ratio_thresh = 3.0 # much larger than 1 = excited Gaussian is very broad -> suspicious. For now leaving loose cut
                 bad_leakage_spread = (sigma_e <= 0 or sigma_g <= 0 or sigma_ratio > sig_ratio_thresh)
 
                 mu_g, mu_e = means[0], means[1]
                 overlap_metric = abs(mu_e - mu_g) / (sigma_g + sigma_e)
-                overlap_min = 2.0 # Large value -> good separation -> LOW overlap -> good fit
+                if qid == 0:
+                    overlap_min = 2.0 # Large value -> good separation -> LOW overlap -> good fit
+                elif qid == 1:
+                    overlap_min = 2.12
+                elif qid == 2:
+                    overlap_min = 2.06
+                elif qid == 3:
+                    overlap_min = 2.08
+                elif qid == 5:
+                    overlap_min = 2.49
+                else:
+                    overlap_min = 2.0
                 bad_overlap = overlap_metric < overlap_min
 
-                if low_leakage_mode and (bad_leakage_spread or bad_overlap):
+                if low_leakage_mode and (bad_leakage_spread or bad_overlap): # only for run 9 so far
                     print(f"Rejected fit | sigma_ratio={sigma_ratio:.2f} (>{sig_ratio_thresh}) or overlap={overlap_metric:.2f} (<{overlap_min})")
-                    if do_plots and qid == 0:
+                    if do_plots and qid == 5:
                         bad_plots_path = os.path.join(save_figs_path, f"bad_fits_LRT_failed/Q{qid+1}")
                         os.makedirs(bad_plots_path, exist_ok=True)
                         self.plot_gaussians_qtemps(qid, bad_plots_path, ig_new, ground_data,
                                                             excited_data, ground_gaussian,
                                                             excited_gaussian, pop_threshold,
                                                             idx, weights, sigmas, means, temperature_mk = None,
-                                                            title_ext = f"sigma ratio:{sigma_ratio:.2f}, overlap val: {overlap_metric:.2f}",
+                                                            title_ext = f"sigma ratio:{sigma_ratio:.2f}, overlap val:{overlap_metric:.2f}",
                                                             dontuse_midpt_thresh = dontuse_midpt_thresh, ylim = ssf_hist_ylim)
                     continue
 
@@ -691,13 +702,13 @@ class SSFTempCalcAndPlots:
                 sigma_TmK, sigma_Pe_total = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
 
                 # Plotting
-                if do_plots and qid == 0 and T_mK < 45: # run 9 test
+                if do_plots and qid == 5: # run 9 test
                     save_figs_path_clean = os.path.join(save_figs_path, f"Q{qid + 1}") # to separate plots by qubit
                     self.plot_gaussians_qtemps(qid, save_figs_path_clean, ig_new, ground_data,
                                                excited_data, ground_gaussian,
                                                excited_gaussian, pop_threshold,
                                                idx, weights,
-                                               sigmas, means, T_mK, title_ext=f"{datetime.datetime.fromtimestamp(ts_unix)} Qfreq:{freq_mhz:.2f}MHz, LRT val:{lr_stat:.2f}",
+                                               sigmas, means, T_mK, title_ext=f"{datetime.datetime.fromtimestamp(ts_unix)}, Qfreq:{freq_mhz:.2f}MHz, LRT val:{lr_stat:.2f}, sigma ratio:{sigma_ratio:.2f}, overlap val:{overlap_metric:.2f}",
                                                dontuse_midpt_thresh = dontuse_midpt_thresh, ylim = ssf_hist_ylim)
 
                 # -------- save qubit temps and timestamps ----------------------------------------------
@@ -1387,9 +1398,9 @@ class SSFTempCalcAndPlots:
                 )
 
         # Title
-        title = f"SSF double-Gaussian fit ; Q{q_key + 1}"
+        title = f"SSF g-data fit, Q{q_key + 1}"
         if temperature_mk is not None:
-            title += f" ; T = {temperature_mk:.2f} mK"
+            title += f" , T={temperature_mk:.2f}mK"
         if title_ext:
             title += f" {title_ext}"
 
@@ -1404,10 +1415,9 @@ class SSFTempCalcAndPlots:
 
         plot_filename = os.path.join(
             qubit_folder,
-            f"Q{q_key + 1}_SSF_gaussfit_Dataset{dataset}_{datetime.datetime.now():%Y%m%d%H%M%S}.png",
-        )
+            f"Q{q_key + 1}_SSF_gaussfit_Dataset{dataset}_{datetime.datetime.now():%Y%m%d%H%M%S}.png")
         #print('saved: ', plot_filename)
-        plt.savefig(plot_filename, dpi=300, bbox_inches="tight")
+        plt.savefig(plot_filename, dpi = 300, bbox_inches="tight")
         plt.close()
 
     # -------------------------------OLD WAY: MADE FOR MIDPOINT THRESHOLD METHOD ONLY------------
@@ -1585,6 +1595,68 @@ class SSFTempCalcAndPlots:
 
         return pairs_by_qubit, unmatched_qspec, unmatched_ssf
 
+    def plot_ssf_vs_time(self, fit_results, plot_path, n_qubits):
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        os.makedirs(plot_path, exist_ok=True)
+
+        fig, ax = plt.subplots(figsize=(15, 10))
+        date_fmt = DateFormatter('%m-%d-%H')
+
+        if not isinstance(fit_results, dict):
+            raise TypeError("fit_results must be a dictionary keyed by qubit index.")
+
+        for q in range(n_qubits):
+            records = fit_results.get(q, []) or []
+
+            times_vals = []
+            ssf_vals = []
+
+            for rec in records:
+                if not isinstance(rec, dict):
+                    continue
+
+                timestamp = rec.get("timestamp", None)
+                ssf = rec.get("ssf_fid", None)
+
+                if timestamp is None or ssf is None:
+                    continue
+
+                if not np.isfinite(ssf):
+                    continue
+
+                times_vals.append(timestamp)
+                ssf_vals.append(ssf)
+
+            if len(ssf_vals) == 0:
+                print(f"No valid SSF values found for Q{q + 1}")
+                continue
+
+            ax.scatter(
+                times_vals,
+                ssf_vals,
+                color=colors[q % len(colors)],
+                alpha=0.7,
+                label=f"Q{q + 1}"
+            )
+
+        ax.set_title("Single-Shot Fidelity vs Time", fontsize=18)
+        ax.set_xlabel("Time", fontsize=16)
+        ax.set_ylabel("Single-Shot Fidelity", fontsize=16)
+
+        ax.xaxis.set_major_formatter(date_fmt)
+        plt.setp(ax.get_xticklabels(), rotation=45, fontsize=16)
+        plt.setp(ax.get_yticklabels(), fontsize=16)
+
+        ax.legend(fontsize=14)
+        ax.grid(alpha=0.3)
+        plt.tight_layout()
+
+        fname = os.path.join(plot_path,f"AllQubits_SSF_vs_Time_{datetime.datetime.now():%Y%m%d%H%M%S}.png")
+        plt.savefig(fname, dpi=300, bbox_inches="tight")
+        plt.close(fig)
+
+        print("Saved SSF vs time plot to ->", fname)
+
     #  Scatter plot – qubit temperatures vs. time  (all dates, each qubit its own subplot)
     def plot_qubit_temperatures_vs_time_ssf(self, all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs,
                                             out_dir, rel_err_cutoff = None, plot_error_bars = False):
@@ -1652,7 +1724,7 @@ class SSFTempCalcAndPlots:
             f"AllQubits_Temps_vs_Time_{datetime.datetime.now():%Y%m%d%H%M%S}.png")
         plt.savefig(fname, dpi=300)
         plt.close()
-        print("Saved all-dates scatter →", fname)
+        print("Saved all-dates scatter to: ", fname)
 
     # Histograms – temperature distributions  (all dates, each qubit subplot)
     def plot_all_Qs_qtemps_hists_ssf(self, all_qubit_temperatures, all_qubit_temperatures_errs, out_dir, bins=20, rel_err_cutoff = None):
@@ -1802,12 +1874,6 @@ class SSFTempCalcAndPlots:
         SSF input format:
           SSF_double_gauss_fit_results[q] = [ {"Pe": float, "total_sigma_Pe": float, "timestamp": datetime, ...}, ... ]
         """
-        import os
-        import numpy as np
-        import datetime
-        import matplotlib.pyplot as plt
-        from scipy.stats import norm
-
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
         os.makedirs(out_dir, exist_ok=True)
 
@@ -2842,47 +2908,8 @@ class combined_Qtemp_studies:
                     ssf_vals[qid].append(_to_float_or_nan(ssf))
 
             return temps, errs, ssf_vals
-
-        # ---- flat-list form: [ {qid:..., temperature_mK:...}, ... ] ----
-        if isinstance(fit_results, (list, tuple)):
-            # try common qid keys
-            qid_keys = ("qid", "qubit", "qubit_id", "q_key", "q")
-            for rec in fit_results:
-                if not isinstance(rec, dict):
-                    continue
-
-                # find qid
-                qid = None
-                for k in qid_keys:
-                    if k in rec:
-                        qid = rec.get(k)
-                        break
-                if qid is None:
-                    continue
-
-                try:
-                    qid = int(qid)
-                except Exception:
-                    continue
-                if qid < 0 or qid >= n_qubits:
-                    continue
-
-                T = rec.get(temp_key, None)
-                Te = _get_err(rec)
-
-                if T is None or (not np.isfinite(T) and not keep_nans):
-                    continue
-
-                temps[qid].append(float(T) if T is not None else np.nan)
-                if Te is not None and np.isfinite(Te):
-                    errs[qid].append(float(Te))
-                else:
-                    errs[qid].append(np.nan)
-
-            return temps, errs
-
-        # ---- unknown type -> return empties ----
-        return temps, errs
+        else:
+            return None, None, None
 
     def rpm_results_to_per_qubit_lists(
             self,
@@ -4459,8 +4486,8 @@ class combined_Qtemp_studies:
         paramvstime_dir = os.path.join(out_dir, "params_vs_time")
         os.makedirs(paramvstime_dir, exist_ok=True)
         stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        out_path = os.path.join(paramvstime_dir, f"Qtemps_Comparison_TwoMethods_AllQs_{stamp}.png")
-        fig.savefig(out_path, dpi=self.figure_quality)
+        out_path = os.path.join(paramvstime_dir, f"Qtemps_Comparison_TwoMethods_AllQs_{stamp}.pdf")
+        fig.savefig(out_path) # dpi=self.figure_quality
         plt.close(fig)
         print("Saved combined methods plot: ", out_path)
         return out_path
