@@ -2826,8 +2826,70 @@ class PlotRR_noQick:
             label=f"{label_prefix}: slope={m:.1f} mK/h, R²={r2:.2f}",
             zorder=10)
 
+    def get_exp_fit_curve(self, times, temps, n_fit_pts=200):
+        """
+        Fits T(t) = C + A * exp(-t / tau)
+
+        Returns:
+            times_fit, temps_fit, tau_hours, plateau_hours, popt
+        """
+        if len(times) < 4:
+            return None, None, None, None, None
+
+        # Sort by time
+        data = sorted(zip(times, temps), key=lambda z: z[0])
+        times_sorted = [d[0] for d in data]
+        temps_sorted = [d[1] for d in data]
+
+        print(f"helper first fit time = {times_sorted[0]}")
+        print(f"helper last fit time  = {times_sorted[-1]}")
+
+        t0 = times_sorted[0].timestamp()
+        t = np.array([(tt.timestamp() - t0) / 3600 for tt in times_sorted], dtype=float)  # hours
+        y = np.array(temps_sorted, dtype=float)
+
+        def exp_func(t, C, A, tau):
+            return C + A * np.exp(-t / tau)
+
+        # guesses
+        C_guess = y[-1]
+        A_guess = y[0] - y[-1]
+        tau_guess = max((t[-1] - t[0]) / 3, 1.0)
+
+        try:
+            popt, _ = curve_fit(
+                exp_func,
+                t,
+                y,
+                p0=[C_guess, A_guess, tau_guess],
+                bounds=(
+                    [-np.inf, -np.inf, 1e-3],  # tau > 0
+                    [np.inf, np.inf, np.inf]
+                ),
+                maxfev=10000
+            )
+
+            C, A, tau_hours = popt # at t=tau the system has moved ~63% of the way to the plateau
+
+            t_fit = np.linspace(t.min(), t.max(), n_fit_pts)
+            temps_fit = exp_func(t_fit, C, A, tau_hours)
+
+            times_fit = [
+                datetime.datetime.fromtimestamp(t0 + th * 3600)
+                for th in t_fit
+            ]
+
+            plateau_hours = 3 * tau_hours  # ~95% settled
+
+            return times_fit, temps_fit, tau_hours, plateau_hours, popt
+
+        except Exception as e:
+            print(f"Exponential fit failed: {e}")
+            return None, None, None, None, None
+
     def plot_qubit_temperatures_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6, yaxis_min = 10, yaxis_max = 950, rel_err_cutoff = None, restrict_time_xaxis = False,
-                                             plot_extra_event_lines = False, rad_events_plot_lines = True, plot_error_bars=False, fit_to_line=False, average_per_heater_step=False):
+                                             plot_extra_event_lines = False, rad_events_plot_lines = True, plot_error_bars=False, fit_to_line=False, average_per_heater_step=False,
+                                             fit_to_exp=False):
         """
         Plots qubit temperatures vs. time for each qubit in a separate subplot (max 3 columns).
 
@@ -2837,7 +2899,8 @@ class PlotRR_noQick:
         - restrict_time_xaxis : do you want to plot only a certain region of time?
         - plot_extra_event_lines: do you want to plot vertical dashed lines to mark extra events that happened (besides source instalation)?
         - plot_error_bars: do you want to plot error bars?
-        - fit_to_line : do you want to perform linar fits? Right now it is set up to fit two linear fits: (1)full heater ramp up 2)and up to 120 mK)
+        - fit_to_line : do you want to perform linar fits? Right now it is set up to fit two linear fits: (1)full heater ramp up 2)and up to 120 mK) for Q1 and Q5
+        - fit_to_exp : do you want to fit the data to an exponential function?
         """
 
         # Define the colors you want for each qubit
@@ -3096,6 +3159,30 @@ class PlotRR_noQick:
                     if label not in used_labels:
                         legend_handles.append(Line2D([0], [0], color=color, linestyle='--', label=label, alpha=1.0))
                         used_labels.add(label)
+
+            if fit_to_exp:
+                # turn existing lists of datetimes/temps into arrays of POSIX seconds
+                times_arr = np.array([t.timestamp() for t in times])
+                temps_arr = np.array(temps)
+
+                fit_start_time = datetime.datetime(2026, 4, 19, 0, 0)
+                fit_start_ts = fit_start_time.timestamp()
+                mask_exp = times_arr >= fit_start_ts
+
+                times_for_fit = list(np.array(times, dtype=object)[mask_exp])
+                temps_for_fit = list(temps_arr[mask_exp])
+                times_fit, temps_fit, tau_hours, plateau_hours, popt = self.get_exp_fit_curve(times_for_fit,temps_for_fit)
+
+                if times_fit is not None:
+                    ax.plot(
+                        times_fit,
+                        temps_fit,
+                        "--",
+                        color="black",
+                        linewidth=2.5,
+                        zorder=100, # make sure it gets plotted on top of the datapoints
+                        label=f"Exp fit: t={tau_hours:.1f} h, plateau ~ {plateau_hours:.1f} h")
+                    ax.legend(fontsize=9, loc="best")
 
             if fit_to_line:  # fit data to a line, choosing where to start and stop based on event time stamps
                 # pull out all three relevant heater events

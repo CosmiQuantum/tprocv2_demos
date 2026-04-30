@@ -617,7 +617,7 @@ class SSFTempCalcAndPlots:
                         4: 645,
                         5: 645,  # No good data for this qubit in this run
                         },
-                    9: {0: 749, # not optimized yet for any of the Qs
+                    9: {0: 250, # not optimized yet for any of the Qs
                         1: 200,
                         2: 200,
                         3: 200,
@@ -648,16 +648,19 @@ class SSFTempCalcAndPlots:
 
                     continue
 
-                # ---------------- Run 9 (low_leakage_mode) small-leakage Gaussian spread cut ----------------
-                sigma_g, sigma_e = sigmas
+                # ---- Run 9 (low_leakage_mode) small-thermal-pop Gaussian spread cut and/or gaussians overlap cut ----------------
+                sigma_g, sigma_e = sigmas[0], sigmas[1]
                 sigma_ratio = sigma_e / sigma_g if sigma_g > 0 else np.inf
-                bad_leakage_spread = (
-                        sigma_e <= 0
-                        or sigma_g <= 0
-                        or sigma_ratio > 3.0)
+                sig_ratio_thresh = 3.0 # much larger than 1 = excited Gaussian is very broad -> suspicious
+                bad_leakage_spread = (sigma_e <= 0 or sigma_g <= 0 or sigma_ratio > sig_ratio_thresh)
 
-                if low_leakage_mode and bad_leakage_spread:
-                    print(f'low_leakage_mode: Rejected a fit with sigma_e/sigma_g > {sigma_ratio}')
+                mu_g, mu_e = means[0], means[1]
+                overlap_metric = abs(mu_e - mu_g) / (sigma_g + sigma_e)
+                overlap_min = 2.0 # Large value -> good separation -> LOW overlap -> good fit
+                bad_overlap = overlap_metric < overlap_min
+
+                if low_leakage_mode and (bad_leakage_spread or bad_overlap):
+                    print(f"Rejected fit | sigma_ratio={sigma_ratio:.2f} (>{sig_ratio_thresh}) or overlap={overlap_metric:.2f} (<{overlap_min})")
                     if do_plots and qid == 0:
                         bad_plots_path = os.path.join(save_figs_path, f"bad_fits_LRT_failed/Q{qid+1}")
                         os.makedirs(bad_plots_path, exist_ok=True)
@@ -665,7 +668,7 @@ class SSFTempCalcAndPlots:
                                                             excited_data, ground_gaussian,
                                                             excited_gaussian, pop_threshold,
                                                             idx, weights, sigmas, means, temperature_mk = None,
-                                                            title_ext = f"sigma_ratio:{sigma_ratio:.2f}",
+                                                            title_ext = f"sigma ratio:{sigma_ratio:.2f}, overlap val: {overlap_metric:.2f}",
                                                             dontuse_midpt_thresh = dontuse_midpt_thresh, ylim = ssf_hist_ylim)
                     continue
 
