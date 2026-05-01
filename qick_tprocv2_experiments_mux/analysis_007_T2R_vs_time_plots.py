@@ -240,7 +240,7 @@ class T2rVsTime:
                 outerFolder = f"/exp/cosmiq/data/QUIET/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
                         # f"/exp/cosmiq/data/QUIET/QICK_data/{self.run_name}/" + folder_date + "/study_data/" # CEPH
                         # f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/" #daq01
-                print('Looking inside: ', outerFolder)
+                #print('Looking inside: ', outerFolder)
             elif self.fridge.upper() == 'NEXUS':
                 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
             else:
@@ -322,30 +322,40 @@ class T2rVsTime:
                                     n_osc = min(len(pks), len(trs))
 
                                 if n_osc < min_peaks:
-                                    print(
-                                        f'Rejected a T2R scan. Failed ramsey shape, less than {min_peaks} oscillations.')
+                                    print(f'Rejected a T2R scan. Failed ramsey shape, less than {min_peaks} oscillations.')
                                     continue
                             except Exception:
                                 # if peak counting fails for any reason, be conservative and skip
                                 continue
 
                             # -------------------- flat baseline vs Ramsey shape BIC test -------------------------------
+                            # Works like this: keep_ramsey = (delta_bic >= threshold)
                             y = I if plot_sig == "I" else Q
 
-                            keep_ramsey, delta_bic = self.flat_vs_ramsey_bic(y, fitted, k_fit=6, k0=1, threshold=35) # threshold is good for runs 4-8
+                            if self.run_number == 9:
+                                LIN_Rams_BIC_thresh = 100
+                            else: #runs 4-8
+                                LIN_Rams_BIC_thresh = 35 # threshold is good for runs 4-8
 
+                            keep_ramsey, delta_bic = self.flat_vs_ramsey_bic(y, fitted, k_fit=6, k0=1, threshold=LIN_Rams_BIC_thresh)
                             if not keep_ramsey:
                                 print(f"Rejected by BIC: ΔBIC(line-Ramsey) = {delta_bic:.2f}")
+                                #T2_class_instance.t2_fit_iminuit(delay_times, I, Q, make_plots=True,title_ext=f"ΔBIC(line-Ramsey) = {delta_bic:.2f}")
                                 continue
 
                             # ---------------- Exponential vs Ramsey BIC test ----------------
+                            # It works by checking: keep_ramsey = (delta_bic_exp >= threshold)
                             y = I if plot_sig == "I" else Q
 
-                            keep_ramsey, delta_bic_exp = self.exp_vs_ramsey_bic(
-                                delay_times, y, fitted, k_fit=6, k_exp=3, threshold=10) # threshold is good for runs 4-8
+                            if self.run_number == 9:
+                                EXP_Rams_BIC_thresh = 100
+                            else: #runs 4-8
+                                EXP_Rams_BIC_thresh = 10 # threshold is good for runs 4-8
 
+                            keep_ramsey, delta_bic_exp = self.exp_vs_ramsey_bic(delay_times, y, fitted, k_fit=6, k_exp=3, threshold=EXP_Rams_BIC_thresh)
                             if not keep_ramsey:
                                 print(f"Rejected by exp-BIC: ΔBIC(exp−Ramsey) = {delta_bic_exp:.2f}")
+                                #T2_class_instance.t2_fit_iminuit(delay_times, I, Q, make_plots=True,title_ext=f"ΔBIC(exp−Ramsey) = {delta_bic_exp:.2f}")
                                 continue
                             # -------------------- Other cuts-----------------------
                             if t2r_est < 0:
@@ -362,18 +372,23 @@ class T2rVsTime:
                             # You want to keep data below the threshold. We expect good fits to have small residuals.
                             # small NRMSE = good fit = keep, and large NRMSE = poor fit = reject
 
-                            if self.run_number == 8 or self.run_number == 7:
+                            if self.run_number == 8 or self.run_number == 7: # Specific to QUIET
                                 nrmse_threshold = 0.1224
                             elif self.run_number == 6:
                                 nrmse_threshold = 0.1065
                             elif self.run_number == 5:
                                 nrmse_threshold = 0.1319
-                            else:
+                            elif self.run_number == 4:
                                 nrmse_threshold = 0.15 # all run 4 plots were good so threshold here is just a dummy that doesn't filter anything
+                            elif self.run_number == 9:
+                                nrmse_threshold = 0.079
+                            else: # default for runs with great plots / no major issues
+                                nrmse_threshold = 0.15
 
                             nrmse_score = out["nrmse"]
                             if nrmse_score> nrmse_threshold:
                                 print(f"Rejected due to NRMSE cut. Value was above threshold of {nrmse_threshold}")
+                                #T2_class_instance.t2_fit_iminuit(delay_times, I, Q, make_plots=True,title_ext=f"NRMSE:{nrmse_score:.4f}")
                                 continue
 
                             # If you want to plot the data that made it through, uncomment this:

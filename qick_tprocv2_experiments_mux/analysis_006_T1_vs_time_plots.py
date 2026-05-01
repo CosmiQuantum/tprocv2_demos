@@ -237,7 +237,7 @@ class T1VsTime:
                     # fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\{self.run_name}\{folder_date}" # Arianna's pc
                     # f"/data/QICK_data/{self.run_name}/{folder_date}" # qubituser-daq01
                 outerFolder = timestamp_dir + "/study_data/"
-                print('Looking inside: ', timestamp_dir)
+                #print('Looking inside: ', timestamp_dir)
             elif self.fridge.upper() == 'NEXUS':
                 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
             else:

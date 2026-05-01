@@ -244,7 +244,7 @@ class T2eVsTime:
             if self.fridge.upper() == 'QUIET':
                 outerFolder = f"/exp/cosmiq/data/QUIET/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
                             # f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/" #daq01
-                print('Looking inside: ', outerFolder)
+                #print('Looking inside: ', outerFolder)
             elif self.fridge.upper() == 'NEXUS':
                 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
             else:
