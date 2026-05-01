@@ -334,7 +334,7 @@ class T2eVsTime:
                             # -------------------- flat baseline vs Ramsey shape BIC test -------------------------------
                             y = I if plot_sig == "I" else Q
 
-                            keep_ramsey, delta_bic = self.flat_vs_ramsey_bic(y, fitted, k_fit=6, k0=1, threshold=35) # threshold is good for runs 4-8
+                            keep_ramsey, delta_bic = self.flat_vs_ramsey_bic(y, fitted, k_fit=6, k0=1, threshold=35) # threshold is good for runs 4-9
 
                             if not keep_ramsey:
                                 print(f"Rejected by flat BIC test: ΔBIC(line-Ramsey) = {delta_bic:.2f}")
@@ -344,7 +344,7 @@ class T2eVsTime:
                             y = I if plot_sig == "I" else Q
 
                             keep_ramsey, delta_bic_exp = self.exp_vs_ramsey_bic(
-                                delay_times, y, fitted, k_fit=6, k_exp=3, threshold=10) # threshold is good for runs 4-8
+                                delay_times, y, fitted, k_fit=6, k_exp=3, threshold=10) # threshold is good for runs 4-9
 
                             if not keep_ramsey:
                                 print(f"Rejected by exponential BIC test: ΔBIC(exp-Ramsey) = {delta_bic_exp:.2f}")
@@ -364,7 +364,7 @@ class T2eVsTime:
                             # You want to keep data below the threshold. We expect good fits to have small residuals.
                             # small NRMSE = good fit = keep, and large NRMSE = poor fit = reject
 
-                            nrmse_threshold = 0.14 # tested for QUIET runs 4-8 and it worked well for all!
+                            nrmse_threshold = 0.14 # tested for QUIET runs 4-9 and it worked well for all!
                             nrmse_score = out["nrmse"]
                             if nrmse_score > nrmse_threshold:
                                 print(f"Rejected due to NRMSE cut. Value was above threshold of {nrmse_threshold}")
