@@ -40,7 +40,7 @@ signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
 replot_RPMs = False # Do you want to re-plot rabi population measurements from RR data but not extract temps? Only make plots
-save_figsRR = False # Do you want to save (or not save) the RR RPM plots?
+save_figsRR = False # Do you want to save (or not save) the RR RPM plots as you process the data? aka when get_qtemp_data = True
 save_figs = False # To be used in general for any function or class to save (or not save) plots.
 save_figs_SSF = False # Do you want to save gaussian fit plots while calculating ssf qtemps? iminuit case only
 fit_saved = False # Not used here, set to false.
@@ -53,7 +53,7 @@ pre_sciencerun6_data = True # Do you also want to incorporate the run 6 pre-scie
 
 use_iminuit_gdoublegauss_ssf = True # do you want to fit the g-state to a double gaussian using iminuit? The default is GMM instead
 #Double gaussian fitting is optimized for lower thermal pops (<2%) if this is set to true:
-low_thermal_pops = True if run_num == 9 else False # This run number is specific to QUIET.
+low_thermal_pops = True if run_num == 9 else False # This run number is specific to QUIET. Used in SSF qtemps
 
 # When re-plotting SSF g-state histograms using iminuit, do you want to limit y-axis to see thermal pop region better?:
 ssf_hist_ylim = 30
@@ -66,24 +66,24 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_Qtemps": True}
+qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+                      "combined_studies_Qtemps": False}
 
 # What analysis plots do you want to make?
-analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
-                  "Qtemps_hists_viaRPM": False, "Pe_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_hists_viaSSF": False, "Pe_vs_time_viaRPM": False,
-                  "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": True}
+analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
+                  "Qtemps_hists_viaRPM": False, "Pe_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_hists_viaSSF": False, "Pe_vs_time_viaRPM": True,
+                  "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
-comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": True, "Pe_vs_time_comb_separate_plts": False,
-                       "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
+comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
+                       "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": True, "Pe_box_whisker_allruns_allQs": True, "ssf_box_whisker_allruns_allQs": False,
                        "plot_ssf_log_curves": False}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 
 # For double-gaussian SSF analysis using alternative methods (does not require any other flags to be set to True above!)
-alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": True}
+alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
 
 # For coherence-qubit temps combined analysis
 coh_qtemp_ana_flags = {"load_qtemps": False, "load_mcp1_temps": False, "load_coherence_res": False, "plot_qtemps_t1_ftemps_qfreq": False}
@@ -152,7 +152,7 @@ r6_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run6" #1hw
 
 # For round robin plots:
-outerFolder_qtemps_plots_RR_run6 =  f"{r6_plts_prefix}/replotted_RR_data/rabi_pop_meas"
+outerFolder_qtemps_plots_RR_run6 =  f"{r6_plts_prefix}/rpm_qtemps/replotted_RR_data/"
 #For analysis:
 outerFolder_qtemps_plots_run6 = f"{r6_plts_prefix}/rpm_qtemps"
 
@@ -188,7 +188,7 @@ r7_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run7" #1hw
 
 # For round robin plots:
-outerFolder_qtemps_plots_RR_run7 =  f"{r7_plts_prefix}/replotted_RR_data/rabi_pop_meas"
+outerFolder_qtemps_plots_RR_run7 =  f"{r7_plts_prefix}/rpm_qtemps/replotted_RR_data/"
 #For analysis:
 outerFolder_qtemps_plots_run7 = f"{r7_plts_prefix}/rpm_qtemps"
 
@@ -225,7 +225,7 @@ r8_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run8" #1hw
 
 # For round robin plots:
-outerFolder_qtemps_plots_RR_run8 =  f"{r8_plts_prefix}/replotted_RR_data/rabi_pop_meas"
+outerFolder_qtemps_plots_RR_run8 =  f"{r8_plts_prefix}/rpm_qtemps/replotted_RR_data/"
 #For analysis:
 outerFolder_qtemps_plots_run8 = f"{r8_plts_prefix}/rpm_qtemps"
 
@@ -273,7 +273,7 @@ r9_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run9" #1hw
 
 # For round robin plots:
-outerFolder_qtemps_plots_RR_run9 =  f"{r9_plts_prefix}/replotted_RR_data/rabi_pop_meas"
+outerFolder_qtemps_plots_RR_run9 =  f"{r9_plts_prefix}/rpm_qtemps/replotted_RR_data/"
 #For analysis:
 outerFolder_qtemps_plots_run9 = f"{r9_plts_prefix}/rpm_qtemps"
 
@@ -804,7 +804,7 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
     #----------------------------------------------------------------------------------------------------------------------------------------------------------
     if analysis_flags["Pe_vs_time_viaRPM"]:
         #------------------------------------------------------------ Excited state populations (P_e) vs time (via RPMs) ----------------------------------------
-        RPM_plotter.plot_qubit_pe_vs_time_RPMs(combined_qtemp_data)
+        RPM_plotter.plot_qubit_pe_vs_time_RPMs(combined_qtemp_data, ylim = 0.08)
 
     if analysis_flags["qtemps_Pe_vs_time_viaRPM"]:
         #---------------------------------------------------------- Qubit temp and P_e vs time in the same plot (via RPMs) ------------------------------------

@@ -2302,7 +2302,7 @@ class PlotRR_noQick:
                         # Get SSF candidates for this qubit
                         ssf_entries = ssf_by_qkey_and_time.get(int(q_key), [])
 
-                        if run_num == 7 or run_num == 8 or run_num == 4 or run_num == 5:
+                        if run_num == 7 or run_num == 8 or run_num == 4 or run_num == 5 or run_num == 9:
                             MAX_TIME_DIFF_SSF_RPM = 10.0  # seconds
                         elif run_num == 6:
                             MAX_TIME_DIFF_SSF_RPM = 600
@@ -2396,14 +2396,20 @@ class PlotRR_noQick:
 
                         # There is no run 4 or 5 RPM data
                         if run_num == 7:
-                            BIC_THRESH_LINE = 12.0  # adjust as needed
-                            BIC_THRESH_EXP = 14.0  # adjust as needed
+                            BIC_THRESH_LINE = 12.0
+                            BIC_THRESH_EXP = 14.0
                         elif run_num == 6:
-                            BIC_THRESH_LINE = 12.0  # adjust as needed
-                            BIC_THRESH_EXP = 14.4  # adjust as needed
-                        else:
-                            BIC_THRESH_LINE = 12.0  # adjust as needed
-                            BIC_THRESH_EXP = 19.9  # adjust as needed
+                            BIC_THRESH_LINE = 12.0
+                            BIC_THRESH_EXP = 14.4
+                        elif run_num == 8:
+                            BIC_THRESH_LINE = 12.0
+                            BIC_THRESH_EXP = 19.9
+                        elif run_num == 9:
+                            BIC_THRESH_LINE = 12.0
+                            BIC_THRESH_EXP = 17.6
+                        else: # future runs, default vals as starting point
+                            BIC_THRESH_LINE = 12.0
+                            BIC_THRESH_EXP = 18.0
 
                         # Pe sequence
                         res_bic_I_Pe = self.bic_line_exp_vs_cosine(gains1, I1, I_fit_Pe)
@@ -3302,9 +3308,9 @@ class PlotRR_noQick:
         os.makedirs(paramvstime_dir, exist_ok=True)
 
         timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        save_path = os.path.join(paramvstime_dir, f"QubitTemps_vs_Time_{timestp}.png")
+        save_path = os.path.join(paramvstime_dir, f"QubitTemps_vs_Time_{timestp}.pdf")
         print("Plot saved to: ", save_path)
-        plt.savefig(save_path, dpi=self.figure_quality)
+        plt.savefig(save_path)
         plt.close(fig)
 
     def plot_qubit_temperature_histograms_RPMs(self, all_files_Qtemp_results, num_qubits, rel_err_cutoff = None):
@@ -3709,7 +3715,7 @@ class PlotRR_noQick:
 
         return results_by_qubit
 
-    def plot_qubit_pe_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6):
+    def plot_qubit_pe_vs_time_RPMs(self, all_files_Qtemp_results, num_qubits=6, ylim = None):
         """
         Plots qubit excited state populations (P_e) vs. time in a separate figure.
 
@@ -3735,21 +3741,50 @@ class PlotRR_noQick:
         for q in range(num_qubits):
             times = []
             pe_values = []
+            pe_err_values = []
 
             for file_result in all_files_Qtemp_results:
                 qubit_data = file_result['qubits'].get(q)
                 if qubit_data:
                     timestamp = qubit_data['date']
                     P_e = qubit_data.get('P_e', None)
-                    if P_e is not None:
+                    P_e_err = qubit_data.get('P_e_err_total', None)
+                    if P_e is not None and P_e_err is not None:
                         times.append(datetime.datetime.fromtimestamp(timestamp))
                         pe_values.append(P_e)
+                        pe_err_values.append(P_e_err)
+
+            if len(pe_values) > 0:
+                pe_arr = np.asarray(pe_values)
+                times_arr = np.asarray(times)
+                pe_err_arr = np.asarray(pe_err_values)
+
+                min_idx = np.argmin(pe_arr)
+                min_pe = pe_arr[min_idx]
+                min_time = times_arr[min_idx]
+                min_err = pe_err_arr[min_idx]
+
+                print(f"Q{q + 1} minimum Pe: {min_pe:.4f} +/- {min_err:.4f} at {min_time}")
+            else:
+                print(f"Q{q + 1} minimum temperature: no valid data")
 
             ax = axes[q]
-            ax.scatter(times, pe_values, marker='o', color=colors[q % len(colors)], label=f"Q{q + 1}")
+            ax.errorbar(
+                times,
+                pe_values,
+                yerr=pe_err_values,
+                fmt="o",
+                color=colors[q % len(colors)],
+                ecolor=colors[q % len(colors)],
+                elinewidth=1,
+                capsize=3,
+                alpha=0.8,
+                label=f"Q{q + 1}")
             ax.set_title(f"Q{q + 1}", fontsize=font)
             ax.set_ylabel("$P_e$", fontsize=font)
-            ax.set_ylim(0, 0.3)
+
+            if ylim is not None:
+                ax.set_ylim(0, ylim)
 
             # start_time = datetime.datetime(2025, 4, 11, 12, 30)
             # ax.set_xlim(left=start_time)
@@ -3766,9 +3801,9 @@ class PlotRR_noQick:
         os.makedirs(paramvstime_dir, exist_ok=True)
 
         timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        save_path = os.path.join(paramvstime_dir, f"QubitPe_vs_Time_{timestp}.png")
+        save_path = os.path.join(paramvstime_dir, f"QubitPe_vs_Time_{timestp}.pdf")
         print("Plot saved to:", save_path)
-        plt.savefig(save_path, dpi=self.figure_quality)
+        plt.savefig(save_path)
         plt.close(fig)
         # plt.show()
 

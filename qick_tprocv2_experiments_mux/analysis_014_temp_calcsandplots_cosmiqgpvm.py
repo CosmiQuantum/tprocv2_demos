@@ -2756,7 +2756,7 @@ class RPMTempCalcAndPlots:
 
                     if os.path.isdir(data_path):
                         date_string = d[:10]  # Extract 'YYYY-MM-DD'
-                        print(f"Analyzing: {data_path}")
+                        #print(f"Analyzing: {data_path}")
 
                         # If both are set equal to data_path, it is assumed that q_temperatures and qspec_ge data are share the same path
                         outerFolder = data_path  # RR data (g-e Qspec) folder path before Data_h5
