@@ -159,7 +159,7 @@ t2r_keys = ['T2', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num'
             'Syst Config', 'measurement_timestamp']
 t2e_keys = ['T2E', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num', 'Batch Num', 'Exp Config',
             'Syst Config', 'measurement_timestamp']
-rabi_keys_ef_Qtemps = ['Dates', 'Qfreq_ge', 'I1', 'Q1', 'Gains1', 'Fit1', 'I2', 'Q2', 'Gains2', 'Fit2', 'Round Num',
+rabi_keys_ef_Qtemps = ['Dates', 'Qfreq_ge', 'I1', 'Q1', 'Gains1', 'Ishots1', 'Qshots1', 'Fit1', 'I2', 'Q2', 'Gains2', 'Ishots2', 'Qshots2', 'Fit2', 'Round Num',
                        'Batch Num', 'Exp Config', 'Syst Config', 'measurement_timestamp']
 
 # initialize a simple list to store the qspec values in incase a fit fails
@@ -812,9 +812,7 @@ while j < n:
         if save_data_h5:
             # ---------------------Collect g-e Res Spec Results----------------
             if run_flags["res_spec"]:
-                res_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
-                    time.mktime(datetime.datetime.now().timetuple()))
-                res_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_resge
+                res_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
                 res_data[QubitIndex]['freq_pts'][j - batch_num * save_r - 1] = freq_pts
                 res_data[QubitIndex]['freq_center'][j - batch_num * save_r - 1] = freq_center
                 res_data[QubitIndex]['Amps'][j - batch_num * save_r - 1] = amps
@@ -823,12 +821,11 @@ while j < n:
                 res_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 res_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
                 res_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_rspec
+                res_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_resge
 
             # ---------------------Collect g-e QSpec Results----------------
             if run_flags["q_spec"]:
-                qspec_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
-                    time.mktime(datetime.datetime.now().timetuple()))
-                qspec_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_qspecge
+                qspec_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
                 qspec_data[QubitIndex]['I'][j - batch_num * save_r - 1] = qspec_I
                 qspec_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = qspec_Q
                 qspec_data[QubitIndex]['Frequencies'][j - batch_num * save_r - 1] = qspec_freqs
@@ -839,12 +836,11 @@ while j < n:
                 qspec_data[QubitIndex]['Recycled QFreq'][j - batch_num * save_r - 1] = recycled_qfreq
                 qspec_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
                 qspec_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_qspec
+                qspec_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_qspecge
 
             # ---------------------Collect g-e Rabi Results----------------
             if run_flags["rabi"]:
-                rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
-                    time.mktime(datetime.datetime.now().timetuple()))
-                rabi_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_rabige
+                rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
                 rabi_data[QubitIndex]['I'][j - batch_num * save_r - 1] = rabi_I
                 rabi_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = rabi_Q
                 rabi_data[QubitIndex]['Gains'][j - batch_num * save_r - 1] = rabi_gains
@@ -853,14 +849,13 @@ while j < n:
                 rabi_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 rabi_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
                 rabi_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_rabi
+                rabi_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_rabige
 
             # ---------------------Collect g-e Single Shot Results----------------
             if run_flags["ss"]:
                 ss_data[QubitIndex]['Fidelity'][j - batch_num * save_r - 1] = fid
                 ss_data[QubitIndex]['Angle'][j - batch_num * save_r - 1] = angle
-                ss_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
-                    time.mktime(datetime.datetime.now().timetuple()))
-                ss_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_ssge
+                ss_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
                 ss_data[QubitIndex]['I_g'][j - batch_num * save_r - 1] = I_g
                 ss_data[QubitIndex]['Q_g'][j - batch_num * save_r - 1] = Q_g
                 ss_data[QubitIndex]['I_e'][j - batch_num * save_r - 1] = I_e
@@ -869,12 +864,11 @@ while j < n:
                 ss_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 ss_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
                 ss_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_ss
+                ss_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_ssge
 
             # ---------------------Collect e-f res spec Results----------------
             if run_flags["ef_res_spec"] and ef_res_spec_survived:
-                ef_res_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
-                    time.mktime(datetime.datetime.now().timetuple()))
-                ef_res_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_resef
+                ef_res_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
                 ef_res_data[QubitIndex]['freq_pts'][j - batch_num * save_r - 1] = ef_freq_pts
                 ef_res_data[QubitIndex]['freq_center'][j - batch_num * save_r - 1] = ef_freq_center
                 ef_res_data[QubitIndex]['Amps'][j - batch_num * save_r - 1] = ef_amps
@@ -883,13 +877,12 @@ while j < n:
                 ef_res_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 ef_res_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
                 ef_res_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_rspec_ef
+                ef_res_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_resef
                 ef_res_any = True
 
                 # ---------------------Collect e-f qspec Results----------------
             if run_flags["ef_q_spec"] and ef_qspec_survived:
-                ef_qspec_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
-                    time.mktime(datetime.datetime.now().timetuple()))
-                ef_qspec_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_qspecef
+                ef_qspec_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
                 ef_qspec_data[QubitIndex]['I'][j - batch_num * save_r - 1] = efqspec_I
                 ef_qspec_data[QubitIndex]['Q'][j - batch_num * save_r - 1]= efqspec_Q
                 ef_qspec_data[QubitIndex]['Frequencies'][j - batch_num * save_r - 1] = efqspec_freqs
@@ -900,12 +893,11 @@ while j < n:
                 ef_qspec_data[QubitIndex]['Recycled QFreq'][j - batch_num * save_r - 1] = False  # no recycling here
                 ef_qspec_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
                 ef_qspec_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_qspec_ef
+                ef_qspec_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_qspecef
                 ef_qspec_any = True
 
             if run_flags["ef_Rabi"] and ef_qspec_survived and ef_res_spec_survived:
-                ef_rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = time.mktime(
-                    datetime.datetime.now().timetuple())
-                ef_rabi_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_rabief
+                ef_rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
                 ef_rabi_data[QubitIndex]['I'][j - batch_num * save_r - 1] = efrabi_I
                 ef_rabi_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = efrabi_Q
                 ef_rabi_data[QubitIndex]['Gains'][j - batch_num * save_r - 1] = efrabi_gains
@@ -914,20 +906,24 @@ while j < n:
                 ef_rabi_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 ef_rabi_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
                 ef_rabi_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = efsys_config_to_save
+                ef_rabi_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_rabief
 
             # --------------------Collect rabi population measurements (qubit temperature data) ----------------
             if run_flags["rabi_pop_meas"] and ef_res_spec_survived and ef_qspec_survived:
                 rabi_data_ef_Qtemps[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
-                rabi_data_ef_Qtemps[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_rpm
                 rabi_data_ef_Qtemps[QubitIndex]['Qfreq_ge'][j - batch_num * save_r - 1] = qubit_freq  # save the g-e qubit freq too for this qubit
                 rabi_data_ef_Qtemps[QubitIndex]['I1'][j - batch_num * save_r - 1] = I1_qtemp
                 rabi_data_ef_Qtemps[QubitIndex]['Q1'][j - batch_num * save_r - 1]= Q1_qtemp
                 rabi_data_ef_Qtemps[QubitIndex]['Gains1'][j - batch_num * save_r - 1] = gains1_qtemp
+                rabi_data_ef_Qtemps[QubitIndex]['Ishots1'][j - batch_num * save_r - 1] = I1_qtemp_shots
+                rabi_data_ef_Qtemps[QubitIndex]['Qshots1'][j - batch_num * save_r - 1] = Q1_qtemp_shots
                 rabi_data_ef_Qtemps[QubitIndex]['Fit1'][j - batch_num * save_r - 1] = fit_cosine1_qtemp
 
                 rabi_data_ef_Qtemps[QubitIndex]['I2'][j - batch_num * save_r - 1]= I2_qtemp
                 rabi_data_ef_Qtemps[QubitIndex]['Q2'][j - batch_num * save_r - 1]= Q2_qtemp
                 rabi_data_ef_Qtemps[QubitIndex]['Gains2'][j - batch_num * save_r - 1]= gains2_qtemp
+                rabi_data_ef_Qtemps[QubitIndex]['Ishots2'][j - batch_num * save_r - 1] = I2_qtemp_shots
+                rabi_data_ef_Qtemps[QubitIndex]['Qshots2'][j - batch_num * save_r - 1] = Q2_qtemp_shots
                 rabi_data_ef_Qtemps[QubitIndex]['Fit2'][j - batch_num * save_r - 1]= fit_cosine2_qtemp
 
                 rabi_data_ef_Qtemps[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
@@ -935,14 +931,15 @@ while j < n:
                 rabi_data_ef_Qtemps[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
                 rabi_data_ef_Qtemps[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sysconfig_efrabi_Qtemps
 
+                rabi_data_ef_Qtemps[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_rpm
+
                 rpm_any = True
 
                 # ---------------------Collect g-e T1 Results----------------
             if run_flags["t1"]:
                 t1_data[QubitIndex]['T1'][j - batch_num * save_r - 1] = t1_est
                 t1_data[QubitIndex]['Errors'][j - batch_num * save_r - 1] = t1_err
-                t1_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
-                    time.mktime(datetime.datetime.now().timetuple()))
+                t1_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
                 t1_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_t1ge
                 t1_data[QubitIndex]['I'][j - batch_num * save_r - 1] = t1_I
                 t1_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = t1_Q
@@ -959,8 +956,7 @@ while j < n:
             if run_flags["t2r"]:
                 t2r_data[QubitIndex]['T2'][j - batch_num * save_r - 1] = t2r_est
                 t2r_data[QubitIndex]['Errors'][j - batch_num * save_r - 1] = t2r_err
-                t2r_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
-                    time.mktime(datetime.datetime.now().timetuple()))
+                t2r_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
                 t2r_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_t2r
                 t2r_data[QubitIndex]['I'][j - batch_num * save_r - 1] = t2r_I
                 t2r_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = t2r_Q
@@ -975,8 +971,7 @@ while j < n:
             if run_flags["t2e"]:
                 t2e_data[QubitIndex]['T2E'][j - batch_num * save_r - 1] = t2e_est
                 t2e_data[QubitIndex]['Errors'][j - batch_num * save_r - 1] = t2e_err
-                t2e_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
-                    time.mktime(datetime.datetime.now().timetuple()))
+                t2e_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
                 t2e_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_t2e
                 t2e_data[QubitIndex]['I'][j - batch_num * save_r - 1] = t2e_I
                 t2e_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = t2e_Q

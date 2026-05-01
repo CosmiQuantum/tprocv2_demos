@@ -204,8 +204,8 @@ class Data_H5:
 
                     elif data_type == 'q_temperatures':
                         target_keys = {'Dates': 'Dates', 'Qfreq_ge': 'Qfreq_ge',
-                                       'I1': 'I1', 'Q1': 'Q1', 'Gains1': 'Gains1', 'Fit1': 'Fit1',
-                                       'I2': 'I2', 'Q2': 'Q2', 'Gains2': 'Gains2', 'Fit2': 'Fit2',
+                                       'I1': 'I1', 'Q1': 'Q1', 'Gains1': 'Gains1', 'Ishots1': 'Ishots1', 'Qshots1': 'Qshots1', 'Fit1': 'Fit1',
+                                       'I2': 'I2', 'Q2': 'Q2', 'Gains2': 'Gains2', 'Ishots2': 'Ishots2', 'Qshots2': 'Qshots2', 'Fit2': 'Fit2',
                                        'Round Num': 'Round Num', 'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
                                        'Syst Config': 'Syst Config', 'measurement_timestamp': 'measurement_timestamp'}
 
