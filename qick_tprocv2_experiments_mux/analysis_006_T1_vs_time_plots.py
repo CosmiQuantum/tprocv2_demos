@@ -434,7 +434,7 @@ class T1VsTime:
                             delta_bic = bic_flat - bic_exp
 
                             if delta_bic < 35:
-                                # I verified this BIC score for runs 4-8 and it worked well for ALL of them! No bad fits left.
+                                # I verified this BIC score for runs 4-9 and it worked well for ALL of them! No bad fits left.
                                 continue
                             #---------------------------------------------------------------------------------------------
 

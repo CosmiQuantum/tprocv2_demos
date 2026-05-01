@@ -39,7 +39,7 @@ import h5py
 # from qualang_tools.plot import Fit
 # import visdom
 ###################################################### Set These #######################################################
-save_figs = False  #this is just for RR plots
+save_figs = True  #this is just for RR plots
 fit_saved = False
 show_legends = False
 signal = 'None'
@@ -61,7 +61,7 @@ qfreq_errs_by_run = {}
 for run_number in run_num_list:
     print(f'Processing run {run_number} data.')
     if run_number == 9:
-        process_shots_t1ge = False
+        process_shots_t1ge = False # the option exists for this run, but for analysis consistency w initial runs we keep it off unless necessary.
         per_pt_errs_t1 = False
         run_name = "run9/6transmon/round_robin_benchmark"
         data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
