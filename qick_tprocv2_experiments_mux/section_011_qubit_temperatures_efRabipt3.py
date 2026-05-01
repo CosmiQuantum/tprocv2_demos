@@ -31,7 +31,7 @@ class Temps_EFAmpRabiExperiment:
         self.reduce_rlx_delay = reduce_rlx_delay
         self.reduce_rlx_delay_to = reduce_rlx_delay_to # can help speed up meas for qubits with lower T1s
         self.signal = signal
-        self.save_shots = save_shots # not implemented yet
+        self.save_shots = save_shots
         self.save_figs = save_figs
         self.experiment = experiment
         self.list_of_all_qubits = list_of_all_qubits
@@ -63,6 +63,7 @@ class Temps_EFAmpRabiExperiment:
 
     def run(self, soccfg, soc, use_iminuit_instead = True):
         print(self.config)
+
         # --- Pe sequence ---
         amp_rabi1 = AmplitudeRabiProgram1(soccfg, reps=self.config['reps2'], final_delay=self.config['relax_delay'], cfg=self.config)
         if self.live_plot:
@@ -90,7 +91,24 @@ class Temps_EFAmpRabiExperiment:
 
         measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
 
-        return I1, Q1, gains1, I2, Q2, gains2, A_amp_IQ1, A_amp_IQ2, A_amp_IQ_err1, A_amp_IQ_err2, fit_IQ_1, fit_IQ_2, self.config, measurement_timestamp
+        #-------------------------------------------------- Optional: save shots -------------------------------------#
+        Ishots1 = None
+        Qshots1 = None
+        Ishots2 = None
+        Qshots2 = None
+
+        if self.save_shots:
+            # For Pe sequence:
+            raw_0_pe = amp_rabi1.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
+            Ishots1 = raw_0_pe[self.QubitIndex][:, :, 0, 0]
+            Qshots1 = raw_0_pe[self.QubitIndex][:, :, 0, 1]
+
+            # For Pg sequence:
+            raw_0_pg = amp_rabi2.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
+            Ishots2 = raw_0_pg[self.QubitIndex][:, :, 0, 0]
+            Qshots2 = raw_0_pg[self.QubitIndex][:, :, 0, 1]
+
+        return I1, Q1, gains1, Ishots1, Qshots1, I2, Q2, gains2, Ishots2, Qshots2, A_amp_IQ1, A_amp_IQ2, A_amp_IQ_err1, A_amp_IQ_err2, fit_IQ_1, fit_IQ_2, self.config, measurement_timestamp
 
 
     def live_plotting(self, amp_rabi, soc):

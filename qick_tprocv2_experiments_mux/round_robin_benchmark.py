@@ -641,10 +641,10 @@ while j < n:
                                                                  experiment, live_plot,
                                                                  increase_qubit_reps = increase_qubit_reps_rpm, increase_qubit_reps_to = increase_qubit_reps_rpm_to,
                                                                  increase_qubit_reps2 = increase_qubit_reps2_rpm, increase_qubit_reps2_to = increase_qubit_reps2_rpm_to,
-                                                                 unmasking_resgain=unmask, reduce_rlx_delay = reduce_rlx_delay_rpm, reduce_rlx_delay_to = reduce_rlx_delay_rpm_to,
+                                                                 unmasking_resgain=unmask, save_shots = True, reduce_rlx_delay = reduce_rlx_delay_rpm, reduce_rlx_delay_to = reduce_rlx_delay_rpm_to,
                                                                  logger=rr_logger)
 
-                    (I1_qtemp, Q1_qtemp, gains1_qtemp, I2_qtemp, Q2_qtemp, gains2_qtemp,
+                    (I1_qtemp, Q1_qtemp, gains1_qtemp, I1_qtemp_shots, Q1_qtemp_shots, I2_qtemp, Q2_qtemp, gains2_qtemp, I2_qtemp_shots, Q2_qtemp_shots,
                      A_amplitude1, A_amplitude2, A_amplitude_err1, A_amplitude_err2, fit_cosine1_qtemp, fit_cosine2_qtemp,
                      sysconfig_efrabi_Qtemps, meas_timestamp_rpm) = efAmprabi_Qtemps.run(experiment.soccfg, experiment.soc, use_iminuit_instead = use_iminuit_instead)
 
