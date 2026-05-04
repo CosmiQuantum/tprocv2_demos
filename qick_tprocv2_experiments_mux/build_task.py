@@ -33,13 +33,9 @@ def add_single_qubit_experiment(expt_cfg, expt_name, QubitIndex):
 
         exp_cfg.update([("start",start), ("stop", stop)]) #this line is perminantly updating tprocv2_demos.qick_tprocv2_experiments_mux.expt_config import expt_cfg
 
-
     elif "start" in exp_cfg: # for time rabi
         start = exp_cfg["start"][QubitIndex]
         expts = exp_cfg['expts'][QubitIndex]
-
-
-    # else: # for single shot IQ plot
 
     # Decide what parameter we are changing.
     if expt_name == 'res_spec_ge':
@@ -76,7 +72,7 @@ def add_single_qubit_experiment(expt_cfg, expt_name, QubitIndex):
         exp_cfg.update([('qubit_gain_ef', QickSweep1D('gainloop', start, stop))])
     elif expt_name == 'power_rabi_fh':
         exp_cfg.update([('qubit_gain_fh', QickSweep1D('gainloop', start, stop))])
-    
+
     return exp_cfg
 
 

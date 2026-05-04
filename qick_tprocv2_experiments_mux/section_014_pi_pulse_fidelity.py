@@ -85,21 +85,31 @@ class RepeatedPiPulseProgram(AveragerProgramV2):
             gain=cfg['pi_amp'],   # freshly extracted pi gain
         )
 
-        self.add_loop("shotloop", cfg["steps"])
+        self.add_loop("shotloop", cfg["shots_per_pulse_count"]) # This loop collects many single-shot IQ points for one fixed N
 
     def _body(self, cfg):
-        n_pi_pulses = cfg.get("n_pi_pulses", 0)
+        num_pi_pulses_this_point = cfg["n_pi_pulses"]
 
-        for _ in range(n_pi_pulses):
+        # Apply the selected number of repeated pi pulses for this N point
+        for _ in range(num_pi_pulses_this_point):
             self.pulse(ch=cfg["qubit_ch"], name="pi_pulse", t=0)
-            self.delay_auto(0.0)
+            self.delay_auto(0.0) # spacing between repeated pi pulses
 
-        self.delay_auto(0.01)
-
-        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        # self.delay_auto(0.0) # spacing between the last pi pulse and the readout pulse
+        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0) # readout pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 class RepeatedPiPulseFidelity:
+    """
+    1. run() loop
+        Chooses N = 0, 1, 2, ..., 40
+
+    2. _body() loop
+       Plays N pi pulses inside one shot
+
+    3. shotloop
+       Repeats that same shot many times to collect statistics
+    """
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, outerFolder_save_plots,
                  round_num, experiment=None, save_figs=False, verbose=False, logger=None):
 
@@ -126,10 +136,9 @@ class RepeatedPiPulseFidelity:
         # n_pi_pulses tells the program how many pi pulses to apply for that one shot set.
         if n_pi_list is None:
             n_pi_list = np.arange(
-                self.config["n_pi_start"],
-                self.config["n_pi_stop"] + self.config["n_pi_step"],
-                self.config["n_pi_step"]
-            )
+                self.config["min_pi_pulses"],
+                self.config["max_pi_pulses"] + self.config["pi_pulse_step"],
+                self.config["pi_pulse_step"])
 
         I_data = []
         Q_data = []

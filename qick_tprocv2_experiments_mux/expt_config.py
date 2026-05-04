@@ -435,12 +435,12 @@ if FRIDGE == "QUIET":
         },
 
         "Pi_Pulse_Fid": {
-            "steps": 15000,          # shots per pulse-count point
-            "py_avg": 1,
-            "n_pi_start": 0,
-            "n_pi_stop": 40,
-            "n_pi_step": 1,
-            "relax_delay": 900,      # us
+            "shots_per_pulse_count": 1000,   # reps; number of single-shot measurements for each N to get statistical info
+            "py_avg": 1,                      # keep as 1 for single-shot data
+            "min_pi_pulses": 0,               # first N value
+            "max_pi_pulses": 40,              # last N value
+            "pi_pulse_step": 1,               # increment in N
+            "relax_delay": 900,               # us, wait time between shots
             "list_of_all_qubits": list_of_all_qubits
         }
 
