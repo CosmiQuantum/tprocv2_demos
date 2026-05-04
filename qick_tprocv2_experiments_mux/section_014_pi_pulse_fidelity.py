@@ -122,8 +122,14 @@ class RepeatedPiPulseFidelity:
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
 
     def run(self, n_pi_list=None):
+        # n_pi_list = all N values you sweep
+        # n_pi_pulses tells the program how many pi pulses to apply for that one shot set.
         if n_pi_list is None:
-            n_pi_list = np.arange(0, 41, 1)
+            n_pi_list = np.arange(
+                self.config["n_pi_start"],
+                self.config["n_pi_stop"] + self.config["n_pi_step"],
+                self.config["n_pi_step"]
+            )
 
         I_data = []
         Q_data = []
@@ -132,18 +138,9 @@ class RepeatedPiPulseFidelity:
             cfg = copy.deepcopy(self.config)
             cfg["n_pi_pulses"] = int(n_pi)
 
-            prog = RepeatedPiPulseProgram(
-                self.experiment.soccfg,
-                reps=1,
-                final_delay=cfg['relax_delay'],
-                cfg=cfg
-            )
+            prog = RepeatedPiPulseProgram(self.experiment.soccfg,reps=1,final_delay=cfg['relax_delay'], cfg=cfg)
 
-            iq_list = prog.acquire(
-                self.experiment.soc,
-                soft_avgs=1,
-                progress=False
-            )
+            iq_list = prog.acquire(self.experiment.soc, soft_avgs=cfg["py_avg"], progress=False)
 
             I = iq_list[self.QubitIndex][0].T[0]
             Q = iq_list[self.QubitIndex][0].T[1]
@@ -172,7 +169,7 @@ class RepeatedPiPulseFidelity:
         driven_pe_list = np.asarray(driven_pe_list)
 
         even_mask = (n_pi_list % 2 == 0)
-        odd_mask = ~even_mask
+        odd_mask = (n_pi_list % 2 == 1)
 
         fig, ax = plt.subplots(figsize=(8, 5))
 
@@ -193,12 +190,12 @@ class RepeatedPiPulseFidelity:
         ax.axhline(0, linestyle="--", linewidth=1, alpha=0.5)
         ax.axhline(1, linestyle="--", linewidth=1, alpha=0.5)
 
-        ax.set_xlabel("Number of repeated $X_\\pi$ pulses, N")
+        ax.set_xlabel("Number of repeated $\pi$ pulses, N")
         ax.set_ylabel("Excited-state population, $P_e$")
         ax.set_ylim(-0.05, 1.05)
 
         if title is None:
-            title = "Repeated $X_\\pi$ Pulse Check"
+            title = "Repeated $\pi$ Pulse Check"
         ax.set_title(title)
 
         ax.legend()

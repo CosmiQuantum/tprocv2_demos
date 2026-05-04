@@ -434,18 +434,15 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
         },
 
-        "Pi_Pulse_Fid": {  # used for SSF
-            "steps": 15000, # shots
+        "Pi_Pulse_Fid": {
+            "steps": 15000,          # shots per pulse-count point
             "py_avg": 1,
-            "gain_start" : [0, 0, 0, 0], # used in readout-optimization scripts
-            "gain_stop" : [1, 0, 0, 0], # used in readout-optimization scripts
-            "gain_step" : 0.1, # used in readout-optimization scripts
-            "freq_start" : [6176.0, 0, 0, 0], # used in readout-optimization scripts
-            "freq_stop" : [6178.0, 0, 0, 0], # used in readout-optimization scripts
-            "freq_step" : 0.1, # used in readout-optimization scripts
-            "relax_delay": 900, # 600, # [us]
-            "list_of_all_qubits": list_of_all_qubits,
-        },
+            "n_pi_start": 0,
+            "n_pi_stop": 40,
+            "n_pi_step": 1,
+            "relax_delay": 900,      # us
+            "list_of_all_qubits": list_of_all_qubits
+        }
 
     }
 
