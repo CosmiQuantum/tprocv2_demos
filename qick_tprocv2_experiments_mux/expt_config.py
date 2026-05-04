@@ -411,64 +411,8 @@ if FRIDGE == "QUIET":
             "wait_time": 0.0, # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
-    #
 
-    #
-    #     "res_spec_ef": {
-    #         "reps": 100,
-    #         "py_avg": 10,
-    #         "start": [7148, 0, 7202, 0, 0, 0], # [MHz]
-    #         "stop":  [7151, 0, 7207, 0, 0, 0], # [MHz]
-    #         "steps": 200,
-    #         "relax_delay": 900, # [us]
-    #         "list_of_all_qubits": list_of_all_qubits,
-    #     },
-    #
-    #     "qubit_spec_ef": {
-    #         "reps": 100,
-    #         "py_avg": 10,
-    #         "start": [2750, 0, 0, 0, 0, 0], # [MHz]
-    #         "stop":  [2850, 0, 0, 0, 0, 0], # [MHz]
-    #         "steps": 500,
-    #         "relax_delay": 900, # [us]
-        #         "list_of_all_qubits": list_of_all_qubits,
-    #     },
-    #
-        # "qubit_temp": { #this is for Santi's length rabi qubit temperature script (not working fully)
-        #     "reps": 500,
-        #     "py_avg": 1, #this is rounds, change after u get script working
-        #     "start": [20]*6, # [us]
-        #     "expts":  [200] * 6, #points
-        #     "step": (22 - 20) / (200 - 1), # [us], step = (stop - start) / (expts - 1)
-        #     "relax_delay": 800, # [us]
-        #     "list_of_all_qubits": list_of_all_qubits,
-        # },
-
-
-    #
-    #     "power_rabi_ef": {
-    #         "reps": 1000,
-    #         "py_avg": 10,
-    #         "start": [0.0] * 6, # [DAC units]
-    #         "stop":  [1.0] * 6, # [DAC units]
-    #         "steps": 100,
-    #         "relax_delay": 900, # [us]
-    #         "list_of_all_qubits": list_of_all_qubits,
-    #     },
-    #
-    #     "Ramsey_ef": {
-    #         "reps": 100,
-    #         "py_avg": 10,
-    #         "start": [0.0] * 6, # [us]
-    #         "stop":  [100] * 6, # [us]
-    #         "steps": 100,
-    #         "ramsey_freq": 0.05,  # [MHz]
-    #         "relax_delay": 900, # [us]
-    #         "wait_time": 0.0, # [us]
-    #         "list_of_all_qubits": list_of_all_qubits,
-    #     },
-    #
-        "IQ_plot":{
+        "IQ_plot":{ # not used currently
             "steps": 5000, # shots
             "py_avg": 1,
             "reps": 1,
@@ -476,18 +420,30 @@ if FRIDGE == "QUIET":
             "SS_ONLY": False,
             "list_of_all_qubits": list_of_all_qubits,
         },
-    # #
 
-        "Readout_Optimization":{
+        "Readout_Optimization":{ # used for SSF
             "steps": 15000, # shots
             "py_avg": 1,
-            "gain_start" : [0, 0, 0, 0],
-            "gain_stop" : [1, 0, 0, 0],
-            "gain_step" : 0.1,
-            "freq_start" : [6176.0, 0, 0, 0],
-            "freq_stop" : [6178.0, 0, 0, 0],
-            "freq_step" : 0.1,
-            "relax_delay": 900,#600, # [us]
+            "gain_start" : [0, 0, 0, 0], # used in readout-optimization scripts
+            "gain_stop" : [1, 0, 0, 0], # used in readout-optimization scripts
+            "gain_step" : 0.1, # used in readout-optimization scripts
+            "freq_start" : [6176.0, 0, 0, 0], # used in readout-optimization scripts
+            "freq_stop" : [6178.0, 0, 0, 0], # used in readout-optimization scripts
+            "freq_step" : 0.1, # used in readout-optimization scripts
+            "relax_delay": 900, # 600, # [us]
+            "list_of_all_qubits": list_of_all_qubits,
+        },
+
+        "Pi_Pulse_Fid": {  # used for SSF
+            "steps": 15000, # shots
+            "py_avg": 1,
+            "gain_start" : [0, 0, 0, 0], # used in readout-optimization scripts
+            "gain_stop" : [1, 0, 0, 0], # used in readout-optimization scripts
+            "gain_step" : 0.1, # used in readout-optimization scripts
+            "freq_start" : [6176.0, 0, 0, 0], # used in readout-optimization scripts
+            "freq_stop" : [6178.0, 0, 0, 0], # used in readout-optimization scripts
+            "freq_step" : 0.1, # used in readout-optimization scripts
+            "relax_delay": 900, # 600, # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
