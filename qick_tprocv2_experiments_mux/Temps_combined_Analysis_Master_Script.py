@@ -1182,9 +1182,9 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             ylims=(0, 600),
             yticks=np.arange(0, 601, 100),
             showfliers=True,  # outliers
-            save_plt_path = "/home/acolonce/Documents/analysis/multirun/qubit_temps_analysis/combined_ssf_rpm") # if set to 'None' uses plt.show()
-            # "/home/acolonce/Documents/analysis/multirun/qubit_temps_analysis/combined_ssf_rpm" #cosmiqserver01
-            # "/data/QICK_data/multirun_analysis/qubit_temps_analysis/combined" # daq01
+            save_plt_path = "/home/acolonce/Documents/analysis/multirun/qubit_temps/combined_ssf_rpm") # if set to 'None' uses plt.show()
+            # "/home/acolonce/Documents/analysis/multirun/qubit_temps/combined_ssf_rpm" #cosmiqserver01
+            # "/data/QICK_data/multirun_analysis/qubit_temps/combined" # daq01
             #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF")
 
     if comb_analysis_flags["Pe_box_whisker_allruns_allQs"]:
@@ -1204,9 +1204,9 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             showfliers=True,  # outliers
             fig_title="Excited-State Population vs Run Number",
             ylabel=r"$P_e$",
-            save_plt_path= "/home/acolonce/Documents/analysis/multirun/qubit_temps_analysis/combined_ssf_rpm") # if set to 'None' uses plt.show()
-            # "/home/acolonce/Documents/analysis/multirun/qubit_temps_analysis/combined_ssf_rpm" #cosmiqserver01
-            #"/data/QICK_data/multirun_analysis/qubit_temps_analysis/combined") #daq01
+            save_plt_path= "/home/acolonce/Documents/analysis/multirun/qubit_temps/combined_ssf_rpm") # if set to 'None' uses plt.show()
+            # "/home/acolonce/Documents/analysis/multirun/qubit_temps/combined_ssf_rpm" #cosmiqserver01
+            #"/data/QICK_data/multirun_analysis/qubit_temps/combined") #daq01
             #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF") # CEPH
 
     if comb_analysis_flags["ssf_box_whisker_allruns_allQs"]:
@@ -1220,10 +1220,10 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                 ylims=None,
                 yticks=None,
                 showfliers=True,
-                save_plt_path= "/home/acolonce/Documents/analysis/multirun/SSF_fid_analysis/") # if set to 'None' uses plt.show()
-                # "/home/acolonce/Documents/analysis/multirun/SSF_fid_analysis" #cosmiqserver01
-                #"/data/QICK_data/multirun_analysis/qubit_temps_analysis/SSF" ) #daq01
-                #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/SSF_fid_analysis") #CEPH
+                save_plt_path= "/home/acolonce/Documents/analysis/multirun/SSF_fid/") # if set to 'None' uses plt.show()
+                # "/home/acolonce/Documents/analysis/multirun/SSF_fid" #cosmiqserver01
+                #"/data/QICK_data/multirun_analysis/qubit_temps/SSF" ) #daq01
+                #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/SSF_fid") #CEPH
 
     # ------------ Qubit temperatures vs Time using all three methods ------------------------
     if comb_analysis_flags["Qtemps_vs_time_comb_separate_plts"]:

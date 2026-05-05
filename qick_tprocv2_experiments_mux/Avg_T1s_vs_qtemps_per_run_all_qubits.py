@@ -9,45 +9,47 @@ colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
 T1_vs_qtemps = True
 T1_AND_qtemps = False  # (left untouched below; your focus is T1_vs_qtemps)
 
-runs = [5, 6, 7, 8]
+runs = [5, 6, 7, 8, 9]
 
 # ----------------- DATA ARRAYS -----------------
+# Qubit temp values and errs last updated on 5/5/2026 !!! This was after run 9a ended
 qubit_temps = [
-    [197.35,  99.22,  81.46,  71.21],  # Qubit 1
-    [361.39,  84.26,  78.32,  75.36],  # Qubit 2
-    [164.24, 106.43,  80.11,  78.82],  # Qubit 3
-    [354.34, 135.15,  91.27, 100.85],  # Qubit 4
-    [169.67,  76.82,  87.88,  74.10],  # Qubit 5
-    [216.55,  91.56,  78.55,  64.90],  # Qubit 6
+    [193.9678, 101.6589, 81.9942, 71.2653, 47.0581],  # Qubit 1
+    [374.3313, 84.7427, 78.1897, 75.2878, 50.5346],  # Qubit 2
+    [165.4990, 108.3733, 79.9452, 78.8874, 57.2820],  # Qubit 3
+    [359.0683, 134.7626, 91.4804, 102.8802, 60.4407],  # Qubit 4
+    [169.67, 76.82, 87.88, 74.10, None],  # Qubit 5
+    [216.8889, 91.5844, 79.2936, 68.7476, 52.8615],  # Qubit 6
 ]
 
 qtemp_errs = [
-    [12.76, 9.99, 2.52, 1.26],   # Qubit 1
-    [33.57, 2.74, 1.18, 1.64],   # Qubit 2
-    [8.37,  8.37, 1.37, 2.55],   # Qubit 3
-    [23.71, 10.16, 2.38, 7.78],  # Qubit 4
-    [5.94,  5.77, 1.58, 2.07],   # Qubit 5
-    [7.80,  1.65, 1.98, 3.96],   # Qubit 6
+    [31.5876, 9.7054, 2.5526, 1.2428, 4.5928],  # Qubit 1
+    [35.6782, 2.1271, 1.1306, 1.5602, 3.8983],  # Qubit 2
+    [8.4186, 8.6378, 1.3020, 2.4503, 5.7933],  # Qubit 3
+    [22.0604, 10.3902, 2.3391, 7.6295, 5.1787],  # Qubit 4
+    [5.94, 5.77, 1.58, 2.07, None],  # Qubit 5
+    [7.5547, 2.1030, 2.0174, 2.7332, 3.6556],  # Qubit 6
 ]
 
-# NOTE: 5 entries per qubit, but temps only have 4 (runs).
-# We drop the first T1 entry so the LAST 4 align with runs 5-8.
+# NOTE: 6 entries per qubit, but temps only have 5 (runs).
+# We drop the first T1 entry so the LAST 4 align with runs 5-9.
+# Qubit temp values and errs last updated on 5/5/2026 !!! This was after run 9a ended
 t1_vals = [
-    [6.09, 14.94, 64.32, 63.71, 61.14],   # Qubit 1
-    [19.61, 27.73, 59.71, 62.47, 63.60],  # Qubit 2
-    [7.72, 16.43, 73.72, 52.64, 54.17],   # Qubit 3
-    [12.74, 21.53, 59.55, 59.51, 64.76],  # Qubit 4
-    [9.28, 12.31, 32.83, 55.77, 48.78],   # Qubit 5
-    [9.44, 14.82, 41.52, 32.09, 30.45],   # Qubit 6
+    [6.09, 14.94, 64.32, 63.71, 61.14, 58.2909],   # Qubit 1
+    [19.61, 27.73, 59.71, 62.47, 63.60, 51.2307],  # Qubit 2
+    [7.72, 16.43, 73.72, 52.64, 54.17, 71.4829],   # Qubit 3
+    [12.74, 21.53, 59.55, 59.51, 64.76, 67.0882],  # Qubit 4
+    [9.28, 12.31, 32.83, 55.77, 48.78, None],      # Qubit 5
+    [9.44, 14.82, 41.52, 32.09, 30.45, 49.5618],   # Qubit 6
 ]
 
 t1_errs = [
-    [0.24, 1.41, 4.20, 5.63, 3.06],  # Qubit 1
-    [2.38, 3.34, 6.54, 3.98, 3.85],  # Qubit 2
-    [0.26, 1.75, 4.18, 1.81, 4.82],  # Qubit 3
-    [0.44, 2.49, 3.72, 6.65, 7.72],  # Qubit 4
-    [0.46, 1.66, 4.19, 2.45, 2.99],  # Qubit 5
-    [0.35, 1.39, 2.98, 2.02, 1.36],  # Qubit 6
+    [0.24, 1.41, 4.20, 5.63, 3.06, 4.1109],  # Qubit 1
+    [2.38, 3.34, 6.54, 3.98, 3.85, 3.1261],  # Qubit 2
+    [0.26, 1.75, 4.18, 1.81, 4.82, 4.7908],  # Qubit 3
+    [0.44, 2.49, 3.72, 6.65, 7.72, 3.6070],  # Qubit 4
+    [0.46, 1.66, 4.19, 2.45, 2.99, None],    # Qubit 5
+    [0.35, 1.39, 2.98, 2.02, 1.36, 3.0307],  # Qubit 6
 ]
 
 # ----------------- PHYSICS ASSUMPTIONS (SET ONCE) -----------------
@@ -122,7 +124,7 @@ def implied_B_values(T_mK, T1_us, gamma0, delta_over_kB_K):
 
 # ----------------- PLOT: T1 vs Teff (Option A) -----------------
 if T1_vs_qtemps:
-    run_markers = {5: "o", 6: "s", 7: "^", 8: "D"}
+    run_markers = {5: "o", 6: "s", 7: "^", 8: "D", 9: "P"}
 
     num_qubits = len(qubit_temps)
     fig, axes = plt.subplots(2, 3, figsize=(14, 8), sharex=True, sharey=True)
@@ -136,7 +138,7 @@ if T1_vs_qtemps:
         xq = np.asarray(qubit_temps[q], float)
 
         yq_all = np.asarray(t1_vals[q], float)
-        yq = yq_all[1:1 + len(runs)]  # align to runs 58
+        yq = yq_all[1:1 + len(runs)]  # align to runs 5-9
 
         gamma0_q = infer_gamma0_from_points(xq, yq, mode=BASELINE_MODE)
         gamma0_list.append(gamma0_q)
@@ -162,7 +164,7 @@ if T1_vs_qtemps:
         y_all = np.asarray(t1_vals[q], dtype=float)      # µs (len 5)
         yerr_all = np.asarray(t1_errs[q], dtype=float)   # µs (len 5)
 
-        # Align T1 arrays to runs 58 (drop the first entry)
+        # Align T1 arrays to runs 5-9 (drop the first entry)
         y = y_all[1:1 + len(runs)]
         yerr = yerr_all[1:1 + len(runs)]
 

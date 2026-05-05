@@ -1,32 +1,33 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-runs6_through_8_rpm = False
-plot_both_SSF_RPM_tog = True
+runs6_through_9_rpm = True
+plot_both_SSF_RPM_tog = False
 show_text = False
 colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
 
-if runs6_through_8_rpm is True and not plot_both_SSF_RPM_tog:
-    print("runs6_through_8_rpm")
+if runs6_through_9_rpm is True and not plot_both_SSF_RPM_tog:
+    # Qubit temp values and errs last updated on 5/5/2026 (after run 9a ended). These are good to go!
+    print("runs6_through_9_rpm")
     qubit_temps = [
-        [193.97, 101.66, 81.99, 71.27],  # Qubit 1
-        [374.33, 84.74, 78.19, 75.29],  # Qubit 2
-        [165.50, 108.37, 79.95, 78.89],  # Qubit 3
-        [359.07, 134.76, 91.48, 102.98],  # Qubit 4
-        [170.05, 78.19, 87.87, 73.93],  # Qubit 5
-        [216.89, 91.58, 79.29, 68.69],  # Qubit 6
+        [193.9678, 101.6589, 81.9942, 71.2653, 47.0581],  # Qubit 1
+        [374.3313, 84.7427, 78.1897, 75.2878, 50.5346],  # Qubit 2
+        [165.4990, 108.3733, 79.9452, 78.8874, 57.2820],  # Qubit 3
+        [359.0683, 134.7626, 91.4804, 102.8802, 60.4407],  # Qubit 4
+        [169.67, 76.82, 87.88, 74.10, None],  # Qubit 5
+        [216.8889, 91.5844, 79.2936, 68.7476, 52.8615],  # Qubit 6
     ]
 
     qtemp_errs = [
-        [31.59, 9.71, 2.55, 1.24],  # Qubit 1
-        [35.68, 2.13, 1.13, 1.56],  # Qubit 2
-        [8.42, 8.64, 1.30, 2.45],  # Qubit 3
-        [22.06, 10.39, 2.34, 7.60],  # Qubit 4
-        [6.05, 9.91, 1.55, 2.06],  # Qubit 5
-        [7.55, 2.10, 2.02, 2.71],  # Qubit 6
+        [31.5876, 9.7054, 2.5526, 1.2428, 4.5928],  # Qubit 1
+        [35.6782, 2.1271, 1.1306, 1.5602, 3.8983],  # Qubit 2
+        [8.4186, 8.6378, 1.3020, 2.4503, 5.7933],  # Qubit 3
+        [22.0604, 10.3902, 2.3391, 7.6295, 5.1787],  # Qubit 4
+        [5.94, 5.77, 1.58, 2.07, None],  # Qubit 5
+        [7.5547, 2.1030, 2.0174, 2.7332, 3.6556],  # Qubit 6
     ]
 
-    runs = np.array([5, 6, 7, 8])
+    runs = np.array([5, 6, 7, 8, 9])
 
     num_qubits = len(qubit_temps)
     num_runs =  len(qubit_temps[0])
@@ -91,29 +92,30 @@ if runs6_through_8_rpm is True and not plot_both_SSF_RPM_tog:
         xy = (r, y_anchor[i])
         xytext = (r + 0.40, y_anchor[i] + 70) # tweak offsets to taste
 
-        plt.annotate(
-            note,
-            xy=xy,
-            xytext=xytext,
-            textcoords="data",
-            ha="left",
-            va="center",
-            fontsize=8,
-            bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="gray", alpha=0.9),
-            arrowprops=dict(arrowstyle="->", lw=0.8, color="gray"),
-            zorder=5
-        )
+        # plt.annotate(
+        #     note,
+        #     xy=xy,
+        #     xytext=xytext,
+        #     textcoords="data",
+        #     ha="left",
+        #     va="center",
+        #     fontsize=8,
+        #     bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="gray", alpha=0.9),
+        #     arrowprops=dict(arrowstyle="->", lw=0.8, color="gray"),
+        #     zorder=5
+        # )
 
     plt.xlabel("Run Number")
-    plt.ylabel("Average Effective Qubit Temperature (mK)")
-    plt.title("Average Effective Qubit Temperature vs Run Number")
-    plt.xticks(runs, ['Run 5\n(SSF Meas.)', 'Run 6\n(Rabi Pop. Meas.)', 'Run 7\n(Rabi Pop. Meas.)', 'Run 8\n(Rabi Pop. Meas.)'])
+    plt.ylabel("Median Effective Qubit Temperature (mK)")
+    plt.title("Median Effective Qubit Temperature vs Run Number")
+    plt.xticks(runs, ['Run 5\n(SSF Meas.)', 'Run 6\n(Rabi Pop. Meas.)', 'Run 7\n(Rabi Pop. Meas.)', 'Run 8\n(Rabi Pop. Meas.)', 'Run 9\n(Rabi Pop. Meas.)'])
     plt.yticks(np.arange(100, 351, 25))
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
     plt.show()
-elif not runs6_through_8_rpm and not plot_both_SSF_RPM_tog: # Only SSF qubit temps, OUTDATED
+elif not runs6_through_9_rpm and not plot_both_SSF_RPM_tog: # Only SSF qubit temps
+    #  VALUES IN THIS SECTION ARE OUTDATED!!!!!
     qubit_temps = [
         [193.97, 100.98, 89.26, 77.21],  # Qubit 1
         [374.33, None, 85.85, 85.96],  # Qubit 2
@@ -224,6 +226,7 @@ elif not runs6_through_8_rpm and not plot_both_SSF_RPM_tog: # Only SSF qubit tem
     plt.show()
 
 if plot_both_SSF_RPM_tog:
+    #  VALUES IN THIS SECTION ARE OUTDATED!!!!!
     # ---------------- USER OPTIONS ----------------
     qubits_to_plot = [1]  # qubit numbers (1-based)
     colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred'] # if u want to do per qubit
