@@ -944,6 +944,10 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         base_dir2 = None
         filter_keywords2 = None
         target_dates_qtemps_RPM2 = None
+
+        # -- Reset this param for SSF qubit temps --
+        low_thermal_pops = False
+
         if run_num == 5:
             # ---------------- RPM (none) ----------------
             Science_Qubits = [0, 1, 2, 3, 4, 5]
@@ -1014,6 +1018,8 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run8
 
         elif run_num == 9:
+            low_thermal_pops = True # for SSF qubit temps (there were really low thermal pops in this run)
+
             # ---------------- RPM ----------------
             Science_Qubits = [0, 1, 2, 3, 4, 5]
             base_dir = base_dir_run9
