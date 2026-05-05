@@ -11,6 +11,7 @@ from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
 #from expt_config import *
 import glob
+import matplotlib.dates as mdates
 import re
 import datetime
 import ast
@@ -468,12 +469,9 @@ class T2rVsTime:
         font = 14
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
-        fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+        fig, axes = plt.subplots(2, 3, figsize=(12, 8), sharey=True, sharex=True)
         plt.suptitle('T2R Values vs Time', fontsize=font)
         axes = axes.flatten()
-
-        from datetime import datetime
-        import matplotlib.dates as mdates
 
         for i, ax in enumerate(axes):
             if i >= self.number_of_qubits:
@@ -486,7 +484,7 @@ class T2rVsTime:
             y = t2_vals[i]
             err = t2_fit_err[i]
 
-            datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
+            datetime_objects = [datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
 
             combined = list(zip(datetime_objects, y, err))
             combined.sort(key=lambda tup: tup[0])
@@ -500,15 +498,12 @@ class T2rVsTime:
 
             ax.errorbar(
                 sorted_x, sorted_y, yerr=sorted_err,
-                fmt='none',  #no marker
+                fmt='o',
+                markersize=3,
+                color=colors[i],
                 ecolor=colors[i],
                 elinewidth=1,
-                capsize=0
-            )
-            ax.scatter(
-                sorted_x, sorted_y,
-                s=10,
-                color=colors[i],
+                capsize=0,
                 alpha=0.5
             )
 
@@ -542,7 +537,7 @@ class T2rVsTime:
             x = date_times[i]
             y = t2_vals[i]
             err = t2_fit_err[i]
-            datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
+            datetime_objects = [datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
             combined = list(zip(datetime_objects, y, err))
             combined.sort(key=lambda tup: tup[0])
             if len(combined) == 0:

@@ -484,7 +484,7 @@ class T2eVsTime:
         font = 14
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
-        fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+        fig, axes = plt.subplots(2, 3, figsize=(12, 8), sharey=True, sharex=True)
         plt.suptitle('T2E Values vs Time', fontsize=font)
         axes = axes.flatten()
 
@@ -516,16 +516,12 @@ class T2eVsTime:
             # ax.set_ylim(20, 140)
             ax.errorbar(
                 sorted_x, sorted_y, yerr=sorted_err,
-                fmt='none',
+                fmt='o',
+                markersize=3,
+                color=colors[i],
                 ecolor=colors[i],
                 elinewidth=1,
-                capsize=0
-            )
-
-            ax.scatter(
-                sorted_x, sorted_y,
-                s=10,
-                color=colors[i],
+                capsize=0,
                 alpha=0.5
             )
 

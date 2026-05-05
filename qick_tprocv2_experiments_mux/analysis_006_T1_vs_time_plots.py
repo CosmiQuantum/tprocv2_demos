@@ -347,7 +347,7 @@ class T1VsTime:
                                 soccfg_dump_path = "/exp/cosmiq/data/QUIET/QICK_data/run9/6transmon/run9_soccfg_params/soccfg_full_dump_2026-04-20_21-30-15_firmware_during_run9.txt"
                                     #"/data/QICK_data/run9/6transmon/run9_soccfg_params/soccfg_full_dump_2026-04-20_21-30-15_firmware_during_run9.txt" #daq01
                             if self.run_number == 8:  # This works
-                                soccfg_dump_path = "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
+                                soccfg_dump_path = "/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
                                     # r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8\soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
                                     # "/data/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
                             elif self.run_number == 6:  # This doesn't work yet (shots need to be processed diff for run 6) but the skeleton is set up
@@ -603,13 +603,10 @@ class T1VsTime:
         font = 14
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
-        fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+        fig, axes = plt.subplots(2, 3, figsize=(12, 8), sharey=True, sharex=True)
         ext = exp_extension.replace('_', '')
         plt.suptitle(f'T1 Values vs Time {ext}', fontsize=font)
         axes = axes.flatten()
-
-        import matplotlib.dates as mdates
-        from matplotlib.ticker import StrMethodFormatter
 
         for i, ax in enumerate(axes):
             if i >= self.number_of_qubits:
@@ -637,16 +634,12 @@ class T1VsTime:
 
             ax.errorbar(
                 sorted_x, sorted_y, yerr=sorted_err,
-                fmt='none',
+                fmt='o',
+                markersize=3,
+                color=colors[i],
                 ecolor=colors[i],
                 elinewidth=1,
-                capsize=0
-            )
-
-            ax.scatter(
-                sorted_x, sorted_y,
-                s=10,
-                color=colors[i],
+                capsize=0,
                 alpha=0.5
             )
 

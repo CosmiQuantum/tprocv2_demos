@@ -2,7 +2,7 @@ import numpy as np
 import os
 import sys
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
-
+from matplotlib.ticker import MaxNLocator
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_004_qubit_spec_ge import QubitSpectroscopy
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
@@ -20,7 +20,7 @@ import ast
 import os
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from matplotlib.ticker import StrMethodFormatter
+from matplotlib.ticker import StrMethodFormatter, LinearLocator
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
@@ -140,7 +140,7 @@ class QubitFreqsVsTime:
                     outerFolder = timestamp_dir + "/study_data/"  # where data is stored
 
                 #outerFolder_save_plots = timestamp_dir + "/documentation/" # where plots will be stored
-                print("Looking inside: ", outerFolder)
+                #print("Looking inside: ", outerFolder)
 
             elif self.fridge.upper() == 'NEXUS':
                 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
@@ -263,9 +263,9 @@ class QubitFreqsVsTime:
                             good_fit = (
                                     qspec_fit_err is not None
                                     and np.isfinite(qspec_fit_err)
-                                    and qspec_fit_err < 1.0 # above 1 MHz fit err is probably not a good fit
-                                    and 0.01 < largest_amp_curve_fwhm < 10.0 # width of peak
-                                    and good_center
+                                    # and qspec_fit_err < 1.0 # above 1 MHz fit err is probably not a good fit
+                                    # and largest_amp_curve_fwhm < 10.0  #0.01 < largest_amp_curve_fwhm < 10.0 # width of peak
+                                    # and good_center
                             )
 
                             if good_fit:
@@ -273,7 +273,7 @@ class QubitFreqsVsTime:
                                 qspec_fit_errs[q_key].extend([qspec_fit_err])
 
                                 # # If you want to look at scans that made it through, uncomment this:
-                                # qspec_class_instance.plot_results(I, Q, freqs)
+                                #qspec_class_instance.plot_results(I, Q, freqs)
 
                                 if use_png_timestamps:
                                     # --- use PNG filename timestamp from mapping if available ------
@@ -472,7 +472,7 @@ class QubitFreqsVsTime:
         font = 18
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
-        fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+        fig, axes = plt.subplots(2, 3, figsize=(12, 8), sharex=True)
         ext = exp_extension.split('_')[0]
         plt.suptitle(f'g-e Qubit Frequencies (MHz) vs Time {ext}', fontsize=font)
         axes = axes.flatten()
@@ -545,18 +545,20 @@ class QubitFreqsVsTime:
                 alpha=0.5
             )
 
-            ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+            ax.xaxis.set_major_locator(LinearLocator(6))
             ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
             ax.tick_params(axis='x', rotation=45)
+            ax.tick_params(axis='both', which='major', labelsize=10)
 
-            ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.2f}"))
+            ymin, ymax = ax.get_ylim()
+            ax.set_yticks(np.linspace(ymin, ymax, 8))
+            ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.3f}"))
 
             if show_legends:
                 ax.legend(edgecolor='black')
 
             ax.set_xlabel('Time', fontsize=16)
             ax.set_ylabel('Freq (MHz)', fontsize=16)
-            ax.tick_params(axis='both', which='major', labelsize=10)
 
         plt.tight_layout()
         plt.savefig(
@@ -627,7 +629,6 @@ class QubitFreqsVsTime:
         ax.tick_params(axis='x', rotation=45)
 
         ax.ticklabel_format(style="plain", axis="y")
-        from matplotlib.ticker import StrMethodFormatter
         ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.2f}"))
 
         if show_legends:
