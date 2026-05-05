@@ -109,7 +109,7 @@ if runs6_through_9_rpm is True and not plot_both_SSF_RPM_tog:
     plt.ylabel("Median Effective Qubit Temperature (mK)")
     plt.title("Median Effective Qubit Temperature vs Run Number")
     plt.xticks(runs, ['Run 5\n(SSF Meas.)', 'Run 6\n(Rabi Pop. Meas.)', 'Run 7\n(Rabi Pop. Meas.)', 'Run 8\n(Rabi Pop. Meas.)', 'Run 9\n(Rabi Pop. Meas.)'])
-    plt.yticks(np.arange(100, 351, 25))
+    plt.yticks(np.arange(25, 376, 25))
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
