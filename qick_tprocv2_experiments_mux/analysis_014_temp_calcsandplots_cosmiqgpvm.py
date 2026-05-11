@@ -580,13 +580,20 @@ class SSFTempCalcAndPlots:
                 ssf_fid = rec["ssf_fid"]
                 ts_unix = rec["data_timestamp"]
 
+                # Extracting SSF errors
+                ssf_err_shot = rec["ssf_err_shot"]
+                ssf_err_bins = rec["ssf_err_bins"]
+                ssf_err_fit = rec["ssf_err_fit"]
+                ssf_err_total = rec["ssf_err_total"]
+                ssf_vs_bins = rec["ssf_vs_bins"]
+
                 # -------- Only using double-Gaussian fit on ground state data, without fallback method --------------------------
                 (Pg, Pe, sigma_Pe, m2, means, sigmas, weights, pop_threshold, pop_threshold_err,
                  ground_gaussian, excited_gaussian,
                  ground_data, excited_data, x,
                  lr_stat, nll1, nll2) = self.fit_double_gaussian_midpoint_iminuit(ig_new, dontuse_midpt_thresh, low_leakage_mode)
 
-                # ---------- quality cut (do 2 gaussians fit the data better than a single one?) ---------------------
+                # ---------- quality cut limits (do 2 gaussians fit the data better than a single one?) ---------------------
 
                 LR_STAT_LIMITS = {
                     5: {0: 706,
@@ -636,7 +643,7 @@ class SSFTempCalcAndPlots:
                     print(f'Rejected a fit with Likelihood ratio test score < {lr_stat_limit}')
                     # not convincingly bimodal --> skip this dataset, it is better described by a single gaussian
 
-                    if do_plots and qid == 5:
+                    if do_plots:
                         bad_plots_path = os.path.join(save_figs_path, f"bad_fits_LRT_failed/Q{qid+1}")
                         os.makedirs(bad_plots_path, exist_ok=True)
                         self.plot_gaussians_qtemps(qid, bad_plots_path, ig_new, ground_data,
@@ -702,7 +709,7 @@ class SSFTempCalcAndPlots:
                 sigma_TmK, sigma_Pe_total = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
 
                 # Plotting
-                if do_plots and qid == 5: # run 9 test
+                if do_plots: # run 9 test
                     save_figs_path_clean = os.path.join(save_figs_path, f"Q{qid + 1}") # to separate plots by qubit
                     self.plot_gaussians_qtemps(qid, save_figs_path_clean, ig_new, ground_data,
                                                excited_data, ground_gaussian,
@@ -734,6 +741,10 @@ class SSFTempCalcAndPlots:
                     "Pg": Pg,
                     "Pe": Pe,
                     "ssf_fid": ssf_fid,
+                    "ssf_err_shot": ssf_err_shot,
+                    "ssf_err_bins": ssf_err_bins,
+                    "ssf_err_fit": ssf_err_fit,
+                    "ssf_err_total": ssf_err_total, # Total SSF error
                     "qfreq_mhz": freq_mhz,
                     "qfreq_mhz_err": freq_mhz_err,
                 })
@@ -1610,6 +1621,7 @@ class SSFTempCalcAndPlots:
 
             times_vals = []
             ssf_vals = []
+            ssf_errs = []
 
             for rec in records:
                 if not isinstance(rec, dict):
@@ -1617,6 +1629,7 @@ class SSFTempCalcAndPlots:
 
                 timestamp = rec.get("timestamp", None)
                 ssf = rec.get("ssf_fid", None)
+                ssf_err = rec.get("ssf_err_total", None)
 
                 if timestamp is None or ssf is None:
                     continue
@@ -1624,20 +1637,28 @@ class SSFTempCalcAndPlots:
                 if not np.isfinite(ssf):
                     continue
 
+                if ssf_err is None or not np.isfinite(ssf_err):
+                    continue
+
                 times_vals.append(timestamp)
                 ssf_vals.append(ssf)
+                ssf_errs.append(ssf_err)
 
             if len(ssf_vals) == 0:
                 print(f"No valid SSF values found for Q{q + 1}")
                 continue
 
-            ax.scatter(
+            ax.errorbar(
                 times_vals,
                 ssf_vals,
+                yerr=ssf_errs,
+                fmt="o",
                 color=colors[q % len(colors)],
                 alpha=0.7,
-                label=f"Q{q + 1}"
-            )
+                capsize=3,
+                markersize=5,
+                linestyle="None",
+                label=f"Q{q + 1}")
 
         ax.set_title("Single-Shot Fidelity vs Time", fontsize=18)
         ax.set_xlabel("Time", fontsize=16)
@@ -1651,10 +1672,9 @@ class SSFTempCalcAndPlots:
         ax.grid(alpha=0.3)
         plt.tight_layout()
 
-        fname = os.path.join(plot_path,f"AllQubits_SSF_vs_Time_{datetime.datetime.now():%Y%m%d%H%M%S}.png")
+        fname = os.path.join(plot_path,f"AllQubits_SSF_vs_Time_{datetime.datetime.now():%Y%m%d%H%M%S}.pdf")
         plt.savefig(fname, dpi=300, bbox_inches="tight")
         plt.close(fig)
-
         print("Saved SSF vs time plot to ->", fname)
 
     #  Scatter plot – qubit temperatures vs. time  (all dates, each qubit its own subplot)
@@ -1852,6 +1872,159 @@ class SSFTempCalcAndPlots:
         plt.savefig(fname, dpi=300)
         plt.close(fig)
         print("Saved all-dates histogram to:", fname)
+
+    def plot_ssf_vs_pe(self, fit_results, plot_path, n_qubits=6, plot_together=True):
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        os.makedirs(plot_path, exist_ok=True)
+
+        if not isinstance(fit_results, dict):
+            raise TypeError("fit_results must be a dictionary keyed by qubit index.")
+
+        # ---------------- Helper to extract valid data ----------------
+        def extract_qubit_data(q):
+            records = fit_results.get(q, []) or []
+
+            pe_vals = []
+            pe_errs = []
+            ssf_vals = []
+            ssf_errs = []
+
+            for rec in records:
+                if not isinstance(rec, dict):
+                    continue
+
+                pe = rec.get("Pe", None)
+                pe_err = rec.get("total_sigma_Pe", None)
+
+                ssf = rec.get("ssf_fid", None)
+                ssf_err = rec.get("ssf_err_total", None)
+
+                if pe is None or ssf is None:
+                    continue
+
+                if not np.isfinite(pe) or not np.isfinite(ssf):
+                    continue
+
+                if pe_err is None or not np.isfinite(pe_err):
+                    continue
+
+                if ssf_err is None or not np.isfinite(ssf_err):
+                    continue
+
+                pe_vals.append(pe)
+                pe_errs.append(pe_err)
+                ssf_vals.append(ssf)
+                ssf_errs.append(ssf_err)
+
+            return pe_vals, pe_errs, ssf_vals, ssf_errs
+
+        # =====================================================================
+        # Option 1: plot all qubits together
+        # =====================================================================
+        if plot_together:
+            fig, ax = plt.subplots(figsize=(10, 8), sharex=True, sharey=True)
+
+            for q in range(n_qubits):
+                pe_vals, pe_errs, ssf_vals, ssf_errs = extract_qubit_data(q)
+
+                if len(ssf_vals) == 0:
+                    print(f"No valid SSF/Pe values found for Q{q + 1}")
+                    continue
+
+                ax.errorbar(
+                    pe_vals,
+                    ssf_vals,
+                    xerr=pe_errs,
+                    yerr=ssf_errs,
+                    fmt="o",
+                    color=colors[q % len(colors)],
+                    alpha=0.7,
+                    capsize=3,
+                    markersize=5,
+                    linestyle="None",
+                    label=f"Q{q + 1}"
+                )
+
+            ax.set_title("Single-Shot Fidelity vs $P_e$", fontsize=18)
+            ax.set_xlabel("$P_e$", fontsize=16)
+            ax.set_ylabel("Single-Shot Fidelity", fontsize=16)
+
+            plt.setp(ax.get_xticklabels(), fontsize=16)
+            plt.setp(ax.get_yticklabels(), fontsize=16)
+
+            ax.legend(fontsize=14)
+            ax.grid(alpha=0.3)
+
+            plt.tight_layout()
+            fname = os.path.join(plot_path,f"AllQubits_SSF_vs_Pe_{datetime.datetime.now():%Y%m%d%H%M%S}.pdf")
+            plt.savefig(fname, dpi=300, bbox_inches="tight")
+            plt.close(fig)
+
+            print("Saved combined SSF vs Pe plot to ->", fname)
+            return fname
+
+        # =====================================================================
+        # Option 2: plot each qubit separately as subplots in one figure
+        # =====================================================================
+        else:
+            ncols = min(3, n_qubits)
+            nrows = math.ceil(n_qubits / ncols)
+
+            fig, axes = plt.subplots(
+                nrows,
+                ncols,
+                figsize=(5.5 * ncols, 4.5 * nrows),
+                sharex=False,
+                sharey=True)
+
+            axes = np.atleast_1d(axes).ravel()
+
+            for q in range(n_qubits):
+                ax = axes[q]
+
+                pe_vals, pe_errs, ssf_vals, ssf_errs = extract_qubit_data(q)
+
+                if len(ssf_vals) == 0:
+                    print(f"No valid SSF/Pe values found for Q{q + 1}")
+                    ax.set_title(f"Qubit {q + 1}", fontsize=16)
+                    ax.grid(alpha=0.3)
+                    continue
+
+                ax.errorbar(
+                    pe_vals,
+                    ssf_vals,
+                    xerr=pe_errs,
+                    yerr=ssf_errs,
+                    fmt="o",
+                    color=colors[q % len(colors)],
+                    alpha=0.7,
+                    capsize=3,
+                    markersize=5,
+                    linestyle="None",
+                    label=f"Q{q + 1}")
+
+                ax.set_title(f"Qubit {q + 1}", fontsize=16)
+                ax.grid(alpha=0.3)
+                ax.legend(fontsize=12)
+                ax.tick_params(axis="both", labelsize=14)
+
+            # Hide unused subplot panels, if any
+            for k in range(n_qubits, len(axes)):
+                axes[k].set_visible(False)
+
+            fig.suptitle("Single-Shot Fidelity vs $P_e$", fontsize=18)
+            fig.supxlabel("$P_e$", fontsize=16)
+            fig.supylabel("Single-Shot Fidelity", fontsize=16)
+
+            plt.tight_layout(rect=[0, 0, 1, 0.96])
+
+            fname = os.path.join(plot_path,f"Subplots_SSF_vs_Pe_{datetime.datetime.now():%Y%m%d%H%M%S}.pdf")
+
+            plt.savefig(fname, dpi=300, bbox_inches="tight")
+            plt.close(fig)
+
+            print("Saved subplot SSF vs Pe plot to ->", fname)
+            return fname
 
     def plot_all_Qs_Pe_hists_ssf(
             self,
@@ -2309,11 +2482,18 @@ class SSFTempCalcAndPlots:
         """
         print('Processing SSF and g-e quit spec data for temperature analysis...')
         freq_cache = {}  # for qubit freqs (MHz)
-        freq_err_cache = {}  # 1-σ error (std) on that freq
+        freq_err_cache = {}  # 1-? error (std) on that freq
         ig_new_cache = {}  # for ground state roated I data (SSF)
         ie_new_cache = {}  # for first excited state roated I data (SSF)
         timestamp_ssf_cache = {}  # for ssf data time stamps (qubit temperature time stamps)
-        ssf_fid_cache = {} # for single shot fidelity values
+        ssf_fid_cache = {}  # for single shot fidelity values
+
+        #-- To store SSF errors --
+        ssf_err_shot_cache = {}
+        ssf_err_bins_cache = {}
+        ssf_err_fit_cache = {}
+        ssf_err_total_cache = {}
+        ssf_vs_bins_cache = {}
 
         if self.run_num == 4 or self.run_num ==5:
             folder_qspec = "study_data"
@@ -2453,15 +2633,29 @@ class SSFTempCalcAndPlots:
                     # iterate through every round (file)
                     for i in range(ssf_n):
                         try:
-                            _, _, fid, ig_new, _, ie_new, _, _, _, _, _ = ssf_ge.get_ssf_in_round(I_g, Q_g, I_e, Q_e, i)
+                            ssf_results = ssf_ge.get_ssf_in_round(I_g, Q_g, I_e, Q_e, i)
                         except Exception as e:
                             print(f"rotate-Ig failed ({ssf_paths[i]}): {e}")
                             continue
+
+                        ig_new = ssf_results["ig_new"]
+                        ie_new = ssf_results["ie_new"]
+                        fid = ssf_results["ssf"]
+                        fid_err_shot = ssf_results["ssf_err_shot"]
+                        fid_err_bins = ssf_results["ssf_err_bins"]
+                        fid_err_fit = ssf_results["ssf_err_fit"]
+                        fid_err_total = ssf_results["ssf_err_total"]
+                        fid_bins = ssf_results["ssf_vs_bins"]
 
                         key = (ssf_paths[i], QubitIndex)
                         ig_new_cache[key] = ig_new
                         ie_new_cache[key] = ie_new
                         ssf_fid_cache[key] = fid
+                        ssf_err_shot_cache[key] = fid_err_shot
+                        ssf_err_bins_cache[key] = fid_err_bins
+                        ssf_err_fit_cache[key] = fid_err_fit
+                        ssf_err_total_cache[key] = fid_err_total
+                        ssf_vs_bins_cache[key] = fid_bins
                         timestamp_ssf_cache[key] = ssf_dates[i]
 
                 except Exception as e:
@@ -2493,10 +2687,15 @@ class SSFTempCalcAndPlots:
                     "qspec_path": qspec_path,
                     "ssf_path": ssf_path,
                     "qfreq_MHz": freq_cache[fq_key],  # MHz
-                    "qfreq_MHz_err": freq_err_cache[fq_key],  # 1-σ (standard deviation) fit error on "qfreq_MHz_err"
+                    "qfreq_MHz_err": freq_err_cache[fq_key],  # 1-sigma (standard deviation) fit error on "qfreq_MHz_err"
                     "ig_new": ig_new_cache[ss_key],
                     "ie_new": ie_new_cache[ss_key],
-                    "ssf_fid": ssf_fid_cache[ss_key],
+                    "ssf_fid": ssf_fid_cache[ss_key], # SSF value
+                    "ssf_err_shot": ssf_err_shot_cache[ss_key], # finite-shot/statistical uncertainty on SSF from counting shots relative to the chosen threshold
+                    "ssf_err_bins": ssf_err_bins_cache[ss_key], # SSF uncertainty from sensitivity to the histogram binning choice
+                    "ssf_err_fit": ssf_err_fit_cache[ss_key], # additional SSF uncertainty from the fitted Gaussian threshold; zero for max_contrast
+                    "ssf_err_total": ssf_err_total_cache[ss_key], # total SSF uncertainty, combining shot, binning, and fit contributions in quadrature
+                    "ssf_vs_bins": ssf_vs_bins_cache[ss_key], # diagnostic array of SSF values obtained when recalculating SSF with different numbins values
                     "data_timestamp": timestamp_ssf_cache[ss_key].timestamp(),  # unix-timestamps
                 })
         return pairs_info
