@@ -1876,7 +1876,7 @@ class SSFTempCalcAndPlots:
         plt.close(fig)
         print("Saved all-dates histogram to:", fname)
 
-    def plot_ssf_vs_pe(self, fit_results, plot_path, n_qubits=6, plot_together=True, sharex=False, sharey=True):
+    def plot_SSF_fid_vs_Pe_viaSSF(self, fit_results, plot_path, n_qubits=6, plot_together=True, sharex=False, sharey=True):
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
         markers = ['o', 's', '^', 'D', 'v', 'P']
         os.makedirs(plot_path, exist_ok=True)
