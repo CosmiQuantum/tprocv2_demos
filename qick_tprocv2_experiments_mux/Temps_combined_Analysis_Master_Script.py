@@ -45,7 +45,8 @@ save_figs = False # To be used in general for any function or class to save (or 
 save_figs_SSF = False # Do you want to save gaussian fit plots while calculating ssf qtemps? iminuit case only
 fit_saved = False # Not used here, set to false.
 exclude_temp_sweeps = True # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
-filter_out_bad_amp_fits = True # filter out bad rpm fits? this doesn't work perfect but helps a bit
+filter_out_bad_RPM_fits = True # filter out bad rpm fits? this doesn't work perfect but helps a bit
+filter_out_bad_SSF_qtemp_fits = False # filter out SSF data that can't be properly fitted for qubit temp calcs?
 get_qtemp_data = True # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
 get_london_data = False # This returns RPM qubit temperatures, resonator freqs, and qubit freqs for specified dates. Designed for London Penetration analysis.
 
@@ -66,13 +67,13 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": True, "Qtemps_viaSSF_with_fallback": False,
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
                       "combined_studies_Qtemps": True}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False, "Pe_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_hists_viaSSF": False, "Pe_vs_time_viaRPM": False,
-                  "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": False, "SSF_vs_Pe": True}
+                  "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": False, "SSF_fid_vs_Pe_viaSSF": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
 comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
@@ -766,13 +767,13 @@ elif coh_qtemp_ana_flags["load_coherence_res"] and run_num != 8:
 if qtemp_method_flags["Qtemps_viaRPM"]:
     RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits)
     combined_qtemp_data = RPM_calcs.run_RPMqtemps(base_dir, target_dates_qtemps_RPM, filter_keywords, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
-                            outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, filter_out_bad_amp_fits = filter_out_bad_amp_fits,
+                            outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, filter_out_bad_RPM_fits = filter_out_bad_RPM_fits,
                                                   passing_pre_sciencerun_data = False, combine_IQ_signal = rpm_combine_IQ_signal)
 
     if run_num == 6:
         if pre_sciencerun6_data:
             combined_qtemp_data2 = RPM_calcs.run_RPMqtemps(base_dir2, target_dates_qtemps_RPM2, filter_keywords2, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
-                                                          outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, filter_out_bad_amp_fits = filter_out_bad_amp_fits,
+                                                          outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps, filter_out_bad_RPM_fits = filter_out_bad_RPM_fits,
                                                            passing_pre_sciencerun_data = True, combine_IQ_signal = rpm_combine_IQ_signal)
 
             combined_qtemp_data += combined_qtemp_data2
@@ -784,7 +785,7 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
     outerFolder_qtemps_data = ""
     date_string = ""
     Pe_dist_err_dict = None
-    RPM_plotter = PlotRR_noQick(date_string, figure_quality, save_figs, fit_saved, signal, run_name, tot_num_of_qubits, outerFolder, outerFolder_qtemps_plots, outerFolder_qtemps_data, run_num, filter_out_bad_amp_fits)
+    RPM_plotter = PlotRR_noQick(date_string, figure_quality, save_figs, fit_saved, signal, run_name, tot_num_of_qubits, outerFolder, outerFolder_qtemps_plots, outerFolder_qtemps_data, run_num, filter_out_bad_RPM_fits)
 
     # ---------------------------------------------- RPM Pe histograms -------------------------------------------
     if analysis_flags["Pe_hists_viaRPM"]:
@@ -835,7 +836,7 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
             # Made a special iminuit-based double gaussian fitting function. For now it is only set up to fit g-state data.
             # optionally saves fitted data and shows which scans were filtered out and which were kept
             all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=1.0, do_plots=save_figs_SSF, save_figs_path = path_saveplots_fits, dontuse_midpt_thresh = True,
-                                                                                                                        low_leakage_mode = low_thermal_pops, ssf_hist_ylim = ssf_hist_ylim)
+                                                                                                                        low_leakage_mode = low_thermal_pops, ssf_hist_ylim = ssf_hist_ylim, apply_quality_cuts = filter_out_bad_SSF_qtemp_fits)
         else:
             all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only = False, fallback_to_threshold = False)
     elif qtemp_method_flags["Qtemps_viaSSF_ge_thresh"]: # Fits both GROUND STATE and PREPARED EXCITED STATE SSF data to a double gaussian ; threshold = midpoint of the two gaussian means
@@ -849,8 +850,8 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
     if analysis_flags["SSF_vs_time"]:
         SSF_calcs_obj.plot_ssf_vs_time(fit_results, path_saveplots_ssf_qtemps_vsT, n_qubits =6)
     # --------------------------------------------------------- SSF vs Pe for each qubit -------------------------------------------------------------------------
-    if analysis_flags["SSF_vs_Pe"]:
-        SSF_calcs_obj.plot_ssf_vs_pe(fit_results, path_saveplots_ssf_qtemps_vsT, n_qubits =6, plot_together = True, sharex=True, sharey=True)
+    if analysis_flags["SSF_fid_vs_Pe_viaSSF"]:
+        SSF_calcs_obj.plot_SSF_fid_vs_Pe_viaSSF(fit_results, path_saveplots_ssf_qtemps_vsT, n_qubits =6, plot_together = True, sharex=True, sharey=True)
     # ---------------------------------------- SSF thermal population (Pe) histograms --------------------------------------------------------------
     if analysis_flags["Pe_hists_viaSSF"]:
         SSF_calcs_obj.plot_all_Qs_Pe_hists_ssf(fit_results, out_dir=path_saveplots_ssf_qtemps_vsT, bins=45, rel_err_cutoff=None, only_return_mu_and_sigma=True)
@@ -919,7 +920,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
     # Using ground-state double gaussian fit method
     all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=1.0,
                                                                                                                 do_plots = True, save_figs_path = made_on_folder, dontuse_midpt_thresh = True,
-                                                                                                               low_leakage_mode = low_thermal_pops, ssf_hist_ylim = ssf_hist_ylim)
+                                                                                                               low_leakage_mode = low_thermal_pops, ssf_hist_ylim = ssf_hist_ylim, apply_quality_cuts = filter_out_bad_SSF_qtemp_fits)
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
@@ -1066,13 +1067,13 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                                                               run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
                                                               outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data,
                                                               get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps,
-                                                              passing_pre_sciencerun_data=False, filter_out_bad_amp_fits = filter_out_bad_amp_fits,
+                                                              passing_pre_sciencerun_data=False, filter_out_bad_RPM_fits = filter_out_bad_RPM_fits,
                                                             combine_IQ_signal = rpm_combine_IQ_signal)
                 if run_num == 6:
                     if pre_sciencerun6_data:
                         all_files_Qtemp_results_RPMs2 = RPM_calcs.run_RPMqtemps(base_dir2, target_dates_qtemps_RPM2, filter_keywords2, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
                                                                       outerFolder_qtemps_plots_RR, replot_RPMs, get_qtemp_data, get_london_data, figure_quality, save_figsRR, exclude_temp_sweeps,
-                                                                                passing_pre_sciencerun_data = True, filter_out_bad_amp_fits = filter_out_bad_amp_fits, combine_IQ_signal = rpm_combine_IQ_signal)
+                                                                                passing_pre_sciencerun_data = True, filter_out_bad_RPM_fits = filter_out_bad_RPM_fits, combine_IQ_signal = rpm_combine_IQ_signal)
                         all_files_Qtemp_results_RPMs += all_files_Qtemp_results_RPMs2
 
                 # ---- ADAPT + STORE (RPM) ----
@@ -1092,7 +1093,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
 
             if use_iminuit_gdoublegauss_ssf: # Made a special iminuit-based double gaussian fitting function, but for now it is only set up to fit g-state data.
                 all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=0.6,
-                    do_plots=False, dontuse_midpt_thresh = True, low_leakage_mode = low_thermal_pops, ssf_hist_ylim = ssf_hist_ylim)
+                    do_plots=False, dontuse_midpt_thresh = True, low_leakage_mode = low_thermal_pops, ssf_hist_ylim = ssf_hist_ylim, apply_quality_cuts = filter_out_bad_SSF_qtemp_fits)
 
                 # ---- STORE FULL FIT RESULTS FOR SSF LOG OVERLAY PLOTS ----
                 fit_results_g_by_run[run_num] = fit_results_g
@@ -1276,7 +1277,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             qubits_to_plot=[0, 1, 2, 3, 5],
             tolerance_seconds=10, # 10 seconds for all runs except Run 6 SCIENCE run data (600s)
             plot_together=True,
-            xlims= None, #(0, 0.06),
+            xlims= (0.0, 0.07),
             ylims=(0.6, 1.0),
             RPM_Pe_rel_err_cut = 0.2)
 
@@ -1494,7 +1495,7 @@ if coh_qtemp_ana_flags["load_qtemps"]:
                                                                    get_london_data, figure_quality, save_figsRR,
                                                                    exclude_temp_sweeps,
                                                                    passing_pre_sciencerun_data=False,
-                                                                   filter_out_bad_amp_fits=filter_out_bad_amp_fits,
+                                                                   filter_out_bad_RPM_fits=filter_out_bad_RPM_fits,
                                                                    combine_IQ_signal=rpm_combine_IQ_signal)
             if run_num == 6:
                 if pre_sciencerun6_data:
@@ -1507,7 +1508,7 @@ if coh_qtemp_ana_flags["load_qtemps"]:
                                                                             figure_quality, save_figsRR,
                                                                             exclude_temp_sweeps,
                                                                             passing_pre_sciencerun_data=True,
-                                                                            filter_out_bad_amp_fits=filter_out_bad_amp_fits,
+                                                                            filter_out_bad_RPM_fits=filter_out_bad_RPM_fits,
                                                                             combine_IQ_signal=rpm_combine_IQ_signal)
                     all_files_Qtemp_results_RPMs += all_files_Qtemp_results_RPMs2
 
@@ -1527,8 +1528,9 @@ if coh_qtemp_ana_flags["load_qtemps"]:
 
         if use_iminuit_gdoublegauss_ssf:  # Made a special iminuit-based double gaussian fitting function, but for now it is only set up to fit g-state data.
             all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps_iminuit(
-                pairs_info, run_num=run_num, limit_temp_k=0.6,
-                do_plots=False, dontuse_midpt_thresh=True, low_leakage_mode = low_thermal_pops, ssf_hist_ylim = ssf_hist_ylim)
+                pairs_info, run_num=run_num, limit_temp_k=0.6, do_plots=False, dontuse_midpt_thresh=True, low_leakage_mode = low_thermal_pops, 
+                ssf_hist_ylim = ssf_hist_ylim, apply_quality_cuts = filter_out_bad_SSF_qtemp_fits)
+            
             # ---- STORE RESULTS (SSF g) ----
             ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals, ssf_fid_errs = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
 

@@ -523,7 +523,8 @@ class SSFTempCalcAndPlots:
 
         return all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs, fit_results
 
-    def run_ssf_qtemps_iminuit(self, pairs_info, run_num, limit_temp_k=0.8, do_plots = False, save_figs_path = "", dontuse_midpt_thresh = False, low_leakage_mode = False, ssf_hist_ylim = None):
+    def run_ssf_qtemps_iminuit(self, pairs_info, run_num, limit_temp_k=0.8, do_plots = False, save_figs_path = "", dontuse_midpt_thresh = False, low_leakage_mode = False, ssf_hist_ylim = None,
+                               apply_quality_cuts=True):
         """
         Uses iminuit instead of GMM for double gaussian fitting and minimization.
 
@@ -536,6 +537,7 @@ class SSFTempCalcAndPlots:
         Discard temperatures above this value (default 0.8 K → 800 mK).
         low_leakage_mode: used when fitting SSF data with very smalll thermal populations (example QUIET run 9)
         dontuse_midpt_thresh: when set to False, uses threshold method. When set to True, uses weights of gaussian mixture as Pg and Pe.
+        apply_quality_cuts: if True, implements quality cuts that are used for qubit temps
 
         Returns
         -------
@@ -563,6 +565,7 @@ class SSFTempCalcAndPlots:
             "Pe": Pe,
             "qfreq_mhz": freq_mhz, # qubit frequency
             "qfreq_mhz_err": freq_mhz_err,
+            ...,
           }]}
         """
         # initialise output arrays
@@ -639,7 +642,7 @@ class SSFTempCalcAndPlots:
                 else:
                     lr_stat_limit = DEFAULT_LR_STAT_LIMIT
 
-                if lr_stat < lr_stat_limit: # higher = stricter
+                if apply_quality_cuts and lr_stat < lr_stat_limit: # higher = stricter
                     print(f'Rejected a fit with Likelihood ratio test score < {lr_stat_limit}')
                     # not convincingly bimodal --> skip this dataset, it is better described by a single gaussian
 
@@ -677,9 +680,9 @@ class SSFTempCalcAndPlots:
                     overlap_min = 2.0
                 bad_overlap = overlap_metric < overlap_min
 
-                if low_leakage_mode and (bad_leakage_spread or bad_overlap): # only for run 9 so far
+                if apply_quality_cuts and low_leakage_mode and (bad_leakage_spread or bad_overlap): # only for run 9 so far
                     print(f"Rejected fit | sigma_ratio={sigma_ratio:.2f} (>{sig_ratio_thresh}) or overlap={overlap_metric:.2f} (<{overlap_min})")
-                    if do_plots and qid == 5:
+                    if do_plots:
                         bad_plots_path = os.path.join(save_figs_path, f"bad_fits_LRT_failed/Q{qid+1}")
                         os.makedirs(bad_plots_path, exist_ok=True)
                         self.plot_gaussians_qtemps(qid, bad_plots_path, ig_new, ground_data,
@@ -709,7 +712,7 @@ class SSFTempCalcAndPlots:
                 sigma_TmK, sigma_Pe_total = self.compute_temperature_error_SSF(Pe, sigma_Pe, T_mK, freq_mhz, freq_mhz_err)
 
                 # Plotting
-                if do_plots: # run 9 test
+                if do_plots:
                     save_figs_path_clean = os.path.join(save_figs_path, f"Q{qid + 1}") # to separate plots by qubit
                     self.plot_gaussians_qtemps(qid, save_figs_path_clean, ig_new, ground_data,
                                                excited_data, ground_gaussian,
@@ -1875,6 +1878,7 @@ class SSFTempCalcAndPlots:
 
     def plot_ssf_vs_pe(self, fit_results, plot_path, n_qubits=6, plot_together=True, sharex=False, sharey=True):
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
+        markers = ['o', 's', '^', 'D', 'v', 'P']
         os.makedirs(plot_path, exist_ok=True)
 
         if not isinstance(fit_results, dict):
@@ -1936,7 +1940,7 @@ class SSFTempCalcAndPlots:
                     ssf_vals,
                     xerr=pe_errs,
                     yerr=ssf_errs,
-                    fmt="o",
+                    fmt=markers[q % len(markers)],
                     color=colors[q % len(colors)],
                     alpha=0.7,
                     capsize=3,
@@ -1946,9 +1950,11 @@ class SSFTempCalcAndPlots:
                     label=f"Q{q + 1}"
                 )
 
-            ax.set_title("Single-Shot Fidelity vs $P_e$", fontsize=18)
+            ax.set_title("Single-Shot Fidelity vs $P_e$ (via SSF)", fontsize=18)
             ax.set_xlabel("$P_e$", fontsize=16)
             ax.set_ylabel("Single-Shot Fidelity", fontsize=16)
+            ax.set_ylim(0.6, 1.0)
+            ax.set_xlim(0.0, 0.07)
 
             plt.setp(ax.get_xticklabels(), fontsize=16)
             plt.setp(ax.get_yticklabels(), fontsize=16)
@@ -1998,7 +2004,7 @@ class SSFTempCalcAndPlots:
                     ssf_vals,
                     xerr=pe_errs,
                     yerr=ssf_errs,
-                    fmt="o",
+                    fmt=markers[q % len(markers)],
                     markersize=5,
                     elinewidth=1,
                     capsize=3,
@@ -2014,6 +2020,7 @@ class SSFTempCalcAndPlots:
                 ax.set_xlabel("$P_e$")
                 ax.set_ylabel("Single-Shot Fidelity")
                 ax.set_ylim(0.6, 1.0)
+                ax.set_xlim(0.0, 0.07)
                 ax.grid(alpha=0.3)
                 ax.legend(loc="best", fontsize=14, frameon=False)
                 ax.tick_params(axis="both", labelsize=16)
@@ -2026,7 +2033,7 @@ class SSFTempCalcAndPlots:
             # for ax in axes:
             #     ax.label_outer()
 
-            fig.suptitle("Single-Shot Fidelity vs $P_e$", fontsize=16)
+            fig.suptitle("Single-Shot Fidelity vs $P_e$ (via SSF)", fontsize=16)
             fname = os.path.join(plot_path,f"Subplots_SSF_vs_Pe_{datetime.datetime.now():%Y%m%d%H%M%S}.pdf")
             plt.savefig(fname, dpi=300, bbox_inches="tight")
             plt.close(fig)
@@ -2590,6 +2597,11 @@ class SSFTempCalcAndPlots:
             dataset = os.path.basename(full_path)  # just the '2025-04-16_11-47-09' part
 
             for QubitIndex in Science_Qubits:  # We are only taking science data for some qubits
+                # Run 9 patch: accidentally took punched-out data for Q4 in this dataset.
+                # QubitIndex == 3 corresponds to Q4.
+                if (QubitIndex == 3 and "AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47" in str(full_path).replace("\\", "/")):
+                    print(f"Skipping Q4 data due to punchout in {full_path}", flush=True)
+                    continue
                 try:
                     # --- Load QSpec ---
                     qspec_obj = AnaQSpec(path, dataset, QubitIndex, folder_qspec, expt_name_qspec, datagroup_qspec)
@@ -2924,7 +2936,7 @@ class RPMTempCalcAndPlots:
 
     def run_RPMqtemps(self, base_dir, target_dates, filter_keywords, fit_saved, signal, run_name, run_num, list_of_all_qubits, tot_num_of_qubits,
                      outerFolder_RR_plots, replot_RPMs = False, get_qtemp_data = False, get_london_data = False, figure_quality = 200, save_figsRR = False,
-                      exclude_temp_sweeps = False, passing_pre_sciencerun_data = False, filter_out_bad_amp_fits = False, use_png_timestamps = False,
+                      exclude_temp_sweeps = False, passing_pre_sciencerun_data = False, filter_out_bad_RPM_fits = False, use_png_timestamps = False,
                       combine_IQ_signal = False):
 
         combined_qtemp_data = []  # list of results from different .h5 files
@@ -2972,18 +2984,18 @@ class RPMTempCalcAndPlots:
 
                         # ---------------------------------------- Initialize the PlotRR_noQick class ------------------------------------------------
                         plotter = PlotRR_noQick(date_string, figure_quality, save_figsRR, fit_saved, signal, run_name,
-                                                tot_num_of_qubits, outerFolder, outerFolder_RR_plots, outerFolder_qtemps_data, run_num, filter_out_bad_amp_fits)
+                                                tot_num_of_qubits, outerFolder, outerFolder_RR_plots, outerFolder_qtemps_data, run_num, filter_out_bad_RPM_fits)
 
                         if replot_RPMs:
                             # You still have to set save_figsRR to True if you want to save plots
-                            # set filter_out_bad_amp_fits to True to save filtered ones, otherwise no quality cuts will be applied
+                            # set filter_out_bad_RPM_fits to True to save filtered ones, otherwise no quality cuts will be applied
                             # ------------------------------------To re-plot the RPM plots (the rest have been internally commented out)-----------------------------------------------------
                             plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_ss = False,  ss_plot_gef = False, plot_t1 = False,
                                         plot_t2r = False, plot_t2e = False, plot_rabis_Qtemps = True, combine_rpm_IQ_signal = combine_IQ_signal)
 
                         if get_qtemp_data: # returns RPM qubit temperature data (and qfreqs that were used for the calculations)
                             # ---------------------------------------- Load data and append to list spanning multiple dates --------------------------------------------------
-                            qtemp_data = plotter.load_plot_save_rabis_Qtemps(list_of_all_qubits, run_num, save_figs = save_figsRR, get_qtemp_data = get_qtemp_data, filter_out_bad_amp_fits = filter_out_bad_amp_fits,
+                            qtemp_data = plotter.load_plot_save_rabis_Qtemps(list_of_all_qubits, run_num, save_figs = save_figsRR, get_qtemp_data = get_qtemp_data, filter_out_bad_RPM_fits = filter_out_bad_RPM_fits,
                                                                              use_png_timestamps = use_png_timestamps, combine_IQ_signal = combine_IQ_signal)
                             combined_qtemp_data.extend(qtemp_data)
 
@@ -4576,7 +4588,8 @@ class combined_Qtemp_studies:
         os.makedirs(out_dir, exist_ok=True)
 
         num_qubits = self.number_of_qubits
-        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred'] # palevioletred
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
+        markers = ['o', 's', '^', 'D', 'v', 'P']
 
         if ssf_fit_results is None or not isinstance(ssf_fit_results, dict):
             raise ValueError("ssf_fit_results must be a dict like fit_results[qid] = [ {...}, ... ]")
@@ -4776,7 +4789,7 @@ class combined_Qtemp_studies:
                     matched[q]["SSF"],
                     xerr=matched[q]["PeErr_RPM"],
                     yerr=matched[q]["SSF_err"],
-                    fmt="o",
+                    fmt=markers[q % len(markers)],
                     markersize=5,
                     elinewidth=1,
                     capsize=3,
@@ -4834,7 +4847,7 @@ class combined_Qtemp_studies:
                         matched[q]["SSF"],
                         xerr=matched[q]["PeErr_RPM"],
                         yerr=matched[q]["SSF_err"],
-                        fmt="o",
+                        fmt=markers[q % len(markers)],
                         markersize=5,
                         elinewidth=1,
                         capsize=3,
@@ -4936,9 +4949,9 @@ class combined_Qtemp_studies:
                     outerFolder_save_plots = ""
                     unique_folder_path = ""
                     run_num = ""
-                    filter_out_bad_amp_fits = ""
+                    filter_out_bad_RPM_fits = ""
                     rr = PlotRR_noQick(date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
-                                        outerFolder_save_plots, unique_folder_path, run_num, filter_out_bad_amp_fits)
+                                        outerFolder_save_plots, unique_folder_path, run_num, filter_out_bad_RPM_fits)
 
                 # ------------------ Optional RPM from I-only amplitudes ------------------
                 # Pe distribution error from I-only amplitude case has not been implemented yet!!!

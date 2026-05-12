@@ -1620,9 +1620,9 @@ class QubitFreqsVsTime:
 
 class PlotRR_noQick:
     def __init__(self,  date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
-                 outerFolder_save_plots, unique_folder_path, run_num, filter_out_bad_amp_fits):
+                 outerFolder_save_plots, unique_folder_path, run_num, filter_out_bad_RPM_fits):
         self.date = date
-        self.filter_out_bad_amp_fits = filter_out_bad_amp_fits
+        self.filter_out_bad_RPM_fits = filter_out_bad_RPM_fits
         self.figure_quality = figure_quality
         self.save_figs = save_figs
         self.fit_saved = fit_saved
@@ -1692,7 +1692,7 @@ class PlotRR_noQick:
         #     self.load_plot_save_q_spec()
         if plot_rabis_Qtemps:
             list_of_all_qubits = [i for i in range(self.number_of_qubits + 1)]
-            self.load_plot_save_rabis_Qtemps(list_of_all_qubits, run_num = self.run_num, save_figs = self.save_figs, filter_out_bad_amp_fits = self.filter_out_bad_amp_fits,
+            self.load_plot_save_rabis_Qtemps(list_of_all_qubits, run_num = self.run_num, save_figs = self.save_figs, filter_out_bad_RPM_fits = self.filter_out_bad_RPM_fits,
                                              combine_IQ_signal = combine_rpm_IQ_signal)
         # if plot_rabi:
         #     if rabi_rolling_avg:
@@ -1765,13 +1765,20 @@ class PlotRR_noQick:
         outerFolder_expt = self.outerFolder + "/Data_h5/qspec_ge/"
         h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
         extracted_qfreqs = []
+
         for h5_file in h5_files:
+
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
             H5_class_instance = Data_H5(h5_file)
             load_data = H5_class_instance.load_from_h5(data_type='qspec_ge', save_r=int(save_round))
 
             populated_keys = []
             for q_key in load_data['qspec_ge']:
+                # Run 9 patch, accidentally took punched out data for Q4, bad.
+                if ("AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47" in h5_file
+                        and int(q_key) == 3):
+                    print(f"Skipping Q4 data due to punchout in {h5_file}")
+                    continue
                 # Access 'Dates' for the current q_key
                 dates_list = load_data['qspec_ge'][q_key].get('Dates', [[]])
 
@@ -1866,7 +1873,6 @@ class PlotRR_noQick:
         ssf_dict = {"records": []}
 
         for h5_file in h5_files:
-
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
 
             H5_class_instance = Data_H5(h5_file)
@@ -1874,6 +1880,11 @@ class PlotRR_noQick:
 
             populated_keys = []
             for q_key in load_data[data_key]:
+                # Run 9 patch, accidentally took punched out data for Q4, bad.
+                if ("AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47" in h5_file
+                        and int(q_key) == 3):
+                    print(f"Skipping Q4 data due to punchout in {h5_file}")
+                    continue
                 # Access 'Dates' for the current q_key
                 dates_list = load_data[data_key][q_key].get('Dates', [[]])
 
@@ -2160,7 +2171,7 @@ class PlotRR_noQick:
             },
         }
 
-    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, run_num, save_figs = False, get_qtemp_data = False, filter_out_bad_amp_fits = False, use_png_timestamps = False, combine_IQ_signal = False):
+    def load_plot_save_rabis_Qtemps(self, list_of_all_qubits, run_num, save_figs = False, get_qtemp_data = False, filter_out_bad_RPM_fits = False, use_png_timestamps = False, combine_IQ_signal = False):
         """
         Note: this code assumes that a single h5 file contains ONE dataset for EACH qubit inside.
 
@@ -2268,6 +2279,11 @@ class PlotRR_noQick:
             # print('populated_keys ', populated_keys)
 
             for q_key in populated_keys:
+                # Run 9 patch, accidentally took punched out data for Q4, bad.
+                if ("AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47" in h5_file
+                        and int(q_key) == 3):
+                    print(f"Skipping Q4 data due to punchout in {h5_file}", flush=True)
+                    continue
                 # print(f"Extracting data for QubitIndex: {q_key}")
                 for dataset in range(len(load_data['q_temperatures'][q_key].get('Dates', [])[0])):
                     A_amp_IQ_Pe = None
@@ -2340,7 +2356,7 @@ class PlotRR_noQick:
                     # If we are saving filtered plots we don't want to save unfiltered ones
                     # But sometimes we want to just look at unfiltered ones
                     save_figs_nonfiltered = False
-                    if save_figs and not filter_out_bad_amp_fits:
+                    if save_figs and not filter_out_bad_RPM_fits:
                         save_figs_nonfiltered = True
 
                     if len(I1) > 0:
@@ -2386,8 +2402,8 @@ class PlotRR_noQick:
                     A_Q_Pg = fit_params_Pg.get("A_Q", None)
                     sigma_A_Q_Pg = fit_params_Pg.get("sigma_A_Q", None)
 
-                    if filter_out_bad_amp_fits and len(I1) > 0 and len(I2) > 0:
-                        print(f'\n inside filter_out_bad_amp_fits block for {q_key + 1}')
+                    if filter_out_bad_RPM_fits and len(I1) > 0 and len(I2) > 0:
+                        print(f'\n inside filter_out_bad_RPM_fits block for {q_key + 1}')
 
                         # -------------------- BIC filtering: cosine must beat line AND exp in at least one quadrature ------------
                         # sometimes all the oscillation is in I, and sometimes all the oscillation is in Q.
