@@ -3049,66 +3049,135 @@ class combined_Qtemp_studies:
             temp_key="temperature_mK",
             err_key="temperature_err_mK",
             ssf_key="ssf_fid",
+            ssf_err_key="ssf_err_total",
             alt_err_keys=("temperature_mK_err", "T_mK_err", "T_err_mK", "T_err"),
-            keep_nans=False,
-    ):
+            qubit_keys=("qid", "qubit", "qubit_index", "QubitIndex"),
+            keep_nans=False):
         """
-        Converts SSF fit_results into:
-          temps[qid]    = [T_mK, ...]
-          errs[qid]     = [T_err_mK (or nan), ...]
-          ssf_vals[qid] = [ssf_fid (or nan), ...]
+        Convert SSF fit_results into per-qubit lists.
 
-        Supports fit_results as:
-          - dict: fit_results[qid] -> list of record dicts
-          - list/tuple: a flat list of record dicts (must include a qubit id key)
+        Returns
+        -------
+        temps : list of lists
+            temps[qid] = [temperature_mK, ...]
 
-        Notes:
-          * If an error key is missing, we append np.nan so temps/errs stay aligned.
-          * If the SSF key is missing, we append np.nan so temps/errs/ssf stay aligned.
-          * If keep_nans=False (default), we skip non-finite temperatures.
+        errs : list of lists
+            errs[qid] = [temperature_error_mK, ...]
+
+        ssf_vals : list of lists
+            ssf_vals[qid] = [ssf_fid, ...]
+
+        ssf_errs : list of lists
+            ssf_errs[qid] = [ssf_err_total, ...]
+
+        Supported input formats
+        -----------------------
+        1. Dictionary form:
+            fit_results[qid] = [record_dict, record_dict, ...]
+
+        2. Flat list form:
+            fit_results = [record_dict, record_dict, ...]
+
+           In this case, each record must contain a qubit identifier using one
+           of the names in qubit_keys, e.g. "qid" or "qubit_index".
+
+        Notes
+        -----
+        - If an error key is missing, np.nan is appended so the arrays stay aligned.
+        - If the SSF key is missing, np.nan is appended so the arrays stay aligned.
+        - If keep_nans=False, records with non-finite temperatures are skipped.
         """
 
         temps = [[] for _ in range(n_qubits)]
         errs = [[] for _ in range(n_qubits)]
         ssf_vals = [[] for _ in range(n_qubits)]
+        ssf_errs = [[] for _ in range(n_qubits)]
 
-        # ---- helper to pick an error value from record with fallbacks ----
-        def _get_err(rec):
-            if err_key in rec:
-                return rec.get(err_key, None)
-            for k in alt_err_keys:
-                if k in rec:
-                    return rec.get(k, None)
+        # ---------------- Helpers ----------------
+        def _to_float_or_nan(val):
+            """Safely convert scalar-like values to float; otherwise return np.nan."""
+            try:
+                if val is None:
+                    return np.nan
+
+                val = float(val)
+
+                if np.isfinite(val):
+                    return val
+
+                return np.nan
+
+            except (TypeError, ValueError):
+                return np.nan
+
+        def _get_first_available(rec, keys):
+            """Return the first available record value from a list/tuple of keys."""
+            for key in keys:
+                if key in rec:
+                    return rec.get(key)
             return None
 
-        # ---- helper to safely convert values ----
-        def _to_float_or_nan(val):
-            if val is not None and np.isfinite(val):
-                return float(val)
-            return np.nan
+        def _get_temp_err(rec):
+            """Get temperature error, allowing fallback key names."""
+            if err_key in rec:
+                return rec.get(err_key)
 
-        # ---- dict form: {qid: [records...]} ----
+            for key in alt_err_keys:
+                if key in rec:
+                    return rec.get(key)
+
+            return None
+
+        def _append_record(qid, rec):
+            """Append one record into the per-qubit containers."""
+            if not isinstance(rec, dict):
+                return
+
+            if qid is None or qid < 0 or qid >= n_qubits:
+                return
+
+            T = _to_float_or_nan(rec.get(temp_key, None))
+
+            if not keep_nans and not np.isfinite(T):
+                return
+
+            T_err = _to_float_or_nan(_get_temp_err(rec))
+            ssf = _to_float_or_nan(rec.get(ssf_key, None))
+            ssf_err = _to_float_or_nan(rec.get(ssf_err_key, None))
+
+            temps[qid].append(T)
+            errs[qid].append(T_err)
+            ssf_vals[qid].append(ssf)
+            ssf_errs[qid].append(ssf_err)
+
+        # ---------------- Dictionary form: {qid: [records]} ----------------
         if isinstance(fit_results, dict):
             for qid in range(n_qubits):
                 records = fit_results.get(qid, []) or []
+
                 for rec in records:
-                    if not isinstance(rec, dict):
-                        continue
+                    _append_record(qid, rec)
 
-                    T = rec.get(temp_key, None)
-                    Te = _get_err(rec)
-                    ssf = rec.get(ssf_key, None)
+            return temps, errs, ssf_vals, ssf_errs
 
-                    if T is None or (not np.isfinite(T) and not keep_nans):
-                        continue
+        # ---------------- Flat list form: [records] ----------------
+        if isinstance(fit_results, (list, tuple)):
+            for rec in fit_results:
+                if not isinstance(rec, dict):
+                    continue
 
-                    temps[qid].append(float(T) if T is not None else np.nan)
-                    errs[qid].append(_to_float_or_nan(Te))
-                    ssf_vals[qid].append(_to_float_or_nan(ssf))
+                qid = _get_first_available(rec, qubit_keys)
 
-            return temps, errs, ssf_vals
-        else:
-            return None, None, None
+                try:
+                    qid = int(qid)
+                except (TypeError, ValueError):
+                    continue
+
+                _append_record(qid, rec)
+
+            return temps, errs, ssf_vals, ssf_errs
+
+        raise TypeError("fit_results must be either a dict keyed by qubit index or a flat list of record dictionaries.")
 
     def rpm_results_to_per_qubit_lists(
             self,
@@ -4452,6 +4521,349 @@ class combined_Qtemp_studies:
         plt.close(fig)
         print("Saved Pe comparison plot:", out_path)
         return out_path
+
+    def SSF_fid_vs_RRPM_Pe(
+            self,
+            ssf_fit_results,
+            all_files_Qtemp_results_RPMs,
+            out_dir,
+            qubits_to_plot=None,
+            tolerance_seconds=10, # 10s for all runs except QUIET run 6 SCIENCE RUN data (600s)
+            plot_together=False,
+            sort_by_time=True,
+            xlims=None,
+            ylims=None):
+        """
+        Plot SSF fidelity vs RPM-extracted thermal population Pe.
+
+        This function matches SSF points to RPM Pe points by nearest timestamp
+        for the same qubit.
+
+        SSF input format
+        ----------------
+        ssf_fit_results[qid] = list of dicts with keys including:
+            - "timestamp"      : datetime.datetime
+            - "ssf_fid"        : float
+            - "ssf_err_total"  : float
+
+        RPM input format
+        ----------------
+        all_files_Qtemp_results_RPMs = list of record dicts where:
+            rec["qubits"][q]["P_e"]
+            rec["qubits"][q]["P_e_err_total"]
+            rec["qubits"][q]["date"]    # epoch seconds
+
+        Plot meaning
+        ------------
+        x    = RPM Pe
+        xerr = RPM Pe error
+        y    = SSF fidelity
+        yerr = SSF fidelity error
+
+        Matching
+        --------
+        For each SSF point, the nearest RPM Pe point in time is selected.
+        The pair is kept only if |t_SSF - t_RPM| <= tolerance_seconds.
+        """
+
+        os.makedirs(out_dir, exist_ok=True)
+
+        num_qubits = self.number_of_qubits
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+
+        if ssf_fit_results is None or not isinstance(ssf_fit_results, dict):
+            raise ValueError("ssf_fit_results must be a dict like fit_results[qid] = [ {...}, ... ]")
+
+        # -------------------- Decide which qubits to plot --------------------
+        if qubits_to_plot is None:
+            qubits_to_plot = list(range(num_qubits))
+        else:
+            qubits_to_plot = sorted(
+                q for q in qubits_to_plot
+                if isinstance(q, int) and 0 <= q < num_qubits
+            )
+
+        if not qubits_to_plot:
+            raise ValueError("qubits_to_plot is empty after filtering valid indices.")
+
+        # ================================================================
+        # 1. Build RPM dictionaries
+        # ================================================================
+        times_RPM = {q: [] for q in range(num_qubits)}
+        Pe_RPM = {q: [] for q in range(num_qubits)}
+        PeErr_RPM = {q: [] for q in range(num_qubits)}
+
+        for rec in all_files_Qtemp_results_RPMs:
+            if not isinstance(rec, dict):
+                continue
+
+            qubits_dict = rec.get("qubits", {})
+            if not isinstance(qubits_dict, dict):
+                continue
+
+            for q in range(num_qubits):
+                d = qubits_dict.get(q)
+                if not d:
+                    continue
+
+                pe = d.get("P_e", None)
+                pe_err = d.get("P_e_err_total", None)
+                ts = d.get("date", None)  # epoch seconds
+
+                if pe is None or ts is None:
+                    continue
+
+                try:
+                    pe = float(pe)
+                    ts = float(ts)
+                except Exception:
+                    continue
+
+                if not np.isfinite(pe) or not np.isfinite(ts):
+                    continue
+
+                try:
+                    pe_err = float(pe_err) if pe_err is not None else np.nan
+                except Exception:
+                    pe_err = np.nan
+
+                times_RPM[q].append(datetime.datetime.fromtimestamp(ts))
+                Pe_RPM[q].append(pe)
+                PeErr_RPM[q].append(pe_err)
+
+        # ================================================================
+        # 2. Build SSF dictionaries
+        # ================================================================
+        times_SSF = {q: [] for q in range(num_qubits)}
+        SSF_vals = {q: [] for q in range(num_qubits)}
+        SSF_errs = {q: [] for q in range(num_qubits)}
+
+        for q in range(num_qubits):
+            entries = ssf_fit_results.get(q, []) or []
+
+            for r in entries:
+                if not isinstance(r, dict):
+                    continue
+
+                t = r.get("timestamp", None)
+                ssf = r.get("ssf_fid", None)
+                ssf_err = r.get("ssf_err_total", None)
+
+                if t is None or ssf is None:
+                    continue
+
+                if not isinstance(t, datetime.datetime):
+                    continue
+
+                try:
+                    ssf = float(ssf)
+                except Exception:
+                    continue
+
+                if not np.isfinite(ssf):
+                    continue
+
+                try:
+                    ssf_err = float(ssf_err) if ssf_err is not None else np.nan
+                except Exception:
+                    ssf_err = np.nan
+
+                times_SSF[q].append(t)
+                SSF_vals[q].append(ssf)
+                SSF_errs[q].append(ssf_err)
+
+        # ================================================================
+        # 3. Optional sorting
+        # ================================================================
+        def _sort_series(tlist, ylist, elist):
+            if not tlist or not ylist:
+                return tlist, ylist, elist
+
+            order = np.argsort([tt.timestamp() for tt in tlist])
+            t_sorted = [tlist[i] for i in order]
+            y_sorted = [ylist[i] for i in order]
+            e_sorted = [elist[i] for i in order] if elist is not None and len(elist) == len(ylist) else elist
+
+            return t_sorted, y_sorted, e_sorted
+
+        if sort_by_time:
+            for q in range(num_qubits):
+                times_RPM[q], Pe_RPM[q], PeErr_RPM[q] = _sort_series(times_RPM[q], Pe_RPM[q], PeErr_RPM[q])
+                times_SSF[q], SSF_vals[q], SSF_errs[q] = _sort_series(times_SSF[q], SSF_vals[q], SSF_errs[q])
+
+        # ================================================================
+        # 4. Match SSF to nearest RPM by timestamp
+        # ================================================================
+        matched = {
+            q: {
+                "Pe_RPM": [],
+                "PeErr_RPM": [],
+                "SSF": [],
+                "SSF_err": [],
+                "dt_seconds": [],
+                "t_SSF": [],
+                "t_RPM": [],
+            }
+            for q in range(num_qubits)
+        }
+
+        for q in qubits_to_plot:
+            if len(times_RPM[q]) == 0 or len(times_SSF[q]) == 0:
+                print(f"Q{q + 1}: missing RPM or SSF data, skipping.")
+                continue
+
+            rpm_ts = np.array([t.timestamp() for t in times_RPM[q]])
+
+            for t_ssf, ssf, ssf_err in zip(times_SSF[q], SSF_vals[q], SSF_errs[q]):
+                ssf_ts = t_ssf.timestamp()
+
+                dt = np.abs(rpm_ts - ssf_ts)
+                nearest_idx = int(np.argmin(dt))
+                dt_min = float(dt[nearest_idx])
+
+                if dt_min > tolerance_seconds:
+                    continue
+
+                pe = Pe_RPM[q][nearest_idx]
+                pe_err = PeErr_RPM[q][nearest_idx]
+                t_rpm = times_RPM[q][nearest_idx]
+
+                if not np.isfinite(pe) or not np.isfinite(ssf):
+                    continue
+
+                if not np.isfinite(pe_err) or not np.isfinite(ssf_err):
+                    continue
+
+                matched[q]["Pe_RPM"].append(pe)
+                matched[q]["PeErr_RPM"].append(pe_err)
+                matched[q]["SSF"].append(ssf)
+                matched[q]["SSF_err"].append(ssf_err)
+                matched[q]["dt_seconds"].append(dt_min)
+                matched[q]["t_SSF"].append(t_ssf)
+                matched[q]["t_RPM"].append(t_rpm)
+
+            print(
+                f"Q{q + 1}: matched {len(matched[q]['SSF'])} SSF/RPM points "
+                f"within {tolerance_seconds}s each.")
+
+        # ================================================================
+        # 5. Plot
+        # ================================================================
+        paramvstime_dir = os.path.join(out_dir, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        if plot_together:
+            fig, ax = plt.subplots(figsize=(8, 8))
+
+            for q in qubits_to_plot:
+                if len(matched[q]["SSF"]) == 0:
+                    continue
+
+                ax.errorbar(
+                    matched[q]["Pe_RPM"],
+                    matched[q]["SSF"],
+                    xerr=matched[q]["PeErr_RPM"],
+                    yerr=matched[q]["SSF_err"],
+                    fmt="o",
+                    markersize=5,
+                    elinewidth=1,
+                    capsize=3,
+                    alpha=0.8,
+                    color=colors[q % len(colors)],
+                    ecolor=colors[q % len(colors)],
+                    markeredgecolor="k",
+                    linestyle="None",
+                    label=f"Q{q + 1}"
+                )
+
+            ax.set_title(
+                f"SSF Fidelity vs RPM $P_e$ "
+                f"(nearest-time match, tolerance={tolerance_seconds}s)",
+                fontsize=16)
+            ax.set_xlabel("RPM $P_e$", fontsize=14)
+            ax.set_ylabel("Single-Shot Fidelity", fontsize=14)
+
+            if xlims is not None:
+                ax.set_xlim(*xlims)
+            if ylims is not None:
+                ax.set_ylim(*ylims)
+
+            ax.grid(alpha=0.3)
+            ax.legend(fontsize=11, frameon=False)
+            plt.tight_layout()
+
+            out_path = os.path.join(paramvstime_dir, f"SSF_fid_vs_RPM_Pe_AllQs_{stamp}.pdf")
+            fig.savefig(out_path, dpi=self.figure_quality)
+            plt.close(fig)
+
+            print("Saved SSF fidelity vs RPM Pe plot: ", out_path)
+
+        else:
+            nrows = 2
+            ncols = 3
+
+            fig, axes = plt.subplots(
+                nrows,
+                ncols,
+                figsize=(15, 10),
+                sharex=False,
+                sharey=True,
+                constrained_layout=True
+            )
+
+            axes = np.atleast_1d(axes).ravel()
+
+            for ax, q in zip(axes, qubits_to_plot):
+
+                if len(matched[q]["SSF"]) > 0:
+                    ax.errorbar(
+
+                        matched[q]["Pe_RPM"],
+                        matched[q]["SSF"],
+                        xerr=matched[q]["PeErr_RPM"],
+                        yerr=matched[q]["SSF_err"],
+                        fmt="o",
+                        markersize=5,
+                        elinewidth=1,
+                        capsize=3,
+                        alpha=0.85,
+                        color=colors[q % len(colors)],
+                        ecolor=colors[q % len(colors)],
+                        markeredgecolor="k",
+                        linestyle="None",
+                        label=f"Q{q + 1}"
+                    )
+
+                #ax.label_outer()
+                ax.set_title(f"Q{q + 1}", loc="left", fontsize=14, fontweight="bold")
+                ax.set_ylabel("SSF")
+                ax.grid(alpha=0.3)
+                ax.legend(loc="best", fontsize=9, frameon=False)
+                ax.set_box_aspect(1)
+
+                if xlims is not None:
+                    ax.set_xlim(*xlims)
+
+                if ylims is not None:
+                    ax.set_ylim(*ylims)
+
+            for k in range(len(qubits_to_plot), len(axes)):
+                axes[k].set_visible(False)
+
+            fig.supxlabel("RPM $P_e$")
+
+            fig.supylabel("SSF Fidelity")
+
+            fig.suptitle(f"SSF Fidelity vs RPM $P_e$ "
+                f"(nearest-time match, tolerance={tolerance_seconds}s)",
+                fontsize=16)
+
+            out_path = os.path.join(paramvstime_dir, f"SSF_fid_vs_RPM_Pe_Subplots_{stamp}.pdf")
+            fig.savefig(out_path, dpi=self.figure_quality)
+            plt.close(fig)
+
+            print("Saved SSF fidelity vs RPM Pe subplot plot: ", out_path)
 
     def Qtemps_vs_time_comb_allQs_1col(self, all_qubit_temperatures_ssf_g, all_qubit_timestamps_ssf_g,
                                               out_dir, all_files_Qtemp_results_RPMs, all_qubit_temps_errs_g,
