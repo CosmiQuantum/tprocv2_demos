@@ -1607,7 +1607,7 @@ class SSFTempCalcAndPlots:
         return pairs_by_qubit, unmatched_qspec, unmatched_ssf
 
     def plot_ssf_vs_time(self, fit_results, plot_path, n_qubits):
-        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
         os.makedirs(plot_path, exist_ok=True)
 
         fig, ax = plt.subplots(figsize=(15, 10))
@@ -1873,8 +1873,8 @@ class SSFTempCalcAndPlots:
         plt.close(fig)
         print("Saved all-dates histogram to:", fname)
 
-    def plot_ssf_vs_pe(self, fit_results, plot_path, n_qubits=6, plot_together=True):
-        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+    def plot_ssf_vs_pe(self, fit_results, plot_path, n_qubits=6, plot_together=True, sharex=False, sharey=True):
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
         os.makedirs(plot_path, exist_ok=True)
 
         if not isinstance(fit_results, dict):
@@ -1922,7 +1922,7 @@ class SSFTempCalcAndPlots:
         # Option 1: plot all qubits together
         # =====================================================================
         if plot_together:
-            fig, ax = plt.subplots(figsize=(10, 8), sharex=True, sharey=True)
+            fig, ax = plt.subplots(figsize=(10, 8), sharex=sharex, sharey=sharey)
 
             for q in range(n_qubits):
                 pe_vals, pe_errs, ssf_vals, ssf_errs = extract_qubit_data(q)
@@ -1941,6 +1941,7 @@ class SSFTempCalcAndPlots:
                     alpha=0.7,
                     capsize=3,
                     markersize=5,
+                    markeredgecolor="k",
                     linestyle="None",
                     label=f"Q{q + 1}"
                 )
@@ -1967,15 +1968,17 @@ class SSFTempCalcAndPlots:
         # Option 2: plot each qubit separately as subplots in one figure
         # =====================================================================
         else:
-            ncols = min(3, n_qubits)
-            nrows = math.ceil(n_qubits / ncols)
+            nrows = 2
+            ncols = 3
 
             fig, axes = plt.subplots(
                 nrows,
                 ncols,
-                figsize=(5.5 * ncols, 4.5 * nrows),
-                sharex=False,
-                sharey=True)
+                figsize=(15, 10),
+                sharex=sharex,
+                sharey=sharey,
+                constrained_layout=True
+            )
 
             axes = np.atleast_1d(axes).ravel()
 
@@ -1986,7 +1989,7 @@ class SSFTempCalcAndPlots:
 
                 if len(ssf_vals) == 0:
                     print(f"No valid SSF/Pe values found for Q{q + 1}")
-                    ax.set_title(f"Qubit {q + 1}", fontsize=16)
+                    ax.set_title(f"Q{q + 1}", loc="left", fontsize=18, fontweight="bold")
                     ax.grid(alpha=0.3)
                     continue
 
@@ -1996,35 +1999,38 @@ class SSFTempCalcAndPlots:
                     xerr=pe_errs,
                     yerr=ssf_errs,
                     fmt="o",
-                    color=colors[q % len(colors)],
-                    alpha=0.7,
-                    capsize=3,
                     markersize=5,
+                    elinewidth=1,
+                    capsize=3,
+                    alpha=0.85,
+                    color=colors[q % len(colors)],
+                    ecolor=colors[q % len(colors)],
+                    markeredgecolor="k",
                     linestyle="None",
-                    label=f"Q{q + 1}")
+                    label=f"Q{q + 1}"
+                )
 
-                ax.set_title(f"Qubit {q + 1}", fontsize=16)
+                ax.set_title(f"Q{q + 1}", loc="left", fontsize=18, fontweight="bold")
+                ax.set_xlabel("$P_e$")
+                ax.set_ylabel("Single-Shot Fidelity")
+                ax.set_ylim(0.6, 1.0)
                 ax.grid(alpha=0.3)
-                ax.legend(fontsize=12)
-                ax.tick_params(axis="both", labelsize=14)
+                ax.legend(loc="best", fontsize=14, frameon=False)
+                ax.tick_params(axis="both", labelsize=16)
 
             # Hide unused subplot panels, if any
             for k in range(n_qubits, len(axes)):
                 axes[k].set_visible(False)
 
-            fig.suptitle("Single-Shot Fidelity vs $P_e$", fontsize=18)
-            fig.supxlabel("$P_e$", fontsize=16)
-            fig.supylabel("Single-Shot Fidelity", fontsize=16)
+            # Hide inner axis labels/tick labels for shared axes
+            # for ax in axes:
+            #     ax.label_outer()
 
-            plt.tight_layout(rect=[0, 0, 1, 0.96])
-
+            fig.suptitle("Single-Shot Fidelity vs $P_e$", fontsize=16)
             fname = os.path.join(plot_path,f"Subplots_SSF_vs_Pe_{datetime.datetime.now():%Y%m%d%H%M%S}.pdf")
-
             plt.savefig(fname, dpi=300, bbox_inches="tight")
             plt.close(fig)
-
             print("Saved subplot SSF vs Pe plot to ->", fname)
-            return fname
 
     def plot_all_Qs_Pe_hists_ssf(
             self,
@@ -4532,7 +4538,8 @@ class combined_Qtemp_studies:
             plot_together=False,
             sort_by_time=True,
             xlims=None,
-            ylims=None):
+            ylims=None,
+            RPM_Pe_rel_err_cut = None):
         """
         Plot SSF fidelity vs RPM-extracted thermal population Pe.
 
@@ -4569,7 +4576,7 @@ class combined_Qtemp_studies:
         os.makedirs(out_dir, exist_ok=True)
 
         num_qubits = self.number_of_qubits
-        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred'] # palevioletred
 
         if ssf_fit_results is None or not isinstance(ssf_fit_results, dict):
             raise ValueError("ssf_fit_results must be a dict like fit_results[qid] = [ {...}, ... ]")
@@ -4626,6 +4633,10 @@ class combined_Qtemp_studies:
                     pe_err = float(pe_err) if pe_err is not None else np.nan
                 except Exception:
                     pe_err = np.nan
+
+                if RPM_Pe_rel_err_cut is not None:
+                    if pe_err / pe >= RPM_Pe_rel_err_cut: # optional relative err cut
+                        continue
 
                 times_RPM[q].append(datetime.datetime.fromtimestamp(ts))
                 Pe_RPM[q].append(pe)
@@ -4754,7 +4765,7 @@ class combined_Qtemp_studies:
         stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
         if plot_together:
-            fig, ax = plt.subplots(figsize=(8, 8))
+            fig, ax = plt.subplots(figsize=(10, 8))
 
             for q in qubits_to_plot:
                 if len(matched[q]["SSF"]) == 0:
