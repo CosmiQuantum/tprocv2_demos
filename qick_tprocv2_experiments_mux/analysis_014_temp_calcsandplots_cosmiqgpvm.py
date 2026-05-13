@@ -17,6 +17,7 @@ from matplotlib.ticker import MaxNLocator
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 from qicklab.datahandling.datafile_tools import find_h5_files
 import math
+from matplotlib.lines import Line2D
 import datetime
 import pandas as pd
 from pathlib import Path
@@ -1926,7 +1927,7 @@ class SSFTempCalcAndPlots:
         # Option 1: plot all qubits together
         # =====================================================================
         if plot_together:
-            fig, ax = plt.subplots(figsize=(10, 8), sharex=sharex, sharey=sharey)
+            fig, ax = plt.subplots(figsize=(11, 8), sharex=sharex, sharey=sharey)
 
             for q in range(n_qubits):
                 pe_vals, pe_errs, ssf_vals, ssf_errs = extract_qubit_data(q)
@@ -4540,18 +4541,133 @@ class combined_Qtemp_studies:
         print("Saved Pe comparison plot:", out_path)
         return out_path
 
+    def get_time_alphas(self, times, alpha_min=0.20, alpha_max=0.95):
+        """
+        Return alpha values that increase with time. THhis is used to plot colors using a gradients
+
+        Parameters
+        ----------
+        times : list
+            List of datetime.datetime objects.
+
+        alpha_min : float
+            Alpha for the earliest point.
+
+        alpha_max : float
+            Alpha for the latest point.
+
+        Returns
+        -------
+        alphas : np.ndarray
+            Array of alpha values with the same length as times.
+        """
+
+        if times is None or len(times) == 0:
+            return np.array([])
+
+        time_seconds = np.array([t.timestamp() for t in times], dtype=float)
+
+        if not np.all(np.isfinite(time_seconds)):
+            return np.full(len(times), alpha_max)
+
+        t_min = np.nanmin(time_seconds)
+        t_max = np.nanmax(time_seconds)
+
+        if t_max == t_min:
+            return np.full(len(times), alpha_max)
+
+        time_norm = (time_seconds - t_min) / (t_max - t_min)
+
+        alphas = alpha_min + (alpha_max - alpha_min) * time_norm
+
+        return alphas
+
+    def add_alpha_gradient_bars(
+            self,
+            fig,
+            colors,
+            labels,
+            alpha_min=0.20,
+            alpha_max=0.95,
+            box_pos=(0.75, 0.15, 0.12, 0.20),
+            title="Time\nEarlier $\\rightarrow$ Later"
+    ):
+        """
+        Add small alpha-gradient bars, one per qubit color.
+
+        Parameters
+        ----------
+        fig : matplotlib.figure.Figure
+            Figure to add the inset legend to.
+
+        colors : list
+            List of colors, one per qubit.
+
+        labels : list
+            List of labels, e.g. ["Q1", "Q2", ...].
+
+        box_pos : tuple
+            Position of inset axes in figure coordinates:
+            (left, bottom, width, height).
+        """
+
+        import matplotlib.colors as mcolors
+
+        ax_grad = fig.add_axes(box_pos)
+        ax_grad.set_title(title, fontsize=9)
+
+        n = len(colors)
+        n_alpha = 100
+
+        for i, (color, label) in enumerate(zip(colors, labels)):
+            rgb = mcolors.to_rgb(color)
+
+            grad = np.ones((1, n_alpha, 4))
+            grad[:, :, 0] = rgb[0]
+            grad[:, :, 1] = rgb[1]
+            grad[:, :, 2] = rgb[2]
+            grad[:, :, 3] = np.linspace(alpha_min, alpha_max, n_alpha)
+
+            y0 = n - i - 1
+
+            ax_grad.imshow(
+                grad,
+                extent=[0, 1, y0, y0 + 0.6],
+                aspect="auto"
+            )
+
+            ax_grad.text(
+                -0.08,
+                y0 + 0.3,
+                label,
+                ha="right",
+                va="center",
+                fontsize=8
+            )
+
+        ax_grad.set_xlim(-0.25, 1.0)
+        ax_grad.set_ylim(0, n)
+        ax_grad.set_xticks([0, 1])
+        ax_grad.set_xticklabels(["early", "late"], fontsize=8)
+        ax_grad.set_yticks([])
+
+        for spine in ax_grad.spines.values():
+            spine.set_visible(False)
+
     def SSF_fid_vs_RRPM_Pe(
             self,
             ssf_fit_results,
             all_files_Qtemp_results_RPMs,
             out_dir,
             qubits_to_plot=None,
+            colors=['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred'],
             tolerance_seconds=10, # 10s for all runs except QUIET run 6 SCIENCE RUN data (600s)
             plot_together=False,
             sort_by_time=True,
             xlims=None,
             ylims=None,
-            RPM_Pe_rel_err_cut = None):
+            RPM_Pe_rel_err_cut = None,
+            plot_with_t_color_gradient = False):
         """
         Plot SSF fidelity vs RPM-extracted thermal population Pe.
 
@@ -4588,7 +4704,6 @@ class combined_Qtemp_studies:
         os.makedirs(out_dir, exist_ok=True)
 
         num_qubits = self.number_of_qubits
-        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
         markers = ['o', 's', '^', 'D', 'v', 'P']
 
         if ssf_fit_results is None or not isinstance(ssf_fit_results, dict):
@@ -4778,28 +4893,53 @@ class combined_Qtemp_studies:
         stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
         if plot_together:
-            fig, ax = plt.subplots(figsize=(10, 8))
+            fig, ax = plt.subplots(figsize=(11, 8))
 
             for q in qubits_to_plot:
                 if len(matched[q]["SSF"]) == 0:
                     continue
 
+                if plot_with_t_color_gradient:
+                    alphas = self.get_time_alphas(
+                        matched[q]["t_SSF"],
+                        alpha_min=0.20,
+                        alpha_max=0.95)
+                else:
+                    alphas = np.full(len(matched[q]["SSF"]), 0.8)
+
+                # Plot point-by-point so each point can have its own alpha
+                for pe, ssf, pe_err, ssf_err, a in zip(
+                        matched[q]["Pe_RPM"],
+                        matched[q]["SSF"],
+                        matched[q]["PeErr_RPM"],
+                        matched[q]["SSF_err"],
+                        alphas):
+
+                    ax.errorbar(
+                        pe,
+                        ssf,
+                        xerr=pe_err,
+                        yerr=ssf_err,
+                        fmt=markers[q % len(markers)],
+                        markersize=5,
+                        elinewidth=1,
+                        capsize=3,
+                        alpha=a,
+                        color=colors[q % len(colors)],
+                        ecolor=colors[q % len(colors)],
+                        markeredgecolor="k",
+                        linestyle="None")
+
+                # Dummy point only for legend since we are plotting point-by-point above
                 ax.errorbar(
-                    matched[q]["Pe_RPM"],
-                    matched[q]["SSF"],
-                    xerr=matched[q]["PeErr_RPM"],
-                    yerr=matched[q]["SSF_err"],
+                    [],
+                    [],
                     fmt=markers[q % len(markers)],
                     markersize=5,
-                    elinewidth=1,
-                    capsize=3,
-                    alpha=0.8,
                     color=colors[q % len(colors)],
-                    ecolor=colors[q % len(colors)],
                     markeredgecolor="k",
                     linestyle="None",
-                    label=f"Q{q + 1}"
-                )
+                    label=f"Q{q + 1}")
 
             ax.set_title(
                 f"SSF Fidelity vs RPM $P_e$ "
@@ -4815,45 +4955,79 @@ class combined_Qtemp_studies:
 
             ax.grid(alpha=0.3)
             ax.legend(fontsize=11, frameon=False)
-            plt.tight_layout()
+
+            if plot_with_t_color_gradient:
+                qubit_labels = [f"Q{q + 1}" for q in qubits_to_plot]
+                qubit_colors = [colors[q % len(colors)] for q in qubits_to_plot]
+
+                self.add_alpha_gradient_bars(
+                    fig,
+                    qubit_colors,
+                    qubit_labels,
+                    alpha_min=0.20,
+                    alpha_max=0.95,
+                    box_pos=(0.75, 0.15, 0.12, 0.22)
+                )
+            #plt.tight_layout()
 
             out_path = os.path.join(paramvstime_dir, f"SSF_fid_vs_RPM_Pe_AllQs_{stamp}.pdf")
             fig.savefig(out_path, dpi=self.figure_quality)
             plt.close(fig)
-
             print("Saved SSF fidelity vs RPM Pe plot: ", out_path)
 
         else:
             nrows = 2
             ncols = 3
-
             fig, axes = plt.subplots(
                 nrows,
                 ncols,
                 figsize=(15, 10),
                 sharex=False,
                 sharey=True,
-                constrained_layout=True
-            )
+                constrained_layout=True)
 
             axes = np.atleast_1d(axes).ravel()
 
             for ax, q in zip(axes, qubits_to_plot):
 
                 if len(matched[q]["SSF"]) > 0:
-                    ax.errorbar(
+                    if plot_with_t_color_gradient:
+                        alphas = self.get_time_alphas(
+                            matched[q]["t_SSF"],
+                            alpha_min=0.20,
+                            alpha_max=0.95
+                        )
+                    else:
+                        alphas = np.full(len(matched[q]["SSF"]), 0.8)
 
-                        matched[q]["Pe_RPM"],
-                        matched[q]["SSF"],
-                        xerr=matched[q]["PeErr_RPM"],
-                        yerr=matched[q]["SSF_err"],
+                    for pe, ssf, pe_err, ssf_err, a in zip(
+                            matched[q]["Pe_RPM"],
+                            matched[q]["SSF"],
+                            matched[q]["PeErr_RPM"],
+                            matched[q]["SSF_err"],
+                            alphas):
+                        ax.errorbar(
+                            pe,
+                            ssf,
+                            xerr=pe_err,
+                            yerr=ssf_err,
+                            fmt=markers[q % len(markers)],
+                            markersize=5,
+                            elinewidth=1,
+                            capsize=3,
+                            alpha=a,
+                            color=colors[q % len(colors)],
+                            ecolor=colors[q % len(colors)],
+                            markeredgecolor="k",
+                            linestyle="None"
+                        )
+
+                    ax.errorbar( # Dummy, just to plot legend (since above we are point-by-point plotting)
+                        [],
+                        [],
                         fmt=markers[q % len(markers)],
                         markersize=5,
-                        elinewidth=1,
-                        capsize=3,
-                        alpha=0.85,
                         color=colors[q % len(colors)],
-                        ecolor=colors[q % len(colors)],
                         markeredgecolor="k",
                         linestyle="None",
                         label=f"Q{q + 1}"
@@ -4882,6 +5056,19 @@ class combined_Qtemp_studies:
             fig.suptitle(f"SSF Fidelity vs RPM $P_e$ "
                 f"(nearest-time match, tolerance={tolerance_seconds}s)",
                 fontsize=16)
+
+            if plot_with_t_color_gradient:
+                qubit_labels = [f"Q{q + 1}" for q in qubits_to_plot]
+                qubit_colors = [colors[q % len(colors)] for q in qubits_to_plot]
+
+                self.add_alpha_gradient_bars(
+                    fig,
+                    qubit_colors,
+                    qubit_labels,
+                    alpha_min=0.20,
+                    alpha_max=0.95,
+                    box_pos=(0.83, 0.15, 0.12, 0.22)
+                )
 
             out_path = os.path.join(paramvstime_dir, f"SSF_fid_vs_RPM_Pe_Subplots_{stamp}.pdf")
             fig.savefig(out_path, dpi=self.figure_quality)

@@ -46,7 +46,7 @@ save_figs_SSF = False # Do you want to save gaussian fit plots while calculating
 fit_saved = False # Not used here, set to false.
 exclude_temp_sweeps = True # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
 filter_out_bad_RPM_fits = True # filter out bad rpm fits? this doesn't work perfect but helps a bit
-filter_out_bad_SSF_qtemp_fits = False # filter out SSF data that can't be properly fitted for qubit temp calcs?
+filter_out_bad_SSF_qtemp_fits = True # filter out SSF data that can't be properly fitted for qubit temp calcs?
 get_qtemp_data = True # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
 get_london_data = False # This returns RPM qubit temperatures, resonator freqs, and qubit freqs for specified dates. Designed for London Penetration analysis.
 
@@ -67,13 +67,13 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": True, "Qtemps_viaSSF_with_fallback": False,
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
                       "combined_studies_Qtemps": True}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False, "Pe_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_hists_viaSSF": False, "Pe_vs_time_viaRPM": False,
-                  "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": False, "SSF_fid_vs_Pe_viaSSF": True}
+                  "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": False, "SSF_fid_vs_Pe_viaSSF": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
 comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
@@ -851,7 +851,7 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
         SSF_calcs_obj.plot_ssf_vs_time(fit_results, path_saveplots_ssf_qtemps_vsT, n_qubits =6)
     # --------------------------------------------------------- SSF vs Pe for each qubit -------------------------------------------------------------------------
     if analysis_flags["SSF_fid_vs_Pe_viaSSF"]:
-        SSF_calcs_obj.plot_SSF_fid_vs_Pe_viaSSF(fit_results, path_saveplots_ssf_qtemps_vsT, n_qubits =6, plot_together = True, sharex=True, sharey=True)
+        SSF_calcs_obj.plot_SSF_fid_vs_Pe_viaSSF(fit_results, path_saveplots_ssf_qtemps_vsT, n_qubits =6, plot_together = False, sharex=True, sharey=True)
     # ---------------------------------------- SSF thermal population (Pe) histograms --------------------------------------------------------------
     if analysis_flags["Pe_hists_viaSSF"]:
         SSF_calcs_obj.plot_all_Qs_Pe_hists_ssf(fit_results, out_dir=path_saveplots_ssf_qtemps_vsT, bins=45, rel_err_cutoff=None, only_return_mu_and_sigma=True)
@@ -1276,10 +1276,11 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             out_dir=outerFolder_qtemps_plots,
             qubits_to_plot=[0, 1, 2, 3, 5],
             tolerance_seconds=10, # 10 seconds for all runs except Run 6 SCIENCE run data (600s)
-            plot_together=False,
+            plot_together=True,
             xlims= (0.0, 0.07),
             ylims=(0.6, 1.0),
-            RPM_Pe_rel_err_cut = 0.2)
+            RPM_Pe_rel_err_cut = 0.2,
+            plot_with_t_color_gradient = True) # to depict time passed
 
     #----------- Thermal Populations vs Time using all three methods ----
     if comb_analysis_flags["Pe_vs_time_comb_separate_plts"]:
