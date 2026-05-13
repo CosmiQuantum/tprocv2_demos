@@ -14,8 +14,8 @@ from qicklab.analysis.qspec import AnaQSpec
 from qicklab.analysis.ssf import AnaSSF
 from Arianna_non_prebuilt_SSF_doublegauss_funcs import non_prebuilt_ssf_analysis_class
 from matplotlib.ticker import MaxNLocator
-from analysis_021_plot_allRR_noqick import PlotRR_noQick
 from qicklab.datahandling.datafile_tools import find_h5_files
+from analysis_021_plot_allRR_noqick import PlotRR_noQick
 import math
 from matplotlib.lines import Line2D
 import datetime
@@ -26,9 +26,10 @@ import matplotlib.dates as mdates
 from bisect import bisect_left
 from matplotlib.dates import DateFormatter
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+
 save_figs = True
 figure_quality = 100 #ramp this up to like 500 for presentation plots
-from analysis_021_plot_allRR_noqick import PlotRR_noQick
 
 class SSFTempCalcAndPlots:
     def __init__(self, figure_quality, number_of_qubits, run_num, save_figs):
@@ -4654,6 +4655,739 @@ class combined_Qtemp_studies:
         for spine in ax_grad.spines.values():
             spine.set_visible(False)
 
+    def get_time_bins(self, times):
+        """
+        Split timestamps into early/middle/late bins.
+
+        Returns
+        -------
+        time_bins : np.ndarray of str
+            Values are "early", "middle", or "late".
+        """
+
+        if times is None or len(times) == 0:
+            return np.array([])
+
+        time_seconds = np.array([t.timestamp() for t in times], dtype=float)
+
+        if len(time_seconds) < 3:
+            return np.array(["middle"] * len(time_seconds))
+
+        q1, q2 = np.percentile(time_seconds, [33.33, 66.67])
+
+        time_bins = []
+
+        for t in time_seconds:
+            if t <= q1:
+                time_bins.append("early")
+            elif t <= q2:
+                time_bins.append("middle")
+            else:
+                time_bins.append("late")
+
+        return np.array(time_bins)
+
+    def SSF_fid_vs_RRPM_Pe_3D(
+            self,
+            ssf_fit_results,
+            all_files_Qtemp_results_RPMs,
+            out_dir,
+            qubits_to_plot=None,
+            colors=['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred'],
+            tolerance_seconds=10,
+            sort_by_time=True,
+            xlims=None,
+            ylims=None,
+            zlims=None,
+            RPM_Pe_rel_err_cut=None,
+            axis_order="time_pe_ssf",
+            elev=25,
+            azim=-60):
+        """
+        Make a 3D plot showing how SSF vs RPM Pe evolves over time.
+
+        axis_order options
+        ------------------
+        "time_pe_ssf":
+            x = time since start [hours]
+            y = RPM Pe
+            z = SSF fidelity
+
+        "pe_time_ssf":
+            x = RPM Pe
+            y = time since start [hours]
+            z = SSF fidelity
+
+        "pe_ssf_time":
+            x = RPM Pe
+            y = SSF fidelity
+            z = time since start [hours]
+        """
+
+        from mpl_toolkits.mplot3d import Axes3D  # needed for 3D projection
+
+        os.makedirs(out_dir, exist_ok=True)
+
+        num_qubits = self.number_of_qubits
+        markers = ['o', 's', '^', 'D', 'v', 'P']
+
+        allowed_axis_orders = ["time_pe_ssf", "pe_time_ssf", "pe_ssf_time"]
+        if axis_order not in allowed_axis_orders:
+            raise ValueError(f"axis_order must be one of {allowed_axis_orders}")
+
+        if ssf_fit_results is None or not isinstance(ssf_fit_results, dict):
+            raise ValueError("ssf_fit_results must be a dict like fit_results[qid] = [ {...}, ... ]")
+
+        # -------------------- Decide which qubits to plot --------------------
+        if qubits_to_plot is None:
+            qubits_to_plot = list(range(num_qubits))
+        else:
+            qubits_to_plot = sorted(
+                q for q in qubits_to_plot
+                if isinstance(q, int) and 0 <= q < num_qubits
+            )
+
+        if not qubits_to_plot:
+            raise ValueError("qubits_to_plot is empty after filtering valid indices.")
+
+        # ================================================================
+        # 1. Build RPM dictionaries
+        # ================================================================
+        times_RPM = {q: [] for q in range(num_qubits)}
+        Pe_RPM = {q: [] for q in range(num_qubits)}
+        PeErr_RPM = {q: [] for q in range(num_qubits)}
+
+        for rec in all_files_Qtemp_results_RPMs:
+            if not isinstance(rec, dict):
+                continue
+
+            qubits_dict = rec.get("qubits", {})
+            if not isinstance(qubits_dict, dict):
+                continue
+
+            for q in range(num_qubits):
+                d = qubits_dict.get(q)
+                if not d:
+                    continue
+
+                pe = d.get("P_e", None)
+                pe_err = d.get("P_e_err_total", None)
+                ts = d.get("date", None)
+
+                if pe is None or ts is None:
+                    continue
+
+                try:
+                    pe = float(pe)
+                    ts = float(ts)
+                except Exception:
+                    continue
+
+                if not np.isfinite(pe) or not np.isfinite(ts):
+                    continue
+
+                try:
+                    pe_err = float(pe_err) if pe_err is not None else np.nan
+                except Exception:
+                    pe_err = np.nan
+
+                if RPM_Pe_rel_err_cut is not None:
+                    if pe <= 0 or not np.isfinite(pe_err):
+                        continue
+                    if pe_err / pe >= RPM_Pe_rel_err_cut:
+                        continue
+
+                times_RPM[q].append(datetime.datetime.fromtimestamp(ts))
+                Pe_RPM[q].append(pe)
+                PeErr_RPM[q].append(pe_err)
+
+        # ================================================================
+        # 2. Build SSF dictionaries
+        # ================================================================
+        times_SSF = {q: [] for q in range(num_qubits)}
+        SSF_vals = {q: [] for q in range(num_qubits)}
+        SSF_errs = {q: [] for q in range(num_qubits)}
+
+        for q in range(num_qubits):
+            entries = ssf_fit_results.get(q, []) or []
+
+            for r in entries:
+                if not isinstance(r, dict):
+                    continue
+
+                t = r.get("timestamp", None)
+                ssf = r.get("ssf_fid", None)
+                ssf_err = r.get("ssf_err_total", None)
+
+                if t is None or ssf is None:
+                    continue
+
+                if not isinstance(t, datetime.datetime):
+                    continue
+
+                try:
+                    ssf = float(ssf)
+                except Exception:
+                    continue
+
+                if not np.isfinite(ssf):
+                    continue
+
+                try:
+                    ssf_err = float(ssf_err) if ssf_err is not None else np.nan
+                except Exception:
+                    ssf_err = np.nan
+
+                times_SSF[q].append(t)
+                SSF_vals[q].append(ssf)
+                SSF_errs[q].append(ssf_err)
+
+        # ================================================================
+        # 3. Optional sorting
+        # ================================================================
+        def _sort_series(tlist, ylist, elist):
+            if not tlist or not ylist:
+                return tlist, ylist, elist
+
+            order = np.argsort([tt.timestamp() for tt in tlist])
+            t_sorted = [tlist[i] for i in order]
+            y_sorted = [ylist[i] for i in order]
+            e_sorted = [elist[i] for i in order] if elist is not None and len(elist) == len(ylist) else elist
+
+            return t_sorted, y_sorted, e_sorted
+
+        if sort_by_time:
+            for q in range(num_qubits):
+                times_RPM[q], Pe_RPM[q], PeErr_RPM[q] = _sort_series(
+                    times_RPM[q], Pe_RPM[q], PeErr_RPM[q]
+                )
+                times_SSF[q], SSF_vals[q], SSF_errs[q] = _sort_series(
+                    times_SSF[q], SSF_vals[q], SSF_errs[q]
+                )
+
+        # ================================================================
+        # 4. Match SSF to nearest RPM by timestamp
+        # ================================================================
+        matched = {
+            q: {
+                "Pe_RPM": [],
+                "PeErr_RPM": [],
+                "SSF": [],
+                "SSF_err": [],
+                "dt_seconds": [],
+                "t_SSF": [],
+                "t_RPM": [],
+            }
+            for q in range(num_qubits)
+        }
+
+        for q in qubits_to_plot:
+            if len(times_RPM[q]) == 0 or len(times_SSF[q]) == 0:
+                print(f"Q{q + 1}: missing RPM or SSF data, skipping.")
+                continue
+
+            rpm_ts = np.array([t.timestamp() for t in times_RPM[q]])
+
+            for t_ssf, ssf, ssf_err in zip(times_SSF[q], SSF_vals[q], SSF_errs[q]):
+                ssf_ts = t_ssf.timestamp()
+
+                dt = np.abs(rpm_ts - ssf_ts)
+                nearest_idx = int(np.argmin(dt))
+                dt_min = float(dt[nearest_idx])
+
+                if dt_min > tolerance_seconds:
+                    continue
+
+                pe = Pe_RPM[q][nearest_idx]
+                pe_err = PeErr_RPM[q][nearest_idx]
+                t_rpm = times_RPM[q][nearest_idx]
+
+                if not np.isfinite(pe) or not np.isfinite(ssf):
+                    continue
+
+                if not np.isfinite(pe_err) or not np.isfinite(ssf_err):
+                    continue
+
+                matched[q]["Pe_RPM"].append(pe)
+                matched[q]["PeErr_RPM"].append(pe_err)
+                matched[q]["SSF"].append(ssf)
+                matched[q]["SSF_err"].append(ssf_err)
+                matched[q]["dt_seconds"].append(dt_min)
+                matched[q]["t_SSF"].append(t_ssf)
+                matched[q]["t_RPM"].append(t_rpm)
+
+            print(
+                f"Q{q + 1}: matched {len(matched[q]['SSF'])} SSF/RPM points "
+                f"within {tolerance_seconds}s each."
+            )
+
+        # ================================================================
+        # 5. Convert time to hours since first matched RPM point
+        # ================================================================
+        all_times = []
+        for q in qubits_to_plot:
+            all_times.extend(matched[q]["t_RPM"])
+
+        if len(all_times) == 0:
+            print("No matched SSF/RPM points found. No 3D plot made.")
+            return None, matched
+
+        t0 = min(all_times)
+
+        # ================================================================
+        # 6. Helper for axis ordering
+        # ================================================================
+        def _axis_values(pe_vals, ssf_vals, t_hours):
+            if axis_order == "time_pe_ssf":
+                return (
+                    t_hours,
+                    pe_vals,
+                    ssf_vals,
+                    "Time since start [hours]",
+                    "RPM $P_e$",
+                    "Single-Shot Fidelity",
+                )
+
+            elif axis_order == "pe_time_ssf":
+                return (
+                    pe_vals,
+                    t_hours,
+                    ssf_vals,
+                    "RPM $P_e$",
+                    "Time since start [hours]",
+                    "Single-Shot Fidelity",
+                )
+
+            elif axis_order == "pe_ssf_time":
+                return (
+                    pe_vals,
+                    ssf_vals,
+                    t_hours,
+                    "RPM $P_e$",
+                    "Single-Shot Fidelity",
+                    "Time since start [hours]",
+                )
+
+        # ================================================================
+        # 7. Plot 3D
+        # ================================================================
+        paramvstime_dir = os.path.join(out_dir, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        # Bigger figure helps a lot
+        fig = plt.figure(figsize=(13.5, 10.5))
+        ax = fig.add_subplot(111, projection="3d")
+
+        xlabel = None
+        ylabel = None
+        zlabel = None
+
+        for q in qubits_to_plot:
+            if len(matched[q]["SSF"]) == 0:
+                continue
+
+            q_color = colors[q % len(colors)]
+            q_marker = markers[q % len(markers)]
+
+            pe_vals = np.array(matched[q]["Pe_RPM"], dtype=float)
+            ssf_vals = np.array(matched[q]["SSF"], dtype=float)
+            pe_errs = np.array(matched[q]["PeErr_RPM"], dtype=float)
+            ssf_errs = np.array(matched[q]["SSF_err"], dtype=float)
+
+            t_hours = np.array([
+                (t - t0).total_seconds() / 3600.0
+                for t in matched[q]["t_RPM"]
+            ])
+
+            # Sort by time
+            order = np.argsort(t_hours)
+            pe_vals = pe_vals[order]
+            ssf_vals = ssf_vals[order]
+            pe_errs = pe_errs[order]
+            ssf_errs = ssf_errs[order]
+            t_hours = t_hours[order]
+
+            xvals, yvals, zvals, xlabel, ylabel, zlabel = _axis_values(
+                pe_vals,
+                ssf_vals,
+                t_hours
+            )
+
+            # Put the Pe and SSF errors on the correct 3D axes
+            if axis_order == "time_pe_ssf":
+                xerr_3d = None  # x = time
+                yerr_3d = pe_errs  # y = RPM Pe
+                zerr_3d = ssf_errs  # z = SSF
+
+            elif axis_order == "pe_time_ssf":
+                xerr_3d = pe_errs  # x = RPM Pe
+                yerr_3d = None  # y = time
+                zerr_3d = ssf_errs  # z = SSF
+
+            elif axis_order == "pe_ssf_time":
+                xerr_3d = pe_errs  # x = RPM Pe
+                yerr_3d = ssf_errs  # y = SSF
+                zerr_3d = None  # z = time
+
+            # Plot error bars first so markers sit on top
+            ax.errorbar(
+                xvals,
+                yvals,
+                zvals,
+                xerr=xerr_3d,
+                yerr=yerr_3d,
+                zerr=zerr_3d,
+                fmt="none",
+                ecolor=q_color,
+                elinewidth=1.2,
+                capsize=3,
+                alpha=0.5,
+                zorder=1
+            )
+
+            ax.scatter(
+                xvals,
+                yvals,
+                zvals,
+                marker=q_marker,
+                s=35,
+                color=q_color,
+                edgecolor="k",
+                linewidth=0.5,
+                alpha=0.85,
+                label=f"Q{q + 1}",
+                zorder=3
+            )
+
+        # Bigger labelpad
+        ax.set_xlabel(xlabel, fontsize=14, labelpad=30)
+        ax.set_ylabel(ylabel, fontsize=14, labelpad=30)
+        ax.set_zlabel(zlabel, fontsize=14, labelpad=30)
+
+        # Bigger tick label padding too
+        ax.tick_params(axis='x', pad=10, labelsize=11)
+        ax.tick_params(axis='y', pad=10, labelsize=11)
+        ax.tick_params(axis='z', pad=10, labelsize=11)
+
+        ax.set_title(
+            f"SSF Fidelity vs RPM $P_e$ vs Time\n"
+            f"(nearest-time match, tolerance={tolerance_seconds}s)",
+            fontsize=16,
+            pad=24
+        )
+
+        if xlims is not None:
+            ax.set_xlim(*xlims)
+
+        if ylims is not None:
+            ax.set_ylim(*ylims)
+
+        if zlims is not None:
+            ax.set_zlim(*zlims)
+
+        ax.view_init(elev=elev, azim=azim)
+        ax.legend(fontsize=10, frameon=True)
+
+        out_path = os.path.join(
+            paramvstime_dir,
+            f"SSF_fid_vs_RPM_Pe_vs_Time_3D_{axis_order}_{stamp}.pdf"
+        )
+
+        # Much more generous margins
+        fig.subplots_adjust(
+            left=0.08,
+            right=0.92,
+            bottom=0.10,
+            top=0.88
+        )
+
+        fig.savefig(
+            out_path,
+            dpi=self.figure_quality,
+            bbox_inches="tight",
+            pad_inches=0.65
+        )
+        plt.close(fig)
+        print("Saved 3D SSF fidelity vs RPM Pe vs time plot:", out_path)
+        return matched
+
+    def animate_SSF_fid_vs_RRPM_Pe_2D(
+            self,
+            matched,
+            out_dir,
+            qubits_to_plot=None,
+            colors=['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred'],
+            markers=['o', 's', '^', 'D', 'v', 'P'],
+            xlims=None,
+            ylims=None,
+            tolerance_seconds=10,
+            fps=10,
+            frame_step=5,
+            show_errorbars=True,
+            plot_ideal_line=False,
+            save_as="mp4"):
+        """
+        Make a small animation showing SSF vs RPM Pe points appearing over time.
+
+        Input
+        -----
+        matched : dict
+            Dictionary produced by SSF_fid_vs_RRPM_Pe or SSF_fid_vs_RRPM_Pe_3D.
+
+            Expected structure:
+                matched[q]["Pe_RPM"]
+                matched[q]["PeErr_RPM"]
+                matched[q]["SSF"]
+                matched[q]["SSF_err"]
+                matched[q]["t_RPM"]
+
+        Axes
+        ----
+        x = RPM Pe
+        y = SSF fidelity
+        """
+        os.makedirs(out_dir, exist_ok=True)
+
+        paramvstime_dir = os.path.join(out_dir, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+
+        if qubits_to_plot is None:
+            qubits_to_plot = sorted(list(matched.keys()))
+        else:
+            qubits_to_plot = [
+                q for q in qubits_to_plot
+                if q in matched
+            ]
+
+        if not qubits_to_plot:
+            raise ValueError("No valid qubits_to_plot found in matched dictionary.")
+
+        # --------------------------------------------------
+        # Collect all matched points into one time-ordered list
+        # --------------------------------------------------
+        all_points = []
+
+        for q in qubits_to_plot:
+            npts = len(matched[q]["SSF"])
+
+            for i in range(npts):
+                pe = matched[q]["Pe_RPM"][i]
+                ssf = matched[q]["SSF"][i]
+                pe_err = matched[q]["PeErr_RPM"][i]
+                ssf_err = matched[q]["SSF_err"][i]
+                t = matched[q]["t_RPM"][i]
+
+                if t is None:
+                    continue
+
+                try:
+                    pe = float(pe)
+                    ssf = float(ssf)
+                    pe_err = float(pe_err)
+                    ssf_err = float(ssf_err)
+                except Exception:
+                    continue
+
+                if not np.isfinite(pe) or not np.isfinite(ssf):
+                    continue
+
+                if not np.isfinite(pe_err):
+                    pe_err = 0.0
+
+                if not np.isfinite(ssf_err):
+                    ssf_err = 0.0
+
+                all_points.append({
+                    "q": q,
+                    "pe": pe,
+                    "ssf": ssf,
+                    "pe_err": pe_err,
+                    "ssf_err": ssf_err,
+                    "time": t,
+                })
+
+        if len(all_points) == 0:
+            print("No valid matched points found. No animation made.")
+            return None
+
+        all_points = sorted(all_points, key=lambda d: d["time"])
+
+        t0 = all_points[0]["time"]
+        t_final = all_points[-1]["time"]
+        total_hours = (t_final - t0).total_seconds() / 3600.0
+
+        # Frame indices. Use frame_step to keep the movie small.
+        frame_indices = list(range(1, len(all_points) + 1, frame_step))
+
+        if frame_indices[-1] != len(all_points):
+            frame_indices.append(len(all_points))
+
+        # --------------------------------------------------
+        # Auto axis limits if not supplied
+        # --------------------------------------------------
+        if xlims is None:
+            all_pe = np.array([p["pe"] for p in all_points])
+            xmin = np.nanmin(all_pe)
+            xmax = np.nanmax(all_pe)
+            xpad = 0.05 * (xmax - xmin) if xmax > xmin else 0.01
+            xlims = (max(0, xmin - xpad), xmax + xpad)
+
+        if ylims is None:
+            all_ssf = np.array([p["ssf"] for p in all_points])
+            ymin = np.nanmin(all_ssf)
+            ymax = np.nanmax(all_ssf)
+            ypad = 0.05 * (ymax - ymin) if ymax > ymin else 0.02
+            ylims = (ymin - ypad, ymax + ypad)
+
+        # --------------------------------------------------
+        # Set up figure
+        # --------------------------------------------------
+        fig, ax = plt.subplots(figsize=(11, 8))
+
+        def draw_frame(frame_num):
+            ax.clear()
+
+            points_now = all_points[:frame_num]
+            current_time = points_now[-1]["time"]
+
+            elapsed_hours = (current_time - t0).total_seconds() / 3600.0
+            elapsed_days = elapsed_hours / 24.0
+            progress = 100.0 * frame_num / len(all_points)
+
+            # Optional ideal line
+            if plot_ideal_line:
+                pe_line = np.linspace(max(0, xlims[0]), xlims[1], 300)
+                ssf_ideal = 1 - 2 * pe_line
+
+                ax.plot(
+                    pe_line,
+                    ssf_ideal,
+                    color="black",
+                    linestyle="--",
+                    linewidth=2,
+                    alpha=0.9,
+                    label=r"Ideal: SSF $= 1 - 2P_e$",
+                    zorder=5
+                )
+
+            # Plot points by qubit
+            for q in qubits_to_plot:
+                q_points = [p for p in points_now if p["q"] == q]
+
+                if len(q_points) == 0:
+                    continue
+
+                q_color = colors[q % len(colors)]
+                q_marker = markers[q % len(markers)]
+
+                pe_vals = np.array([p["pe"] for p in q_points])
+                ssf_vals = np.array([p["ssf"] for p in q_points])
+                pe_errs = np.array([p["pe_err"] for p in q_points])
+                ssf_errs = np.array([p["ssf_err"] for p in q_points])
+
+                # Put Q4 in the back if present
+                zorder_val = 1 if q == 3 else 3
+
+                if show_errorbars:
+                    ax.errorbar(
+                        pe_vals,
+                        ssf_vals,
+                        xerr=pe_errs,
+                        yerr=ssf_errs,
+                        fmt="none",
+                        ecolor=q_color,
+                        elinewidth=0.8,
+                        capsize=2,
+                        alpha=0.35,
+                        zorder=zorder_val
+                    )
+
+                ax.scatter(
+                    pe_vals,
+                    ssf_vals,
+                    marker=q_marker,
+                    s=35,
+                    facecolors=q_color,
+                    edgecolors="k",
+                    linewidths=0.6,
+                    alpha=0.85,
+                    label=f"Q{q + 1}",
+                    zorder=zorder_val + 1
+                )
+
+            ax.set_xlim(*xlims)
+            ax.set_ylim(*ylims)
+
+            ax.set_xlabel("RPM $P_e$", fontsize=14)
+            ax.set_ylabel("Single-Shot Fidelity", fontsize=14)
+
+            ax.set_title(
+                f"SSF Fidelity vs RPM $P_e$ over Time\n"
+                f"(nearest-time match, tolerance={tolerance_seconds}s)",
+                fontsize=15
+            )
+
+            # Live-updating time metric text box
+            ax.text(
+                0.03,
+                0.97,
+                (
+                    f"Current time: {current_time:%m-%d %H:%M:%S}\n"
+                    f"Elapsed: {elapsed_hours:.1f} h ({elapsed_days:.2f} d)\n"
+                    f"Total span: {total_hours:.1f} h\n"
+                    f"Points shown: {frame_num}/{len(all_points)} ({progress:.0f}%)"
+                ),
+                transform=ax.transAxes,
+                fontsize=11,
+                ha="left",
+                va="top",
+                bbox=dict(facecolor="white", alpha=0.85, edgecolor="black")
+            )
+
+            ax.grid(alpha=0.3)
+            ax.legend(fontsize=10, frameon=True, loc="best")
+
+            return ax,
+
+        ani = animation.FuncAnimation(
+            fig,
+            draw_frame,
+            frames=frame_indices,
+            interval=1000 / fps,
+            blit=False
+        )
+
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        if save_as.lower() == "gif":
+            out_path = os.path.join(
+                paramvstime_dir,
+                f"SSF_fid_vs_RPM_Pe_animation_{stamp}.gif"
+            )
+            writer = animation.PillowWriter(fps=fps)
+            ani.save(out_path, writer=writer, dpi=self.figure_quality)
+
+        else:
+            out_path = os.path.join(
+                paramvstime_dir,
+                f"SSF_fid_vs_RPM_Pe_animation_{stamp}.mp4"
+            )
+
+            if animation.writers.is_available("ffmpeg"):
+                writer = animation.FFMpegWriter(fps=fps, bitrate=1800)
+                ani.save(out_path, writer=writer, dpi=self.figure_quality)
+            else:
+                # Fallback to GIF if ffmpeg is unavailable
+                out_path = out_path.replace(".mp4", ".gif")
+                writer = animation.PillowWriter(fps=fps)
+                ani.save(out_path, writer=writer, dpi=self.figure_quality)
+
+        plt.close(fig)
+
+        print("Saved SSF vs RPM Pe animation:", out_path)
+        return out_path
+
     def SSF_fid_vs_RRPM_Pe(
             self,
             ssf_fit_results,
@@ -4667,7 +5401,9 @@ class combined_Qtemp_studies:
             xlims=None,
             ylims=None,
             RPM_Pe_rel_err_cut = None,
-            plot_with_t_color_gradient = False):
+            plot_with_t_color_gradient = False,
+            plot_with_t_markers = False, # only implemented for plot_together case currently
+            plot_ideal_line = False): # only implemented for plot_together case currently
         """
         Plot SSF fidelity vs RPM-extracted thermal population Pe.
 
@@ -4702,6 +5438,11 @@ class combined_Qtemp_studies:
         """
 
         os.makedirs(out_dir, exist_ok=True)
+
+        # Do not allow both time-encoding styles at once.
+        # If marker time-bins are requested, turn off the alpha gradient.
+        if plot_with_t_markers:
+            plot_with_t_color_gradient = False
 
         num_qubits = self.number_of_qubits
         markers = ['o', 's', '^', 'D', 'v', 'P']
@@ -4899,52 +5640,106 @@ class combined_Qtemp_studies:
                 if len(matched[q]["SSF"]) == 0:
                     continue
 
-                if plot_with_t_color_gradient:
-                    alphas = self.get_time_alphas(
-                        matched[q]["t_SSF"],
-                        alpha_min=0.20,
-                        alpha_max=0.95)
-                else:
+                q_color = colors[q % len(colors)]
+                q_marker = markers[q % len(markers)]
+
+                # --------------------------------------------------
+                # Time styling
+                # Priority:
+                #   1. plot_with_t_markers: early/middle/late marker fill
+                #   2. plot_with_t_color_gradient: alpha gradient
+                #   3. default constant alpha
+                # --------------------------------------------------
+                if plot_with_t_markers:
+                    time_bins = self.get_time_bins(matched[q]["t_RPM"])
                     alphas = np.full(len(matched[q]["SSF"]), 0.8)
 
-                # Plot point-by-point so each point can have its own alpha
-                for pe, ssf, pe_err, ssf_err, a in zip(
+                elif plot_with_t_color_gradient:
+                    time_bins = None
+                    alphas = self.get_time_alphas(
+                        matched[q]["t_RPM"],
+                        alpha_min=0.20,
+                        alpha_max=0.95
+                    )
+
+                else:
+                    time_bins = None
+                    alphas = np.full(len(matched[q]["SSF"]), 0.8)
+
+                # Plot point-by-point so each point can have its own alpha/fill
+                for idx, (pe, ssf, pe_err, ssf_err, a) in enumerate(zip(
                         matched[q]["Pe_RPM"],
                         matched[q]["SSF"],
                         matched[q]["PeErr_RPM"],
                         matched[q]["SSF_err"],
-                        alphas):
+                        alphas)):
 
+                    if plot_with_t_markers:
+                        tbin = time_bins[idx]
+
+                        if tbin == "early":
+                            markerfacecolor = "none"  # open marker
+                            alpha = 0.95
+                        elif tbin == "middle":
+                            markerfacecolor = q_color  # half-transparent filled marker
+                            alpha = 0.45
+                        else:  # late
+                            markerfacecolor = q_color  # filled marker
+                            alpha = 0.95
+
+                    else:
+                        markerfacecolor = q_color
+                        alpha = a
+
+                    # Q4 behind other qubits
+                    #zorder_val = 1 if q == 3 else 3
+
+                    # Plot error bars first, behind marker
                     ax.errorbar(
                         pe,
                         ssf,
                         xerr=pe_err,
                         yerr=ssf_err,
-                        fmt=markers[q % len(markers)],
-                        markersize=5,
+                        fmt="none",
                         elinewidth=1,
                         capsize=3,
-                        alpha=a,
-                        color=colors[q % len(colors)],
-                        ecolor=colors[q % len(colors)],
-                        markeredgecolor="k",
-                        linestyle="None")
+                        alpha=alpha,
+                        ecolor=q_color,
+                        #zorder=zorder_val
+                    )
 
-                # Dummy point only for legend since we are plotting point-by-point above
+                    # Plot marker on top so error bars do not show through it
+                    ax.scatter(
+                        pe,
+                        ssf,
+                        marker=q_marker,
+                        s=45,
+                        facecolors=markerfacecolor,
+                        edgecolors="k",
+                        linewidths=0.8,
+                        alpha=alpha,
+                        color=q_color if markerfacecolor != "none" else None,
+                        #zorder=zorder_val + 1
+                    )
+
+                # Dummy point only for qubit legend since we are plotting point-by-point above
                 ax.errorbar(
                     [],
                     [],
-                    fmt=markers[q % len(markers)],
+                    fmt=q_marker,
                     markersize=5,
-                    color=colors[q % len(colors)],
+                    color=q_color,
+                    markerfacecolor=q_color,
                     markeredgecolor="k",
                     linestyle="None",
-                    label=f"Q{q + 1}")
+                    label=f"Q{q + 1}"
+                )
 
             ax.set_title(
                 f"SSF Fidelity vs RPM $P_e$ "
                 f"(nearest-time match, tolerance={tolerance_seconds}s)",
-                fontsize=16)
+                fontsize=16
+            )
             ax.set_xlabel("RPM $P_e$", fontsize=14)
             ax.set_ylabel("Single-Shot Fidelity", fontsize=14)
 
@@ -4953,9 +5748,36 @@ class combined_Qtemp_studies:
             if ylims is not None:
                 ax.set_ylim(*ylims)
 
-            ax.grid(alpha=0.3)
-            ax.legend(fontsize=11, frameon=False)
+            if plot_ideal_line:
+                cur_xlim = ax.get_xlim()
 
+                pe_line = np.linspace(max(0, cur_xlim[0]), cur_xlim[1], 300)
+                ssf_ideal = 1 - 2 * pe_line
+
+                ax.plot(
+                    pe_line,
+                    ssf_ideal,
+                    color="black",
+                    linestyle="--",
+                    linewidth=2,
+                    alpha=0.9,
+                    label=r"Ideal: SSF $= 1 - 2P_e$",
+                    zorder=5
+                )
+
+                ax.set_xlim(cur_xlim)
+
+            ax.grid(alpha=0.3)
+
+            # Main qubit/ideal-line legend
+            qubit_legend = ax.legend(
+                fontsize=11,
+                frameon=True,
+                loc="best"
+            )
+            ax.add_artist(qubit_legend)
+
+            # Only show alpha-gradient legend if using continuous alpha gradient
             if plot_with_t_color_gradient:
                 qubit_labels = [f"Q{q + 1}" for q in qubits_to_plot]
                 qubit_colors = [colors[q % len(colors)] for q in qubits_to_plot]
@@ -4968,13 +5790,57 @@ class combined_Qtemp_studies:
                     alpha_max=0.95,
                     box_pos=(0.75, 0.15, 0.12, 0.22)
                 )
-            #plt.tight_layout()
 
-            out_path = os.path.join(paramvstime_dir, f"SSF_fid_vs_RPM_Pe_AllQs_{stamp}.pdf")
+            # Only show marker-fill legend if using early/middle/late marker bins
+            if plot_with_t_markers:
+                time_marker_handles = [
+                    Line2D(
+                        [0], [0],
+                        marker="o",
+                        color="gray",
+                        markerfacecolor="none",
+                        markeredgecolor="k",
+                        linestyle="None",
+                        markersize=7,
+                        label="Early"
+                    ),
+                    Line2D(
+                        [0], [0],
+                        marker="o",
+                        color="gray",
+                        markerfacecolor="gray",
+                        markeredgecolor="k",
+                        linestyle="None",
+                        markersize=7,
+                        alpha=0.45,
+                        label="Middle"
+                    ),
+                    Line2D(
+                        [0], [0],
+                        marker="o",
+                        color="gray",
+                        markerfacecolor="gray",
+                        markeredgecolor="k",
+                        linestyle="None",
+                        markersize=7,
+                        alpha=0.95,
+                        label="Late"
+                    ),
+                ]
+
+                time_legend = ax.legend(
+                    handles=time_marker_handles,
+                    title="Time bin",
+                    fontsize=10,
+                    title_fontsize=10,
+                    frameon=True,
+                    loc="lower right")
+                ax.add_artist(time_legend)
+
+            out_path = os.path.join(paramvstime_dir,f"SSF_fid_vs_RPM_Pe_AllQs_{stamp}.pdf")
             fig.savefig(out_path, dpi=self.figure_quality)
             plt.close(fig)
             print("Saved SSF fidelity vs RPM Pe plot: ", out_path)
-
         else:
             nrows = 2
             ncols = 3

@@ -46,7 +46,7 @@ save_figs_SSF = False # Do you want to save gaussian fit plots while calculating
 fit_saved = False # Not used here, set to false.
 exclude_temp_sweeps = True # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
 filter_out_bad_RPM_fits = True # filter out bad rpm fits? this doesn't work perfect but helps a bit
-filter_out_bad_SSF_qtemp_fits = True # filter out SSF data that can't be properly fitted for qubit temp calcs?
+filter_out_bad_SSF_qtemp_fits = False # filter out SSF data that can't be properly fitted for qubit temp calcs?
 get_qtemp_data = True # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
 get_london_data = False # This returns RPM qubit temperatures, resonator freqs, and qubit freqs for specified dates. Designed for London Penetration analysis.
 
@@ -78,7 +78,7 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
 comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
                        "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
-                       "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe": True}
+                       "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": False, "SSF_fid_vs_RRPM_Pe_3D": True, "SSF_fid_vs_RRPM_Pe_video": False}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
@@ -1260,7 +1260,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                                                         rad_events_plot_lines = False, qubits_to_plot = [0,1,2,3,5], # 0-based indexing
                                                         plot_rpm_I_only=False, plot_rpm_Q_only=False)
 
-    if comb_analysis_flags["SSF_fid_vs_RRPM_Pe"]: # only configured to run for one run at a time
+    if comb_analysis_flags["SSF_fid_vs_RRPM_Pe_2D"]: # only configured to run for one run at a time
         # Plots SSF vs Pe, using Pe values extracted from RPM data, not SSF data
         if len(run_num_list) != 1:
             raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
@@ -1280,7 +1280,48 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             xlims= (0.0, 0.07),
             ylims=(0.6, 1.0),
             RPM_Pe_rel_err_cut = 0.2,
-            plot_with_t_color_gradient = True) # to depict time passed
+            plot_with_t_color_gradient = False, # to depict time passed
+            plot_ideal_line = False,
+            plot_with_t_markers=True) # second option to depict time passed
+
+    if comb_analysis_flags["SSF_fid_vs_RRPM_Pe_3D"]:  # only configured to run for one run at a time
+        # Plots SSF vs Pe, using Pe values extracted from RPM data, not SSF data
+        if len(run_num_list) != 1:
+            raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
+                             "This section is only set up to process one run at a time.")
+        if not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
+            raise ValueError(
+                'This plot requires both comb_analysis_flags["load_rpm"] and '
+                'comb_analysis_flags["load_ssf"] to be True.')
+
+        matched_3d = combined_studies.SSF_fid_vs_RRPM_Pe_3D(
+            fit_results_g,
+            all_files_Qtemp_results_RPMs,
+            out_dir=outerFolder_qtemps_plots,
+            qubits_to_plot=[0, 1, 2, 3, 5],
+            tolerance_seconds=10,
+            RPM_Pe_rel_err_cut=0.5,
+            axis_order="time_pe_ssf",
+            xlims=(0,200),  # time
+            ylims=(0.01, 0.07),  # RPM Pe
+            zlims=(0.6, 0.95),  # SSF
+            elev=25,
+            azim=-60
+        )
+
+        if comb_analysis_flags["SSF_fid_vs_RRPM_Pe_video"]:  # only configured to run for one run at a time
+            anim_path = combined_studies.animate_SSF_fid_vs_RRPM_Pe_2D(
+                matched_3d,
+                out_dir=outerFolder_qtemps_plots,
+                qubits_to_plot=[0, 1, 2, 3, 5],
+                xlims=(0, 0.07),
+                ylims=(0.6, 1.0),
+                fps=10, #Frames per second.
+                frame_step=20,
+                show_errorbars=True,
+                plot_ideal_line=False,
+                save_as="gif" # mp4 or gif
+            )
 
     #----------- Thermal Populations vs Time using all three methods ----
     if comb_analysis_flags["Pe_vs_time_comb_separate_plts"]:
