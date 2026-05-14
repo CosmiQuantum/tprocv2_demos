@@ -46,7 +46,7 @@ save_figs_SSF = False # Do you want to save gaussian fit plots while calculating
 fit_saved = False # Not used here, set to false.
 exclude_temp_sweeps = True # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
 filter_out_bad_RPM_fits = True # filter out bad rpm fits? this doesn't work perfect but helps a bit
-filter_out_bad_SSF_qtemp_fits = False # filter out SSF data that can't be properly fitted for qubit temp calcs?
+filter_out_bad_SSF_qtemp_fits = True # filter out SSF data that can't be properly fitted for qubit temp calcs?
 get_qtemp_data = True # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
 get_london_data = False # This returns RPM qubit temperatures, resonator freqs, and qubit freqs for specified dates. Designed for London Penetration analysis.
 
@@ -77,8 +77,8 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
 comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
-                       "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
-                       "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": False, "SSF_fid_vs_RRPM_Pe_3D": True, "SSF_fid_vs_RRPM_Pe_video": False}
+                       "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": True, "Pe_box_whisker_allruns_allQs": True, "ssf_box_whisker_allruns_allQs": False,
+                       "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": False, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
@@ -924,7 +924,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
-run_num_list = [9] # for quiet, start at 5. no qtemp data for run 4
+run_num_list = [5,6,7,8,9] # for quiet, start at 5. no qtemp data for run 4
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
 rpm_Pe_by_run = {}      # rpm_Pe_by_run[run][qid] = [P_e, ...]
@@ -1047,7 +1047,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         # Simple cache options for processed SSF/RPM inputs
         # ============================================================
         create_cached_files = False  # True = save processed files after processing
-        use_cached_files = True  # True = load processed files instead of processing
+        use_cached_files = False  # True = load processed files instead of processing
 
         cache_dir = "/home/acolonce/Documents/analysis/cached_processed_data"
         os.makedirs(cache_dir, exist_ok=True)
@@ -1315,13 +1315,13 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             out_dir=outerFolder_qtemps_plots,
             qubits_to_plot=[0, 1, 2, 3, 5],
             tolerance_seconds=10, # 10 seconds for all runs except Run 6 SCIENCE run data (600s)
-            plot_together=True,
+            plot_together=False,
             xlims= (0.0, 0.07),
             ylims=(0.6, 1.0),
             RPM_Pe_rel_err_cut = 0.2,
-            plot_with_t_color_gradient = False, # to depict time passed
+            plot_with_t_color_gradient = True, # to depict time passed
             plot_ideal_line = False,
-            plot_with_t_markers=True) # second option to depict time passed
+            plot_with_t_markers=False) # second option to depict time passed
 
     if comb_analysis_flags["SSF_fid_vs_RRPM_Pe_3D"]:  # only configured to run for one run at a time
         # Plots SSF vs Pe, using Pe values extracted from RPM data, not SSF data
@@ -1345,9 +1345,10 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             xlims=(275, 0),  # time
             ylims=(0.0, 0.07),  # RPM Pe
             zlims=(0.6, 0.95),  # SSF
-            elev=25, # positive = from above, negative = from below
-            azim=-60, #-40
-            plot_qubits_separately = True
+            elev=8, # positive = from above, negative = from below
+            azim=-30, #-40
+            plot_qubits_separately = True,
+            show_bottom_shadow = True
         )
 
         if comb_analysis_flags["SSF_fid_vs_RRPM_Pe_video"]:  # only configured to run for one run at a time

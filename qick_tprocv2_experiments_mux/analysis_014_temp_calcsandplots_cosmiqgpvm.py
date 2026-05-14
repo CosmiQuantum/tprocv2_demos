@@ -4931,7 +4931,8 @@ class combined_Qtemp_studies:
             axis_order="time_pe_ssf",
             elev=25,
             azim=-60,
-            plot_qubits_separately = False):
+            plot_qubits_separately = False,
+            show_bottom_shadow=True):
         """
         Make a 3D plot showing how SSF vs RPM Pe evolves over time.
 
@@ -5242,6 +5243,28 @@ class combined_Qtemp_studies:
                     pe_vals,
                     ssf_vals,
                     t_hours)
+                # --------------------------------------------------
+                # Optional shadow/projection on the bottom plane
+                # --------------------------------------------------
+                if show_bottom_shadow:
+
+                    # Choose the bottom of the visible z-axis
+                    if zlims is not None:
+                        z_shadow = zlims[0]
+                    else:
+                        z_shadow = np.nanmin(zvals)
+
+                    ax.scatter(
+                        xvals,
+                        yvals,
+                        np.full_like(zvals, z_shadow),
+                        marker=q_marker,
+                        s=28,
+                        color=q_color,
+                        alpha=0.15,
+                        edgecolor="none",
+                        zorder=0
+                    )
 
                 # Put the Pe and SSF errors on the correct 3D axes
                 if axis_order == "time_pe_ssf":
@@ -5396,6 +5419,29 @@ class combined_Qtemp_studies:
                     t_hours = t_hours[order]
 
                     xvals, yvals, zvals, xlabel, ylabel, zlabel = _axis_values(pe_vals, ssf_vals, t_hours)
+
+                    # --------------------------------------------------
+                    # Optional shadow/projection on the bottom plane
+                    # --------------------------------------------------
+                    if show_bottom_shadow:
+
+                        # Choose the bottom of the visible z-axis
+                        if zlims is not None:
+                            z_shadow = zlims[0]
+                        else:
+                            z_shadow = np.nanmin(zvals)
+
+                        ax.scatter(
+                            xvals,
+                            yvals,
+                            np.full_like(zvals, z_shadow),
+                            marker=q_marker,
+                            s=28,
+                            color=q_color,
+                            alpha=0.15,
+                            edgecolor="none",
+                            zorder=0
+                        )
 
                     if axis_order == "time_pe_ssf":
                         xerr_3d = None
@@ -6309,7 +6355,7 @@ class combined_Qtemp_studies:
                 ax.set_title(f"Q{q + 1}", loc="left", fontsize=14, fontweight="bold")
                 ax.set_ylabel("SSF")
                 ax.grid(alpha=0.3)
-                ax.legend(loc="best", fontsize=9, frameon=False)
+                #ax.legend(loc="best", fontsize=9, frameon=False)
                 ax.set_box_aspect(1)
 
                 if xlims is not None:

@@ -5,7 +5,7 @@ import math
 import os
 import datetime
 
-qtemp_noisetemp_plot = False
+qtemp_noisetemp_plot = True
 lnPe_vs_qfreq_plots_per_run = False
 lnPe_vs_qfreq_plots_per_qubit = False
 ssf_fid_vs_Pe = False
@@ -18,7 +18,7 @@ Pe_meas = [
     [None, 0.2622, 0.1223, 0.0802, 0.0566, 0.0135],  # Qubit 1
     [None, 0.3799, 0.1039, 0.0880, 0.0808, 0.0254],  # Qubit 2
     [None, 0.2306, 0.1376, 0.0766, 0.0738, 0.0292],  # Qubit 3
-    [None, 0.3553, 0.1703, 0.0883, 0.1112, 0.0275],  # Qubit 4
+    [None, 0.3553, 0.1703, 0.0883, 0.1112, 0.0264 ],  # Qubit 4
     [None, 0.2206, 0.0610, 0.0806, 0.0521, None],    # Qubit 5
     [None, 0.2485, 0.0685, 0.0466, 0.0296, 0.0103],  # Qubit 6
 ]
@@ -27,7 +27,7 @@ Pe_err = [
     [None, 0.0386, 0.0203, 0.0056, 0.0026, 0.0057],  # Qubit 1
     [None, 0.0109, 0.0050, 0.0027, 0.0037, 0.0071],  # Qubit 2
     [None, 0.0109, 0.0173, 0.0029, 0.0054, 0.0103],  # Qubit 3
-    [None, 0.0085, 0.0169, 0.0048, 0.0152, 0.0083],  # Qubit 4
+    [None, 0.0085, 0.0169, 0.0048, 0.0152, 0.0080],  # Qubit 4
     [None, 0.0077, 0.0201, 0.0032, 0.0040, None],    # Qubit 5
     [None, 0.0072, 0.0038, 0.0034, 0.0040, 0.0031],  # Qubit 6
 ]
