@@ -67,17 +67,17 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_Qtemps": True}
+qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+                      "combined_studies_Qtemps": False}
 
 # What analysis plots do you want to make?
-analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
-                  "Qtemps_hists_viaRPM": False, "Pe_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_hists_viaSSF": False, "Pe_vs_time_viaRPM": False,
+analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
+                  "Qtemps_hists_viaRPM": False, "Pe_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_hists_viaSSF": False, "Pe_vs_time_viaRPM": True,
                   "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": False, "SSF_fid_vs_Pe_viaSSF": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
-comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
-                       "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": True, "Pe_box_whisker_allruns_allQs": True, "ssf_box_whisker_allruns_allQs": False,
+comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": True, "Pe_vs_time_comb_separate_plts": False,
+                       "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
                        "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": False, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False}
 
 # For London Penetration Depth analysis
@@ -924,7 +924,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
-run_num_list = [5,6,7,8,9] # for quiet, start at 5. no qtemp data for run 4
+run_num_list = [9] # for quiet, start at 5. no qtemp data for run 4
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
 rpm_Pe_by_run = {}      # rpm_Pe_by_run[run][qid] = [P_e, ...]
@@ -1295,7 +1295,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         # Plots error bars always, unless you pass None instead of all_qubit_temps_errs_g.
         combined_studies.Qtemps_vs_time_comb_allQs_1col(all_qubit_temps_g, all_qubit_times_g, outerFolder_qtemps_plots,
                                                      all_files_Qtemp_results_RPMs, all_qubit_temps_errs_g, restrict_time_yaxis = True, ylims = [20,80],
-                                                        rad_events_plot_lines = False, qubits_to_plot = [0,1,2,3,5], # 0-based indexing
+                                                        rad_events_plot_lines = False, qubits_to_plot = [2,3], # 0-based indexing
                                                         plot_rpm_I_only=False, plot_rpm_Q_only=False)
 
     if comb_analysis_flags["SSF_fid_vs_RRPM_Pe_2D"]: # only configured to run for one run at a time
