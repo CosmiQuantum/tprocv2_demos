@@ -4,6 +4,7 @@ import ast
 import numpy as np
 import sys
 import h5py
+import pickle
 from mpl_toolkits.mplot3d import proj3d
 from matplotlib.ticker import FormatStrFormatter
 from matplotlib.axes import Axes
@@ -3016,6 +3017,105 @@ class combined_Qtemp_studies:
         self.figure_quality = figure_quality
         self.number_of_qubits = number_of_qubits
 
+    def save_processed_ssf_rpm_inputs(self,
+            fit_results_g,
+            all_files_Qtemp_results_RPMs,
+            save_dir,
+            tag="ssf_rpm_processed"):
+        """
+        Save the processed SSF and RPM inputs into separate pickle files.
+
+        This lets you avoid rerunning the slow processing step before calling
+        SSF_fid_vs_RRPM_Pe_3D.
+
+        Parameters
+        ----------
+        fit_results_g : dict
+            Processed SSF fit results.
+
+        all_files_Qtemp_results_RPMs : list
+            Processed RPM qubit temperature / P_e results.
+
+        save_dir : str
+            Folder where the cached files should be saved.
+
+        tag : str
+            Name prefix to identify this cache set.
+
+        Returns
+        -------
+        paths : dict
+            Dictionary containing the saved file paths.
+        """
+
+        os.makedirs(save_dir, exist_ok=True)
+
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        ssf_path = os.path.join(
+            save_dir,
+            f"{tag}_fit_results_g_{timestamp}.pkl"
+        )
+
+        rpm_path = os.path.join(
+            save_dir,
+            f"{tag}_all_files_Qtemp_results_RPMs_{timestamp}.pkl"
+        )
+
+        with open(ssf_path, "wb") as f:
+            pickle.dump(fit_results_g, f)
+
+        with open(rpm_path, "wb") as f:
+            pickle.dump(all_files_Qtemp_results_RPMs, f)
+
+        print("Saved processed SSF fit results to:")
+        print(ssf_path)
+
+        print("Saved processed RPM results to:")
+        print(rpm_path)
+
+        return {
+            "fit_results_g": ssf_path,
+            "all_files_Qtemp_results_RPMs": rpm_path,
+        }
+
+    def load_processed_ssf_rpm_inputs(self,
+            fit_results_g_path,
+            all_files_Qtemp_results_RPMs_path):
+        """
+        Load previously saved processed SSF and RPM inputs.
+
+        Parameters
+        ----------
+        fit_results_g_path : str
+            Path to the saved fit_results_g pickle file.
+
+        all_files_Qtemp_results_RPMs_path : str
+            Path to the saved RPM results pickle file.
+
+        Returns
+        -------
+        fit_results_g : dict
+            Loaded SSF fit results.
+
+        all_files_Qtemp_results_RPMs : list
+            Loaded RPM results.
+        """
+
+        with open(fit_results_g_path, "rb") as f:
+            fit_results_g = pickle.load(f)
+
+        with open(all_files_Qtemp_results_RPMs_path, "rb") as f:
+            all_files_Qtemp_results_RPMs = pickle.load(f)
+
+        print("Loaded processed SSF fit results from:")
+        print(fit_results_g_path)
+
+        print("Loaded processed RPM results from:")
+        print(all_files_Qtemp_results_RPMs_path)
+
+        return fit_results_g, all_files_Qtemp_results_RPMs
+
     def extract_pe_from_fit_results(self, fit_results_g, n_qubits):
         """
         Converts SSF fit_results_g into per-qubit Pe arrays.
@@ -4830,7 +4930,8 @@ class combined_Qtemp_studies:
             RPM_Pe_rel_err_cut=None,
             axis_order="time_pe_ssf",
             elev=25,
-            azim=-60):
+            azim=-60,
+            plot_qubits_separately = False):
         """
         Make a 3D plot showing how SSF vs RPM Pe evolves over time.
 
@@ -5097,192 +5198,324 @@ class combined_Qtemp_studies:
                 )
 
         # ================================================================
-        # 7. Plot 3D
+        # 7. Plot
         # ================================================================
         paramvstime_dir = os.path.join(out_dir, "params_vs_time")
         os.makedirs(paramvstime_dir, exist_ok=True)
         stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        # Bigger figure helps a lot
-        fig = plt.figure(figsize=(13.5, 10.5))
-        ax = fig.add_subplot(111, projection="3d")
+        if not plot_qubits_separately: # a single 3D figure, all qubits in it
+            # Bigger figure helps a lot
+            fig = plt.figure(figsize=(13.5, 10.5))
+            ax = fig.add_subplot(111, projection="3d")
 
-        xlabel = None
-        ylabel = None
-        zlabel = None
+            xlabel = None
+            ylabel = None
+            zlabel = None
 
-        max_ssf_wall_lines = []
-        for q in qubits_to_plot:
-            if len(matched[q]["SSF"]) == 0:
-                continue
+            max_ssf_wall_lines = []
+            for q in qubits_to_plot:
+                if len(matched[q]["SSF"]) == 0:
+                    continue
 
-            q_color = colors[q % len(colors)]
-            q_marker = markers[q % len(markers)]
+                q_color = colors[q % len(colors)]
+                q_marker = markers[q % len(markers)]
 
-            pe_vals = np.array(matched[q]["Pe_RPM"], dtype=float)
-            ssf_vals = np.array(matched[q]["SSF"], dtype=float)
-            pe_errs = np.array(matched[q]["PeErr_RPM"], dtype=float)
-            ssf_errs = np.array(matched[q]["SSF_err"], dtype=float)
+                pe_vals = np.array(matched[q]["Pe_RPM"], dtype=float)
+                ssf_vals = np.array(matched[q]["SSF"], dtype=float)
+                pe_errs = np.array(matched[q]["PeErr_RPM"], dtype=float)
+                ssf_errs = np.array(matched[q]["SSF_err"], dtype=float)
 
-            t_hours = np.array([
-                (t - t0).total_seconds() / 3600.0
-                for t in matched[q]["t_RPM"]
-            ])
+                t_hours = np.array([
+                    (t - t0).total_seconds() / 3600.0
+                    for t in matched[q]["t_RPM"]])
 
-            # Sort by time
-            order = np.argsort(t_hours)
-            pe_vals = pe_vals[order]
-            ssf_vals = ssf_vals[order]
-            pe_errs = pe_errs[order]
-            ssf_errs = ssf_errs[order]
-            t_hours = t_hours[order]
+                # Sort by time
+                order = np.argsort(t_hours)
+                pe_vals = pe_vals[order]
+                ssf_vals = ssf_vals[order]
+                pe_errs = pe_errs[order]
+                ssf_errs = ssf_errs[order]
+                t_hours = t_hours[order]
 
-            xvals, yvals, zvals, xlabel, ylabel, zlabel = _axis_values(
-                pe_vals,
-                ssf_vals,
-                t_hours
-            )
+                xvals, yvals, zvals, xlabel, ylabel, zlabel = _axis_values(
+                    pe_vals,
+                    ssf_vals,
+                    t_hours)
 
-            # Put the Pe and SSF errors on the correct 3D axes
-            if axis_order == "time_pe_ssf":
-                xerr_3d = None  # x = time
-                yerr_3d = pe_errs  # y = RPM Pe
-                zerr_3d = ssf_errs  # z = SSF
+                # Put the Pe and SSF errors on the correct 3D axes
+                if axis_order == "time_pe_ssf":
+                    xerr_3d = None  # x = time
+                    yerr_3d = pe_errs  # y = RPM Pe
+                    zerr_3d = ssf_errs  # z = SSF
 
-            elif axis_order == "pe_time_ssf":
-                xerr_3d = pe_errs  # x = RPM Pe
-                yerr_3d = None  # y = time
-                zerr_3d = ssf_errs  # z = SSF
+                elif axis_order == "pe_time_ssf":
+                    xerr_3d = pe_errs  # x = RPM Pe
+                    yerr_3d = None  # y = time
+                    zerr_3d = ssf_errs  # z = SSF
 
-            elif axis_order == "pe_ssf_time":
-                xerr_3d = pe_errs  # x = RPM Pe
-                yerr_3d = ssf_errs  # y = SSF
-                zerr_3d = None  # z = time
+                elif axis_order == "pe_ssf_time":
+                    xerr_3d = pe_errs  # x = RPM Pe
+                    yerr_3d = ssf_errs  # y = SSF
+                    zerr_3d = None  # z = time
 
-            # Plot error bars first so markers sit on top
-            ax.errorbar(
-                xvals,
-                yvals,
-                zvals,
-                xerr=xerr_3d,
-                yerr=yerr_3d,
-                zerr=zerr_3d,
-                fmt="none",
-                ecolor=q_color,
-                elinewidth=1.2,
-                capsize=3,
-                alpha=0.5,
-                zorder=1
-            )
+                # Plot error bars first so markers sit on top
+                ax.errorbar(
+                    xvals,
+                    yvals,
+                    zvals,
+                    xerr=xerr_3d,
+                    yerr=yerr_3d,
+                    zerr=zerr_3d,
+                    fmt="none",
+                    ecolor=q_color,
+                    elinewidth=1.2,
+                    capsize=3,
+                    alpha=0.5,
+                    zorder=1)
 
-            ax.scatter(
-                xvals,
-                yvals,
-                zvals,
-                marker=q_marker,
-                s=35,
-                color=q_color,
-                edgecolor="k",
-                linewidth=0.5,
-                alpha=0.85,
-                label=f"Q{q + 1}",
-                zorder=3
-            )
+                ax.scatter(
+                    xvals,
+                    yvals,
+                    zvals,
+                    marker=q_marker,
+                    s=35,
+                    color=q_color,
+                    edgecolor="k",
+                    linewidth=0.5,
+                    alpha=0.85,
+                    label=f"Q{q + 1}",
+                    zorder=3)
 
-            imax_ssf = int(np.nanargmax(ssf_vals))
+                imax_ssf = int(np.nanargmax(ssf_vals))
+                max_ssf_wall_lines.append({
+                    "q": q,
+                    "color": q_color,
+                    "z_max": zvals[imax_ssf],
+                    "ssf_max": ssf_vals[imax_ssf]})
 
-            max_ssf_wall_lines.append({
-                "q": q,
-                "color": q_color,
-                "z_max": zvals[imax_ssf],
-                "ssf_max": ssf_vals[imax_ssf],
-            })
+            # Bigger labelpad
+            ax.set_xlabel(xlabel, fontsize=14, labelpad=30)
+            ax.set_ylabel(ylabel, fontsize=14, labelpad=30)
+            ax.set_zlabel(zlabel, fontsize=14, labelpad=30)
 
-        # Bigger labelpad
-        ax.set_xlabel(xlabel, fontsize=14, labelpad=30)
-        ax.set_ylabel(ylabel, fontsize=14, labelpad=30)
-        ax.set_zlabel(zlabel, fontsize=14, labelpad=30)
+            # Bigger tick label padding too
+            ax.tick_params(axis='x', pad=10, labelsize=11)
+            ax.tick_params(axis='y', pad=10, labelsize=11)
+            ax.tick_params(axis='z', pad=10, labelsize=11)
 
-        # Bigger tick label padding too
-        ax.tick_params(axis='x', pad=10, labelsize=11)
-        ax.tick_params(axis='y', pad=10, labelsize=11)
-        ax.tick_params(axis='z', pad=10, labelsize=11)
+            ax.set_title(
+                f"SSF Fidelity vs RPM $P_e$ vs Time\n"
+                f"(nearest-time match, tolerance={tolerance_seconds}s)",
+                fontsize=16,
+                pad=24)
 
-        ax.set_title(
-            f"SSF Fidelity vs RPM $P_e$ vs Time\n"
-            f"(nearest-time match, tolerance={tolerance_seconds}s)",
-            fontsize=16,
-            pad=24
-        )
+            if xlims is not None:
+                ax.set_xlim(*xlims)
 
-        if xlims is not None:
-            ax.set_xlim(*xlims)
+            if ylims is not None:
+                ax.set_ylim(*ylims)
 
-        if ylims is not None:
-            ax.set_ylim(*ylims)
+            if zlims is not None:
+                ax.set_zlim(*zlims)
 
-        if zlims is not None:
-            ax.set_zlim(*zlims)
+                ztick_vals = np.round(np.arange(zlims[0], zlims[1] + 0.0001, 0.05), 2)
+                ax.set_zticks(ztick_vals)
+                ax.set_zticklabels([f"{z:.2f}" for z in ztick_vals])
 
-            ztick_vals = np.round(np.arange(zlims[0], zlims[1] + 0.0001, 0.05), 2)
-            ax.set_zticks(ztick_vals)
-            ax.set_zticklabels([f"{z:.2f}" for z in ztick_vals])
+            ax.view_init(elev=elev, azim=azim)
 
-        ax.view_init(elev=elev, azim=azim)
+            self.add_left_duplicate_z_axis_projected_auto(ax)
 
-        self.add_left_duplicate_z_axis_projected_auto(ax)
+            # --------------------------------------------------
+            # Draw max-SSF wall guide lines AFTER final limits
+            # --------------------------------------------------
+            x0, x1 = ax.get_xlim()
+            y0, y1 = ax.get_ylim()
+            y_wall = y1
 
-        # --------------------------------------------------
-        # Draw max-SSF wall guide lines AFTER final limits
-        # --------------------------------------------------
-        x0, x1 = ax.get_xlim()
-        y0, y1 = ax.get_ylim()
+            for item in max_ssf_wall_lines:
+                ax.plot(
+                    [x0, x1],
+                    [y_wall, y_wall],
+                    [item["z_max"], item["z_max"]],
+                    color=item["color"],
+                    linewidth=2.5,
+                    linestyle="-",
+                    alpha=0.60,
+                    zorder=100)
 
-        # Use the visible Pe wall.
-        # Try y1 first; if it appears on the wrong wall, switch to y0.
-        y_wall = y1
+                print(
+                    f"Q{item['q'] + 1}: max SSF wall line at "
+                    f"SSF={item['ssf_max']:.4f}, z={item['z_max']:.4f}, "
+                    f"Pe wall={y_wall:.4f}")
 
-        for item in max_ssf_wall_lines:
-            ax.plot(
-                [x0, x1],
-                [y_wall, y_wall],
-                [item["z_max"], item["z_max"]],
-                color=item["color"],
-                linewidth=2.5,
-                linestyle="-",
-                alpha=0.60,
-                zorder=100
-            )
+            ax.legend(fontsize=10, frameon=True)
+            out_path = os.path.join(paramvstime_dir,f"SSF_fid_vs_RPM_Pe_vs_Time_3D_{axis_order}_{stamp}.pdf")
 
-            print(
-                f"Q{item['q'] + 1}: max SSF wall line at "
-                f"SSF={item['ssf_max']:.4f}, z={item['z_max']:.4f}, "
-                f"Pe wall={y_wall:.4f}"
-            )
+            # Much more generous margins
+            fig.subplots_adjust(
+                left=0.15,
+                right=0.92,
+                bottom=0.10,
+                top=0.88)
 
-        ax.legend(fontsize=10, frameon=True)
+            fig.savefig(out_path,dpi=self.figure_quality,bbox_inches="tight", pad_inches=0.65)
+        else:
+            # ------------------------------------------------
+            # Separate qubit plots in a 2 x 3 grid
+            # ------------------------------------------------
+            nrows = 2
+            ncols = 3
 
-        out_path = os.path.join(
-            paramvstime_dir,
-            f"SSF_fid_vs_RPM_Pe_vs_Time_3D_{axis_order}_{stamp}.pdf"
-        )
+            fig = plt.figure(figsize=(18, 11))
+            axes = []
+            for i in range(nrows * ncols):
+                ax = fig.add_subplot(nrows, ncols, i + 1, projection="3d")
+                axes.append(ax)
 
-        # Much more generous margins
-        fig.subplots_adjust(
-            left=0.15,
-            right=0.92,
-            bottom=0.10,
-            top=0.88
-        )
+            for ax, q in zip(axes, qubits_to_plot):
 
-        fig.savefig(
-            out_path,
-            dpi=self.figure_quality,
-            bbox_inches="tight",
-            pad_inches=0.65
-        )
+                if len(matched[q]["SSF"]) > 0:
+
+                    q_color = colors[q % len(colors)]
+                    q_marker = markers[q % len(markers)]
+
+                    pe_vals = np.array(matched[q]["Pe_RPM"], dtype=float)
+                    ssf_vals = np.array(matched[q]["SSF"], dtype=float)
+                    pe_errs = np.array(matched[q]["PeErr_RPM"], dtype=float)
+                    ssf_errs = np.array(matched[q]["SSF_err"], dtype=float)
+
+                    t_hours = np.array([(t - t0).total_seconds() / 3600.0 for t in matched[q]["t_RPM"]])
+
+                    order = np.argsort(t_hours)
+                    pe_vals = pe_vals[order]
+                    ssf_vals = ssf_vals[order]
+                    pe_errs = pe_errs[order]
+                    ssf_errs = ssf_errs[order]
+                    t_hours = t_hours[order]
+
+                    xvals, yvals, zvals, xlabel, ylabel, zlabel = _axis_values(pe_vals, ssf_vals, t_hours)
+
+                    if axis_order == "time_pe_ssf":
+                        xerr_3d = None
+                        yerr_3d = pe_errs
+                        zerr_3d = ssf_errs
+
+                    elif axis_order == "pe_time_ssf":
+                        xerr_3d = pe_errs
+                        yerr_3d = None
+                        zerr_3d = ssf_errs
+
+                    elif axis_order == "pe_ssf_time":
+                        xerr_3d = pe_errs
+                        yerr_3d = ssf_errs
+                        zerr_3d = None
+
+                    ax.errorbar(
+                        xvals,
+                        yvals,
+                        zvals,
+                        xerr=xerr_3d,
+                        yerr=yerr_3d,
+                        zerr=zerr_3d,
+                        fmt="none",
+                        ecolor=q_color,
+                        elinewidth=1.0,
+                        capsize=2,
+                        alpha=0.5,
+                        zorder=1)
+
+                    ax.scatter(
+                        xvals,
+                        yvals,
+                        zvals,
+                        marker=q_marker,
+                        s=28,
+                        color=q_color,
+                        edgecolor="k",
+                        linewidth=0.4,
+                        alpha=0.85,
+                        label=f"Q{q + 1}",
+                        zorder=3)
+
+                    # Optional max-SSF wall line for each separate qubit
+                    imax_ssf = int(np.nanargmax(ssf_vals))
+                    z_max = zvals[imax_ssf]
+                    ssf_max = ssf_vals[imax_ssf]
+
+                    ax.set_xlabel(xlabel, fontsize=9, labelpad=10)
+                    ax.set_ylabel(ylabel, fontsize=9, labelpad=10)
+                    ax.set_zlabel(zlabel, fontsize=9, labelpad=10)
+
+                    ax.tick_params(axis='x', pad=3, labelsize=8)
+                    ax.tick_params(axis='y', pad=3, labelsize=8)
+                    ax.tick_params(axis='z', pad=3, labelsize=8)
+
+                    if xlims is not None:
+                        ax.set_xlim(*xlims)
+
+                    if ylims is not None:
+                        ax.set_ylim(*ylims)
+
+                    if zlims is not None:
+                        ax.set_zlim(*zlims)
+
+                        ztick_vals = np.round(np.arange(zlims[0], zlims[1] + 0.0001, 0.05),2)
+                        ax.set_zticks(ztick_vals)
+                        ax.set_zticklabels([f"{z:.2f}" for z in ztick_vals])
+
+                    ax.view_init(elev=elev, azim=azim)
+
+                    x0, x1 = ax.get_xlim()
+                    y0, y1 = ax.get_ylim()
+                    y_wall = y1
+
+                    ax.plot(
+                        [x0, x1],
+                        [y_wall, y_wall],
+                        [z_max, z_max],
+                        color=q_color,
+                        linewidth=2.0,
+                        linestyle="-",
+                        alpha=0.60,
+                        zorder=100)
+
+                    print(
+                        f"Q{q + 1}: max SSF wall line at "
+                        f"SSF={ssf_max:.4f}, z={z_max:.4f}, "
+                        f"Pe wall={y_wall:.4f}")
+
+                    #ax.legend(loc="best", fontsize=8, frameon=False)
+
+                ax.set_title(
+                    f"Q{q + 1}",
+                    loc="left",
+                    fontsize=13,
+                    fontweight="bold")
+
+            for k in range(len(qubits_to_plot), len(axes)):
+                axes[k].set_visible(False)
+
+            fig.subplots_adjust(
+                left=0.04,
+                right=0.96,
+                bottom=0.06,
+                top=0.90,
+                wspace=0.20,
+                hspace=0.25)
+
+            fig.suptitle(
+                f"SSF Fidelity vs RPM $P_e$ vs Time\n"
+                f"(nearest-time match, tolerance={tolerance_seconds}s)",
+                fontsize=16)
+
+            out_path = os.path.join(paramvstime_dir, f"SSF_fid_vs_RPM_Pe_vs_Time_3D_Subplots_{axis_order}_{stamp}.pdf")
+
+            fig.savefig(out_path, dpi=self.figure_quality)
+
         plt.close(fig)
-        print("Saved 3D SSF fidelity vs RPM Pe vs time plot:", out_path)
+        print("Saved 3D SSF fidelity vs RPM Pe subplot plot:", out_path)
         return matched
 
     def animate_SSF_fid_vs_RRPM_Pe_2D(

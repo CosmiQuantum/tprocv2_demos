@@ -1043,6 +1043,29 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         # ------------ Initialize class for combined qubit temps analysis ------------------
         combined_studies = combined_Qtemp_studies(figure_quality, tot_num_of_qubits)
 
+        # ============================================================
+        # Simple cache options for processed SSF/RPM inputs
+        # ============================================================
+        create_cached_files = False  # True = save processed files after processing
+        use_cached_files = True  # True = load processed files instead of processing
+
+        cache_dir = "/home/acolonce/Documents/analysis/cached_processed_data"
+        os.makedirs(cache_dir, exist_ok=True)
+
+        # Only needed when use_cached_files = True
+        fit_results_g_cache_path = f"{cache_dir}/run9_ssf_fit_results_g_20260514_121236.pkl"
+        rpm_results_cache_path = f"{cache_dir}/run9_all_files_Qtemp_results_RPMs_20260514_121236.pkl"
+
+        if use_cached_files:
+            fit_results_g, all_files_Qtemp_results_RPMs = combined_studies.load_processed_ssf_rpm_inputs(
+                fit_results_g_cache_path,
+                rpm_results_cache_path)
+
+            # Skip the slow processing sections
+            comb_analysis_flags["load_rpm"] = False
+            comb_analysis_flags["load_ssf"] = False
+        # -----------------------------------------------------------------------
+
         # ---------------- pre-fill so dict shape is always stable ----------------
         rpm_temps_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
         rpm_temps_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
@@ -1135,6 +1158,21 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                 ssf_ge_temps, ssf_ge_temp_errs, ssf_fid_vals_ge, ssf_fid_errs_ge = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_ge, n_qubits=tot_num_of_qubits)
                 ssf_ge_temps_by_run[run_num] = ssf_ge_temps
                 ssf_ge_temp_errs_by_run[run_num] = ssf_ge_temp_errs
+
+            # ============================================================
+            # Optionally create cached files after processing
+            # ============================================================
+            if create_cached_files and not use_cached_files:
+                ssf_cache_path, rpm_cache_path = combined_studies.save_processed_ssf_rpm_inputs(
+                    fit_results_g,
+                    all_files_Qtemp_results_RPMs,
+                    save_dir=cache_dir,
+                    tag=f"run{run_num}_ssf_rpm")
+
+                print("\nCopy these paths if you want to use the cached files later:")
+                print("fit_results_g_cache_path =", repr(ssf_cache_path))
+                print("rpm_results_cache_path =", repr(rpm_cache_path))
+            #----------------------------------------------------------------
 
     if comb_analysis_flags["plot_ssf_log_curves"]:
         if not comb_analysis_flags["load_ssf"]:
@@ -1265,9 +1303,10 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         if len(run_num_list) != 1:
             raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
                 "This section is only set up to process one run at a time.")
-        if not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
+        if not use_cached_files and not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
             raise ValueError(
-                'This plot requires both comb_analysis_flags["load_rpm"] and '
+                'This plot requires either use_cached_files=True, or both '
+                'comb_analysis_flags["load_rpm"] and '
                 'comb_analysis_flags["load_ssf"] to be True.')
 
         combined_studies.SSF_fid_vs_RRPM_Pe(
@@ -1289,9 +1328,10 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         if len(run_num_list) != 1:
             raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
                              "This section is only set up to process one run at a time.")
-        if not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
+        if not use_cached_files and not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
             raise ValueError(
-                'This plot requires both comb_analysis_flags["load_rpm"] and '
+                'This plot requires either use_cached_files=True, or both '
+                'comb_analysis_flags["load_rpm"] and '
                 'comb_analysis_flags["load_ssf"] to be True.')
 
         matched_3d = combined_studies.SSF_fid_vs_RRPM_Pe_3D(
@@ -1306,7 +1346,8 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             ylims=(0.0, 0.07),  # RPM Pe
             zlims=(0.6, 0.95),  # SSF
             elev=25, # positive = from above, negative = from below
-            azim=-60 #-40
+            azim=-60, #-40
+            plot_qubits_separately = True
         )
 
         if comb_analysis_flags["SSF_fid_vs_RRPM_Pe_video"]:  # only configured to run for one run at a time
