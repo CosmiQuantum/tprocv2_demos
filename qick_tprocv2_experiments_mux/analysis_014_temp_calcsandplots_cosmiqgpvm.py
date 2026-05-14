@@ -4,6 +4,8 @@ import ast
 import numpy as np
 import sys
 import h5py
+from mpl_toolkits.mplot3d import proj3d
+from matplotlib.ticker import FormatStrFormatter
 from matplotlib.axes import Axes
 from sklearn.mixture import GaussianMixture
 import matplotlib.ticker as mticker
@@ -4687,6 +4689,132 @@ class combined_Qtemp_studies:
 
         return np.array(time_bins)
 
+    def add_left_duplicate_z_axis_projected_auto(self, ax):
+        """
+        Duplicate the 3D z-axis on the left side, tilted with the 3D plot.
+
+        This automatically finds the leftmost projected vertical edge of the 3D box
+        and draws a duplicate z-axis there using the same z ticks and labels as
+        the real z-axis.
+        """
+
+        fig = ax.figure
+        fig.canvas.draw()
+
+        def project_point(x, y, z):
+            # Project 3D data point to 2D axes coordinates
+            x2, y2, _ = proj3d.proj_transform(x, y, z, ax.get_proj())
+            x_display, y_display = ax.transData.transform((x2, y2))
+            x_axes, y_axes = ax.transAxes.inverted().transform((x_display, y_display))
+            return np.array([x_axes, y_axes])
+
+        xlim = ax.get_xlim3d()
+        ylim = ax.get_ylim3d()
+        zlim = ax.get_zlim3d()
+
+        x_candidates = [xlim[0], xlim[1]]
+        y_candidates = [ylim[0], ylim[1]]
+
+        z0, z1 = zlim[0], zlim[1]
+
+        # Build the four possible vertical z-edges of the 3D box
+        edges = []
+        for x in x_candidates:
+            for y in y_candidates:
+                p0 = project_point(x, y, z0)
+                p1 = project_point(x, y, z1)
+                x_mean = 0.5 * (p0[0] + p1[0])
+                edges.append((x_mean, x, y, p0, p1))
+
+        # Pick the leftmost projected vertical edge
+        edges = sorted(edges, key=lambda item: item[0])
+        _, x_edge, y_edge, p0, p1 = edges[0]
+
+        # Copy real z ticks/labels
+        zticks = ax.get_zticks()
+        zticklabels = [lab.get_text() for lab in ax.get_zticklabels()]
+        zlabel = ax.get_zlabel()
+
+        zlo, zhi = min(zlim), max(zlim)
+
+        # Direction of the tilted z-edge in axes coordinates
+        v = p1 - p0
+        v_norm = np.linalg.norm(v)
+        if v_norm == 0:
+            return
+
+        v = v / v_norm
+
+        # Perpendicular direction for ticks/labels.
+        # Force it to point left.
+        n = np.array([-v[1], v[0]])
+        if n[0] > 0:
+            n = -n
+
+        tick_len = 0.018
+        tick_label_pad = 0.040
+        axis_label_pad = 0.120
+
+        # Draw the duplicated tilted z-axis line
+        ax.add_line(Line2D(
+            [p0[0], p1[0]],
+            [p0[1], p1[1]],
+            transform=ax.transAxes,
+            color="black",
+            linewidth=1.0,
+            clip_on=False
+        ))
+
+        # Draw ticks and labels
+        for z, tick_label in zip(zticks, zticklabels):
+            if z < zlo or z > zhi:
+                continue
+
+            p = project_point(x_edge, y_edge, z)
+
+            tick_end = p + tick_len * n
+            label_pos = p + tick_label_pad * n
+
+            ax.add_line(Line2D(
+                [p[0], tick_end[0]],
+                [p[1], tick_end[1]],
+                transform=ax.transAxes,
+                color="black",
+                linewidth=1.0,
+                clip_on=False
+            ))
+
+            ax.text2D(
+                label_pos[0],
+                label_pos[1],
+                tick_label,
+                transform=ax.transAxes,
+                ha="right",
+                va="center",
+                fontsize=ax.zaxis.get_ticklabels()[0].get_size()
+                if len(ax.zaxis.get_ticklabels()) > 0 else 10,
+                color="black"
+            )
+
+        # Axis label tilted along the copied z-axis
+        mid = 0.5 * (p0 + p1)
+        label_pos = mid + axis_label_pad * n
+
+        angle = np.degrees(np.arctan2(v[1], v[0]))
+
+        ax.text2D(
+            label_pos[0],
+            label_pos[1],
+            zlabel,
+            transform=ax.transAxes,
+            rotation=angle,
+            rotation_mode="anchor",
+            ha="center",
+            va="center",
+            fontsize=ax.zaxis.label.get_size(),
+            color=ax.zaxis.label.get_color()
+        )
+
     def SSF_fid_vs_RRPM_Pe_3D(
             self,
             ssf_fit_results,
@@ -4983,6 +5111,7 @@ class combined_Qtemp_studies:
         ylabel = None
         zlabel = None
 
+        max_ssf_wall_lines = []
         for q in qubits_to_plot:
             if len(matched[q]["SSF"]) == 0:
                 continue
@@ -5060,6 +5189,15 @@ class combined_Qtemp_studies:
                 zorder=3
             )
 
+            imax_ssf = int(np.nanargmax(ssf_vals))
+
+            max_ssf_wall_lines.append({
+                "q": q,
+                "color": q_color,
+                "z_max": zvals[imax_ssf],
+                "ssf_max": ssf_vals[imax_ssf],
+            })
+
         # Bigger labelpad
         ax.set_xlabel(xlabel, fontsize=14, labelpad=30)
         ax.set_ylabel(ylabel, fontsize=14, labelpad=30)
@@ -5086,7 +5224,42 @@ class combined_Qtemp_studies:
         if zlims is not None:
             ax.set_zlim(*zlims)
 
+            ztick_vals = np.round(np.arange(zlims[0], zlims[1] + 0.0001, 0.05), 2)
+            ax.set_zticks(ztick_vals)
+            ax.set_zticklabels([f"{z:.2f}" for z in ztick_vals])
+
         ax.view_init(elev=elev, azim=azim)
+
+        self.add_left_duplicate_z_axis_projected_auto(ax)
+
+        # --------------------------------------------------
+        # Draw max-SSF wall guide lines AFTER final limits
+        # --------------------------------------------------
+        x0, x1 = ax.get_xlim()
+        y0, y1 = ax.get_ylim()
+
+        # Use the visible Pe wall.
+        # Try y1 first; if it appears on the wrong wall, switch to y0.
+        y_wall = y1
+
+        for item in max_ssf_wall_lines:
+            ax.plot(
+                [x0, x1],
+                [y_wall, y_wall],
+                [item["z_max"], item["z_max"]],
+                color=item["color"],
+                linewidth=2.5,
+                linestyle="-",
+                alpha=0.60,
+                zorder=100
+            )
+
+            print(
+                f"Q{item['q'] + 1}: max SSF wall line at "
+                f"SSF={item['ssf_max']:.4f}, z={item['z_max']:.4f}, "
+                f"Pe wall={y_wall:.4f}"
+            )
+
         ax.legend(fontsize=10, frameon=True)
 
         out_path = os.path.join(
@@ -5096,7 +5269,7 @@ class combined_Qtemp_studies:
 
         # Much more generous margins
         fig.subplots_adjust(
-            left=0.08,
+            left=0.15,
             right=0.92,
             bottom=0.10,
             top=0.88

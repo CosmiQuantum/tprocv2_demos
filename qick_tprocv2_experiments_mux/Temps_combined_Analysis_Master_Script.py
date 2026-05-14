@@ -1302,11 +1302,11 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             tolerance_seconds=10,
             RPM_Pe_rel_err_cut=0.5,
             axis_order="time_pe_ssf",
-            xlims=(0,200),  # time
-            ylims=(0.01, 0.07),  # RPM Pe
+            xlims=(275, 0),  # time
+            ylims=(0.0, 0.07),  # RPM Pe
             zlims=(0.6, 0.95),  # SSF
-            elev=25,
-            azim=-60
+            elev=25, # positive = from above, negative = from below
+            azim=-60 #-40
         )
 
         if comb_analysis_flags["SSF_fid_vs_RRPM_Pe_video"]:  # only configured to run for one run at a time
