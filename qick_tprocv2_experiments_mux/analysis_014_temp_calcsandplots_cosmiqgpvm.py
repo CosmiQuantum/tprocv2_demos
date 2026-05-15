@@ -9,6 +9,7 @@ from mpl_toolkits.mplot3d import proj3d
 from matplotlib.ticker import FormatStrFormatter
 from matplotlib.axes import Axes
 from sklearn.mixture import GaussianMixture
+from scipy.optimize import least_squares
 import matplotlib.ticker as mticker
 from scipy.stats import norm
 import os
@@ -6079,6 +6080,24 @@ class combined_Qtemp_studies:
                 f"within {tolerance_seconds}s each.")
 
         # ================================================================
+        # Print maximum SSF for each qubit
+        # ================================================================
+        print("\nMaximum matched SSF fidelity per qubit:")
+
+        for q in qubits_to_plot:
+            ssf_arr = np.array(matched[q]["SSF"], dtype=float)
+
+            if len(ssf_arr) == 0:
+                print(f"Q{q + 1}: no matched points")
+                continue
+
+            max_idx = int(np.nanargmax(ssf_arr))
+
+            print(
+                f"Q{q + 1}: max SSF = {matched[q]['SSF'][max_idx]:.4f} "
+                f"at Pe = {matched[q]['Pe_RPM'][max_idx]:.4f}"
+            )
+        # ================================================================
         # 5. Plot
         # ================================================================
         paramvstime_dir = os.path.join(out_dir, "params_vs_time")
@@ -6155,7 +6174,7 @@ class combined_Qtemp_studies:
                         fmt="none",
                         elinewidth=1,
                         capsize=3,
-                        alpha=alpha,
+                        alpha=alpha - 0.2,
                         ecolor=q_color,
                         #zorder=zorder_val
                     )
@@ -6187,11 +6206,53 @@ class combined_Qtemp_studies:
                     label=f"Q{q + 1}"
                 )
 
+                # --------------------------------------------------
+                # Optional linear fit: SSF = intercept + slope * Pe
+                # This falls under the same flag as the ideal/reference line.
+                # --------------------------------------------------
+                if plot_ideal_line:
+                    # Default robust fit for all qubits.
+                    # Q1 has several clear outliers, so we use a stronger Cauchy down-weighting
+                    # for Q1 only. This is checked against the default f_scale=3.0 fit.
+                    if q == 0:
+                        fit_f_scale = 2.0
+                    else:
+                        fit_f_scale = 3.0
+                    slope, intercept, r2 = self.fit_line_for_qubit(
+                        matched[q]["Pe_RPM"],
+                        matched[q]["SSF"],
+                        pe_errs=matched[q]["PeErr_RPM"],
+                        ssf_errs=matched[q]["SSF_err"],
+                        loss_method="cauchy",
+                        f_scale=fit_f_scale)
+
+                    if slope is not None:
+                        x_fit = np.array(matched[q]["Pe_RPM"], dtype=float)
+                        x_fit = x_fit[np.isfinite(x_fit)]
+
+                        if len(x_fit) >= 2:
+                            pe_fit_line = np.linspace(np.min(x_fit), np.max(x_fit), 200)
+                            ssf_fit_line = intercept + slope * pe_fit_line
+
+                            ax.plot(
+                                pe_fit_line,
+                                ssf_fit_line,
+                                color=q_color,
+                                linestyle="-",
+                                linewidth=2.0,
+                                alpha=0.9,
+                                label=(
+                                    rf"Q{q + 1} fit: "
+                                    rf"$m={slope:.2f}$, "
+                                    rf"$b={intercept:.3f}$, "
+                                    rf"$R^2={r2:.2f}$"
+                                ),
+                                zorder=6)
+
             ax.set_title(
                 f"SSF Fidelity vs RPM $P_e$ "
                 f"(nearest-time match, tolerance={tolerance_seconds}s)",
-                fontsize=16
-            )
+                fontsize=16)
             ax.set_xlabel("RPM $P_e$", fontsize=14)
             ax.set_ylabel("Single-Shot Fidelity", fontsize=14)
 
@@ -6350,6 +6411,45 @@ class combined_Qtemp_studies:
                         linestyle="None",
                         label=f"Q{q + 1}"
                     )
+                    if plot_ideal_line:
+                        # Default robust fit for all qubits.
+                        # Q1 has several clear outliers, so we use a stronger Cauchy down-weighting
+                        # for Q1 only. This is checked against the default f_scale=3.0 fit.
+                        if q == 0:
+                            fit_f_scale = 2.0
+                        else:
+                            fit_f_scale = 3.0
+                        slope, intercept, r2 = self.fit_line_for_qubit(
+                            matched[q]["Pe_RPM"],
+                            matched[q]["SSF"],
+                            pe_errs=matched[q]["PeErr_RPM"],
+                            ssf_errs=matched[q]["SSF_err"],
+                            loss_method="cauchy",
+                            f_scale=fit_f_scale)
+
+                        if slope is not None:
+                            x_fit = np.array(matched[q]["Pe_RPM"], dtype=float)
+                            x_fit = x_fit[np.isfinite(x_fit)]
+
+                            if len(x_fit) >= 2:
+                                pe_fit_line = np.linspace(np.min(x_fit), np.max(x_fit), 200)
+                                ssf_fit_line = intercept + slope * pe_fit_line
+
+                                ax.plot(
+                                    pe_fit_line,
+                                    ssf_fit_line,
+                                    color="cyan",
+                                    linestyle="-",
+                                    linewidth=4.0,
+                                    alpha=1.0,
+                                    zorder = 1000,
+                                    label=(
+                                        rf"Fit: "
+                                        rf"$m={slope:.2f}$, "
+                                        rf"$b={intercept:.3f}$, "
+                                        rf"$R^2={r2:.2f}$"
+                                    )
+                                )
 
                 #ax.label_outer()
                 ax.set_title(f"Q{q + 1}", loc="left", fontsize=14, fontweight="bold")
@@ -6360,9 +6460,37 @@ class combined_Qtemp_studies:
 
                 if xlims is not None:
                     ax.set_xlim(*xlims)
+                else: # for a test
+                    xlims_per_q = {
+                        0: [0.0, 0.035],
+                        1: [0.01, 0.045],
+                        2: [0.01, 0.065],
+                        3: [0.01, 0.05],
+                        5: [0.0025, 0.018]}
+                    ax.set_xlim(xlims_per_q[q])
 
                 if ylims is not None:
                     ax.set_ylim(*ylims)
+
+                # --------------------------------------------------
+                # Ideal reference line: draw after xlims are finalized
+                # so every subplot uses the same visible Pe range.
+                # --------------------------------------------------
+                if plot_ideal_line:
+                    cur_xlim = ax.get_xlim()
+                    pe_line = np.linspace(max(0, cur_xlim[0]), cur_xlim[1], 300)
+                    ssf_ideal = 1 - 2 * pe_line
+
+                    ax.plot(
+                        pe_line,
+                        ssf_ideal,
+                        color="black",
+                        linestyle="--",
+                        linewidth=2,
+                        alpha=0.9,
+                        label=r"Ideal: SSF $= 1 - 2P_e$",
+                        zorder=5)
+                ax.legend(loc="best", fontsize=10, frameon=True)
 
             for k in range(len(qubits_to_plot), len(axes)):
                 axes[k].set_visible(False)
@@ -6393,6 +6521,137 @@ class combined_Qtemp_studies:
             plt.close(fig)
 
             print("Saved SSF fidelity vs RPM Pe subplot plot: ", out_path)
+
+    def fit_line_for_qubit(self, pe_vals, ssf_vals, pe_errs=None, ssf_errs=None, loss_method = "cauchy", f_scale = 3.0):
+        """
+        Fits SSF = intercept + slope * Pe.
+
+        Uses all finite points. If both Pe and SSF uncertainties are provided,
+        Pe uncertainty is propagated into an effective SSF uncertainty using:
+
+            sigma_eff^2 = sigma_SSF^2 + (slope * sigma_Pe)^2
+
+        Then a robust weighted least-squares fit is used, making the result less
+        sensitive to outliers/readout-parameter artifacts.
+
+        Returns:
+            slope, intercept, r2
+
+        Additional context on loss methods:
+        f_scale is the cutoff scale for the residuals in the robust fit. The residuals are r = (SSF_data - SSF_fit) / sigma_eff.
+        If you choose, say, f_scale = 3, it means that points within about 3 effective sigma of the fit are treated fairly normally.
+        Points farther away than that start getting strongly down-weighted by the robust loss.
+
+        soft_l1 + smaller f_scale  = safer, more conservative robust fit
+        cauchy + smaller f_scale   = stronger outlier rejection
+        larger f_scale             = closer to ordinary least squares
+
+        smaller f_scale  -> more aggressive outlier rejection
+        larger f_scale   -> less aggressive, closer to ordinary least squares
+        """
+        valid_losses = ["linear", "soft_l1", "huber", "cauchy", "arctan"]
+        if loss_method not in valid_losses:
+            raise ValueError(
+                f"loss_method must be one of {valid_losses}, got {loss_method}")
+
+        x = np.array(pe_vals, dtype=float)
+        y = np.array(ssf_vals, dtype=float)
+
+        good = np.isfinite(x) & np.isfinite(y)
+
+        if pe_errs is not None:
+            xerr = np.array(pe_errs, dtype=float)
+            good &= np.isfinite(xerr) & (xerr >= 0)
+        else:
+            xerr = None
+
+        if ssf_errs is not None:
+            yerr = np.array(ssf_errs, dtype=float)
+            good &= np.isfinite(yerr) & (yerr > 0)
+        else:
+            yerr = None
+
+        x = x[good]
+        y = y[good]
+
+        if xerr is not None:
+            xerr = xerr[good]
+
+        if yerr is not None:
+            yerr = yerr[good]
+
+        if len(x) < 2:
+            return None, None, None
+
+        # Initial unweighted fit
+        slope0, intercept0 = np.polyfit(x, y, 1)
+
+        # If no uncertainty info is available, use a robust unweighted fit
+        if yerr is None:
+            sigma_eff = np.ones_like(y)
+        else:
+            # Initial effective uncertainty using the first slope estimate
+            if xerr is not None:
+                sigma_eff = np.sqrt(yerr ** 2 + (slope0 * xerr) ** 2)
+            else:
+                sigma_eff = yerr.copy()
+
+            # Prevent tiny error bars from dominating
+            sigma_floor = max(0.25 * np.nanmedian(sigma_eff), 1e-6)
+            sigma_eff = np.maximum(sigma_eff, sigma_floor)
+
+        try:
+            from scipy.optimize import least_squares
+
+            def residuals(params):
+                slope, intercept = params
+                y_model = slope * x + intercept
+                return (y - y_model) / sigma_eff
+
+            result = least_squares(
+                residuals,
+                x0=[slope0, intercept0],
+                loss=loss_method,
+                f_scale=f_scale
+            )
+
+            slope, intercept = result.x
+
+            # Update sigma_eff once using the robust-fit slope
+            if yerr is not None and xerr is not None:
+                sigma_eff = np.sqrt(yerr ** 2 + (slope * xerr) ** 2)
+                sigma_floor = max(0.25 * np.nanmedian(sigma_eff), 1e-6)
+                sigma_eff = np.maximum(sigma_eff, sigma_floor)
+
+                result = least_squares(
+                    residuals,
+                    x0=[slope, intercept],
+                    loss=loss_method,
+                    f_scale=f_scale
+                )
+
+                slope, intercept = result.x
+
+        except Exception:
+            # Fallback to weighted polyfit if scipy robust fit fails
+            weights = 1.0 / sigma_eff
+            slope, intercept = np.polyfit(x, y, 1, w=weights)
+
+        y_fit = slope * x + intercept
+
+        # Weighted R^2
+        weights_r2 = 1.0 / sigma_eff ** 2
+        y_mean_weighted = np.average(y, weights=weights_r2)
+
+        ss_res = np.sum(weights_r2 * (y - y_fit) ** 2)
+        ss_tot = np.sum(weights_r2 * (y - y_mean_weighted) ** 2)
+
+        if ss_tot > 0:
+            r2 = 1 - ss_res / ss_tot
+        else:
+            r2 = np.nan
+
+        return slope, intercept, r2
 
     def Qtemps_vs_time_comb_allQs_1col(self, all_qubit_temperatures_ssf_g, all_qubit_timestamps_ssf_g,
                                               out_dir, all_files_Qtemp_results_RPMs, all_qubit_temps_errs_g,

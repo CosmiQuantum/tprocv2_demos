@@ -67,18 +67,18 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_Qtemps": False}
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+                      "combined_studies_Qtemps": True}
 
 # What analysis plots do you want to make?
-analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
-                  "Qtemps_hists_viaRPM": False, "Pe_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_hists_viaSSF": False, "Pe_vs_time_viaRPM": True,
+analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
+                  "Qtemps_hists_viaRPM": False, "Pe_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_hists_viaSSF": False, "Pe_vs_time_viaRPM": False,
                   "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": False, "SSF_fid_vs_Pe_viaSSF": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
-comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": True, "Pe_vs_time_comb_separate_plts": False,
+comb_analysis_flags = {"load_rpm": False, "load_ssf": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
                        "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
-                       "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": False, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False}
+                       "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": True, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
@@ -1047,7 +1047,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         # Simple cache options for processed SSF/RPM inputs
         # ============================================================
         create_cached_files = False  # True = save processed files after processing
-        use_cached_files = False  # True = load processed files instead of processing
+        use_cached_files = True  # True = load processed files instead of processing
 
         cache_dir = "/home/acolonce/Documents/analysis/cached_processed_data"
         os.makedirs(cache_dir, exist_ok=True)
@@ -1316,12 +1316,12 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             qubits_to_plot=[0, 1, 2, 3, 5],
             tolerance_seconds=10, # 10 seconds for all runs except Run 6 SCIENCE run data (600s)
             plot_together=False,
-            xlims= (0.0, 0.07),
-            ylims=(0.6, 1.0),
+            xlims=  None, #(0.0, 0.07),
+            ylims= (0.6, 1.0),
             RPM_Pe_rel_err_cut = 0.2,
-            plot_with_t_color_gradient = True, # to depict time passed
-            plot_ideal_line = False,
-            plot_with_t_markers=False) # second option to depict time passed
+            plot_with_t_color_gradient = False, # to depict time passed. For plot_together True and False cases
+            plot_ideal_line = True,
+            plot_with_t_markers=False) # second option to depict time passed. Only for plot_together case
 
     if comb_analysis_flags["SSF_fid_vs_RRPM_Pe_3D"]:  # only configured to run for one run at a time
         # Plots SSF vs Pe, using Pe values extracted from RPM data, not SSF data
