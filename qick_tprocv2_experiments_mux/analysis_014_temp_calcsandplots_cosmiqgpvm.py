@@ -6215,7 +6215,9 @@ class combined_Qtemp_studies:
                     # Q1 has several clear outliers, so we use a stronger Cauchy down-weighting
                     # for Q1 only. This is checked against the default f_scale=3.0 fit.
                     if q == 0:
-                        fit_f_scale = 2.0
+                        fit_f_scale = 2.0 # has pretty bad outliers
+                    # elif q == 3:
+                    #     fit_f_scale = 2.5
                     else:
                         fit_f_scale = 3.0
                     slope, intercept, r2 = self.fit_line_for_qubit(
@@ -6416,7 +6418,9 @@ class combined_Qtemp_studies:
                         # Q1 has several clear outliers, so we use a stronger Cauchy down-weighting
                         # for Q1 only. This is checked against the default f_scale=3.0 fit.
                         if q == 0:
-                            fit_f_scale = 2.0
+                            fit_f_scale = 2.0 # has pretty bad outliers
+                        # elif q == 3:
+                        #     fit_f_scale = 2.5
                         else:
                             fit_f_scale = 3.0
                         slope, intercept, r2 = self.fit_line_for_qubit(
@@ -6542,12 +6546,14 @@ class combined_Qtemp_studies:
         If you choose, say, f_scale = 3, it means that points within about 3 effective sigma of the fit are treated fairly normally.
         Points farther away than that start getting strongly down-weighted by the robust loss.
 
-        soft_l1 + smaller f_scale  = safer, more conservative robust fit
-        cauchy + smaller f_scale   = stronger outlier rejection
-        larger f_scale             = closer to ordinary least squares
-
         smaller f_scale  -> more aggressive outlier rejection
         larger f_scale   -> less aggressive, closer to ordinary least squares
+
+        linear   = ordinary weighted least squares
+        soft_l1  = gentle robust fitting
+        huber    = moderate robust fitting with a clearer cutoff
+        cauchy   = strong outlier down-weighting
+        arctan   = very strong outlier down-weighting
         """
         valid_losses = ["linear", "soft_l1", "huber", "cauchy", "arctan"]
         if loss_method not in valid_losses:
