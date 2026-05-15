@@ -530,7 +530,7 @@ class SSFTempCalcAndPlots:
         return all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs, fit_results
 
     def run_ssf_qtemps_iminuit(self, pairs_info, run_num, limit_temp_k=0.8, do_plots = False, save_figs_path = "", dontuse_midpt_thresh = False, low_leakage_mode = False, ssf_hist_ylim = None,
-                               apply_quality_cuts=True):
+                               apply_quality_cuts=True, calc_SNR=False):
         """
         Uses iminuit instead of GMM for double gaussian fitting and minimization.
 
@@ -727,6 +727,12 @@ class SSFTempCalcAndPlots:
                                                sigmas, means, T_mK, title_ext=f"{datetime.datetime.fromtimestamp(ts_unix)}, Qfreq:{freq_mhz:.2f}MHz, LRT val:{lr_stat:.2f}, sigma ratio:{sigma_ratio:.2f}, overlap val:{overlap_metric:.2f}",
                                                dontuse_midpt_thresh = dontuse_midpt_thresh, ylim = ssf_hist_ylim)
 
+                # -------------------------- optionally calulate SNR of the scan -------------------------
+                snr = np.nan
+                snr_info = {}
+                if calc_SNR:
+                    snr, snr_info = self.fit_ssf_ge_double_gaussian_SNR_iminuit(ig_new,ie_new)
+                    
                 # -------- save qubit temps and timestamps ----------------------------------------------
                 all_qubit_temperatures[qid].append(T_mK)  # temperatures in mK
                 all_qubit_temperatures_errs[qid].append(sigma_TmK) #temperature errors
@@ -738,6 +744,7 @@ class SSFTempCalcAndPlots:
                     "temperature_mK": T_mK,
                     "temperature_err_mK": sigma_TmK,
                     "ig_new": ig_new,
+                    "ie_new": ie_new,
                     "ground_data": ground_data,
                     "excited_data": excited_data,
                     "ground_gaussian": ground_gaussian, # index
@@ -756,6 +763,7 @@ class SSFTempCalcAndPlots:
                     "ssf_err_total": ssf_err_total, # Total SSF error
                     "qfreq_mhz": freq_mhz,
                     "qfreq_mhz_err": freq_mhz_err,
+                    "ssf_SNR": snr,
                 })
 
         return all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs, fit_results
@@ -1614,6 +1622,88 @@ class SSFTempCalcAndPlots:
             unmatched_qspec[qi] = [p for p in spec_list if p not in used_spec]
 
         return pairs_by_qubit, unmatched_qspec, unmatched_ssf
+
+    def plot_ssf_SNR_vs_time(self, fit_results, plot_path, n_qubits=6):
+        """
+        Plot SSF readout SNR vs time for each qubit.
+
+        Expects fit_results[q] to contain records with:
+            rec["timestamp"]
+            rec["ssf_SNR"]
+        """
+
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
+        os.makedirs(plot_path, exist_ok=True)
+
+        fig, ax = plt.subplots(figsize=(15, 10))
+        date_fmt = DateFormatter('%m-%d-%H')
+
+        if not isinstance(fit_results, dict):
+            raise TypeError("fit_results must be a dictionary keyed by qubit index.")
+
+        for q in range(n_qubits):
+            records = fit_results.get(q, []) or []
+
+            times_vals = []
+            snr_vals = []
+
+            for rec in records:
+                if not isinstance(rec, dict):
+                    continue
+
+                timestamp = rec.get("timestamp", None)
+                snr = rec.get("ssf_SNR", None)
+
+                if timestamp is None or snr is None:
+                    continue
+
+                try:
+                    snr = float(snr)
+                except Exception:
+                    continue
+
+                if not np.isfinite(snr):
+                    continue
+
+                times_vals.append(timestamp)
+                snr_vals.append(snr)
+
+            if len(snr_vals) == 0:
+                print(f"No valid SSF SNR values found for Q{q + 1}")
+                continue
+
+            ax.plot(
+                times_vals,
+                snr_vals,
+                marker="o",
+                color=colors[q % len(colors)],
+                alpha=0.7,
+                markersize=5,
+                linestyle="-",
+                label=f"Q{q + 1}"
+            )
+
+        ax.set_title("SSF Readout SNR vs Time", fontsize=18)
+        ax.set_xlabel("Time", fontsize=16)
+        ax.set_ylabel("SSF SNR", fontsize=16)
+
+        ax.xaxis.set_major_formatter(date_fmt)
+        plt.setp(ax.get_xticklabels(), rotation=45, fontsize=16)
+        plt.setp(ax.get_yticklabels(), fontsize=16)
+
+        ax.legend(fontsize=14)
+        ax.grid(alpha=0.3)
+        plt.tight_layout()
+
+        fname = os.path.join(
+            plot_path,
+            f"AllQubits_SSF_SNR_vs_Time_{datetime.datetime.now():%Y%m%d%H%M%S}.pdf"
+        )
+
+        plt.savefig(fname, dpi=300, bbox_inches="tight")
+        plt.close(fig)
+
+        print("Saved SSF SNR vs time plot to ->", fname)
 
     def plot_ssf_vs_time(self, fit_results, plot_path, n_qubits):
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
@@ -2728,6 +2818,179 @@ class SSFTempCalcAndPlots:
         """Normalized 1D Gaussian pdf."""
         return np.exp(-0.5 * ((x - mu) / sigma) ** 2) / (np.sqrt(2 * np.pi) * sigma)
 
+    def fit_ssf_ge_double_gaussian_SNR_iminuit(self, ig_new, ie_new):
+        """
+        Fit prepared |g> and prepared |e> SSF data together as a two-Gaussian
+        mixture using iminuit, then calculate readout SNR.
+
+        This is intended for SNR/readout-separation analysis, not thermal
+        population extraction.
+
+        Parameters
+        ----------
+        ig_new : array-like
+            Prepared |g> rotated/projected SSF data.
+        ie_new : array-like
+            Prepared |e> rotated/projected SSF data.
+
+        Returns
+        -------
+        snr : float
+            Readout SNR,
+
+                SNR = |mu_e - mu_g| / sqrt((sigma_g^2 + sigma_e^2) / 2)
+
+        snr_info : dict
+            Dictionary containing fitted means, sigmas, weights, Minuit object,
+            and fit quality information.
+        """
+
+        # -------------------- Prepare data --------------------
+        ig = np.asarray(ig_new, dtype=float).ravel()
+        ie = np.asarray(ie_new, dtype=float).ravel()
+
+        ig = ig[np.isfinite(ig)]
+        ie = ie[np.isfinite(ie)]
+
+        if ig.size == 0 or ie.size == 0:
+            raise ValueError("ig_new and ie_new must both contain finite data.")
+
+        x = np.concatenate([ig, ie])
+
+        if x.size < 10:
+            raise ValueError("Not enough total points to fit prepared g/e distributions.")
+
+        eps = 1e-300
+
+        # -------------------- Initial guesses --------------------
+        # Use the prepared-state medians as the starting means.
+        mu_g_init = np.median(ig)
+        mu_e_init = np.median(ie)
+
+        sigma_g_init = np.std(ig)
+        sigma_e_init = np.std(ie)
+
+        std_all = np.std(x)
+        if not np.isfinite(std_all) or std_all <= 0:
+            std_all = 1.0
+
+        if not np.isfinite(sigma_g_init) or sigma_g_init <= 0:
+            sigma_g_init = std_all / 2.0
+
+        if not np.isfinite(sigma_e_init) or sigma_e_init <= 0:
+            sigma_e_init = std_all / 2.0
+
+        # Starting mixture weight based on number of prepared ground shots.
+        w_g_init = ig.size / x.size
+        w_g_init = np.clip(w_g_init, 1e-6, 1.0 - 1e-6)
+
+        # -------------------- Two-Gaussian mixture NLL --------------------
+        def nll_2g(mu1, sigma1, mu2, sigma2, w1):
+            w1_clipped = np.clip(w1, 1e-6, 1.0 - 1e-6)
+            w2 = 1.0 - w1_clipped
+
+            g1 = self.gaussian_pdf(x, mu1, sigma1)
+            g2 = self.gaussian_pdf(x, mu2, sigma2)
+
+            p = w1_clipped * g1 + w2 * g2
+            p = np.clip(p, eps, None)
+
+            return -np.sum(np.log(p))
+
+        m2 = Minuit(
+            nll_2g,
+            mu1=mu_g_init,
+            sigma1=sigma_g_init,
+            mu2=mu_e_init,
+            sigma2=sigma_e_init,
+            w1=w_g_init,
+        )
+
+        m2.limits["sigma1"] = (1e-6, None)
+        m2.limits["sigma2"] = (1e-6, None)
+        m2.limits["w1"] = (1e-6, 1.0 - 1e-6)
+        m2.errordef = Minuit.LIKELIHOOD
+
+        m2.simplex()
+        m2.migrad()
+        m2.hesse()
+
+        nll_2g_min = m2.fval
+
+        # -------------------- Extract parameters --------------------
+        mu1 = float(m2.values["mu1"])
+        sigma1 = float(m2.values["sigma1"])
+        mu2 = float(m2.values["mu2"])
+        sigma2 = float(m2.values["sigma2"])
+        w1 = float(m2.values["w1"])
+        w2 = 1.0 - w1
+
+        means_raw = np.array([mu1, mu2], dtype=float)
+        sigmas_raw = np.array([sigma1, sigma2], dtype=float)
+        weights_raw = np.array([w1, w2], dtype=float)
+
+        # -------------------- Identify prepared |g> and |e> components --------------------
+        # Do not assume ground is always the lower-mean Gaussian. Instead, assign
+        # components based on closeness to the prepared |g> and |e> medians.
+        dist_to_g = np.abs(means_raw - mu_g_init)
+        dist_to_e = np.abs(means_raw - mu_e_init)
+
+        ground_idx_raw = int(np.argmin(dist_to_g))
+        excited_idx_raw = int(np.argmin(dist_to_e))
+
+        # If both medians picked the same Gaussian, fall back to sorting by mean.
+        # This keeps the function from crashing on poor/degenerate fits.
+        if ground_idx_raw == excited_idx_raw:
+            order = np.argsort(means_raw)
+        else:
+            order = np.array([ground_idx_raw, excited_idx_raw], dtype=int)
+
+        means = means_raw[order]
+        sigmas = sigmas_raw[order]
+        weights = weights_raw[order]
+
+        # After ordering, index 0 = prepared |g>, index 1 = prepared |e>
+        ground_idx = 0
+        excited_idx = 1
+
+        mu_g = means[ground_idx]
+        mu_e = means[excited_idx]
+        sigma_g = sigmas[ground_idx]
+        sigma_e = sigmas[excited_idx]
+
+        # -------------------- Calculate SNR --------------------
+        denom = np.sqrt(0.5 * (sigma_g ** 2 + sigma_e ** 2))
+
+        if denom <= 0 or not np.isfinite(denom):
+            snr = np.nan
+        else:
+            snr = np.abs(mu_e - mu_g) / denom
+
+        snr_info = {
+            "snr": snr,
+            "means": means,
+            "sigmas": sigmas,
+            "weights": weights,
+            "mu_g_prep": mu_g,
+            "mu_e_prep": mu_e,
+            "sigma_g_prep": sigma_g,
+            "sigma_e_prep": sigma_e,
+            "weight_g_prep": weights[ground_idx],
+            "weight_e_prep": weights[excited_idx],
+            "ground_idx": ground_idx,
+            "excited_idx": excited_idx,
+            "means_raw": means_raw,
+            "sigmas_raw": sigmas_raw,
+            "weights_raw": weights_raw,
+            "n_g_prep": ig.size,
+            "n_e_prep": ie.size,
+            "nll_2g_min": nll_2g_min,
+            "minuit": m2,
+            "valid": bool(m2.valid),
+        }
+
+        return snr, snr_info
+    
     def fit_double_gaussian_midpoint_iminuit(self, iq_data, dontuse_midpt_thresh = False, low_leakage_mode = False):
         """
         Iminuit-based version of fit_double_gaussian_midpoint().
