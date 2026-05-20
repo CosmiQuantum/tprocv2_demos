@@ -3891,6 +3891,8 @@ class combined_Qtemp_studies:
             # Option 2: Process coherence data normally
             # ------------------------------------------------------------
             res_spec_vs_time = ResonatorFreqVsTime(
+                data_path,
+                plots_path,
                 figure_quality,
                 final_figure_quality,
                 tot_num_of_qubits,
@@ -8452,26 +8454,26 @@ class combined_Qtemp_studies:
 
     def plot_qtemps_and_coherence_res(self, out_dir, all_qubit_temperatures_ssf_g = None, all_qubit_timestamps_ssf_g = None,
                                       all_files_Qtemp_results_RPMs = None, fridge_temps = None, fridge_dates = None,
-                                      t1_vals = None, t1_dates = None, qfreqs_vals = None, qfreqs_dates = None,
+                                      t1_vals = None, t1_dates = None, qfreqs_vals = None, qfreqs_dates = None, resfreqs_vals=None,
+                                        resfreqs_dates=None, t2r_vals=None, t2r_dates=None, t2e_vals=None, t2e_dates=None,
                                       restrict_time_xaxis=False, start_time = None, end_time = None, plot_extra_event_lines=False,
                                       rad_events_plot_lines=False):
         """
         One subplot per qubit.
-
         Plots (only if provided):
           - RPM Qtemps
           - SSF g-only Qtemps
           - Fridge mixing-chamber temp
           - T1 (µs)
+          - T2 Ramsey (µs)
+          - T2 Echo (µs)
           - Qubit freq (MHz)
+          - Resonator freq (MHz)
         """
-
         os.makedirs(out_dir, exist_ok=True)
-
         num_qubits = self.number_of_qubits
         qubits_to_plot = list(range(num_qubits))
         nrows = len(qubits_to_plot)
-
         small_fs = 8  # font size for y axes labels and ticks
 
         # ------------------------------------------------------------------
@@ -8486,7 +8488,7 @@ class combined_Qtemp_studies:
                     d = rec.get("qubits", {}).get(q)
                     if not d:
                         continue
-                    if d["T_mK"] < 750: # mK, just filtering out bad data
+                    if d["T_mK"] < 150: # mK, just filtering out bad data for run 9
                         t = datetime.datetime.fromtimestamp(d["date"])
                         times_RPM[q].append(t)
                         temps_RPM[q].append(d["T_mK"])
@@ -8552,6 +8554,60 @@ class combined_Qtemp_studies:
                 qfreq_values[q] = q_vals
 
         # ------------------------------------------------------------------
+        # Resonator frequencies per qubit (2D lists, MHz)
+        # ------------------------------------------------------------------
+        resfreq_times = {q: [] for q in range(num_qubits)}
+        resfreq_values = {q: [] for q in range(num_qubits)}
+
+        if resfreqs_vals is not None and resfreqs_dates is not None:
+            time_fmt = "%Y-%m-%d %H:%M:%S"
+            for q in qubits_to_plot:
+                if q >= len(resfreqs_dates) or q >= len(resfreqs_vals):
+                    continue
+                q_dates = resfreqs_dates[q]
+                q_vals = resfreqs_vals[q]
+                if not q_dates or not q_vals:
+                    continue
+                resfreq_times[q] = [datetime.datetime.strptime(d, time_fmt) for d in q_dates]
+                resfreq_values[q] = q_vals
+
+        # ------------------------------------------------------------------
+        # T2 Ramsey per qubit (2D lists: t2r_dates[q] -> list[str], t2r_vals[q] -> list[float])
+        # ------------------------------------------------------------------
+        t2r_times = {q: [] for q in range(num_qubits)}
+        t2r_values = {q: [] for q in range(num_qubits)}
+
+        if t2r_vals is not None and t2r_dates is not None:
+            time_fmt = "%Y-%m-%d %H:%M:%S"
+            for q in qubits_to_plot:
+                if q >= len(t2r_dates) or q >= len(t2r_vals):
+                    continue
+                q_dates = t2r_dates[q]
+                q_vals = t2r_vals[q]
+                if not q_dates or not q_vals:
+                    continue
+                t2r_times[q] = [datetime.datetime.strptime(d, time_fmt) for d in q_dates]
+                t2r_values[q] = q_vals
+
+        # ------------------------------------------------------------------
+        # T2 Echo per qubit (2D lists: t2e_dates[q] -> list[str], t2e_vals[q] -> list[float])
+        # ------------------------------------------------------------------
+        t2e_times = {q: [] for q in range(num_qubits)}
+        t2e_values = {q: [] for q in range(num_qubits)}
+
+        if t2e_vals is not None and t2e_dates is not None:
+            time_fmt = "%Y-%m-%d %H:%M:%S"
+            for q in qubits_to_plot:
+                if q >= len(t2e_dates) or q >= len(t2e_vals):
+                    continue
+                q_dates = t2e_dates[q]
+                q_vals = t2e_vals[q]
+                if not q_dates or not q_vals:
+                    continue
+                t2e_times[q] = [datetime.datetime.strptime(d, time_fmt) for d in q_dates]
+                t2e_values[q] = q_vals
+
+        # ------------------------------------------------------------------
         # Decide which qubits actually have any data
         # ------------------------------------------------------------------
         qubits_to_plot = []
@@ -8559,8 +8615,12 @@ class combined_Qtemp_studies:
             has_rpm = bool(times_RPM[q])
             has_ssf = bool(times_g.get(q, []))
             has_t1 = bool(t1_times[q])
+            has_t2r = bool(t2r_times[q])
+            has_t2e = bool(t2e_times[q])
             has_qf = bool(qfreq_times[q])
-            if has_rpm or has_ssf or has_t1 or has_qf:
+            has_rf = bool(resfreq_times[q])
+
+            if has_rpm or has_ssf or has_t1 or has_t2r or has_t2e or has_qf or has_rf:
                 qubits_to_plot.append(q)
 
         if not qubits_to_plot:
@@ -8592,7 +8652,7 @@ class combined_Qtemp_studies:
         # Make figure: 1 row per qubit
         # ------------------------------------------------------------------
         fig, axes = plt.subplots(
-            nrows, 1, figsize=(12, 3.2 * nrows), sharex=True, constrained_layout=True
+            nrows, 1, figsize=(12, 5 * nrows), sharex=True, constrained_layout=True
         )
         if nrows == 1:
             axes = [axes]
@@ -8616,7 +8676,7 @@ class combined_Qtemp_studies:
                     ax.scatter(
                         ts,
                         ys,
-                        s=30,
+                        s=10,
                         alpha=0.85,
                         edgecolors="k",
                         color=color,
@@ -8685,6 +8745,7 @@ class combined_Qtemp_studies:
                     t1_times[q],
                     t1_values[q],
                     marker="^",
+                    markersize=3,
                     linestyle="None",
                     color="red",
                     alpha=0.8,
@@ -8697,14 +8758,57 @@ class combined_Qtemp_studies:
                 labels += l3
                 right_axes_offset += 1
 
+            # T2 Ramsey (µs) on next right axis (per qubit)
+            if t2r_times[q] and t2r_values[q]:
+                t2r_ax = ax.twinx()
+                t2r_ax.spines["right"].set_position(("axes", 1.0 + 0.08 * right_axes_offset))
+                t2r_ax.plot(
+                    t2r_times[q],
+                    t2r_values[q],
+                    marker="v",
+                    markersize=3,
+                    linestyle="None",
+                    color="orange",
+                    alpha=0.8,
+                    label="T2R (µs)",
+                )
+                t2r_ax.set_ylabel("T2R (µs)", color="orange", fontsize=small_fs)
+                t2r_ax.tick_params(axis="y", labelcolor="orange", labelsize=small_fs)
+                h_t2r, l_t2r = t2r_ax.get_legend_handles_labels()
+                handles += h_t2r
+                labels += l_t2r
+                right_axes_offset += 1
+
+            # T2 Echo (µs) on next right axis (per qubit)
+            if t2e_times[q] and t2e_values[q]:
+                t2e_ax = ax.twinx()
+                t2e_ax.spines["right"].set_position(("axes", 1.0 + 0.08 * right_axes_offset))
+                t2e_ax.plot(
+                    t2e_times[q],
+                    t2e_values[q],
+                    marker="D",
+                    markersize=3,
+                    linestyle="None",
+                    color="green",
+                    alpha=0.8,
+                    label="T2E (µs)",
+                )
+                t2e_ax.set_ylabel("T2E (µs)", color="green", fontsize=small_fs)
+                t2e_ax.tick_params(axis="y", labelcolor="green", labelsize=small_fs)
+                h_t2e, l_t2e = t2e_ax.get_legend_handles_labels()
+                handles += h_t2e
+                labels += l_t2e
+                right_axes_offset += 1
+
             # Qfreq (MHz) on third right axis (per qubit)
             if qfreq_times[q] and qfreq_values[q]:
                 qf_ax = ax.twinx()
-                qf_ax.spines["right"].set_position(("axes", 1.0 + 0.08 * right_axes_offset))
+                qf_ax.spines["right"].set_position(("axes", 1.0 + 0.079 * right_axes_offset))
                 qf_ax.plot(
                     qfreq_times[q],
                     qfreq_values[q],
                     marker="s",
+                    markersize=3,
                     linestyle="None",
                     color="purple",
                     alpha=0.8,
@@ -8717,6 +8821,29 @@ class combined_Qtemp_studies:
                 h4, l4 = qf_ax.get_legend_handles_labels()
                 handles += h4
                 labels += l4
+                right_axes_offset += 1
+
+            # Resonator freq (MHz) on next right axis (per qubit)
+            if resfreq_times[q] and resfreq_values[q]:
+                rf_ax = ax.twinx()
+                rf_ax.spines["right"].set_position(("axes", 1.0 + 0.086 * right_axes_offset))
+                rf_ax.plot(
+                    resfreq_times[q],
+                    resfreq_values[q],
+                    marker="o",
+                    markersize=3,
+                    linestyle="None",
+                    color="blue",
+                    alpha=0.8,
+                    label="Res freq (MHz)",
+                )
+                rf_ax.set_ylabel("Res freq (MHz)", color="blue", fontsize=small_fs)
+                rf_ax.tick_params(axis="y", labelcolor="blue", labelsize=small_fs)
+                rf_ax.yaxis.get_offset_text().set_visible(False)
+                rf_ax.yaxis.set_major_formatter(mticker.FormatStrFormatter("%.2f"))
+                h_rf, l_rf = rf_ax.get_legend_handles_labels()
+                handles += h_rf
+                labels += l_rf
                 right_axes_offset += 1
 
             # Radiation event lines
@@ -8733,17 +8860,30 @@ class combined_Qtemp_studies:
                 )
 
             if handles:
-                ax.legend(handles, labels, loc="upper left", fontsize=8, frameon=False)
+                leg = ax.legend(
+                    handles,
+                    labels,
+                    loc="upper left",
+                    fontsize=8,
+                    frameon=True,
+                    fancybox=False,
+                )
+
+                frame = leg.get_frame()
+                frame.set_facecolor("white")
+                frame.set_alpha(1.0)
+                frame.set_edgecolor("black")
+                frame.set_linewidth(0.8)
 
         axes[-1].set_xlabel("Time")
-        fig.suptitle("Qtemps, Fridge, T1, and Qfreq vs Time", fontsize=15)
+        fig.suptitle("Qtemps, Fridge, T1, T2R, T2E, Qfreq, and Res Freq vs Time", fontsize=15)
 
         # Save
         paramvstime_dir = os.path.join(out_dir, "params_vs_time")
         os.makedirs(paramvstime_dir, exist_ok=True)
         stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         out_path = os.path.join(paramvstime_dir, f"Qtemps_Coherence_allQs_{stamp}.pdf")
-        fig.savefig(out_path, dpi=self.figure_quality)
+        fig.savefig(out_path, facecolor="white")
         plt.close(fig)
         print("Saved combined methods plot: ", out_path)
         return out_path

@@ -18,9 +18,11 @@ from scipy.stats import norm
 from scipy.optimize import curve_fit
 
 class ResonatorFreqVsTime:
-    def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+    def __init__(self, base_data_path, plots_path, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
                  signal, run_name, fridge):
         self.figure_quality = figure_quality
+        self.base_data_path = base_data_path
+        self.plots_path = plots_path
         self.number_of_qubits = number_of_qubits
         self.save_figs = save_figs
         self.fit_saved = fit_saved
@@ -117,8 +119,14 @@ class ResonatorFreqVsTime:
 
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
-                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
-                outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "/documentation/"
+                timestamp_dir = os.path.join(self.base_data_path, folder_date)
+                if "run6" in self.run_name:  # For QUIET, science run data was saved differently
+                    if "ge_round_robin_presciencerun_data" in folder_date:
+                        outerFolder = timestamp_dir + "/study_data/"  # where data is stored
+                    else:
+                        outerFolder = timestamp_dir + "/optimization/"  # where data is stored
+                else:
+                    outerFolder = timestamp_dir + "/study_data/"  # where data is stored
             elif self.fridge.upper() == 'NEXUS':
                 outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
                 outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
@@ -146,6 +154,12 @@ class ResonatorFreqVsTime:
                     # print("all batch_num datasets------------------------", load_data['Res'][q_key].get('Amps', [])[0])
                     # print("one dataset------------------------",load_data['Res'][q_key].get('Amps', [])[0][0].decode())
                     # go through each dataset in the batch and plot
+
+                    # Run 9 patch, accidentally took punched out data for Q4, bad.
+                    if ("AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47" in folder_date
+                            and int(q_key) == 3):
+                        print(f"Skipping Q4 data due to punchout in {self.run_name}/{folder_date}")
+                        continue
                     for dataset in range(len(load_data[f'res{exp_extension}'][q_key].get('Dates', [])[0])):
                         if 'nan' in str(load_data[f'res{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
                             continue
@@ -171,7 +185,7 @@ class ResonatorFreqVsTime:
                             exp_config = None
 
                         if len(freq_pts) > 0:
-                            res_class_instance = ResonanceSpectroscopy(q_key, self.number_of_qubits, outerFolder_save_plots, round_num, self.save_figs)
+                            res_class_instance = ResonanceSpectroscopy(q_key, self.number_of_qubits, self.plots_path, round_num, self.save_figs)
                             #res_spec_cfg = exp_config['res_spec']
                             res_freqs = res_class_instance.get_results(freq_pts, freq_center, amps)
 

@@ -1826,7 +1826,26 @@ if coh_qtemp_ana_flags["plot_qtemps_t1_ftemps_qfreq"]:
                          "This plotting section is only set up to process one run at a time at the moment.")
         # This section is set up to process multiple runs, but I have not updated this plotting function to handle more than one.
     comb_plots_path = "/home/acolonce/Documents/analysis/combined_qtemps/qtemps_and_coherence/"
-    combined_studies.plot_qtemps_and_coherence_res(comb_plots_path, all_qubit_temperatures_ssf_g=all_qubit_temps_g, all_qubit_timestamps_ssf_g=all_qubit_times_g,
-                                  all_files_Qtemp_results_RPMs=all_files_Qtemp_results_RPMs, fridge_temps=None, fridge_dates=None,
-                                  t1_vals=t1_vals, t1_dates=date_times_t1, qfreqs_vals=q_freqs, qfreqs_dates=date_times_q_spec,
-                                  restrict_time_xaxis=restrict_time, start_time = start_time, end_time = end_time, plot_extra_event_lines=False)
+
+    combined_studies.plot_qtemps_and_coherence_res(
+        comb_plots_path,
+        all_qubit_temperatures_ssf_g=all_qubit_temps_g,
+        all_qubit_timestamps_ssf_g=all_qubit_times_g,
+        all_files_Qtemp_results_RPMs=all_files_Qtemp_results_RPMs,
+        fridge_temps=mcp_temps,
+        fridge_dates=mcp_dates,
+        t1_vals=t1_vals,
+        t1_dates=date_times_t1,
+        qfreqs_vals=q_freqs,
+        qfreqs_dates=date_times_q_spec,
+        resfreqs_vals=res_freqs,
+        resfreqs_dates=date_times_res_spec,
+        t2r_vals=t2r_vals,
+        t2r_dates=date_times_t2r,
+        t2e_vals=t2e_vals,
+        t2e_dates=date_times_t2e,
+        restrict_time_xaxis=restrict_time,
+        start_time=start_time,
+        end_time=end_time,
+        plot_extra_event_lines=False,
+    )
