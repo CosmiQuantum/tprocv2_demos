@@ -3490,6 +3490,536 @@ class combined_Qtemp_studies:
         self.figure_quality = figure_quality
         self.number_of_qubits = number_of_qubits
 
+    def load_processed_coherence_inputs(
+            self,
+            res_spec_path,
+            qspec_path,
+            t1_path,
+            t2r_path,
+            t2e_path,
+    ):
+        """
+        Load previously saved processed coherence inputs.
+
+        Parameters
+        ----------
+        res_spec_path : str
+            Path to the saved resonator spectroscopy pickle file.
+
+        qspec_path : str
+            Path to the saved qubit spectroscopy pickle file.
+
+        t1_path : str
+            Path to the saved T1 pickle file.
+
+        t2r_path : str
+            Path to the saved T2 Ramsey pickle file.
+
+        t2e_path : str
+            Path to the saved T2 Echo pickle file.
+
+        Returns
+        -------
+        date_times_res_spec : list
+            Timestamps for resonator spectroscopy measurements.
+
+        res_freqs : list or dict
+            Resonator frequency values.
+
+        date_times_q_spec : list
+            Timestamps for qubit spectroscopy measurements.
+
+        q_freqs : list or dict
+            Qubit frequency values.
+
+        qspec_fit_err : list or dict
+            Qubit spectroscopy fit errors.
+
+        date_times_t1 : list
+            Timestamps for T1 measurements.
+
+        t1_vals : list or dict
+            T1 values.
+
+        t1_fit_err : list or dict
+            T1 fit errors.
+
+        date_times_t2r : list
+            Timestamps for T2 Ramsey measurements.
+
+        t2r_vals : list or dict
+            T2 Ramsey values.
+
+        t2r_fit_err : list or dict
+            T2 Ramsey fit errors.
+
+        date_times_t2e : list
+            Timestamps for T2 Echo measurements.
+
+        t2e_vals : list or dict
+            T2 Echo values.
+
+        t2e_fit_err : list or dict
+            T2 Echo fit errors.
+
+        I_per_pt_errs : list or dict or None
+            Optional per-point I errors from T1 shot processing.
+
+        Q_per_pt_errs : list or dict or None
+            Optional per-point Q errors from T1 shot processing.
+        """
+
+        with open(res_spec_path, "rb") as f:
+            res_spec_data = pickle.load(f)
+
+        with open(qspec_path, "rb") as f:
+            qspec_data = pickle.load(f)
+
+        with open(t1_path, "rb") as f:
+            t1_data = pickle.load(f)
+
+        with open(t2r_path, "rb") as f:
+            t2r_data = pickle.load(f)
+
+        with open(t2e_path, "rb") as f:
+            t2e_data = pickle.load(f)
+
+        print("Loaded processed resonator spectroscopy results from:")
+        print(res_spec_path)
+
+        print("Loaded processed qubit spectroscopy results from:")
+        print(qspec_path)
+
+        print("Loaded processed T1 results from:")
+        print(t1_path)
+
+        print("Loaded processed T2 Ramsey results from:")
+        print(t2r_path)
+
+        print("Loaded processed T2 Echo results from:")
+        print(t2e_path)
+
+        date_times_res_spec = res_spec_data["date_times_res_spec"]
+        res_freqs = res_spec_data["res_freqs"]
+
+        date_times_q_spec = qspec_data["date_times_q_spec"]
+        q_freqs = qspec_data["q_freqs"]
+        qspec_fit_err = qspec_data["qspec_fit_err"]
+
+        date_times_t1 = t1_data["date_times_t1"]
+        t1_vals = t1_data["t1_vals"]
+        t1_fit_err = t1_data["t1_fit_err"]
+
+        I_per_pt_errs = t1_data.get("I_per_pt_errs", None)
+        Q_per_pt_errs = t1_data.get("Q_per_pt_errs", None)
+
+        date_times_t2r = t2r_data["date_times_t2r"]
+        t2r_vals = t2r_data["t2r_vals"]
+        t2r_fit_err = t2r_data["t2r_fit_err"]
+
+        date_times_t2e = t2e_data["date_times_t2e"]
+        t2e_vals = t2e_data["t2e_vals"]
+        t2e_fit_err = t2e_data["t2e_fit_err"]
+
+        return (
+            date_times_res_spec,
+            res_freqs,
+            date_times_q_spec,
+            q_freqs,
+            qspec_fit_err,
+            date_times_t1,
+            t1_vals,
+            t1_fit_err,
+            date_times_t2r,
+            t2r_vals,
+            t2r_fit_err,
+            date_times_t2e,
+            t2e_vals,
+            t2e_fit_err,
+            I_per_pt_errs, # T1
+            Q_per_pt_errs, # T1
+        )
+
+    def load_processed_coherence_inputs(
+            self,
+            res_spec_path,
+            qspec_path,
+            t1_path,
+            t2r_path,
+            t2e_path,
+    ):
+        """
+        Load previously saved processed coherence inputs.
+
+        Parameters
+        ----------
+        res_spec_path : str
+            Path to the saved resonator spectroscopy pickle file.
+
+        qspec_path : str
+            Path to the saved qubit spectroscopy pickle file.
+
+        t1_path : str
+            Path to the saved T1 pickle file.
+
+        t2r_path : str
+            Path to the saved T2 Ramsey pickle file.
+
+        t2e_path : str
+            Path to the saved T2 Echo pickle file.
+
+        Returns
+        -------
+        date_times_res_spec : list
+            Timestamps for resonator spectroscopy measurements.
+
+        res_freqs : list or dict
+            Resonator frequency values.
+
+        date_times_q_spec : list
+            Timestamps for qubit spectroscopy measurements.
+
+        q_freqs : list or dict
+            Qubit frequency values.
+
+        qspec_fit_err : list or dict
+            Qubit spectroscopy fit errors.
+
+        date_times_t1 : list
+            Timestamps for T1 measurements.
+
+        t1_vals : list or dict
+            T1 values.
+
+        t1_fit_err : list or dict
+            T1 fit errors.
+
+        date_times_t2r : list
+            Timestamps for T2 Ramsey measurements.
+
+        t2r_vals : list or dict
+            T2 Ramsey values.
+
+        t2r_fit_err : list or dict
+            T2 Ramsey fit errors.
+
+        date_times_t2e : list
+            Timestamps for T2 Echo measurements.
+
+        t2e_vals : list or dict
+            T2 Echo values.
+
+        t2e_fit_err : list or dict
+            T2 Echo fit errors.
+
+        I_per_pt_errs : list or dict or None
+            Optional per-point I errors from T1 shot processing.
+
+        Q_per_pt_errs : list or dict or None
+            Optional per-point Q errors from T1 shot processing.
+        """
+
+        with open(res_spec_path, "rb") as f:
+            res_spec_data = pickle.load(f)
+
+        with open(qspec_path, "rb") as f:
+            qspec_data = pickle.load(f)
+
+        with open(t1_path, "rb") as f:
+            t1_data = pickle.load(f)
+
+        with open(t2r_path, "rb") as f:
+            t2r_data = pickle.load(f)
+
+        with open(t2e_path, "rb") as f:
+            t2e_data = pickle.load(f)
+
+        print("Loaded processed resonator spectroscopy results from:")
+        print(res_spec_path)
+
+        print("Loaded processed qubit spectroscopy results from:")
+        print(qspec_path)
+
+        print("Loaded processed T1 results from:")
+        print(t1_path)
+
+        print("Loaded processed T2 Ramsey results from:")
+        print(t2r_path)
+
+        print("Loaded processed T2 Echo results from:")
+        print(t2e_path)
+
+        date_times_res_spec = res_spec_data["date_times_res_spec"]
+        res_freqs = res_spec_data["res_freqs"]
+
+        date_times_q_spec = qspec_data["date_times_q_spec"]
+        q_freqs = qspec_data["q_freqs"]
+        qspec_fit_err = qspec_data["qspec_fit_err"]
+
+        date_times_t1 = t1_data["date_times_t1"]
+        t1_vals = t1_data["t1_vals"]
+        t1_fit_err = t1_data["t1_fit_err"]
+
+        I_per_pt_errs = t1_data.get("I_per_pt_errs", None)
+        Q_per_pt_errs = t1_data.get("Q_per_pt_errs", None)
+
+        date_times_t2r = t2r_data["date_times_t2r"]
+        t2r_vals = t2r_data["t2r_vals"]
+        t2r_fit_err = t2r_data["t2r_fit_err"]
+
+        date_times_t2e = t2e_data["date_times_t2e"]
+        t2e_vals = t2e_data["t2e_vals"]
+        t2e_fit_err = t2e_data["t2e_fit_err"]
+
+        return (
+            date_times_res_spec,
+            res_freqs,
+            date_times_q_spec,
+            q_freqs,
+            qspec_fit_err,
+            date_times_t1,
+            t1_vals,
+            t1_fit_err,
+            date_times_t2r,
+            t2r_vals,
+            t2r_fit_err,
+            date_times_t2e,
+            t2e_vals,
+            t2e_fit_err,
+            I_per_pt_errs,
+            Q_per_pt_errs,
+        )
+
+    def get_or_create_processed_coherence_inputs(
+            self,
+            run_number,
+            run_name,
+            coherence_cache_dir,
+            coh_qtemp_ana_flags,
+            figure_quality,
+            final_figure_quality,
+            tot_num_of_qubits,
+            top_folder_dates,
+            save_figs,
+            fit_saved,
+            signal,
+            FRIDGE,
+            data_path,
+            plots_path,
+            per_pt_errs_t1=False,
+            process_shots_t1ge=False,
+    ):
+        """
+        Either load cached processed coherence inputs or process the coherence data
+        normally and optionally save the results.
+
+        This is intended to be used for one run at a time.
+
+        Returns
+        -------
+        date_times_res_spec, res_freqs,
+        date_times_q_spec, q_freqs, qspec_fit_err,
+        date_times_t1, t1_vals, t1_fit_err,
+        date_times_t2r, t2r_vals, t2r_fit_err,
+        date_times_t2e, t2e_vals, t2e_fit_err,
+        I_per_pt_errs, Q_per_pt_errs
+        """
+
+        os.makedirs(coherence_cache_dir, exist_ok=True)
+
+        cache_prefix = f"run{run_number}_{run_name}"
+
+        res_spec_cache_path = os.path.join(
+            coherence_cache_dir,
+            f"{cache_prefix}_processed_res_spec.pkl"
+        )
+
+        qspec_cache_path = os.path.join(
+            coherence_cache_dir,
+            f"{cache_prefix}_processed_qspec.pkl"
+        )
+
+        t1_cache_path = os.path.join(
+            coherence_cache_dir,
+            f"{cache_prefix}_processed_t1.pkl"
+        )
+
+        t2r_cache_path = os.path.join(
+            coherence_cache_dir,
+            f"{cache_prefix}_processed_t2r.pkl"
+        )
+
+        t2e_cache_path = os.path.join(
+            coherence_cache_dir,
+            f"{cache_prefix}_processed_t2e.pkl"
+        )
+
+        # ------------------------------------------------------------
+        # Option 1: Load cached processed coherence files
+        # ------------------------------------------------------------
+        if coh_qtemp_ana_flags["use_cached_coherence_files"]:
+            return self.load_processed_coherence_inputs(
+                res_spec_path=res_spec_cache_path,
+                qspec_path=qspec_cache_path,
+                t1_path=t1_cache_path,
+                t2r_path=t2r_cache_path,
+                t2e_path=t2e_cache_path,
+            )
+
+        # ------------------------------------------------------------
+        # Option 2: Process coherence data normally
+        # ------------------------------------------------------------
+        res_spec_vs_time = ResonatorFreqVsTime(
+            figure_quality,
+            final_figure_quality,
+            tot_num_of_qubits,
+            top_folder_dates,
+            save_figs,
+            fit_saved,
+            signal,
+            run_name,
+            FRIDGE
+        )
+
+        date_times_res_spec, res_freqs = res_spec_vs_time.run()
+
+        q_spec_vs_time = QubitFreqsVsTime(
+            data_path,
+            plots_path,
+            figure_quality,
+            final_figure_quality,
+            tot_num_of_qubits,
+            top_folder_dates,
+            save_figs,
+            fit_saved,
+            signal,
+            run_name,
+            FRIDGE
+        )
+
+        date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(
+            exp_extension="_ge",
+            use_png_timestamps=False
+        )
+
+        t1_vs_time = T1VsTime(
+            plots_path,
+            figure_quality,
+            final_figure_quality,
+            tot_num_of_qubits,
+            top_folder_dates,
+            save_figs,
+            fit_saved,
+            signal,
+            run_name,
+            FRIDGE,
+            run_number,
+            per_pt_errs=per_pt_errs_t1
+        )
+
+        I_per_pt_errs = None
+        Q_per_pt_errs = None
+
+        if per_pt_errs_t1 and process_shots_t1ge:
+            (
+                date_times_t1,
+                t1_vals,
+                t1_fit_err,
+                I_per_pt_errs,
+                Q_per_pt_errs,
+            ) = t1_vs_time.run(
+                return_errs=True,
+                exp_extension="_ge",
+                process_shots=process_shots_t1ge
+            )
+        else:
+            date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(
+                return_errs=True,
+                exp_extension="_ge"
+            )
+
+        t2r_vs_time = T2rVsTime(
+            plots_path,
+            run_number,
+            figure_quality,
+            final_figure_quality,
+            tot_num_of_qubits,
+            top_folder_dates,
+            save_figs,
+            fit_saved,
+            signal,
+            run_name,
+            FRIDGE
+        )
+
+        date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(
+            return_errs=True,
+            t1_vals=t1_vals
+        )
+
+        t2e_vs_time = T2eVsTime(
+            plots_path,
+            run_number,
+            figure_quality,
+            final_figure_quality,
+            tot_num_of_qubits,
+            top_folder_dates,
+            save_figs,
+            fit_saved,
+            signal,
+            run_name,
+            FRIDGE
+        )
+
+        date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(
+            return_errs=True,
+            t1_vals=t1_vals
+        )
+
+        # ------------------------------------------------------------
+        # Optionally save processed coherence files
+        # ------------------------------------------------------------
+        if coh_qtemp_ana_flags["save_cached_coherence_files"]:
+            self.save_processed_coherence_inputs(
+                coherence_cache_dir=coherence_cache_dir,
+                run_name=cache_prefix,
+                date_times_res_spec=date_times_res_spec,
+                res_freqs=res_freqs,
+                date_times_q_spec=date_times_q_spec,
+                q_freqs=q_freqs,
+                qspec_fit_err=qspec_fit_err,
+                date_times_t1=date_times_t1,
+                t1_vals=t1_vals,
+                t1_fit_err=t1_fit_err,
+                date_times_t2r=date_times_t2r,
+                t2r_vals=t2r_vals,
+                t2r_fit_err=t2r_fit_err,
+                date_times_t2e=date_times_t2e,
+                t2e_vals=t2e_vals,
+                t2e_fit_err=t2e_fit_err,
+                I_per_pt_errs=I_per_pt_errs,
+                Q_per_pt_errs=Q_per_pt_errs,
+            )
+
+        return (
+            date_times_res_spec,
+            res_freqs,
+            date_times_q_spec,
+            q_freqs,
+            qspec_fit_err,
+            date_times_t1,
+            t1_vals,
+            t1_fit_err,
+            date_times_t2r,
+            t2r_vals,
+            t2r_fit_err,
+            date_times_t2e,
+            t2e_vals,
+            t2e_fit_err,
+            I_per_pt_errs,
+            Q_per_pt_errs,
+        )
+    
     def save_processed_ssf_rpm_inputs(self,
             fit_results_g,
             all_files_Qtemp_results_RPMs,

@@ -375,10 +375,10 @@ for run_number in run_num_list:
     run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB attenuator ') #please make it brief for the plot
 
     ################################################ 01: Get all data ######################################################
-    # res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-    #                                        save_figs, fit_saved, signal, run_name, FRIDGE)
-    # date_times_res_spec, res_freqs = res_spec_vs_time.run()
-    # #
+    res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+                                           save_figs, fit_saved, signal, run_name, FRIDGE)
+    date_times_res_spec, res_freqs = res_spec_vs_time.run()
+    #
     q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
                                       save_figs, fit_saved, signal, run_name, FRIDGE)
     date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
