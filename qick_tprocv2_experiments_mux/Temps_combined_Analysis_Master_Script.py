@@ -46,7 +46,7 @@ save_figs_SSF = False # Do you want to save gaussian fit plots while calculating
 fit_saved = False # Not used here, set to false.
 exclude_temp_sweeps = True # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
 filter_out_bad_RPM_fits = True # filter out bad rpm fits? this doesn't work perfect but helps a bit
-filter_out_bad_SSF_qtemp_fits = True # filter out SSF data that can't be properly fitted for qubit temp calcs?
+filter_out_bad_SSF_qtemp_fits = False # filter out SSF data that can't be properly fitted for qubit temp calcs?
 get_qtemp_data = True # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
 get_london_data = False # This returns RPM qubit temperatures, resonator freqs, and qubit freqs for specified dates. Designed for London Penetration analysis.
 
@@ -68,18 +68,18 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": True, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_Qtemps": False}
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+                      "combined_studies_Qtemps": True}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False, "Pe_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_hists_viaSSF": False, "Pe_vs_time_viaRPM": False,
-                  "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": False, "SSF_fid_vs_Pe_viaSSF": False, "ssf_SNR_vs_time": True}
+                  "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": False, "SSF_fid_vs_Pe_viaSSF": False, "ssf_SNR_vs_time": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
-comb_analysis_flags = {"load_rpm": False, "load_ssf": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
+comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
                        "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
-                       "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": True, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False}
+                       "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": False, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False, "SNR_vs_RRPM_Pe": True}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
@@ -846,7 +846,7 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
         all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only = False, fallback_to_threshold = True)
 
     # --------------------------------------------------------- SSF qubit temps analysis --------------------------------------------------------
-    # --------------------------------------------------------- SSF vs time for each qubit --------------------------------------------------------------
+    # --------------------------------------------------------- SNR vs time for each qubit --------------------------------------------------------------
     if analysis_flags["ssf_SNR_vs_time"]:
         SSF_calcs_obj.plot_ssf_SNR_vs_time(fit_results,path_saveplots_ssf_qtemps_vsT,n_qubits=6)
     # --------------------------------------------------------- SSF vs time for each qubit --------------------------------------------------------------
@@ -1050,8 +1050,8 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         # ============================================================
         # Simple cache options for processed SSF/RPM inputs
         # ============================================================
-        create_cached_files = False  # True = save processed files after processing
-        use_cached_files = True  # True = load processed files instead of processing
+        create_cached_files = True  # True = save processed files after processing
+        use_cached_files = False  # True = load processed files instead of processing
 
         cache_dir = "/home/acolonce/Documents/analysis/cached_processed_data"
         os.makedirs(cache_dir, exist_ok=True)
@@ -1172,7 +1172,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                     fit_results_g,
                     all_files_Qtemp_results_RPMs,
                     save_dir=cache_dir,
-                    tag=f"run{run_num}_ssf_rpm")
+                    tag=f"run{run_num}")
 
                 print("\nCopy these paths if you want to use the cached files later:")
                 print("fit_results_g_cache_path =", repr(ssf_cache_path))
@@ -1369,6 +1369,26 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                 plot_ideal_line=False,
                 save_as="gif" # mp4 or gif
             )
+
+    if comb_analysis_flags["SNR_vs_RRPM_Pe"]:  # only configured to run for one run at a time
+        # Plots SSF vs Pe, using Pe values extracted from RPM data, not SSF data
+        if len(run_num_list) != 1:
+            raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
+                             "This section is only set up to process one run at a time.")
+        if not use_cached_files and not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
+            raise ValueError(
+                'This plot requires either use_cached_files=True, or both '
+                'comb_analysis_flags["load_rpm"] and '
+                'comb_analysis_flags["load_ssf"] to be True.')
+        combined_studies.plot_ssf_SNR_vs_pe(
+            fit_results_g,
+            all_files_Qtemp_results_RPMs,
+            outerFolder_qtemps_plots,
+            n_qubits=6,
+            tolerance_seconds=10,
+            plot_together=True,
+            xlims=(0, 0.07),
+            ylims=None)
 
     #----------- Thermal Populations vs Time using all three methods ----
     if comb_analysis_flags["Pe_vs_time_comb_separate_plts"]:

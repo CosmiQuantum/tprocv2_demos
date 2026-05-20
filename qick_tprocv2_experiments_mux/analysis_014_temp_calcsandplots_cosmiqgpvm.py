@@ -729,9 +729,9 @@ class SSFTempCalcAndPlots:
 
                 # -------------------------- optionally calulate SNR of the scan -------------------------
                 snr = np.nan
-                snr_info = {}
                 if calc_SNR:
-                    snr, snr_info = self.fit_ssf_ge_double_gaussian_SNR_iminuit(ig_new,ie_new)
+                    save_figs_path_SNR = os.path.join(save_figs_path, "SNR")
+                    snr, snr_info = self.fit_ssf_ge_double_gaussian_SNR_iminuit(ig_new,ie_new, qid, plot = False, qubit_folder = save_figs_path_SNR, dataset = idx)
                     
                 # -------- save qubit temps and timestamps ----------------------------------------------
                 all_qubit_temperatures[qid].append(T_mK)  # temperatures in mK
@@ -1448,6 +1448,196 @@ class SSFTempCalcAndPlots:
         plt.savefig(plot_filename, dpi = 300, bbox_inches="tight")
         plt.close()
 
+    def plot_gaussians_SNR(
+            self,
+            q_key,
+            qubit_folder,
+            ig_new,
+            ie_new,
+            weights,
+            sigmas,
+            means,
+            snr,
+            dataset=None,
+            title_ext="",
+            numbins=64,
+            ylim=None,
+    ):
+        """
+        Plot the prepared |g> and prepared |e> SSF data together with the
+        fitted two-Gaussian mixture used to calculate readout SNR.
+
+        This is intended only as a diagnostic plot for checking the SNR fit:
+
+            SNR = |mu_e - mu_g| / sqrt((sigma_g^2 + sigma_e^2) / 2)
+
+        After ordering, this assumes:
+            means[0], sigmas[0], weights[0] -> prepared |g> component
+            means[1], sigmas[1], weights[1] -> prepared |e> component
+        """
+
+        os.makedirs(qubit_folder, exist_ok=True)
+
+        ig = np.asarray(ig_new, dtype=float).ravel()
+        ie = np.asarray(ie_new, dtype=float).ravel()
+
+        ig = ig[np.isfinite(ig)]
+        ie = ie[np.isfinite(ie)]
+
+        if ig.size == 0 or ie.size == 0:
+            return
+
+        weights = np.asarray(weights, dtype=float).ravel()
+        means = np.asarray(means, dtype=float).ravel()
+        sigmas = np.asarray(sigmas, dtype=float).ravel()
+
+        if weights.size != 2 or means.size != 2 or sigmas.size != 2:
+            return
+
+        if np.sum(weights) <= 0 or not np.isfinite(np.sum(weights)):
+            return
+
+        # Normalize weights for safety
+        weights = weights / np.sum(weights)
+
+        xdata = np.concatenate([ig, ie])
+
+        x_min = float(np.min(xdata))
+        x_max = float(np.max(xdata))
+
+        if x_min == x_max:
+            return
+
+        xlims = [x_min, x_max]
+
+        # Histogram scaling
+        counts, edges = np.histogram(xdata, bins=numbins, range=xlims)
+        bin_w = edges[1] - edges[0]
+        N = xdata.size
+
+        plt.figure(figsize=(10, 6))
+
+        # Plot prepared-state histograms separately
+        plt.hist(
+            ig,
+            bins=numbins,
+            range=xlims,
+            density=False,
+            alpha=0.45,
+            color="blue",
+            edgecolor="black",
+            label="Prepared $|g\\rangle$ data",
+        )
+
+        plt.hist(
+            ie,
+            bins=numbins,
+            range=xlims,
+            density=False,
+            alpha=0.45,
+            color="red",
+            edgecolor="black",
+            label="Prepared $|e\\rangle$ data",
+        )
+
+        # Smooth fitted curves
+        xplot = np.linspace(xlims[0], xlims[1], 1000)
+
+        comp_g = N * bin_w * weights[0] * norm.pdf(
+            xplot,
+            loc=means[0],
+            scale=sigmas[0],
+        )
+
+        comp_e = N * bin_w * weights[1] * norm.pdf(
+            xplot,
+            loc=means[1],
+            scale=sigmas[1],
+        )
+
+        mixture = comp_g + comp_e
+
+        plt.plot(
+            xplot,
+            comp_g,
+            color="blue",
+            linewidth=2,
+            label=(
+                f"$|g\\rangle$ fit: "
+                f"$\\mu_g$={means[0]:.3f}, "
+                f"$\\sigma_g$={sigmas[0]:.3f}"
+            ),
+        )
+
+        plt.plot(
+            xplot,
+            comp_e,
+            color="red",
+            linewidth=2,
+            label=(
+                f"$|e\\rangle$ fit: "
+                f"$\\mu_e$={means[1]:.3f}, "
+                f"$\\sigma_e$={sigmas[1]:.3f}"
+            ),
+        )
+
+        plt.plot(
+            xplot,
+            mixture,
+            color="black",
+            linestyle="--",
+            linewidth=2,
+            label="Two-Gaussian mixture",
+        )
+
+        # Mark fitted means
+        plt.axvline(
+            means[0],
+            color="blue",
+            linestyle=":",
+            linewidth=2,
+            label="$\\mu_g$",
+        )
+
+        plt.axvline(
+            means[1],
+            color="red",
+            linestyle=":",
+            linewidth=2,
+            label="$\\mu_e$",
+        )
+
+        title = f"SSF SNR double-Gaussian fit, Q{q_key + 1}"
+        if dataset is not None:
+            title += f", Dataset {dataset}"
+        title += f", SNR={snr:.2f}"
+
+        if title_ext:
+            title += f" {title_ext}"
+
+        plt.title(title)
+        plt.xlabel("Rotated/projected SSF signal", fontsize=14)
+        plt.ylabel("Counts", fontsize=14)
+
+        if ylim is not None:
+            plt.ylim(0, ylim)
+
+        plt.legend(fontsize=10)
+        plt.tight_layout()
+
+        if dataset is None:
+            dataset_str = ""
+        else:
+            dataset_str = f"_Dataset{dataset}"
+
+        plot_filename = os.path.join(
+            qubit_folder,
+            f"Q{q_key + 1}_SSF_SNR_gaussfits{dataset_str}_{datetime.datetime.now():%Y%m%d%H%M%S}.png",
+        )
+
+        plt.savefig(plot_filename, dpi=300, bbox_inches="tight")
+        plt.close()
+
     # -------------------------------OLD WAY: MADE FOR MIDPOINT THRESHOLD METHOD ONLY------------
     # def plot_gaussians_qtemps(self, q_key, qubit_folder, ig_new, ground_data, excited_data, ground_gaussian, excited_gaussian, pop_threshold, dataset, weights, sigmas, means,
     #                           temperature_mk = None, title_ext = "", dontuse_midpt_thresh = False):
@@ -1633,6 +1823,7 @@ class SSFTempCalcAndPlots:
         """
 
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
+        markers = ['o', 's', '^', 'D', 'v', 'P']  # Q1-Q6
         os.makedirs(plot_path, exist_ok=True)
 
         fig, ax = plt.subplots(figsize=(15, 10))
@@ -1675,7 +1866,7 @@ class SSFTempCalcAndPlots:
             ax.plot(
                 times_vals,
                 snr_vals,
-                marker="o",
+                marker=markers[q % len(markers)],
                 color=colors[q % len(colors)],
                 alpha=0.7,
                 markersize=5,
@@ -2818,7 +3009,8 @@ class SSFTempCalcAndPlots:
         """Normalized 1D Gaussian pdf."""
         return np.exp(-0.5 * ((x - mu) / sigma) ** 2) / (np.sqrt(2 * np.pi) * sigma)
 
-    def fit_ssf_ge_double_gaussian_SNR_iminuit(self, ig_new, ie_new):
+    def fit_ssf_ge_double_gaussian_SNR_iminuit(self, ig_new, ie_new, q_key, plot = False, qubit_folder = "SSF_SNR_fit_plots",
+                                                dataset = None, ssf_hist_ylim = None):
         """
         Fit prepared |g> and prepared |e> SSF data together as a two-Gaussian
         mixture using iminuit, then calculate readout SNR.
@@ -2959,12 +3151,29 @@ class SSFTempCalcAndPlots:
         sigma_e = sigmas[excited_idx]
 
         # -------------------- Calculate SNR --------------------
-        denom = np.sqrt(0.5 * (sigma_g ** 2 + sigma_e ** 2))
+        denom = np.sqrt(sigma_g ** 2 + sigma_e ** 2) # np.sqrt(0.5 * (sigma_g ** 2 + sigma_e ** 2))
 
         if denom <= 0 or not np.isfinite(denom):
             snr = np.nan
         else:
             snr = np.abs(mu_e - mu_g) / denom
+
+        # ------------------ Optional fits plotting --------------
+        if plot:
+            self.plot_gaussians_SNR(
+                q_key=q_key,
+                qubit_folder=qubit_folder,
+                ig_new=ig_new,
+                ie_new=ie_new,
+                weights=weights,
+                sigmas=sigmas,
+                means=means,
+                snr=snr,
+                dataset=dataset,
+                title_ext=f"valid={bool(m2.valid)}",
+                numbins=64,
+                ylim=ssf_hist_ylim,
+            )
 
         snr_info = {
             "snr": snr,
@@ -3318,7 +3527,7 @@ class combined_Qtemp_studies:
 
         ssf_path = os.path.join(
             save_dir,
-            f"{tag}_fit_results_g_{timestamp}.pkl"
+            f"{tag}_SSF_fit_results_g_{timestamp}.pkl"
         )
 
         rpm_path = os.path.join(
@@ -6788,6 +6997,480 @@ class combined_Qtemp_studies:
             plt.close(fig)
 
             print("Saved SSF fidelity vs RPM Pe subplot plot: ", out_path)
+
+    def plot_ssf_SNR_vs_pe(
+            self,
+            fit_results,
+            all_files_Qtemp_results_RPMs,
+            plot_path,
+            n_qubits=6,
+            qubits_to_plot=None,
+            colors=None,
+            tolerance_seconds=10,
+            sort_by_time=True,
+            xlims=None,
+            ylims=None,
+            RPM_Pe_rel_err_cut=None,
+            plot_together=True,
+            plot_with_t_color_gradient=False,
+    ):
+        """
+        Plot SSF readout SNR vs RPM-extracted thermal population Pe.
+
+        This function matches SSF SNR points to RPM Pe points by nearest timestamp
+        for the same qubit.
+
+        SSF/SNR input format
+        --------------------
+        fit_results[qid] = list of dicts with keys including:
+            - "timestamp" : datetime.datetime
+            - "ssf_SNR"   : float
+
+        RPM input format
+        ----------------
+        all_files_Qtemp_results_RPMs = list of record dicts where:
+            rec["qubits"][q]["P_e"]
+            rec["qubits"][q]["P_e_err_total"]
+            rec["qubits"][q]["date"]    # epoch seconds
+
+        Plot meaning
+        ------------
+        x    = RPM Pe
+        xerr = RPM Pe error
+        y    = SSF readout SNR
+
+        Matching
+        --------
+        For each SSF SNR point, the nearest RPM Pe point in time is selected.
+        The pair is kept only if |t_SSF - t_RPM| <= tolerance_seconds.
+        """
+
+        if colors is None:
+            colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
+
+        markers = ['o', 's', '^', 'D', 'v', 'P']  # Q1-Q6
+
+        os.makedirs(plot_path, exist_ok=True)
+
+        if fit_results is None or not isinstance(fit_results, dict):
+            raise ValueError("fit_results must be a dict like fit_results[qid] = [ {...}, ... ]")
+
+        # -------------------- Decide which qubits to plot --------------------
+        if qubits_to_plot is None:
+            qubits_to_plot = list(range(n_qubits))
+        else:
+            qubits_to_plot = sorted(
+                q for q in qubits_to_plot
+                if isinstance(q, int) and 0 <= q < n_qubits
+            )
+
+        if not qubits_to_plot:
+            raise ValueError("qubits_to_plot is empty after filtering valid indices.")
+
+        # ================================================================
+        # 1. Build RPM dictionaries
+        # ================================================================
+        times_RPM = {q: [] for q in range(n_qubits)}
+        Pe_RPM = {q: [] for q in range(n_qubits)}
+        PeErr_RPM = {q: [] for q in range(n_qubits)}
+
+        for rec in all_files_Qtemp_results_RPMs:
+            if not isinstance(rec, dict):
+                continue
+
+            qubits_dict = rec.get("qubits", {})
+            if not isinstance(qubits_dict, dict):
+                continue
+
+            for q in range(n_qubits):
+                d = qubits_dict.get(q)
+                if not d:
+                    continue
+
+                pe = d.get("P_e", None)
+                pe_err = d.get("P_e_err_total", None)
+                ts = d.get("date", None)  # epoch seconds
+
+                if pe is None or ts is None:
+                    continue
+
+                try:
+                    pe = float(pe)
+                    ts = float(ts)
+                except Exception:
+                    continue
+
+                if not np.isfinite(pe) or not np.isfinite(ts):
+                    continue
+
+                try:
+                    pe_err = float(pe_err) if pe_err is not None else np.nan
+                except Exception:
+                    pe_err = np.nan
+
+                if RPM_Pe_rel_err_cut is not None:
+                    if not np.isfinite(pe_err) or pe <= 0:
+                        continue
+                    if pe_err / pe >= RPM_Pe_rel_err_cut:
+                        continue
+
+                times_RPM[q].append(datetime.datetime.fromtimestamp(ts))
+                Pe_RPM[q].append(pe)
+                PeErr_RPM[q].append(pe_err)
+
+        # ================================================================
+        # 2. Build SSF SNR dictionaries
+        # ================================================================
+        times_SSF = {q: [] for q in range(n_qubits)}
+        SNR_vals = {q: [] for q in range(n_qubits)}
+
+        for q in range(n_qubits):
+            entries = fit_results.get(q, []) or []
+
+            for r in entries:
+                if not isinstance(r, dict):
+                    continue
+
+                t = r.get("timestamp", None)
+                snr = r.get("ssf_SNR", None)
+
+                if t is None or snr is None:
+                    continue
+
+                if not isinstance(t, datetime.datetime):
+                    continue
+
+                try:
+                    snr = float(snr)
+                except Exception:
+                    continue
+
+                if not np.isfinite(snr):
+                    continue
+
+                times_SSF[q].append(t)
+                SNR_vals[q].append(snr)
+
+        # ================================================================
+        # 3. Optional sorting
+        # ================================================================
+        def _sort_series(tlist, ylist, elist=None):
+            if not tlist or not ylist:
+                return tlist, ylist, elist
+
+            order = np.argsort([tt.timestamp() for tt in tlist])
+            t_sorted = [tlist[i] for i in order]
+            y_sorted = [ylist[i] for i in order]
+
+            if elist is not None and len(elist) == len(ylist):
+                e_sorted = [elist[i] for i in order]
+            else:
+                e_sorted = elist
+
+            return t_sorted, y_sorted, e_sorted
+
+        if sort_by_time:
+            for q in range(n_qubits):
+                times_RPM[q], Pe_RPM[q], PeErr_RPM[q] = _sort_series(
+                    times_RPM[q],
+                    Pe_RPM[q],
+                    PeErr_RPM[q]
+                )
+
+                times_SSF[q], SNR_vals[q], _ = _sort_series(
+                    times_SSF[q],
+                    SNR_vals[q],
+                    None
+                )
+
+        # ================================================================
+        # 4. Match SSF SNR to nearest RPM by timestamp
+        # ================================================================
+        matched = {
+            q: {
+                "Pe_RPM": [],
+                "PeErr_RPM": [],
+                "SNR": [],
+                "dt_seconds": [],
+                "t_SSF": [],
+                "t_RPM": [],
+            }
+            for q in range(n_qubits)
+        }
+
+        for q in qubits_to_plot:
+            if len(times_RPM[q]) == 0 or len(times_SSF[q]) == 0:
+                print(f"Q{q + 1}: missing RPM or SSF SNR data, skipping.")
+                continue
+
+            rpm_ts = np.array([t.timestamp() for t in times_RPM[q]])
+
+            for t_ssf, snr in zip(times_SSF[q], SNR_vals[q]):
+                ssf_ts = t_ssf.timestamp()
+
+                dt = np.abs(rpm_ts - ssf_ts)
+                nearest_idx = int(np.argmin(dt))
+                dt_min = float(dt[nearest_idx])
+
+                if dt_min > tolerance_seconds:
+                    continue
+
+                pe = Pe_RPM[q][nearest_idx]
+                pe_err = PeErr_RPM[q][nearest_idx]
+                t_rpm = times_RPM[q][nearest_idx]
+
+                if not np.isfinite(pe) or not np.isfinite(snr):
+                    continue
+
+                if not np.isfinite(pe_err):
+                    continue
+
+                matched[q]["Pe_RPM"].append(pe)
+                matched[q]["PeErr_RPM"].append(pe_err)
+                matched[q]["SNR"].append(snr)
+                matched[q]["dt_seconds"].append(dt_min)
+                matched[q]["t_SSF"].append(t_ssf)
+                matched[q]["t_RPM"].append(t_rpm)
+
+            print(
+                f"Q{q + 1}: matched {len(matched[q]['SNR'])} SSF SNR/RPM points "
+                f"within {tolerance_seconds}s each."
+            )
+
+        # ================================================================
+        # 5. Print basic summary
+        # ================================================================
+        print("\nMaximum matched SSF SNR per qubit:")
+
+        for q in qubits_to_plot:
+            snr_arr = np.array(matched[q]["SNR"], dtype=float)
+
+            if len(snr_arr) == 0:
+                print(f"Q{q + 1}: no matched points")
+                continue
+
+            max_idx = int(np.nanargmax(snr_arr))
+
+            print(
+                f"Q{q + 1}: max SNR = {matched[q]['SNR'][max_idx]:.3f} "
+                f"at Pe = {matched[q]['Pe_RPM'][max_idx]:.5f}"
+            )
+
+        # ================================================================
+        # 6. Plot
+        # ================================================================
+        paramvstime_dir = os.path.join(plot_path, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        if plot_together:
+            fig, ax = plt.subplots(figsize=(11, 8))
+
+            for q in qubits_to_plot:
+                if len(matched[q]["SNR"]) == 0:
+                    continue
+
+                q_color = colors[q % len(colors)]
+                q_marker = markers[q % len(markers)]
+
+                if plot_with_t_color_gradient:
+                    alphas = self.get_time_alphas(
+                        matched[q]["t_RPM"],
+                        alpha_min=0.20,
+                        alpha_max=0.95
+                    )
+                else:
+                    alphas = np.full(len(matched[q]["SNR"]), 0.8)
+
+                for pe, snr, pe_err, a in zip(
+                        matched[q]["Pe_RPM"],
+                        matched[q]["SNR"],
+                        matched[q]["PeErr_RPM"],
+                        alphas):
+                    # x-error only, because we do not currently have SNR error
+                    ax.errorbar(
+                        pe,
+                        snr,
+                        xerr=pe_err,
+                        fmt="none",
+                        elinewidth=1,
+                        capsize=3,
+                        alpha=max(a - 0.2, 0.1),
+                        ecolor=q_color,
+                    )
+
+                    ax.scatter(
+                        pe,
+                        snr,
+                        marker=q_marker,
+                        s=50,
+                        facecolors=q_color,
+                        edgecolors="k",
+                        linewidths=0.8,
+                        alpha=a,
+                    )
+
+                # Dummy handle for legend
+                ax.errorbar(
+                    [],
+                    [],
+                    fmt=q_marker,
+                    markersize=6,
+                    color=q_color,
+                    markerfacecolor=q_color,
+                    markeredgecolor="k",
+                    linestyle="None",
+                    label=f"Q{q + 1}"
+                )
+
+            ax.set_title(
+                f"SSF Readout SNR vs RPM $P_e$ "
+                f"(nearest-time match, tolerance={tolerance_seconds}s)",
+                fontsize=16
+            )
+            ax.set_xlabel("RPM $P_e$", fontsize=14)
+            ax.set_ylabel("SSF Readout SNR", fontsize=14)
+
+            if xlims is not None:
+                ax.set_xlim(*xlims)
+            if ylims is not None:
+                ax.set_ylim(*ylims)
+
+            ax.grid(alpha=0.3)
+            ax.legend(fontsize=11, frameon=True, loc="best")
+
+            if plot_with_t_color_gradient:
+                qubit_labels = [f"Q{q + 1}" for q in qubits_to_plot]
+                qubit_colors = [colors[q % len(colors)] for q in qubits_to_plot]
+
+                self.add_alpha_gradient_bars(
+                    fig,
+                    qubit_colors,
+                    qubit_labels,
+                    alpha_min=0.20,
+                    alpha_max=0.95,
+                    box_pos=(0.75, 0.15, 0.12, 0.22)
+                )
+
+            plt.tight_layout()
+
+            out_path = os.path.join(
+                paramvstime_dir,
+                f"SSF_SNR_vs_RPM_Pe_AllQs_{stamp}.pdf"
+            )
+
+            fig.savefig(out_path, dpi=self.figure_quality, bbox_inches="tight")
+            plt.close(fig)
+
+            print("Saved SSF SNR vs RPM Pe plot: ", out_path)
+
+        else:
+            nrows = 2
+            ncols = 3
+
+            fig, axes = plt.subplots(
+                nrows,
+                ncols,
+                figsize=(15, 10),
+                sharex=False,
+                sharey=True,
+                constrained_layout=True
+            )
+
+            axes = np.atleast_1d(axes).ravel()
+
+            for ax, q in zip(axes, qubits_to_plot):
+                q_color = colors[q % len(colors)]
+                q_marker = markers[q % len(markers)]
+
+                if len(matched[q]["SNR"]) > 0:
+                    if plot_with_t_color_gradient:
+                        alphas = self.get_time_alphas(
+                            matched[q]["t_RPM"],
+                            alpha_min=0.20,
+                            alpha_max=0.95
+                        )
+                    else:
+                        alphas = np.full(len(matched[q]["SNR"]), 0.8)
+
+                    for pe, snr, pe_err, a in zip(
+                            matched[q]["Pe_RPM"],
+                            matched[q]["SNR"],
+                            matched[q]["PeErr_RPM"],
+                            alphas):
+                        ax.errorbar(
+                            pe,
+                            snr,
+                            xerr=pe_err,
+                            fmt=q_marker,
+                            markersize=5,
+                            elinewidth=1,
+                            capsize=3,
+                            alpha=a,
+                            color=q_color,
+                            ecolor=q_color,
+                            markeredgecolor="k",
+                            linestyle="None"
+                        )
+
+                    ax.errorbar(
+                        [],
+                        [],
+                        fmt=q_marker,
+                        markersize=5,
+                        color=q_color,
+                        markeredgecolor="k",
+                        linestyle="None",
+                        label=f"Q{q + 1}"
+                    )
+
+                ax.set_title(f"Q{q + 1}", loc="left", fontsize=14, fontweight="bold")
+                ax.set_ylabel("SSF SNR")
+                ax.grid(alpha=0.3)
+                ax.set_box_aspect(1)
+
+                if xlims is not None:
+                    ax.set_xlim(*xlims)
+
+                if ylims is not None:
+                    ax.set_ylim(*ylims)
+
+                ax.legend(loc="best", fontsize=10, frameon=True)
+
+            for k in range(len(qubits_to_plot), len(axes)):
+                axes[k].set_visible(False)
+
+            fig.supxlabel("RPM $P_e$")
+            fig.supylabel("SSF Readout SNR")
+
+            fig.suptitle(
+                f"SSF Readout SNR vs RPM $P_e$ "
+                f"(nearest-time match, tolerance={tolerance_seconds}s)",
+                fontsize=16
+            )
+
+            if plot_with_t_color_gradient:
+                qubit_labels = [f"Q{q + 1}" for q in qubits_to_plot]
+                qubit_colors = [colors[q % len(colors)] for q in qubits_to_plot]
+
+                self.add_alpha_gradient_bars(
+                    fig,
+                    qubit_colors,
+                    qubit_labels,
+                    alpha_min=0.20,
+                    alpha_max=0.95,
+                    box_pos=(0.83, 0.15, 0.12, 0.22)
+                )
+
+            out_path = os.path.join(
+                paramvstime_dir,
+                f"SSF_SNR_vs_RPM_Pe_Subplots_{stamp}.pdf"
+            )
+
+            fig.savefig(out_path, dpi=self.figure_quality, bbox_inches="tight")
+            plt.close(fig)
+
+            print("Saved SSF SNR vs RPM Pe subplot plot: ", out_path)
 
     def fit_line_for_qubit(self, pe_vals, ssf_vals, pe_errs=None, ssf_errs=None, loss_method = "cauchy", f_scale = 3.0):
         """
