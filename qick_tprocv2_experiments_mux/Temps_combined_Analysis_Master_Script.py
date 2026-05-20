@@ -70,7 +70,7 @@ tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
 qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_Qtemps": True}
+                      "combined_studies_Qtemps": False}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
@@ -80,7 +80,7 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
 comb_analysis_flags = {"load_rpm": False, "load_ssf": False, "use_cached_qtemp_files": True, "create_cached_qtemp_files": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
                        "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
-                       "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": False, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False, "SNR_vs_RRPM_Pe": True}
+                       "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": False, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False, "SNR_vs_RRPM_Pe": False}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
@@ -89,7 +89,8 @@ london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
 
 # For coherence-qubit temps combined analysis
-coh_qtemp_ana_flags = {"load_qtemps": False, "use_cached_coherence_files": False, "save_cached_coherence_files": False, "load_mcp1_temps": False, "load_coherence_res": False, "plot_qtemps_t1_ftemps_qfreq": False}
+coh_qtemp_ana_flags = {"load_qtemps": False, "run_coherence_section": True, "use_cached_qtemp_files": True, "use_cached_coherence_files": True, "create_cached_qtemp_files": False,"create_cached_coherence_files": False, "load_mcp1_temps": False,
+                       "plot_qtemps_t1_ftemps_qfreq": True}
 
 ############################################################################## Set up #######################################################################################################################
 #----------------------------------------------------- For qubit temperature calculations via rabi population measurements --------------------------------------------------------------------------------------
@@ -699,72 +700,109 @@ else:
     raise ValueError("You must choose run_num = 4, 5, 6, 7, 8 or 9. Otherwise, define a section for your run of interest.")
 
 #-------------------------------------------------------- For coherence data -------------------------------------------
-if coh_qtemp_ana_flags["load_coherence_res"] and run_num == 8:
-    # on Arianna's local pc
-    run_name_coh = "run8\ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional"
-    data_path = fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\{run_name}"
-    plots_path = data_path
-    top_folder_dates = ["2025-10-27_22-04-57"]
+if coh_qtemp_ana_flags["run_coherence_section"] and run_num == 9:
+    process_shots_t1ge = False  # the option exists for this run, but for analysis consistency w initial runs we keep it off unless necessary.
+    per_pt_errs_t1 = False
+    run_name = "run9/6transmon/round_robin_benchmark"
+    data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}"  # CEPH
+    # f'/data/QICK_data/{run_name}' #daq01
+    plots_path = "/home/acolonce/Documents/analysis/coherence"  # cosmiqserver01
+    # "/data/QICK_data/run9/6transmon/analysis" #daq01
 
-    # run_name_coh = 'run8/6transmon/round_robin/temperature_sweep_qubit_data'  # 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis'
-    # data_path = f'/data/QICK_data/{run_name}'
-    # plots_path = data_path
+    top_folder_dates = [
+        "AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47",  # ignore Q4 in this data, punched out too much!!
 
-    # all of run 8 thus far
-    # top_folder_dates = [
-    #     "2025-10-19_11-09-32",
-    #     "2025-10-19_12-05-25",
-    #     "2025-10-19_19-43-00",
-    #     "2025-10-19_20-25-18",
-    #     "2025-10-20_12-10-19",
-    #     "2025-10-23_00-49-28",
-    #     "2025-10-23_14-47-22",
-    #     "2025-10-24_01-41-30",
-    #     "2025-10-24_13-58-37",
-    #     "2025-10-27_14-15-40",
-    #     "2025-10-27_14-24-29",
-    #     "2025-10-27_22-04-57",
-    #     "2025-10-28_21-57-47",
-    #     "2025-10-29_18-38-25",
-    #     "2025-10-29_23-48-45",
-    #     "2025-10-31_01-54-57",
-    #     "2025-10-31_20-40-11",
-    #     "2025-11-01_12-54-55"
-    # ]
+        "AB_paper_data_batch2_25dB_DACatten_onlyQ4/2026-04-17_16-47-30",
 
-    # # when saving t1 shots + avg IQ data started
-    # top_folder_dates = [
-    #     "2025-10-24_13-58-37",
-    #     "2025-10-27_14-15-40",
-    #     "2025-10-27_14-24-29",
-    #     "2025-10-27_22-04-57",
-    #     "2025-10-28_21-57-47",
-    #     "2025-10-29_18-38-25",
-    #     "2025-10-29_23-48-45",
-    #     "2025-10-31_01-54-57",
-    #     "2025-10-31_20-40-11",
-    #     "2025-11-01_12-54-55"]
+        "AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_20-54-40",
+        "AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_21-53-52",
+        "AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_22-51-33",
+        "AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-17_23-47-15",
+        "AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_00-42-05",
+        "AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_11-24-10",
+        "AB_paper_data_batch3_25dB_DACatten_noQ5/2026-04-18_13-25-28",
 
-    # All run 8 qubit temperature sweep data except the 200mK dataset bc no qubits visible
-    # top_folder_dates = [
-    #     "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_08-39-37",
-    #     "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_09-02-01",
-    #     "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_12-40-59",
-    #     "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_14-26-01",
-    #     "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_14-48-11",
-    #
-    #     "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_08-04-25",
-    #     "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-00-00",
-    #     "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-27-04",
-    #
-    #     "temperature_sweep_run8_25dBDAC_onechan_day3/2025-11-20_07-31-49",
-    #
-    #     "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-01-57",
-    #     "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-33-09",
-    #     "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-45-17",
-    #     "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-54-05"]
-elif coh_qtemp_ana_flags["load_coherence_res"] and run_num != 8:
-    raise ValueError("You must choose run_num = 8 to load coherence data. Otherwise, define a section for your run of interest.")
+        "AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-18_23-06-45",
+        "AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_00-16-08",
+        "AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_01-18-51",
+        "AB_paper_data_batch4_25dB_DACatten_noQ5/2026-04-19_17-54-48",
+
+        "AB_paper_does_no_rpm_fromRR_affect_coh_25dBDAC/2026-04-18_20-58-30",
+
+        "AB_paper_data_batch5_25dBDAC_onlyQ1_onlySSF/2026-04-20_18-43-20",
+
+        "AB_paper_data_batch6_25dB_DACatten_onlyQ1/2026-04-20_18-50-54",
+
+        "AB_paper_data_batch7_25dB_DACatten_noQ5/2026-04-21_02-55-23",
+
+        "AB_paper_data_batch8_25dB_DACatten_noQ5/2026-04-21_11-34-57",
+
+        "AB_paper_data_batch9_25dB_DACatten_noQ5Q4/2026-04-22_03-09-46",
+
+        "AB_paper_data_batch10_25dB_DACatten_onlyQ4/2026-04-22_11-48-15",
+
+        "AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_16-37-14",
+        "AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_16-54-54",
+        "AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_17-06-49",
+        "AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_17-22-15",
+        "AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_17-35-15",
+        "AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_18-11-40",
+        "AB_paper_data_batch11_25dB_DACatten_noQ5/2026-04-22_19-55-31",
+
+        "AB_paper_data_batch12_25dB_DACatten_noQ5/2026-04-22_20-53-08",
+
+        "AB_paper_data_batch13_25dB_DACatten_noQ5noQ6/2026-04-23_06-22-14",
+
+        "AB_paper_data_batch14_25dB_DACatten_noQ5noQ6/2026-04-23_12-20-26",
+
+        "AB_paper_data_batch15_25dB_DACatten_onlyQ6/2026-04-23_16-59-52",
+        "AB_paper_data_batch15_25dB_DACatten_onlyQ6/2026-04-23_17-25-33",
+        "AB_paper_data_batch15_25dB_DACatten_onlyQ6/2026-04-23_18-49-54",
+        "AB_paper_data_batch15_25dB_DACatten_onlyQ6/2026-04-23_19-06-16",
+        "AB_paper_data_batch15_25dB_DACatten_onlyQ6/2026-04-23_19-24-51",
+
+        "AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_20-14-15",
+        "AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_20-17-04",
+        "AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_21-22-18",
+        "AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_22-29-25",
+        "AB_paper_data_batch16_25dB_DACatten_noQ5/2026-04-23_23-40-11",
+
+        "AB_paper_data_batch17_25dB_DACatten_noQ5/2026-04-24_00-51-38",
+
+        "AB_paper_data_batch18_25dB_DACatten_noQ5noQ1/2026-04-24_14-37-30",
+
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-24_18-51-32",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-24_21-13-58",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-24_23-27-19",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-21-18",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-22-27",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-30-29",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-33-26",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-34-54",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-36-30",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-48-04",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-25_23-57-26",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_00-04-04",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_00-35-21",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_12-49-11",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_12-55-00",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_12-57-51",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_12-59-36",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_13-02-45",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_13-04-33",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_13-25-03",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_13-27-10",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_13-39-30",
+        "AB_paper_data_batch19_25dB_DACatten_noQ5/2026-04-26_13-41-18",
+
+        "AB_paper_data_batch20_25dB_DACatten_noQ5/2026-04-26_13-45-45",
+        "AB_paper_data_batch20_25dB_DACatten_noQ5/2026-04-26_20-58-39",
+
+        "AB_paper_data_batch21_25dB_DACatten_noQ5/2026-04-27_08-07-32",
+        "AB_paper_data_batch21_25dB_DACatten_noQ5/2026-04-27_11-41-29",
+        "AB_paper_data_batch21_25dB_DACatten_noQ5/2026-04-27_13-07-15"]
+elif coh_qtemp_ana_flags["run_coherence_section"] and run_num != 9:
+    raise ValueError("You must choose run_num = 9 to load coherence data. Otherwise, define a section for your run of interest.")
 
 ############################################################################### Qubit temperature calculations via rabi population measurements #####################################################
 if qtemp_method_flags["Qtemps_viaRPM"]:
@@ -1056,12 +1094,12 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             raise ValueError("Choose only one or set both to False: create_cached_qtemp_files or use_cached_qtemp_files.")
 
         if comb_analysis_flags["use_cached_qtemp_files"]:
-            cache_dir = "/home/acolonce/Documents/analysis/cached_processed_data"
+            cache_dir = f"/home/acolonce/Documents/analysis/cached_processed_data/run{run_num}"
             os.makedirs(cache_dir, exist_ok=True)
 
-            # Only needed when use_cached_files is True
-            fit_results_g_cache_path = f"{cache_dir}/run9_processed_ssf_fit_results_g_20260514_121236.pkl"
-            rpm_results_cache_path = f"{cache_dir}/run9_processed_all_files_Qtemp_results_RPMs_20260514_121236.pkl"
+            # Only needed when use_cached_files is True.
+            fit_results_g_cache_path = f"{cache_dir}/run{run_num}_processed_SSF_fit_results_g_20260519_113207.pkl"
+            rpm_results_cache_path = f"{cache_dir}/run{run_num}_processed_all_files_Qtemp_results_RPMs_20260519_113207.pkl"
             
             fit_results_g, all_files_Qtemp_results_RPMs = combined_studies.load_processed_ssf_rpm_inputs(
                 fit_results_g_cache_path,
@@ -1170,17 +1208,17 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                 ssf_ge_temps_by_run[run_num] = ssf_ge_temps
                 ssf_ge_temp_errs_by_run[run_num] = ssf_ge_temp_errs
 
-            # ============================================================
-            # Optionally create cached files after processing
-            # ============================================================
-            if comb_analysis_flags["create_cached_qtemp_files"] and not comb_analysis_flags["use_cached_qtemp_files"]:
-                ssf_cache_path, rpm_cache_path = combined_studies.save_processed_ssf_rpm_inputs(
-                    fit_results_g, all_files_Qtemp_results_RPMs, save_dir=cache_dir, tag=f"run{run_num}_processed")
+        # ============================================================
+        # Optionally create cached files after processing
+        # ============================================================
+        if comb_analysis_flags["create_cached_qtemp_files"] and not comb_analysis_flags["use_cached_qtemp_files"]:
+            ssf_cache_path, rpm_cache_path = combined_studies.save_processed_ssf_rpm_inputs(
+                fit_results_g, all_files_Qtemp_results_RPMs, save_dir=cache_dir, tag=f"run{run_num}_processed")
 
-                print("\nCopy these paths if you want to use the cached files later:")
-                print("fit_results_g_cache_path =", repr(ssf_cache_path))
-                print("rpm_results_cache_path =", repr(rpm_cache_path))
-            #----------------------------------------------------------------
+            print("\nCopy these paths if you want to use the cached files later:")
+            print("fit_results_g_cache_path =", repr(ssf_cache_path))
+            print("rpm_results_cache_path =", repr(rpm_cache_path))
+        #----------------------------------------------------------------
 
     if comb_analysis_flags["plot_ssf_log_curves"]:
         if not comb_analysis_flags["load_ssf"]:
@@ -1490,15 +1528,37 @@ t2r_errs_by_run = {}
 t2e_errs_by_run = {}
 qfreq_errs_by_run = {}
 
+# ------------ Initialize class for combined analysis ------------------
+combined_studies = combined_Qtemp_studies(figure_quality, tot_num_of_qubits)
+        
+# ========================================================================================
+# Simple cache options for processed SSF/RPM inputs
+# ========================================================================================
+if coh_qtemp_ana_flags["create_cached_qtemp_files"] and coh_qtemp_ana_flags["use_cached_qtemp_files"]:
+    raise ValueError("Choose only one or set both to False: create_cached_qtemp_files or use_cached_qtemp_files.")
+
+if coh_qtemp_ana_flags["use_cached_qtemp_files"]:
+    cache_dir = f"/home/acolonce/Documents/analysis/cached_processed_data/run{run_num}"
+    os.makedirs(cache_dir, exist_ok=True)
+
+    # Only needed when use_cached_files is True
+    fit_results_g_cache_path = f"{cache_dir}/run{run_num}_processed_SSF_fit_results_g_20260519_113207.pkl"
+    rpm_results_cache_path = f"{cache_dir}/run{run_num}_processed_all_files_Qtemp_results_RPMs_20260519_113207.pkl"
+
+    fit_results_g, all_files_Qtemp_results_RPMs = combined_studies.load_processed_ssf_rpm_inputs(
+        fit_results_g_cache_path,
+        rpm_results_cache_path)
+
+    # Makes sure processing sections are set to False if the user forgot
+    coh_qtemp_ana_flags["load_qtemps"] = False
+# ---------------------------------------------------------------------------------------
+        
 if coh_qtemp_ana_flags["load_qtemps"]:
     for run_num in run_num_list:
         # ---- always reset optional pre-SR variables each iteration ----
         base_dir2 = None
         filter_keywords2 = None
         target_dates_qtemps_RPM2 = None
-
-        process_shots_t1ge = False
-        per_pt_errs_t1 = False
 
         if run_num == 5:
             # ---------------- RPM (none) ----------------
@@ -1556,10 +1616,6 @@ if coh_qtemp_ana_flags["load_qtemps"]:
 
 
         elif run_num == 8:
-            # For coherence (T1) analysis:
-            process_shots_t1ge = True
-            per_pt_errs_t1 = True
-
             # ---------------- RPM ----------------
             Science_Qubits = [0, 1, 2, 3, 4, 5]
             base_dir = base_dir_run8
@@ -1589,9 +1645,6 @@ if coh_qtemp_ana_flags["load_qtemps"]:
 
         else:
             raise ValueError(f"Unsupported run_num={run_num}")
-
-        # ------------ Initialize class for combined qubit temps analysis ------------------
-        combined_studies = combined_Qtemp_studies(figure_quality, tot_num_of_qubits)
 
         # ---------------- pre-fill so dict shape is always stable ----------------
         rpm_temps_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
@@ -1697,16 +1750,26 @@ if coh_qtemp_ana_flags["load_qtemps"]:
             ssf_ge_temps_by_run[run_num] = ssf_ge_temps
             ssf_ge_temp_errs_by_run[run_num] = ssf_ge_temp_errs
 
+        # ============================================================
+        # Optionally create cached files after processing
+        # ============================================================
+        if coh_qtemp_ana_flags["create_cached_qtemp_files"] and not coh_qtemp_ana_flags["use_cached_qtemp_files"]:
+            ssf_cache_path, rpm_cache_path = combined_studies.save_processed_ssf_rpm_inputs(
+                fit_results_g, all_files_Qtemp_results_RPMs, save_dir=cache_dir, tag=f"run{run_num}_processed")
+
+            print("\nCopy these paths if you want to use the cached files later:")
+            print("fit_results_g_cache_path =", repr(ssf_cache_path))
+            print("rpm_results_cache_path =", repr(rpm_cache_path))
+        # ----------------------------------------------------------------
+
 if coh_qtemp_ana_flags["load_mcp1_temps"]: # update path
     mcp1_csv_path = "/data/QICK_data/run8/6transmon/round_robin/temperature_sweep_qubit_data/Mixing chamber stage-data-2025-11-25 09_46_33.csv"
-    combined_studies = combined_Qtemp_studies(figure_quality, tot_num_of_qubits)
     mcp_dates, mcp_temps, _ = combined_studies.load_mixing_chamber_csv(mcp1_csv_path, restrict_time=True,
                                 start_time=start_time, end_time=end_time)
     del combined_studies
 
-if coh_qtemp_ana_flags["load_coherence_res"]:
-    combined_studies = combined_Qtemp_studies(figure_quality, tot_num_of_qubits)
-    coherence_cache_dir = os.path.join(outerFolder_qtemps_plots, "processed_coherence_cache")
+if coh_qtemp_ana_flags["run_coherence_section"]:
+    coherence_cache_dir = "/home/acolonce/Documents/analysis/cached_processed_data/run9/"
     for run_number in run_num_list:
         (   date_times_res_spec,
             res_freqs,
@@ -1741,7 +1804,7 @@ if coh_qtemp_ana_flags["load_coherence_res"]:
             plots_path=plots_path,
             per_pt_errs_t1=per_pt_errs_t1,
             process_shots_t1ge=process_shots_t1ge)
-
+        
         # ---------------- Another option: store results per run for downstream plotting ----------------
         t1_vals_by_run[run_number] = t1_vals
         t1_errs_by_run[run_number] = t1_fit_err
@@ -1762,9 +1825,8 @@ if coh_qtemp_ana_flags["plot_qtemps_t1_ftemps_qfreq"]:
         raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
                          "This plotting section is only set up to process one run at a time at the moment.")
         # This section is set up to process multiple runs, but I have not updated this plotting function to handle more than one.
-    comb_plots_path = "/data/QICK_data/run8/6transmon/round_robin/temperature_sweep_qubit_data/analysis_plots/"
-    combined_studies = combined_Qtemp_studies(figure_quality, tot_num_of_qubits)
+    comb_plots_path = "/home/acolonce/Documents/analysis/combined_qtemps/qtemps_and_coherence/"
     combined_studies.plot_qtemps_and_coherence_res(comb_plots_path, all_qubit_temperatures_ssf_g=all_qubit_temps_g, all_qubit_timestamps_ssf_g=all_qubit_times_g,
-                                  all_files_Qtemp_results_RPMs=all_files_Qtemp_results_RPMs, fridge_temps=mcp_temps, fridge_dates=mcp_dates,
+                                  all_files_Qtemp_results_RPMs=all_files_Qtemp_results_RPMs, fridge_temps=None, fridge_dates=None,
                                   t1_vals=t1_vals, t1_dates=date_times_t1, qfreqs_vals=q_freqs, qfreqs_dates=date_times_q_spec,
                                   restrict_time_xaxis=restrict_time, start_time = start_time, end_time = end_time, plot_extra_event_lines=False)

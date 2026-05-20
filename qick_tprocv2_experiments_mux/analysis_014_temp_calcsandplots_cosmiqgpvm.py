@@ -17,6 +17,11 @@ sys.path.insert(0, os.path.abspath("/home/quietuser/Documents/GitHub/QICK_Qubit_
 from qicklab.analysis.qspec import AnaQSpec
 from qicklab.analysis.ssf import AnaSSF
 from Arianna_non_prebuilt_SSF_doublegauss_funcs import non_prebuilt_ssf_analysis_class
+from analysis_002_res_centers_vs_time_plots import ResonatorFreqVsTime
+from analysis_003_q_freqs_vs_time_plots import QubitFreqsVsTime
+from analysis_006_T1_vs_time_plots import T1VsTime
+from analysis_007_T2R_vs_time_plots import T2rVsTime
+from analysis_008_T2E_vs_time_plots import T2eVsTime
 from matplotlib.ticker import MaxNLocator
 from qicklab.datahandling.datafile_tools import find_h5_files
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
@@ -1870,7 +1875,7 @@ class SSFTempCalcAndPlots:
                 color=colors[q % len(colors)],
                 alpha=0.7,
                 markersize=5,
-                linestyle="-",
+                linestyle="None",
                 label=f"Q{q + 1}"
             )
 
@@ -3490,6 +3495,172 @@ class combined_Qtemp_studies:
         self.figure_quality = figure_quality
         self.number_of_qubits = number_of_qubits
 
+    def create_processed_coherence_inputs(
+            self,
+            coherence_cache_dir,
+            run_name,
+            date_times_res_spec,
+            res_freqs,
+            date_times_q_spec,
+            q_freqs,
+            qspec_fit_err,
+            date_times_t1,
+            t1_vals,
+            t1_fit_err,
+            date_times_t2r,
+            t2r_vals,
+            t2r_fit_err,
+            date_times_t2e,
+            t2e_vals,
+            t2e_fit_err,
+            I_per_pt_errs=None,
+            Q_per_pt_errs=None,
+    ):
+        """
+        Save processed coherence inputs for one run.
+
+        Each coherence metric is saved to a separate pickle file:
+            - resonator spectroscopy
+            - qubit spectroscopy
+            - T1
+            - T2 Ramsey
+            - T2 Echo
+
+        Parameters
+        ----------
+        coherence_cache_dir : str
+            Directory where processed coherence pickle files should be saved.
+
+        run_name : str
+            Name of the run. Used in the filename so each run gets separate cache files.
+
+        date_times_res_spec : list
+            Timestamps for resonator spectroscopy measurements.
+
+        res_freqs : list or dict
+            Resonator frequency values.
+
+        date_times_q_spec : list
+            Timestamps for qubit spectroscopy measurements.
+
+        q_freqs : list or dict
+            Qubit frequency values.
+
+        qspec_fit_err : list or dict
+            Qubit spectroscopy fit errors.
+
+        date_times_t1 : list
+            Timestamps for T1 measurements.
+
+        t1_vals : list or dict
+            T1 values.
+
+        t1_fit_err : list or dict
+            T1 fit errors.
+
+        date_times_t2r : list
+            Timestamps for T2 Ramsey measurements.
+
+        t2r_vals : list or dict
+            T2 Ramsey values.
+
+        t2r_fit_err : list or dict
+            T2 Ramsey fit errors.
+
+        date_times_t2e : list
+            Timestamps for T2 Echo measurements.
+
+        t2e_vals : list or dict
+            T2 Echo values.
+
+        t2e_fit_err : list or dict
+            T2 Echo fit errors.
+
+        I_per_pt_errs : list or dict, optional
+            Optional per-point I errors from T1 shot processing.
+
+        Q_per_pt_errs : list or dict, optional
+            Optional per-point Q errors from T1 shot processing.
+
+        Returns
+        -------
+        saved_paths : dict
+            Dictionary containing the saved pickle paths for each metric.
+        """
+
+        os.makedirs(coherence_cache_dir, exist_ok=True)
+
+        saved_paths = {
+            "res_spec": os.path.join(
+                coherence_cache_dir,
+                f"{run_name}_processed_res_spec.pkl"
+            ),
+            "qspec": os.path.join(
+                coherence_cache_dir,
+                f"{run_name}_processed_qspec.pkl"
+            ),
+            "t1": os.path.join(
+                coherence_cache_dir,
+                f"{run_name}_processed_t1.pkl"
+            ),
+            "t2r": os.path.join(
+                coherence_cache_dir,
+                f"{run_name}_processed_t2r.pkl"
+            ),
+            "t2e": os.path.join(
+                coherence_cache_dir,
+                f"{run_name}_processed_t2e.pkl"
+            ),
+        }
+
+        res_spec_data = {
+            "date_times_res_spec": date_times_res_spec,
+            "res_freqs": res_freqs,
+        }
+
+        qspec_data = {
+            "date_times_q_spec": date_times_q_spec,
+            "q_freqs": q_freqs,
+            "qspec_fit_err": qspec_fit_err,
+        }
+
+        t1_data = {
+            "date_times_t1": date_times_t1,
+            "t1_vals": t1_vals,
+            "t1_fit_err": t1_fit_err,
+            "I_per_pt_errs": I_per_pt_errs,
+            "Q_per_pt_errs": Q_per_pt_errs,
+        }
+
+        t2r_data = {
+            "date_times_t2r": date_times_t2r,
+            "t2r_vals": t2r_vals,
+            "t2r_fit_err": t2r_fit_err,
+        }
+
+        t2e_data = {
+            "date_times_t2e": date_times_t2e,
+            "t2e_vals": t2e_vals,
+            "t2e_fit_err": t2e_fit_err,
+        }
+
+        data_to_save = {
+            "res_spec": res_spec_data,
+            "qspec": qspec_data,
+            "t1": t1_data,
+            "t2r": t2r_data,
+            "t2e": t2e_data,
+        }
+
+        for metric, data in data_to_save.items():
+            with open(saved_paths[metric], "wb") as f:
+                pickle.dump(data, f)
+
+            print(f"Saved processed {metric} results to:")
+            print(saved_paths[metric])
+
+        return saved_paths
+    
     def load_processed_coherence_inputs(
             self,
             res_spec_path,
@@ -3640,156 +3811,6 @@ class combined_Qtemp_studies:
             Q_per_pt_errs, # T1
         )
 
-    def load_processed_coherence_inputs(
-            self,
-            res_spec_path,
-            qspec_path,
-            t1_path,
-            t2r_path,
-            t2e_path,
-    ):
-        """
-        Load previously saved processed coherence inputs.
-
-        Parameters
-        ----------
-        res_spec_path : str
-            Path to the saved resonator spectroscopy pickle file.
-
-        qspec_path : str
-            Path to the saved qubit spectroscopy pickle file.
-
-        t1_path : str
-            Path to the saved T1 pickle file.
-
-        t2r_path : str
-            Path to the saved T2 Ramsey pickle file.
-
-        t2e_path : str
-            Path to the saved T2 Echo pickle file.
-
-        Returns
-        -------
-        date_times_res_spec : list
-            Timestamps for resonator spectroscopy measurements.
-
-        res_freqs : list or dict
-            Resonator frequency values.
-
-        date_times_q_spec : list
-            Timestamps for qubit spectroscopy measurements.
-
-        q_freqs : list or dict
-            Qubit frequency values.
-
-        qspec_fit_err : list or dict
-            Qubit spectroscopy fit errors.
-
-        date_times_t1 : list
-            Timestamps for T1 measurements.
-
-        t1_vals : list or dict
-            T1 values.
-
-        t1_fit_err : list or dict
-            T1 fit errors.
-
-        date_times_t2r : list
-            Timestamps for T2 Ramsey measurements.
-
-        t2r_vals : list or dict
-            T2 Ramsey values.
-
-        t2r_fit_err : list or dict
-            T2 Ramsey fit errors.
-
-        date_times_t2e : list
-            Timestamps for T2 Echo measurements.
-
-        t2e_vals : list or dict
-            T2 Echo values.
-
-        t2e_fit_err : list or dict
-            T2 Echo fit errors.
-
-        I_per_pt_errs : list or dict or None
-            Optional per-point I errors from T1 shot processing.
-
-        Q_per_pt_errs : list or dict or None
-            Optional per-point Q errors from T1 shot processing.
-        """
-
-        with open(res_spec_path, "rb") as f:
-            res_spec_data = pickle.load(f)
-
-        with open(qspec_path, "rb") as f:
-            qspec_data = pickle.load(f)
-
-        with open(t1_path, "rb") as f:
-            t1_data = pickle.load(f)
-
-        with open(t2r_path, "rb") as f:
-            t2r_data = pickle.load(f)
-
-        with open(t2e_path, "rb") as f:
-            t2e_data = pickle.load(f)
-
-        print("Loaded processed resonator spectroscopy results from:")
-        print(res_spec_path)
-
-        print("Loaded processed qubit spectroscopy results from:")
-        print(qspec_path)
-
-        print("Loaded processed T1 results from:")
-        print(t1_path)
-
-        print("Loaded processed T2 Ramsey results from:")
-        print(t2r_path)
-
-        print("Loaded processed T2 Echo results from:")
-        print(t2e_path)
-
-        date_times_res_spec = res_spec_data["date_times_res_spec"]
-        res_freqs = res_spec_data["res_freqs"]
-
-        date_times_q_spec = qspec_data["date_times_q_spec"]
-        q_freqs = qspec_data["q_freqs"]
-        qspec_fit_err = qspec_data["qspec_fit_err"]
-
-        date_times_t1 = t1_data["date_times_t1"]
-        t1_vals = t1_data["t1_vals"]
-        t1_fit_err = t1_data["t1_fit_err"]
-
-        I_per_pt_errs = t1_data.get("I_per_pt_errs", None)
-        Q_per_pt_errs = t1_data.get("Q_per_pt_errs", None)
-
-        date_times_t2r = t2r_data["date_times_t2r"]
-        t2r_vals = t2r_data["t2r_vals"]
-        t2r_fit_err = t2r_data["t2r_fit_err"]
-
-        date_times_t2e = t2e_data["date_times_t2e"]
-        t2e_vals = t2e_data["t2e_vals"]
-        t2e_fit_err = t2e_data["t2e_fit_err"]
-
-        return (
-            date_times_res_spec,
-            res_freqs,
-            date_times_q_spec,
-            q_freqs,
-            qspec_fit_err,
-            date_times_t1,
-            t1_vals,
-            t1_fit_err,
-            date_times_t2r,
-            t2r_vals,
-            t2r_fit_err,
-            date_times_t2e,
-            t2e_vals,
-            t2e_fit_err,
-            I_per_pt_errs,
-            Q_per_pt_errs,
-        )
-
     def get_or_create_processed_coherence_inputs(
             self,
             run_number,
@@ -3824,10 +3845,10 @@ class combined_Qtemp_studies:
         date_times_t2e, t2e_vals, t2e_fit_err,
         I_per_pt_errs, Q_per_pt_errs
         """
-
+        #coherence_cache_dir = os.path.join(coherence_cache_dir,f"run{run_number}")
         os.makedirs(coherence_cache_dir, exist_ok=True)
 
-        cache_prefix = f"run{run_number}_{run_name}"
+        cache_prefix = f"run{run_number}"
 
         res_spec_cache_path = os.path.join(
             coherence_cache_dir,
@@ -3865,141 +3886,141 @@ class combined_Qtemp_studies:
                 t2r_path=t2r_cache_path,
                 t2e_path=t2e_cache_path,
             )
-
-        # ------------------------------------------------------------
-        # Option 2: Process coherence data normally
-        # ------------------------------------------------------------
-        res_spec_vs_time = ResonatorFreqVsTime(
-            figure_quality,
-            final_figure_quality,
-            tot_num_of_qubits,
-            top_folder_dates,
-            save_figs,
-            fit_saved,
-            signal,
-            run_name,
-            FRIDGE
-        )
-
-        date_times_res_spec, res_freqs = res_spec_vs_time.run()
-
-        q_spec_vs_time = QubitFreqsVsTime(
-            data_path,
-            plots_path,
-            figure_quality,
-            final_figure_quality,
-            tot_num_of_qubits,
-            top_folder_dates,
-            save_figs,
-            fit_saved,
-            signal,
-            run_name,
-            FRIDGE
-        )
-
-        date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(
-            exp_extension="_ge",
-            use_png_timestamps=False
-        )
-
-        t1_vs_time = T1VsTime(
-            plots_path,
-            figure_quality,
-            final_figure_quality,
-            tot_num_of_qubits,
-            top_folder_dates,
-            save_figs,
-            fit_saved,
-            signal,
-            run_name,
-            FRIDGE,
-            run_number,
-            per_pt_errs=per_pt_errs_t1
-        )
-
-        I_per_pt_errs = None
-        Q_per_pt_errs = None
-
-        if per_pt_errs_t1 and process_shots_t1ge:
-            (
-                date_times_t1,
-                t1_vals,
-                t1_fit_err,
-                I_per_pt_errs,
-                Q_per_pt_errs,
-            ) = t1_vs_time.run(
-                return_errs=True,
-                exp_extension="_ge",
-                process_shots=process_shots_t1ge
-            )
         else:
-            date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(
+            # ------------------------------------------------------------
+            # Option 2: Process coherence data normally
+            # ------------------------------------------------------------
+            res_spec_vs_time = ResonatorFreqVsTime(
+                figure_quality,
+                final_figure_quality,
+                tot_num_of_qubits,
+                top_folder_dates,
+                save_figs,
+                fit_saved,
+                signal,
+                run_name,
+                FRIDGE
+            )
+
+            date_times_res_spec, res_freqs = res_spec_vs_time.run()
+
+            q_spec_vs_time = QubitFreqsVsTime(
+                data_path,
+                plots_path,
+                figure_quality,
+                final_figure_quality,
+                tot_num_of_qubits,
+                top_folder_dates,
+                save_figs,
+                fit_saved,
+                signal,
+                run_name,
+                FRIDGE
+            )
+
+            date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(
+                exp_extension="_ge",
+                use_png_timestamps=False
+            )
+
+            t1_vs_time = T1VsTime(
+                plots_path,
+                figure_quality,
+                final_figure_quality,
+                tot_num_of_qubits,
+                top_folder_dates,
+                save_figs,
+                fit_saved,
+                signal,
+                run_name,
+                FRIDGE,
+                run_number,
+                per_pt_errs=per_pt_errs_t1
+            )
+
+            I_per_pt_errs = None
+            Q_per_pt_errs = None
+
+            if per_pt_errs_t1 and process_shots_t1ge:
+                (
+                    date_times_t1,
+                    t1_vals,
+                    t1_fit_err,
+                    I_per_pt_errs,
+                    Q_per_pt_errs,
+                ) = t1_vs_time.run(
+                    return_errs=True,
+                    exp_extension="_ge",
+                    process_shots=process_shots_t1ge
+                )
+            else:
+                date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(
+                    return_errs=True,
+                    exp_extension="_ge"
+                )
+
+            t2r_vs_time = T2rVsTime(
+                plots_path,
+                run_number,
+                figure_quality,
+                final_figure_quality,
+                tot_num_of_qubits,
+                top_folder_dates,
+                save_figs,
+                fit_saved,
+                signal,
+                run_name,
+                FRIDGE
+            )
+
+            date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(
                 return_errs=True,
-                exp_extension="_ge"
+                t1_vals=t1_vals
             )
 
-        t2r_vs_time = T2rVsTime(
-            plots_path,
-            run_number,
-            figure_quality,
-            final_figure_quality,
-            tot_num_of_qubits,
-            top_folder_dates,
-            save_figs,
-            fit_saved,
-            signal,
-            run_name,
-            FRIDGE
-        )
-
-        date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(
-            return_errs=True,
-            t1_vals=t1_vals
-        )
-
-        t2e_vs_time = T2eVsTime(
-            plots_path,
-            run_number,
-            figure_quality,
-            final_figure_quality,
-            tot_num_of_qubits,
-            top_folder_dates,
-            save_figs,
-            fit_saved,
-            signal,
-            run_name,
-            FRIDGE
-        )
-
-        date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(
-            return_errs=True,
-            t1_vals=t1_vals
-        )
-
-        # ------------------------------------------------------------
-        # Optionally save processed coherence files
-        # ------------------------------------------------------------
-        if coh_qtemp_ana_flags["save_cached_coherence_files"]:
-            self.save_processed_coherence_inputs(
-                coherence_cache_dir=coherence_cache_dir,
-                run_name=cache_prefix,
-                date_times_res_spec=date_times_res_spec,
-                res_freqs=res_freqs,
-                date_times_q_spec=date_times_q_spec,
-                q_freqs=q_freqs,
-                qspec_fit_err=qspec_fit_err,
-                date_times_t1=date_times_t1,
-                t1_vals=t1_vals,
-                t1_fit_err=t1_fit_err,
-                date_times_t2r=date_times_t2r,
-                t2r_vals=t2r_vals,
-                t2r_fit_err=t2r_fit_err,
-                date_times_t2e=date_times_t2e,
-                t2e_vals=t2e_vals,
-                t2e_fit_err=t2e_fit_err,
-                I_per_pt_errs=I_per_pt_errs,
-                Q_per_pt_errs=Q_per_pt_errs,
+            t2e_vs_time = T2eVsTime(
+                plots_path,
+                run_number,
+                figure_quality,
+                final_figure_quality,
+                tot_num_of_qubits,
+                top_folder_dates,
+                save_figs,
+                fit_saved,
+                signal,
+                run_name,
+                FRIDGE
             )
+
+            date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(
+                return_errs=True,
+                t1_vals=t1_vals
+            )
+
+            # ------------------------------------------------------------
+            # Optionally save processed coherence files
+            # ------------------------------------------------------------
+            if coh_qtemp_ana_flags["create_cached_coherence_files"]:
+                self.create_processed_coherence_inputs(
+                    coherence_cache_dir=coherence_cache_dir,
+                    run_name=cache_prefix,
+                    date_times_res_spec=date_times_res_spec,
+                    res_freqs=res_freqs,
+                    date_times_q_spec=date_times_q_spec,
+                    q_freqs=q_freqs,
+                    qspec_fit_err=qspec_fit_err,
+                    date_times_t1=date_times_t1,
+                    t1_vals=t1_vals,
+                    t1_fit_err=t1_fit_err,
+                    date_times_t2r=date_times_t2r,
+                    t2r_vals=t2r_vals,
+                    t2r_fit_err=t2r_fit_err,
+                    date_times_t2e=date_times_t2e,
+                    t2e_vals=t2e_vals,
+                    t2e_fit_err=t2e_fit_err,
+                    I_per_pt_errs=I_per_pt_errs,
+                    Q_per_pt_errs=Q_per_pt_errs,
+                )
 
         return (
             date_times_res_spec,
@@ -4019,7 +4040,7 @@ class combined_Qtemp_studies:
             I_per_pt_errs,
             Q_per_pt_errs,
         )
-    
+
     def save_processed_ssf_rpm_inputs(self,
             fit_results_g,
             all_files_Qtemp_results_RPMs,
@@ -6367,7 +6388,7 @@ class combined_Qtemp_studies:
                     [item["z_max"], item["z_max"]],
                     color=item["color"],
                     linewidth=2.5,
-                    linestyle="-",
+                    linestyle="None",
                     alpha=0.60,
                     zorder=100)
 
@@ -6526,7 +6547,7 @@ class combined_Qtemp_studies:
                         [z_max, z_max],
                         color=q_color,
                         linewidth=2.0,
-                        linestyle="-",
+                        linestyle="None",
                         alpha=0.60,
                         zorder=100)
 
@@ -7242,7 +7263,7 @@ class combined_Qtemp_studies:
                                 pe_fit_line,
                                 ssf_fit_line,
                                 color=q_color,
-                                linestyle="-",
+                                linestyle="None",
                                 linewidth=2.0,
                                 alpha=0.9,
                                 label=(
@@ -7445,7 +7466,7 @@ class combined_Qtemp_studies:
                                     pe_fit_line,
                                     ssf_fit_line,
                                     color="cyan",
-                                    linestyle="-",
+                                    linestyle="None",
                                     linewidth=4.0,
                                     alpha=1.0,
                                     zorder = 1000,
@@ -8721,7 +8742,7 @@ class combined_Qtemp_studies:
         paramvstime_dir = os.path.join(out_dir, "params_vs_time")
         os.makedirs(paramvstime_dir, exist_ok=True)
         stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        out_path = os.path.join(paramvstime_dir, f"Qtemps_Coherence_allQs_{stamp}.png")
+        out_path = os.path.join(paramvstime_dir, f"Qtemps_Coherence_allQs_{stamp}.pdf")
         fig.savefig(out_path, dpi=self.figure_quality)
         plt.close(fig)
         print("Saved combined methods plot: ", out_path)
