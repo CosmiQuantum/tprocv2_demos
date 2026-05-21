@@ -4105,40 +4105,55 @@ class combined_Qtemp_studies:
             "all_files_Qtemp_results_RPMs": rpm_path,
         }
 
-    def load_processed_ssf_rpm_inputs(self,
-            fit_results_g_path,
-            all_files_Qtemp_results_RPMs_path):
+    def load_processed_ssf_rpm_inputs(
+            self,
+            fit_results_g_path=None,
+            all_files_Qtemp_results_RPMs_path=None):
         """
         Load previously saved processed SSF and RPM inputs.
 
+        This version allows either file to be missing. If a path is None,
+        empty, or does not exist, that dataset is returned as an empty dict.
+
         Parameters
         ----------
-        fit_results_g_path : str
+        fit_results_g_path : str or None
             Path to the saved fit_results_g pickle file.
 
-        all_files_Qtemp_results_RPMs_path : str
+        all_files_Qtemp_results_RPMs_path : str or None
             Path to the saved RPM results pickle file.
 
         Returns
         -------
         fit_results_g : dict
-            Loaded SSF fit results.
+            Loaded SSF fit results, or {} if unavailable.
 
-        all_files_Qtemp_results_RPMs : list
-            Loaded RPM results.
+        all_files_Qtemp_results_RPMs : dict or list
+            Loaded RPM results, or {} if unavailable.
         """
 
-        with open(fit_results_g_path, "rb") as f:
-            fit_results_g = pickle.load(f)
+        fit_results_g = {}
+        all_files_Qtemp_results_RPMs = {}
 
-        with open(all_files_Qtemp_results_RPMs_path, "rb") as f:
-            all_files_Qtemp_results_RPMs = pickle.load(f)
+        if fit_results_g_path and os.path.isfile(fit_results_g_path):
+            with open(fit_results_g_path, "rb") as f:
+                fit_results_g = pickle.load(f)
 
-        print("Loaded processed SSF fit results from:")
-        print(fit_results_g_path)
+            print("Loaded processed SSF fit results from:")
+            print(fit_results_g_path)
+        else:
+            print("No processed SSF fit results loaded.")
+            print(f"SSF path was: {fit_results_g_path}")
 
-        print("Loaded processed RPM results from:")
-        print(all_files_Qtemp_results_RPMs_path)
+        if all_files_Qtemp_results_RPMs_path and os.path.isfile(all_files_Qtemp_results_RPMs_path):
+            with open(all_files_Qtemp_results_RPMs_path, "rb") as f:
+                all_files_Qtemp_results_RPMs = pickle.load(f)
+
+            print("Loaded processed RPM results from:")
+            print(all_files_Qtemp_results_RPMs_path)
+        else:
+            print("No processed RPM results loaded.")
+            print(f"RPM path was: {all_files_Qtemp_results_RPMs_path}")
 
         return fit_results_g, all_files_Qtemp_results_RPMs
 
@@ -8457,7 +8472,7 @@ class combined_Qtemp_studies:
                                       t1_vals = None, t1_dates = None, qfreqs_vals = None, qfreqs_dates = None, resfreqs_vals=None,
                                         resfreqs_dates=None, t2r_vals=None, t2r_dates=None, t2e_vals=None, t2e_dates=None,
                                       restrict_time_xaxis=False, start_time = None, end_time = None, plot_extra_event_lines=False,
-                                      rad_events_plot_lines=False):
+                                      rad_events_plot_lines=False, run_num =""):
         """
         One subplot per qubit.
         Plots (only if provided):
@@ -8474,7 +8489,7 @@ class combined_Qtemp_studies:
         num_qubits = self.number_of_qubits
         qubits_to_plot = list(range(num_qubits))
         nrows = len(qubits_to_plot)
-        small_fs = 8  # font size for y axes labels and ticks
+        small_fs = 14  # font size for y axes labels and ticks
 
         # ------------------------------------------------------------------
         # RPM Qtemps (per-qubit dicts)
@@ -8651,9 +8666,8 @@ class combined_Qtemp_studies:
         # ------------------------------------------------------------------
         # Make figure: 1 row per qubit
         # ------------------------------------------------------------------
-        fig, axes = plt.subplots(
-            nrows, 1, figsize=(12, 5 * nrows), sharex=True, constrained_layout=True
-        )
+        fig, axes = plt.subplots(nrows, 1, figsize=(27, 8 * nrows), sharex=True, constrained_layout=True)
+
         if nrows == 1:
             axes = [axes]
 
@@ -8661,7 +8675,7 @@ class combined_Qtemp_studies:
 
         # Qtemp methods
         methods = [
-            ("RPM Qtemps", times_RPM, temps_RPM, "orange"),
+            ("RPM Qtemps", times_RPM, temps_RPM, "black"),
             ("SSF g-only Qtemps", times_g, temps_g, "blue"),
         ]
 
@@ -8676,21 +8690,22 @@ class combined_Qtemp_studies:
                     ax.scatter(
                         ts,
                         ys,
-                        s=10,
+                        s=15,
                         alpha=0.85,
                         edgecolors="k",
                         color=color,
                         label=label,
                     )
 
-            ax.set_title(f"Q{q + 1}", loc="left", fontsize=13, fontweight="bold")
-            # ax.set_ylabel("Qtemp & MCP1 temps (mK)", fontsize=small_fs)
-            ax.set_ylabel("Qtemp (mK)", fontsize=small_fs)
+            ax.set_title(f"Q{q + 1}", loc="left", fontsize=14, fontweight="bold")
+            ax.set_ylabel("Qubit Effective Temperature (mK)", fontsize=small_fs)
             ax.grid(False)
 
             ax.xaxis.set_major_locator(mdates.AutoDateLocator())
             ax.xaxis.set_major_formatter(date_fmt)
             ax.tick_params(axis="x", rotation=45, labelsize=small_fs)
+            ax.tick_params(axis="x", labelbottom=True)
+            ax.set_xlabel("Time", fontsize=small_fs)
             ax.tick_params(axis="y", labelsize=small_fs)
             # left_ymin, left_ymax = ax.get_ylim() # get y limits to use them for fridge y axis too
             if restrict_time_xaxis:
@@ -8735,7 +8750,7 @@ class combined_Qtemp_studies:
                 h2, l2 = fridge_ax.get_legend_handles_labels()
                 handles += h2
                 labels += l2
-                right_axes_offset = 1
+                right_axes_offset = 1.0
 
             # T1 (µs) on second right axis (per qubit)
             if t1_times[q] and t1_values[q]:
@@ -8745,7 +8760,7 @@ class combined_Qtemp_studies:
                     t1_times[q],
                     t1_values[q],
                     marker="^",
-                    markersize=3,
+                    markersize=5,
                     linestyle="None",
                     color="red",
                     alpha=0.8,
@@ -8761,12 +8776,12 @@ class combined_Qtemp_studies:
             # T2 Ramsey (µs) on next right axis (per qubit)
             if t2r_times[q] and t2r_values[q]:
                 t2r_ax = ax.twinx()
-                t2r_ax.spines["right"].set_position(("axes", 1.0 + 0.08 * right_axes_offset))
+                t2r_ax.spines["right"].set_position(("axes", 1.0 + 0.05 * right_axes_offset))
                 t2r_ax.plot(
                     t2r_times[q],
                     t2r_values[q],
                     marker="v",
-                    markersize=3,
+                    markersize=5,
                     linestyle="None",
                     color="orange",
                     alpha=0.8,
@@ -8782,12 +8797,12 @@ class combined_Qtemp_studies:
             # T2 Echo (µs) on next right axis (per qubit)
             if t2e_times[q] and t2e_values[q]:
                 t2e_ax = ax.twinx()
-                t2e_ax.spines["right"].set_position(("axes", 1.0 + 0.08 * right_axes_offset))
+                t2e_ax.spines["right"].set_position(("axes", 1.0 + 0.05 * right_axes_offset))
                 t2e_ax.plot(
                     t2e_times[q],
                     t2e_values[q],
                     marker="D",
-                    markersize=3,
+                    markersize=5,
                     linestyle="None",
                     color="green",
                     alpha=0.8,
@@ -8803,12 +8818,12 @@ class combined_Qtemp_studies:
             # Qfreq (MHz) on third right axis (per qubit)
             if qfreq_times[q] and qfreq_values[q]:
                 qf_ax = ax.twinx()
-                qf_ax.spines["right"].set_position(("axes", 1.0 + 0.079 * right_axes_offset))
+                qf_ax.spines["right"].set_position(("axes", 1.0 + 0.05 * right_axes_offset))
                 qf_ax.plot(
                     qfreq_times[q],
                     qfreq_values[q],
                     marker="s",
-                    markersize=3,
+                    markersize=5,
                     linestyle="None",
                     color="purple",
                     alpha=0.8,
@@ -8826,16 +8841,22 @@ class combined_Qtemp_studies:
             # Resonator freq (MHz) on next right axis (per qubit)
             if resfreq_times[q] and resfreq_values[q]:
                 rf_ax = ax.twinx()
-                rf_ax.spines["right"].set_position(("axes", 1.0 + 0.086 * right_axes_offset))
+
+                # Keep resonator data behind the legend
+                rf_ax.set_zorder(0)
+                ax.set_zorder(1)
+                ax.patch.set_visible(False)
+
+                rf_ax.spines["right"].set_position(("axes", 1.0 + 0.053 * right_axes_offset))
                 rf_ax.plot(
                     resfreq_times[q],
                     resfreq_values[q],
                     marker="o",
-                    markersize=3,
+                    markersize=5,
                     linestyle="None",
                     color="blue",
                     alpha=0.8,
-                    label="Res freq (MHz)",
+                    label="Res freq (MHz)"
                 )
                 rf_ax.set_ylabel("Res freq (MHz)", color="blue", fontsize=small_fs)
                 rf_ax.tick_params(axis="y", labelcolor="blue", labelsize=small_fs)
@@ -8864,10 +8885,12 @@ class combined_Qtemp_studies:
                     handles,
                     labels,
                     loc="upper left",
-                    fontsize=8,
+                    fontsize=10,
                     frameon=True,
-                    fancybox=False,
+                    fancybox=False
                 )
+                # Force legend to be drawn on top of the data
+                leg.set_zorder(10000000)
 
                 frame = leg.get_frame()
                 frame.set_facecolor("white")
@@ -8875,14 +8898,14 @@ class combined_Qtemp_studies:
                 frame.set_edgecolor("black")
                 frame.set_linewidth(0.8)
 
-        axes[-1].set_xlabel("Time")
-        fig.suptitle("Qtemps, Fridge, T1, T2R, T2E, Qfreq, and Res Freq vs Time", fontsize=15)
+        #axes[-1].set_xlabel("Time", fontsize = small_fs) if u only want it under the last subplot
+        fig.suptitle("Qtemps, Fridge, T1, T2R, T2E, Qfreq, and Res Freq vs Time", fontsize=18)
 
         # Save
         paramvstime_dir = os.path.join(out_dir, "params_vs_time")
         os.makedirs(paramvstime_dir, exist_ok=True)
         stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        out_path = os.path.join(paramvstime_dir, f"Qtemps_Coherence_allQs_{stamp}.pdf")
+        out_path = os.path.join(paramvstime_dir, f"run{run_num}_Qtemps_Coherence_allQs_{stamp}.pdf")
         fig.savefig(out_path, facecolor="white")
         plt.close(fig)
         print("Saved combined methods plot: ", out_path)
