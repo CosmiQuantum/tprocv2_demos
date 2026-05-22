@@ -1700,10 +1700,10 @@ t2e_vals = None
 Pe_dist_err_dict = None
 use_png_timestamps = False
 
-restrict_time = False
-start_time = None # datetime.datetime(2025, 11, 18, 0, 0)
-end_time = None # datetime.datetime(2025, 11, 21, 12, 0)
-run_num_list = [4]
+restrict_time = True
+start_time = datetime.datetime(2025, 10, 20, 0, 0)
+end_time = datetime.datetime(2025, 10, 24, 0, 0)
+run_num_list = [8]
 
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
@@ -2054,17 +2054,17 @@ if coh_qtemp_ana_flags["plot_qtemps_t1_ftemps_qfreq"]:
 
     combined_studies.plot_qtemps_and_coherence_res(
         comb_plots_path,
-        all_qubit_temperatures_ssf_g=all_qubit_temps_g,
-        all_qubit_timestamps_ssf_g=all_qubit_times_g,
-        all_files_Qtemp_results_RPMs=all_files_Qtemp_results_RPMs,
+        # all_qubit_temperatures_ssf_g=all_qubit_temps_g,
+        # all_qubit_timestamps_ssf_g=all_qubit_times_g,
+        all_files_Qtemp_results_RPMs= all_files_Qtemp_results_RPMs,
         fridge_temps=mcp_temps,
         fridge_dates=mcp_dates,
         t1_vals=t1_vals,
         t1_dates=date_times_t1,
         qfreqs_vals=q_freqs,
         qfreqs_dates=date_times_q_spec,
-        resfreqs_vals=res_freqs,
-        resfreqs_dates=date_times_res_spec,
+        resfreqs_vals= res_freqs,
+        resfreqs_dates= date_times_res_spec,
         t2r_vals=t2r_vals,
         t2r_dates=date_times_t2r,
         t2e_vals=t2e_vals,

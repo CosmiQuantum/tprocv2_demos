@@ -1833,6 +1833,7 @@ class SSFTempCalcAndPlots:
 
         fig, ax = plt.subplots(figsize=(15, 10))
         date_fmt = DateFormatter('%m-%d-%H')
+        #date_fmt = mdates.DateFormatter("%Y-%m-%d %H:%M:%S")
 
         if not isinstance(fit_results, dict):
             raise TypeError("fit_results must be a dictionary keyed by qubit index.")
@@ -8547,8 +8548,10 @@ class combined_Qtemp_studies:
                 q_vals = t1_vals[q]
                 if not q_dates or not q_vals:
                     continue
-                t1_times[q] = [datetime.datetime.strptime(d, time_fmt) for d in q_dates]
-                t1_values[q] = q_vals
+                q_times = [datetime.datetime.strptime(d, time_fmt) for d in q_dates]
+                order = np.argsort(q_times)
+                t1_times[q] = list(np.array(q_times)[order])
+                t1_values[q] = list(np.array(q_vals)[order])
 
         # ------------------------------------------------------------------
         # Qubit frequencies per qubit (2D lists, MHz)
@@ -8558,6 +8561,7 @@ class combined_Qtemp_studies:
 
         if qfreqs_vals is not None and qfreqs_dates is not None:
             time_fmt = "%Y-%m-%d %H:%M:%S"
+
             for q in qubits_to_plot:
                 if q >= len(qfreqs_dates) or q >= len(qfreqs_vals):
                     continue
@@ -8565,8 +8569,10 @@ class combined_Qtemp_studies:
                 q_vals = qfreqs_vals[q]
                 if not q_dates or not q_vals:
                     continue
-                qfreq_times[q] = [datetime.datetime.strptime(d, time_fmt) for d in q_dates]
-                qfreq_values[q] = q_vals
+                q_times = [datetime.datetime.strptime(d, time_fmt) for d in q_dates]
+                order = np.argsort(q_times)
+                qfreq_times[q] = list(np.array(q_times)[order])
+                qfreq_values[q] = list(np.array(q_vals)[order])
 
         # ------------------------------------------------------------------
         # Resonator frequencies per qubit (2D lists, MHz)
@@ -8583,8 +8589,10 @@ class combined_Qtemp_studies:
                 q_vals = resfreqs_vals[q]
                 if not q_dates or not q_vals:
                     continue
-                resfreq_times[q] = [datetime.datetime.strptime(d, time_fmt) for d in q_dates]
-                resfreq_values[q] = q_vals
+                q_times = [datetime.datetime.strptime(d, time_fmt) for d in q_dates]
+                order = np.argsort(q_times)
+                resfreq_times[q] = list(np.array(q_times)[order])
+                resfreq_values[q] = list(np.array(q_vals)[order])
 
         # ------------------------------------------------------------------
         # T2 Ramsey per qubit (2D lists: t2r_dates[q] -> list[str], t2r_vals[q] -> list[float])
@@ -8601,8 +8609,10 @@ class combined_Qtemp_studies:
                 q_vals = t2r_vals[q]
                 if not q_dates or not q_vals:
                     continue
-                t2r_times[q] = [datetime.datetime.strptime(d, time_fmt) for d in q_dates]
-                t2r_values[q] = q_vals
+                q_times = [datetime.datetime.strptime(d, time_fmt) for d in q_dates]
+                order = np.argsort(q_times)
+                t2r_times[q] = list(np.array(q_times)[order])
+                t2r_values[q] = list(np.array(q_vals)[order])
 
         # ------------------------------------------------------------------
         # T2 Echo per qubit (2D lists: t2e_dates[q] -> list[str], t2e_vals[q] -> list[float])
@@ -8612,6 +8622,7 @@ class combined_Qtemp_studies:
 
         if t2e_vals is not None and t2e_dates is not None:
             time_fmt = "%Y-%m-%d %H:%M:%S"
+
             for q in qubits_to_plot:
                 if q >= len(t2e_dates) or q >= len(t2e_vals):
                     continue
@@ -8619,8 +8630,10 @@ class combined_Qtemp_studies:
                 q_vals = t2e_vals[q]
                 if not q_dates or not q_vals:
                     continue
-                t2e_times[q] = [datetime.datetime.strptime(d, time_fmt) for d in q_dates]
-                t2e_values[q] = q_vals
+                q_times = [datetime.datetime.strptime(d, time_fmt) for d in q_dates]
+                order = np.argsort(q_times)
+                t2e_times[q] = list(np.array(q_times)[order])
+                t2e_values[q] = list(np.array(q_vals)[order])
 
         # ------------------------------------------------------------------
         # Decide which qubits actually have any data
@@ -8667,11 +8680,13 @@ class combined_Qtemp_studies:
         # Make figure: 1 row per qubit
         # ------------------------------------------------------------------
         fig, axes = plt.subplots(nrows, 1, figsize=(27, 8 * nrows), sharex=True, constrained_layout=True)
+        ln_style = "-"
 
         if nrows == 1:
             axes = [axes]
 
-        date_fmt = DateFormatter("%m-%d-%H")
+        #date_fmt = DateFormatter("%m-%d-%H")
+        date_fmt = mdates.DateFormatter("%Y-%m-%d %H:%M:%S")
 
         # Qtemp methods
         methods = [
@@ -8686,14 +8701,25 @@ class combined_Qtemp_studies:
             for label, tdict, ydict, color in methods:
                 ts = tdict.get(q, []) if isinstance(tdict, dict) else []
                 ys = ydict.get(q, []) if isinstance(ydict, dict) else []
-                if ts and ys:
-                    ax.scatter(
+
+                # Sort by timestamp so the connecting line follows time order
+                order = np.argsort(ts)
+
+                ts = np.array(ts)[order]
+                ys = np.array(ys)[order]
+
+                if len(ts) > 0 and len(ys) > 0:
+                    ax.plot(
                         ts,
                         ys,
-                        s=15,
-                        alpha=0.85,
-                        edgecolors="k",
+                        linestyle=ln_style,
+                        linewidth=1.2,
+                        marker="o",  # default scatter-like marker
+                        markersize=5,
+                        markeredgecolor="k",
+                        markerfacecolor=color,
                         color=color,
+                        alpha=0.85,
                         label=label,
                     )
 
@@ -8701,7 +8727,9 @@ class combined_Qtemp_studies:
             ax.set_ylabel("Qubit Effective Temperature (mK)", fontsize=small_fs)
             ax.grid(False)
 
-            ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+            #ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+            locator = mdates.AutoDateLocator(minticks=8, maxticks=12)
+            ax.xaxis.set_major_locator(locator)
             ax.xaxis.set_major_formatter(date_fmt)
             ax.tick_params(axis="x", rotation=45, labelsize=small_fs)
             ax.tick_params(axis="x", labelbottom=True)
@@ -8761,7 +8789,7 @@ class combined_Qtemp_studies:
                     t1_values[q],
                     marker="^",
                     markersize=5,
-                    linestyle="None",
+                    linestyle=ln_style,
                     color="red",
                     alpha=0.8,
                     label="T1 (µs)",
@@ -8782,7 +8810,7 @@ class combined_Qtemp_studies:
                     t2r_values[q],
                     marker="v",
                     markersize=5,
-                    linestyle="None",
+                    linestyle=ln_style,
                     color="orange",
                     alpha=0.8,
                     label="T2R (µs)",
@@ -8803,7 +8831,7 @@ class combined_Qtemp_studies:
                     t2e_values[q],
                     marker="D",
                     markersize=5,
-                    linestyle="None",
+                    linestyle=ln_style,
                     color="green",
                     alpha=0.8,
                     label="T2E (µs)",
@@ -8824,7 +8852,7 @@ class combined_Qtemp_studies:
                     qfreq_values[q],
                     marker="s",
                     markersize=5,
-                    linestyle="None",
+                    linestyle=ln_style,
                     color="purple",
                     alpha=0.8,
                     label="Qfreq (MHz)",
@@ -8853,7 +8881,7 @@ class combined_Qtemp_studies:
                     resfreq_values[q],
                     marker="o",
                     markersize=5,
-                    linestyle="None",
+                    linestyle=ln_style,
                     color="blue",
                     alpha=0.8,
                     label="Res freq (MHz)"
