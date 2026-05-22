@@ -1984,3 +1984,424 @@ def boxwhisker_ssf_per_qubit_vs_run(
         fname = os.path.join(save_plt_path, save_name)
         fig.savefig(fname, bbox_inches="tight")
         plt.close(fig)
+
+def boxwhisker_t1t2_init_vs_final_per_run(
+        run_pair,
+        median_qubit_freqs,
+        sort_by_freq=True,
+        t1_vals_by_run=None,
+        t2r_vals_by_run=None,
+        t2e_vals_by_run=None,
+        do_T1=True,
+        do_T2R=True,
+        do_T2E=True,
+        n_qubits=6,
+        ylims=(0, 90),
+        yticks=np.arange(0, 91, 10),
+        showfliers=False,
+        whis=1.5,
+        fig_title="Coherence by Qubit Frequency",
+        ylabel="Coherence time (µs)",
+        xlabel="Qubit Frequency (MHz)",
+        run_labels=None,
+        metric_colors=None,
+        metric_offsets=None,
+        box_width=0.16,
+        qubit_gap=1.15,
+        run_gap=0.42,
+        add_background_shading=True,
+        shade_color="0.90",
+        shade_alpha=0.7,
+        add_break_marks=True,
+        run_override_by_qubit=None,
+        save_plt_path=None,
+        save_name=None,
+        show=True
+):
+    """
+    Make one boxplot-style comparison figure for two runs.
+
+    median_qubit_freqs can be given as a dictionary, for example:
+        {
+            "Q1": 3819.23,
+            "Q2": 4161.44,
+            "Q3": 4189.81,
+            "Q4": 4462.51,
+            "Q5": 4471.79,
+            "Q6": 4999.47,
+        }
+
+    The function uses the qubit label to identify the correct data index:
+        Q1 -> q = 0
+        Q2 -> q = 1
+        ...
+        Q6 -> q = 5
+
+    If sort_by_freq=True, the columns are sorted from lowest to highest
+    qubit frequency.
+
+    run_override_by_qubit can be used to replace the second run in run_pair
+    for selected qubits.
+
+    Example:
+        run_pair = [8, 9]
+        run_override_by_qubit = {"Q4": 7}
+
+    This means Q4 will compare Run 8 vs Run 7, while all other qubits
+    compare Run 8 vs Run 9.
+    """
+
+    # ---------------- checks ----------------
+    if len(run_pair) != 2:
+        raise ValueError("run_pair must contain exactly two runs, e.g. [8, 9].")
+
+    run_a, run_b = run_pair
+
+    if run_override_by_qubit is None:
+        run_override_by_qubit = {}
+
+    if run_labels is None:
+        run_labels = {run_a: f"Run {run_a}", run_b: f"Run {run_b}"}
+
+    if metric_colors is None:
+        metric_colors = {
+            "T1": "skyblue",
+            "T2R": "lightgreen",
+            "T2E": "lightcoral",
+        }
+
+    metric_specs = []
+
+    if do_T1:
+        if t1_vals_by_run is None:
+            raise ValueError("do_T1=True but t1_vals_by_run is None")
+        metric_specs.append(("T1", t1_vals_by_run, metric_colors["T1"]))
+
+    if do_T2R:
+        if t2r_vals_by_run is None:
+            raise ValueError("do_T2R=True but t2r_vals_by_run is None")
+        metric_specs.append(("T2R", t2r_vals_by_run, metric_colors["T2R"]))
+
+    if do_T2E:
+        if t2e_vals_by_run is None:
+            raise ValueError("do_T2E=True but t2e_vals_by_run is None")
+        metric_specs.append(("T2E", t2e_vals_by_run, metric_colors["T2E"]))
+
+    if len(metric_specs) == 0:
+        raise ValueError("Enable at least one of do_T1/do_T2R/do_T2E.")
+
+    if metric_offsets is None:
+        if len(metric_specs) == 1:
+            metric_offsets = np.array([0.0])
+        elif len(metric_specs) == 2:
+            metric_offsets = np.array([-0.09, 0.09])
+        else:
+            metric_offsets = np.array([-0.16, 0.0, 0.16])
+
+    # ---------------- helpers ----------------
+    def cell_to_1d(cell):
+        if cell is None:
+            return np.array([], dtype=float)
+
+        if np.isscalar(cell):
+            arr = np.array([cell], dtype=float)
+        else:
+            arr = np.asarray(cell, dtype=float).ravel()
+
+        return arr[np.isfinite(arr)]
+
+    def qubit_label_to_index(label):
+        """
+        Converts labels like 'Q1', 'q1', 'Qubit 1', or 1 into q = 0.
+        """
+        if isinstance(label, str):
+            digits = "".join(ch for ch in label if ch.isdigit())
+            if digits == "":
+                raise ValueError(f"Could not extract qubit number from label: {label}")
+            return int(digits) - 1
+
+        elif isinstance(label, (int, np.integer)):
+            # If the user gives 1, 2, ..., 6, treat as Q1, Q2, ..., Q6.
+            # If they give 0, 1, ..., 5, this also supports that.
+            if label == 0:
+                return 0
+            elif 1 <= label <= n_qubits:
+                return int(label) - 1
+            else:
+                return int(label)
+
+        else:
+            raise TypeError(f"Unsupported qubit label type: {type(label)}")
+
+    def build_qubit_info():
+        """
+        Returns a list of dictionaries like:
+            {"q": 0, "label": "Q1", "freq": 3819.23}
+        """
+        qubit_info = []
+
+        if isinstance(median_qubit_freqs, dict):
+            for label, freq in median_qubit_freqs.items():
+                q = qubit_label_to_index(label)
+
+                if q < 0 or q >= n_qubits:
+                    raise ValueError(
+                        f"Label {label} maps to q={q}, which is outside n_qubits={n_qubits}."
+                    )
+
+                qubit_info.append({
+                    "q": q,
+                    "label": str(label),
+                    "freq": float(freq),
+                })
+
+        else:
+            for q in range(n_qubits):
+                qubit_info.append({
+                    "q": q,
+                    "label": f"Q{q + 1}",
+                    "freq": float(median_qubit_freqs[q]),
+                })
+
+        if len(qubit_info) < n_qubits:
+            print(
+                f"Plotting {len(qubit_info)} out of {n_qubits} qubits. "
+                "Qubits not included in median_qubit_freqs will be hidden."
+            )
+        elif len(qubit_info) > n_qubits:
+            raise ValueError(
+                f"Received {len(qubit_info)} qubit frequency entries, "
+                f"but n_qubits={n_qubits}."
+            )
+
+        return qubit_info
+
+    def style_boxplot(bp, color):
+        for b in bp["boxes"]:
+            b.set_facecolor(color)
+            b.set_edgecolor("0.25")
+            b.set_alpha(0.95)
+            b.set_linewidth(1.1)
+
+        for m in bp["medians"]:
+            m.set_color("tab:orange")
+            m.set_linewidth(1.4)
+
+        for w in bp["whiskers"]:
+            w.set_color("0.25")
+            w.set_linewidth(1.1)
+
+        for c in bp["caps"]:
+            c.set_color("0.25")
+            c.set_linewidth(1.1)
+
+        for f in bp["fliers"]:
+            f.set_marker("o")
+            f.set_markersize(3.0)
+            f.set_markerfacecolor(color)
+            f.set_markeredgecolor("0.25")
+            f.set_alpha(0.65)
+
+    def get_actual_run_for_qubit(run, item):
+        """
+        Allows selected qubits to use a different second/comparison run.
+
+        This only overrides the second run in run_pair, not the first one.
+        Plot positions still use the original run slot, so spacing stays the same.
+        """
+        if run != run_b:
+            return run
+
+        label = item["label"]
+        q = item["q"]
+
+        if label in run_override_by_qubit:
+            return run_override_by_qubit[label]
+
+        if q in run_override_by_qubit:
+            return run_override_by_qubit[q]
+
+        if q + 1 in run_override_by_qubit:
+            return run_override_by_qubit[q + 1]
+
+        return run
+
+    # ---------------- decide qubit plotting order ----------------
+    qubit_info = build_qubit_info()
+
+    if sort_by_freq:
+        qubit_info = sorted(qubit_info, key=lambda item: item["freq"])
+    else:
+        qubit_info = sorted(qubit_info, key=lambda item: item["q"])
+
+    print("Qubit plotting order:")
+    for plot_i, item in enumerate(qubit_info):
+        print(
+            f"  Column {plot_i + 1}: {item['label']} "
+            f"(data index q={item['q']}), freq = {item['freq']:.2f} MHz"
+        )
+
+    # ---------------- x positions ----------------
+    n_plot_qubits = len(qubit_info)
+    qubit_centers = np.arange(n_plot_qubits) * qubit_gap
+
+    run_offsets = {
+        run_a: -run_gap / 2,
+        run_b: +run_gap / 2,
+    }
+
+    # ---------------- figure ----------------
+    fig_width = max(12, 2.2 * n_plot_qubits)
+    fig, ax = plt.subplots(figsize=(fig_width, 6.5))
+
+    # Background shading for first run of each plotted qubit column
+    if add_background_shading:
+        for plot_i, item in enumerate(qubit_info):
+            shade_center = qubit_centers[plot_i] + run_offsets[run_a]
+            x0 = shade_center - run_gap / 2
+            x1 = shade_center + run_gap / 2
+            ax.axvspan(x0, x1, color=shade_color, alpha=shade_alpha, zorder=0)
+
+    # ---------------- boxplots ----------------
+    for plot_i, item in enumerate(qubit_info):
+        q = item["q"]
+        qubit_center = qubit_centers[plot_i]
+
+        for run in run_pair:
+            actual_run = get_actual_run_for_qubit(run, item)
+
+            # Keep position based on original run slot.
+            # This preserves all spacing and positions.
+            run_center = qubit_center + run_offsets[run]
+
+            for (metric_label, vals_by_run, color), metric_offset in zip(metric_specs, metric_offsets):
+                try:
+                    data = cell_to_1d(vals_by_run[actual_run][q])
+                except KeyError:
+                    data = np.array([], dtype=float)
+                except IndexError:
+                    data = np.array([], dtype=float)
+
+                if len(data) == 0:
+                    continue
+
+                bp = ax.boxplot(
+                    [data],
+                    positions=[run_center + metric_offset],
+                    widths=box_width,
+                    patch_artist=True,
+                    showfliers=showfliers,
+                    whis=whis,
+                    manage_ticks=False,
+                    zorder=3
+                )
+                style_boxplot(bp, color)
+
+            # Run label near the top of each run block
+            ax.text(
+                run_center,
+                ylims[1] * 0.955,
+                run_labels.get(actual_run, f"Run {actual_run}"),
+                ha="center",
+                va="top",
+                fontsize=13,
+                color="0.25"
+            )
+
+    # ---------------- x-axis labels ----------------
+    xtick_labels = [
+        f"{item['label']}\n{item['freq']:.2f}"
+        for item in qubit_info
+    ]
+
+    ax.set_xticks(qubit_centers)
+    ax.set_xticklabels(xtick_labels, fontsize=14)
+
+    # Vertical separators between qubit columns
+    for plot_i in range(n_plot_qubits - 1):
+        sep_x = 0.5 * (qubit_centers[plot_i] + qubit_centers[plot_i + 1])
+        ax.axvline(sep_x, color="0.85", linestyle=":", linewidth=1.0, zorder=1)
+
+    # Optional axis-break style marks between qubit columns
+    if add_break_marks:
+        trans = ax.get_xaxis_transform()
+
+        for plot_i in range(n_plot_qubits - 1):
+            sep_x = 0.5 * (qubit_centers[plot_i] + qubit_centers[plot_i + 1])
+
+            dx = 0.018 * qubit_gap
+
+            ax.plot(
+                [sep_x - dx, sep_x + dx],
+                [-0.025, 0.025],
+                transform=trans,
+                color="black",
+                clip_on=False,
+                linewidth=1.5
+            )
+
+            ax.plot(
+                [sep_x - dx, sep_x + dx],
+                [0.985, 1.025],
+                transform=trans,
+                color="black",
+                clip_on=False,
+                linewidth=1.5
+            )
+
+    # ---------------- axes and labels ----------------
+    ax.set_ylim(*ylims)
+    ax.set_yticks(yticks)
+    ax.set_ylabel(ylabel, fontsize=16)
+    ax.set_xlabel(xlabel, fontsize=16, labelpad=18)
+    fig.suptitle(fig_title, fontsize=18, y=0.84)
+
+    ax.tick_params(axis="both", labelsize=14)
+
+    # ---------------- legend ----------------
+    handles = [
+        Patch(
+            facecolor=color,
+            edgecolor="0.25",
+            alpha=0.95,
+            label=f"{label} (µs)"
+        )
+        for label, _, color in metric_specs
+    ]
+
+    leg = ax.legend(
+        handles=handles,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.15),
+        ncol=len(handles),
+        fontsize=12,
+        frameon=True
+    )
+    leg.get_frame().set_facecolor("white")
+    leg.get_frame().set_alpha(1.0)
+
+    # Clean up x limits
+    left_edge = qubit_centers[0] + run_offsets[run_a] - 0.45
+    right_edge = qubit_centers[-1] + run_offsets[run_b] + 0.45
+    ax.set_xlim(left_edge, right_edge)
+
+    fig.tight_layout(rect=[0, 0, 1, 0.90])
+
+    # ---------------- save ----------------
+    if save_plt_path is not None:
+        os.makedirs(save_plt_path, exist_ok=True)
+
+        if save_name is None:
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            save_name = f"coherence_by_qubit_frequency_runs_{run_a}_vs_{run_b}_{timestamp}.pdf"
+
+        fname = os.path.join(save_plt_path, save_name)
+        fig.savefig(fname, bbox_inches="tight")
+        print(f"Saved plot to: {fname}")
+
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+
+    return fig, ax
