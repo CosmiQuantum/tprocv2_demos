@@ -1106,6 +1106,7 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
 
             # ---------------- main/hybrid data ----------------
             box_data = [cell_to_1d(select_cell(r, q)) for r in run_num_list]
+
             if plot_mode == "compare_methods":
                 print(f"\nHybrid summary for Qubit {q + 1}:")
                 print_median_spread_table(run_num_list, box_data, q, units="mK", mode="iqr2")
@@ -1180,6 +1181,7 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
             ax.set_title(f"Qubit {q + 1}", fontsize=title_fs)
             ax.set_ylim(*ylims)
             ax.set_yticks(yticks)
+
             ax.tick_params(axis="both", labelsize=tick_fs)
             ax.grid(True, alpha=0.35)
 
@@ -1387,12 +1389,13 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
         yticks=None,
         showfliers=True,  # show outliers?
         whis=1.5,
-        fig_title="Excited-State Population vs Run Number",
-        ylabel=r"$P_e$",
-        suptitle_fs=18,
-        title_fs=18,
-        label_fs=18,
-        tick_fs=18,
+        fig_title="Thermal Population vs Run Number",
+        ylabel=r"Thermal Population (%)",
+        add_last_run_inset=False,
+        suptitle_fs=24,
+        title_fs=22,
+        label_fs=22,
+        tick_fs=22,
         save_plt_path=None
 ):
     """
@@ -1515,7 +1518,8 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
         ax = axes[ax_idx]
         q_color = colors[q % len(colors)]
 
-        box_data = [cell_to_1d(select_cell(r, q)) for r in run_num_list]
+        #box_data = [cell_to_1d(select_cell(r, q)) for r in run_num_list]
+        box_data = [100 * cell_to_1d(select_cell(r, q)) for r in run_num_list] # as percentage instead
 
         # compute variance and std per run, for this qubit
         variance_per_run = [np.var(arr, ddof=1) if len(arr) > 1 else np.nan for arr in box_data]
@@ -1566,15 +1570,89 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
                 bp["fliers"][i0].set_markeredgecolor(ssf_color)
                 bp["fliers"][i0].set_alpha(0.6)
 
-        ax.set_title(f"Qubit {q + 1}", fontsize=title_fs)
-        ax.set_ylim(*ylims)
-        ax.set_yticks(yticks)
+        # ax.set_title(f"Qubit {q + 1}", fontsize=title_fs)
+        title_label = f"Qubit {q + 1}"
+        if q == 5: # for a test only. this is temporary
+            title_label = "Qubit 5"
+        ax.set_title(title_label, fontsize=title_fs)
+
+        # ax.set_ylim(*ylims)
+        # ax.set_yticks(yticks)
+
+        ax.set_ylim(100 * ylims[0], 100 * ylims[1]) # as percentage instead
+        ax.set_yticks(100 * yticks) # as percentage instead
+        ax.yaxis.set_major_formatter(plt.FormatStrFormatter("%.1f"))
+
         ax.tick_params(axis="both", labelsize=tick_fs)
         ax.grid(True, alpha=0.35)
 
         ax.set_xticks(base_pos)
         ax.set_xticklabels(xtick_labels)
         ax.set_xlim(0.5, len(run_num_list) + 0.5)
+
+        # Temporarily show run-number tick labels under Qubit 3
+        if q == 2:  # Qubit 3, since q is zero-indexed
+            ax.tick_params(axis="x", labelbottom=True)
+
+        # ---------------- optional zoomed inset for last run ----------------
+        if add_last_run_inset:
+            last_run = run_num_list[-1]
+            #last_data = cell_to_1d(select_cell(last_run, q))
+            last_data = 100 * cell_to_1d(select_cell(last_run, q)) # as percentage instead
+
+            if len(last_data) > 0:
+                inset_color = ssf_color if last_run == 5 else q_color
+
+                # Set inset position here only
+                inset_pos = (0.58, 0.54, 0.36, 0.36)  # left, bottom, width, height
+
+                axins = ax.inset_axes(inset_pos)
+
+                bp_inset = axins.boxplot(
+                    [last_data],
+                    positions=[1],
+                    widths=0.45,
+                    patch_artist=True,
+                    showfliers=showfliers,
+                    whis=whis,
+                    manage_ticks=False
+                )
+
+                style_boxplot(bp_inset, inset_color)
+
+                # # Same y-axis limits and same ticks for every inset
+                # inset_ymin = 0.00
+                # inset_ymax = 0.05
+                #
+                # axins.set_ylim(inset_ymin, inset_ymax)
+                #
+                # # Same y-axis ticks for every inset
+                # shared_inset_yticks = np.array([0.00, 0.025, 0.05])
+                # axins.set_yticks(shared_inset_yticks)
+                # axins.yaxis.set_major_formatter(plt.FormatStrFormatter("%.2f"))
+
+                # Same y-axis limits and same ticks for every inset, in percent
+                inset_ymin = 0.00
+                inset_ymax = 5.00
+
+                axins.set_ylim(inset_ymin, inset_ymax)
+
+                # Same y-axis ticks for every inset, in percent
+                shared_inset_yticks = np.array([0.00, 1.25, 2.50, 3.75, 5.00])
+                axins.set_yticks(shared_inset_yticks)
+                axins.yaxis.set_major_formatter(plt.FormatStrFormatter("%.2f"))
+
+                axins.set_xticks([1])
+                axins.set_xticklabels([f"Run {last_run}"], fontsize=15)
+
+                axins.tick_params(axis="y", labelsize=15)
+                axins.tick_params(axis="x", labelsize=15)
+
+                axins.grid(True, alpha=0.25)
+                axins.set_title(r"Low $P_e$ %", fontsize=15, pad=2)
+
+                for spine in axins.spines.values():
+                    spine.set_linewidth(0.8)
 
     # hide unused axes
     for k in range(n_plot, len(axes)):
@@ -1590,19 +1668,47 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
         right=right_margin,
         bottom=bottom_margin,
         top=top_margin,
-        wspace=0.25,
-        hspace=0.35
+        wspace=0.08,
+        hspace=0.22
     )
 
-    fig.suptitle(fig_title, fontsize=suptitle_fs, y=0.975)
-    fig.supxlabel("Run Number", fontsize=label_fs, y=0.04)
-    fig.supylabel(ylabel, fontsize=label_fs, x=0.035)
+    # ---------------- single figure legend ----------------
+    rpm_legend_color = colors[qubits_to_plot[0] % len(colors)]
+
+    legend_handles = [
+        Patch(
+            facecolor=ssf_color,
+            edgecolor=ssf_color,
+            alpha=0.31,
+            label="Run 5 (SSF Method)"
+        ),
+        Patch(
+            facecolor=rpm_legend_color,
+            edgecolor=rpm_legend_color,
+            alpha=0.31,
+            label="Runs 6-9 (RPM Method)"
+        ),
+    ]
+
+    fig.legend(
+        handles=legend_handles,
+        loc="lower right",
+        bbox_to_anchor=(0.96, 0.3),
+        fontsize=label_fs - 2,
+        frameon=True
+    )
+
+    fig.suptitle(fig_title, fontsize=suptitle_fs, y=0.97)
+    fig.supxlabel("Run Number", fontsize=label_fs, y=0.07)
+    fig.supylabel(ylabel, fontsize=label_fs, x=0.06)
 
     if save_plt_path is None:
         plt.show()
     else:
         os.makedirs(save_plt_path, exist_ok=True)
-        fname = os.path.join(save_plt_path, "boxwhisk_pe_vs_run_num.pdf")
+        now = datetime.datetime.now()
+        timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+        fname = os.path.join(save_plt_path, f"boxwhisk_pe_vs_run_num_{timestamp}.pdf")
         fig.savefig(fname, bbox_inches="tight")
         plt.close(fig)
 
@@ -2249,6 +2355,7 @@ def boxwhisker_t1t2_init_vs_final_per_run(
         run_a: -run_gap / 2,
         run_b: +run_gap / 2,
     }
+    run_offsets[run_b] += 0.09  # small additional shift to the right
 
     # ---------------- figure ----------------
     fig_width = max(12, 2.2 * n_plot_qubits)
@@ -2257,9 +2364,10 @@ def boxwhisker_t1t2_init_vs_final_per_run(
     # Background shading for first run of each plotted qubit column
     if add_background_shading:
         for plot_i, item in enumerate(qubit_info):
+            additional_shift = 0.04
             shade_center = qubit_centers[plot_i] + run_offsets[run_a]
-            x0 = shade_center - run_gap / 2
-            x1 = shade_center + run_gap / 2
+            x0 = shade_center - run_gap / 2 - additional_shift
+            x1 = shade_center + run_gap / 2 + additional_shift
             ax.axvspan(x0, x1, color=shade_color, alpha=shade_alpha, zorder=0)
 
     # ---------------- boxplots ----------------
@@ -2304,7 +2412,7 @@ def boxwhisker_t1t2_init_vs_final_per_run(
                 run_labels.get(actual_run, f"Run {actual_run}"),
                 ha="center",
                 va="top",
-                fontsize=13,
+                fontsize=18,
                 color="0.25"
             )
 
@@ -2313,9 +2421,13 @@ def boxwhisker_t1t2_init_vs_final_per_run(
         f"{item['label']}\n{item['freq']:.2f}"
         for item in qubit_info
     ]
+    # xtick_labels = [
+    #     f"{'Q5' if item['label'] == 'Q6' else item['label']}\n{item['freq']:.2f}"
+    #     for item in qubit_info
+    # ]
 
     ax.set_xticks(qubit_centers)
-    ax.set_xticklabels(xtick_labels, fontsize=14)
+    ax.set_xticklabels(xtick_labels, fontsize=18)
 
     # Vertical separators between qubit columns
     for plot_i in range(n_plot_qubits - 1):
@@ -2352,11 +2464,11 @@ def boxwhisker_t1t2_init_vs_final_per_run(
     # ---------------- axes and labels ----------------
     ax.set_ylim(*ylims)
     ax.set_yticks(yticks)
-    ax.set_ylabel(ylabel, fontsize=16)
-    ax.set_xlabel(xlabel, fontsize=16, labelpad=18)
-    fig.suptitle(fig_title, fontsize=18, y=0.84)
+    ax.set_ylabel(ylabel, fontsize=18, labelpad =6)
+    ax.set_xlabel(xlabel, fontsize=18, labelpad=18)
+    fig.suptitle(fig_title, fontsize=19, y=0.8)
 
-    ax.tick_params(axis="both", labelsize=14)
+    ax.tick_params(axis="both", labelsize=18)
 
     # ---------------- legend ----------------
     handles = [
@@ -2372,9 +2484,9 @@ def boxwhisker_t1t2_init_vs_final_per_run(
     leg = ax.legend(
         handles=handles,
         loc="upper center",
-        bbox_to_anchor=(0.5, 1.15),
+        bbox_to_anchor=(0.5, 1.24),
         ncol=len(handles),
-        fontsize=12,
+        fontsize=18,
         frameon=True
     )
     leg.get_frame().set_facecolor("white")

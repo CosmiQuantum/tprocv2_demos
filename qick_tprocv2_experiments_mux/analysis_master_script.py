@@ -46,7 +46,7 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
-run_num_list = [4, 8, 9] # options: 4,5,6,7,8,9
+run_num_list = [4, 9] # options: 4,5,6,7,8,9
 t1_vals_by_run  = {}
 t2r_vals_by_run = {}
 t2e_vals_by_run = {}
@@ -713,12 +713,12 @@ median_qubit_freqs = { # 4194.77, 3828.69, 4173.69, 4474.04, 4485.38, 5018.12
     "Q2": 3829,
     "Q3": 4174,
     "Q4": 4474,
-    "Q5": 4485,
+    #"Q5": 4485,
     "Q6": 5018}
 fig, ax = boxwhisker_t1t2_init_vs_final_per_run(
     run_pair=[4, 9],
     median_qubit_freqs=median_qubit_freqs,
-    sort_by_freq = True,
+    sort_by_freq = False,
     t1_vals_by_run=t1_vals_by_run,
     t2r_vals_by_run=t2r_vals_by_run,
     t2e_vals_by_run=t2e_vals_by_run,
@@ -727,8 +727,8 @@ fig, ax = boxwhisker_t1t2_init_vs_final_per_run(
     do_T2E=True,
     n_qubits=6,
     ylims=(0, 140),
-    yticks=np.arange(0, 141, 10),
-    run_override_by_qubit={"Q5": 8}, #Specify the Q you would like to use a different run for. Then write the run you want to use instead
+    yticks=np.arange(0, 141, 20),
+    #run_override_by_qubit={"Q5": 8}, #Specify the Q you would like to use a different run for. Then write the run you want to use instead
     fig_title="Coherence vs Qubit Frequency",
     save_plt_path="/home/acolonce/Documents/analysis/multirun/coherence",
     show = False

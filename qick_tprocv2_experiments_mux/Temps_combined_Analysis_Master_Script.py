@@ -35,7 +35,7 @@ def make_paths(base_prefix, relative_batches):
             paths.append(str(Path(base_prefix) / folder / ts))
     return paths
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 4
+run_num = 5
 run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence analysis it's defined in its respective section
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
@@ -70,7 +70,7 @@ tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
 qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_Qtemps": False}
+                      "combined_studies_Qtemps": True}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
@@ -79,7 +79,7 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
 comb_analysis_flags = {"load_rpm": False, "load_ssf": False, "use_cached_qtemp_files": True, "create_cached_qtemp_files": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
-                       "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
+                       "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": True, "ssf_box_whisker_allruns_allQs": False,
                        "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": False, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False, "SNR_vs_RRPM_Pe": False}
 
 # For London Penetration Depth analysis
@@ -89,8 +89,8 @@ london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
 
 # For coherence-qubit temps combined analysis
-coh_qtemp_ana_flags = {"run_qtemps_section": True, "run_coherence_section": True, "use_cached_qtemp_files": True, "use_cached_coherence_files": True, "create_cached_qtemp_files": False,"create_cached_coherence_files": False, "load_mcp1_temps": False,
-                       "plot_qtemps_t1_ftemps_qfreq": True}
+coh_qtemp_ana_flags = {"run_qtemps_section": False, "run_coherence_section": False, "use_cached_qtemp_files": False, "use_cached_coherence_files": False, "create_cached_qtemp_files": False,"create_cached_coherence_files": False, "load_mcp1_temps": False,
+                       "plot_qtemps_t1_ftemps_qfreq": False}
 
 ############################################################################## Set up #######################################################################################################################
 #----------------------------------------------------- For qubit temperature calculations via rabi population measurements --------------------------------------------------------------------------------------
@@ -1178,7 +1178,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
-run_num_list = [4] # for quiet, start at 5. no qtemp data for run 4
+run_num_list = [5,6,7,8,9] # for quiet, start at 5. no qtemp data for run 4
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
 rpm_Pe_by_run = {}      # rpm_Pe_by_run[run][qid] = [P_e, ...]
@@ -1307,13 +1307,25 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             cache_dir = f"/home/acolonce/Documents/analysis/cached_processed_data/run{run_num}"
             os.makedirs(cache_dir, exist_ok=True)
 
-            # Only needed when use_cached_files is True.
-            fit_results_g_cache_path = f"{cache_dir}/run{run_num}_processed_SSF_fit_results_g_20260519_113207.pkl"
-            rpm_results_cache_path = f"{cache_dir}/run{run_num}_processed_all_files_Qtemp_results_RPMs_20260519_113207.pkl"
-            
-            fit_results_g, all_files_Qtemp_results_RPMs = combined_studies.load_processed_ssf_rpm_inputs(
-                fit_results_g_cache_path,
-                rpm_results_cache_path)
+            # Default: no cached qtemp data
+            fit_results_g = {}
+            all_files_Qtemp_results_RPMs = {}
+
+            # Run 5 has SSF data, but no RPM data
+            if run_num == 5:
+                fit_results_g_cache_path = (f"{cache_dir}/run{run_num}_processed_SSF_fit_results_g.pkl")
+                print(f"Run {run_num}: loading SSF only. No RPM data available.")
+                fit_results_g, _ = combined_studies.load_processed_ssf_rpm_inputs(fit_results_g_cache_path,None)
+
+            # Runs 6+ have both SSF and RPM data
+            else:
+                fit_results_g_cache_path = (f"{cache_dir}/run{run_num}_processed_SSF_fit_results_g.pkl")
+                rpm_results_cache_path = (f"{cache_dir}/run{run_num}_processed_all_files_Qtemp_results_RPMs.pkl")
+
+                print(f"Run {run_num}: loading SSF and RPM data.")
+                fit_results_g, all_files_Qtemp_results_RPMs = combined_studies.load_processed_ssf_rpm_inputs(
+                    fit_results_g_cache_path,
+                    rpm_results_cache_path)
 
             # Makes sure processing sections are set to False if the user forgot
             comb_analysis_flags["load_rpm"] = False
@@ -1335,6 +1347,36 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         ssf_ge_temp_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
         ssf_fid_values_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
         ssf_err_values_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+
+        # ============================================================
+        # If using cached qtemp files, adapt cached SSF/RPM data into
+        # the same per-run dictionaries used by the plotting functions.
+        # ============================================================
+        if comb_analysis_flags["use_cached_qtemp_files"]:
+            # ---------------- RPM cached data ----------------
+            # Run 5 has no RPM data, so leave the pre-filled empty lists.
+            if run_num != 5 and all_files_Qtemp_results_RPMs:
+                rpm_temps, rpm_temps_errs, rpm_Pe, rpm_Pe_errs = (combined_studies.rpm_results_to_per_qubit_lists(all_files_Qtemp_results_RPMs, n_qubits=tot_num_of_qubits))
+                rpm_temps_by_run[run_num] = rpm_temps
+                rpm_temps_errs_by_run[run_num] = rpm_temps_errs
+                rpm_Pe_by_run[run_num] = rpm_Pe
+                rpm_Pe_errs_by_run[run_num] = rpm_Pe_errs
+
+            # ---------------- SSF cached data ----------------
+            if fit_results_g:
+                fit_results_g_by_run[run_num] = fit_results_g
+                ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals, ssf_fid_errs = (combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g,n_qubits=tot_num_of_qubits))
+                ssf_g_temps_by_run[run_num] = ssf_g_temps
+                ssf_g_temp_errs_by_run[run_num] = ssf_g_temp_errs
+                pe_vals, pe_errs = combined_studies.extract_pe_from_fit_results(fit_results_g,tot_num_of_qubits)
+                ssf_g_Pe_by_run[run_num] = pe_vals
+                ssf_g_Pe_errs_by_run[run_num] = pe_errs
+                ssf_fid_values_by_run[run_num] = ssf_fid_vals
+                ssf_err_values_by_run[run_num] = ssf_fid_errs
+
+            print(f"\nRUN {run_num} cached SSF counts:")
+            for q in range(tot_num_of_qubits):
+                print(f"  Q{q + 1}: {len(ssf_g_Pe_by_run[run_num][q])}")
 
         if comb_analysis_flags["load_rpm"]:
             if run_num != 5: # no rpm data for run 5
@@ -1427,8 +1469,11 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         #----------------------------------------------------------------
 
     if comb_analysis_flags["plot_ssf_log_curves"]:
-        if not comb_analysis_flags["load_ssf"]:
-            raise ValueError('This plot requires comb_analysis_flags["load_ssf"] to be True.')
+        have_qtemp_inputs = (comb_analysis_flags["use_cached_qtemp_files"] or comb_analysis_flags["load_ssf"])
+        if not have_qtemp_inputs:
+            raise ValueError('This plot requires qtemp inputs. Either set '
+                            'comb_analysis_flags["use_cached_qtemp_files"] = True, or set '
+                            'comb_analysis_flags["load_ssf"] to True.')
         ssf_overlay_save_path = "/home/acolonce/Documents/analysis/ssf_qtemps/ssf_log_curves" # cosmiqserver01
             #"/data/QICK_data/run9/6transmon/analysis/ssf_qtemps/ssf_log_curves" #daq01
         for qid in range(tot_num_of_qubits):
@@ -1459,10 +1504,11 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             )
     # --------------------- box and whiskers plots. Per run and per qubit. Separate or together options -------------------
     if comb_analysis_flags["qtemp_box_whisker_allruns_allQs"]:
-        if not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
-            raise ValueError(
-                'This plot requires both comb_analysis_flags["load_rpm"] and '
-                'comb_analysis_flags["load_ssf"] to be True.')
+        have_qtemp_inputs = (comb_analysis_flags["use_cached_qtemp_files"] or (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]))
+        if not have_qtemp_inputs:
+            raise ValueError('This plot requires qtemp inputs. Either set '
+                             'comb_analysis_flags["use_cached_qtemp_files"] = True, or set both '
+                             'comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"] to True.')
         boxwhisker_qtemps_per_qubit_vs_run_choice(
             run_num_list=run_num_list,
             rpm_temps_by_run=rpm_temps_by_run,
@@ -1483,30 +1529,36 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF")
 
     if comb_analysis_flags["Pe_box_whisker_allruns_allQs"]:
-        if not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
-            raise ValueError('This plot requires both comb_analysis_flags["load_rpm"] and '
-                'comb_analysis_flags["load_ssf"] to be True.')
+        have_qtemp_inputs = (comb_analysis_flags["use_cached_qtemp_files"] or (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]))
+        if not have_qtemp_inputs:
+            raise ValueError('This plot requires qtemp inputs. Either set '
+                             'comb_analysis_flags["use_cached_qtemp_files"] = True, or set both '
+                             'comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"] to True.')
         # This is only set up in 'hybrid' 'separate' mode
         boxwhisker_pe_per_qubit_vs_run_hybrid(
             run_num_list=run_num_list,
             rpm_pe_by_run=rpm_Pe_by_run,
             ssf_pe_by_run=ssf_g_Pe_by_run,
             qubits_to_plot=[0, 1, 2, 3, 5],
-            colors=('palevioletred', 'palevioletred', 'palevioletred',
-                    'palevioletred', 'palevioletred', 'palevioletred'),
-            ylims=(0, 0.55),
-            yticks=np.arange(0, 0.551, 0.05),
-            showfliers=True,  # outliers
-            fig_title="Excited-State Population vs Run Number",
-            ylabel=r"$P_e$",
+            colors=('darkblue', 'darkblue', 'darkblue', # palevioletred, forestgreen, darkblue
+                    'darkblue', 'darkblue', 'darkblue'),
+            ylims=(0, 0.45),
+            yticks=np.arange(0.05, 0.46, 0.1),
+            showfliers=False,  # outliers
+            fig_title=r"Thermal Population vs Run Number",
+            ylabel=r"Thermal Population (%)",
+            add_last_run_inset=True,
             save_plt_path= "/home/acolonce/Documents/analysis/multirun/qubit_temps/combined_ssf_rpm") # if set to 'None' uses plt.show()
             # "/home/acolonce/Documents/analysis/multirun/qubit_temps/combined_ssf_rpm" #cosmiqserver01
             #"/data/QICK_data/multirun_analysis/qubit_temps/combined") #daq01
             #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF") # CEPH
 
     if comb_analysis_flags["ssf_box_whisker_allruns_allQs"]:
-        if not comb_analysis_flags["load_ssf"]:
-            raise ValueError('This plot requires comb_analysis_flags["load_ssf"] to be True.')
+        have_qtemp_inputs = (comb_analysis_flags["use_cached_qtemp_files"] or comb_analysis_flags["load_ssf"])
+        if not have_qtemp_inputs:
+            raise ValueError('This plot requires qtemp inputs. Either set '
+                             'comb_analysis_flags["use_cached_qtemp_files"] = True, or set '
+                             'comb_analysis_flags["load_ssf"] to True.')
         boxwhisker_ssf_per_qubit_vs_run(
                 run_num_list,
                 ssf_vals_by_run = ssf_fid_values_by_run,
@@ -1525,10 +1577,11 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         if len(run_num_list) != 1:
             raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
                 "This section is only set up to process one run at a time.")
-        if not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
-            raise ValueError(
-                'This plot requires both comb_analysis_flags["load_rpm"] and '
-                'comb_analysis_flags["load_ssf"] to be True.')
+        have_qtemp_inputs = (comb_analysis_flags["use_cached_qtemp_files"] or (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]))
+        if not have_qtemp_inputs:
+            raise ValueError('This plot requires qtemp inputs. Either set '
+                             'comb_analysis_flags["use_cached_qtemp_files"] = True, or set both '
+                             'comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"] to True.')
         # This func has only been set up to work for 2 qubits.
         # Plots two rows (one for each qubit) and 3 columns (one for each method)
         combined_studies.Qtemps_vs_time_comb_methods_3col(all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, all_qubit_temps_ge, all_qubit_times_ge, all_qubit_temps_errs_ge,
@@ -1538,10 +1591,11 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         if len(run_num_list) != 1:
             raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
                 "This section is only set up to process one run at a time.")
-        if not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
-            raise ValueError(
-                'This plot requires both comb_analysis_flags["load_rpm"] and '
-                'comb_analysis_flags["load_ssf"] to be True.')
+        have_qtemp_inputs = (comb_analysis_flags["use_cached_qtemp_files"] or (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]))
+        if not have_qtemp_inputs:
+            raise ValueError('This plot requires qtemp inputs. Either set '
+                             'comb_analysis_flags["use_cached_qtemp_files"] = True, or set both '
+                             'comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"] to True.')
         # This one works for multiple qubits (has been improved)
         # Makes 1 subplot per qubit (and all methods in a single plot). Note: I removed the ge SSF method from being plotted since we haven't been using that one lately.
         # Plots error bars always, unless you pass None instead of all_qubit_temps_errs_g.
@@ -1642,10 +1696,11 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         if len(run_num_list) != 1:
             raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
                 "This section is only set up to process one run at a time.")
-        if not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
-            raise ValueError(
-                'This plot requires both comb_analysis_flags["load_rpm"] and '
-                'comb_analysis_flags["load_ssf"] to be True.')
+        have_qtemp_inputs = (comb_analysis_flags["use_cached_qtemp_files"] or (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]))
+        if not have_qtemp_inputs:
+            raise ValueError('This plot requires qtemp inputs. Either set '
+                             'comb_analysis_flags["use_cached_qtemp_files"] = True, or set both '
+                             'comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"] to True.')
         # Plots two rows (one for each qubit) and 3 columns (one for each method)
         combined_studies.Pe_vs_time_comb_methods(all_files_Qtemp_results_RPMs, fit_results_g, fit_results_ge, outerFolder_qtemps_plots,
                                                  restrict_time_xaxis = False, plot_extra_event_lines = False, rad_events_plot_lines = False)
@@ -1653,10 +1708,11 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         if len(run_num_list) != 1:
             raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
                 "This section is only set up to process one run at a time.")
-        if not (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]):
-            raise ValueError(
-                'This plot requires both comb_analysis_flags["load_rpm"] and '
-                'comb_analysis_flags["load_ssf"] to be True.')
+        have_qtemp_inputs = (comb_analysis_flags["use_cached_qtemp_files"] or (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]))
+        if not have_qtemp_inputs:
+            raise ValueError('This plot requires qtemp inputs. Either set '
+                             'comb_analysis_flags["use_cached_qtemp_files"] = True, or set both '
+                             'comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"] to True.')
         # THREE METHODS VERSION
         # Plots two rows (one for each qubit) and 1 column (all three methods in a single plot)
         # combined_studies.Pe_vs_time_comb_2subplts(all_files_Qtemp_results_RPMs, fit_results_g, fit_results_ge, outerFolder_qtemps_plots,
