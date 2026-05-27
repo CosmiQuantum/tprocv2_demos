@@ -4109,12 +4109,19 @@ class combined_Qtemp_studies:
     def load_processed_ssf_rpm_inputs(
             self,
             fit_results_g_path=None,
-            all_files_Qtemp_results_RPMs_path=None):
+            all_files_Qtemp_results_RPMs_path=None,
+            start_time=None,
+            time_key="date",
+    ):
         """
         Load previously saved processed SSF and RPM inputs.
 
         This version allows either file to be missing. If a path is None,
         empty, or does not exist, that dataset is returned as an empty dict.
+
+        Optional RPM timestamp filtering:
+        If start_time is provided, only RPM file_results with
+        file_result[time_key] >= start_time are kept.
 
         Parameters
         ----------

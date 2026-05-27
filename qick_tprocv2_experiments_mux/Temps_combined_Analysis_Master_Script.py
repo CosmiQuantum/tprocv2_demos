@@ -18,6 +18,7 @@ from sklearn.mixture import GaussianMixture
 import matplotlib.pyplot as plt
 import math
 import h5py
+import pandas as pd
 from expt_config import expt_cfg, list_of_all_qubits, FRIDGE
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 from analysis_003_q_freqs_vs_time_plots import QubitFreqsVsTime
@@ -1327,6 +1328,24 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                     fit_results_g_cache_path,
                     rpm_results_cache_path)
 
+                # Temporary: to consider only the last chunk of run 9a AB paper data.
+                if run_num == 9 and all_files_Qtemp_results_RPMs:
+                    start_dt = pd.to_datetime("2026-04-25 00:00:00")
+                    filtered = []
+                    for rec in all_files_Qtemp_results_RPMs:
+                        new_qubits = {}
+                        for qid, qrec in rec.get("qubits", {}).items():
+                            qdate = pd.to_datetime(qrec.get("date"), unit="s", errors="coerce")
+                            if pd.notna(qdate) and qdate >= start_dt:
+                                new_qubits[qid] = qrec
+                        if new_qubits:
+                            rec = rec.copy()
+                            rec["qubits"] = new_qubits
+                            filtered.append(rec)
+                    print(f"Run 9 RPM files before filter: {len(all_files_Qtemp_results_RPMs)}")
+                    print(f"Run 9 RPM files after filter: {len(filtered)}")
+                    all_files_Qtemp_results_RPMs = filtered
+
             # Makes sure processing sections are set to False if the user forgot
             comb_analysis_flags["load_rpm"] = False
             comb_analysis_flags["load_ssf"] = False
@@ -1545,8 +1564,8 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             ylims=(0, 0.45),
             yticks=np.arange(0.05, 0.46, 0.1),
             showfliers=False,  # outliers
-            fig_title=r"Thermal Population vs Run Number",
-            ylabel=r"Thermal Population (%)",
+            fig_title=r"Excited State Population vs Run Number",
+            ylabel=r"Excited State Population ($P_e$ %)",
             add_last_run_inset=True,
             save_plt_path= "/home/acolonce/Documents/analysis/multirun/qubit_temps/combined_ssf_rpm") # if set to 'None' uses plt.show()
             # "/home/acolonce/Documents/analysis/multirun/qubit_temps/combined_ssf_rpm" #cosmiqserver01

@@ -682,7 +682,10 @@ def print_median_spread_table(run_num_list, box_data, q, units="", mode="q1q3"):
 
     mode="q1q3"  -> prints median (Q1, Q3)  [recommended for papers]
     mode="iqr2"  -> prints median ± IQR/2
+
+    units can be "", "MHz", "mK", "%", etc.
     """
+
     for r, arr in zip(run_num_list, box_data):
         arr = np.asarray(arr, dtype=float)
         arr = arr[np.isfinite(arr)]
@@ -699,18 +702,27 @@ def print_median_spread_table(run_num_list, box_data, q, units="", mode="q1q3"):
         if "Hz" in units:  # more decimals for qubit freq vals to identify subtle shifts
             if mode.lower() == "iqr2":
                 spread = 0.5 * iqr
-                print(f"Run {r}, Q{q + 1}: {med:.6f} ± {spread:.6f} {units}  (IQR={iqr:.6f}, n={arr.size})")
+                print(
+                    f"Run {r}, Q{q + 1}: "
+                    f"{med:.6f} ± {spread:.6f} {units}  "
+                    f"(IQR={iqr:.6f} {units}, n={arr.size})")
             else:
-                # default: median (Q1, Q3)
-                print(f"Run {r}, Q{q + 1}: {med:.6f} ({q1:.6f}, {q3:.6f}) {units}  [n={arr.size}]")
+                print(
+                    f"Run {r}, Q{q + 1}: "
+                    f"{med:.6f} ({q1:.6f}, {q3:.6f}) {units}  "
+                    f"[n={arr.size}]")
         else:
             if mode.lower() == "iqr2":
                 spread = 0.5 * iqr
-                print(f"Run {r}, Q{q + 1}: {med:.4f} ± {spread:.4f} {units}  (IQR={iqr:.4f}, n={arr.size})")
+                print(
+                    f"Run {r}, Q{q + 1}: "
+                    f"{med:.4f} ± {spread:.4f} {units}  "
+                    f"(IQR={iqr:.4f} {units}, n={arr.size})")
             else:
-                # default: median (Q1, Q3)
-                print(f"Run {r}, Q{q + 1}: {med:.4f} ({q1:.4f}, {q3:.4f}) {units}  [n={arr.size}]")
-
+                print(
+                    f"Run {r}, Q{q + 1}: "
+                    f"{med:.4f} ({q1:.4f}, {q3:.4f}) {units}  "
+                    f"[n={arr.size}]")
 
 def boxwhisker_t1t2_per_qubit_vs_run(
         run_num_list,
@@ -1531,14 +1543,15 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
             run_num_list,
             box_data,
             q,
+            units="%",
             mode="iqr2"  # or "q1q3" if you want paper-style output
         )
 
-        print(f"\nQubit {q + 1} noise summary:")
+        print(f"\nQubit {q + 1} spread summary:")
         for run, arr, var, std in zip(run_num_list, box_data, variance_per_run, std_per_run):
             n = len(arr)
             if np.isfinite(var):
-                print(f"Run {run}: std(Pe) = {std:.3e}  (var = {var:.3e}, n = {n})")
+                print(f"Run {run}: std(Pe) = {std:.3e} %  (var = {var:.3e} %^2, n = {n})")
             else:
                 print(f"Run {run}: insufficient data (n = {n})")
 
@@ -1633,12 +1646,12 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
 
                 # Same y-axis limits and same ticks for every inset, in percent
                 inset_ymin = 0.00
-                inset_ymax = 5.00
+                inset_ymax = 3.0
 
                 axins.set_ylim(inset_ymin, inset_ymax)
 
                 # Same y-axis ticks for every inset, in percent
-                shared_inset_yticks = np.array([0.00, 1.25, 2.50, 3.75, 5.00])
+                shared_inset_yticks = np.array([0.0, 1.0, 2.0, 3.0]) # 0.00, 1.25, 2.50, 3.75, 5.00
                 axins.set_yticks(shared_inset_yticks)
                 axins.yaxis.set_major_formatter(plt.FormatStrFormatter("%.2f"))
 
