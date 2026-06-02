@@ -33,7 +33,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1 # number of rounds
+n = 1000000 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -59,22 +59,31 @@ unmask = True  # Do you want to use the unmasking feature to increase resonator 
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi ?
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 
-Qs_to_look_at = [4] # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,3,5] # only list the qubits you want to do the RR for
 
 # Data saving info
-run_name = 'run9c'
+run_name = 'run9'
 device_name = '6transmon'
-substudy_txt_notes = ('All qubits. Initial run 9c checkouts. \n')
+substudy_txt_notes = ('All qubits except Q5. Quiet run 9 AB paper data \n')
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": False, "ss_gef": False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
-             "rabi_pop_meas": False, "ef_Rabi": False}
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
+             "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
+             "rabi_pop_meas": True, "ef_Rabi": False}
 
-# For 25dB DAC,
-res_leng_vals = [5.5, 5.6, 6.5, 6.75, 6.0, 8.5]  # 5.63, 25dB [5.5, 6.0, 5.7, 6.8, 7.0, 8.0] , [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
-res_gain = [0.8125, 0.836, 0.95, 0.6218, 0.825, 0.94]  # 0.8125,25dB, [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97], [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
-freq_offsets = [0,0,0,0,0,0]  # -0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222
+# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
+#              "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
+#              "rabi_pop_meas": False, "ef_Rabi": False}
+
+# For 25dB DAC, 4/21
+res_leng_vals = [5.5, 5.6, 5.7, 6.75, 7.0, 7.65]  # 5.63, 25dB [5.5, 6.0, 5.7, 6.8, 7.0, 8.0] , [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
+res_gain = [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97]  # 0.8125,25dB, [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97], [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
+freq_offsets = [-0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222]  #0.04, -0.0300 25dB [-0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222]
+
+# For 20dB DAC
+# res_leng_vals = [4.25, 5.25, 5.0, 5.0, 6.25, 4.5]  # 4/12, 20dB
+# res_gain = [0.6400, 0.7300, 0.7800, 0.3750, 0.45, 0.7600]  # 4/12, 20dB,
+# freq_offsets = [0.2308, 0.1385, 0.0462, 0.1385, -0.1385, 0.1385]  # 4/12, 20dB
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
@@ -86,8 +95,8 @@ meas_time_RR = {}
 
 ################################################ Data Saving Setup ##################################################
 # Folders
-study = 'qubit_checkouts' #qubit_checkouts
-sub_study = 'initial_checkouts_25dB_DAC' #
+study = 'round_robin_benchmark' #qubit_checkouts
+sub_study = 'AB_paper_data_batch21_25dB_DACatten_noQ5' # DACatten_SSF_inv_allQs_25dB_junk, AB_paper_data_batch20_25dB_DACatten_noQ5, AB_paper_data_25dB_DACatten_noQ5_batch1, AB_paper_data_25dB_DACatten_onlyQ4_batch2
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
