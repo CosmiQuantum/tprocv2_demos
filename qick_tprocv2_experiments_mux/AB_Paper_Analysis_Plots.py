@@ -2103,6 +2103,215 @@ def boxwhisker_ssf_per_qubit_vs_run(
         fname = os.path.join(save_plt_path, save_name)
         fig.savefig(fname, bbox_inches="tight")
         plt.close(fig)
+def boxwhisker_snr_per_qubit_vs_run(
+        run_num_list,
+        snr_vals_by_run,
+        n_qubits=6,
+        qubits_to_plot=None,
+        colors="navy",
+        # default: same color for all qubits, can pass multiple too:
+        # ('orange', 'blue', 'purple', 'green', 'brown', 'palevioletred')
+        ylims=None,
+        yticks=None,
+        showfliers=True,
+        whis=1.5,
+        fig_title="Readout SNR vs Run Number",
+        ylabel="Readout SNR",
+        suptitle_fs=18,
+        title_fs=18,
+        label_fs=18,
+        tick_fs=18,
+        save_plt_path=None,
+        save_name="boxwhisk_snr_vs_run_num.pdf"
+):
+    """
+    SNR boxplot, using already-grouped per-run dictionaries.
+
+    Expected input shape
+    --------------------
+    snr_vals_by_run[run][q] = [snr, snr, ...]
+
+    Notes
+    -----
+    - This is the SNR-only version of the SSF boxplot function.
+    - Default color is navy for all qubits.
+    - If you want different colors per qubit, pass something like:
+          colors=('orange', 'blue', 'purple', 'green', 'brown', 'palevioletred')
+    """
+
+    # ---------------- choose qubits to plot ----------------
+    if qubits_to_plot is None:
+        qubits_to_plot = list(range(n_qubits))
+    else:
+        qubits_to_plot = list(qubits_to_plot)
+
+    n_plot = len(qubits_to_plot)
+    if n_plot == 0:
+        raise ValueError("qubits_to_plot is empty.")
+
+    # ---------------- helpers ----------------
+    def cell_to_1d(cell):
+        if cell is None:
+            return np.array([], dtype=float)
+
+        try:
+            if not np.isscalar(cell) and len(cell) == 0:
+                return np.array([], dtype=float)
+        except TypeError:
+            pass
+
+        if np.isscalar(cell):
+            arr = np.array([cell], dtype=float)
+        else:
+            arr = np.asarray(cell, dtype=float).ravel()
+
+        return arr[np.isfinite(arr)]
+
+    def get_cell(vals_by_run, run, q):
+        if vals_by_run is None or run not in vals_by_run:
+            return None
+
+        row = vals_by_run[run]
+        if row is None or q >= len(row):
+            return None
+
+        return row[q]
+
+    def style_boxplot(bp, color):
+        for b in bp["boxes"]:
+            b.set_facecolor(color)
+            b.set_edgecolor(color)
+            b.set_alpha(0.31)
+            b.set_linewidth(1.3)
+
+        for m in bp["medians"]:
+            m.set_color(color)
+            m.set_linewidth(2.0)
+
+        for w in bp["whiskers"]:
+            w.set_color(color)
+            w.set_linewidth(1.2)
+
+        for c in bp["caps"]:
+            c.set_color(color)
+            c.set_linewidth(1.2)
+
+        for f in bp["fliers"]:
+            f.set_marker("o")
+            f.set_markersize(3.5)
+            f.set_markerfacecolor(color)
+            f.set_markeredgecolor(color)
+            f.set_alpha(0.6)
+
+    def get_qubit_color(q):
+        if isinstance(colors, str):
+            return colors
+        return colors[q % len(colors)]
+
+    # ---------------- axis defaults ----------------
+    if ylims is None:
+        ylims = None
+
+    if yticks is None:
+        yticks = None
+
+    n_runs = len(run_num_list)
+    base_pos = np.arange(1, n_runs + 1)
+    xtick_labels = [f"{r}" for r in run_num_list]
+
+    # ---------------- dynamic subplot grid ----------------
+    if n_plot == 1:
+        nrows, ncols = 1, 1
+    elif n_plot == 2:
+        nrows, ncols = 1, 2
+    elif n_plot <= 4:
+        nrows, ncols = 2, 2
+    else:
+        ncols = 3
+        nrows = math.ceil(n_plot / 3)
+
+    fig_w = 5.8 * ncols
+    fig_h = 4.6 * nrows
+
+    fig, axes = plt.subplots(
+        nrows, ncols,
+        figsize=(fig_w, fig_h),
+        sharex=True,
+        sharey=True,
+        constrained_layout=False
+    )
+    axes = np.atleast_1d(axes).ravel()
+
+    for ax_idx, q in enumerate(qubits_to_plot):
+        ax = axes[ax_idx]
+        q_color = get_qubit_color(q)
+
+        box_data = [cell_to_1d(get_cell(snr_vals_by_run, r, q)) for r in run_num_list]
+
+        # summary print
+        print(f"\nQubit {q + 1} SNR summary:")
+        print_median_spread_table(
+            run_num_list,
+            box_data,
+            q,
+            mode="iqr2"
+        )
+
+        bp = ax.boxplot(
+            box_data,
+            positions=base_pos,
+            widths=0.55,
+            patch_artist=True,
+            showfliers=showfliers,
+            whis=whis,
+            manage_ticks=False
+        )
+        style_boxplot(bp, q_color)
+
+        ax.set_title(f"Qubit {q + 1}", fontsize=title_fs)
+
+        if ylims is not None:
+            ax.set_ylim(*ylims)
+
+        if yticks is not None:
+            ax.set_yticks(yticks)
+
+        ax.tick_params(axis="both", labelsize=tick_fs)
+        ax.grid(True, alpha=0.35)
+
+        ax.set_xticks(base_pos)
+        ax.set_xticklabels(xtick_labels)
+        ax.set_xlim(0.5, len(run_num_list) + 0.5)
+
+    # ---------------- hide unused axes ----------------
+    for k in range(n_plot, len(axes)):
+        axes[k].set_visible(False)
+
+    left_margin = 0.12 + 0.015 * max(nrows - 1, 0)
+    bottom_margin = 0.14 + 0.025 * max(nrows - 1, 0)
+    top_margin = 0.90 - 0.015 * max(nrows - 1, 0)
+    right_margin = 0.96
+
+    fig.subplots_adjust(
+        left=left_margin,
+        right=right_margin,
+        bottom=bottom_margin,
+        top=top_margin,
+        wspace=0.25,
+        hspace=0.35
+    )
+
+    fig.suptitle(fig_title, fontsize=suptitle_fs, y=0.975)
+    fig.supxlabel("Run Number", fontsize=label_fs, y=0.04)
+    fig.supylabel(ylabel, fontsize=label_fs, x=0.035)
+
+    if save_plt_path is None:
+        plt.show()
+    else:
+        os.makedirs(save_plt_path, exist_ok=True)
+        fname = os.path.join(save_plt_path, save_name)
+        fig.savefig(fname, bbox_inches="tight")
+        plt.close(fig)
 
 def boxwhisker_t1t2_init_vs_final_per_run(
         run_pair,

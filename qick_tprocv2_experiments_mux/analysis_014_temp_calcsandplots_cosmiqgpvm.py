@@ -1876,7 +1876,7 @@ class SSFTempCalcAndPlots:
                 color=colors[q % len(colors)],
                 alpha=0.7,
                 markersize=5,
-                linestyle="None",
+                linestyle="-",
                 label=f"Q{q + 1}"
             )
 
@@ -3157,7 +3157,7 @@ class SSFTempCalcAndPlots:
         sigma_e = sigmas[excited_idx]
 
         # -------------------- Calculate SNR --------------------
-        denom = np.sqrt(sigma_g ** 2 + sigma_e ** 2) # np.sqrt(0.5 * (sigma_g ** 2 + sigma_e ** 2))
+        denom = np.sqrt(0.5 * (sigma_g ** 2 + sigma_e ** 2))
 
         if denom <= 0 or not np.isfinite(denom):
             snr = np.nan
@@ -4221,6 +4221,7 @@ class combined_Qtemp_studies:
             err_key="temperature_err_mK",
             ssf_key="ssf_fid",
             ssf_err_key="ssf_err_total",
+            snr_key="ssf_SNR",
             alt_err_keys=("temperature_mK_err", "T_mK_err", "T_err_mK", "T_err"),
             qubit_keys=("qid", "qubit", "qubit_index", "QubitIndex"),
             keep_nans=False):
@@ -4241,6 +4242,9 @@ class combined_Qtemp_studies:
         ssf_errs : list of lists
             ssf_errs[qid] = [ssf_err_total, ...]
 
+        snr_vals : list of lists
+            snr_vals[qid] = [ssf_SNR, ...]
+
         Supported input formats
         -----------------------
         1. Dictionary form:
@@ -4256,6 +4260,7 @@ class combined_Qtemp_studies:
         -----
         - If an error key is missing, np.nan is appended so the arrays stay aligned.
         - If the SSF key is missing, np.nan is appended so the arrays stay aligned.
+        - If the SNR key is missing, np.nan is appended so the arrays stay aligned.
         - If keep_nans=False, records with non-finite temperatures are skipped.
         """
 
@@ -4263,6 +4268,7 @@ class combined_Qtemp_studies:
         errs = [[] for _ in range(n_qubits)]
         ssf_vals = [[] for _ in range(n_qubits)]
         ssf_errs = [[] for _ in range(n_qubits)]
+        snr_vals = [[] for _ in range(n_qubits)]
 
         # ---------------- Helpers ----------------
         def _to_float_or_nan(val):
@@ -4315,11 +4321,13 @@ class combined_Qtemp_studies:
             T_err = _to_float_or_nan(_get_temp_err(rec))
             ssf = _to_float_or_nan(rec.get(ssf_key, None))
             ssf_err = _to_float_or_nan(rec.get(ssf_err_key, None))
+            snr = _to_float_or_nan(rec.get(snr_key, None))
 
             temps[qid].append(T)
             errs[qid].append(T_err)
             ssf_vals[qid].append(ssf)
             ssf_errs[qid].append(ssf_err)
+            snr_vals[qid].append(snr)
 
         # ---------------- Dictionary form: {qid: [records]} ----------------
         if isinstance(fit_results, dict):
@@ -4329,7 +4337,7 @@ class combined_Qtemp_studies:
                 for rec in records:
                     _append_record(qid, rec)
 
-            return temps, errs, ssf_vals, ssf_errs
+            return temps, errs, ssf_vals, ssf_errs, snr_vals
 
         # ---------------- Flat list form: [records] ----------------
         if isinstance(fit_results, (list, tuple)):
@@ -4346,9 +4354,11 @@ class combined_Qtemp_studies:
 
                 _append_record(qid, rec)
 
-            return temps, errs, ssf_vals, ssf_errs
+            return temps, errs, ssf_vals, ssf_errs, snr_vals
 
-        raise TypeError("fit_results must be either a dict keyed by qubit index or a flat list of record dictionaries.")
+        raise TypeError(
+            "fit_results must be either a dict keyed by qubit index "
+            "or a flat list of record dictionaries.")
 
     def rpm_results_to_per_qubit_lists(
             self,
@@ -5693,44 +5703,36 @@ class combined_Qtemp_studies:
         print("Saved Pe comparison plot:", out_path)
         return out_path
 
-    def get_time_alphas(self, times, alpha_min=0.20, alpha_max=0.95):
+    def get_time_alphas(self, times, alpha_min=0.20, alpha_max=0.95, gamma=1.25):
         """
-        Return alpha values that increase with time. THhis is used to plot colors using a gradients
+        Convert timestamps into smoothly varying alpha values.
 
-        Parameters
-        ----------
-        times : list
-            List of datetime.datetime objects.
+        Earlier times get alpha_min.
+        Later times get alpha_max.
 
-        alpha_min : float
-            Alpha for the earliest point.
-
-        alpha_max : float
-            Alpha for the latest point.
-
-        Returns
-        -------
-        alphas : np.ndarray
-            Array of alpha values with the same length as times.
+        gamma controls how the gradient is stretched:
+            gamma = 1.0  -> linear gradient
+            gamma < 1.0  -> spreads out early-time differences more
+            gamma > 1.0  -> spreads out late-time differences more
         """
 
         if times is None or len(times) == 0:
             return np.array([])
 
-        time_seconds = np.array([t.timestamp() for t in times], dtype=float)
+        t_seconds = np.array([t.timestamp() for t in times], dtype=float)
 
-        if not np.all(np.isfinite(time_seconds)):
-            return np.full(len(times), alpha_max)
+        if len(t_seconds) == 1 or np.nanmax(t_seconds) == np.nanmin(t_seconds):
+            return np.full(len(t_seconds), alpha_max)
 
-        t_min = np.nanmin(time_seconds)
-        t_max = np.nanmax(time_seconds)
+        # Normalize time from 0 to 1
+        t_norm = (t_seconds - np.nanmin(t_seconds)) / (
+                np.nanmax(t_seconds) - np.nanmin(t_seconds)
+        )
 
-        if t_max == t_min:
-            return np.full(len(times), alpha_max)
+        # Optional nonlinear stretch
+        t_norm = t_norm ** gamma
 
-        time_norm = (time_seconds - t_min) / (t_max - t_min)
-
-        alphas = alpha_min + (alpha_max - alpha_min) * time_norm
+        alphas = alpha_min + t_norm * (alpha_max - alpha_min)
 
         return alphas
 
@@ -5766,7 +5768,7 @@ class combined_Qtemp_studies:
         import matplotlib.colors as mcolors
 
         ax_grad = fig.add_axes(box_pos)
-        ax_grad.set_title(title, fontsize=9)
+        # ax_grad.set_title(title, fontsize=9)
 
         n = len(colors)
         n_alpha = 100
@@ -5794,13 +5796,13 @@ class combined_Qtemp_studies:
                 label,
                 ha="right",
                 va="center",
-                fontsize=8
+                fontsize=14
             )
 
         ax_grad.set_xlim(-0.25, 1.0)
         ax_grad.set_ylim(0, n)
         ax_grad.set_xticks([0, 1])
-        ax_grad.set_xticklabels(["early", "late"], fontsize=8)
+        ax_grad.set_xticklabels(["early", "late"], fontsize=14)
         ax_grad.set_yticks([])
 
         for spine in ax_grad.spines.values():
@@ -6889,6 +6891,135 @@ class combined_Qtemp_studies:
         print("Saved SSF vs RPM Pe animation:", out_path)
         return out_path
 
+    def mean_datetime(self, dt_list):
+        """
+        Average a list of datetime objects.
+        """
+        if not dt_list:
+            return None
+
+        ts = [
+            t.timestamp()
+            for t in dt_list
+            if isinstance(t, datetime.datetime)
+        ]
+
+        if len(ts) == 0:
+            return None
+
+        return datetime.datetime.fromtimestamp(float(np.mean(ts)))
+
+    def nearest_neighbor_average_plot_data(self, q_match, n_neighbors=10, min_neighbors=3):
+        """
+        Reduce matched SSF/RPM points by averaging nearest neighbors in RPM Pe.
+
+        Important:
+        - Neighbors are chosen only by Pe, not by SSF.
+        - Points are sorted by Pe and averaged in non-overlapping groups.
+        - Each original point is used once.
+        - This reduces visual crowding without using the y-axis value to define groups.
+
+        Error bars:
+        - Pe error: propagated measurement error on the mean, sqrt(sum(err_i^2)) / N
+        - SSF error: propagated measurement error on the mean, sqrt(sum(err_i^2)) / N
+        """
+
+        pe = np.array(q_match["Pe_RPM"], dtype=float)
+        pe_err = np.array(q_match["PeErr_RPM"], dtype=float)
+        ssf = np.array(q_match["SSF"], dtype=float)
+        ssf_err = np.array(q_match["SSF_err"], dtype=float)
+        dt_seconds = np.array(q_match["dt_seconds"], dtype=float)
+
+        t_ssf = list(q_match["t_SSF"])
+        t_rpm = list(q_match["t_RPM"])
+
+        good = (
+                np.isfinite(pe)
+                & np.isfinite(pe_err)
+                & np.isfinite(ssf)
+                & np.isfinite(ssf_err)
+                & np.isfinite(dt_seconds)
+        )
+
+        if np.sum(good) < min_neighbors:
+            return q_match
+
+        pe = pe[good]
+        pe_err = pe_err[good]
+        ssf = ssf[good]
+        ssf_err = ssf_err[good]
+        dt_seconds = dt_seconds[good]
+
+        good_indices = np.where(good)[0]
+        t_ssf = [t_ssf[i] for i in good_indices]
+        t_rpm = [t_rpm[i] for i in good_indices]
+
+        # Sort only by Pe so the averaging is independent of SSF.
+        order = np.argsort(pe)
+
+        pe = pe[order]
+        pe_err = pe_err[order]
+        ssf = ssf[order]
+        ssf_err = ssf_err[order]
+        dt_seconds = dt_seconds[order]
+        t_ssf = [t_ssf[i] for i in order]
+        t_rpm = [t_rpm[i] for i in order]
+
+        # Build non-overlapping nearest-neighbor groups.
+        groups = [
+            list(range(i, min(i + n_neighbors, len(pe))))
+            for i in range(0, len(pe), n_neighbors)
+        ]
+
+        # Avoid a tiny final group by merging it into the previous group.
+        if len(groups) > 1 and len(groups[-1]) < min_neighbors:
+            groups[-2].extend(groups[-1])
+            groups = groups[:-1]
+
+        avg = {
+            "Pe_RPM": [],
+            "PeErr_RPM": [],
+            "SSF": [],
+            "SSF_err": [],
+            "dt_seconds": [],
+            "t_SSF": [],
+            "t_RPM": [],
+        }
+
+        for g in groups:
+            g = np.array(g, dtype=int)
+            n = len(g)
+
+            if n < min_neighbors:
+                continue
+
+            pe_g = pe[g]
+            pe_err_g = pe_err[g]
+            ssf_g = ssf[g]
+            ssf_err_g = ssf_err[g]
+            dt_g = dt_seconds[g]
+
+            # Arithmetic means keep the averaging simple and transparent.
+            pe_mean = float(np.mean(pe_g))
+            ssf_mean = float(np.mean(ssf_g))
+            dt_mean = float(np.mean(dt_g))
+
+            # Propagate measurement uncertainty on the mean.
+            # This keeps the averaged x and y error bars consistent:
+            # both show the measurement uncertainty of the averaged value.
+            pe_total_err = float(np.sqrt(np.sum(pe_err_g ** 2)) / n)
+            ssf_total_err = float(np.sqrt(np.sum(ssf_err_g ** 2)) / n)
+
+            avg["Pe_RPM"].append(pe_mean)
+            avg["PeErr_RPM"].append(pe_total_err)
+            avg["SSF"].append(ssf_mean)
+            avg["SSF_err"].append(ssf_total_err)
+            avg["dt_seconds"].append(dt_mean)
+            avg["t_SSF"].append(self.mean_datetime([t_ssf[i] for i in g]))
+            avg["t_RPM"].append(self.mean_datetime([t_rpm[i] for i in g]))
+
+        return avg
+
     def SSF_fid_vs_RRPM_Pe(
             self,
             ssf_fit_results,
@@ -6904,7 +7035,10 @@ class combined_Qtemp_studies:
             RPM_Pe_rel_err_cut = None,
             plot_with_t_color_gradient = False,
             plot_with_t_markers = False, # only implemented for plot_together case currently
-            plot_ideal_line = False): # only implemented for plot_together case currently
+            plot_ideal_line = False,
+            nearest_neighbor_average=False,
+            nn_average_neighbors=10,
+            nn_average_min_neighbors=3): # This just prevents the last averaged point from being made from only 1 or 2 leftover points.
         """
         Plot SSF fidelity vs RPM-extracted thermal population Pe.
 
@@ -7005,7 +7139,9 @@ class combined_Qtemp_studies:
                     pe_err = np.nan
 
                 if RPM_Pe_rel_err_cut is not None:
-                    if pe_err / pe >= RPM_Pe_rel_err_cut: # optional relative err cut
+                    rel_err = pe_err / pe
+                    if rel_err >= RPM_Pe_rel_err_cut: # optional relative err cut
+                        print(f"Removed datapoint for Q{q} due to Pe relative err of {rel_err*100:.2f}%")
                         continue
 
                 times_RPM[q].append(datetime.datetime.fromtimestamp(ts))
@@ -7159,6 +7295,23 @@ class combined_Qtemp_studies:
                 if len(matched[q]["SSF"]) == 0:
                     continue
 
+                # Keep a copy of the original matched data for this qubit.
+                # This lets us temporarily replace matched[q] only for plotting.
+                original_matched_q = matched[q]
+                if nearest_neighbor_average:
+                    avg_data = self.nearest_neighbor_average_plot_data(
+                        matched[q],
+                        n_neighbors=nn_average_neighbors,
+                        min_neighbors=nn_average_min_neighbors)
+
+                    print(
+                        f"Q{q + 1}: nearest-neighbor averaged "
+                        f"{len(matched[q]['SSF'])} points into {len(avg_data['SSF'])} points "
+                        f"using {nn_average_neighbors} neighbors per averaged point.")
+
+                    # Temporarily use the averaged data for the rest of this plotting loop.
+                    matched[q] = avg_data
+
                 q_color = colors[q % len(colors)]
                 q_marker = markers[q % len(markers)]
 
@@ -7177,8 +7330,9 @@ class combined_Qtemp_studies:
                     time_bins = None
                     alphas = self.get_time_alphas(
                         matched[q]["t_RPM"],
-                        alpha_min=0.20,
-                        alpha_max=0.95
+                        alpha_min=0.35,
+                        alpha_max=1.0,
+                        gamma=1.6,
                     )
 
                 else:
@@ -7210,8 +7364,8 @@ class combined_Qtemp_studies:
                         markerfacecolor = q_color
                         alpha = a
 
-                    # Q4 behind other qubits
-                    #zorder_val = 1 if q == 3 else 3
+                    # lower zorder = plotted first
+                    zorder_val = 100 if q == 0 else 3
 
                     # Plot error bars first, behind marker
                     ax.errorbar(
@@ -7224,7 +7378,7 @@ class combined_Qtemp_studies:
                         capsize=3,
                         alpha=alpha - 0.2,
                         ecolor=q_color,
-                        #zorder=zorder_val
+                        zorder=zorder_val
                     )
 
                     # Plot marker on top so error bars do not show through it
@@ -7238,21 +7392,22 @@ class combined_Qtemp_studies:
                         linewidths=0.8,
                         alpha=alpha,
                         color=q_color if markerfacecolor != "none" else None,
-                        #zorder=zorder_val + 1
+                        zorder=zorder_val + 1
                     )
 
                 # Dummy point only for qubit legend since we are plotting point-by-point above
-                ax.errorbar(
-                    [],
-                    [],
-                    fmt=q_marker,
-                    markersize=5,
-                    color=q_color,
-                    markerfacecolor=q_color,
-                    markeredgecolor="k",
-                    linestyle="None",
-                    label=f"Q{q + 1}"
-                )
+                if not plot_with_t_color_gradient:
+                    ax.errorbar(
+                        [],
+                        [],
+                        fmt=q_marker,
+                        markersize=5,
+                        color=q_color,
+                        markerfacecolor=q_color,
+                        markeredgecolor="k",
+                        linestyle="None",
+                        label=f"Q{q + 1}"
+                    )
 
                 # --------------------------------------------------
                 # Optional linear fit: SSF = intercept + slope * Pe
@@ -7263,7 +7418,7 @@ class combined_Qtemp_studies:
                     # Q1 has several clear outliers, so we use a stronger Cauchy down-weighting
                     # for Q1 only. This is checked against the default f_scale=3.0 fit.
                     if q == 0:
-                        fit_f_scale = 2.0 # has pretty bad outliers
+                        fit_f_scale = 2.0 # has pretty bad outliers in run 9
                     # elif q == 3:
                     #     fit_f_scale = 2.5
                     else:
@@ -7295,16 +7450,25 @@ class combined_Qtemp_studies:
                                     rf"Q{q + 1} fit: "
                                     rf"$m={slope:.2f}$, "
                                     rf"$b={intercept:.3f}$, "
-                                    rf"$R^2={r2:.2f}$"
-                                ),
+                                    rf"$R^2={r2:.2f}$"),
                                 zorder=6)
+                # Restore the original full matched data before moving to the next qubit.
+                matched[q] = original_matched_q
+
+            if nearest_neighbor_average:
+                title_extra = (
+                    # f"nearest-time match, tol={tolerance_seconds}s; "
+                    f"nearest-neighbor avg, N={nn_average_neighbors}")
+            else:
+                title_extra = "" #f"nearest-time match, tol={tolerance_seconds}s"
 
             ax.set_title(
                 f"SSF Fidelity vs RPM $P_e$ "
-                f"(nearest-time match, tolerance={tolerance_seconds}s)",
+                f"({title_extra})",
                 fontsize=16)
             ax.set_xlabel("RPM $P_e$", fontsize=14)
             ax.set_ylabel("Single-Shot Fidelity", fontsize=14)
+            ax.tick_params(axis="both", which="major", labelsize=14)
 
             if xlims is not None:
                 ax.set_xlim(*xlims)
@@ -7333,12 +7497,13 @@ class combined_Qtemp_studies:
             ax.grid(alpha=0.3)
 
             # Main qubit/ideal-line legend
-            qubit_legend = ax.legend(
-                fontsize=11,
-                frameon=True,
-                loc="best"
-            )
-            ax.add_artist(qubit_legend)
+            if plot_ideal_line and not plot_with_t_color_gradient:
+                qubit_legend = ax.legend(
+                    fontsize=11,
+                    frameon=True,
+                    loc="best"
+                )
+                ax.add_artist(qubit_legend)
 
             # Only show alpha-gradient legend if using continuous alpha gradient
             if plot_with_t_color_gradient:
@@ -7351,7 +7516,7 @@ class combined_Qtemp_studies:
                     qubit_labels,
                     alpha_min=0.20,
                     alpha_max=0.95,
-                    box_pos=(0.75, 0.15, 0.12, 0.22)
+                    box_pos=(0.75, 0.65, 0.12, 0.22) # box_pos=(left, bottom, width, height)
                 )
 
             # Only show marker-fill legend if using early/middle/late marker bins
@@ -7394,8 +7559,8 @@ class combined_Qtemp_studies:
                 time_legend = ax.legend(
                     handles=time_marker_handles,
                     title="Time bin",
-                    fontsize=10,
-                    title_fontsize=10,
+                    fontsize=14,
+                    title_fontsize=14,
                     frameon=True,
                     loc="lower right")
                 ax.add_artist(time_legend)
@@ -7419,12 +7584,34 @@ class combined_Qtemp_studies:
 
             for ax, q in zip(axes, qubits_to_plot):
 
+                # Keep a copy of the original matched data for this qubit.
+                # This lets us temporarily replace matched[q] only for plotting.
+                original_matched_q = matched[q]
+
                 if len(matched[q]["SSF"]) > 0:
+
+                    if nearest_neighbor_average:
+                        avg_data = self.nearest_neighbor_average_plot_data(
+                            matched[q],
+                            n_neighbors=nn_average_neighbors,
+                            min_neighbors=nn_average_min_neighbors
+                        )
+
+                        print(
+                            f"Q{q + 1}: nearest-neighbor averaged "
+                            f"{len(matched[q]['SSF'])} points into {len(avg_data['SSF'])} points "
+                            f"using {nn_average_neighbors} neighbors per averaged point."
+                        )
+
+                        # Temporarily use the averaged data for the rest of this subplot.
+                        matched[q] = avg_data
+
                     if plot_with_t_color_gradient:
                         alphas = self.get_time_alphas(
-                            matched[q]["t_SSF"],
-                            alpha_min=0.20,
-                            alpha_max=0.95
+                            matched[q]["t_RPM"],
+                            alpha_min=0.35,
+                            alpha_max=1.0,
+                            gamma=1.6,
                         )
                     else:
                         alphas = np.full(len(matched[q]["SSF"]), 0.8)
@@ -7451,16 +7638,17 @@ class combined_Qtemp_studies:
                             linestyle="None"
                         )
 
-                    ax.errorbar( # Dummy, just to plot legend (since above we are point-by-point plotting)
-                        [],
-                        [],
-                        fmt=markers[q % len(markers)],
-                        markersize=5,
-                        color=colors[q % len(colors)],
-                        markeredgecolor="k",
-                        linestyle="None",
-                        label=f"Q{q + 1}"
-                    )
+                    if not plot_with_t_color_gradient:
+                        ax.errorbar( # Dummy, just to plot legend (since above we are point-by-point plotting)
+                            [],
+                            [],
+                            fmt=markers[q % len(markers)],
+                            markersize=5,
+                            color=colors[q % len(colors)],
+                            markeredgecolor="k",
+                            linestyle="None",
+                            label=f"Q{q + 1}"
+                        )
                     if plot_ideal_line:
                         # Default robust fit for all qubits.
                         # Q1 has several clear outliers, so we use a stronger Cauchy down-weighting
@@ -7507,6 +7695,7 @@ class combined_Qtemp_studies:
                 ax.set_title(f"Q{q + 1}", loc="left", fontsize=14, fontweight="bold")
                 ax.set_ylabel("SSF")
                 ax.grid(alpha=0.3)
+                ax.tick_params(axis="both", which="major", labelsize=14)
                 #ax.legend(loc="best", fontsize=9, frameon=False)
                 ax.set_box_aspect(1)
 
@@ -7544,6 +7733,9 @@ class combined_Qtemp_studies:
                         zorder=5)
                 ax.legend(loc="best", fontsize=10, frameon=True)
 
+                # Restore the original full matched data before moving to the next qubit.
+                matched[q] = original_matched_q
+
             for k in range(len(qubits_to_plot), len(axes)):
                 axes[k].set_visible(False)
 
@@ -7551,8 +7743,14 @@ class combined_Qtemp_studies:
 
             fig.supylabel("SSF Fidelity")
 
-            fig.suptitle(f"SSF Fidelity vs RPM $P_e$ "
-                f"(nearest-time match, tolerance={tolerance_seconds}s)",
+            if nearest_neighbor_average:
+                title_extra = f"nearest-neighbor avg, N={nn_average_neighbors}"
+            else:
+                title_extra = f"nearest-time match, tolerance={tolerance_seconds}s"
+
+            fig.suptitle(
+                f"SSF Fidelity vs RPM $P_e$ "
+                f"({title_extra})",
                 fontsize=16)
 
             if plot_with_t_color_gradient:
@@ -7563,9 +7761,9 @@ class combined_Qtemp_studies:
                     fig,
                     qubit_colors,
                     qubit_labels,
-                    alpha_min=0.20,
-                    alpha_max=0.95,
-                    box_pos=(0.83, 0.15, 0.12, 0.22)
+                    alpha_min=0.35,
+                    alpha_max=1.0,
+                    box_pos=(0.83, 0.15, 0.12, 0.22) # box_pos=(left, bottom, width, height)
                 )
 
             out_path = os.path.join(paramvstime_dir, f"SSF_fid_vs_RPM_Pe_Subplots_{stamp}.pdf")
