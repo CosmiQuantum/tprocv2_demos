@@ -535,7 +535,7 @@ class SSFTempCalcAndPlots:
         return all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs, fit_results
 
     def run_ssf_qtemps_iminuit(self, pairs_info, run_num, limit_temp_k=0.8, do_plots = False, save_figs_path = "", dontuse_midpt_thresh = False, low_leakage_mode = False, ssf_hist_ylim = None,
-                               apply_quality_cuts=True, calc_SNR=False):
+                               apply_quality_cuts=True, calc_SNR=False, calc_e_state_decay = True):
         """
         Uses iminuit instead of GMM for double gaussian fitting and minimization.
 
@@ -738,6 +738,24 @@ class SSFTempCalcAndPlots:
                     save_figs_path_SNR = os.path.join(save_figs_path, "SNR")
                     snr, snr_info = self.fit_ssf_ge_double_gaussian_SNR_iminuit(ig_new,ie_new, qid, plot = False, qubit_folder = save_figs_path_SNR, dataset = idx)
                     
+                # -------- optionally estimate e-state population on the left due to T1 decay, failed pi pulses, etc. --------
+                # ---------------- fit excited-prepared SSF data ----------------
+                ie_new_ground_frac = np.nan
+                ie_new_ground_frac_err = np.nan
+                ie_new_excited_frac = np.nan
+                ie_new_excited_frac_err = np.nan
+                ie_new_lr_stat = np.nan
+                ie_new_fit_results = np.nan
+
+                if calc_e_state_decay:
+                    ie_new_fit_results = self.fit_e_state_double_gaussian_iminuit(ie_new, qid=qid, dataset=idx)
+                    if ie_new_fit_results is not None:
+                        ie_new_ground_frac = ie_new_fit_results["ie_new_ground_frac"]
+                        ie_new_ground_frac_err = ie_new_fit_results["ie_new_ground_frac_err"]
+                        ie_new_excited_frac = ie_new_fit_results["ie_new_excited_frac"]
+                        ie_new_excited_frac_err = ie_new_fit_results["ie_new_excited_frac_err"]
+                        ie_new_lr_stat = ie_new_fit_results["ie_new_lr_stat"]
+
                 # -------- save qubit temps and timestamps ----------------------------------------------
                 all_qubit_temperatures[qid].append(T_mK)  # temperatures in mK
                 all_qubit_temperatures_errs[qid].append(sigma_TmK) #temperature errors
@@ -769,6 +787,16 @@ class SSFTempCalcAndPlots:
                     "qfreq_mhz": freq_mhz,
                     "qfreq_mhz_err": freq_mhz_err,
                     "ssf_SNR": snr,
+
+                    # Excited-prepared ie_new double-Gaussian fit.
+                    # ie_new_ground_frac = observed ground-like fraction in intended e-state data.
+                    # If calc_e_state_decay is set to False, these are np.nan
+                    "ie_new_fit_results": ie_new_fit_results,
+                    "ie_new_ground_frac": ie_new_ground_frac,
+                    "ie_new_ground_frac_err": ie_new_ground_frac_err,
+                    "ie_new_excited_frac": ie_new_excited_frac,
+                    "ie_new_excited_frac_err": ie_new_excited_frac_err,
+                    "ie_new_lr_stat": ie_new_lr_stat,
                 })
 
         return all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs, fit_results
@@ -3205,6 +3233,183 @@ class SSFTempCalcAndPlots:
         }
 
         return snr, snr_info
+
+    def fit_e_state_double_gaussian_iminuit(
+            self,
+            iq_data,
+            qid=None,
+            dataset=None,
+            right_weight_init=0.8,
+            verbose=False):
+        """
+        Fit SSF excited-prepared data, ie_new, to a two-Gaussian mixture.
+
+        This uses the same fitting logic as fit_double_gaussian_midpoint_iminuit(),
+        but with initial conditions appropriate for excited-prepared data.
+
+        For ie_new:
+            lower-mean Gaussian  -> decay during readout, failed pi pulses, etc component
+            higher-mean Gaussian -> excited-state component
+
+        Main quantity of interest:
+            ie_new_ground_frac
+
+        This is the observed ground-like fraction in the intended excited-state data.
+        It is not automatically pure T1 decay.
+        """
+
+        try:
+            # -------------------- Prepare data --------------------
+            x = np.asarray(iq_data, dtype=float).ravel()
+            x = x[np.isfinite(x)]
+
+            if x.size == 0:
+                raise ValueError("iq_data is empty after removing non-finite values.")
+
+            eps = 1e-300  # to avoid log(0)
+
+            # -------------------- Initial guesses --------------------
+            # Same logic as the usual fitter, but tailored to excited-prepared data.
+            # For ie_new, the dominant blob should usually be the excited-like
+            # component on the right, with a smaller ground-like component on the left.
+            q25, q75 = np.percentile(x, [25, 75])
+
+            std_all = np.std(x)
+            if std_all <= 0:
+                std_all = 1.0
+
+            mu1_init = q75  # right / excited-like component
+            mu2_init = q25  # left / ground-like component
+            w1_init = right_weight_init  # dominant right component
+
+            sigma1_init = std_all / 2.0
+            sigma2_init = std_all / 2.0
+
+            # -------------------- 1-Gaussian null model --------------------
+            def nll_1g(mu, sigma):
+                g = self.gaussian_pdf(x, mu, sigma)
+                p = np.clip(g, eps, None)
+                return -np.sum(np.log(p))
+
+            mu0_init = np.mean(x)
+            sigma0_init = std_all
+
+            m1 = Minuit(nll_1g, mu=mu0_init, sigma=sigma0_init)
+            m1.limits["sigma"] = (1e-6, None)
+            m1.errordef = Minuit.LIKELIHOOD
+            m1.simplex()
+            m1.migrad()
+            m1.hesse()
+
+            nll_1g_min = m1.fval
+
+            # -------------------- 2-Gaussian mixture --------------------
+            def nll_2g(mu1, sigma1, mu2, sigma2, w1):
+                w1_clipped = np.clip(w1, 1e-6, 1.0 - 1e-6)
+                w2 = 1.0 - w1_clipped
+
+                g1 = self.gaussian_pdf(x, mu1, sigma1)
+                g2 = self.gaussian_pdf(x, mu2, sigma2)
+
+                p = w1_clipped * g1 + w2 * g2
+                p = np.clip(p, eps, None)
+                return -np.sum(np.log(p))
+
+            m2 = Minuit(
+                nll_2g,
+                mu1=mu1_init,
+                sigma1=sigma1_init,
+                mu2=mu2_init,
+                sigma2=sigma2_init,
+                w1=w1_init)
+
+            m2.limits["sigma1"] = (1e-6, None)
+            m2.limits["sigma2"] = (1e-6, None)
+            m2.limits["w1"] = (1e-6, 1.0 - 1e-6)
+            m2.errordef = Minuit.LIKELIHOOD
+            m2.simplex()
+            m2.migrad()
+            m2.hesse()
+
+            nll_2g_min = m2.fval
+
+            # -------------------- Likelihood-ratio statistic --------------------
+            ie_new_lr_stat = 2.0 * (nll_1g_min - nll_2g_min)
+
+            # -------------------- Extract and sort components --------------------
+            mu1, sigma1, mu2, sigma2, w1 = m2.values
+            w2 = 1.0 - w1
+
+            means = np.array([mu1, mu2], dtype=float)
+            sigmas = np.array([sigma1, sigma2], dtype=float)
+            weights = np.array([w1, w2], dtype=float)
+
+            # Same sorting logic as your ig_new fitter:
+            # lower mean first, higher mean second.
+            order = np.argsort(means)
+            means = means[order]
+            sigmas = sigmas[order]
+            weights = weights[order]
+
+            # For ie_new:
+            # lower-mean component = ground-like
+            # higher-mean component = excited-like
+            ie_new_ground_frac = float(weights[0])
+            ie_new_excited_frac = float(weights[1])
+
+            # -------------------- Uncertainty from Minuit on w1 --------------------
+            sigma_w1 = None
+
+            if m2.covariance is not None:
+                try:
+                    sigma_w1 = float(np.sqrt(m2.covariance["w1", "w1"]))
+                except Exception:
+                    sigma_w1 = None
+
+            if sigma_w1 is None:
+                sigma_w1 = float(m2.errors["w1"])
+
+            # Since w2 = 1 - w1, use same uncertainty for both mixture weights.
+            ie_new_ground_frac_err = sigma_w1
+            ie_new_excited_frac_err = sigma_w1
+
+            # -------------------- Build output dictionary only after success --------------------
+            ie_fit_results = {
+                "ie_new_ground_frac": ie_new_ground_frac,
+                "ie_new_ground_frac_err": ie_new_ground_frac_err,
+                "ie_new_excited_frac": ie_new_excited_frac,
+                "ie_new_excited_frac_err": ie_new_excited_frac_err,
+                "ie_new_means": means,
+                "ie_new_sigmas": sigmas,
+                "ie_new_weights": weights,
+                "ie_new_ground_mean": float(means[0]),
+                "ie_new_excited_mean": float(means[1]),
+                "ie_new_ground_sigma": float(sigmas[0]),
+                "ie_new_excited_sigma": float(sigmas[1]),
+                "ie_new_lr_stat": float(ie_new_lr_stat),
+                "ie_new_nll_1g": float(nll_1g_min),
+                "ie_new_nll_2g": float(nll_2g_min),
+                "ie_new_Nshots": int(x.size)}
+            
+            if verbose:
+                qlabel = f"Q{qid + 1}" if qid is not None else "Q?"
+                dlabel = f"dataset {dataset}" if dataset is not None else "dataset ?"
+                print(f"\n{qlabel}, {dlabel} excited-prepared ie_new fit:")
+                print(
+                    f"  ground-like fraction = "
+                    f"{ie_new_ground_frac:.4f} ± {ie_new_ground_frac_err:.4f}")
+                print(
+                    f"  excited-like fraction = "
+                    f"{ie_new_excited_frac:.4f} ± {ie_new_excited_frac_err:.4f}")
+                print(f"  LRT = {ie_new_lr_stat:.2f}")
+
+            return ie_fit_results
+
+        except Exception as err:
+            qlabel = f"Q{qid + 1}" if qid is not None else "Q?"
+            dlabel = f"dataset {dataset}" if dataset is not None else "dataset ?"
+            print(f"{qlabel}, {dlabel}: excited-prepared ie_new fit failed: {err}")
+            return None
     
     def fit_double_gaussian_midpoint_iminuit(self, iq_data, dontuse_midpt_thresh = False, low_leakage_mode = False):
         """
@@ -4077,16 +4282,16 @@ class combined_Qtemp_studies:
 
         os.makedirs(save_dir, exist_ok=True)
 
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        #timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
         ssf_path = os.path.join(
             save_dir,
-            f"{tag}_SSF_fit_results_g_{timestamp}.pkl"
+            f"{tag}_SSF_fit_results_g.pkl"
         )
 
         rpm_path = os.path.join(
             save_dir,
-            f"{tag}_all_files_Qtemp_results_RPMs_{timestamp}.pkl"
+            f"{tag}_all_files_Qtemp_results_RPMs.pkl"
         )
 
         with open(ssf_path, "wb") as f:
@@ -4222,6 +4427,8 @@ class combined_Qtemp_studies:
             ssf_key="ssf_fid",
             ssf_err_key="ssf_err_total",
             snr_key="ssf_SNR",
+            ie_new_ground_key="ie_new_ground_frac",
+            ie_new_ground_err_key="ie_new_ground_frac_err",
             alt_err_keys=("temperature_mK_err", "T_mK_err", "T_err_mK", "T_err"),
             qubit_keys=("qid", "qubit", "qubit_index", "QubitIndex"),
             keep_nans=False):
@@ -4245,6 +4452,12 @@ class combined_Qtemp_studies:
         snr_vals : list of lists
             snr_vals[qid] = [ssf_SNR, ...]
 
+        ie_ground_vals : list of lists
+            ie_ground_vals[qid] = [ie_new_ground_frac, ...]
+
+        ie_ground_errs : list of lists
+            ie_ground_errs[qid] = [ie_new_ground_frac_err, ...]
+
         Supported input formats
         -----------------------
         1. Dictionary form:
@@ -4261,6 +4474,7 @@ class combined_Qtemp_studies:
         - If an error key is missing, np.nan is appended so the arrays stay aligned.
         - If the SSF key is missing, np.nan is appended so the arrays stay aligned.
         - If the SNR key is missing, np.nan is appended so the arrays stay aligned.
+        - If the ie_new ground-fraction key is missing, np.nan is appended.
         - If keep_nans=False, records with non-finite temperatures are skipped.
         """
 
@@ -4269,6 +4483,8 @@ class combined_Qtemp_studies:
         ssf_vals = [[] for _ in range(n_qubits)]
         ssf_errs = [[] for _ in range(n_qubits)]
         snr_vals = [[] for _ in range(n_qubits)]
+        ie_ground_vals = [[] for _ in range(n_qubits)]
+        ie_ground_errs = [[] for _ in range(n_qubits)]
 
         # ---------------- Helpers ----------------
         def _to_float_or_nan(val):
@@ -4323,11 +4539,16 @@ class combined_Qtemp_studies:
             ssf_err = _to_float_or_nan(rec.get(ssf_err_key, None))
             snr = _to_float_or_nan(rec.get(snr_key, None))
 
+            ie_ground = _to_float_or_nan(rec.get(ie_new_ground_key, None))
+            ie_ground_err = _to_float_or_nan(rec.get(ie_new_ground_err_key, None))
+
             temps[qid].append(T)
             errs[qid].append(T_err)
             ssf_vals[qid].append(ssf)
             ssf_errs[qid].append(ssf_err)
             snr_vals[qid].append(snr)
+            ie_ground_vals[qid].append(ie_ground)
+            ie_ground_errs[qid].append(ie_ground_err)
 
         # ---------------- Dictionary form: {qid: [records]} ----------------
         if isinstance(fit_results, dict):
@@ -4337,7 +4558,15 @@ class combined_Qtemp_studies:
                 for rec in records:
                     _append_record(qid, rec)
 
-            return temps, errs, ssf_vals, ssf_errs, snr_vals
+            return (
+                temps,
+                errs,
+                ssf_vals,
+                ssf_errs,
+                snr_vals,
+                ie_ground_vals,
+                ie_ground_errs
+            )
 
         # ---------------- Flat list form: [records] ----------------
         if isinstance(fit_results, (list, tuple)):
@@ -4354,7 +4583,14 @@ class combined_Qtemp_studies:
 
                 _append_record(qid, rec)
 
-            return temps, errs, ssf_vals, ssf_errs, snr_vals
+            return (
+                temps,
+                errs,
+                ssf_vals,
+                ssf_errs,
+                snr_vals,
+                ie_ground_vals,
+                ie_ground_errs)
 
         raise TypeError(
             "fit_results must be either a dict keyed by qubit index "

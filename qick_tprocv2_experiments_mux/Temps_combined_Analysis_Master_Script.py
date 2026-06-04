@@ -11,6 +11,7 @@ from section_008_save_data_to_h5 import Data_H5
 from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots, combined_Qtemp_studies, RPMTempCalcAndPlots
 import glob
 import re
+import pickle
 import datetime
 from analysis_002_res_centers_vs_time_plots import ResonatorFreqVsTime
 import ast
@@ -25,7 +26,7 @@ from analysis_003_q_freqs_vs_time_plots import QubitFreqsVsTime
 from analysis_006_T1_vs_time_plots import T1VsTime
 from analysis_007_T2R_vs_time_plots import T2rVsTime
 from analysis_008_T2E_vs_time_plots import T2eVsTime
-from AB_Paper_Analysis_Plots import boxwhisker_qtemps_per_qubit_vs_run_choice, boxwhisker_pe_per_qubit_vs_run_hybrid, boxwhisker_ssf_per_qubit_vs_run, boxwhisker_snr_per_qubit_vs_run
+from AB_Paper_Analysis_Plots import boxwhisker_qtemps_per_qubit_vs_run_choice, boxwhisker_pe_per_qubit_vs_run_hybrid, boxwhisker_ssf_per_qubit_vs_run, boxwhisker_snr_per_qubit_vs_run, boxwhisker_ie_new_Pg_per_Q_vs_run
 from pathlib import Path
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 # To do: implement this to make SSF paths sections shorter
@@ -48,7 +49,7 @@ save_figs_SSF = False # Do you want to save gaussian fit plots while calculating
 fit_saved = False # Not used here, set to false.
 exclude_temp_sweeps = True # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
 filter_out_bad_RPM_fits = True # filter out bad rpm fits? this doesn't work perfect but helps a bit
-filter_out_bad_SSF_qtemp_fits = True # filter out SSF data that can't be properly fitted for qubit temp calcs?
+filter_out_bad_SSF_qtemp_fits = False # filter out SSF data that can't be properly fitted for qubit temp calcs?
 get_qtemp_data = True # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
 get_london_data = False # This returns RPM qubit temperatures, resonator freqs, and qubit freqs for specified dates. Designed for London Penetration analysis.
 
@@ -79,10 +80,10 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
                   "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": False, "SSF_fid_vs_Pe_viaSSF": False, "ssf_SNR_vs_time": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
-comb_analysis_flags = {"load_rpm": False, "load_ssf": False, "use_cached_qtemp_files": True, "create_cached_qtemp_files": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
+comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "use_cached_qtemp_files": False, "create_cached_qtemp_files": True, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False, "Pe_vs_time_comb_separate_plts": False,
                        "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
                        "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": False, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False, "SNR_vs_RRPM_Pe": False,
-                       "SNR_box_whisker_allruns_allQs": True}
+                       "SNR_box_whisker_allruns_allQs": False, "ie_new_Pg_boxwhisk_allruns_allQs": True}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
@@ -1197,7 +1198,9 @@ ssf_ge_temp_errs_by_run  = {}      # matching errors
 
 ssf_fid_values_by_run = {} # single shot fidelity values
 ssf_err_values_by_run = {} # single shot fidelity errors (total errs)
-ssf_snr_by_run = {}  # ssf_snr_by_run[run][qid] = [SNR, ...]
+ssf_snr_by_run = {}  # SNR values from each ssf scan
+ie_new_Pg_vals_by_run = {} # pop. corresponding to T1 decay, failed pi pulses etc in SSF meas.
+ie_new_Pg_errs_by_run = {} # corresponding errors
 
 if qtemp_method_flags["combined_studies_Qtemps"]:
     for run_num in run_num_list:
@@ -1306,23 +1309,29 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         if comb_analysis_flags["create_cached_qtemp_files"] and comb_analysis_flags["use_cached_qtemp_files"]:
             raise ValueError("Choose only one or set both to False: create_cached_qtemp_files or use_cached_qtemp_files.")
 
+        cache_dir = f"/home/acolonce/Documents/analysis/cached_processed_data/run{run_num}"
+
         if comb_analysis_flags["use_cached_qtemp_files"]:
-            cache_dir = f"/home/acolonce/Documents/analysis/cached_processed_data/run{run_num}"
             os.makedirs(cache_dir, exist_ok=True)
 
             # Default: no cached qtemp data
             fit_results_g = {}
             all_files_Qtemp_results_RPMs = {}
 
+            if filter_out_bad_SSF_qtemp_fits:
+                ssf_file_ext = "_filtered"
+            else:
+                ssf_file_ext = "_unfiltered"
+
             # Run 5 has SSF data, but no RPM data
             if run_num == 5:
-                fit_results_g_cache_path = (f"{cache_dir}/run{run_num}_processed_SSF_fit_results_g.pkl")
+                fit_results_g_cache_path = (f"{cache_dir}/run{run_num}_processed_SSF_fit_results_g{ssf_file_ext}.pkl")
                 print(f"Run {run_num}: loading SSF only. No RPM data available.")
                 fit_results_g, _ = combined_studies.load_processed_ssf_rpm_inputs(fit_results_g_cache_path,None)
 
             # Runs 6+ have both SSF and RPM data
             else:
-                fit_results_g_cache_path = (f"{cache_dir}/run{run_num}_processed_SSF_fit_results_g.pkl")
+                fit_results_g_cache_path = (f"{cache_dir}/run{run_num}_processed_SSF_fit_results_g{ssf_file_ext}.pkl")
                 rpm_results_cache_path = (f"{cache_dir}/run{run_num}_processed_all_files_Qtemp_results_RPMs.pkl")
 
                 print(f"Run {run_num}: loading SSF and RPM data.")
@@ -1369,6 +1378,8 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         ssf_fid_values_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
         ssf_err_values_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
         ssf_snr_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+        ie_new_Pg_vals_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
+        ie_new_Pg_errs_by_run[run_num] = [[] for _ in range(tot_num_of_qubits)]
 
         # ============================================================
         # If using cached qtemp files, adapt cached SSF/RPM data into
@@ -1387,7 +1398,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             # ---------------- SSF cached data ----------------
             if fit_results_g:
                 fit_results_g_by_run[run_num] = fit_results_g
-                ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals, ssf_fid_errs, ssf_snr_vals = (combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g,n_qubits=tot_num_of_qubits))
+                ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals, ssf_fid_errs, ssf_snr_vals, ie_new_Pg_vals, ie_new_Pg_errs = (combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g,n_qubits=tot_num_of_qubits))
                 ssf_g_temps_by_run[run_num] = ssf_g_temps
                 ssf_g_temp_errs_by_run[run_num] = ssf_g_temp_errs
                 pe_vals, pe_errs = combined_studies.extract_pe_from_fit_results(fit_results_g,tot_num_of_qubits)
@@ -1396,12 +1407,15 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                 ssf_fid_values_by_run[run_num] = ssf_fid_vals
                 ssf_err_values_by_run[run_num] = ssf_fid_errs
                 ssf_snr_by_run[run_num] = ssf_snr_vals
+                ie_new_Pg_vals_by_run[run_num] = ie_new_Pg_vals
+                ie_new_Pg_errs_by_run[run_num] = ie_new_Pg_errs
 
             print(f"\nRUN {run_num} cached SSF counts:")
             for q in range(tot_num_of_qubits):
                 print(f"  Q{q + 1}: {len(ssf_g_Pe_by_run[run_num][q])}")
 
         if comb_analysis_flags["load_rpm"]:
+            all_files_Qtemp_results_RPMs = {}
             if run_num != 5: # no rpm data for run 5
                 # ----------- Get Qubit temperature results via RPMs
                 RPM_calcs = RPMTempCalcAndPlots(figure_quality, tot_num_of_qubits)
@@ -1442,7 +1456,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                 fit_results_g_by_run[run_num] = fit_results_g
 
                 # ---- STORE RESULTS (SSF g) ----
-                ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals, ssf_fid_errs, ssf_snr_vals = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
+                ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals, ssf_fid_errs, ssf_snr_vals, ie_new_Pg_vals, ie_new_Pg_errs = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
 
                 print(f"\nRUN {run_num} accepted SSF counts:")
                 for q in range(tot_num_of_qubits):
@@ -1456,6 +1470,8 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                 ssf_fid_values_by_run[run_num] = ssf_fid_vals
                 ssf_err_values_by_run[run_num] = ssf_fid_errs
                 ssf_snr_by_run[run_num] = ssf_snr_vals
+                ie_new_Pg_vals_by_run[run_num] = ie_new_Pg_vals
+                ie_new_Pg_errs_by_run[run_num] = ie_new_Pg_errs
 
             else: # uses sklearn.mixture.GaussianMixture for double gaussian fitting
                 all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only = False, fallback_to_threshold = False)
@@ -1465,7 +1481,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                 fit_results_g_by_run[run_num] = fit_results_g
 
                 # ---- STORE RESULTS (SSF g) ----
-                ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals, ssf_fid_errs, ssf_snr_vals = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
+                ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals, ssf_fid_errs, ssf_snr_vals, ie_new_Pg_vals, ie_new_Pg_errs = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
                 print(f"\nRUN {run_num} accepted SSF counts:")
                 for q in range(tot_num_of_qubits):
                     print(f"  Q{q + 1}: {len(ssf_g_temps[q])}")
@@ -1478,10 +1494,12 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                 ssf_fid_values_by_run[run_num] = ssf_fid_vals
                 ssf_err_values_by_run[run_num] = ssf_fid_errs
                 ssf_snr_by_run[run_num] = ssf_snr_vals
+                ie_new_Pg_vals_by_run[run_num] = ie_new_Pg_vals
+                ie_new_Pg_errs_by_run[run_num] = ie_new_Pg_errs
 
                 # ---- STORE RESULTS (SSF ge) ----
                 # Not tested yet
-                ssf_ge_temps, ssf_ge_temp_errs, ssf_fid_vals_ge, ssf_fid_errs_ge, ssf_snr_vals_ge = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_ge, n_qubits=tot_num_of_qubits)
+                ssf_ge_temps, ssf_ge_temp_errs, ssf_fid_vals_ge, ssf_fid_errs_ge, ssf_snr_vals_ge, ie_new_Pg_vals_ge, ie_new_Pg_errs_ge = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_ge, n_qubits=tot_num_of_qubits)
                 ssf_ge_temps_by_run[run_num] = ssf_ge_temps
                 ssf_ge_temp_errs_by_run[run_num] = ssf_ge_temp_errs
 
@@ -1617,6 +1635,28 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             fig_title="Readout SNR vs Run Number",
             ylabel="Readout SNR",
             save_plt_path="/home/acolonce/Documents/analysis/multirun/SNR")
+
+    if comb_analysis_flags["ie_new_Pg_boxwhisk_allruns_allQs"]:
+        have_qtemp_inputs = (comb_analysis_flags["use_cached_qtemp_files"]or comb_analysis_flags["load_ssf"])
+        if not have_qtemp_inputs:
+            raise ValueError(
+                'This plot requires SSF inputs. Either set '
+                'comb_analysis_flags["use_cached_qtemp_files"] = True, or set '
+                'comb_analysis_flags["load_ssf"] = True.')
+
+        boxwhisker_ie_new_Pg_per_Q_vs_run(
+            run_num_list=run_num_list,
+            ie_new_Pg_vals_by_run=ie_new_Pg_vals_by_run,
+            n_qubits=tot_num_of_qubits,
+            qubits_to_plot=[0, 1, 2, 3, 5],
+            colors=('darkblue', 'darkblue', 'darkblue', 'darkblue', 'darkblue', 'darkblue'),
+            ylims=None,
+            yticks=None,
+            showfliers=False,
+            fig_title=r"Excited-State Ground-Like Population vs Run Number",
+            ylabel=r"Excited-State Ground-Like Population",
+            convert_to_percent=False,
+            save_plt_path="/home/acolonce/Documents/analysis/multirun/ie_new_Pg")
 
     # ------------ Qubit temperatures vs Time using all three methods ------------------------
     if comb_analysis_flags["Qtemps_vs_time_comb_separate_plts"]:
@@ -1859,6 +1899,11 @@ if coh_qtemp_ana_flags["use_cached_qtemp_files"]:
         fit_results_g = {}
         all_files_Qtemp_results_RPMs = {}
 
+        if filter_out_bad_SSF_qtemp_fits:
+            ssf_file_ext = "_filtered"
+        else:
+            ssf_file_ext = "_unfiltered"
+
         # Run 4 has no SSF or RPM qubit-temp data
         if run_number == 4:
             print(f"Run {run_number}: no cached SSF or RPM qtemp data. Skipping qtemp loading.")
@@ -2042,7 +2087,7 @@ if coh_qtemp_ana_flags["run_qtemps_section"]:
                 ssf_hist_ylim = ssf_hist_ylim, apply_quality_cuts = filter_out_bad_SSF_qtemp_fits, calc_SNR = calc_SNR_ssfqtemps)
             
             # ---- STORE RESULTS (SSF g) ----
-            ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals, ssf_fid_errs, ssf_snr_vals = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
+            ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals, ssf_fid_errs, ssf_snr_vals, ie_new_Pg_vals, ie_new_Pg_errs = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)
 
             print(f"\nRUN {run_num} accepted SSF counts:")
             for q in range(tot_num_of_qubits):
@@ -2056,6 +2101,8 @@ if coh_qtemp_ana_flags["run_qtemps_section"]:
             ssf_fid_values_by_run[run_num] = ssf_fid_vals
             ssf_err_values_by_run[run_num] = ssf_fid_errs
             ssf_snr_by_run[run_num] = ssf_snr_vals
+            ie_new_Pg_vals_by_run[run_num] = ie_new_Pg_vals
+            ie_new_Pg_errs_by_run[run_num] = ie_new_Pg_errs
 
         else:  # uses sklearn.mixture.GaussianMixture for double gaussian fitting
             all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps(
@@ -2064,8 +2111,7 @@ if coh_qtemp_ana_flags["run_qtemps_section"]:
                 pairs_info, limit_temp_k=1.0, use_gessf_thresh_only=True, fallback_to_threshold=False)
 
             # ---- STORE RESULTS (SSF g) ----
-            ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals, ssf_fid_errs, ssf_snr_vals = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g,
-                                                                                               n_qubits=tot_num_of_qubits)
+            ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals, ssf_fid_errs, ssf_snr_vals, ie_new_Pg_vals, ie_new_Pg_errs = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g,n_qubits=tot_num_of_qubits)
             print(f"\nRUN {run_num} accepted SSF counts:")
             for q in range(tot_num_of_qubits):
                 print(f"  Q{q + 1}: {len(ssf_g_temps[q])}")
@@ -2078,10 +2124,12 @@ if coh_qtemp_ana_flags["run_qtemps_section"]:
             ssf_fid_values_by_run[run_num] = ssf_fid_vals
             ssf_err_values_by_run[run_num] = ssf_fid_errs
             ssf_snr_by_run[run_num] = ssf_snr_vals
+            ie_new_Pg_vals_by_run[run_num] = ie_new_Pg_vals
+            ie_new_Pg_errs_by_run[run_num] = ie_new_Pg_errs
 
             # ---- STORE RESULTS (SSF ge) ----
             # Not tested yet
-            ssf_ge_temps, ssf_ge_temp_errs, ssf_fid_vals_ge, ssf_fid_errs_ge, ssf_snr_vals_ge = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_ge, n_qubits=tot_num_of_qubits)
+            ssf_ge_temps, ssf_ge_temp_errs, ssf_fid_vals_ge, ssf_fid_errs_ge, ssf_snr_vals_ge, ie_new_Pg_vals_ge, ie_new_Pg_errs_ge = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_ge, n_qubits=tot_num_of_qubits)
             ssf_ge_temps_by_run[run_num] = ssf_ge_temps
             ssf_ge_temp_errs_by_run[run_num] = ssf_ge_temp_errs
 

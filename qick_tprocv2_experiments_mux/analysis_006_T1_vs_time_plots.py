@@ -16,6 +16,7 @@ from pathlib import Path
 from collections import OrderedDict
 import glob
 import re
+import h5py
 import datetime
 import ast
 import os
@@ -208,6 +209,60 @@ class T1VsTime:
 
         return flat_obj_val, d_fit
 
+    def _safe_eval_cfg(self, cfg_str): # copy of the one inside the offline replica class at the bottom
+        s = re.sub(r"<qick\.asm_v2\.QickParam object at 0x[0-9a-fA-F]+>", "None", cfg_str)
+        s = re.sub(r"np\.float64\(\s*([^)]+)\s*\)", r"float(\1)", s)
+        safe_globals = {"np": np, "array": np.array, "float": float, "__builtins__": {}}
+        return eval(s, safe_globals)
+
+    def get_res_length_from_old_configs(self, configs_dir):
+        """
+        For QUIET runs 4 and 5, read res_length from the old config H5 files stored in:
+
+            .../study_data/Data_h5/configs/
+
+        Expected files may include:
+            expt_cfg.h5
+            sys_config.h5
+
+        Returns
+        -------
+        res_length : float
+            The readout length if found. Returns np.nan if not found.
+        """
+        if not os.path.isdir(configs_dir):
+            print(f"[WARN] Configs directory does not exist: {configs_dir}")
+            return np.nan
+
+        # Look through all .h5 config files in the configs folder
+        config_files = glob.glob(os.path.join(configs_dir, "*.h5"))
+
+        if len(config_files) == 0:
+            print(f"[WARN] No .h5 config files found in: {configs_dir}")
+            return np.nan
+
+        for cfg_file in config_files:
+            try:
+                with h5py.File(cfg_file, "r") as f:
+                    if "res_length" not in f:
+                        continue
+
+                    raw = f["res_length"][()]
+
+                    # In your test, this was bytes like b"4.75"
+                    if isinstance(raw, bytes):
+                        res_length = float(raw.decode())
+                    else:
+                        res_length = float(raw)
+
+                    return res_length
+
+            except Exception as err:
+                print(f"[WARN] Could not read res_length from {cfg_file}: {err}")
+
+        print(f"[WARN] Could not find res_length in any config file in: {configs_dir}")
+        return np.nan
+
     def run(self, return_errs = False, exp_extension='', process_shots = False, use_png_timestamps = False):
         import datetime
 
@@ -226,9 +281,9 @@ class T1VsTime:
         rounds = []
         reps = []
         file_names = []
-        date_times = {i: [] for i in range(self.number_of_qubits)}
+        date_times = {i: [] for i in range(self.number_of_qubits)} # to store timestamps
+        res_lengths = {i: [] for i in range(self.number_of_qubits)} # to store readout/pulse lengths
         mean_values = {}
-        #print(self.top_folder_dates)
         timestamp_dir = "" ""
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
@@ -309,7 +364,7 @@ class T1VsTime:
                         # errors = load_data['T1'][q_key].get('Errors', [])[0][dataset]
                         date = datetime.datetime.fromtimestamp(load_data[f't1{exp_extension}'][q_key].get('Dates', [])[0][dataset])
 
-                        # cutoff when we switched to saving both averaged arrays *and* shots under Ishots/Qshots
+                        # cutoff when we switched to saving both averaged arrays *and* shots under Ishots/Qshots, QUIET run 8
                         cutoff_dt = datetime.datetime(2025, 10, 24, 13, 58, 37)
 
                         # Skip processing if the date (as a date object) is in the excluded set
@@ -320,23 +375,30 @@ class T1VsTime:
                         # run 8 patch to include a dataset with no saved shots
                         if folder_date == "2025-10-24_01-41-30":  # don't change for QUIET analysis, make more general in the future though
                             process_shots = False
-                            
+
+                        if date < cutoff_dt:
+                            # before 2025-10-24_13-58-37: shots were saved under 'I' and 'Q'
+                            I_key, Q_key = 'I', 'Q'
+                        else:
+                            # on/after the cutoff: shots were saved under 'Ishots' and 'Qshots'
+                            I_key, Q_key = 'Ishots', 'Qshots'
+
+                        if (self.run_number == 4 or self.run_number == 5
+                            or (self.run_number == 6 and ("2025-02-21" in folder_date or "2025-02-22" in folder_date))):
+                            configs_dir = os.path.join(outerFolder, "Data_h5", "configs")
+                            res_length = self.get_res_length_from_old_configs(configs_dir)
+                        else:
+                            q_data = load_data[f't1{exp_extension}'][q_key]
+                            exp_config_str = q_data['Exp Config'][0][dataset].decode()
+                            syst_config_str = q_data["Syst Config"][0][dataset].decode()
+                            exp_cfg = self._safe_eval_cfg(exp_config_str)
+                            syst_cfg = self._safe_eval_cfg(syst_config_str)
+                            res_length = float(syst_cfg.get("res_length", np.nan))
+
                         # --- make per-shot data compatible with per-delay fitting --------------------------------
                         if process_shots:
                             # --- process IQ shots and turn them into IQ arrays (using Arianna's func, not QICK) --------------------------------
                             print("Processing shots...")
-
-                            # --- load cfg strings from H5 ---
-                            exp_config_str = load_data[f't1{exp_extension}'][q_key]['Exp Config'][0][dataset].decode()
-                            syst_config_str = load_data[f't1{exp_extension}'][q_key]['Syst Config'][0][dataset].decode()
-
-                            # --- choose which datasets hold the *shots* based on date ---
-                            if date < cutoff_dt:
-                                # before 2025-10-24_13-58-37: shots were saved under 'I' and 'Q'
-                                I_key, Q_key = 'I', 'Q'
-                            else:
-                                # on/after the cutoff: shots were saved under 'Ishots' and 'Qshots'
-                                I_key, Q_key = 'Ishots', 'Qshots'
 
                             # --- raw shots from H5 ---
                             Ishots_raw = self.process_h5_data(load_data[f't1{exp_extension}'][q_key][I_key][0][dataset].decode())
@@ -365,8 +427,8 @@ class T1VsTime:
                             syst_cfg = replica._safe_eval_cfg(syst_config_str)
 
                             # Pull steps/reps from Syst Config first; fall back to Exp Config only if missing. Sys config is the updated one in each measurement during RR
-                            steps = int(syst_cfg.get('steps', exp_cfg[f'T1{exp_extension}']['steps']))
-                            reps = int(syst_cfg.get('reps', exp_cfg[f'T1{exp_extension}']['reps']))
+                            steps = int(syst_cfg.get('steps'))
+                            reps = int(syst_cfg.get('reps'))
                             # rounds not needed here; H5 holds one round
 
                             # --- coerce raw shots to (rounds, N, reps) before averaging ---
@@ -383,22 +445,11 @@ class T1VsTime:
                             Q_errs = None
 
                         delay_times = self.process_h5_data(load_data[f't1{exp_extension}'][q_key].get('Delay Times', [])[0][dataset].decode())
-                        # fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
                         round_num = load_data[f't1{exp_extension}'][q_key].get('Round Num', [])[0][dataset]
-
-                        # try:
-                        #     batch_num = load_data[f't1{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
-                        #     syst_config = load_data[f't1{exp_extension}'][q_key].get('Syst Config', [])[0][dataset].decode()
-                        #     exp_config = load_data[f't1{exp_extension}'][q_key].get('Exp Config', [])[0][dataset].decode()
-                        #     safe_globals = {"np": np, "array": np.array, "__builtins__": {}}
-                        #     exp_config = eval(exp_config, safe_globals)
-                        # except:
-                        #     exp_config =None
 
                         if len(I) > 0:
                             T1_class_instance = T1Measurement(q_key, self.number_of_qubits, self.outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                               fit_data=True)
-                            #T1_spec_cfg = exp_config['T1_ge']
                             q1_fit_exponential, T1_err, T1_est, fit_info = T1_class_instance.t1_fit_iminuit(I, Q, delay_times)
                             if T1_est < 0:
                                 print("The value is negative, continuing...")
@@ -450,6 +501,8 @@ class T1VsTime:
                             t1_vals[q_key].extend([T1_est])
                             t1_errs[q_key].extend([T1_err])
 
+                            res_lengths[q_key].append(res_length)
+
                             # --- store per-point errors too, only if we had process_shots ---
                             if process_shots:
                                 I_per_pt_errs[int(q_key)].append(I_errs)
@@ -496,12 +549,12 @@ class T1VsTime:
         if return_errs:
             if process_shots:
                 # return per-point errors too
-                return date_times, t1_vals, t1_errs, I_per_pt_errs, Q_per_pt_errs
+                return date_times, t1_vals, t1_errs, I_per_pt_errs, Q_per_pt_errs, res_lengths
             else:
                 # you asked for errs, but we didn't have shots
-                return date_times, t1_vals, t1_errs
+                return date_times, t1_vals, t1_errs, res_lengths
         else:
-            return date_times, t1_vals
+            return date_times, t1_vals, res_lengths
 
     def plot_without_errs(self, date_times, t1_vals, show_legends):
         #---------------------------------plot-----------------------------------------------------
