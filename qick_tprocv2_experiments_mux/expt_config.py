@@ -5,7 +5,7 @@ FRIDGE = "QUIET"  # change to "NEXUS" as needed
 if FRIDGE == "QUIET":
     VNA_res = np.array([6235.097, 6295.745, 6356.840, 6426.675, 6493.5, 6561.2]) # run 9c # run 9a:  6228.487, 6290.125, 6349.800, 6420.615, 6486.0, 6553.600
     VNA_qubit = np.array([4229.89, 3853.24, 4197.02, 4500.9, 4515.34, 5054.02])  # run 9c
-    ef_qfreqs = np.array([4052.15, 3676.11, 4022.75, 4334.65, 4345.33, 4883.54]) # Qubit freqs e/f Transition, run 9a
+    ef_qfreqs = np.array([4055.94, 3675.69, 4022.54, 4329.42, 4343.53, 4886.5]) # Qubit freqs e/f Transition, run 9a
     fh_qfreqs = np.array([3820.97, 3450.85, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition, old run
     two_photon_qfreqs=np.array([4107.61, 3739.36, 4086.36, 4388.34, 4399.3, 4933.52]) # qubit freqs, two photon peak between ge and ef qubit freqs, old run
 
