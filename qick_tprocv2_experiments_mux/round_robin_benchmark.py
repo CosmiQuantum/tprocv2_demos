@@ -33,7 +33,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1 # number of rounds
+n = 10000 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -56,7 +56,7 @@ debug_mode = False  # if True, it disables the continuing function of RR if an e
 
 thresholding = False  # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 unmask = True  # Do you want to use the unmasking feature to increase resonator gain? This may not apply to LOUD
-save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi ?
+save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 
 Qs_to_look_at = [0,1,2,3,4,5] # only list the qubits you want to do the RR for
@@ -64,17 +64,17 @@ Qs_to_look_at = [0,1,2,3,4,5] # only list the qubits you want to do the RR for
 # Data saving info
 run_name = 'run9c'
 device_name = '6transmon'
-substudy_txt_notes = ('All qubits. Initial run 9c checkouts. \n')
+substudy_txt_notes = ('All qubits. Unmasking. Saving T1 shots too. Have not optimized fully yet. Taking data to compare thermal pop. later on. 2nd day of being at base temp. \n')
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": False, "ss_gef": False,
-             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": True, "ef_q_spec": True,
-             "rabi_pop_meas": False, "ef_Rabi": True}
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
+             "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
+             "rabi_pop_meas": True, "ef_Rabi": False}
 
 # For 25dB DAC, 6/5/2026
 res_leng_vals = [5.7, 7.4, 7.0, 6.4, 7.0, 7.6]  # 5.63, 25dB [5.5, 6.0, 5.7, 6.8, 7.0, 8.0] , [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
-res_gain = [0.8056, 0.6778, 0.7808, 0.6115, 0.825, 0.8769]  # 0.8125,25dB, [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97], [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
-freq_offsets = [-0.1200,0,-0.1600,-0.2000,0,-0.2000]  # -0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222
+res_gain = [0.80, 0.6556, 0.7808, 0.6115, 0.825, 0.8308]  # 0.8125,25dB, [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97], [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
+freq_offsets = [0.0,-0.0400,-0.2000,0.0400,0.0,-0.0800]  # -0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
@@ -87,7 +87,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'qubit_checkouts' #qubit_checkouts
-sub_study = 'initial_checkouts_25dB_DAC' #
+sub_study = 'Day2_base_not_fully_opt_yet_25dBDAC'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
