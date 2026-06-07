@@ -444,7 +444,7 @@ elif FRIDGE == "NEXUS":
     expt_cfg = {
         "tof": {
             "reps": 1,  # reps doesnt make a difference here, leave it at 1
-            "soft_avgs": 1000, #500,
+            "soft_avgs": 500, #500,
             "relax_delay": 0,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },

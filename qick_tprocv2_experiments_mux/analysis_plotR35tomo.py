@@ -211,11 +211,11 @@ def fitdata(fit_params, vsweep, qindex, qid, qdata, rd, signal = "amp", plot = F
 
 #def fit_single_scan()
 
-run = 'run36'
-study = 'Tomography_Check' #'PostCsTomography' #'EndOfRunData' #'PostCsTomography' #'BackgroundTomography'
-substudy = 'HighgainOpt' #'Dataset2' #'Dataset2_neg'
-timestamp = '2026-04-23_19-27-04' #'2026-03-23_16-15-38' #'2026-04-03_11-55-28'
-file = 'Tomography_Qs1234_2026-04-23_19-36-26.h5' #'Tomography_Qs1234_2026-03-24_17-06-21.h5'
+run = 'run36a'
+study = 'BackgroundTomography' #'Tomography_Check' #'PostCsTomography' #'EndOfRunData' #'PostCsTomography' #'BackgroundTomography'
+substudy = 'Dataset1' #'HighgainOpt' #'Dataset2' #'Dataset2_neg'
+timestamp = '2026-04-25_13-45-53' #'2026-03-23_16-15-38' #'2026-04-03_11-55-28'
+file = 'Tomography_Qs1234_2026-04-27_02-50-42.h5' #'Tomography_Qs1234_2026-04-23_19-36-26.h5' #'Tomography_Qs1234_2026-03-24_17-06-21.h5'
 path = f'/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}/{timestamp}/study_data/{file}'
 
 vsweep, qubits, qdata, timestamps, rounds = load_singleh5(path)

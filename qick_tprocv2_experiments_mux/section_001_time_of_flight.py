@@ -38,12 +38,12 @@ class TOFExperiment:
 
                 self.declare_gen(
                     ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
-                    mux_freqs=[f for f in cfg['res_freq_ge']],
+                    mux_freqs=[f+1 for f in cfg['res_freq_ge']],
                     mux_gains= cfg['res_gain_ge'], #[1,0,0,0,0,0],#cfg['res_gain_ge'], #[1,0,0,0,0,0]
                     mux_phases=cfg['res_phase'],
                     mixer_freq=cfg['mixer_freq']
                 )
-                for ch, f, ph in zip(cfg['ro_ch'], [f for f in cfg['res_freq_ge']], cfg['ro_phase']):
+                for ch, f, ph in zip(cfg['ro_ch'], [f+1 for f in cfg['res_freq_ge']], cfg['ro_phase']):
                     self.declare_readout(
                         ch=ch, length=cfg['res_length']+2, freq=f, phase=ph, gen_ch=gen_ch
                     )

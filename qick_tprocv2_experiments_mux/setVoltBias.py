@@ -4,8 +4,8 @@ import time
 ###################
 supply = 'keithley' #'keithley' #'keysight'
 qubit_index = 0 #0, 1, 2, 3 (only used for keysight)
-voltage = 0.042 #0.15 MAX!! #V
-turn_output_off = False ### Don't use for Q4 on keysight! Will turn off HEMT chs too
+voltage = 0.0 #0.15 MAX!! #V
+turn_output_off = True ### Don't use for Q4 on keysight! Will turn off HEMT chs too
 ###################
 
 if voltage> 0.15:
