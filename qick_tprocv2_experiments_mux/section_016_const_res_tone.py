@@ -59,7 +59,7 @@ class ResToneSpectrumAnalyzer:
         sa_hold_time = self.sa_hold_time
         tof_freq_offset_MHz = self.tof_freq_offset_MHz
 
-        class MuxProgram(AveragerProgramV2):
+        class ResToneSpectrumAnalyzerProgram(AveragerProgramV2):
             def _initialize(self, cfg):
                 ro_chs = cfg['ro_ch']
                 gen_ch = cfg['res_ch']
@@ -98,12 +98,13 @@ class ResToneSpectrumAnalyzer:
                     mode=res_pulse_mode,
                 )
 
-            def _body(self, cfg):
-                # Spectrum analyzer mode:
-                # start resonator/readout DAC output, no ADC trigger.
-                self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+                # Start the periodic resonator tone here.
+                # This was the commented line your colleague mentioned.
+                self.pulse(ch=gen_ch, name="res_pulse", t=0)
 
-                # Hold program open so SA has time to see periodic tone.
+            def _body(self, cfg):
+                # No ADC trigger and no pulse call here.
+                # The periodic pulse was started in _initialize().
                 self.delay(sa_hold_time)
 
         print("\nRunning TOF in spectrum-analyzer mode:")
@@ -119,7 +120,7 @@ class ResToneSpectrumAnalyzer:
         print(f"  sa_hold_time: {self.sa_hold_time} us")
         print(f"  tof_freq_offset_MHz: {self.tof_freq_offset_MHz} MHz")
 
-        prog = MuxProgram(
+        prog = ResToneSpectrumAnalyzerProgram(
             self.experiment.soccfg,
             reps=self.config["reps"],
             final_delay=self.config["relax_delay"],

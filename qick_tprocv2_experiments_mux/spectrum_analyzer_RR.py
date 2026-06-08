@@ -33,7 +33,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 10000 # number of rounds
+n = 1 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -188,7 +188,7 @@ while j < n:
 
             long_tof = ResToneSpectrumAnalyzer(QubitIndex, studyDocumentationFolder,
                 experiment, j, save_figs=save_figs,unmasking_resgain=unmask,qick_verbose=qick_verbose,
-                res_pulse_mode="periodic", sa_hold_time=100.0, tof_freq_offset_MHz=1.0)  # old TOF behavior. Use 0.0 instead for exact res_freq_ge
+                res_pulse_mode="periodic", sa_hold_time=1000.0, tof_freq_offset_MHz=1.0)  # old TOF behavior. Use 0.0 instead for exact res_freq_ge
 
             long_tof.config["reps"] = 100000
             long_tof.config["soft_avgs"] = 1

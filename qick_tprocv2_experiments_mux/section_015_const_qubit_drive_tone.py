@@ -69,17 +69,30 @@ class QubitToneSpectrumAnalyzer:
                 ro_ch = cfg['ro_ch']
                 qubit_ch = cfg['qubit_ch']
 
-                self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
-                self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_ch[0],
-                               style="const",
-                               length=cfg['qubit_length_ge'],
-                               freq=cfg['qubit_freq_ge'],
-                               phase=0,
-                               gain=cfg['qubit_gain_ge'],
-                               mode=qubit_pulse_mode)
+                self.declare_gen(
+                    ch=qubit_ch,
+                    nqz=cfg['nqz_qubit'],
+                    mixer_freq=cfg['qubit_mixer_freq']
+                )
+
+                self.add_pulse(
+                    ch=qubit_ch,
+                    name="qubit_pulse",
+                    ro_ch=ro_ch[0],
+                    style="const",
+                    length=cfg['qubit_length_ge'],
+                    freq=cfg['qubit_freq_ge'],
+                    phase=0,
+                    gain=cfg['qubit_gain_ge'],
+                    mode=qubit_pulse_mode
+                )
+
+                # Start the periodic qubit-drive tone here.
+                self.pulse(ch=qubit_ch, name="qubit_pulse", t=0)
 
             def _body(self, cfg):
-                self.pulse(ch=cfg["qubit_ch"], name="qubit_pulse", t=0)
+                # No additional pulse call here.
+                # The periodic pulse was started in _initialize().
                 self.delay(qubit_sa_hold_time)
 
         prog = QubitToneSpectrumAnalyzerProgram(
@@ -90,5 +103,5 @@ class QubitToneSpectrumAnalyzer:
 
         prog.acquire(
             self.experiment.soc,
-            soft_avgs=1,
+            soft_avgs=self.config["rounds"],
             progress=self.qick_verbose)
