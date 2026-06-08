@@ -17,7 +17,6 @@ class ResToneSpectrumAnalyzer:
         unmasking_resgain=False,
             
         # Spectrum analyzer inputs
-        res_pulse_mode="periodic",
         sa_hold_time=100.0,
         tof_freq_offset_MHz=1.0): # 1 in typical ToF
         
@@ -36,7 +35,6 @@ class ResToneSpectrumAnalyzer:
         self.qick_verbose = qick_verbose
 
         # SA-specific inputs, kept outside config
-        self.res_pulse_mode = res_pulse_mode
         self.sa_hold_time = sa_hold_time
         self.tof_freq_offset_MHz = tof_freq_offset_MHz
 
@@ -55,7 +53,6 @@ class ResToneSpectrumAnalyzer:
 
     def run(self):
         # Pull class inputs into local variables so the nested QICK program can use them
-        res_pulse_mode = self.res_pulse_mode
         sa_hold_time = self.sa_hold_time
         tof_freq_offset_MHz = self.tof_freq_offset_MHz
 
@@ -95,7 +92,6 @@ class ResToneSpectrumAnalyzer:
                     style="const",
                     length=cfg["res_length"],
                     mask=cfg["list_of_all_qubits"],
-                    mode=res_pulse_mode,
                 )
 
                 # Start the periodic resonator tone here.
@@ -116,7 +112,6 @@ class ResToneSpectrumAnalyzer:
         print(f"  reps: {self.config['reps']}")
         print(f"  soft_avgs: {self.config['soft_avgs']}")
         print(f"  relax_delay: {self.config['relax_delay']} us")
-        print(f"  res_pulse_mode: {self.res_pulse_mode}")
         print(f"  sa_hold_time: {self.sa_hold_time} us")
         print(f"  tof_freq_offset_MHz: {self.tof_freq_offset_MHz} MHz")
 
@@ -129,8 +124,11 @@ class ResToneSpectrumAnalyzer:
 
         # Run program so spectrum analyzer can measure RF output.
         # No ADC decimated data needed.
-        prog.acquire(
+        # prog.acquire(
+        #     self.experiment.soc,
+        #     soft_avgs=self.config["soft_avgs"],
+        #     progress=self.qick_verbose
+        # )
+        prog.run(
             self.experiment.soc,
-            soft_avgs=self.config["soft_avgs"],
-            progress=self.qick_verbose
         )

@@ -59,7 +59,7 @@ unmask = True  # Do you want to use the unmasking feature to increase resonator 
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 
-Qs_to_look_at = [2] # only list the qubits you want to do the RR for
+Qs_to_look_at = [5] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run9c'
@@ -67,11 +67,11 @@ device_name = '6transmon'
 substudy_txt_notes = ('Spectrum anlayzer measurements using the Qick Box. \n')
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"long_tof": False, "long_qdrive": False}
+run_flags = {"long_tof": False, "long_qdrive": True}
 
 # For 25dB DAC, 6/5/2026
 res_gain = [0.80, 0.6556, 0.7808, 0.6115, 0.825, 0.8308]  # 0.8125,25dB, [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97], [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
-freq_offsets = [0.0,-0.0400,-0.2000,0.0400,0.0,-0.0800]  # -0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222
+freq_offsets = [0.0,0.0,0.0,0.0,0.0,0.0]  # -0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
@@ -183,13 +183,23 @@ while j < n:
 
         ###################################################### long const tone: res channel #####################################################
         if run_flags["long_tof"]:
-            prog_time = 1000.0 # approx run time is prog_time x reps
-            # This is part of readout/system config, so set before the experiment program is created
-            experiment.readout_cfg['res_length'] = prog_time
+            prog_time = 1000000.0  # us; approx run time is prog_time x reps
 
-            long_tof = ResToneSpectrumAnalyzer(QubitIndex, studyDocumentationFolder,
-                experiment, j, save_figs=save_figs,unmasking_resgain=unmask,qick_verbose=qick_verbose,
-                res_pulse_mode="periodic", sa_hold_time=prog_time, tof_freq_offset_MHz=1.0)  # old TOF behavior. Use 0.0 instead for exact res_freq_ge
+            # This is part of readout/system config, so set before the experiment program is created.
+            # This makes the resonator pulse length long.
+            experiment.readout_cfg["res_length"] = prog_time
+
+            long_tof = ResToneSpectrumAnalyzer(
+                QubitIndex,
+                studyDocumentationFolder,
+                experiment,
+                j,
+                save_figs=save_figs,
+                unmasking_resgain=unmask,
+                qick_verbose=qick_verbose,
+                sa_hold_time=prog_time,
+                tof_freq_offset_MHz=1.0,  # old TOF behavior. Use 0.0 for exact res_freq_ge
+            )
 
             long_tof.config["reps"] = 30000
             long_tof.config["soft_avgs"] = 1
@@ -199,9 +209,11 @@ while j < n:
             del long_tof
         ################################################## long const tone: qubit channel ##################################################
         if run_flags["long_qdrive"]:
-            prog_time = 1000.0 # approx run time is prog_time x reps
-            experiment.qubit_cfg['qubit_length_ge'] = prog_time # long constant pulse for SA measurements
-            experiment.qubit_cfg['qubit_gain_ge'][QubitIndex] = 0.05
+            prog_time = 1000000.0 # approx run time is prog_time x reps
+            experiment.qubit_cfg['qubit_length_ge'] = 15 # long constant pulse for SA measurements
+            qubit_gains = [0.01, 0.011, 0.033, 0.021, 0.14, 0.08]
+            this_gain= qubit_gains[QubitIndex]
+            experiment.qubit_cfg['qubit_gain_ge'][QubitIndex] = this_gain
 
             # Optional: leave the frequency as the stored qubit frequency or override only the selected qubit for a test tone.
             # experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = 4229.89 # MHz
@@ -211,8 +223,9 @@ while j < n:
                 unmasking_resgain=unmask, qubit_pulse_mode="periodic", qubit_sa_hold_time=prog_time)
 
             # Optional but recommended for SA measurement
-            long_qdrive.config["reps"] = 30000
+            long_qdrive.config["reps"] = 1
             long_qdrive.config["rounds"] = 1
 
             long_qdrive.run()
+            #experiment.soc.reset_gens() # to stop the pulse, re-run it with this line uncommented.
             del long_qdrive

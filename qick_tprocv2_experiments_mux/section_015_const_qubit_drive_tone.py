@@ -46,6 +46,15 @@ class QubitToneSpectrumAnalyzer:
             self.live_plot = live_plot
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+
+            # Easy fix: remove qspec sweep behavior for SA tone.
+            qfreq = self.q_config[self.Qubit]["qubit_freq_ge"]
+
+            if isinstance(qfreq, list):
+                qfreq = qfreq[self.QubitIndex]
+
+            self.config["qubit_freq_ge"] = float(qfreq)
+
             if self.verbose: print(f'Q {self.QubitIndex + 1} Round {self.round_num} configuration: ', self.config)
             self.logger.info(f'Q {self.QubitIndex + 1} Round {self.round_num} configuration: {self.config}')
 
@@ -101,7 +110,9 @@ class QubitToneSpectrumAnalyzer:
             final_delay=0.0,
             cfg=self.config)
 
-        prog.acquire(
-            self.experiment.soc,
-            soft_avgs=self.config["rounds"],
-            progress=self.qick_verbose)
+        # prog.acquire(
+        #     self.experiment.soc,
+        #     soft_avgs=self.config["rounds"],
+        #     progress=self.qick_verbose)
+
+        prog.run(self.experiment.soc)
