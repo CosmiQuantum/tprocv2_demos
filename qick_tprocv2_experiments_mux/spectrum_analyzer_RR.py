@@ -183,14 +183,15 @@ while j < n:
 
         ###################################################### long const tone: res channel #####################################################
         if run_flags["long_tof"]:
+            prog_time = 1000.0 # approx run time is prog_time x reps
             # This is part of readout/system config, so set before the experiment program is created
-            experiment.readout_cfg['res_length'] = 1000.0
+            experiment.readout_cfg['res_length'] = prog_time
 
             long_tof = ResToneSpectrumAnalyzer(QubitIndex, studyDocumentationFolder,
                 experiment, j, save_figs=save_figs,unmasking_resgain=unmask,qick_verbose=qick_verbose,
-                res_pulse_mode="periodic", sa_hold_time=1000.0, tof_freq_offset_MHz=1.0)  # old TOF behavior. Use 0.0 instead for exact res_freq_ge
+                res_pulse_mode="periodic", sa_hold_time=prog_time, tof_freq_offset_MHz=1.0)  # old TOF behavior. Use 0.0 instead for exact res_freq_ge
 
-            long_tof.config["reps"] = 100000
+            long_tof.config["reps"] = 30000
             long_tof.config["soft_avgs"] = 1
             long_tof.config["relax_delay"] = 0.0
 
@@ -198,7 +199,8 @@ while j < n:
             del long_tof
         ################################################## long const tone: qubit channel ##################################################
         if run_flags["long_qdrive"]:
-            experiment.qubit_cfg['qubit_length_ge'] = 1000.0  # long constant pulse for SA measurements
+            prog_time = 1000.0 # approx run time is prog_time x reps
+            experiment.qubit_cfg['qubit_length_ge'] = prog_time # long constant pulse for SA measurements
             experiment.qubit_cfg['qubit_gain_ge'][QubitIndex] = 0.05
 
             # Optional: leave the frequency as the stored qubit frequency or override only the selected qubit for a test tone.
@@ -206,10 +208,10 @@ while j < n:
 
             long_qdrive = QubitToneSpectrumAnalyzer(QubitIndex, tot_num_of_qubits, studyDocumentationFolder,j,
                 signal, save_figs, experiment=experiment, live_plot=live_plot, verbose=verbose, logger=rr_logger,
-                unmasking_resgain=unmask, qubit_pulse_mode="periodic", qubit_sa_hold_time=1000.0)
+                unmasking_resgain=unmask, qubit_pulse_mode="periodic", qubit_sa_hold_time=prog_time)
 
             # Optional but recommended for SA measurement
-            long_qdrive.config["reps"] = 100000
+            long_qdrive.config["reps"] = 30000
             long_qdrive.config["rounds"] = 1
 
             long_qdrive.run()
