@@ -59,7 +59,7 @@ unmask = True  # Do you want to use the unmasking feature to increase resonator 
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 
-Qs_to_look_at = [0,1,2,3] # only list the qubits you want to do the RR for
+Qs_to_look_at = [5,0,1,2,3] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run9c'
@@ -67,12 +67,12 @@ device_name = '6transmon'
 substudy_txt_notes = ('Changing res channel and qubit channel DAC filtering in the syst config.\n')
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
-             "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
-             "rabi_pop_meas": True, "ef_Rabi": False}
 # run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
-#              "t1": True, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
-#              "rabi_pop_meas": False, "ef_Rabi": False}
+#              "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
+#              "rabi_pop_meas": True, "ef_Rabi": False}
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
+             "t1": True, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
+             "rabi_pop_meas": False, "ef_Rabi": False}
 
 # For 25dB DAC, 6/8/2026
 res_leng_vals = [5.0, 6.8, 6.3, 6.7, 7.0, 7.1]  # 5.63, 25dB [5.5, 6.0, 5.7, 6.8, 7.0, 8.0] , [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
@@ -89,8 +89,8 @@ meas_time_RR = {}
 
 ################################################ Data Saving Setup ##################################################
 # Folders
-study = 'qubit_checkouts' #qubit_checkouts, DAC_filtering_tests
-sub_study = 'noQ5orQ6_Qcenter4365_bw1.53' #Day4_base_not_fully_opt_yet_25dBDAC
+study = 'DAC_filtering_tests' #qubit_checkouts, DAC_filtering_tests
+sub_study = 'Rcenter6330_bw1.0_Qcenter4365_bw1.53' #Day4_base_not_fully_opt_yet_25dBDAC
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):

@@ -33,7 +33,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1 # number of rounds
+n = 10000 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -67,7 +67,8 @@ device_name = '6transmon'
 substudy_txt_notes = ('Spectrum anlayzer measurements using the Qick Box. \n')
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"long_tof": False, "long_qdrive": True}
+run_flags = {"long_tof": True, "long_qdrive": False}
+stop_qubit_pulse = False
 
 # For 25dB DAC, 6/5/2026
 res_gain = [0.80, 0.6556, 0.7808, 0.6115, 0.825, 0.8308]  # 0.8125,25dB, [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97], [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
@@ -84,7 +85,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'spectrum_analyzer_meas' #qubit_checkouts
-sub_study = 'Qick_Box'
+sub_study = 'QickBox_Rcenter6330_bw1.0_Qcenter4365_bw1.53'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -183,7 +184,7 @@ while j < n:
 
         ###################################################### long const tone: res channel #####################################################
         if run_flags["long_tof"]:
-            prog_time = 1000000.0  # us; approx run time is prog_time x reps
+            prog_time = 100000.0 # us; approx run time is prog_time x reps
 
             # This is part of readout/system config, so set before the experiment program is created.
             # This makes the resonator pulse length long.
@@ -201,11 +202,12 @@ while j < n:
                 tof_freq_offset_MHz=1.0,  # old TOF behavior. Use 0.0 for exact res_freq_ge
             )
 
-            long_tof.config["reps"] = 30000
+            long_tof.config["reps"] = 600
             long_tof.config["soft_avgs"] = 1
             long_tof.config["relax_delay"] = 0.0
 
             long_tof.run()
+
             del long_tof
         ################################################## long const tone: qubit channel ##################################################
         if run_flags["long_qdrive"]:
@@ -227,5 +229,6 @@ while j < n:
             long_qdrive.config["rounds"] = 1
 
             long_qdrive.run()
-            #experiment.soc.reset_gens() # to stop the pulse, re-run it with this line uncommented.
+            if stop_qubit_pulse:
+                experiment.soc.reset_gens() # to stop the pulse, re-run it with this line uncommented.
             del long_qdrive
