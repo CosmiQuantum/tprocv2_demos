@@ -33,7 +33,7 @@ if FRIDGE == "QUIET":
         # },
 
         "res_spec": { # run 9a
-            "reps": 270, # 300
+            "reps": 300, # 300
             "rounds": 1,
             "start": -1.7,       # MHz
             "step_size": 0.04,  #0.04 # MHz

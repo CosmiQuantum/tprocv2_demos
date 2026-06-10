@@ -29,11 +29,11 @@ number_of_qubits = 6 # for QUIET 6, for NEXUS 4
 list_of_all_qubits = [0,1,2,3,4,5] # for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0, 1, 2, 3]
 
 # For Quiet
-substudy = "opt_25dBDAC"
+substudy = "opt_25dBDAC_junk"
 outerFolder = os.path.join(f"/data/QICK_data/run9c/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 
-opt_flags = {"res_leng_sweep": False, "2d_sweep": True}
-save_figs_ss = False # do you want to save SSF pics as you run the readout optimization sweeps?
+opt_flags = {"res_leng_sweep": True, "2d_sweep": False}
+save_figs_ss = True # do you want to save SSF pics as you run the readout optimization sweeps?
 
 def create_folder_if_not_exists(folder_path):
     """Creates a folder at the given path if it doesn't already exist."""
@@ -49,22 +49,22 @@ create_folder_if_not_exists(output_folder_length)
 outerfolder_plots = outerFolder + "/documentation/"
 
 n = 1  # Number of rounds
-n_loops = 4 # Number of repetitions per length to average
+n_loops = 1 # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [0,1,2,3,5]
+Qs = [5]
 
 # For 25dB DAC, 6/8/2026
-res_leng_vals = [5.0, 6.8, 6.3, 6.7, 7.0, 7.2]  # 5.63, 25dB [5.5, 6.0, 5.7, 6.8, 7.0, 8.0] , [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
-res_gain = [0.80, 0.7778, 0.8333, 0.6071, 0.825, 0.8545]  # 0.8125,25dB, [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97], [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
-freq_offsets = [-0.1556,0.0222,-0.2000,-0.2000,0.0,-0.1556]  # -0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222
+res_leng_vals = [5.0, 6.8, 6.3, 6.7, 7.0, 7.0]  # 5.63, 25dB [5.5, 6.0, 5.7, 6.8, 7.0, 8.0] , [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
+res_gain = [0.80, 0.7778, 0.8333, 0.6071, 0.825, 0.75]  # 0.8125,25dB, [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97], [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
+freq_offsets = [-0.1556,0.0222,-0.2000,-0.2000,0.0, -0.1200]  # -0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_freq_ge = [None] * 6 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
 
 j=0 # round number, from RR code. Not really used here since we just run it once for each qubit
 
-lengs = np.arange(4.5, 7.6, 0.1)
+lengs = np.arange(6.8, 7.8, 0.1)
 
 start=time.time()
 
@@ -325,10 +325,10 @@ for QubitIndex in Qs:
             gain_range = [0.7, 1.0]
             gain_steps = 13
         elif QubitIndex == 5:
-            gain_range = [0.65, 0.9]
-            gain_steps = 11
+            gain_range = [0.7, 0.76] #[0.65, 0.9] with 11 steps
+            gain_steps = 8
 
-        freq_steps = 9
+        freq_steps = 5 #9
 
         print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')
         # Select the reference frequency for the current resonator
