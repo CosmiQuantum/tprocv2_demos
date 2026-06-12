@@ -4,8 +4,9 @@ from matplotlib.patches import Patch
 import math
 import os
 import datetime
+import matplotlib.ticker as mticker
 
-qtemp_noisetemp_plot = False
+qtemp_noisetemp_plot = True
 lnPe_vs_qfreq_plots_per_run = False
 lnPe_vs_qfreq_plots_per_qubit = False
 ssf_fid_vs_Pe = False
@@ -155,14 +156,20 @@ if qtemp_noisetemp_plot:
         return (h * f_hz) / (kB * x)
 
 
-    def Te_from_stages(f_hz: float, stage_temps_K: dict, A_after_stage_dB: dict):
+    def Pe_from_nbar(nbar: float):
+        # thermal two-level population written directly in terms of effective photon occupation
+        if nbar <= 0:
+            return 0.0
+        return nbar / (2.0 * nbar + 1.0)
+    
+    def Te_Pe_from_stages(f_hz: float, stage_temps_K: dict, A_after_stage_dB: dict):
         n_eff = 0.0
         for stage, T in stage_temps_K.items():
             if stage not in A_after_stage_dB:
                 raise ValueError(f"Missing attenuation-after-stage entry for '{stage}'")
             A_lin = 10 ** (-A_after_stage_dB[stage] / 10.0)
             n_eff += A_lin * nbar_thermal(f_hz, T)
-        return Te_from_nbar(f_hz, n_eff)
+        return Te_from_nbar(f_hz, n_eff), Pe_from_nbar(n_eff)
 
 
     def cumulative_after_stage(config_dB: dict, order):
@@ -173,60 +180,142 @@ if qtemp_noisetemp_plot:
         return A_after
 
 
-    order = ["300K", "4K", "1K", "100mK", "10mK"]
-    stage_temps_K = {"300K": 300.0, "4K": 4.0, "1K": 1.0, "100mK": 0.100, "10mK": 0.010}
+    order = ["300K", "50K", "4K", "still", "CP", "MXC"]
+
+    stage_temps_K = {
+        "300K": 300.0,
+        "50K": 50.0,
+        "4K": 4.0,
+        "still": 1.0,
+        "CP": 0.100,
+        "MXC": 0.010,
+    }
+
+    cooling_power_W = {
+        "50K": 40.0,  # Spencer/Dan July 2024 slack
+        "4K": 1.5,  # Spencer/Dan July 2024 slack
+        "still": 20e-3,  # Arianna
+        "CP": 1e-6,  # Arianna
+        "MXC": 12e-6,  # Spencer/Dan July 2024 slack
+    }
 
     IL_marki = 0.9
     IL_eccosorb = 1.0
-    SS_line_loss_total_dB = 14.0
 
+    # ------------------------------------------------------------
+    # A11 input-line loss model at 6 GHz
+    # ------------------------------------------------------------
+    # From A11 full input measurement:
+    #   total measured attenuation at 6 GHz = 81 dB
+    #   known in-plate attenuation = 66 dB
+    #   inferred A11 line/feedthrough loss = 15 dB
+    #
+    # We exclude the ambiguous "patch panel cable" term.
+    #
+    # Known pieces from the diagnostic sheet:
+    #   50K plate to patch panel          = 4.95 dB
+    #   4K-50K line, labeled A11 4K       = 2.44 dB
+    #   1K-4K line, labeled A11 still     = 2.08 dB
+    #
+    # Assign each line section to the colder endpoint:
+    #   patch panel -> 50K      goes at 50K
+    #   50K -> 4K              goes at 4K
+    #   4K -> still/1K         goes at still
+    #
+    # The remaining loss is assigned to the lower cold sections using
+    # the relative line lengths:
+    #   still/1K -> CP/100mK   = 23.5 cm
+    #   CP/100mK -> MXC/10mK   = 30.5 cm
+    A11_total_line_loss_dB = 15.0
+
+    A11_line_loss_by_stage_dB = {
+        "50K": 4.95,
+        "4K": 2.44,
+        "still": 2.08,
+    }
+
+    A11_assigned_loss_dB = sum(A11_line_loss_by_stage_dB.values())
+    A11_remaining_loss_dB = A11_total_line_loss_dB - A11_assigned_loss_dB
+
+    # Split the remaining loss by lower-stage line length
+    L_still_to_CP_cm = 23.5
+    L_CP_to_MXC_cm = 30.5
+    L_lower_total_cm = L_still_to_CP_cm + L_CP_to_MXC_cm
+
+    A11_line_loss_by_stage_dB["CP"] = (
+            A11_remaining_loss_dB * L_still_to_CP_cm / L_lower_total_cm
+    )
+
+    A11_line_loss_by_stage_dB["MXC"] = (
+            A11_remaining_loss_dB * L_CP_to_MXC_cm / L_lower_total_cm
+    )
+
+    print("\nA11 line-loss model at 6 GHz:")
+    for stage, loss_dB in A11_line_loss_by_stage_dB.items():
+        print(f"  {stage}: {loss_dB:.3f} dB")
+    print(f"  Total: {sum(A11_line_loss_by_stage_dB.values()):.3f} dB")
+
+    # ------------------------------------------------------------
+    # Intentional attenuators / filters by run
+    # ------------------------------------------------------------
     atten_config_by_run = {
         5: {
             "4K": 20,
-            "1K": 20,
-            "10mK": 20 + 3 * IL_eccosorb + IL_marki,
+            "still": 20,
+            "MXC": 20 + 3 * IL_eccosorb + IL_marki,
         },
         6: {
             "4K": 20,
-            "1K": 20,
-            "10mK": 20 + 3 * IL_eccosorb + IL_marki,
+            "still": 20,
+            "MXC": 20 + 3 * IL_eccosorb + IL_marki,
         },
         7: {
             "4K": 20,
-            "1K": 6,
-            "100mK": 10,
-            "10mK": 30 + 3 * IL_eccosorb + IL_marki,
+            "still": 6,
+            "CP": 10,
+            "MXC": 30 + 3 * IL_eccosorb + IL_marki,
         },
         8: {
             "4K": 20,
-            "1K": 6,
-            "100mK": 10,
-            "10mK": 30 + 3 * IL_eccosorb + IL_marki,
+            "still": 6,
+            "CP": 10,
+            "MXC": 30 + 3 * IL_eccosorb + IL_marki,
         },
         9: {
             "4K": 20,
-            "1K": 6,
-            "100mK": 10,
-            "10mK": 30 + 3 * IL_eccosorb + IL_marki,
-        }
+            "still": 6,
+            "CP": 10,
+            "MXC": 30 + 3 * IL_eccosorb + IL_marki,
+        },
     }
 
     nQ, nRuns = Pe_meas.shape
     Te_mK = np.zeros((nQ, nRuns), dtype=float)
+    Pe_pred = np.zeros((nQ, nRuns), dtype=float)
 
     for qi in range(nQ):
         for ri, r in enumerate(runs):
             cfg = dict(atten_config_by_run[int(r)])  # copy so we don't mutate the base dict
-            cfg["300K"] = cfg.get("300K", 0.0) + SS_line_loss_total_dB
+
+            # Add the distributed A11 input-line loss.
+            # Do NOT put this at 300K; assign each line section to its colder endpoint.
+            for stage, loss_dB in A11_line_loss_by_stage_dB.items():
+                cfg[stage] = cfg.get(stage, 0.0) + loss_dB
 
             A_after = cumulative_after_stage(cfg, order)
-            f_hz = f_ge_Hz[qi, ri]
-            Te_K = Te_from_stages(f_hz, stage_temps_K, A_after)
-            Te_mK[qi, ri] = 1e3 * Te_K
 
-    print("\nPredicted Te (mK) by qubit & run (using per-run f_ge):")
+            f_hz = f_ge_Hz[qi, ri]
+            Te_K, Pe = Te_Pe_from_stages(f_hz, stage_temps_K, A_after)
+
+            Te_mK[qi, ri] = 1e3 * Te_K
+            Pe_pred[qi, ri] = Pe
+
+    print("\nPredicted Te (mK) and Pe (%) by qubit & run (using per-run f_ge):")
     for qi in range(nQ):
-        vals = ", ".join([f"R{int(runs[i])}:{Te_mK[qi, i]:.4f}" for i in range(nRuns)])
+        vals = ", ".join([
+            f"R{int(runs[i])}: Te={Te_mK[qi, i]:.4f} mK, Pe={100 * Pe_pred[qi, i]:.4f}%"
+            for i in range(nRuns)
+        ])
         print(f"  Q{qi + 1}: {vals}")
 
 
@@ -416,7 +505,9 @@ if qtemp_noisetemp_plot:
     # Leave space at bottom for legend
     fig.tight_layout(rect=[0.05, 0.12, 1, 0.95])
 
-    plt.show()
+    save_path = "/home/acolonce/Documents/analysis/multirun/qubit_temps/combined_ssf_rpm/Tpred_vs_Tmeas_inputlinemodel.pdf"
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close()
 
 if lnPe_vs_qfreq_plots_per_run:
     run_labels = ["Run 5", "Run 6", "Run 7", "Run 8"]
@@ -1569,7 +1660,9 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
         title_fs=22,
         label_fs=22,
         tick_fs=22,
-        save_plt_path=None
+        save_plt_path=None,
+        log_y=False,
+        log_yticks_percent=[0.1, 1, 10, 50]
 ):
     """
     Hybrid Pe boxplot, using already-grouped per-run dictionaries.
@@ -1753,9 +1846,41 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
         # ax.set_ylim(*ylims)
         # ax.set_yticks(yticks)
 
-        ax.set_ylim(100 * ylims[0], 100 * ylims[1]) # as percentage instead
-        ax.set_yticks(100 * yticks) # as percentage instead
-        ax.yaxis.set_major_formatter(plt.FormatStrFormatter("%.1f"))
+        # ---------------- y-axis formatting ----------------
+        if log_y:
+            ax.set_yscale("log")
+
+            # Convert fraction y-limits to percent
+            ymin = 100 * ylims[0]
+            ymax = 100 * ylims[1]
+
+            # Log scale cannot include zero
+            if ymin <= 0:
+                ymin = 0.1  # percent
+
+            ax.set_ylim(ymin, ymax)
+
+            # Clean poster-style log ticks, already in percent units
+            if log_yticks_percent is None:
+                log_yticks_percent = [0.1, 1, 10, 50]
+
+            log_yticks_percent = np.asarray(log_yticks_percent, dtype=float)
+            log_yticks_percent = log_yticks_percent[
+                (log_yticks_percent > 0) &
+                (log_yticks_percent >= ymin) &
+                (log_yticks_percent <= ymax)
+                ]
+
+            ax.yaxis.set_major_locator(mticker.FixedLocator(log_yticks_percent))
+            ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda y, _: f"{y:g}"))
+
+            # Hide minor tick labels completely
+            ax.yaxis.set_minor_formatter(mticker.NullFormatter())
+
+        else:
+            ax.set_ylim(100 * ylims[0], 100 * ylims[1])
+            ax.set_yticks(100 * yticks)
+            ax.yaxis.set_major_formatter(plt.FormatStrFormatter("%.1f"))
 
         ax.tick_params(axis="both", labelsize=tick_fs)
         ax.grid(True, alpha=0.35)
@@ -1874,7 +1999,10 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
 
     fig.suptitle(fig_title, fontsize=suptitle_fs, y=0.97)
     fig.supxlabel("Run Number", fontsize=label_fs, y=0.07)
-    fig.supylabel(ylabel, fontsize=label_fs, x=0.06)
+
+    if log_y and "log" not in ylabel.lower():
+        ylabel = ylabel + " [log scale]"
+    fig.supylabel(ylabel, fontsize=label_fs, x=0.07)
 
     if save_plt_path is None:
         plt.show()

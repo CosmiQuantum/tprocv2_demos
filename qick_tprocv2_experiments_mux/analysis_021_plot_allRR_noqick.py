@@ -1,6 +1,7 @@
 from section_008_save_data_to_h5 import Data_H5
 import matplotlib.dates as mdates
 from typing import List
+from scipy.constants import h, k as k_B
 from matplotlib.axes import Axes
 import glob
 from pathlib import Path
@@ -2995,12 +2996,18 @@ class PlotRR_noQick:
             times = []
             temps = []
             errs = []
+            pe_values = []
+            pe_err_values = []
+            qfreq_values = []
 
             for file_result in all_files_Qtemp_results:
                 qubit_data = file_result['qubits'].get(q)
                 if qubit_data:
                     T_err = qubit_data['T_mK_err']
                     T_mK = qubit_data['T_mK']
+                    P_e = qubit_data["P_e"]
+                    P_e_err = qubit_data["P_e_err_total"]
+                    qfreq_MHz = qubit_data["qubit_freq_MHz"]
 
                     # # Skip if relative error is ≥ rel_err_cutoff
 
@@ -3016,6 +3023,9 @@ class PlotRR_noQick:
 
                     errs.append(T_err)
                     temps.append(T_mK)
+                    pe_values.append(P_e)
+                    pe_err_values.append(P_e_err)
+                    qfreq_values.append(qfreq_MHz)
 
                     timestamp = qubit_data['date']
                     times.append(datetime.datetime.fromtimestamp(timestamp))
@@ -3205,6 +3215,34 @@ class PlotRR_noQick:
                         zorder=100, # make sure it gets plotted on top of the datapoints
                         label=f"Exp fit: t={tau_hours:.1f} h, plateau ~ {plateau_hours:.1f} h")
                     ax.legend(fontsize=9, loc="best")
+
+                    # ------------------------------------------------------------
+                    # Predict temperature and P_e at 3*tau
+                    # ------------------------------------------------------------
+
+                    fit_t0 = times_for_fit[0]
+                    plateau_time = fit_t0 + datetime.timedelta(hours=4 * tau_hours)
+
+                    # get_exp_fit_curve uses:
+                    # T(t) = C + A * exp(-t / tau)
+                    C, A, tau_fit_hours = popt
+
+                    # At t = 4*tau, exp(-t/tau) = exp(-4)
+                    plateau_temp = C + A * np.exp(-4)
+
+                    qfreq_MHz = np.median(qfreq_values)
+                    qfreq_Hz = qfreq_MHz * 1e6
+
+                    T_K = plateau_temp * 1e-3
+
+                    Pe_pred = 1.0 / (1.0 + np.exp((h * qfreq_Hz) / (k_B * T_K)))
+
+                    print(
+                        f"Q{q + 1} exponential fit prediction at 4*tau: "
+                        f"T = {plateau_temp:.4f} mK at {plateau_time}, "
+                        f"predicted Pe = {Pe_pred:.6f} "
+                        f"using f_ge = {qfreq_MHz:.3f} MHz"
+                    )
 
             if fit_to_line:  # fit data to a line, choosing where to start and stop based on event time stamps
                 # pull out all three relevant heater events

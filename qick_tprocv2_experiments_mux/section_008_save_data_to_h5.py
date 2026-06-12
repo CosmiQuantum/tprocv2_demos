@@ -207,7 +207,8 @@ class Data_H5:
                                        'I1': 'I1', 'Q1': 'Q1', 'Gains1': 'Gains1', 'Fit1': 'Fit1',
                                        'I2': 'I2', 'Q2': 'Q2', 'Gains2': 'Gains2', 'Fit2': 'Fit2',
                                        'Round Num': 'Round Num', 'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
-                                       'Syst Config': 'Syst Config', 'measurement_timestamp': 'Measurement Timestamp'}
+                                       'Syst Config': 'Syst Config', 'measurement_timestamp': 'Measurement Timestamp',
+                                       'Ishots1': 'Ishots1', 'Ishots2': 'Ishots2', 'Qshots1':'Qshots1', 'Qshots2':'Qshots2'}
 
                     elif data_type == 'Rabi_QZE':
                         target_keys = {'Dates': 'Dates', 'I': 'I', 'Q': 'Q', 'Mag': 'Mag', 'Gains': 'Gains', 'Fit': 'Fit',

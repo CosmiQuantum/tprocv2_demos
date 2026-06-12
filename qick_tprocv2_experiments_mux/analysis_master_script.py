@@ -46,7 +46,7 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
-run_num_list = [4,5,6,7,8,9] # options: 4,5,6,7,8,9
+run_num_list = [4,5,6,7,8,9] # options: 4,5,6,7,8,9, 9.2 (run 9c)
 t1_vals_by_run  = {}
 res_lengths_by_run = {}
 t2r_vals_by_run = {}
@@ -60,7 +60,17 @@ qfreq_errs_by_run = {}
 
 for run_number in run_num_list:
     print(f'Processing run {run_number} data.')
-    if run_number == 9:
+    if run_number == 9.2: # run 9c
+        print('(this is actually run 9c, we just label it run9.2)')
+        process_shots_t1ge = False # the option exists for this run, but for analysis consistency w initial runs we keep it off unless necessary.
+        per_pt_errs_t1 = False
+        run_name = 'run9c/6transmon/qubit_checkouts/Day2_base_not_fully_opt_yet_25dBDAC'
+        data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
+        plots_path = "/home/acolonce/Documents/analysis/coherence" #cosmiqserver01
+
+        top_folder_dates = ["2026-06-05_23-17-54"]
+
+    elif run_number == 9:
         process_shots_t1ge = False # the option exists for this run, but for analysis consistency w initial runs we keep it off unless necessary.
         per_pt_errs_t1 = False
         run_name = "run9/6transmon/round_robin_benchmark"
@@ -162,7 +172,7 @@ for run_number in run_num_list:
                             "AB_paper_data_batch21_25dB_DACatten_noQ5/2026-04-27_11-41-29",
                             "AB_paper_data_batch21_25dB_DACatten_noQ5/2026-04-27_13-07-15"]
 
-    if run_number == 8:
+    elif run_number == 8:
         process_shots_t1ge = True
         per_pt_errs_t1 = True
         run_name = "run8/6transmon/round_robin"
@@ -402,9 +412,9 @@ for run_number in run_num_list:
     #                         fit_saved, signal, run_name, FRIDGE)
     # date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True, t1_vals = t1_vals)
     # #
-    # t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
-    #                         fit_saved, signal, run_name, FRIDGE)
-    # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = t1_vals)
+    t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+                            fit_saved, signal, run_name, FRIDGE)
+    date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = t1_vals)
 
     # ---------------- Store results ----------------
     ## stores data like t1_vals_by_run[6][3], where 6=run number and 3=qubit index (0 based)
@@ -415,8 +425,8 @@ for run_number in run_num_list:
     # t2r_vals_by_run[run_number] = t2r_vals
     # t2r_errs_by_run[run_number] = t2r_fit_err
     #
-    # t2e_vals_by_run[run_number] = t2e_vals
-    # t2e_errs_by_run[run_number] = t2e_fit_err
+    t2e_vals_by_run[run_number] = t2e_vals
+    t2e_errs_by_run[run_number] = t2e_fit_err
 
     # qfreq_vals_by_run[run_number] = q_freqs
     # qfreq_errs_by_run[run_number] = qspec_fit_err
@@ -674,18 +684,18 @@ for run_number in run_num_list:
 #                     # '/data/QICK_data/multirun_analysis/coherence_analysis' #daq01
 # )
 #
-# boxwhisker_t1t2_per_qubit_vs_run(
-#     run_num_list,
-#     t1_vals_by_run=t1_vals_by_run,
-#     t2r_vals_by_run=t2r_vals_by_run,
-#     t2e_vals_by_run=t2e_vals_by_run,
-#     do_T1=False, do_T2R=False, do_T2E=True,
-#     ylims=(0, 180),
-#     yticks=np.arange(0, 181, 20),
-#     mode="separate",
-#     save_plt_path = "/home/acolonce/Documents/analysis/multirun/coherence" #cosmiqserver01
-#                     # '/data/QICK_data/multirun_analysis/coherence_analysis' #daq01
-# )
+boxwhisker_t1t2_per_qubit_vs_run(
+    run_num_list,
+    t1_vals_by_run=t1_vals_by_run,
+    t2r_vals_by_run=t2r_vals_by_run,
+    t2e_vals_by_run=t2e_vals_by_run,
+    do_T1=False, do_T2R=False, do_T2E=True,
+    ylims=(0, 180),
+    yticks=np.arange(0, 181, 20),
+    mode="separate",
+    save_plt_path = "/home/acolonce/Documents/analysis/multirun/coherence" #cosmiqserver01
+                    # '/data/QICK_data/multirun_analysis/coherence_analysis' #daq01
+)
 #
 # boxwhisker_t1t2_per_qubit_vs_run(
 #     run_num_list,
@@ -736,14 +746,14 @@ for run_number in run_num_list:
 #     show = False
 # )
 
-boxwhisker_resleng_per_qubit_vs_run(
-    run_num_list=run_num_list,
-    res_lengths_by_run=res_lengths_by_run,
-    n_qubits=tot_num_of_qubits,
-    ylims=(0, 12.5),
-    yticks=np.arange(0, 12.0, 1),
-    showfliers=True,
-    save_plt_path="/home/acolonce/Documents/analysis/multirun/readout_lengths")
+# boxwhisker_resleng_per_qubit_vs_run(
+#     run_num_list=run_num_list,
+#     res_lengths_by_run=res_lengths_by_run,
+#     n_qubits=tot_num_of_qubits,
+#     ylims=(0, 12.5),
+#     yticks=np.arange(0, 12.0, 1),
+#     showfliers=True,
+#     save_plt_path="/home/acolonce/Documents/analysis/multirun/readout_lengths")
 # # ################################## 18: Allan Deviation/ Welch Spectral Density #########################################
 # stats = AllanWelchStats(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name)

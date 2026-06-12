@@ -2897,8 +2897,19 @@ class SSFTempCalcAndPlots:
 
             tolerance_seconds = 10
 
+        elif self.run_num == 9.2: # run 9c
+            folder_qspec = "study_data"
+            expt_name_qspec = "qspec_ge"
+            datagroup_qspec = 'QSpec'
+
+            expt_name_ssf = "ss_ge"
+            datagroup_ssf = 'SS'
+            folder_ssf = "study_data"
+
+            tolerance_seconds = 10
+
         else:
-            raise ValueError("You must choose run_num = 4,5,6,7, 8 or 9. Otherwise, define a section for your run of interest inside process_ssf_and_qfreq_data_qtemps().")
+            raise ValueError("You must choose run_num = 4,5,6,7, 8, 9 or 9.2 (run 9c). Otherwise, define a section for your run of interest inside process_ssf_and_qfreq_data_qtemps().")
 
         for full_path in paths:
 
@@ -3657,8 +3668,10 @@ class RPMTempCalcAndPlots:
                         data_path = os.path.join(full_path, "study_data")
                     elif run_num == 9:
                         data_path = os.path.join(full_path, "study_data")
+                    elif run_num == 9.2:
+                        data_path = os.path.join(full_path, "study_data")
                     else:
-                        raise ValueError("run_num must be 6, 7, 8, 9 OR you must add an 'if statement' for the run number you want. Specify if RPM data is in optimization OR study_data folder.")
+                        raise ValueError("run_num must be 6, 7, 8, 9, 9.2 (run 9c) OR you must add an 'if statement' for the run number you want. Specify if RPM data is in optimization OR study_data folder.")
 
                     if os.path.isdir(data_path):
                         date_string = d[:10]  # Extract 'YYYY-MM-DD'
