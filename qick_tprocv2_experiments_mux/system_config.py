@@ -36,10 +36,10 @@ class QICK_experiment:
             self.MUXRO_CH = [2, 3, 4, 5, 6, 7]
 
             ### NEW for the RF board,
-            self.qubit_center_freq = 4365 #Run 9a: 4250 # Value to be in the middle of the qubit freqs.
+            self.qubit_center_freq = 4250 #Run 9a: 4250 # Value to be in the middle of the qubit freqs.
             self.res_center_freq   = 6330   # Run 9a: 6330 # To be in the middle of the res freqs. 3000-5000 see nothing,6000 and 7000 see something, 8000+ see nothing
             self.soc.rfb_set_gen_filter(self.MIXMUXGEN_CH, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0) # bw is in units of GHz
-            self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.53) # 4250 + 1700/2 = 5100 MHz, so freqs above that get filtered out
+            self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.7) # 4250 + 1700/2 = 5100 MHz, so freqs above that get filtered out
             self.soc.rfb_set_ro_filter(self.MUXRO_CH[0], fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0) #readout ADC
             # Set attenuator on DAC.
             self.soc.rfb_set_gen_rf(self.MIXMUXGEN_CH, self.DAC_attenuator1, self.DAC_attenuator2)  # Verified 30->25 see increased gain in loopback

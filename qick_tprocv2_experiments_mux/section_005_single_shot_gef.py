@@ -33,7 +33,7 @@ class GEF_SingleShotProgram(AveragerProgramV2):
         self.add_pulse(ch=gen_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_len"],
-                       mask=[0, 1, 2, 3, 4, 5],
+                       mask=cfg["list_of_all_qubits"],
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
@@ -77,7 +77,7 @@ class SingleShotProgram_g(AveragerProgramV2):
         self.add_pulse(ch=gen_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
-                       mask=[0, 1, 2, 3, 4, 5],
+                       mask=cfg["list_of_all_qubits"],
                        )
 
         self.add_loop("shotloop", cfg["steps"])  # number of total shots
@@ -107,7 +107,7 @@ class SingleShotProgram_e(AveragerProgramV2):
         self.add_pulse(ch=gen_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
-                       mask=[0, 1, 2, 3, 4, 5],
+                       mask=cfg["list_of_all_qubits"],
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
@@ -148,7 +148,8 @@ class SingleShotProgram_f(AveragerProgramV2):
         self.add_pulse(ch=gen_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
-                       mask=[0, 1, 2, 3, 4, 5],
+                       mask=cfg["list_of_all_qubits"]
+                       ,
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
@@ -175,9 +176,9 @@ class SingleShotProgram_f(AveragerProgramV2):
         self.add_loop("shotloop", cfg["steps"])  # number of total shots
 
     def _body(self, cfg):
-        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play pulse
+        self.pulse(ch=self.cfg["qubit_ch"], name="ge_pi_pulse", t=0)  # play g-e pulse
         self.delay_auto(0.0)
-        self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # play pulse
+        self.pulse(ch=self.cfg["qubit_ch"], name="ef_pi_pulse", t=0)  # play e-f pulse
         self.delay_auto(0.0)
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
@@ -185,16 +186,21 @@ class SingleShotProgram_f(AveragerProgramV2):
 
 
 class SingleShot_ef:
-    def __init__(self, QubitIndex, num_qubits, outerFolder, round_num, save_figs=False, experiment = None):
+    def __init__(self, QubitIndex, num_qubits, outerFolder, round_num, save_figs=False, experiment = None, unmasking_resgain = False):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "Readout_Optimization"
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.round_num = round_num
         self.save_figs = save_figs
+        self.exp_cfg = expt_cfg[self.expt_name]
+        self.unmasking_resgain = unmasking_resgain
         self.experiment = experiment
         self.num_qubits=num_qubits
         self.list_of_all_qubits = list_of_all_qubits
+
+        if unmasking_resgain:
+            self.exp_cfg["list_of_all_qubits"] = [QubitIndex]
 
         if experiment is not None:
             self.q_config = all_qubit_state(self.experiment, self.num_qubits)
@@ -240,10 +246,9 @@ class SingleShot_ef:
         ssp_f = SingleShotProgram_f(soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
         iq_list_f = ssp_f.acquire(soc, soft_avgs=1, progress=True)
 
-        # fid, angle = self.plot_results(iq_list_g, iq_list_e, iq_list_f, self.QubitIndex)
         ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge = self.plot_results(iq_list_g, iq_list_e, iq_list_f, self.QubitIndex)
         # return fid, angle, iq_list_g, iq_list_e, iq_list_f
-        return iq_list_g, iq_list_e, iq_list_f, ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge,self.config
+        return iq_list_g, iq_list_e, iq_list_f, theta_ge, threshold_ge, self.config
 
     def plot_results(self, iq_list_g, iq_list_e, iq_list_f, QubitIndex,  fig_quality=100):
         I_g = iq_list_g[QubitIndex][0].T[0]
@@ -401,12 +406,12 @@ class GainFrequencySweep:
         self.q_config = all_qubit_state(self.experiment)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
 
-    def set_res_gain_ge(self, QUBIT_INDEX, set_gain, num_qubits=6):
+    def set_res_gain_ef(self, QUBIT_INDEX, set_gain, num_qubits=6):
         """Sets the gain for the selected qubit to 1, others to 0."""
-        res_gain_ge = [0] * num_qubits  # Initialize all gains to 0
+        res_gain_ef = [0] * num_qubits  # Initialize all gains to 0
         if 0 <= QUBIT_INDEX < num_qubits:  # makes sure you are within the range of options
-            res_gain_ge[QUBIT_INDEX] = set_gain  # Set the gain for the selected qubit
-        return res_gain_ge
+            res_gain_ef[QUBIT_INDEX] = set_gain  # Set the gain for the selected qubit
+        return res_gain_ef
 
     def run_sweep(self, freq_range, gain_range, freq_steps, gain_steps):
         freq_step_size = (freq_range[1] - freq_range[0]) / freq_steps
@@ -430,11 +435,11 @@ class GainFrequencySweep:
                 print('gain', gain)
 
                 # Update config with current gain and frequency values
-                fresh_experiment.readout_cfg['res_freq_ge'][self.qubit_index]= freq
+                fresh_experiment.readout_cfg['res_freq_ef'][self.qubit_index]= freq
                 fresh_experiment.readout_cfg['res_length'] = readout_length  # Set the optimal readout length for the qubit
 
                 res_gains = fresh_experiment.mask_gain_res(self.qubit_index, gain)
-                fresh_experiment.readout_cfg['res_gain_ge'] = res_gains
+                fresh_experiment.readout_cfg['res_gain_ef'] = res_gains
 
                 # Initialize SingleShot_ef instance for fidelity calculation
                 round_num = 0

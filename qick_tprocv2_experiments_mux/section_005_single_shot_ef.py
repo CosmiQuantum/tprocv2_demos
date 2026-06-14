@@ -331,7 +331,7 @@ class SingleShot_ef:
                                                                         iq_list_f, iq_list_h, self.QubitIndex)
         # ie_new, qe_new, if_new, qf_new, theta_ef, threshold_ef = self.plot_results( iq_list_e,iq_list_f,self.QubitIndex)
         # return fid, angle, iq_list_g, iq_list_e, iq_list_f
-        return iq_list_e, iq_list_f, ie_new, if_new, theta_ef, theta_fh,  threshold_ef, threshold_fh , self.config, fid, fid_fh
+        return iq_list_e, iq_list_f, ie_new, if_new, theta_ef, theta_fh,  threshold_ef, threshold_fh , self.config
 
     def plot_results(self, outerfolder_plots, iq_list_g, iq_list_e, iq_list_f, iq_list_h, QubitIndex, fig_quality=100):
         I_g = iq_list_g[QubitIndex][0].T[0]

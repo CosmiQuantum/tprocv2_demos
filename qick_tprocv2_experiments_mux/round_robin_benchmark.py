@@ -33,7 +33,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 10000 # number of rounds
+n = 1 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -59,25 +59,22 @@ unmask = True  # Do you want to use the unmasking feature to increase resonator 
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 
-Qs_to_look_at = [5,0,1,2,3] # only list the qubits you want to do the RR for
+Qs_to_look_at = [0] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run9c'
 device_name = '6transmon'
-substudy_txt_notes = ('Changing res channel and qubit channel DAC filtering in the syst config.\n')
+substudy_txt_notes = ('Reverted back to warm filtering setup a the beginning of the run.\n')
 
 # set which of the following you'd like to run to 'True'
-# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
-#              "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
-#              "rabi_pop_meas": True, "ef_Rabi": False}
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
-             "t1": True, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
-             "rabi_pop_meas": False, "ef_Rabi": False}
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
+             "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
+             "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
 
-# For 25dB DAC, 6/8/2026
-res_leng_vals = [5.0, 6.8, 6.3, 6.7, 7.0, 7.1]  # 5.63, 25dB [5.5, 6.0, 5.7, 6.8, 7.0, 8.0] , [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
-res_gain = [0.80, 0.7778, 0.8333, 0.6071, 0.825, 0.8]  # 0.8125,25dB, [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97], [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
-freq_offsets = [-0.1556,0.0222,-0.2000,-0.2000,0.0, -0.1200]  # -0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222
+# For 25dB DAC, 6/14/2026
+res_leng_vals = [5.75, 7.2500, 6.25, 7.25, 7.0, 6.75]  # 5.63, 25dB [5.5, 6.0, 5.7, 6.8, 7.0, 8.0] , [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
+res_gain = [0.76, 0.7788, 0.8419,0.5894, 0.825, 0.8375]  # 0.8125,25dB, [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97], [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
+freq_offsets = [-0.1556,0.0667,-0.0222,-0.0222,0,-0.1111]  # -0.1556,0.0222,-0.2000,-0.2000,0.0, -0.1200
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
@@ -89,8 +86,8 @@ meas_time_RR = {}
 
 ################################################ Data Saving Setup ##################################################
 # Folders
-study = 'DAC_filtering_tests' #qubit_checkouts, DAC_filtering_tests
-sub_study = 'Rcenter6330_bw1.0_Qcenter4365_bw1.53' #Day4_base_not_fully_opt_yet_25dBDAC
+study = 'DAC_filtering_tests_reverted_setup' #qubit_checkouts, DAC_filtering_tests
+sub_study = 'original_filtering_prog' #Day4_base_not_fully_opt_yet_25dBDAC
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -290,6 +287,10 @@ while j < n:
                     increase_qubit_reps_qspec = True
                     qspecge_increase_reps_to = 650
 
+                if QubitIndex == 0:
+                    increase_qubit_reps_qspec = True
+                    qspecge_increase_reps_to = 800
+
                 q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
                                            signal, save_figs, increase_reps = increase_qubit_reps_qspec, increase_rounds =increase_qspec_rounds,
                                            increase_reps_to = qspecge_increase_reps_to, increase_rounds_to = increase_qspec_rounds_to,
@@ -350,6 +351,11 @@ while j < n:
                 #     qubit_to_increase_gerabi_reps_for = QubitIndex
 
                 if QubitIndex == 4:
+                    increase_qubit_reps_gerabi = True
+                    qubit_to_increase_gerabi_reps_for = QubitIndex
+                    multiply_gerabi_reps_by = 2
+
+                if QubitIndex == 0:
                     increase_qubit_reps_gerabi = True
                     qubit_to_increase_gerabi_reps_for = QubitIndex
                     multiply_gerabi_reps_by = 2
@@ -512,54 +518,89 @@ while j < n:
             end_time = time.perf_counter()
             meas_time_RR[QubitIndex]["res_spec_ef"] = end_time - t0
 
-            ################################################ Qubit Spec EF ################################################
-            if run_flags["ef_q_spec"]:
-                if ef_res_spec_survived:
-                    t0 = time.perf_counter()
-                    try:
-                        # Qubit 4 usually needs more reps for e-f spec
-                        increase_qubit_reps_ef = False
-                        increase_ef_qspec_rounds = False
-                        increase_ef_qspec_rounds_to = None
-                        increase_reps_to_ef = None
-                        reduce_rlx_delay_efqspec = False
-                        reduce_rlx_delay_efqspec_to = None
+        ########################################### g-e-f Single Shot Measurements ############################################
+        if run_flags["ss_gef"]:
+            ss = SingleShot_ef(QubitIndex, number_of_qubits, studyDocumentationFolder, j, save_figs, experiment)
 
-                        if QubitIndex == 3:
-                            increase_qubit_reps_ef = True  # if you want to increase the reps for a qubit, set to True
-                            increase_reps_to_ef = 4000  # for ef qspec, 5200
-                            # increase_ef_qspec_rounds = True
-                            # increase_ef_qspec_rounds_to = 2
+            iq_list_g, iq_list_e, iq_list_f, theta_ge, threshold_ge, sys_config_ss_gef = ss.run(experiment.soccfg,
+                                                                                                experiment.soc)
+            # iq_list_g, iq_list_e, iq_list_f, ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge, sys_config_ss_gef
+            I_g = iq_list_g[QubitIndex][0].T[0]
+            Q_g = iq_list_g[QubitIndex][0].T[1]
+            I_e = iq_list_e[QubitIndex][0].T[0]
+            Q_e = iq_list_e[QubitIndex][0].T[1]
+            I_f = iq_list_f[QubitIndex][0].T[0]
+            Q_f = iq_list_f[QubitIndex][0].T[1]
 
-                        if QubitIndex == 5:
-                            reduce_rlx_delay_efqspec = True
-                            reduce_rlx_delay_efqspec_to = 650
+            if run_flags["ss_gef"]:  # currently saves figs and h5 files every time this is run
+                provided_sigma_num = None  # de state circle radius = sigma_num * sigma. Set as None if you want the code to choose an appropriate one for you.
+                Analysis = False  # Keep as false, we are in RR mode here, not post-processing (analysis) mode
+                RR = True  # Keep as true, we are in RR mode here
+                date_analysis = None  # This only matters if you are in post-processing mode (for analysis purposes), keep as None here.
+                round_num = j
+                # analysis_gef_SSF = GEF_SSF_ANALYSIS(studyDocumentationFolder, QubitIndex, Analysis, RR,
+                #                                     date_analysis, round_num)
+                # (line_point1, line_point2, center_e, radius_e, T, v, f_outside, line_point1_rot, line_point2_rot,
+                #  center_e_rot, radius_e_rot, T_rot, v_rot, f_outside_rot
+                #  ) = analysis_gef_SSF.fstate_analysis_plot(I_g, Q_g, I_e, Q_e, I_f, Q_f, ig_new,  ie_new,
+                #
+                #                                            if_new,  theta_ef, threshold_ef, QubitIndex,
+                #                                            provided_sigma_num)
+                # # (line_point1, line_point2, center_e, radius_e, T, v, f_outside, line_point1_rot, line_point2_rot,
+                #  center_e_rot, radius_e_rot, T_rot, v_rot, f_outside_rot
+                #  ) = analysis_gef_SSF.fstate_analysis_plot(I_g, Q_g, I_e, Q_e, I_f, Q_f, ig_new, qg_new, ie_new,
+                #                                            qe_new,
+                #                                            if_new, qf_new, theta_ge, threshold_ge, QubitIndex,
+                #                                            provided_sigma_num)
+            del ss
+        ################################################ Qubit Spec EF ################################################
+        if run_flags["ef_q_spec"]:
+            if ef_res_spec_survived:
+                t0 = time.perf_counter()
+                try:
+                    # Qubit 4 usually needs more reps for e-f spec
+                    increase_qubit_reps_ef = False
+                    increase_ef_qspec_rounds = False
+                    increase_ef_qspec_rounds_to = None
+                    increase_reps_to_ef = None
+                    reduce_rlx_delay_efqspec = False
+                    reduce_rlx_delay_efqspec_to = None
 
-                        ef_q_spec = EFQubitSpectroscopy(QubitIndex, number_of_qubits, studyDocumentationFolder, j, signal,
-                                                        save_figs, experiment, live_plot, logger=rr_logger, increase_reps = increase_qubit_reps_ef,
-                                                        increase_reps_to = increase_reps_to_ef, increase_ef_qspec_rounds = increase_ef_qspec_rounds,
-                                                        increase_ef_qspec_rounds_to = increase_ef_qspec_rounds_to, unmasking_resgain=unmask,
-                                                        reduce_rlx_delay = reduce_rlx_delay_efqspec, reduce_rlx_delay_to = reduce_rlx_delay_efqspec_to)
+                    if QubitIndex == 3:
+                        increase_qubit_reps_ef = True  # if you want to increase the reps for a qubit, set to True
+                        increase_reps_to_ef = 4000  # for ef qspec, 5200
+                        # increase_ef_qspec_rounds = True
+                        # increase_ef_qspec_rounds_to = 2
 
-                        efqspec_I, efqspec_Q, efqspec_freqs, sys_config_qspec_ef, efqspec_I_fit, efqspec_Q_fit, efqubit_freq, meas_timestamp_qspecef = ef_q_spec.run()
-                        qubit_freqs_ef[QubitIndex] = efqubit_freq
-                        experiment.qubit_cfg['qubit_freq_ef'][QubitIndex] = float(efqubit_freq)
+                    if QubitIndex == 5:
+                        reduce_rlx_delay_efqspec = True
+                        reduce_rlx_delay_efqspec_to = 650
 
-                        ef_qspec_survived = True
-                        rr_logger.info(f"EF Qubit {QubitIndex + 1} frequency: {efqubit_freq}")
-                        if verbose:
-                            print(f"EF Qubit {QubitIndex + 1} frequency: {efqubit_freq}")
+                    ef_q_spec = EFQubitSpectroscopy(QubitIndex, number_of_qubits, studyDocumentationFolder, j, signal,
+                                                    save_figs, experiment, live_plot, logger=rr_logger, increase_reps = increase_qubit_reps_ef,
+                                                    increase_reps_to = increase_reps_to_ef, increase_ef_qspec_rounds = increase_ef_qspec_rounds,
+                                                    increase_ef_qspec_rounds_to = increase_ef_qspec_rounds_to, unmasking_resgain=unmask,
+                                                    reduce_rlx_delay = reduce_rlx_delay_efqspec, reduce_rlx_delay_to = reduce_rlx_delay_efqspec_to)
 
-                        del ef_q_spec
+                    efqspec_I, efqspec_Q, efqspec_freqs, sys_config_qspec_ef, efqspec_I_fit, efqspec_Q_fit, efqubit_freq, meas_timestamp_qspecef = ef_q_spec.run()
+                    qubit_freqs_ef[QubitIndex] = efqubit_freq
+                    experiment.qubit_cfg['qubit_freq_ef'][QubitIndex] = float(efqubit_freq)
 
-                    except Exception as e:
-                        if debug_mode:
-                            raise e  # In debug mode, re-raise the exception immediately
-                        rr_logger.exception(f"EF qspec error on qubit {QubitIndex + 1}: {e}")
-                        # we don't skip the qubit if this throws an err because we want to save the rest of the data that was taken
+                    ef_qspec_survived = True
+                    rr_logger.info(f"EF Qubit {QubitIndex + 1} frequency: {efqubit_freq}")
+                    if verbose:
+                        print(f"EF Qubit {QubitIndex + 1} frequency: {efqubit_freq}")
 
-                    end_time = time.perf_counter()
-                    meas_time_RR[QubitIndex]["qspec_ef"] = end_time - t0
+                    del ef_q_spec
+
+                except Exception as e:
+                    if debug_mode:
+                        raise e  # In debug mode, re-raise the exception immediately
+                    rr_logger.exception(f"EF qspec error on qubit {QubitIndex + 1}: {e}")
+                    # we don't skip the qubit if this throws an err because we want to save the rest of the data that was taken
+
+                end_time = time.perf_counter()
+                meas_time_RR[QubitIndex]["qspec_ef"] = end_time - t0
 
         ################################################ e-f rabi ################################################
         # NOT needed for rpm qubit temps, rpm itself is an ef rabi experiment. It is ran separately.
