@@ -33,7 +33,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1 # number of rounds
+n = 10000000 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -59,7 +59,7 @@ unmask = True  # Do you want to use the unmasking feature to increase resonator 
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 
-Qs_to_look_at = [0] # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,1,2,3,5] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run9c'
@@ -68,11 +68,11 @@ substudy_txt_notes = ('Reverted back to warm filtering setup a the beginning of 
 
 # set which of the following you'd like to run to 'True'
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
-             "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
-             "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
+             "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
+             "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
 
 # For 25dB DAC, 6/14/2026
-res_leng_vals = [5.75, 7.2500, 6.25, 7.25, 7.0, 6.75]  # 5.63, 25dB [5.5, 6.0, 5.7, 6.8, 7.0, 8.0] , [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
+res_leng_vals = [5.2, 6.6, 6.80, 6.0, 7.0, 7.2]  # 5.63, 25dB [5.5, 6.0, 5.7, 6.8, 7.0, 8.0] , [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
 res_gain = [0.76, 0.7788, 0.8419,0.5894, 0.825, 0.8375]  # 0.8125,25dB, [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97], [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
 freq_offsets = [-0.1556,0.0667,-0.0222,-0.0222,0,-0.1111]  # -0.1556,0.0222,-0.2000,-0.2000,0.0, -0.1200
 
@@ -86,8 +86,8 @@ meas_time_RR = {}
 
 ################################################ Data Saving Setup ##################################################
 # Folders
-study = 'DAC_filtering_tests_reverted_setup' #qubit_checkouts, DAC_filtering_tests
-sub_study = 'original_filtering_prog' #Day4_base_not_fully_opt_yet_25dBDAC
+study = 'round_robin_benchmark' #qubit_checkouts, DAC_filtering_tests
+sub_study = 'prejul15_outage_no_warm_filt_25dBDAC_noQ5' #Day4_base_not_fully_opt_yet_25dBDAC
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -287,9 +287,9 @@ while j < n:
                     increase_qubit_reps_qspec = True
                     qspecge_increase_reps_to = 650
 
-                if QubitIndex == 0:
-                    increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 800
+                # if QubitIndex == 0:
+                #     increase_qubit_reps_qspec = True
+                #     qspecge_increase_reps_to = 800
 
                 q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
                                            signal, save_figs, increase_reps = increase_qubit_reps_qspec, increase_rounds =increase_qspec_rounds,
@@ -355,10 +355,10 @@ while j < n:
                     qubit_to_increase_gerabi_reps_for = QubitIndex
                     multiply_gerabi_reps_by = 2
 
-                if QubitIndex == 0:
-                    increase_qubit_reps_gerabi = True
-                    qubit_to_increase_gerabi_reps_for = QubitIndex
-                    multiply_gerabi_reps_by = 2
+                # if QubitIndex == 0:
+                #     increase_qubit_reps_gerabi = True
+                #     qubit_to_increase_gerabi_reps_for = QubitIndex
+                #     multiply_gerabi_reps_by = 2
 
                 if QubitIndex == 5:
                 #     increase_qubit_reps_gerabi = True

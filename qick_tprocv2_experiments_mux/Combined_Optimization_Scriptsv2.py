@@ -55,7 +55,7 @@ n_loops = 4 # Number of repetitions per length to average
 Qs = [0]
 
 # For 25dB DAC, 6/14/2026
-res_leng_vals = [5.75, 7.2500, 6.25, 7.25, 7.0, 6.75]  # 5.63, 25dB [5.5, 6.0, 5.7, 6.8, 7.0, 8.0] , [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
+res_leng_vals = [5.2, 6.6, 6.80, 6.0, 7.0, 7.2]  # 5.63, 25dB [5.5, 6.0, 5.7, 6.8, 7.0, 8.0] , [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
 res_gain = [0.76, 0.7788, 0.8419,0.5894, 0.825, 0.8375]  # 0.8125,25dB, [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97], [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
 freq_offsets = [-0.1556,0.0667,-0.0222,-0.0222,0,-0.1111]  # -0.1556,0.0222,-0.2000,-0.2000,0.0, -0.1200
 
@@ -64,7 +64,7 @@ res_freq_ge = [None] * 6 # creates list where the script will be storing the fre
 
 j=0 # round number, from RR code. Not really used here since we just run it once for each qubit
 
-lengs = np.arange(2.6, 6.4, 0.2)
+lengs = np.arange(3.0, 6.0, 0.1)
 
 start=time.time()
 
