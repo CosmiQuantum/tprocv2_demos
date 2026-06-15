@@ -435,7 +435,7 @@ if FRIDGE == "QUIET":
 
 elif FRIDGE == "NEXUS":
     VNA_res = np.array([6187.72, 5828.52, 6074.58, 5959.364]) #Run 34 #[6187.9, 5828.5, 6074.6, 5959.3]) #Run 33 VNA low power   # Old [6187.8, 5828.3, 6074.6, 5959.3])
-    VNA_qubit =np.array([4928.5, 4779.98, 4586.61, 4802.8]) #NR35: [4943.5, 4773, 4579, 4805]) #4913., 4764.2, 4577, 4782
+    VNA_qubit = np.array([4931, 4788.8, 4584.4, 4801.23]) #Run36a: [4928.5, 4779.98, 4586.61, 4802.8] #NR35: [4943.5, 4773, 4579, 4805]) #4913., 4764.2, 4577, 4782
     # #np.array([4909, 4749.4, 4569, 4759])  # Found on NR25 with the QICK
 
     tot_num_of_qubits = 4
@@ -461,9 +461,9 @@ elif FRIDGE == "NEXUS":
         "res_spec_ef": {
             "reps": 1000,
             "rounds": 1,
-            "start": -1.25, #-0.5, #-3.5,  # [MHz]
-            "step_size": 0.01, #0.12,  # [MHz]
-            "steps": 201, #101,
+            "start": -3.5, #-1.25, #-0.5, #-3.5,  # [MHz]
+            "step_size": 0.05, #0.01, #0.12,  # [MHz]
+            "steps": 141, #201, #101,
             "relax_delay": 500,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -592,7 +592,7 @@ elif FRIDGE == "NEXUS":
             "reps": 3000, #1000,
             "rounds": 1,
             "relax_delay": 500,  # [us]
-            "wait_time": 1 / (4*1.8),  # [us]  #1.72 #R35 [1.7, 2.5, 4.1, 2.4] # 2  [2, 2.85, 4, 2.7]
+            "wait_time": 1 / (4*1.81),  # [us] #NR36a:1.8  #1.72 #R35 [1.7, 2.5, 4.1, 2.4] # 2  [2, 2.85, 4, 2.7]
         },
 
         "tomography_ge_q2": {
@@ -600,7 +600,7 @@ elif FRIDGE == "NEXUS":
             "reps": 3000, #1000,
             "rounds": 1,
             "relax_delay": 500,  # [us]
-            "wait_time": 1 / (4*2.5),  # [us] #2.6 #2.85  [2, 2.85, 4, 2.7]
+            "wait_time": 1 / (4*2.58),  # [us] #NR36a: 2.5 #2.6 #2.85  [2, 2.85, 4, 2.7]
         },
 
         "tomography_ge_q3": {
@@ -608,7 +608,7 @@ elif FRIDGE == "NEXUS":
             "reps": 3000, #1000,
             "rounds": 1,
             "relax_delay": 500,  # [us]
-            "wait_time": 1 / (4*3.9),  # [us] #3.8  #4 [2, 2.85, 4, 2.7]
+            "wait_time": 1 / (4*3.96),  # [us] #NR36a: 3.9, #3.8  #4 [2, 2.85, 4, 2.7]
         },
 
         "tomography_ge_q4": {
@@ -616,7 +616,7 @@ elif FRIDGE == "NEXUS":
             "reps": 3000, #1000,
             "rounds": 1,
             "relax_delay": 500,  # [us]
-            "wait_time": 1 / (4*2.3),  # [us] #2.4 #2.7  [2, 2.85, 4, 2.7]
+            "wait_time": 1 / (4*2.46),  # [us] #NR36a: 2.3 #2.4 #2.7  [2, 2.85, 4, 2.7]
         }
         #
 

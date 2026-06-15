@@ -29,7 +29,7 @@ def load_singleh5(filepath):
 
     return vsweep, qubits, qdata[:rows_written], timestamps[:rows_written], rows_written
 
-def tomo_colorplot(vsweep, qindex, qid, qdata, rows_written, timestamps = None):
+def tomo_colorplot(vsweep, qindex, qid, qdata, rows_written, timestamps = None, save = False):
     '''
     qubit : [q_index, q_id (name)]
     '''
@@ -71,7 +71,7 @@ def tomo_colorplot(vsweep, qindex, qid, qdata, rows_written, timestamps = None):
     plt.show()
 
 
-def tomo_colorplot_amp(vsweep, qindex, qid, qdata, rows_written, timestamps = None):
+def tomo_colorplot_amp(vsweep, qindex, qid, qdata, rows_written, timestamps = None, save = False):
     '''
     qubit : [q_index, q_id (name)]
     '''
@@ -87,8 +87,8 @@ def tomo_colorplot_amp(vsweep, qindex, qid, qdata, rows_written, timestamps = No
     if timestamps is not None:
         time_min = decode_time(timestamps, rows_written)
 
-        x_vals = time_min
-        x_label = "Time (min)"
+        x_vals = time_min/60
+        x_label = "Time (hr)"
     else:
         x_vals = np.arange(rows_written)
         x_label = "Round"
@@ -113,7 +113,8 @@ def tomo_colorplot_amp(vsweep, qindex, qid, qdata, rows_written, timestamps = No
 
     plt.tight_layout()
     plt.show()
-    #fig_name = os.path.join('/home/nexusadmin/Documents/Data/run35/4charge/PostCsTomography/Dataset2/2026-03-23_16-15-38/analysis_plots/', 'Tomography_Qs1234_2026-03-24_17-06-21_plot.png') #Hardcode, fix
+
+    #fig_name = 'poster_plot_Q2_set1.png' #os.path.join('/home/nexusadmin/Documents/Data/run35/4charge/PostCsTomography/Dataset2/2026-03-23_16-15-38/analysis_plots/', 'Tomography_Qs1234_2026-03-24_17-06-21_plot.png') #Hardcode, fix
     #plt.savefig(fig_name)
 
 
@@ -211,11 +212,13 @@ def fitdata(fit_params, vsweep, qindex, qid, qdata, rd, signal = "amp", plot = F
 
 #def fit_single_scan()
 
-run = 'run36'
-study = 'Tomography_Check' #'PostCsTomography' #'EndOfRunData' #'PostCsTomography' #'BackgroundTomography'
-substudy = 'HighgainOpt' #'Dataset2' #'Dataset2_neg'
-timestamp = '2026-04-23_19-27-04' #'2026-03-23_16-15-38' #'2026-04-03_11-55-28'
-file = 'Tomography_Qs1234_2026-04-23_19-36-26.h5' #'Tomography_Qs1234_2026-03-24_17-06-21.h5'
+## Add saving with proper names and folders
+
+run = 'run37'
+study = 'BackgroundTomography' #'PostCsTomography' #'EndOfRunData' #'PostCsTomography' #'BackgroundTomography'
+substudy = 'Dataset1' #'Dataset2' #'Dataset2_neg'
+timestamp = '2026-06-11_23-01-38' #'2026-06-09_23-56-29' #'2026-03-23_16-15-38' #'2026-04-03_11-55-28'
+file = 'Tomography_Qs1234_2026-06-14_12-32-54.h5' #'Tomography_Qs1234_2026-03-24_17-06-21.h5'
 path = f'/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}/{timestamp}/study_data/{file}'
 
 vsweep, qubits, qdata, timestamps, rounds = load_singleh5(path)

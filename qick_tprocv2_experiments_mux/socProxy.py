@@ -6,7 +6,7 @@ def makeProxy():
     Pyro4.config.PICKLE_PROTOCOL_VERSION = 4
 
     ns_host = "pynq216-3.dhcp.fnal.gov" #nexus board
-    ns_port = 8888
+    ns_port = 8889
     proxy_name = "myqick"
 
     ns = Pyro4.locateNS(host=ns_host, port=ns_port)

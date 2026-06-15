@@ -9,11 +9,11 @@ import numpy as np
 
 #number_of_qubits = 4
 qubit = [4] #[1, 2, 3, 4] #Qubit to Run, 1-4
-start_voltage = [0.03] #[0.0]*4 #0.06 #V
-stop_voltage = [0.05] #[0.15]*4 #0.08 #0.15 max!!! #V
+start_voltage = [0.04] #[0.0]*4 #0.06 #V
+stop_voltage = [0.06] #[0.15]*4 #0.08 #0.15 max!!! #V
 voltage_pts = [10] #*]4
 
-run = "run36"
+run = "run37"
 study = "Initial Checkout"
 substudy = f"Q{qubit[0]}_BiasSpec" #"AllQ_BiasSpec" #"Q{qubit[0]}_BiasSpec"
 

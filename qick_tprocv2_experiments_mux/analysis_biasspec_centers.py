@@ -83,7 +83,7 @@ def plot_2d_bias(freq, vsweep, Iarr, Qarr, amp, qubit, x1, x2, xc, timstamp, bkg
 
     ax1.set_ylabel("Voltage Bias (V)", fontsize=16)
     ax1.tick_params(axis='both', which='major', labelsize=14)
-    im1 = ax1.imshow(I_plot, asepct = 'auto', origin = 'lower', extent=extent)
+    im1 = ax1.imshow(I_plot, aspect = 'auto', origin = 'lower', extent=extent)
     fig.colorbar(im1, label="I Amplitude (a.u.)")
 
     ax2.set_ylabel("Voltage Bias (V)", fontsize=16)
@@ -215,7 +215,7 @@ def fit_single_lorenzian(I, Q, amp, freqs, freq_q, volt, volt_index, sigma_guess
         for ax in (ax1, ax2, ax3):
             ax.axvline(freq_q, color='k', linestyle='--')
 
-        fig.suptitle(f'Q{qubit} Bias Spec ({name_mod}), {volt} V \n Guess: {freq_q}, Fit: {largest_amp_curve_mean} MHz, FWHM: {round(largest_amp_curve_fwhm, 1)}')
+        fig.suptitle(f'Q{qubit} Bias Spec ({name_mod}), {np.round(volt, 4)} V \n Guess: {freq_q}, Fit: {round(largest_amp_curve_mean, 5)} MHz, FWHM: {round(largest_amp_curve_fwhm, 1)}')
         plt.tight_layout()
 
         plt.subplots_adjust(top=0.90)
@@ -247,26 +247,26 @@ def split_scan(freq, Iarr, Qarr, amp, split_freq = None):
 
     return pt1_freq, pt1_Iarr, pt1_Qarr, pt1_amp, pt2_freq, pt2_Iarr, pt2_Qarr, pt2_amp
 
-run_name = 'run36'
+run_name = 'run37'
 study = 'Initial Checkout'
-qubit = 4 #1, 2, 3, or 4
-substudy = "AllQ_BiasSpec" #f'Q{qubit}_BiasSpec'
+qubit = 3 #1, 2, 3, or 4
+substudy = "Q2Q3_BiasSpec" #f'Q{qubit}_BiasSpec'
 
-date = '2026-04-22'
-timestamp = f'{date}_17-04-59'
+date = '2026-06-09'
+timestamp = f'{date}_10-59-13'
 
 dataFolder = f"/home/nexusadmin/Documents/Data/{run_name}/4charge/{study}/{substudy}/{date}/{timestamp}"
 print(dataFolder)
 
-plot_sweep = False
-plot_2d = False
-bkgd_sub = False
-save_plots = False
-fit = True
+plot_sweep = True
+plot_2d = True
+bkgd_sub = True
+save_plots = True
+fit = False
 
-x1 = [4927.65, 4778.65, 4584.65, 4801.7] #
-x2 = [4929.45, 4781.2, 4588.55, 4803.975]
-xc = [4928.55, 4779.95, 4586.65, 4802.85]
+x1 = [4930, 4787.55, 4582.55, 4799.8] #
+x2 = [4931.8, 4790.1, 4586.45, 4802.3]
+xc = [4930.9, 4788.8, 4584.5, 4801.1]
 
 freq, Iarr, Qarr, amp, vsweep = load_data(dataFolder)
 
@@ -293,7 +293,7 @@ if plot_2d:
 if fit:
     plot_fit = True
     split = False
-    volt_index = 2
+    volt_index = 10
     I = Iarr[volt_index]
     Q = Qarr[volt_index]
     amp = amp[volt_index]
