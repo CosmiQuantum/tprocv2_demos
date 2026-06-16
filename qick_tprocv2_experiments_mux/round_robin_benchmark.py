@@ -33,7 +33,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1000000 # number of rounds
+n = 100000 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -68,16 +68,16 @@ substudy_txt_notes = ('Reverted back to warm filtering setup a the beginning of 
 
 # set which of the following you'd like to run to 'True'
 # run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
-#              "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
-#              "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
+#              "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
+#              "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
              "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
              "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
 
 # For 25dB DAC, 6/15/2026
-res_leng_vals = [5.4, 6.6, 6.4, 6.8, 7.0, 7.0]
-res_gain = [0.8164, 0.7788, 0.8025,0.6156, 0.825, 0.8125]
-freq_offsets = [-0.0706,-0.1176,-0.2118,-0.1647,0,-0.1647]
+res_leng_vals = [5.4, 5.8, 6.4, 6.8, 7.0, 7.0]
+res_gain = [0.8164, 0.85, 0.8025,0.6156, 0.825, 0.8125]
+freq_offsets = [-0.0706,0.1111,-0.2118,-0.1647,0,-0.1647]
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
@@ -90,7 +90,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts, DAC_filtering_tests
-sub_study = 'ABpaper_batch1_25dBDAC_ogfilters_noQ5' #Day4_base_not_fully_opt_yet_25dBDAC
+sub_study = 'ABpaper_batch2_25dBDAC_ogfilters_noQ5' #ABpaper_batch1_25dBDAC_ogfilters_noQ5, optimizing_for_AB_data
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -522,40 +522,40 @@ while j < n:
             meas_time_RR[QubitIndex]["res_spec_ef"] = end_time - t0
 
         ########################################### g-e-f Single Shot Measurements ############################################
-        if run_flags["ss_gef"]:
-            ss = SingleShot_ef(QubitIndex, number_of_qubits, studyDocumentationFolder, j, save_figs, experiment)
-
-            iq_list_g, iq_list_e, iq_list_f, theta_ge, threshold_ge, sys_config_ss_gef = ss.run(experiment.soccfg,
-                                                                                                experiment.soc)
-            # iq_list_g, iq_list_e, iq_list_f, ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge, sys_config_ss_gef
-            I_g = iq_list_g[QubitIndex][0].T[0]
-            Q_g = iq_list_g[QubitIndex][0].T[1]
-            I_e = iq_list_e[QubitIndex][0].T[0]
-            Q_e = iq_list_e[QubitIndex][0].T[1]
-            I_f = iq_list_f[QubitIndex][0].T[0]
-            Q_f = iq_list_f[QubitIndex][0].T[1]
-
-            if run_flags["ss_gef"]:  # currently saves figs and h5 files every time this is run
-                provided_sigma_num = None  # de state circle radius = sigma_num * sigma. Set as None if you want the code to choose an appropriate one for you.
-                Analysis = False  # Keep as false, we are in RR mode here, not post-processing (analysis) mode
-                RR = True  # Keep as true, we are in RR mode here
-                date_analysis = None  # This only matters if you are in post-processing mode (for analysis purposes), keep as None here.
-                round_num = j
-                # analysis_gef_SSF = GEF_SSF_ANALYSIS(studyDocumentationFolder, QubitIndex, Analysis, RR,
-                #                                     date_analysis, round_num)
-                # (line_point1, line_point2, center_e, radius_e, T, v, f_outside, line_point1_rot, line_point2_rot,
-                #  center_e_rot, radius_e_rot, T_rot, v_rot, f_outside_rot
-                #  ) = analysis_gef_SSF.fstate_analysis_plot(I_g, Q_g, I_e, Q_e, I_f, Q_f, ig_new,  ie_new,
-                #
-                #                                            if_new,  theta_ef, threshold_ef, QubitIndex,
-                #                                            provided_sigma_num)
-                # # (line_point1, line_point2, center_e, radius_e, T, v, f_outside, line_point1_rot, line_point2_rot,
-                #  center_e_rot, radius_e_rot, T_rot, v_rot, f_outside_rot
-                #  ) = analysis_gef_SSF.fstate_analysis_plot(I_g, Q_g, I_e, Q_e, I_f, Q_f, ig_new, qg_new, ie_new,
-                #                                            qe_new,
-                #                                            if_new, qf_new, theta_ge, threshold_ge, QubitIndex,
-                #                                            provided_sigma_num)
-            del ss
+        # if run_flags["ss_gef"]:
+        #     ss = SingleShot_ef(QubitIndex, number_of_qubits, studyDocumentationFolder, j, save_figs, experiment)
+        #
+        #     iq_list_g, iq_list_e, iq_list_f, theta_ge, threshold_ge, sys_config_ss_gef = ss.run(experiment.soccfg,
+        #                                                                                         experiment.soc)
+        #     # iq_list_g, iq_list_e, iq_list_f, ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge, sys_config_ss_gef
+        #     I_g = iq_list_g[QubitIndex][0].T[0]
+        #     Q_g = iq_list_g[QubitIndex][0].T[1]
+        #     I_e = iq_list_e[QubitIndex][0].T[0]
+        #     Q_e = iq_list_e[QubitIndex][0].T[1]
+        #     I_f = iq_list_f[QubitIndex][0].T[0]
+        #     Q_f = iq_list_f[QubitIndex][0].T[1]
+        #
+        #     if run_flags["ss_gef"]:  # currently saves figs and h5 files every time this is run
+        #         provided_sigma_num = None  # de state circle radius = sigma_num * sigma. Set as None if you want the code to choose an appropriate one for you.
+        #         Analysis = False  # Keep as false, we are in RR mode here, not post-processing (analysis) mode
+        #         RR = True  # Keep as true, we are in RR mode here
+        #         date_analysis = None  # This only matters if you are in post-processing mode (for analysis purposes), keep as None here.
+        #         round_num = j
+        #         # analysis_gef_SSF = GEF_SSF_ANALYSIS(studyDocumentationFolder, QubitIndex, Analysis, RR,
+        #         #                                     date_analysis, round_num)
+        #         # (line_point1, line_point2, center_e, radius_e, T, v, f_outside, line_point1_rot, line_point2_rot,
+        #         #  center_e_rot, radius_e_rot, T_rot, v_rot, f_outside_rot
+        #         #  ) = analysis_gef_SSF.fstate_analysis_plot(I_g, Q_g, I_e, Q_e, I_f, Q_f, ig_new,  ie_new,
+        #         #
+        #         #                                            if_new,  theta_ef, threshold_ef, QubitIndex,
+        #         #                                            provided_sigma_num)
+        #         # # (line_point1, line_point2, center_e, radius_e, T, v, f_outside, line_point1_rot, line_point2_rot,
+        #         #  center_e_rot, radius_e_rot, T_rot, v_rot, f_outside_rot
+        #         #  ) = analysis_gef_SSF.fstate_analysis_plot(I_g, Q_g, I_e, Q_e, I_f, Q_f, ig_new, qg_new, ie_new,
+        #         #                                            qe_new,
+        #         #                                            if_new, qf_new, theta_ge, threshold_ge, QubitIndex,
+        #         #                                            provided_sigma_num)
+        #     del ss
         ################################################ Qubit Spec EF ################################################
         if run_flags["ef_q_spec"]:
             if ef_res_spec_survived:
