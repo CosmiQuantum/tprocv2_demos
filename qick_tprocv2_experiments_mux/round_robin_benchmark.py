@@ -428,13 +428,13 @@ while j < n:
                     fid, angle, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge = ss.run()
 
                     fid_check = fid
-                    if fid_check < ssf_threshold: # checks if SSF is bad, if it is it tries again
-                        rr_logger.warning(
-                            f"Q{QubitIndex + 1} SSF fid={fid_check:.3f} below {ssf_threshold}, retrying "
-                            f"({try_num}/{max_tries})")
+                    # if fid_check < ssf_threshold: # checks if SSF is bad, if it is it tries again
+                    #     rr_logger.warning(
+                    #         f"Q{QubitIndex + 1} SSF fid={fid_check:.3f} below {ssf_threshold}, retrying "
+                    #         f"({try_num}/{max_tries})")
 
-                if fid_check < ssf_threshold:
-                    rr_logger.warning(f"Q{QubitIndex + 1} SSF never reached {ssf_threshold}. Keeping last attempt.")
+                # if fid_check < ssf_threshold:
+                #     rr_logger.warning(f"Q{QubitIndex + 1} SSF never reached {ssf_threshold}. Keeping last attempt.")
 
                 I_g = iq_list_g[QubitIndex][0].T[0]
                 Q_g = iq_list_g[QubitIndex][0].T[1]
@@ -654,11 +654,11 @@ while j < n:
                     reduce_rlx_delay_rpm = False
                     reduce_rlx_delay_rpm_to = None
 
-                    # if QubitIndex == 5:
-                    #     increase_qubit_reps2_rpm = True
-                    #     increase_qubit_reps2_rpm_to = 20000
-                    #     reduce_rlx_delay_rpm = True
-                    #     reduce_rlx_delay_rpm_to = 650
+                    if QubitIndex == 5:
+                        increase_qubit_reps2_rpm = True
+                        increase_qubit_reps2_rpm_to = 6000 # 20000
+                        reduce_rlx_delay_rpm = True
+                        reduce_rlx_delay_rpm_to = 650
                     #
                     if QubitIndex == 4:
                         increase_qubit_reps2_rpm = True
@@ -786,6 +786,11 @@ while j < n:
                 if QubitIndex == 5:
                     reduce_rlx_delay_geT2R = True
                     reduce_rlx_delay_geT2R_to = 650
+
+                if QubitIndex == 1:
+                    increase_qubit_reps_t2r = True
+                    qubit_to_increase_t2r_reps_for = QubitIndex
+                    increase_t2r_qubit_reps_to = 650  # must be integer
 
                 t2r = T2RMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                      experiment=experiment, live_plot=live_plot, fit_data=fit_data,
