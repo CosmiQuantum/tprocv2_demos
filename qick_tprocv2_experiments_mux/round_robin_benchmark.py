@@ -33,7 +33,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 10000000 # number of rounds
+n = 1000000 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -67,14 +67,17 @@ device_name = '6transmon'
 substudy_txt_notes = ('Reverted back to warm filtering setup a the beginning of the run.\n')
 
 # set which of the following you'd like to run to 'True'
+# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
+#              "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
+#              "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
              "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
              "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
 
-# For 25dB DAC, 6/14/2026
-res_leng_vals = [5.2, 6.6, 6.80, 6.0, 7.0, 7.2]  # 5.63, 25dB [5.5, 6.0, 5.7, 6.8, 7.0, 8.0] , [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
-res_gain = [0.76, 0.7788, 0.8419,0.5894, 0.825, 0.8375]  # 0.8125,25dB, [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97], [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
-freq_offsets = [-0.1556,0.0667,-0.0222,-0.0222,0,-0.1111]  # -0.1556,0.0222,-0.2000,-0.2000,0.0, -0.1200
+# For 25dB DAC, 6/15/2026
+res_leng_vals = [5.4, 6.6, 6.4, 6.8, 7.0, 7.0]
+res_gain = [0.8164, 0.7788, 0.8025,0.6156, 0.825, 0.8125]
+freq_offsets = [-0.0706,-0.1176,-0.2118,-0.1647,0,-0.1647]
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
@@ -87,7 +90,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts, DAC_filtering_tests
-sub_study = 'prejul15_outage_no_warm_filt_25dBDAC_noQ5' #Day4_base_not_fully_opt_yet_25dBDAC
+sub_study = 'ABpaper_batch1_25dBDAC_ogfilters_noQ5' #Day4_base_not_fully_opt_yet_25dBDAC
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -273,19 +276,19 @@ while j < n:
                     increase_qspec_rounds = True
                     increase_qspec_rounds_to = 2
 
-                # if QubitIndex == 3:
-                #     increase_qubit_reps_qspec = True
-                #     qspecge_increase_reps_to = 600
+                if QubitIndex == 3:
+                    increase_qubit_reps_qspec = True
+                    qspecge_increase_reps_to = 700
                 #     # increase_qspec_rounds = True
                 #     # increase_qspec_rounds_to = 3
                 #
-                # if QubitIndex == 2:
-                #     increase_qubit_reps_qspec = True
-                #     qspecge_increase_reps_to = 700
-
-                if QubitIndex == 1:
+                if QubitIndex == 2:
                     increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 650
+                    qspecge_increase_reps_to = 600
+
+                # if QubitIndex == 1:
+                #     increase_qubit_reps_qspec = True
+                #     qspecge_increase_reps_to = 650
 
                 # if QubitIndex == 0:
                 #     increase_qubit_reps_qspec = True
@@ -360,11 +363,11 @@ while j < n:
                 #     qubit_to_increase_gerabi_reps_for = QubitIndex
                 #     multiply_gerabi_reps_by = 2
 
-                if QubitIndex == 5:
-                #     increase_qubit_reps_gerabi = True
-                #     qubit_to_increase_gerabi_reps_for = QubitIndex
-                    reduce_rlx_delay_gerabi = True
-                    reduce_rlx_delay_gerabi_to = 700
+                # if QubitIndex == 5:
+                # #     increase_qubit_reps_gerabi = True
+                # #     qubit_to_increase_gerabi_reps_for = QubitIndex
+                #     reduce_rlx_delay_gerabi = True
+                #     reduce_rlx_delay_gerabi_to = 700
 
                 rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
                                                save_figs=save_figs, save_shots=save_shots_gerabi,
@@ -568,7 +571,7 @@ while j < n:
 
                     if QubitIndex == 3:
                         increase_qubit_reps_ef = True  # if you want to increase the reps for a qubit, set to True
-                        increase_reps_to_ef = 4000  # for ef qspec, 5200
+                        increase_reps_to_ef = 4300  # for ef qspec, 5200
                         # increase_ef_qspec_rounds = True
                         # increase_ef_qspec_rounds_to = 2
 
@@ -651,11 +654,11 @@ while j < n:
                     reduce_rlx_delay_rpm = False
                     reduce_rlx_delay_rpm_to = None
 
-                    if QubitIndex == 5:
-                        increase_qubit_reps2_rpm = True
-                        increase_qubit_reps2_rpm_to = 20000
-                        reduce_rlx_delay_rpm = True
-                        reduce_rlx_delay_rpm_to = 650
+                    # if QubitIndex == 5:
+                    #     increase_qubit_reps2_rpm = True
+                    #     increase_qubit_reps2_rpm_to = 20000
+                    #     reduce_rlx_delay_rpm = True
+                    #     reduce_rlx_delay_rpm_to = 650
                     #
                     if QubitIndex == 4:
                         increase_qubit_reps2_rpm = True
@@ -667,7 +670,7 @@ while j < n:
 
                     if QubitIndex == 0:
                         increase_qubit_reps2_rpm = True
-                        increase_qubit_reps2_rpm_to = 10000
+                        increase_qubit_reps2_rpm_to = 5800 #10000
 
                     efAmprabi_Qtemps = Temps_EFAmpRabiExperiment(QubitIndex, number_of_qubits, list_of_all_qubits,
                                                                  studyDocumentationFolder,

@@ -33,7 +33,7 @@ substudy = "opt_25dBDAC_reverted_setup"
 outerFolder = os.path.join(f"/data/QICK_data/run9c/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 
 opt_flags = {"res_leng_sweep": True, "2d_sweep": False}
-save_figs_ss = True # do you want to save SSF pics as you run the readout optimization sweeps?
+save_figs_ss = False # do you want to save SSF pics as you run the readout optimization sweeps?
 
 def create_folder_if_not_exists(folder_path):
     """Creates a folder at the given path if it doesn't already exist."""
@@ -52,23 +52,28 @@ n = 1  # Number of rounds
 n_loops = 4 # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [0]
+Qs = [0,1,2,3,5]
 
 # For 25dB DAC, 6/14/2026
-res_leng_vals = [5.2, 6.6, 6.80, 6.0, 7.0, 7.2]  # 5.63, 25dB [5.5, 6.0, 5.7, 6.8, 7.0, 8.0] , [5.6, 6.0, 5.7, 6.85, 5.0, 8.5]
-res_gain = [0.76, 0.7788, 0.8419,0.5894, 0.825, 0.8375]  # 0.8125,25dB, [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97], [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
-freq_offsets = [-0.1556,0.0667,-0.0222,-0.0222,0,-0.1111]  # -0.1556,0.0222,-0.2000,-0.2000,0.0, -0.1200
+res_leng_vals = [5.4, 6.6, 6.4, 6.8, 7.0, 7.0]
+res_gain = [0.8164, 0.7788, 0.8025,0.6156, 0.825, 0.8125]
+freq_offsets = [-0.0706,-0.1176,-0.2118,-0.1647,0,-0.1647]
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_freq_ge = [None] * 6 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
 
 j=0 # round number, from RR code. Not really used here since we just run it once for each qubit
 
-lengs = np.arange(3.0, 6.0, 0.1)
+# lengs = np.arange(4.0, 6.0, 0.2)
 
 start=time.time()
 
 for QubitIndex in Qs:
+    if QubitIndex == 0:
+        lengs = np.arange(4.4, 6.0, 0.2)
+    else:
+        lengs = np.arange(5.0, 7.6, 0.2)
+
     recycled_qfreq = False  # don't change
 
     # keep these as False
