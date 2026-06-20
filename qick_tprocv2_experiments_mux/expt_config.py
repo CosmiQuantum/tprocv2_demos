@@ -182,7 +182,7 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ge": {
-            "reps": 120,#500,
+            "reps": 115,#500,
             "rounds": 1,  # 5
             "start": [0] * 6,  # [DAC units]
             "stop": [1] * 6,#[1.0] * 6,  # [DAC units]

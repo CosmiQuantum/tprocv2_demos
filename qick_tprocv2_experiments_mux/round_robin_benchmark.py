@@ -33,7 +33,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 100000 # number of rounds
+n = 1 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -67,17 +67,18 @@ device_name = '6transmon'
 substudy_txt_notes = ('Reverted back to warm filtering setup a the beginning of the run.\n')
 
 # set which of the following you'd like to run to 'True'
-# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
-#              "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
-#              "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
-             "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
-             "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
+             "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
+             "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
+
+# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
+#              "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
+#              "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
 
 # For 25dB DAC, 6/15/2026
 res_leng_vals = [5.4, 5.8, 6.4, 6.8, 7.0, 7.0]
 res_gain = [0.8164, 0.85, 0.8025,0.6156, 0.825, 0.8125]
-freq_offsets = [-0.0706,0.1111,-0.2118,-0.1647,0,-0.1647]
+freq_offsets = [-0.2000, -0.0667,-0.1111,-0.0222,0,-0.0667]
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
@@ -90,7 +91,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts, DAC_filtering_tests
-sub_study = 'ABpaper_batch2_25dBDAC_ogfilters_noQ5' #ABpaper_batch1_25dBDAC_ogfilters_noQ5, optimizing_for_AB_data
+sub_study = 'optimizing_for_AB_data' #ABpaper_batch3_25dBDAC_ogfilters_noQ5, optimizing_for_AB_data
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -575,6 +576,10 @@ while j < n:
                         # increase_ef_qspec_rounds = True
                         # increase_ef_qspec_rounds_to = 2
 
+                    if QubitIndex == 2:
+                        increase_qubit_reps_ef = True  # if you want to increase the reps for a qubit, set to True
+                        increase_reps_to_ef = 2600
+
                     if QubitIndex == 5:
                         reduce_rlx_delay_efqspec = True
                         reduce_rlx_delay_efqspec_to = 650
@@ -656,7 +661,7 @@ while j < n:
 
                     if QubitIndex == 5:
                         increase_qubit_reps2_rpm = True
-                        increase_qubit_reps2_rpm_to = 6000 # 20000
+                        increase_qubit_reps2_rpm_to = 7400 # 20000
                         reduce_rlx_delay_rpm = True
                         reduce_rlx_delay_rpm_to = 650
                     #
@@ -790,7 +795,7 @@ while j < n:
                 if QubitIndex == 1:
                     increase_qubit_reps_t2r = True
                     qubit_to_increase_t2r_reps_for = QubitIndex
-                    increase_t2r_qubit_reps_to = 650  # must be integer
+                    increase_t2r_qubit_reps_to = 1000
 
                 t2r = T2RMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                      experiment=experiment, live_plot=live_plot, fit_data=fit_data,
