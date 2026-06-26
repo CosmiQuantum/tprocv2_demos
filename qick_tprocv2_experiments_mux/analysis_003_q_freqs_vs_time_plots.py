@@ -463,7 +463,7 @@ class QubitFreqsVsTime:
 
         return filtered_data
 
-    def plot_with_errs(self, date_times, qubit_frequencies, qspec_fit_err, show_legends, exp_extension=''):
+    def plot_with_errs(self, run_number, date_times, qubit_frequencies, qspec_fit_err, show_legends, exp_extension='ge'):
         # ---------------------------------plot path-----------------------------------------------------
         self.create_folder_if_not_exists(self.plots_path)
         analysis_folder = os.path.join(self.plots_path, "features_vs_time/")
@@ -473,8 +473,8 @@ class QubitFreqsVsTime:
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8), sharex=True)
-        ext = exp_extension.split('_')[0]
-        plt.suptitle(f'g-e Qubit Frequencies (MHz) vs Time {ext}', fontsize=font)
+        #ext = exp_extension.split('_')[0]
+        plt.suptitle(f'{exp_extension} Qubit Frequencies (MHz) vs Time, Run {run_number}', fontsize=font)
         axes = axes.flatten()
 
         from datetime import datetime
@@ -558,11 +558,11 @@ class QubitFreqsVsTime:
                 ax.legend(edgecolor='black')
 
             ax.set_xlabel('Time', fontsize=16)
-            ax.set_ylabel('Freq (MHz)', fontsize=16)
+            ax.set_ylabel('Qubit Freq (MHz)', fontsize=16)
 
         plt.tight_layout()
         plt.savefig(
-            analysis_folder + f'Q_Freqs{exp_extension}.pdf',
+            analysis_folder + f'{exp_extension}QFreqs_run{run_number}.pdf',
             transparent=True,
             dpi=self.final_figure_quality
         )

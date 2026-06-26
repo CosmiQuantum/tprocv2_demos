@@ -6,7 +6,7 @@ import os
 import datetime
 import matplotlib.ticker as mticker
 
-qtemp_noisetemp_plot = True
+qtemp_noisetemp_plot = False
 lnPe_vs_qfreq_plots_per_run = False
 lnPe_vs_qfreq_plots_per_qubit = False
 ssf_fid_vs_Pe = False

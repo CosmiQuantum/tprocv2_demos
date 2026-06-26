@@ -2003,7 +2003,7 @@ class SSFTempCalcAndPlots:
 
     #  Scatter plot – qubit temperatures vs. time  (all dates, each qubit its own subplot)
     def plot_qubit_temperatures_vs_time_ssf(self, all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs,
-                                            out_dir, rel_err_cutoff = None, plot_error_bars = False):
+                                            out_dir, rel_err_cutoff = None, plot_error_bars = False, yaxis_min = None, yaxis_max = None):
         """Scatter plot of qubit temperatures vs. time for each qubit, optionally with error bars."""
 
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
@@ -2059,13 +2059,18 @@ class SSFTempCalcAndPlots:
             # ax.legend()
             ax.xaxis.set_major_formatter(date_fmt)
             plt.setp(ax.get_xticklabels(), rotation=45, fontsize=16)
-            # ax.set_yticks(np.linspace(20, 160, 10))
+
+            if yaxis_min is not None and yaxis_max is not None:
+                ax.set_ylim(yaxis_min, yaxis_max)
+                ax.set_yticks(np.linspace(yaxis_min, yaxis_max, 10))
+
             plt.setp(ax.get_yticklabels(), fontsize=16)
 
         plt.tight_layout()
+        #plt.suptitle("SSF Effective Qubit Temps vs. Time", fontsize=16)
         fname = os.path.join(
             out_dir,
-            f"AllQubits_Temps_vs_Time_{datetime.datetime.now():%Y%m%d%H%M%S}.png")
+            f"AllQubits_SSF_Temps_vs_Time_{datetime.datetime.now():%Y%m%d%H%M%S}.png")
         plt.savefig(fname, dpi=300)
         plt.close()
         print("Saved all-dates scatter to: ", fname)
@@ -4621,6 +4626,7 @@ class combined_Qtemp_studies:
     ):
         """
         Converts RPM per-file results into:
+          times[qid]   = [datetime, ...]
           temps[qid]   = [T_mK, ...]
           errs[qid]    = [T_err_mK (or nan), ...]
           pe_vals[qid] = [P_e, ...]
@@ -4632,6 +4638,7 @@ class combined_Qtemp_studies:
           * Non-finite values are skipped unless keep_nans=True.
         """
 
+        times = [[] for _ in range(n_qubits)]
         temps = [[] for _ in range(n_qubits)]
         errs = [[] for _ in range(n_qubits)]
         pe_vals = [[] for _ in range(n_qubits)]
@@ -4654,6 +4661,10 @@ class combined_Qtemp_studies:
 
                 if not isinstance(qrec, dict):
                     continue
+
+                # ---------------- timestamp ----------------
+                timestamp = qrec.get("date", None)
+                time_val = datetime.datetime.fromtimestamp(timestamp)
 
                 # ---------------- temperature ----------------
                 T = qrec.get(temp_key, None)
@@ -4684,17 +4695,193 @@ class combined_Qtemp_studies:
                     Pee = np.nan
 
                 # ---------------- append ----------------
-                # Keep alignment between value/error pairs independently
                 if keep_nans or np.isfinite(T):
+                    times[qid].append(time_val)
                     temps[qid].append(T)
                     errs[qid].append(Te if np.isfinite(Te) else np.nan)
-
-                if keep_nans or np.isfinite(Pe):
                     pe_vals[qid].append(Pe)
                     pe_errs[qid].append(Pee if np.isfinite(Pee) else np.nan)
 
-        return temps, errs, pe_vals, pe_errs
+        return times, temps, errs, pe_vals, pe_errs
 
+    def plot_rpm_pe_vs_shifted_time_by_run(self,
+            run_num_list,
+            rpm_times_by_run,
+            rpm_Pe_by_run,
+            rpm_Pe_errs_by_run,
+            qubits_to_plot=None,
+            num_qubits=6,
+            time_units="hours",
+            plot_percent=True,
+            ylim=None,
+            save_plt_path=None,
+            fig_title=r"RPM $P_e$ vs shifted time across runs"
+    ):
+        """
+        Plot RPM P_e vs shifted time for multiple runs.
+
+        Each subplot is one qubit. Each run is shifted so that the first RPM
+        timestamp for that qubit/run starts at t = 0.
+
+        Parameters
+        ----------
+        run_num_list : list
+            Runs to include, e.g. [6, 7, 8, 9].
+
+        rpm_times_by_run : dict
+            rpm_times_by_run[run_num][qid] = [datetime, ...]
+
+        rpm_Pe_by_run : dict
+            rpm_Pe_by_run[run_num][qid] = [P_e, ...]
+
+        rpm_Pe_errs_by_run : dict
+            rpm_Pe_errs_by_run[run_num][qid] = [P_e_err, ...]
+
+        qubits_to_plot : list or None
+            Qubit indices to plot. If None, plots all qubits.
+
+        num_qubits : int
+            Total number of qubits.
+
+        time_units : str
+            "seconds", "hours", or "days".
+
+        plot_percent : bool
+            If True, plots P_e in percent. If False, plots raw P_e.
+
+        ylim : tuple, float, or None
+            If tuple, uses ax.set_ylim(*ylim).
+            If float, uses ax.set_ylim(0, ylim).
+
+        save_plt_path : str or None
+            Folder to save plot. If None, shows plot instead.
+
+        fig_title : str
+            Figure title.
+        """
+
+        if qubits_to_plot is None:
+            qubits_to_plot = list(range(num_qubits))
+
+        colors = ["orange", "blue", "purple", "green", "brown", "pink", "gray", "red"]
+        font = 14
+
+        nplot = len(qubits_to_plot)
+        ncols = min(nplot, 3)
+        nrows = math.ceil(nplot / ncols)
+
+        fig, axes = plt.subplots(
+            nrows=nrows,
+            ncols=ncols,
+            figsize=(4.5 * ncols, 4 * nrows),
+            sharex=False,
+            constrained_layout=True
+        )
+
+        axes = axes.flatten() if isinstance(axes, np.ndarray) else [axes]
+
+        fig.suptitle(fig_title, fontsize=font + 2)
+
+        for ax_i, qid in enumerate(qubits_to_plot):
+            ax = axes[ax_i]
+
+            for run_i, run_num in enumerate(run_num_list):
+                if run_num not in rpm_times_by_run:
+                    continue
+
+                times = rpm_times_by_run[run_num][qid]
+                pe_values = rpm_Pe_by_run[run_num][qid]
+                pe_err_values = rpm_Pe_errs_by_run[run_num][qid]
+
+                if len(times) == 0:
+                    continue
+
+                # Convert to arrays
+                times_arr = np.asarray(times)
+                pe_arr = np.asarray(pe_values, dtype=float)
+                pe_err_arr = np.asarray(pe_err_values, dtype=float)
+
+                # Shift each run so it starts at t = 0
+                start_time = times_arr[0]
+                shifted_seconds = np.asarray([
+                    (t - start_time).total_seconds() for t in times_arr
+                ])
+
+                if time_units == "seconds":
+                    shifted_time = shifted_seconds
+                    xlabel = "Shifted time (s)"
+                elif time_units == "hours":
+                    shifted_time = shifted_seconds / 3600.0
+                    xlabel = "Shifted time (hours)"
+                elif time_units == "days":
+                    shifted_time = shifted_seconds / (3600.0 * 24.0)
+                    xlabel = "Shifted time (days)"
+                else:
+                    raise ValueError("time_units must be 'seconds', 'hours', or 'days'.")
+
+                if plot_percent:
+                    yvals = 100 * pe_arr
+                    yerrs = 100 * pe_err_arr
+                    ylabel = r"$P_e$ (%)"
+                else:
+                    yvals = pe_arr
+                    yerrs = pe_err_arr
+                    ylabel = r"$P_e$"
+
+                ax.errorbar(
+                    shifted_time,
+                    yvals,
+                    yerr=yerrs,
+                    fmt=".",
+                    color=colors[run_i % len(colors)],
+                    ecolor=colors[run_i % len(colors)],
+                    elinewidth=1,
+                    capsize=3,
+                    alpha=0.8,
+                    label=f"Run {run_num}"
+                )
+
+                if len(yvals) > 0:
+                    print(
+                        f"Q{qid + 1}, Run {run_num}: "
+                        f"first Pe = {yvals[0]:.4f}, "
+                        f"last Pe = {yvals[-1]:.4f}, "
+                        f"duration = {shifted_time[-1]:.2f} {time_units}"
+                    )
+
+            ax.set_title(f"Q{qid + 1}", fontsize=font)
+            ax.set_xlabel(xlabel, fontsize=font)
+            ax.set_ylabel(ylabel, fontsize=font)
+
+            if ylim is not None:
+                if isinstance(ylim, tuple):
+                    ax.set_ylim(*ylim)
+                else:
+                    ax.set_ylim(0, ylim)
+
+            ax.tick_params(axis="x", labelrotation=45, labelsize=12)
+            ax.tick_params(axis="y", labelsize=12)
+            ax.legend(fontsize=10)
+            ax.grid(True, alpha=0.3)
+
+        # Hide unused subplot axes
+        for j in range(len(qubits_to_plot), len(axes)):
+            axes[j].axis("off")
+
+        if save_plt_path is not None:
+            os.makedirs(save_plt_path, exist_ok=True)
+
+            timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            save_file = os.path.join(
+                save_plt_path,
+                f"RPM_Pe_vs_shifted_time_by_run_{timestp}.pdf"
+            )
+
+            print("Plot saved to:", save_file)
+            plt.savefig(save_file)
+            plt.close(fig)
+        else:
+            plt.show()
 
     def plot_ssf_log_overlay_by_run(
             self,

@@ -2937,7 +2937,7 @@ class PlotRR_noQick:
                                  sharex=False, constrained_layout=True)  # set sharex=False if you want each subplot to manage ticks independently
         axes = axes.flatten() if isinstance(axes, (list, np.ndarray)) else [axes]
 
-        fig.suptitle("Qubit Temperatures vs. Time", fontsize=16)
+        fig.suptitle("RPM Effective Qubit Temps vs. Time", fontsize=16)
 
         # Optional: to plot radiation source events
         events_radiation = [
@@ -3131,7 +3131,7 @@ class PlotRR_noQick:
                     label=f"Q{q + 1}"
                 )
 
-            ax.set_title(f"Q{q + 1}", fontsize=14)
+            ax.set_title(f"Q{q + 1}, RPM Method", fontsize=14)
             ax.set_ylabel("Temp (mK)", fontsize=12)
             ax.grid(False)
 
@@ -3362,7 +3362,7 @@ class PlotRR_noQick:
         os.makedirs(paramvstime_dir, exist_ok=True)
 
         timestp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        save_path = os.path.join(paramvstime_dir, f"QubitTemps_vs_Time_{timestp}.pdf")
+        save_path = os.path.join(paramvstime_dir, f"RPM_QubitTemps_vs_Time_{timestp}.pdf")
         print("Plot saved to: ", save_path)
         plt.savefig(save_path)
         plt.close(fig)
