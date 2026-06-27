@@ -160,6 +160,12 @@ class ResonatorFreqVsTime:
                             and int(q_key) == 3):
                         print(f"Skipping Q4 data due to punchout in {self.run_name}/{folder_date}")
                         continue
+                    # Run 9c patch: Skip Q5 for run 9c, data is not usable or trustworthy due to strong TLS effects
+                    if (int(q_key) == 4 and "run9c" in str(self.run_name).replace("\\", "/")):
+                        print(
+                            f"Skipping Q5 for run 9c in {self.run_name}. It is not usable/trustworthy due to TLS effects.",
+                            flush=True)
+                        continue
                     for dataset in range(len(load_data[f'res{exp_extension}'][q_key].get('Dates', [])[0])):
                         if 'nan' in str(load_data[f'res{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
                             continue
@@ -199,14 +205,9 @@ class ResonatorFreqVsTime:
 
     def plot(self, date_times, resonator_centers, show_legends, exp_extension = ''):
         #---------------------------------plot-----------------------------------------------------
-        if self.fridge.upper() == 'QUIET':
-            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
-            self.create_folder_if_not_exists(analysis_folder)
-        elif self.fridge.upper() == 'NEXUS':
-            analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
-            self.create_folder_if_not_exists(analysis_folder)
-        else:
-            raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+        self.create_folder_if_not_exists(self.plots_path)
+        analysis_folder = os.path.join(self.plots_path, "features_vs_time/")
+        self.create_folder_if_not_exists(analysis_folder)
 
         font = 14
         colors = ['orange','blue','purple','green','brown','pink']
@@ -228,6 +229,12 @@ class ResonatorFreqVsTime:
 
             # Combine datetime objects and y values into a list of tuples and sort by datetime.
             combined = list(zip(datetime_objects, y))
+
+            if len(combined) == 0:
+                # If this qubit has no data, just skip
+                ax.set_visible(False)
+                continue
+
             combined.sort(reverse=True, key=lambda x: x[0])
 
             # Unpack them back into separate lists, in order from latest to most recent.

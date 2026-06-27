@@ -46,7 +46,7 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
-run_num_list = [5,6,7,8,9] # options: 4,5,6,7,8,9, 9.2 (run 9c)
+run_num_list = [9.2] # options: 4,5,6,7,8,9, 9.2 (run 9c)
 t1_vals_by_run  = {}
 res_lengths_by_run = {}
 t2r_vals_by_run = {}
@@ -61,14 +61,60 @@ qfreq_errs_by_run = {}
 for run_number in run_num_list:
     print(f'Processing run {run_number} data.')
     if run_number == 9.2: # run 9c
-        print('(this is actually run 9c, we just label it run9.2)')
+        print('(this is actually run 9c, we just label it run 9.2)')
         process_shots_t1ge = False # the option exists for this run, but for analysis consistency w initial runs we keep it off unless necessary.
         per_pt_errs_t1 = False
-        run_name = 'run9c/6transmon/qubit_checkouts/Day2_base_not_fully_opt_yet_25dBDAC'
+        run_name = 'run9c/6transmon/round_robin_benchmark'
         data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
         plots_path = "/home/acolonce/Documents/analysis/coherence" #cosmiqserver01
 
-        top_folder_dates = ["2026-06-05_23-17-54"]
+        top_folder_dates = [
+            "Day2_base_not_fully_opt_yet_25dBDAC/2026-06-05_23-17-54",
+
+            "Day4_base_not_fully_opt_yet_25dBDAC/2026-06-09_09-43-21",
+
+            "prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-13-10",
+            "prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-17-55",
+            "prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-18-14",
+            "prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-19-26",
+            "prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-23-30",
+
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-24-54",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-25-34",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-26-35",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-27-31",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-34-02",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-46-13",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-46-45",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-51-05",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-52-11",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-54-23",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-57-31",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-06-05",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-16-41",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-17-12",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-19-09",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-20-54",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-23-24",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-23-35",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-30-06",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-35-48",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_17-39-03",
+
+            "ABpaper_batch1_25dBDAC_ogfilters_noQ5/2026-06-15_19-38-45",
+            "ABpaper_batch1_25dBDAC_ogfilters_noQ5/2026-06-15_20-57-52",
+            "ABpaper_batch1_25dBDAC_ogfilters_noQ5/2026-06-16_00-22-56",
+
+            "ABpaper_batch2_25dBDAC_ogfilters_noQ5/2026-06-16_12-02-29",
+            "ABpaper_batch2_25dBDAC_ogfilters_noQ5/2026-06-16_15-16-01",
+            "ABpaper_batch2_25dBDAC_ogfilters_noQ5/2026-06-17_09-44-00",
+            "ABpaper_batch2_25dBDAC_ogfilters_noQ5/2026-06-17_11-46-15",
+
+            "ABpaper_batch3_25dBDAC_ogfilters_noQ5/2026-06-18_11-38-44",
+            "ABpaper_batch3_25dBDAC_ogfilters_noQ5/2026-06-18_17-18-45",
+            "ABpaper_batch3_25dBDAC_ogfilters_noQ5/2026-06-19_00-28-27",
+            "ABpaper_batch3_25dBDAC_ogfilters_noQ5/2026-06-19_10-53-54"
+            ]
 
     elif run_number == 9:
         process_shots_t1ge = False # the option exists for this run, but for analysis consistency w initial runs we keep it off unless necessary.
@@ -385,13 +431,13 @@ for run_number in run_num_list:
     run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB attenuator ') #please make it brief for the plot
 
     ################################################ 01: Get all data ######################################################
-    # res_spec_vs_time = ResonatorFreqVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-    #                                        save_figs, fit_saved, signal, run_name, FRIDGE)
-    # date_times_res_spec, res_freqs = res_spec_vs_time.run()
+    res_spec_vs_time = ResonatorFreqVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+                                           save_figs, fit_saved, signal, run_name, FRIDGE)
+    date_times_res_spec, res_freqs = res_spec_vs_time.run()
     #
-    q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                      save_figs, fit_saved, signal, run_name, FRIDGE)
-    date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
+    # q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+    #                                   save_figs, fit_saved, signal, run_name, FRIDGE)
+    # date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
 
     #print("qspec fit errs Q1: ", qspec_fit_err[0])
     #print("mean qspec fit err Q1: ", np.mean(qspec_fit_err[0]))
@@ -407,7 +453,7 @@ for run_number in run_num_list:
     #     date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs, res_lengths = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge)
     # else:
     #     date_times_t1, t1_vals, t1_fit_err, res_lengths = t1_vs_time.run(return_errs=True, exp_extension = '_ge')
-
+    #
     # t2r_vs_time = T2rVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
     #                         fit_saved, signal, run_name, FRIDGE)
     # date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True, t1_vals = t1_vals)
@@ -421,17 +467,15 @@ for run_number in run_num_list:
     # t1_vals_by_run[run_number] = t1_vals
     # t1_errs_by_run[run_number] = t1_fit_err
     # res_lengths_by_run[run_number] = res_lengths
-
+    #
     # t2r_vals_by_run[run_number] = t2r_vals
     # t2r_errs_by_run[run_number] = t2r_fit_err
     #
     # t2e_vals_by_run[run_number] = t2e_vals
     # t2e_errs_by_run[run_number] = t2e_fit_err
-
-    qfreq_vals_by_run[run_number] = q_freqs
-    qfreq_errs_by_run[run_number] = qspec_fit_err
-
-    q_spec_vs_time.plot_with_errs(run_number, date_times_q_spec, q_freqs, qspec_fit_err,show_legends)
+    #
+    # qfreq_vals_by_run[run_number] = q_freqs
+    # qfreq_errs_by_run[run_number] = qspec_fit_err
 
 ######################################## Print QICK soccfg live ###########################################
 # If you want to print out the soccfg QICK output, uncomment this:
@@ -465,11 +509,11 @@ for run_number in run_num_list:
             #plot_t2r = True, plot_t2e = False, plot_rabis_Qtemps = False)
 
 ########################################### 03: Resonator Freqs vs Time Plots ###########################################
-# res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
+res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
 #
 # ######################################### 04: Qubit Freqs vs Time Plots #############################################
 #q_spec_vs_time.plot_without_errs(date_times_q_spec, q_freqs,show_legends)
-#q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends) # shows error bars, do this one!!
+#q_spec_vs_time.plot_with_errs(run_number,date_times_q_spec, q_freqs, qspec_fit_err, show_legends, use_global_yaxis=True) # shows error bars, do this one!!
 #q_spec_vs_time.plot_with_errs_single_plot(date_times_q_spec, q_freqs, qspec_fit_err, show_legends=True)
 
 # ############################################## 05: Pi Amp vs Time Plots ###############################################

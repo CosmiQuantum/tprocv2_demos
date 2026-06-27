@@ -29,15 +29,9 @@ from analysis_008_T2E_vs_time_plots import T2eVsTime
 from AB_Paper_Analysis_Plots import boxwhisker_qtemps_per_qubit_vs_run_choice, boxwhisker_pe_per_qubit_vs_run_hybrid, boxwhisker_ssf_per_qubit_vs_run, boxwhisker_snr_per_qubit_vs_run, boxwhisker_ie_new_Pg_per_Q_vs_run
 from pathlib import Path
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
-# To do: implement this to make SSF paths sections shorter
-def make_paths(base_prefix, relative_batches):
-    paths = []
-    for folder, timestamps in relative_batches.items():
-        for ts in timestamps:
-            paths.append(str(Path(base_prefix) / folder / ts))
-    return paths
+
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 6 #Options for QUIET: 5(for coherence only),6,7,8,9,9.2(this is run 9c)
+run_num = 9.2 #Options for QUIET: 5(for coherence only),6,7,8,9,9.2(this is run 9c)
 run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence analysis it's defined in its respective section
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
@@ -71,13 +65,13 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": True, "Qtemps_viaSSF_with_fallback": False,
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
                       "combined_studies_Qtemps": False}
 
 # What analysis plots do you want to make?
-analysis_flags = {"Qtemps_vs_time_viaSSF": True,  "Qtemps_vs_time_viaRPM": True, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
+analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False, "Pe_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_hists_viaSSF": False, "Pe_vs_time_viaRPM": False,
-                  "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": False, "SSF_fid_vs_Pe_viaSSF": False, "ssf_SNR_vs_time": False}
+                  "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": True, "SSF_fid_vs_Pe_viaSSF": False, "ssf_SNR_vs_time": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
 comb_analysis_flags = {"load_rpm": False, "load_ssf": False, "use_cached_qtemp_files": False, "create_cached_qtemp_files": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False,
@@ -92,8 +86,8 @@ london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
 
 # For coherence-qubit temps combined analysis
-coh_qtemp_ana_flags = {"run_qtemps_section": False, "run_coherence_section": False, "use_cached_qtemp_files": False, "use_cached_coherence_files": False, "create_cached_qtemp_files": False,"create_cached_coherence_files": False, "load_mcp1_temps": False,
-                       "plot_qtemps_t1_ftemps_qfreq": False}
+coh_qtemp_ana_flags = {"run_qtemps_section": True, "run_coherence_section": True, "use_cached_qtemp_files": False, "use_cached_coherence_files": False, "create_cached_qtemp_files": False,"create_cached_coherence_files": False, "load_mcp1_temps": True,
+                       "plot_qtemps_t1_ftemps_qfreq": False, "plot_qtemps_qfreq_fridge_only": True}
 
 ############################################################################## Set up #######################################################################################################################
 #----------------------------------------------------- For qubit temperature calculations via rabi population measurements --------------------------------------------------------------------------------------
@@ -314,7 +308,10 @@ filter_keywords_run9 = [
 #Base path of where the data is stored up to the Study Name (round_robin_benchmark)
 base_dir_run9c = "/exp/cosmiq/data/QUIET/QICK_data/run9c/6transmon/round_robin_benchmark"
 
-target_dates_qtemps_RPM_run9c = ["2026-06-14", "2026-06-15", "2026-06-16", "2026-06-17", "2026-06-18", "2026-06-19"]
+target_dates_qtemps_RPM_run9c = [
+    "2026-06-05",
+    "2026-06-09",
+    "2026-06-14", "2026-06-15", "2026-06-16", "2026-06-17", "2026-06-18", "2026-06-19"]
 
 # To save plots
 r9c_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
@@ -325,8 +322,10 @@ outerFolder_qtemps_plots_RR_run9c =  f"{r9c_plts_prefix}/rpm_qtemps/replotted_RR
 outerFolder_qtemps_plots_run9c = f"{r9c_plts_prefix}/rpm_qtemps"
 
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name. These are substudies.
-filter_keywords_run9c = ["prejul15_outage_no_warm_filt_25dBDAC_noQ5", "postjul15_outage_no_warm_filt_25dBDAC_noQ5",
-                         "ABpaper_batch1_25dBDAC_ogfilters_noQ5", "ABpaper_batch2_25dBDAC_ogfilters_noQ5", "ABpaper_batch3_25dBDAC_ogfilters_noQ5"]
+filter_keywords_run9c = [
+    "Day2_base_not_fully_opt_yet_25dBDAC","Day4_base_not_fully_opt_yet_25dBDAC",
+    "prejul15_outage_no_warm_filt_25dBDAC_noQ5", "postjul15_outage_no_warm_filt_25dBDAC_noQ5",
+    "ABpaper_batch1_25dBDAC_ogfilters_noQ5", "ABpaper_batch2_25dBDAC_ogfilters_noQ5", "ABpaper_batch3_25dBDAC_ogfilters_noQ5"]
 
 #-------------------------------------------------------------------------------- Assign func variables depending on run number ---------------------------------------------------------------------------
 if run_num == 6: # We have science-run data as well as pre-science-run data available
@@ -697,11 +696,56 @@ r9_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 path_saveplots_fits_run9 = f"{r9_plts_prefix}/ssf_qtemps/gaussfits"
 path_saveplots_ssf_qtemps_vsT_run9 = f"{r9_plts_prefix}/ssf_qtemps"
 
-# ----------------------------------------------------------------------------------------------run 7----------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------- run 9c ----------------------------------------------------------------------------------------------------------
 r9c_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run9c"
 
 paths_SSFmethods_run9c = [
-  f"{r9c_path_prefix}/6transmon/qubit_checkouts/Day2_base_not_fully_opt_yet_25dBDAC/2026-06-05_23-17-54"]
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/Day2_base_not_fully_opt_yet_25dBDAC/2026-06-05_23-17-54",
+
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/Day4_base_not_fully_opt_yet_25dBDAC/2026-06-09_09-43-21",
+
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-13-10",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-17-55",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-18-14",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-19-26",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-23-30",
+
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-24-54",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-25-34",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-26-35",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-27-31",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-34-02",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-46-13",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-46-45",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-51-05",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-52-11",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-54-23",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-57-31",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-06-05",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-16-41",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-17-12",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-19-09",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-20-54",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-23-24",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-23-35",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-30-06",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-35-48",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_17-39-03",
+
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/ABpaper_batch1_25dBDAC_ogfilters_noQ5/2026-06-15_19-38-45",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/ABpaper_batch1_25dBDAC_ogfilters_noQ5/2026-06-15_20-57-52",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/ABpaper_batch1_25dBDAC_ogfilters_noQ5/2026-06-16_00-22-56",
+
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/ABpaper_batch2_25dBDAC_ogfilters_noQ5/2026-06-16_12-02-29",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/ABpaper_batch2_25dBDAC_ogfilters_noQ5/2026-06-16_15-16-01",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/ABpaper_batch2_25dBDAC_ogfilters_noQ5/2026-06-17_09-44-00",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/ABpaper_batch2_25dBDAC_ogfilters_noQ5/2026-06-17_11-46-15",
+
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/ABpaper_batch3_25dBDAC_ogfilters_noQ5/2026-06-18_11-38-44",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/ABpaper_batch3_25dBDAC_ogfilters_noQ5/2026-06-18_17-18-45",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/ABpaper_batch3_25dBDAC_ogfilters_noQ5/2026-06-19_00-28-27",
+    f"{r9c_path_prefix}/6transmon/round_robin_benchmark/ABpaper_batch3_25dBDAC_ogfilters_noQ5/2026-06-19_10-53-54"
+    ]
 
 # To save plots
 r9c_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
@@ -748,7 +792,62 @@ else:
 
 #-------------------------------------------------------- For coherence data -------------------------------------------
 if coh_qtemp_ana_flags["run_coherence_section"]:
-    if run_num == 9:
+    if run_num == 9.2: # run 9c
+        print('(this is actually run 9c, we just label it run 9.2)')
+        process_shots_t1ge = False # the option exists for this run, but for analysis consistency w initial runs we keep it off unless necessary.
+        per_pt_errs_t1 = False
+        run_name = 'run9c/6transmon/round_robin_benchmark'
+        data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
+        plots_path = "/home/acolonce/Documents/analysis/coherence" #cosmiqserver01
+
+        top_folder_dates = [
+            "Day2_base_not_fully_opt_yet_25dBDAC/2026-06-05_23-17-54",
+
+            "Day4_base_not_fully_opt_yet_25dBDAC/2026-06-09_09-43-21",
+
+            "prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-13-10",
+            "prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-17-55",
+            "prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-18-14",
+            "prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-19-26",
+            "prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-23-30",
+
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-24-54",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-25-34",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-26-35",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-27-31",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-34-02",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-46-13",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-46-45",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-51-05",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-52-11",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-54-23",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-57-31",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-06-05",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-16-41",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-17-12",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-19-09",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-20-54",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-23-24",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-23-35",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-30-06",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-35-48",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_17-39-03",
+
+            "ABpaper_batch1_25dBDAC_ogfilters_noQ5/2026-06-15_19-38-45",
+            "ABpaper_batch1_25dBDAC_ogfilters_noQ5/2026-06-15_20-57-52",
+            "ABpaper_batch1_25dBDAC_ogfilters_noQ5/2026-06-16_00-22-56",
+
+            "ABpaper_batch2_25dBDAC_ogfilters_noQ5/2026-06-16_12-02-29",
+            "ABpaper_batch2_25dBDAC_ogfilters_noQ5/2026-06-16_15-16-01",
+            "ABpaper_batch2_25dBDAC_ogfilters_noQ5/2026-06-17_09-44-00",
+            "ABpaper_batch2_25dBDAC_ogfilters_noQ5/2026-06-17_11-46-15",
+
+            "ABpaper_batch3_25dBDAC_ogfilters_noQ5/2026-06-18_11-38-44",
+            "ABpaper_batch3_25dBDAC_ogfilters_noQ5/2026-06-18_17-18-45",
+            "ABpaper_batch3_25dBDAC_ogfilters_noQ5/2026-06-19_00-28-27",
+            "ABpaper_batch3_25dBDAC_ogfilters_noQ5/2026-06-19_10-53-54"
+            ]
+    elif run_num == 9:
         process_shots_t1ge = False  # the option exists for this run, but for analysis consistency w initial runs we keep it off unless necessary.
         per_pt_errs_t1 = False
         run_name = "run9/6transmon/round_robin_benchmark"
@@ -1092,9 +1191,9 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
 
     if analysis_flags["Qtemps_vs_time_viaRPM"]:
         #------------------------------------------------------------------- Qubit temperatures vs time via RPMs ----------------------------------------------------
-        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 50, yaxis_max = 200, rel_err_cutoff = 0.8, restrict_time_xaxis = False,
+        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 40, yaxis_max = 140, rel_err_cutoff = 0.8, restrict_time_xaxis = False,
                                                          plot_extra_event_lines = False, rad_events_plot_lines = False, plot_error_bars = True, fit_to_line=False, average_per_heater_step=False,
-                                                         fit_to_exp = True)
+                                                         fit_to_exp = False)
 
     if analysis_flags["Qtemps_hists_viaRPM"]:
         #----------------------------------------------------------------- Histograms of Qubit temperatures (via RPMs) -----------------------------------------------
@@ -1161,7 +1260,7 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
     #------------------------------------------------------------------ Temperatures vs Time Scatter Plot --------------------------------------------------------------------------
     if analysis_flags["Qtemps_vs_time_viaSSF"]:
         SSF_calcs_obj.plot_qubit_temperatures_vs_time_ssf(all_qubit_temps, all_qubit_times, all_qubit_temps_errs, path_saveplots_ssf_qtemps_vsT, plot_error_bars = True,
-                                                          yaxis_min = 50, yaxis_max = 280)
+                                                          yaxis_min = 40, yaxis_max = 200)
     #------------------------------------------------------------ Check General SSF Double Gaussian Fits and g-e threshold ---------------------------------------------------------
     if analysis_flags["ge_thresh_check_ssf"]:
         thresh_results = SSF_calcs_obj.plot_ssf_ge_thresh(pairs_info=pairs_info, plotting_path=path_saveplots_fits)
@@ -1917,8 +2016,8 @@ if london_flags["get_qfreqs_resfreqs_qtemps"]: # There was no "pre-science-run" 
 all_files_Qtemp_results_RPMs = None
 all_qubit_times_g = None
 all_qubit_temps_g = None
-mcp_dates = None
-mcp_temps = None
+mcp1_dates = None
+mcp1_temps = None
 date_times_t1 = None
 t1_vals = None
 date_times_q_spec = None
@@ -1930,10 +2029,10 @@ t2e_vals = None
 Pe_dist_err_dict = None
 use_png_timestamps = False
 
-restrict_time = False
-start_time = datetime.datetime(2025, 10, 20, 0, 0)
-end_time = datetime.datetime(2025, 10, 24, 0, 0)
-run_num_list = [8]
+restrict_time = True
+start_time = datetime.datetime(2026, 6, 5, 0, 0)
+end_time = datetime.datetime(2026, 6, 9, 0, 0)
+run_num_list = [9.2]
 
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
@@ -2023,6 +2122,7 @@ if coh_qtemp_ana_flags["run_qtemps_section"]:
         filter_keywords2 = None
         target_dates_qtemps_RPM2 = None
         all_files_Qtemp_results_RPMs = {}
+        low_thermal_pops = False
 
         if run_num == 5:
             # ---------------- RPM (none) ----------------
@@ -2094,6 +2194,7 @@ if coh_qtemp_ana_flags["run_qtemps_section"]:
             path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run8
 
         elif run_num == 9:
+            low_thermal_pops = True
             # ---------------- RPM ----------------
             Science_Qubits = [0, 1, 2, 3, 5]
             base_dir = base_dir_run9
@@ -2106,6 +2207,21 @@ if coh_qtemp_ana_flags["run_qtemps_section"]:
             paths_SSFmethods = paths_SSFmethods_run9
             path_saveplots_fits = path_saveplots_fits_run9
             path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run9
+
+        elif run_num == 9.2:  # this is run 9c
+            # low_thermal_pops = True
+            # ---------------- RPM ----------------
+            Science_Qubits = [0, 1, 2, 3, 5]
+            base_dir = base_dir_run9c
+            filter_keywords = filter_keywords_run9c
+            outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run9c
+            outerFolder_qtemps_plots = outerFolder_qtemps_plots_run9c
+            target_dates_qtemps_RPM = target_dates_qtemps_RPM_run9c
+
+            # ---------------- SSF ----------------
+            paths_SSFmethods = paths_SSFmethods_run9c
+            path_saveplots_fits = path_saveplots_fits_run9c
+            path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run9c
 
         else:
             raise ValueError(f"Unsupported run_num={run_num}")
@@ -2228,11 +2344,12 @@ if coh_qtemp_ana_flags["run_qtemps_section"]:
                 fit_results_g, all_files_Qtemp_results_RPMs, save_dir=cache_dir, tag=f"run{run_num}_processed")
         # ----------------------------------------------------------------
 
-if coh_qtemp_ana_flags["load_mcp1_temps"]: # update path
-    mcp1_csv_path = "/data/QICK_data/run8/6transmon/round_robin/temperature_sweep_qubit_data/Mixing chamber stage-data-2025-11-25 09_46_33.csv"
-    mcp_dates, mcp_temps, _ = combined_studies.load_mixing_chamber_csv(mcp1_csv_path, restrict_time=True,
-                                start_time=start_time, end_time=end_time)
-    del combined_studies
+if coh_qtemp_ana_flags["load_mcp1_temps"]:
+    mcp1_base_dir = "/exp/cosmiq/data/QUIET/MCP1_Grafana_Temperatures/During_AB-Paper_Data-Taking/"
+    mcp1_csv_path = combined_studies.get_single_mcp1_csv_for_run(run_num_list[0], mcp1_base_dir)
+    print("Using MCP1 CSV:", mcp1_csv_path)
+    mcp1_dates, mcp1_temps, _ = combined_studies.load_mixing_chamber_csv(mcp1_csv_path, restrict_time=restrict_time,
+                                                                       start_time=start_time, end_time=end_time)
 
 if coh_qtemp_ana_flags["run_coherence_section"]:
     for run_num in run_num_list:
@@ -2297,22 +2414,40 @@ if coh_qtemp_ana_flags["plot_qtemps_t1_ftemps_qfreq"]:
         comb_plots_path,
         # all_qubit_temperatures_ssf_g=all_qubit_temps_g,
         # all_qubit_timestamps_ssf_g=all_qubit_times_g,
-        # all_files_Qtemp_results_RPMs= all_files_Qtemp_results_RPMs,
-        # fridge_temps=mcp_temps,
-        # fridge_dates=mcp_dates,
-        # t1_vals=t1_vals,
-        # t1_dates=date_times_t1,
+        all_files_Qtemp_results_RPMs= all_files_Qtemp_results_RPMs,
+        # fridge_temps=mcp1_temps,
+        # fridge_dates=mcp1_dates,
+        t1_vals=t1_vals,
+        t1_dates=date_times_t1,
         qfreqs_vals=q_freqs,
         qfreqs_dates=date_times_q_spec,
-        # resfreqs_vals= res_freqs,
-        # resfreqs_dates= date_times_res_spec,
+        resfreqs_vals= res_freqs,
+        resfreqs_dates= date_times_res_spec,
         t2r_vals=t2r_vals,
         t2r_dates=date_times_t2r,
-        # t2e_vals=t2e_vals,
-        # t2e_dates=date_times_t2e,
+        t2e_vals=t2e_vals,
+        t2e_dates=date_times_t2e,
         restrict_time_xaxis=restrict_time,
         start_time=start_time,
         end_time=end_time,
         plot_extra_event_lines=False,
         run_num = f"{run_num_list[0]}"
     )
+if coh_qtemp_ana_flags["plot_qtemps_qfreq_fridge_only"]:
+    if len(run_num_list) != 1:
+        raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
+                         "This plotting section is only set up to process one run at a time at the moment.")
+        # This section is set up to process multiple runs, but I have not updated this plotting function to handle more than one.
+    comb_plots_path = "/home/acolonce/Documents/analysis/combined_qtemps/qtemps_and_coherence/"
+
+    combined_studies.plot_rpm_qtemp_qfreq_fridge_only(
+    out_dir=comb_plots_path,
+    all_files_Qtemp_results_RPMs=all_files_Qtemp_results_RPMs,
+    fridge_temps=mcp1_temps,
+    fridge_dates=mcp1_dates,
+    run_num=f"{run_num_list[0]}",
+    fridge_label="MCP1 Temp (mK)",
+    restrict_time_xaxis=restrict_time,
+    start_time=start_time,
+    end_time=end_time
+)

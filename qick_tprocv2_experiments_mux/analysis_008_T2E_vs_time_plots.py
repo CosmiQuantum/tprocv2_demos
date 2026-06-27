@@ -265,6 +265,12 @@ class T2eVsTime:
                             and int(q_key) == 3):
                         print(f"Skipping Q4 data due to punchout in {self.run_name}/{folder_date}")
                         continue
+                    # Run 9c patch: Skip Q5 for run 9c, data is not usable or trustworthy due to strong TLS effects
+                    if (int(q_key) == 4 and "run9c" in str(self.run_name).replace("\\", "/")):
+                        print(
+                            f"Skipping Q5 for run 9c in {self.run_name}. It is not usable/trustworthy due to TLS effects.",
+                            flush=True)
+                        continue
                     # Access 'Dates' for the current q_key
                     dates_list = load_data['T2E'][q_key].get('Dates', [[]])
 

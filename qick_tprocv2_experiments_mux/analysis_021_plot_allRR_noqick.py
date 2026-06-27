@@ -2285,6 +2285,10 @@ class PlotRR_noQick:
                         and int(q_key) == 3):
                     print(f"Skipping Q4 data due to punchout in {h5_file}", flush=True)
                     continue
+                # Run 9c patch: Skip Q5 for run 9c, data is not usable or trustworthy due to strong TLS effects
+                if (int(q_key) == 4 and run_num == 9.2):
+                    print(f"Skipping Q5 for run 9c in {self.run_name}. It is not usable/trustworthy due to TLS effects.",flush=True)
+                    continue
                 # print(f"Extracting data for QubitIndex: {q_key}")
                 for dataset in range(len(load_data['q_temperatures'][q_key].get('Dates', [])[0])):
                     A_amp_IQ_Pe = None

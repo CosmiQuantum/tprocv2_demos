@@ -209,6 +209,10 @@ class QubitFreqsVsTime:
                         and int(q_key) == 3):
                         print(f"Skipping Q4 data due to punchout in {self.run_name}/{folder_date}")
                         continue
+                    # Run 9c patch: Skip Q5 for run 9c, data is not usable or trustworthy due to strong TLS effects
+                    if (int(q_key)== 4 and "run9c" in str(self.base_data_path).replace("\\", "/")):
+                        print(f"Skipping Q5 for run 9c in {self.base_data_path}. It is not usable/trustworthy due to TLS effects.",flush=True)
+                        continue
                     for dataset in range(len(load_data[f'qspec{exp_extension}'][q_key].get('Dates', [])[0])):
                         if 'nan' in str(load_data[f'qspec{exp_extension}'][q_key].get('Dates', [])[0][dataset]):
                             continue
@@ -463,7 +467,16 @@ class QubitFreqsVsTime:
 
         return filtered_data
 
-    def plot_with_errs(self, run_number, date_times, qubit_frequencies, qspec_fit_err, show_legends, exp_extension='ge'):
+    def plot_with_errs(
+            self,
+            run_number,
+            date_times,
+            qubit_frequencies,
+            qspec_fit_err,
+            show_legends,
+            exp_extension='ge',
+            use_global_yaxis=True
+    ):
         # ---------------------------------plot path-----------------------------------------------------
         self.create_folder_if_not_exists(self.plots_path)
         analysis_folder = os.path.join(self.plots_path, "features_vs_time/")
@@ -473,8 +486,10 @@ class QubitFreqsVsTime:
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8), sharex=True)
-        #ext = exp_extension.split('_')[0]
-        plt.suptitle(f'{exp_extension} Qubit Frequencies (MHz) vs Time, Run {run_number}', fontsize=font)
+
+        # ext = exp_extension.split('_')[0]
+        run_label = "9c" if run_number == 9.2 else run_number
+        plt.suptitle(f'{exp_extension} Qubit Frequencies (MHz) vs Time, Run {run_label}', fontsize=font)
         axes = axes.flatten()
 
         from datetime import datetime
@@ -507,15 +522,18 @@ class QubitFreqsVsTime:
             sorted_y = np.array(sorted_y, dtype=float)
             sorted_err = np.array(sorted_err, dtype=float)
 
-            local_min = np.min(sorted_y - sorted_err)
-            local_max = np.max(sorted_y + sorted_err)
-            global_width = max(global_width, local_max - local_min)
+            if use_global_yaxis:
+                local_min = np.min(sorted_y - sorted_err)
+                local_max = np.max(sorted_y + sorted_err)
+                global_width = max(global_width, local_max - local_min)
 
             processed_data.append((sorted_x, sorted_y, sorted_err))
 
         # add padding so points/error bars are not pressed against the borders
         padding_fraction = 0.15  # try 0.20 if you want even more room
-        global_width *= (1 + 2 * padding_fraction)
+
+        if use_global_yaxis:
+            global_width *= (1 + 2 * padding_fraction)
 
         # -------- plotting loop --------
         for i, ax in enumerate(axes):
@@ -527,8 +545,21 @@ class QubitFreqsVsTime:
 
             sorted_x, sorted_y, sorted_err = processed_data[i]
 
-            center = np.mean(sorted_y)
-            ax.set_ylim(center - global_width / 2, center + global_width / 2)
+            if use_global_yaxis:
+                center = np.mean(sorted_y)
+                ax.set_ylim(center - global_width / 2, center + global_width / 2)
+
+            else:
+                local_min = np.min(sorted_y - sorted_err)
+                local_max = np.max(sorted_y + sorted_err)
+                local_width = local_max - local_min
+
+                if local_width == 0:
+                    padding = 0.001
+                else:
+                    padding = padding_fraction * local_width
+
+                ax.set_ylim(local_min - padding, local_max + padding)
 
             ax.errorbar(
                 sorted_x, sorted_y, yerr=sorted_err,
@@ -561,11 +592,7 @@ class QubitFreqsVsTime:
             ax.set_ylabel('Qubit Freq (MHz)', fontsize=16)
 
         plt.tight_layout()
-        plt.savefig(
-            analysis_folder + f'{exp_extension}QFreqs_run{run_number}.pdf',
-            transparent=True,
-            dpi=self.final_figure_quality
-        )
+        plt.savefig(analysis_folder + f'{exp_extension}QFreqs_run{run_label}.pdf')
         print('Plot saved to:', analysis_folder)
         plt.close()
 

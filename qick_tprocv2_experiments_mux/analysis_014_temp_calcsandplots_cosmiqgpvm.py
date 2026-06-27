@@ -2939,6 +2939,10 @@ class SSFTempCalcAndPlots:
                 if (QubitIndex == 3 and "AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47" in str(full_path).replace("\\", "/")):
                     print(f"Skipping Q4 data due to punchout in {full_path}", flush=True)
                     continue
+                # Run 9c patch: Skip Q5 for run 9c, data is not usable or trustworthy due to strong TLS effects
+                if (QubitIndex == 4 and "run9c" in str(full_path).replace("\\", "/")):
+                    print(f"Skipping Q5 for run 9c in {full_path}. It is not usable/trustworthy due to TLS effects.", flush=True)
+                    continue
                 try:
                     # --- Load QSpec ---
                     qspec_obj = AnaQSpec(path, dataset, QubitIndex, folder_qspec, expt_name_qspec, datagroup_qspec)
@@ -4174,13 +4178,14 @@ class combined_Qtemp_studies:
                     t1_fit_err,
                     I_per_pt_errs,
                     Q_per_pt_errs,
+                    res_lengths
                 ) = t1_vs_time.run(
                     return_errs=True,
                     exp_extension="_ge",
                     process_shots=process_shots_t1ge
                 )
             else:
-                date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(
+                date_times_t1, t1_vals, t1_fit_err, res_lengths = t1_vs_time.run(
                     return_errs=True,
                     exp_extension="_ge"
                 )
@@ -9053,6 +9058,55 @@ class combined_Qtemp_studies:
         print("Saved combined methods plot: ", out_path)
         return out_path
 
+    def get_single_mcp1_csv_for_run(self, run_num, mcp1_base_dir):
+        """
+        Returns the single MCP1/Grafana CSV path for a given run.
+        Raises an error if the folder has zero CSVs or more than one CSV.
+        """
+        # Convert input to Path here
+        mcp1_base_dir = Path(mcp1_base_dir)
+
+        run_folder_map = {
+            "9c": "Run9c",
+            "9a": "Run9a",
+            "8": "Run8",
+            "7": "Run7",
+            "6a": "Run6a",
+            "5": "Run5",
+        }
+
+        if run_num == 9:
+            run_key = "9a"
+        elif run_num == 9.2:
+            run_key = "9c"
+        else:
+            run_key = str(run_num)
+
+        if run_key not in run_folder_map:
+            raise ValueError(
+                f"No MCP1 temperature folder is defined for run {run_num}. "
+                f"Expected one of: {list(run_folder_map.keys())}"
+            )
+
+        run_folder = mcp1_base_dir / run_folder_map[run_key]
+
+        if not run_folder.exists():
+            raise FileNotFoundError(f"MCP1 folder does not exist: {run_folder}")
+
+        csv_files = sorted(run_folder.glob("*.csv"))
+
+        if len(csv_files) == 0:
+            raise FileNotFoundError(f"No CSV files found in: {run_folder}")
+
+        if len(csv_files) > 1:
+            raise RuntimeError(
+                f"Expected exactly one CSV file in {run_folder}, "
+                f"but found {len(csv_files)}:\n"
+                + "\n".join(str(f) for f in csv_files)
+            )
+
+        return str(csv_files[0])
+
     def load_mixing_chamber_csv(self, csv_path, restrict_time=False,
                                 start_time=None, end_time=None):
         """
@@ -9108,6 +9162,266 @@ class combined_Qtemp_studies:
 
         return times, mix_s, mix_h
 
+    def plot_rpm_qtemp_qfreq_fridge_only(
+            self,
+            out_dir,
+            all_files_Qtemp_results_RPMs,
+            fridge_temps,
+            fridge_dates,
+            run_num,
+            fridge_label="Fridge Temp (mK)",
+            temp_key="T_mK",
+            date_key="date",
+            qfreq_key_options=("qubit_freq_MHz", "Qfreq_ge", "Qfreq_ge_MHz", "qfreq_MHz"),
+            fridge_time_fmt="%Y-%m-%d %H:%M:%S",
+            restrict_time_xaxis=False,
+            start_time=None,
+            end_time=None,
+    ):
+        """
+        Plot, for each qubit:
+          - RPM effective temperature vs its own RPM timestamps
+          - qubit frequency vs the same RPM timestamps
+          - fridge/mag-can temperature vs its own independently saved timestamps
+
+        Important:
+          This does NOT nearest-match the fridge data to RPM data.
+          It computes one global x-axis range spanning all provided timestamps,
+          then plots all datapoints at their actual times.
+        """
+        os.makedirs(out_dir, exist_ok=True)
+        num_qubits = self.number_of_qubits
+        # ------------------------------------------------------------
+        # Parse fridge/mag-can temperature data
+        # ------------------------------------------------------------
+        fridge_times = [datetime.datetime.strptime(d, fridge_time_fmt) for d in fridge_dates]
+
+        fridge_order = np.argsort(fridge_times)
+        fridge_times = list(np.array(fridge_times)[fridge_order])
+        fridge_temps = list(np.array(fridge_temps)[fridge_order])
+
+        # ------------------------------------------------------------
+        # Extract RPM effective temp and qubit frequency
+        # ------------------------------------------------------------
+        rpm_times = {q: [] for q in range(num_qubits)}
+        qtemps_mK = {q: [] for q in range(num_qubits)}
+        qfreqs_MHz = {q: [] for q in range(num_qubits)}
+
+        for rec in all_files_Qtemp_results_RPMs:
+            for q in range(num_qubits):
+                d = rec.get("qubits", {}).get(q)
+
+                if not d:
+                    continue
+
+                if temp_key not in d or date_key not in d:
+                    continue
+
+                qtemp = d[temp_key]
+
+                if qtemp is None or not np.isfinite(qtemp):
+                    continue
+
+                # if qtemp >= 150:
+                #     continue
+
+                qfreq = None
+                for key in qfreq_key_options:
+                    if key in d:
+                        qfreq = d[key]
+                        break
+
+                if qfreq is None or not np.isfinite(qfreq):
+                    continue
+
+                t = datetime.datetime.fromtimestamp(d[date_key])
+
+                rpm_times[q].append(t)
+                qtemps_mK[q].append(qtemp)
+                qfreqs_MHz[q].append(qfreq)
+
+        # ------------------------------------------------------------
+        # Decide which qubits have RPM data
+        # ------------------------------------------------------------
+        qubits_to_plot = [
+            q for q in range(num_qubits)
+            if len(rpm_times[q]) > 0
+        ]
+
+        if not qubits_to_plot:
+            print("[WARN] No RPM qtemp/qfreq data found. Nothing to plot.")
+            return None
+
+        # ------------------------------------------------------------
+        # Build one global x-axis range from ALL data
+        # ------------------------------------------------------------
+        all_plot_times = []
+
+        all_plot_times.extend(fridge_times)
+
+        for q in qubits_to_plot:
+            all_plot_times.extend(rpm_times[q])
+
+        if not all_plot_times:
+            print("[WARN] No timestamps found. Nothing to plot.")
+            return None
+
+        if restrict_time_xaxis:
+            global_start = start_time
+            global_end = end_time
+        else:
+            global_start = min(all_plot_times)
+            global_end = max(all_plot_times)
+
+        print("Global x-axis range:")
+        print("  start:", global_start)
+        print("  end:  ", global_end)
+
+        # ------------------------------------------------------------
+        # Make figure
+        # ------------------------------------------------------------
+        nrows = len(qubits_to_plot)
+
+        fig, axes = plt.subplots(
+            nrows,
+            1,
+            figsize=(24, 6 * nrows),
+            sharex=True,
+            constrained_layout=True
+        )
+
+        if nrows == 1:
+            axes = [axes]
+
+        small_fs = 13
+        date_fmt = mdates.DateFormatter("%Y-%m-%d %H:%M:%S")
+
+        for ax, q in zip(axes, qubits_to_plot):
+
+            # Sort RPM data by timestamp
+            order = np.argsort(rpm_times[q])
+
+            q_rpm_times = np.array(rpm_times[q])[order]
+            q_qtemps = np.array(qtemps_mK[q])[order]
+            q_qfreqs = np.array(qfreqs_MHz[q])[order]
+
+            # --------------------------------------------------------
+            # Left axis: RPM effective temperature
+            # --------------------------------------------------------
+            ax.plot(
+                q_rpm_times,
+                q_qtemps,
+                marker="o",
+                markersize=5,
+                linestyle="-",
+                linewidth=1.2,
+                color="black",
+                label="RPM QTemp (mK)"
+            )
+
+            ax.set_title(f"Q{q + 1}", loc="left", fontsize=14, fontweight="bold")
+            ax.set_ylabel("RPM Effective Qubit Temp (mK)", color="black", fontsize=small_fs)
+            ax.tick_params(axis="y", labelcolor="black", labelsize=small_fs)
+            ax.grid(False)
+
+            # --------------------------------------------------------
+            # First right axis: fridge/mag-can temperature
+            # Uses its own independent timestamps.
+            # --------------------------------------------------------
+            fridge_ax = ax.twinx()
+
+            fridge_ax.plot(
+                fridge_times,
+                fridge_temps,
+                marker="s",
+                markersize=4,
+                linestyle="-",
+                linewidth=1.2,
+                color="green",
+                alpha=0.7,
+                label=fridge_label
+            )
+
+            fridge_ax.set_ylabel(fridge_label, color="green", fontsize=small_fs)
+            fridge_ax.tick_params(axis="y", labelcolor="green", labelsize=small_fs)
+
+            # --------------------------------------------------------
+            # Second right axis: qubit frequency
+            # Uses RPM timestamps.
+            # --------------------------------------------------------
+            qfreq_ax = ax.twinx()
+            qfreq_ax.spines["right"].set_position(("axes", 1.08))
+
+            qfreq_ax.plot(
+                q_rpm_times,
+                q_qfreqs,
+                marker="^",
+                markersize=5,
+                linestyle="-",
+                linewidth=1.2,
+                color="purple",
+                alpha=0.8,
+                label="Qubit Freq (MHz)"
+            )
+
+            qfreq_ax.set_ylabel("Qubit Freq (MHz)", color="purple", fontsize=small_fs)
+            qfreq_ax.tick_params(axis="y", labelcolor="purple", labelsize=small_fs)
+            qfreq_ax.yaxis.get_offset_text().set_visible(False)
+            qfreq_ax.yaxis.set_major_formatter(mticker.FormatStrFormatter("%.2f"))
+
+            # --------------------------------------------------------
+            # Force every axis to use the same global x-axis
+            # --------------------------------------------------------
+            ax.set_xlim(global_start, global_end)
+            fridge_ax.set_xlim(global_start, global_end)
+            qfreq_ax.set_xlim(global_start, global_end)
+
+            locator = mdates.AutoDateLocator(minticks=8, maxticks=12)
+            ax.xaxis.set_major_locator(locator)
+            ax.xaxis.set_major_formatter(date_fmt)
+            ax.tick_params(axis="x", rotation=45, labelsize=small_fs)
+            ax.set_xlabel("Time", fontsize=small_fs)
+
+            # --------------------------------------------------------
+            # Combined legend
+            # --------------------------------------------------------
+            handles = []
+            labels = []
+
+            for this_ax in [ax, fridge_ax, qfreq_ax]:
+                h, l = this_ax.get_legend_handles_labels()
+                handles += h
+                labels += l
+
+            leg = ax.legend(
+                handles,
+                labels,
+                loc="upper left",
+                fontsize=10,
+                frameon=True,
+                fancybox=False
+            )
+
+            leg.set_zorder(10000000)
+            frame = leg.get_frame()
+            frame.set_facecolor("white")
+            frame.set_alpha(1.0)
+            frame.set_edgecolor("black")
+            frame.set_linewidth(0.8)
+
+        fig.suptitle("RPM Effective Temperature, Fridge Temperature, and Qubit Frequency vs Time",fontsize=18)
+        # ------------------------------------------------------------
+        # Save
+        # ------------------------------------------------------------
+        paramvstime_dir = os.path.join(out_dir, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_path = os.path.join(paramvstime_dir,f"run{run_num}_RPM_Qtemp_Qfreq_fridge_global_xaxis_{stamp}.pdf")
+        fig.savefig(out_path, facecolor="white")
+        plt.close(fig)
+        print("Saved RPM qtemp/qfreq/fridge global-x-axis plot:", out_path)
+
+        return out_path
 
     def plot_qtemps_and_coherence_res(self, out_dir, all_qubit_temperatures_ssf_g = None, all_qubit_timestamps_ssf_g = None,
                                       all_files_Qtemp_results_RPMs = None, fridge_temps = None, fridge_dates = None,
@@ -9145,10 +9459,10 @@ class combined_Qtemp_studies:
                     d = rec.get("qubits", {}).get(q)
                     if not d:
                         continue
-                    if d["T_mK"] < 150: # mK, just filtering out bad data for run 9
-                        t = datetime.datetime.fromtimestamp(d["date"])
-                        times_RPM[q].append(t)
-                        temps_RPM[q].append(d["T_mK"])
+                    # if d["T_mK"] < 150: # mK, just filtering out bad data for run 9
+                    #     t = datetime.datetime.fromtimestamp(d["date"])
+                    #     times_RPM[q].append(t)
+                    #     temps_RPM[q].append(d["T_mK"])
 
         # ------------------------------------------------------------------
         # SSF g-only Qtemps (expect dicts {q: [datetimes]} and {q: [floats]})
