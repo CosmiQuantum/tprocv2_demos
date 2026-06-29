@@ -31,7 +31,7 @@ from pathlib import Path
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 9.2 #Options for QUIET: 5(for coherence only),6,7,8,9,9.2(this is run 9c)
+run_num = 8 #Options for QUIET: 5(for coherence only),6,7,8,9,9.2(this is run 9c)
 run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence analysis it's defined in its respective section
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
@@ -86,58 +86,61 @@ london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
 
 # For coherence-qubit temps combined analysis
-coh_qtemp_ana_flags = {"run_qtemps_section": True, "run_coherence_section": True, "use_cached_qtemp_files": False, "use_cached_coherence_files": False, "create_cached_qtemp_files": False,"create_cached_coherence_files": False, "load_mcp1_temps": True,
-                       "plot_qtemps_t1_ftemps_qfreq": False, "plot_qtemps_qfreq_fridge_only": True}
+coh_qtemp_ana_flags = {"run_qtemps_section": True, "run_coherence_section": True, "use_cached_qtemp_files": False, "use_cached_coherence_files": True, "create_cached_qtemp_files": False,"create_cached_coherence_files": False, "load_mcp1_temps": True,
+                       "plot_qtemps_t1_ftemps_qfreq": False, "plot_RPM_qtemps_qfreq_fridge_only": False, "plot_SSF_qtemps_qfreq_fridge_only": True}
 
 ############################################################################## Set up #######################################################################################################################
 #----------------------------------------------------- For qubit temperature calculations via rabi population measurements --------------------------------------------------------------------------------------
 # Specify which dates you want to loop through. It will process all the files inside all the folders that contain these dates in their title.
 # ----------------------------------------------------------------------------- Run 6 --------------------------------------------------------
 target_dates_qtemps_RPM_sciencerun = [
-    "2025-04-16",
-    "2025-04-17",
-    "2025-04-18",
-    "2025-04-19",
-    "2025-04-20",
-    "2025-04-21", #starts source on (Co)
-    "2025-04-22",
-    "2025-04-23", #switched source (to Cs)
-    "2025-04-24",
-    "2025-04-25",
-    "2025-04-26",
-    "2025-04-27",
-    "2025-04-28", #Cs source moved closer
-    "2025-04-29",
-    "2025-04-30",
-    "2025-05-01",
-    "2025-05-02",
-    "2025-05-03",
-    "2025-05-04", # Cs source removed. No sources in Cleanroom.
-    "2025-05-05",
-    "2025-05-06",
-    "2025-05-07",
-    "2025-05-08",
-    "2025-05-09",
-    "2025-05-10",
-    "2025-05-11",
-    "2025-05-12",
-    "2025-05-13",
-    "2025-05-14",
-    "2025-05-15",
-    "2025-05-16",
-    "2025-05-20",
-    "2025-05-21",
-    "2025-05-28",
-    "2025-05-29",
-    "2025-05-31",
-    "2025-06-01" # Last Science run data
+    # "2025-04-16",
+    # "2025-04-17",
+    # "2025-04-18",
+    # "2025-04-19",
+    # "2025-04-20",
+    # "2025-04-21", #starts source on (Co)
+    # "2025-04-22",
+    # "2025-04-23", #switched source (to Cs)
+    # "2025-04-24",
+    # "2025-04-25",
+    # "2025-04-26",
+    # "2025-04-27",
+    # "2025-04-28", #Cs source moved closer
+    # "2025-04-29",
+    # "2025-04-30",
+    # "2025-05-01",
+    # "2025-05-02",
+    # "2025-05-03",
+    # "2025-05-04", # Cs source removed. No sources in Cleanroom.
+    # "2025-05-05",
+    # "2025-05-06",
+    # "2025-05-07",
+    # "2025-05-08",
+    # "2025-05-09",
+    # "2025-05-10",
+    # "2025-05-11",
+    # "2025-05-12",
+    # "2025-05-13",
+    # "2025-05-14",
+    # "2025-05-15",
+    # "2025-05-16",
+    # "2025-05-20",
+    # "2025-05-21",
+    # "2025-05-28",
+    # "2025-05-29",
+    # "2025-05-31",
+    # "2025-06-01" # Last Science run data
     ]
 
 # For data during Heater temperature steps, run 6 (20mK to 160mK)
 # target_dates_qtemps_RPM_sciencerun = ["2025-05-08", "2025-05-09", "2025-05-10", "2025-05-11", "2025-05-12", "2025-05-13", "2025-05-14"]
 
 # For pre-science-run data
-target_dates_qtemps_RPM_presciencerun = ['2025-04-11', '2025-04-12']
+target_dates_qtemps_RPM_presciencerun = [
+                                        # '2025-04-11',
+                                        # '2025-04-12'
+                                        ]
 
 # Base path of where the data is stored up to the Study Name (TLS_Comprehensive_Study or ef_studies_pre_science_run)
 base_dir_sciencerun = "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study" # for QUIET run 6 science run data
@@ -488,22 +491,24 @@ paths_SSFmethods_SR = [
     "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_00-36-15",
     "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_03-56-41",
     "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_07-19-10",
-    "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_11-53-46"
+    "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_11-53-46",
+
+    "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/",
+    "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_detuning_24MHz_Q1_substudy1/",
+    "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/"
     ]
 
-    # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/",
-    # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_detuning_24MHz_Q1_substudy1/",
-    #"/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/"
-
 # All pre-Science-Run Data (also exists on daq01, you can find it here: /data/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data)
-paths_SSFmethods_preSR = ["/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-21",
-                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-22",
-                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-23",
-                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-24",
-                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-26",
-                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-28",
-                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-01",
-                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-02"]
+paths_SSFmethods_preSR = [
+                        # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-21",
+                        # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-22",
+                        # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-23",
+                        # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-24",
+                        # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-26",
+                        # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-28",
+                        # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-01",
+                        # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-02"
+                        ]
 
 # To save plots
 r6_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
@@ -1036,88 +1041,88 @@ if coh_qtemp_ana_flags["run_coherence_section"]:
         # all pre-science run data (AB paper data):
         # Can be found both locally in daq01 or on CEPH
         top_folder_dates = [
-        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-21",
-        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-22",
-        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-23",
-        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-24",
-        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-26",
-        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-28",
-        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-01",
-        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-02"]
+        # "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-21",
+        # "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-22",
+        # "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-23",
+        # "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-24",
+        # "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-26",
+        # "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-28",
+        # "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-01",
+        # "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-02"]
 
         # Science run data: can ONLY be found on CEPH!!
         # If you want to process all "science run" data
-        # "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-15_14-47-38",
-        # "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-15_18-08-15",
-        # "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-15_22-02-12",
-        # "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-16_01-28-20",
-        # "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-16_04-49-59",
-        # "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-16_08-13-47",
-        #
-        # "TLS_Comprehensive_Study/source_off_detuning_24MHz_Q1_substudy1/2025-05-15_11-19-50",
-        # "TLS_Comprehensive_Study/source_off_detuning_24MHz_Q1_substudy1/2025-05-15_18-35-56",
-        #
-        # "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-14_19-25-55",
-        # "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-14_22-50-51",
-        # "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-15_02-29-34",
-        # "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-15_05-50-12",
-        # "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-15_09-13-30",
-        #
-        # "TLS_Comprehensive_Study/source_off_substudy1/2025-04-15_21-24-46",
-        #
-        # "TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_11-47-09",
-        # "TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_12-51-09",
-        # "TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_17-50-00",
-        # "TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_22-47-49",
-        # "TLS_Comprehensive_Study/source_off_substudy2/2025-04-17_03-42-36",
-        # "TLS_Comprehensive_Study/source_off_substudy2/2025-04-17_08-42-24",
-        #
-        # "TLS_Comprehensive_Study/source_off_substudy3/2025-04-17_12-28-37",
-        # "TLS_Comprehensive_Study/source_off_substudy3/2025-04-17_17-22-46",
-        # "TLS_Comprehensive_Study/source_off_substudy3/2025-04-17_22-16-39",
-        # "TLS_Comprehensive_Study/source_off_substudy3/2025-04-18_01-45-53",
-        # "TLS_Comprehensive_Study/source_off_substudy3/2025-04-18_06-40-55",
-        #
-        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-18_11-59-33",
-        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-18_16-56-58",
-        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-18_21-51-13",
-        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-19_02-45-41",
-        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-19_07-39-57",
-        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-19_12-34-26",
-        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-19_17-48-44",
-        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-19_22-43-02",
-        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-20_03-37-50",
-        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-20_08-32-36",
-        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-20_13-26-47",
-        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-20_18-25-13",
-        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-20_23-25-04",
-        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-21_04-23-31",
-        #
-        # "TLS_Comprehensive_Study/source_off_substudy5/2025-05-04_20-56-05",
-        # "TLS_Comprehensive_Study/source_off_substudy5/2025-05-04_23-28-05",
-        # "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_03-03-40",
-        # "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_06-40-15",
-        # "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_10-18-53",
-        # "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_13-57-22",
-        # "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_17-34-21",
-        # "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_21-18-14",
-        # "TLS_Comprehensive_Study/source_off_substudy5/2025-05-06_02-18-57",
-        #
-        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-06_11-30-17",
-        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-06_14-50-55",
-        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-06_18-14-29",
-        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-06_21-35-26",
-        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_01-00-14",
-        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_04-23-45",
-        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_07-46-44",
-        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_11-09-17",
-        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_14-30-29",
-        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_17-50-59",
-        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_21-13-50",
-        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_00-36-15",
-        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_03-56-41",
-        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_07-19-10",
-        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_11-53-46"]
+        "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-15_14-47-38",
+        "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-15_18-08-15",
+        "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-15_22-02-12",
+        "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-16_01-28-20",
+        "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-16_04-49-59",
+        "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-16_08-13-47",
+
+        "TLS_Comprehensive_Study/source_off_detuning_24MHz_Q1_substudy1/2025-05-15_11-19-50",
+        "TLS_Comprehensive_Study/source_off_detuning_24MHz_Q1_substudy1/2025-05-15_18-35-56",
+
+        "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-14_19-25-55",
+        "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-14_22-50-51",
+        "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-15_02-29-34",
+        "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-15_05-50-12",
+        "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-15_09-13-30",
+
+        "TLS_Comprehensive_Study/source_off_substudy1/2025-04-15_21-24-46",
+
+        "TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_11-47-09",
+        "TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_12-51-09",
+        "TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_17-50-00",
+        "TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_22-47-49",
+        "TLS_Comprehensive_Study/source_off_substudy2/2025-04-17_03-42-36",
+        "TLS_Comprehensive_Study/source_off_substudy2/2025-04-17_08-42-24",
+
+        "TLS_Comprehensive_Study/source_off_substudy3/2025-04-17_12-28-37",
+        "TLS_Comprehensive_Study/source_off_substudy3/2025-04-17_17-22-46",
+        "TLS_Comprehensive_Study/source_off_substudy3/2025-04-17_22-16-39",
+        "TLS_Comprehensive_Study/source_off_substudy3/2025-04-18_01-45-53",
+        "TLS_Comprehensive_Study/source_off_substudy3/2025-04-18_06-40-55",
+
+        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-18_11-59-33",
+        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-18_16-56-58",
+        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-18_21-51-13",
+        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-19_02-45-41",
+        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-19_07-39-57",
+        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-19_12-34-26",
+        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-19_17-48-44",
+        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-19_22-43-02",
+        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-20_03-37-50",
+        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-20_08-32-36",
+        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-20_13-26-47",
+        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-20_18-25-13",
+        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-20_23-25-04",
+        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-21_04-23-31",
+
+        "TLS_Comprehensive_Study/source_off_substudy5/2025-05-04_20-56-05",
+        "TLS_Comprehensive_Study/source_off_substudy5/2025-05-04_23-28-05",
+        "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_03-03-40",
+        "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_06-40-15",
+        "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_10-18-53",
+        "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_13-57-22",
+        "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_17-34-21",
+        "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_21-18-14",
+        "TLS_Comprehensive_Study/source_off_substudy5/2025-05-06_02-18-57",
+
+        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-06_11-30-17",
+        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-06_14-50-55",
+        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-06_18-14-29",
+        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-06_21-35-26",
+        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_01-00-14",
+        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_04-23-45",
+        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_07-46-44",
+        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_11-09-17",
+        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_14-30-29",
+        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_17-50-59",
+        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_21-13-50",
+        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_00-36-15",
+        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_03-56-41",
+        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_07-19-10",
+        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_11-53-46"]
 
     elif run_num == 5:
         process_shots_t1ge = False
@@ -1325,7 +1330,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
-run_num_list = [9, 9.2] # for quiet, start at 5. no qtemp data for run 4. use run 9.2 for run 9c
+run_num_list = [None] # for quiet, start at 5. no qtemp data for run 4. use run 9.2 for run 9c
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
 rpm_Pe_by_run = {}      # rpm_Pe_by_run[run][qid] = [P_e, ...]
@@ -1615,7 +1620,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                 all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=0.6,
                     do_plots=False, dontuse_midpt_thresh = True, low_leakage_mode = low_thermal_pops, ssf_hist_ylim = ssf_hist_ylim, apply_quality_cuts = filter_out_bad_SSF_qtemp_fits,
                                                                                                                                    calc_SNR = calc_SNR_ssfqtemps)
-
+                
                 # ---- STORE FULL FIT RESULTS FOR SSF LOG OVERLAY PLOTS ----
                 fit_results_g_by_run[run_num] = fit_results_g
 
@@ -2030,9 +2035,10 @@ Pe_dist_err_dict = None
 use_png_timestamps = False
 
 restrict_time = True
-start_time = datetime.datetime(2026, 6, 5, 0, 0)
-end_time = datetime.datetime(2026, 6, 9, 0, 0)
-run_num_list = [9.2]
+start_time = datetime.datetime(2025, 4, 15, 0, 0)
+end_time = datetime.datetime(2025, 5, 8, 16, 0)
+run_num_list = [6]
+run6_subfolder="science-run" # only used for run6 MCP1 csv file data loading. Options: "pre-science-run", "science-run" or "both"
 
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
@@ -2346,10 +2352,10 @@ if coh_qtemp_ana_flags["run_qtemps_section"]:
 
 if coh_qtemp_ana_flags["load_mcp1_temps"]:
     mcp1_base_dir = "/exp/cosmiq/data/QUIET/MCP1_Grafana_Temperatures/During_AB-Paper_Data-Taking/"
-    mcp1_csv_path = combined_studies.get_single_mcp1_csv_for_run(run_num_list[0], mcp1_base_dir)
+    mcp1_csv_path = combined_studies.get_single_mcp1_csv_for_run(run_num_list[0], mcp1_base_dir, run6_subfolder=run6_subfolder)
     print("Using MCP1 CSV:", mcp1_csv_path)
     mcp1_dates, mcp1_temps, _ = combined_studies.load_mixing_chamber_csv(mcp1_csv_path, restrict_time=restrict_time,
-                                                                       start_time=start_time, end_time=end_time)
+                                                            start_time=start_time, end_time=end_time)
 
 if coh_qtemp_ana_flags["run_coherence_section"]:
     for run_num in run_num_list:
@@ -2412,28 +2418,28 @@ if coh_qtemp_ana_flags["plot_qtemps_t1_ftemps_qfreq"]:
 
     combined_studies.plot_qtemps_and_coherence_res(
         comb_plots_path,
-        # all_qubit_temperatures_ssf_g=all_qubit_temps_g,
-        # all_qubit_timestamps_ssf_g=all_qubit_times_g,
-        all_files_Qtemp_results_RPMs= all_files_Qtemp_results_RPMs,
-        # fridge_temps=mcp1_temps,
-        # fridge_dates=mcp1_dates,
-        t1_vals=t1_vals,
-        t1_dates=date_times_t1,
-        qfreqs_vals=q_freqs,
-        qfreqs_dates=date_times_q_spec,
-        resfreqs_vals= res_freqs,
-        resfreqs_dates= date_times_res_spec,
-        t2r_vals=t2r_vals,
-        t2r_dates=date_times_t2r,
-        t2e_vals=t2e_vals,
-        t2e_dates=date_times_t2e,
+        all_qubit_temperatures_ssf_g=all_qubit_temps_g,
+        all_qubit_timestamps_ssf_g=all_qubit_times_g,
+        #all_files_Qtemp_results_RPMs= all_files_Qtemp_results_RPMs,
+        fridge_temps=mcp1_temps,
+        fridge_dates=mcp1_dates,
+        # t1_vals=t1_vals,
+        # t1_dates=date_times_t1,
+        # qfreqs_vals=q_freqs,
+        # qfreqs_dates=date_times_q_spec,
+        # resfreqs_vals= res_freqs,
+        # resfreqs_dates= date_times_res_spec,
+        # t2r_vals=t2r_vals,
+        # t2r_dates=date_times_t2r,
+        # t2e_vals=t2e_vals,
+        # t2e_dates=date_times_t2e,
         restrict_time_xaxis=restrict_time,
         start_time=start_time,
         end_time=end_time,
         plot_extra_event_lines=False,
         run_num = f"{run_num_list[0]}"
     )
-if coh_qtemp_ana_flags["plot_qtemps_qfreq_fridge_only"]:
+if coh_qtemp_ana_flags["plot_RPM_qtemps_qfreq_fridge_only"]:
     if len(run_num_list) != 1:
         raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
                          "This plotting section is only set up to process one run at a time at the moment.")
@@ -2451,3 +2457,22 @@ if coh_qtemp_ana_flags["plot_qtemps_qfreq_fridge_only"]:
     start_time=start_time,
     end_time=end_time
 )
+
+if coh_qtemp_ana_flags["plot_SSF_qtemps_qfreq_fridge_only"]:
+    if len(run_num_list) != 1:
+        raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
+                         "This plotting section is only set up to process one run at a time at the moment.")
+        # This section is set up to process multiple runs, but I have not updated this plotting function to handle more than one.
+    comb_plots_path = "/home/acolonce/Documents/analysis/combined_qtemps/qtemps_and_coherence/"
+
+    combined_studies.plot_ssf_qtemp_qfreq_fridge_only(
+        out_dir=comb_plots_path,
+        all_qubit_ssf_results=fit_results_g,
+        fridge_temps=mcp1_temps,
+        fridge_dates=mcp1_dates,
+        run_num=run_num_list[0],
+        fridge_label="MCP1 Temp (mK)",
+        restrict_time_xaxis=restrict_time,
+        start_time=start_time,
+        end_time=end_time,
+    )

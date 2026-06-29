@@ -846,8 +846,7 @@ class SSFTempCalcAndPlots:
 
         sigma_T_mK = np.sqrt(
             (dT_df0 * sigma_f0_Hz) ** 2 +
-            (dT_dPe * sigma_Pe) ** 2
-        )
+            (dT_dPe * sigma_Pe) ** 2)
 
         return sigma_T_mK, sigma_Pe
 
@@ -9058,12 +9057,21 @@ class combined_Qtemp_studies:
         print("Saved combined methods plot: ", out_path)
         return out_path
 
-    def get_single_mcp1_csv_for_run(self, run_num, mcp1_base_dir):
+    def get_single_mcp1_csv_for_run(self, run_num, mcp1_base_dir, run6_subfolder="both"):
         """
-        Returns the single MCP1/Grafana CSV path for a given run.
-        Raises an error if the folder has zero CSVs or more than one CSV.
+        Returns MCP1/Grafana CSV path(s) for a given run.
+
+        Normal runs:
+            returns a single CSV path as a string.
+
+        Run 6a:
+            run6_subfolder="both" returns a list of two CSV paths.
+            run6_subfolder="science-run" returns only the science-run CSV.
+            run6_subfolder="pre-science-run" returns only the pre-science-run CSV.
+
+        Raises an error if any selected folder has zero CSVs or more than one CSV.
         """
-        # Convert input to Path here
+
         mcp1_base_dir = Path(mcp1_base_dir)
 
         run_folder_map = {
@@ -9079,6 +9087,8 @@ class combined_Qtemp_studies:
             run_key = "9a"
         elif run_num == 9.2:
             run_key = "9c"
+        elif run_num == 6:
+            run_key = "6a"
         else:
             run_key = str(run_num)
 
@@ -9093,43 +9103,87 @@ class combined_Qtemp_studies:
         if not run_folder.exists():
             raise FileNotFoundError(f"MCP1 folder does not exist: {run_folder}")
 
-        csv_files = sorted(run_folder.glob("*.csv"))
+        if run_key == "6a":
+            if run6_subfolder == "both":
+                folders_to_search = [
+                    run_folder / "pre-science-run",
+                    run_folder / "science-run",
+                ]
+            elif run6_subfolder in ["pre-science-run", "science-run"]:
+                folders_to_search = [run_folder / run6_subfolder]
+            else:
+                raise ValueError(
+                    f"Invalid run6_subfolder for run 6a: {run6_subfolder}. "
+                    "Use 'both', 'pre-science-run', or 'science-run'."
+                )
+        else:
+            folders_to_search = [run_folder]
 
-        if len(csv_files) == 0:
-            raise FileNotFoundError(f"No CSV files found in: {run_folder}")
+        all_csv_paths = []
 
-        if len(csv_files) > 1:
-            raise RuntimeError(
-                f"Expected exactly one CSV file in {run_folder}, "
-                f"but found {len(csv_files)}:\n"
-                + "\n".join(str(f) for f in csv_files)
-            )
+        for folder in folders_to_search:
+            if not folder.exists():
+                raise FileNotFoundError(f"MCP1 folder does not exist: {folder}")
 
-        return str(csv_files[0])
+            csv_files = sorted(folder.glob("*.csv"))
+
+            if len(csv_files) == 0:
+                raise FileNotFoundError(f"No CSV files found in: {folder}")
+
+            if len(csv_files) > 1:
+                raise RuntimeError(
+                    f"Expected exactly one CSV file in {folder}, "
+                    f"but found {len(csv_files)}:\n"
+                    + "\n".join(str(f) for f in csv_files)
+                )
+
+            all_csv_paths.append(str(csv_files[0]))
+
+        if len(all_csv_paths) == 1:
+            return all_csv_paths[0]
+
+        return all_csv_paths
 
     def load_mixing_chamber_csv(self, csv_path, restrict_time=False,
                                 start_time=None, end_time=None):
         """
-        Load mixing-chamber CSV and return:
+        Load mixing-chamber CSV(s) and return:
             - times: list[str] formatted '%Y-%m-%d %H:%M:%S'
             - mix_s: list[float]   (DRI-MIX-S, mK)
             - mix_h: list[float]   (DRI-MIX-H, µW)
 
+        csv_path can be either:
+            - a single CSV path as a string/Path
+            - a list of CSV paths
+
         If restrict_time=True:
             Only rows within [start_time, end_time] are kept.
-            Both start_time and end_time must be in '%Y-%m-%d %H:%M:%S' format.
-            If either is None, that bound is ignored.
+            start_time and end_time can be datetime objects or strings.
         """
+        # Allow either one path or a list of paths
+        if isinstance(csv_path, (str, Path)):
+            csv_paths = [csv_path]
+        else:
+            csv_paths = csv_path
 
-        csv_path = Path(csv_path)
-        df = pd.read_csv(csv_path)
+        dfs = []
 
-        # --- Parse timestamps into datetime ---
-        df["Time"] = pd.to_datetime(df["Time"])
+        for path in csv_paths:
+            path = Path(path)
 
-        # --- Apply time restriction if requested ---
+            df = pd.read_csv(path)
+
+            # Parse timestamps into datetime
+            df["Time"] = pd.to_datetime(df["Time"])
+
+            dfs.append(df)
+
+        # Combine all CSVs, then sort by time
+        df = pd.concat(dfs, ignore_index=True)
+        df = df.sort_values("Time")
+
+        # Apply time restriction if requested
         if restrict_time:
-            # Convert to datetime if provided
             if start_time is not None:
                 start_time = pd.to_datetime(start_time)
                 df = df[df["Time"] >= start_time]
@@ -9138,10 +9192,10 @@ class combined_Qtemp_studies:
                 end_time = pd.to_datetime(end_time)
                 df = df[df["Time"] <= end_time]
 
-        # --- Format timestamps to match your T1 format ---
+        # Format timestamps to match your other date lists
         times = df["Time"].dt.strftime("%Y-%m-%d %H:%M:%S").tolist()
 
-        # --- Convert values (remove units, convert to float) ---
+        # Convert DRI-MIX-S values to floats in mK
         mix_s = (
             df["DRI-MIX-S"]
             .astype(str)
@@ -9151,6 +9205,7 @@ class combined_Qtemp_studies:
             .tolist()
         )
 
+        # Convert DRI-MIX-H values to floats in µW
         mix_h = (
             df["DRI-MIX-H"]
             .astype(str)
@@ -9161,6 +9216,291 @@ class combined_Qtemp_studies:
         )
 
         return times, mix_s, mix_h
+
+    def plot_ssf_qtemp_qfreq_fridge_only(
+            self,
+            out_dir,
+            all_qubit_ssf_results,
+            fridge_temps,
+            fridge_dates,
+            run_num,
+            fridge_label="Fridge Temp (mK)",
+            temp_key="temperature_mK",
+            date_key="timestamp",
+            qfreq_key="qfreq_mhz",
+            fridge_time_fmt="%Y-%m-%d %H:%M:%S",
+            restrict_time_xaxis=False,
+            start_time=None,
+            end_time=None,
+    ):
+        """
+        Plot, for each qubit:
+          - SSF effective temperature vs its own SSF timestamps
+          - qubit frequency vs the same SSF timestamps
+          - fridge/mag-can temperature vs its own independently saved timestamps
+
+        Important:
+          This does NOT nearest-match the fridge data to SSF data.
+          It computes one global x-axis range spanning all provided timestamps,
+          then plots all datapoints at their actual times.
+
+        Expected SSF structure:
+          all_qubit_ssf_results[q] = list of dicts, each containing e.g.
+              {
+                  "timestamp": datetime or timestamp-like object,
+                  "temperature_mK": ...,
+                  "qfreq_mhz": ...
+              }
+        """
+
+        os.makedirs(out_dir, exist_ok=True)
+        num_qubits = self.number_of_qubits
+
+        # ------------------------------------------------------------
+        # Parse fridge/mag-can temperature data
+        # ------------------------------------------------------------
+        fridge_times = []
+        for d in fridge_dates:
+            if isinstance(d, datetime.datetime):
+                fridge_times.append(d)
+            else:
+                fridge_times.append(datetime.datetime.strptime(d, fridge_time_fmt))
+
+        fridge_order = np.argsort(fridge_times)
+        fridge_times = list(np.array(fridge_times)[fridge_order])
+        fridge_temps = list(np.array(fridge_temps)[fridge_order])
+
+        # ------------------------------------------------------------
+        # Extract SSF effective temp and qubit frequency
+        # ------------------------------------------------------------
+        ssf_times = {q: [] for q in range(num_qubits)}
+        qtemps_mK = {q: [] for q in range(num_qubits)}
+        qfreqs_MHz = {q: [] for q in range(num_qubits)}
+
+        for q in range(num_qubits):
+            if isinstance(all_qubit_ssf_results, dict):
+                q_results = all_qubit_ssf_results.get(q, [])
+            else:
+                if q >= len(all_qubit_ssf_results):
+                    continue
+                q_results = all_qubit_ssf_results[q]
+
+            for rec in q_results:
+                if temp_key not in rec or date_key not in rec or qfreq_key not in rec:
+                    continue
+
+                qtemp = rec[temp_key]
+                qfreq = rec[qfreq_key]
+                t = rec[date_key]
+
+                if qtemp is None or not np.isfinite(qtemp):
+                    continue
+
+                if qtemp >= 1000:
+                    continue
+
+                if qfreq is None or not np.isfinite(qfreq):
+                    continue
+
+                if not isinstance(t, datetime.datetime):
+                    t = pd.to_datetime(t).to_pydatetime()
+
+                ssf_times[q].append(t)
+                qtemps_mK[q].append(qtemp)
+                qfreqs_MHz[q].append(qfreq)
+
+        # ------------------------------------------------------------
+        # Decide which qubits have SSF data
+        # ------------------------------------------------------------
+        qubits_to_plot = [
+            q for q in range(num_qubits)
+            if len(ssf_times[q]) > 0
+        ]
+
+        if not qubits_to_plot:
+            print("[WARN] No SSF qtemp/qfreq data found. Nothing to plot.")
+            return None
+
+        # ------------------------------------------------------------
+        # Build one global x-axis range from ALL data
+        # ------------------------------------------------------------
+        all_plot_times = []
+
+        all_plot_times.extend(fridge_times)
+
+        for q in qubits_to_plot:
+            all_plot_times.extend(ssf_times[q])
+
+        if not all_plot_times:
+            print("[WARN] No timestamps found. Nothing to plot.")
+            return None
+
+        if restrict_time_xaxis:
+            global_start = start_time
+            global_end = end_time
+        else:
+            global_start = min(all_plot_times)
+            global_end = max(all_plot_times)
+
+        print("Global x-axis range:")
+        print("  start:", global_start)
+        print("  end:  ", global_end)
+
+        # ------------------------------------------------------------
+        # Make figure
+        # ------------------------------------------------------------
+        nrows = len(qubits_to_plot)
+
+        fig, axes = plt.subplots(
+            nrows,
+            1,
+            figsize=(24, 6 * nrows),
+            sharex=True,
+            constrained_layout=True
+        )
+
+        if nrows == 1:
+            axes = [axes]
+
+        small_fs = 13
+        date_fmt = mdates.DateFormatter("%Y-%m-%d %H:%M:%S")
+
+        for ax, q in zip(axes, qubits_to_plot):
+
+            # Sort SSF data by timestamp
+            order = np.argsort(ssf_times[q])
+
+            q_ssf_times = np.array(ssf_times[q])[order]
+            q_qtemps = np.array(qtemps_mK[q])[order]
+            q_qfreqs = np.array(qfreqs_MHz[q])[order]
+
+            # --------------------------------------------------------
+            # Left axis: SSF effective temperature
+            # --------------------------------------------------------
+            ax.plot(
+                q_ssf_times,
+                q_qtemps,
+                marker="o",
+                markersize=5,
+                linestyle="-",
+                linewidth=1.2,
+                color="black",
+                label="SSF QTemp (mK)"
+            )
+
+            ax.set_title(f"Q{q + 1}", loc="left", fontsize=14, fontweight="bold")
+            ax.set_ylabel("SSF Effective Qubit Temp (mK)", color="black", fontsize=small_fs)
+            ax.tick_params(axis="y", labelcolor="black", labelsize=small_fs)
+            ax.grid(False)
+
+            # --------------------------------------------------------
+            # First right axis: fridge/mag-can temperature
+            # --------------------------------------------------------
+            fridge_ax = ax.twinx()
+
+            fridge_ax.plot(
+                fridge_times,
+                fridge_temps,
+                marker="s",
+                markersize=4,
+                linestyle="-",
+                linewidth=1.2,
+                color="green",
+                alpha=0.7,
+                label=fridge_label
+            )
+
+            fridge_ax.set_ylabel(fridge_label, color="green", fontsize=small_fs)
+            fridge_ax.tick_params(axis="y", labelcolor="green", labelsize=small_fs)
+
+            # --------------------------------------------------------
+            # Second right axis: qubit frequency
+            # Uses same SSF timestamps.
+            # --------------------------------------------------------
+            qfreq_ax = ax.twinx()
+            qfreq_ax.spines["right"].set_position(("axes", 1.08))
+
+            qfreq_ax.plot(
+                q_ssf_times,
+                q_qfreqs,
+                marker="^",
+                markersize=5,
+                linestyle="-",
+                linewidth=1.2,
+                color="purple",
+                alpha=0.8,
+                label="Qubit Freq (MHz)"
+            )
+
+            qfreq_ax.set_ylabel("Qubit Freq (MHz)", color="purple", fontsize=small_fs)
+            qfreq_ax.tick_params(axis="y", labelcolor="purple", labelsize=small_fs)
+            qfreq_ax.yaxis.get_offset_text().set_visible(False)
+            qfreq_ax.yaxis.set_major_formatter(mticker.FormatStrFormatter("%.2f"))
+
+            # if q == 0:
+            #     qfreq_ax.set_ylim(4180.8, 4181.5)
+            if q == 5:
+                qfreq_ax.set_ylim(4999.0, 5000.0)
+
+            # --------------------------------------------------------
+            # Force every axis to use the same global x-axis
+            # --------------------------------------------------------
+            ax.set_xlim(global_start, global_end)
+            fridge_ax.set_xlim(global_start, global_end)
+            qfreq_ax.set_xlim(global_start, global_end)
+
+            locator = mdates.AutoDateLocator(minticks=8, maxticks=12)
+            ax.xaxis.set_major_locator(locator)
+            ax.xaxis.set_major_formatter(date_fmt)
+            ax.tick_params(axis="x", rotation=45, labelsize=small_fs)
+            ax.set_xlabel("Time", fontsize=small_fs)
+
+            # --------------------------------------------------------
+            # Combined legend
+            # --------------------------------------------------------
+            handles = []
+            labels = []
+
+            for this_ax in [ax, fridge_ax, qfreq_ax]:
+                h, l = this_ax.get_legend_handles_labels()
+                handles += h
+                labels += l
+
+            leg = ax.legend(
+                handles,
+                labels,
+                loc="upper left",
+                fontsize=10,
+                frameon=True,
+                fancybox=False
+            )
+
+            leg.set_zorder(10000000)
+            frame = leg.get_frame()
+            frame.set_facecolor("white")
+            frame.set_alpha(1.0)
+            frame.set_edgecolor("black")
+            frame.set_linewidth(0.8)
+
+        fig.suptitle(
+            "SSF Effective Temperature, Fridge Temperature, and Qubit Frequency vs Time",
+            fontsize=18)
+
+        # ------------------------------------------------------------
+        # Save
+        # ------------------------------------------------------------
+        paramvstime_dir = os.path.join(out_dir, "params_vs_time")
+        os.makedirs(paramvstime_dir, exist_ok=True)
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_path = os.path.join(
+            paramvstime_dir,
+            f"run{run_num}_SSF_Qtemp_Qfreq_fridge_global_xaxis_{stamp}.pdf")
+
+        fig.savefig(out_path, facecolor="white")
+        plt.close(fig)
+        print("Saved SSF qtemp/qfreq/fridge global-x-axis plot:", out_path)
+
+        return out_path
 
     def plot_rpm_qtemp_qfreq_fridge_only(
             self,
@@ -9222,8 +9562,8 @@ class combined_Qtemp_studies:
                 if qtemp is None or not np.isfinite(qtemp):
                     continue
 
-                # if qtemp >= 150:
-                #     continue
+                if qtemp >= 1000:
+                    continue
 
                 qfreq = None
                 for key in qfreq_key_options:
