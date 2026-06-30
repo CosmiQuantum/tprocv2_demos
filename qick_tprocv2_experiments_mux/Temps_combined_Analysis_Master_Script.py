@@ -500,14 +500,14 @@ paths_SSFmethods_SR = [
 
 # All pre-Science-Run Data (also exists on daq01, you can find it here: /data/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data)
 paths_SSFmethods_preSR = [
-                        # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-21",
-                        # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-22",
-                        # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-23",
-                        # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-24",
-                        # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-26",
-                        # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-28",
-                        # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-01",
-                        # "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-02"
+                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-21",
+                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-22",
+                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-23",
+                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-24",
+                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-26",
+                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-28",
+                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-01",
+                        "/exp/cosmiq/data/QUIET/QICK_data/run6/6transmon/ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-02"
                         ]
 
 # To save plots
@@ -1041,14 +1041,14 @@ if coh_qtemp_ana_flags["run_coherence_section"]:
         # all pre-science run data (AB paper data):
         # Can be found both locally in daq01 or on CEPH
         top_folder_dates = [
-        # "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-21",
-        # "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-22",
-        # "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-23",
-        # "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-24",
-        # "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-26",
-        # "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-28",
-        # "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-01",
-        # "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-02"]
+        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-21",
+        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-22",
+        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-23",
+        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-24",
+        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-26",
+        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-28",
+        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-01",
+        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-02" #]
 
         # Science run data: can ONLY be found on CEPH!!
         # If you want to process all "science run" data
@@ -2034,11 +2034,11 @@ t2e_vals = None
 Pe_dist_err_dict = None
 use_png_timestamps = False
 
-restrict_time = True
+restrict_time = False
 start_time = datetime.datetime(2025, 4, 15, 0, 0)
 end_time = datetime.datetime(2025, 5, 8, 16, 0)
 run_num_list = [6]
-run6_subfolder="science-run" # only used for run6 MCP1 csv file data loading. Options: "pre-science-run", "science-run" or "both"
+run6_subfolder="both" # only used for run6 MCP1 csv file data loading. Options: "pre-science-run", "science-run" or "both"
 
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
