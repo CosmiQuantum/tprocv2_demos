@@ -31,7 +31,7 @@ from pathlib import Path
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 8 #Options for QUIET: 5(for coherence only),6,7,8,9,9.2(this is run 9c)
+run_num = 5 #Options for QUIET: 5(for coherence only),6,7,8,9,9.2(this is run 9c)
 run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence analysis it's defined in its respective section
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
@@ -52,10 +52,11 @@ pre_sciencerun6_data = True # Do you also want to incorporate the run 6 pre-scie
 use_iminuit_gdoublegauss_ssf = True # do you want to fit the g-state to a double gaussian using iminuit? The default is GMM instead
 #Double gaussian fitting is optimized for lower thermal pops (<2%) if this is set to true:
 low_thermal_pops = True if run_num == 9 else False # This run number is specific to QUIET. Used in SSF qtemps
-calc_SNR_ssfqtemps = True # calculate SNR of SSF scans?
+calc_SNR_ssfqtemps = False # calculate SNR of SSF scans?
+calc_SSF_e_decay = True # calculate the e-state decay population in SSF scans?
 
 # When re-plotting SSF g-state histograms using iminuit, do you want to limit y-axis to see thermal pop region better?:
-ssf_hist_ylim = 30
+ssf_hist_ylim = None
 
 rpm_combine_IQ_signal = False # uses ssf angle to rotate rabi population measurement data into a combined IQ signal lying on the same axis
 
@@ -65,13 +66,13 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": True, "Qtemps_viaSSF_with_fallback": False,
                       "combined_studies_Qtemps": False}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False, "Pe_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_hists_viaSSF": False, "Pe_vs_time_viaRPM": False,
-                  "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": True, "SSF_fid_vs_Pe_viaSSF": False, "ssf_SNR_vs_time": False}
+                  "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": False, "SSF_fid_vs_Pe_viaSSF": False, "ssf_SNR_vs_time": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
 comb_analysis_flags = {"load_rpm": False, "load_ssf": False, "use_cached_qtemp_files": False, "create_cached_qtemp_files": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False,
@@ -85,52 +86,52 @@ london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 # For double-gaussian SSF analysis using alternative methods (does not require any other flags to be set to True above!)
 alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
 
-# For coherence-qubit temps combined analysis
-coh_qtemp_ana_flags = {"run_qtemps_section": True, "run_coherence_section": True, "use_cached_qtemp_files": False, "use_cached_coherence_files": True, "create_cached_qtemp_files": False,"create_cached_coherence_files": False, "load_mcp1_temps": True,
-                       "plot_qtemps_t1_ftemps_qfreq": False, "plot_RPM_qtemps_qfreq_fridge_only": False, "plot_SSF_qtemps_qfreq_fridge_only": True}
+# For coherence-qubit temps combined analysis. These flags act on their own, no need to set anything above to True.
+coh_qtemp_ana_flags = {"run_qtemps_section": False, "run_coherence_section": False, "use_cached_qtemp_files": False, "use_cached_coherence_files": False, "create_cached_qtemp_files": False,"create_cached_coherence_files": False, "load_mcp1_temps": False,
+                       "plot_qtemps_t1_ftemps_qfreq": False, "plot_RPM_qtemps_qfreq_fridge_only": False, "plot_SSF_qtemps_qfreq_fridge_only": False}
 
 ############################################################################## Set up #######################################################################################################################
 #----------------------------------------------------- For qubit temperature calculations via rabi population measurements --------------------------------------------------------------------------------------
 # Specify which dates you want to loop through. It will process all the files inside all the folders that contain these dates in their title.
 # ----------------------------------------------------------------------------- Run 6 --------------------------------------------------------
 target_dates_qtemps_RPM_sciencerun = [
-    # "2025-04-16",
-    # "2025-04-17",
-    # "2025-04-18",
-    # "2025-04-19",
-    # "2025-04-20",
-    # "2025-04-21", #starts source on (Co)
-    # "2025-04-22",
-    # "2025-04-23", #switched source (to Cs)
-    # "2025-04-24",
-    # "2025-04-25",
-    # "2025-04-26",
-    # "2025-04-27",
-    # "2025-04-28", #Cs source moved closer
-    # "2025-04-29",
-    # "2025-04-30",
-    # "2025-05-01",
-    # "2025-05-02",
-    # "2025-05-03",
-    # "2025-05-04", # Cs source removed. No sources in Cleanroom.
-    # "2025-05-05",
-    # "2025-05-06",
-    # "2025-05-07",
-    # "2025-05-08",
-    # "2025-05-09",
-    # "2025-05-10",
-    # "2025-05-11",
-    # "2025-05-12",
-    # "2025-05-13",
-    # "2025-05-14",
-    # "2025-05-15",
-    # "2025-05-16",
-    # "2025-05-20",
-    # "2025-05-21",
-    # "2025-05-28",
-    # "2025-05-29",
-    # "2025-05-31",
-    # "2025-06-01" # Last Science run data
+    "2025-04-16",
+    "2025-04-17",
+    "2025-04-18",
+    "2025-04-19",
+    "2025-04-20",
+    "2025-04-21", #starts source on (Co)
+    "2025-04-22",
+    "2025-04-23", #switched source (to Cs)
+    "2025-04-24",
+    "2025-04-25",
+    "2025-04-26",
+    "2025-04-27",
+    "2025-04-28", #Cs source moved closer
+    "2025-04-29",
+    "2025-04-30",
+    "2025-05-01",
+    "2025-05-02",
+    "2025-05-03",
+    "2025-05-04", # Cs source removed. No sources in Cleanroom.
+    "2025-05-05",
+    "2025-05-06",
+    "2025-05-07",
+    "2025-05-08",
+    "2025-05-09",
+    "2025-05-10",
+    "2025-05-11",
+    "2025-05-12",
+    "2025-05-13",
+    "2025-05-14",
+    "2025-05-15",
+    "2025-05-16",
+    "2025-05-20",
+    "2025-05-21",
+    "2025-05-28",
+    "2025-05-29",
+    "2025-05-31",
+    "2025-06-01" # Last Science run data
     ]
 
 # For data during Heater temperature steps, run 6 (20mK to 160mK)
@@ -138,8 +139,8 @@ target_dates_qtemps_RPM_sciencerun = [
 
 # For pre-science-run data
 target_dates_qtemps_RPM_presciencerun = [
-                                        # '2025-04-11',
-                                        # '2025-04-12'
+                                        '2025-04-11',
+                                        '2025-04-12'
                                         ]
 
 # Base path of where the data is stored up to the Study Name (TLS_Comprehensive_Study or ef_studies_pre_science_run)
@@ -539,7 +540,7 @@ r7_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 # "/data/QICK_data/run7/6transmon/analysis" #daq01
 # "/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/run7" #1hw
 
-path_saveplots_fits_run7 = f"{r7_plts_prefix}/ssf_qtemps/qtemps_ssf_gaussfits"
+path_saveplots_fits_run7 = f"{r7_plts_prefix}/ssf_qtemps/gaussfits"
 path_saveplots_ssf_qtemps_vsT_run7 = f"{r7_plts_prefix}/ssf_qtemps"
 
 # ----------------------------------------------------------------------------------------------run 8----------------------------------------------------------------------------------------------------------
@@ -755,7 +756,7 @@ paths_SSFmethods_run9c = [
 # To save plots
 r9c_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 
-path_saveplots_fits_run9c = f"{r9c_plts_prefix}/ssf_qtemps/qtemps_ssf_gaussfits"
+path_saveplots_fits_run9c = f"{r9c_plts_prefix}/ssf_qtemps/gaussfitsfits"
 path_saveplots_ssf_qtemps_vsT_run9c = f"{r9c_plts_prefix}/ssf_qtemps"
 
 #------------------------------------------------------------------------------ Assign func variables depending on run number ---------------------------------------
@@ -1238,7 +1239,8 @@ if qtemp_method_flags["Qtemps_viaSSF_ge_thresh"] or qtemp_method_flags["Qtemps_v
             # Made a special iminuit-based double gaussian fitting function. For now it is only set up to fit g-state data.
             # optionally saves fitted data and shows which scans were filtered out and which were kept
             all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=1.0, do_plots=save_figs_SSF, save_figs_path = path_saveplots_fits, dontuse_midpt_thresh = True,
-                                                                                                                        low_leakage_mode = low_thermal_pops, ssf_hist_ylim = ssf_hist_ylim, apply_quality_cuts = filter_out_bad_SSF_qtemp_fits, calc_SNR = calc_SNR_ssfqtemps)
+                                                                                                                        low_leakage_mode = low_thermal_pops, ssf_hist_ylim = ssf_hist_ylim, apply_quality_cuts = filter_out_bad_SSF_qtemp_fits, calc_SNR = calc_SNR_ssfqtemps,
+                                                                                                                       calc_e_state_decay = calc_SSF_e_decay)
         else:
             all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results  = SSF_calcs_obj.run_ssf_qtemps(pairs_info, limit_temp_k=1.0, use_gessf_thresh_only = False, fallback_to_threshold = False)
     elif qtemp_method_flags["Qtemps_viaSSF_ge_thresh"]: # Fits both GROUND STATE and PREPARED EXCITED STATE SSF data to a double gaussian ; threshold = midpoint of the two gaussian means
@@ -1326,7 +1328,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
     all_qubit_temps, all_qubit_times, all_qubit_temps_errs, fit_results = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=1.0,
                                                                                                                 do_plots = True, save_figs_path = made_on_folder, dontuse_midpt_thresh = True,
                                                                                                                low_leakage_mode = low_thermal_pops, ssf_hist_ylim = ssf_hist_ylim, apply_quality_cuts = filter_out_bad_SSF_qtemp_fits,
-                                                                                                               calc_SNR = calc_SNR_ssfqtemps)
+                                                                                                               calc_SNR = calc_SNR_ssfqtemps, calc_e_state_decay = calc_SSF_e_decay)
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
@@ -1619,7 +1621,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             if use_iminuit_gdoublegauss_ssf: # Made a special iminuit-based double gaussian fitting function, but for now it is only set up to fit g-state data.
                 all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps_iminuit(pairs_info, run_num=run_num, limit_temp_k=0.6,
                     do_plots=False, dontuse_midpt_thresh = True, low_leakage_mode = low_thermal_pops, ssf_hist_ylim = ssf_hist_ylim, apply_quality_cuts = filter_out_bad_SSF_qtemp_fits,
-                                                                                                                                   calc_SNR = calc_SNR_ssfqtemps)
+                                                                                                                    calc_SNR = calc_SNR_ssfqtemps, calc_e_state_decay = calc_SSF_e_decay)
                 
                 # ---- STORE FULL FIT RESULTS FOR SSF LOG OVERLAY PLOTS ----
                 fit_results_g_by_run[run_num] = fit_results_g
@@ -2293,7 +2295,7 @@ if coh_qtemp_ana_flags["run_qtemps_section"]:
         if use_iminuit_gdoublegauss_ssf:  # Made a special iminuit-based double gaussian fitting function, but for now it is only set up to fit g-state data.
             all_qubit_temps_g, all_qubit_times_g, all_qubit_temps_errs_g, fit_results_g = SSF_calcs_obj.run_ssf_qtemps_iminuit(
                 pairs_info, run_num=run_num, limit_temp_k=0.6, do_plots=False, dontuse_midpt_thresh=True, low_leakage_mode = low_thermal_pops, 
-                ssf_hist_ylim = ssf_hist_ylim, apply_quality_cuts = filter_out_bad_SSF_qtemp_fits, calc_SNR = calc_SNR_ssfqtemps)
+                ssf_hist_ylim = ssf_hist_ylim, apply_quality_cuts = filter_out_bad_SSF_qtemp_fits, calc_SNR = calc_SNR_ssfqtemps, calc_e_state_decay = calc_SSF_e_decay)
             
             # ---- STORE RESULTS (SSF g) ----
             ssf_g_temps, ssf_g_temp_errs, ssf_fid_vals, ssf_fid_errs, ssf_snr_vals, ie_new_Pg_vals, ie_new_Pg_errs = combined_studies.ssf_fit_results_to_per_qubit_lists(fit_results_g, n_qubits=tot_num_of_qubits)

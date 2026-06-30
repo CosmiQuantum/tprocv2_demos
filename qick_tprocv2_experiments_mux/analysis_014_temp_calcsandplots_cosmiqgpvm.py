@@ -535,7 +535,7 @@ class SSFTempCalcAndPlots:
         return all_qubit_temperatures, all_qubit_timestamps, all_qubit_temperatures_errs, fit_results
 
     def run_ssf_qtemps_iminuit(self, pairs_info, run_num, limit_temp_k=0.8, do_plots = False, save_figs_path = "", dontuse_midpt_thresh = False, low_leakage_mode = False, ssf_hist_ylim = None,
-                               apply_quality_cuts=True, calc_SNR=False, calc_e_state_decay = True):
+                               apply_quality_cuts=True, calc_SNR=False, calc_e_state_decay = False):
         """
         Uses iminuit instead of GMM for double gaussian fitting and minimization.
 
@@ -748,7 +748,11 @@ class SSFTempCalcAndPlots:
                 ie_new_fit_results = np.nan
 
                 if calc_e_state_decay:
-                    ie_new_fit_results = self.fit_e_state_double_gaussian_iminuit(ie_new, qid=qid, dataset=idx)
+                    save_figs_path_ienew = os.path.join(save_figs_path, f"ie_new_fits")
+                    os.makedirs(save_figs_path_ienew, exist_ok=True)
+                    ie_new_fit_results = self.fit_e_state_double_gaussian_iminuit(ie_new, qid=qid, dataset=idx, plot=True,
+                                        qubit_folder=save_figs_path_ienew, ig_new=ig_new) # ig_new here is optional. Can be plotted along e-state data if needed.
+
                     if ie_new_fit_results is not None:
                         ie_new_ground_frac = ie_new_fit_results["ie_new_ground_frac"]
                         ie_new_ground_frac_err = ie_new_fit_results["ie_new_ground_frac_err"]
@@ -3253,13 +3257,234 @@ class SSFTempCalcAndPlots:
 
         return snr, snr_info
 
+    def plot_ie_new_double_gaussian_fit(
+            self,
+            q_key,
+            qubit_folder,
+            ie_new,
+            weights,
+            sigmas,
+            means,
+            ground_frac,
+            ground_frac_err=None,
+            lr_stat=None,
+            dataset=None,
+            numbins=64,
+            ylim=None,
+            ig_new=None):
+        """
+        Plot the excited-prepared ie_new SSF data with its fitted two-Gaussian mixture.
+
+        Optionally overlay prepared ground-state data (ig_new) as a histogram only,
+        with no fit applied.
+
+        For ie_new after sorting:
+            means[0], sigmas[0], weights[0] -> ground-like component
+            means[1], sigmas[1], weights[1] -> excited-like component
+
+        The main diagnostic quantity is:
+            ie_new_ground_frac = weights[0]
+        """
+
+        os.makedirs(qubit_folder, exist_ok=True)
+
+        ie = np.asarray(ie_new, dtype=float).ravel()
+        ie = ie[np.isfinite(ie)]
+
+        if ie.size == 0:
+            return
+
+        # Optional prepared-ground data
+        ig = None
+        if ig_new is not None:
+            ig = np.asarray(ig_new, dtype=float).ravel()
+            ig = ig[np.isfinite(ig)]
+            if ig.size == 0:
+                ig = None
+
+        weights = np.asarray(weights, dtype=float).ravel()
+        means = np.asarray(means, dtype=float).ravel()
+        sigmas = np.asarray(sigmas, dtype=float).ravel()
+
+        if weights.size != 2 or means.size != 2 or sigmas.size != 2:
+            return
+
+        if np.sum(weights) <= 0 or not np.isfinite(np.sum(weights)):
+            return
+
+        weights = weights / np.sum(weights)
+
+        # Set x-limits using both ie and optional ig data
+        if ig is not None:
+            all_data = np.concatenate([ie, ig])
+        else:
+            all_data = ie
+
+        x_min = float(np.min(all_data))
+        x_max = float(np.max(all_data))
+
+        if x_min == x_max:
+            return
+
+        xlims = [x_min, x_max]
+
+        counts, edges = np.histogram(ie, bins=numbins, range=xlims)
+        bin_w = edges[1] - edges[0]
+        N = ie.size
+
+        plt.figure(figsize=(10, 6))
+
+        # Optional ground-state histogram overlay
+        if ig is not None:
+            plt.hist(
+                ig,
+                bins=numbins,
+                range=xlims,
+                density=False,
+                alpha=0.35,
+                color="blue",
+                edgecolor="black",
+                label="Prepared $|g\\rangle$ data",
+            )
+
+        # Excited-state histogram
+        plt.hist(
+            ie,
+            bins=numbins,
+            range=xlims,
+            density=False,
+            alpha=0.45,
+            color="red",
+            edgecolor="black",
+            label="Prepared $|e\\rangle$ data",
+        )
+
+        xplot = np.linspace(xlims[0], xlims[1], 1000)
+
+        comp_ground_like = N * bin_w * weights[0] * norm.pdf(
+            xplot,
+            loc=means[0],
+            scale=sigmas[0],
+        )
+
+        comp_excited_like = N * bin_w * weights[1] * norm.pdf(
+            xplot,
+            loc=means[1],
+            scale=sigmas[1],
+        )
+
+        mixture = comp_ground_like + comp_excited_like
+
+        plt.plot(
+            xplot,
+            comp_ground_like,
+            color="blue",
+            linewidth=2,
+            label=(
+                f"Ground-like fit: "
+                f"$\\mu_g$={means[0]:.3f}, "
+                f"$\\sigma_g$={sigmas[0]:.3f}, "
+                f"$w_g$={weights[0]:.3f}"
+            ),
+        )
+
+        plt.plot(
+            xplot,
+            comp_excited_like,
+            color="red",
+            linewidth=2,
+            label=(
+                f"Excited-like fit: "
+                f"$\\mu_e$={means[1]:.3f}, "
+                f"$\\sigma_e$={sigmas[1]:.3f}, "
+                f"$w_e$={weights[1]:.3f}"
+            ),
+        )
+
+        plt.plot(
+            xplot,
+            mixture,
+            color="black",
+            linestyle="--",
+            linewidth=2,
+            label="Two-Gaussian mixture",
+        )
+
+        plt.axvline(
+            means[0],
+            color="blue",
+            linestyle=":",
+            linewidth=2,
+            label="Ground-like mean",
+        )
+
+        plt.axvline(
+            means[1],
+            color="red",
+            linestyle=":",
+            linewidth=2,
+            label="Excited-like mean",
+        )
+
+        if ground_frac_err is None:
+            frac_text = f"{ground_frac:.4f}"
+        else:
+            frac_text = f"{ground_frac:.4f} ± {ground_frac_err:.4f}"
+
+        title = f"Excited-prepared ie_new double-Gaussian fit"
+
+        if q_key is not None:
+            title += f", Q{q_key + 1}"
+
+        if dataset is not None:
+            title += f", Dataset {dataset}"
+
+        title += f"\nGround-like fraction = {frac_text}"
+
+        if lr_stat is not None:
+            title += f", LRT = {lr_stat:.2f}"
+
+        plt.title(title)
+        plt.xlabel("Rotated/projected SSF signal", fontsize=14)
+        plt.ylabel("Counts", fontsize=14)
+
+        if ylim is not None:
+            plt.ylim(0, ylim)
+
+        plt.legend(fontsize=10)
+        plt.tight_layout()
+
+        if q_key is None:
+            q_str = "Qunknown"
+        else:
+            q_str = f"Q{q_key + 1}"
+
+        if dataset is None:
+            dataset_str = ""
+        else:
+            dataset_str = f"_Dataset{dataset}"
+
+        plot_filename = os.path.join(
+            qubit_folder,
+            f"{q_str}_ie_new_double_gaussfit{dataset_str}_{datetime.datetime.now():%Y%m%d%H%M%S}.png",
+        )
+
+        plt.savefig(plot_filename, dpi=300, bbox_inches="tight")
+        plt.close()
+
     def fit_e_state_double_gaussian_iminuit(
             self,
             iq_data,
             qid=None,
             dataset=None,
             right_weight_init=0.8,
-            verbose=False):
+            verbose=False,
+            plot = False,
+            qubit_folder = None,
+            numbins = 64,
+            ylim = None,
+            ig_new=None # can optionally plot the prepared ground state data too
+            ):
         """
         Fit SSF excited-prepared data, ie_new, to a two-Gaussian mixture.
 
@@ -3421,6 +3646,26 @@ class SSFTempCalcAndPlots:
                     f"  excited-like fraction = "
                     f"{ie_new_excited_frac:.4f} ± {ie_new_excited_frac_err:.4f}")
                 print(f"  LRT = {ie_new_lr_stat:.2f}")
+
+            if plot:
+                if qubit_folder is None:
+                    print("plot=True, but qubit_folder=None. Skipping ie_new fit plot.")
+                else:
+                    self.plot_ie_new_double_gaussian_fit(
+                        q_key=qid,
+                        qubit_folder=qubit_folder,
+                        ie_new=x,
+                        weights=weights,
+                        sigmas=sigmas,
+                        means=means,
+                        ground_frac=ie_new_ground_frac,
+                        ground_frac_err=ie_new_ground_frac_err,
+                        lr_stat=ie_new_lr_stat,
+                        dataset=dataset,
+                        numbins=numbins,
+                        ylim=ylim,
+                        ig_new = ig_new
+                    )
 
             return ie_fit_results
 
