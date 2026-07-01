@@ -30,7 +30,7 @@ list_of_all_qubits = [0,1,2,3,4,5] # for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0,
 
 # For Quiet
 substudy = "opt_25dBDAC_reverted_setup"
-outerFolder = os.path.join(f"/data/QICK_data/run9c/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
+outerFolder = os.path.join(f"/data/QICK_data/run9d/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 
 opt_flags = {"res_leng_sweep": True, "2d_sweep": False}
 save_figs_ss = False # do you want to save SSF pics as you run the readout optimization sweeps?

@@ -3,8 +3,8 @@ import numpy as np
 FRIDGE = "QUIET"  # change to "NEXUS" as needed
 
 if FRIDGE == "QUIET":
-    VNA_res = np.array([6235.097, 6295.745, 6356.840, 6426.675, 6493.5, 6561.2]) # run 9c # run 9a:  6228.487, 6290.125, 6349.800, 6420.615, 6486.0, 6553.600
-    VNA_qubit = np.array([4229.89, 3853.24, 4197.02, 4500.9, 4515.34, 5054.02])  # run 9c
+    VNA_res = np.array([6236.277, 6296.685, 6358.140, 6427.895, 6494.4, 6562.500]) # run 9c: [6235.097, 6295.745, 6356.840, 6426.675, 6493.5, 6561.2]
+    VNA_qubit = np.array([4228.48, 3852.44, 4201.97, 4506.32, 4518.33, 5054.72])  # run 9c: 4229.89, 3853.24, 4197.02, 4500.9, 4515.34, 5054.02
     ef_qfreqs = np.array([4055.94, 3675.69, 4022.54, 4329.42, 4343.53, 4886.5]) # Qubit freqs e/f Transition, run 9a
     fh_qfreqs = np.array([3820.97, 3450.85, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition, old run
     two_photon_qfreqs=np.array([4107.61, 3739.36, 4086.36, 4388.34, 4399.3, 4933.52]) # qubit freqs, two photon peak between ge and ef qubit freqs, old run
@@ -32,8 +32,8 @@ if FRIDGE == "QUIET":
         #     "list_of_all_qubits": list_of_all_qubits,
         # },
 
-        "res_spec": { # run 9a
-            "reps": 300, # 300
+        "res_spec": { # run 9a and 9c
+            "reps": 500, # 300
             "rounds": 1,
             "start": -1.7,       # MHz
             "step_size": 0.04,  #0.04 # MHz
@@ -95,9 +95,9 @@ if FRIDGE == "QUIET":
         "qubit_spec_ge": { # RR
             "reps": 500, #300
             "rounds": 1, #10
-            "start": list(VNA_qubit-2.0), # [MHz]
-            "stop": list(VNA_qubit+2.0), # [MHz]
-            "steps": 215, # 220 for -3 +3, 400 for -40, +40, 320 for -6 +6
+            "start": list(VNA_qubit-2.0), # [MHz], -2.0
+            "stop": list(VNA_qubit+2.0), # [MHz], +2.0
+            "steps": 215, # 215 for -2 +2, 220 for -3 +3, 400 for -40, +40, 320 for -6 +6
             "relax_delay":10,#1000 # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -182,7 +182,7 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ge": {
-            "reps": 115,#500,
+            "reps": 200,#115,
             "rounds": 1,  # 5
             "start": [0] * 6,  # [DAC units]
             "stop": [1] * 6,#[1.0] * 6,  # [DAC units]
