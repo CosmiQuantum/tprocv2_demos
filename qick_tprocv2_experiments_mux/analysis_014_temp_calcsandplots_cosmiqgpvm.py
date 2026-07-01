@@ -750,8 +750,8 @@ class SSFTempCalcAndPlots:
                 if calc_e_state_decay:
                     save_figs_path_ienew = os.path.join(save_figs_path, f"ie_new_fits")
                     os.makedirs(save_figs_path_ienew, exist_ok=True)
-                    ie_new_fit_results = self.fit_e_state_double_gaussian_iminuit(ie_new, qid=qid, dataset=idx, plot=True,
-                                        qubit_folder=save_figs_path_ienew, ig_new=ig_new) # ig_new here is optional. Can be plotted along e-state data if needed.
+                    ie_new_fit_results = self.fit_e_state_double_gaussian_iminuit(ie_new, qid=qid, dataset=idx, plot=False,
+                                        qubit_folder=save_figs_path_ienew, ig_new=None) # ig_new here is optional. Can be plotted along e-state data if needed.
 
                     if ie_new_fit_results is not None:
                         ie_new_ground_frac = ie_new_fit_results["ie_new_ground_frac"]
@@ -3967,6 +3967,1001 @@ class combined_Qtemp_studies:
         self.figure_quality = figure_quality
         self.number_of_qubits = number_of_qubits
 
+    def run_ssf_limitations_per_scan_for_runs(
+            self,
+            run_num_list,
+            fit_results_g_by_run,
+            date_times_t1_by_run,
+            t1_vals_by_run,
+            t1_errs_by_run,
+            t1_res_lengths_by_run,
+            out_dir,
+            n_qubits=6,
+            sensitive_fraction=0.5,
+            t1_match_max_dt_s=10.0, #10s for all runs except run6 science run (600s)
+            make_ssf_pe_table=True,
+            make_rpm_pe_table=False,
+            all_files_Qtemp_results_RPMs_by_run=None,
+            rpm_match_max_dt_s=10, #10s for all runs except run6 science run (600s)
+            verbose=True):
+        """
+        Run the full SSF limitation calculation pipeline for one or more runs.
+
+        For each run:
+            1. Match nearest T1 scan to each SSF scan.
+            2. Calculate per-scan SSF limitation table using SSF Pe.
+            3. Optionally match nearest RPM result to each SSF scan.
+            4. Optionally calculate per-scan SSF limitation table using RPM Pe.
+
+        Returns
+        -------
+        results : dict
+            results[run_num] contains:
+                "matched_t1_to_ssf"
+                "matched_rpm_to_ssf"              if requested
+                "per_scan_ssfPe"
+                "median_summary_ssfPe"
+                "per_scan_rpmPe"                 if requested
+                "median_summary_rpmPe"           if requested
+        """
+        os.makedirs(out_dir, exist_ok=True)
+        results = {}
+        for run_num in run_num_list:
+            if verbose:
+                print("\n" + "=" * 80)
+                print(f"Running SSF limitation calculations for run {run_num}")
+                print("=" * 80)
+
+            # ------------------------------------------------------------
+            # Check required SSF inputs
+            # ------------------------------------------------------------
+            if run_num not in fit_results_g_by_run:
+                print(f"Skipping run {run_num}: no SSF fit_results_g found.")
+                continue
+
+            # ------------------------------------------------------------
+            # Check required T1 inputs
+            # ------------------------------------------------------------
+            missing_t1_inputs = []
+
+            if run_num not in date_times_t1_by_run:
+                missing_t1_inputs.append("date_times_t1_by_run")
+
+            if run_num not in t1_vals_by_run:
+                missing_t1_inputs.append("t1_vals_by_run")
+
+            if run_num not in t1_errs_by_run:
+                missing_t1_inputs.append("t1_errs_by_run")
+
+            if run_num not in t1_res_lengths_by_run:
+                missing_t1_inputs.append("t1_res_lengths_by_run")
+
+            if missing_t1_inputs:
+                print(
+                    f"Skipping run {run_num}: missing T1 inputs: "
+                    + ", ".join(missing_t1_inputs))
+                continue
+
+            results[run_num] = {}
+
+            # ------------------------------------------------------------
+            # 1. Match nearest T1 scan to each SSF scan
+            # ------------------------------------------------------------
+            matched_t1_to_ssf = self.match_t1_to_ssf_scans(
+                fit_results_g=fit_results_g_by_run[run_num],
+                date_times_t1=date_times_t1_by_run[run_num],
+                t1_vals=t1_vals_by_run[run_num],
+                t1_fit_err=t1_errs_by_run[run_num],
+                t1_res_lengths=t1_res_lengths_by_run[run_num],
+                max_dt_s=t1_match_max_dt_s,
+                n_qubits=n_qubits,
+                verbose=verbose,
+            )
+
+            results[run_num]["matched_t1_to_ssf"] = matched_t1_to_ssf
+
+            # ------------------------------------------------------------
+            # 2. Calculate table using SSF thermal populations
+            # ------------------------------------------------------------
+            if make_ssf_pe_table:
+                save_path_ssfPe = os.path.join(
+                    out_dir,
+                    f"run{run_num}_ssf_limitations_per_scan_using_SSF_Pe.csv")
+
+                per_scan_df_ssfPe, median_summary_df_ssfPe = (
+                    self.calculate_ssf_limitations_per_scan(
+                        run_num=run_num,
+                        fit_results_g=fit_results_g_by_run[run_num],
+                        matched_t1_to_ssf=matched_t1_to_ssf,
+                        matched_rpm_to_ssf=None,
+                        thermal_population_source="ssf",
+                        sensitive_fraction=sensitive_fraction,
+                        n_qubits=n_qubits,
+                        save_path=save_path_ssfPe,
+                        verbose=verbose,
+                    )
+                )
+
+                results[run_num]["per_scan_ssfPe"] = per_scan_df_ssfPe
+                results[run_num]["median_summary_ssfPe"] = median_summary_df_ssfPe
+
+            # ------------------------------------------------------------
+            # 3. Optional: calculate table using RPM thermal populations
+            # ------------------------------------------------------------
+            if make_rpm_pe_table:
+
+                if all_files_Qtemp_results_RPMs_by_run is None:
+                    print(
+                        f"Skipping RPM-Pe table for run {run_num}: "
+                        "all_files_Qtemp_results_RPMs_by_run was not provided.")
+                    continue
+
+                if run_num not in all_files_Qtemp_results_RPMs_by_run:
+                    print(f"Skipping RPM-Pe table for run {run_num}: no RPM results found.")
+                    continue
+
+                all_files_Qtemp_results_RPMs = all_files_Qtemp_results_RPMs_by_run[run_num]
+
+                if not all_files_Qtemp_results_RPMs:
+                    print(f"Skipping RPM-Pe table for run {run_num}: RPM results are empty.")
+                    continue
+
+                matched_rpm_to_ssf = self.match_rpm_to_ssf_scans(
+                    fit_results_g=fit_results_g_by_run[run_num],
+                    all_files_Qtemp_results_RPMs=all_files_Qtemp_results_RPMs,
+                    max_dt_s=rpm_match_max_dt_s,
+                    n_qubits=n_qubits,
+                    verbose=verbose,
+                )
+
+                results[run_num]["matched_rpm_to_ssf"] = matched_rpm_to_ssf
+
+                save_path_rpmPe = os.path.join(out_dir,f"run{run_num}_ssf_limitations_per_scan_using_RPM_Pe.csv")
+
+                per_scan_df_rpmPe, median_summary_df_rpmPe = (
+                    self.calculate_ssf_limitations_per_scan(
+                        run_num=run_num,
+                        fit_results_g=fit_results_g_by_run[run_num],
+                        matched_t1_to_ssf=matched_t1_to_ssf,
+                        matched_rpm_to_ssf=matched_rpm_to_ssf,
+                        thermal_population_source="rpm",
+                        sensitive_fraction=sensitive_fraction,
+                        n_qubits=n_qubits,
+                        save_path=save_path_rpmPe,
+                        verbose=verbose,
+                    )
+                )
+
+                results[run_num]["per_scan_rpmPe"] = per_scan_df_rpmPe
+                results[run_num]["median_summary_rpmPe"] = median_summary_df_rpmPe
+
+        return results
+
+    def match_rpm_to_ssf_scans(
+            self,
+            fit_results_g,
+            all_files_Qtemp_results_RPMs,
+            max_dt_s=10, # 10s for all runs except run 6 SCIENCE RUN (600s)
+            n_qubits=6,
+            verbose=True):
+        """
+        Match each accepted SSF scan to the nearest RPM thermal-population result
+        for the same qubit.
+
+        The SSF scan is the anchor. For each SSF timestamp, this finds the nearest
+        RPM timestamp for that qubit.
+
+        If max_dt_s is None, the nearest RPM is always used.
+        If max_dt_s is a number, the match is only accepted if abs(dt) <= max_dt_s.
+
+        Returns
+        -------
+        matched_rpm_by_qid : dict
+            matched_rpm_by_qid[qid][scan_index] corresponds to fit_results_g[qid][scan_index].
+        """
+        def to_datetime(x):
+            if x is None:
+                return pd.NaT
+
+            if isinstance(x, pd.Timestamp):
+                return x.to_pydatetime()
+
+            if isinstance(x, datetime.datetime):
+                return x
+
+            if isinstance(x, (int, float, np.integer, np.floating)):
+                if np.isfinite(x):
+                    return pd.to_datetime(x, unit="s").to_pydatetime()
+                return pd.NaT
+
+            return pd.to_datetime(x, errors="coerce").to_pydatetime()
+
+        def get_q_records(obj, qid):
+            if obj is None:
+                return []
+            if isinstance(obj, dict):
+                return obj.get(qid, obj.get(str(qid), []))
+            if qid < len(obj):
+                return obj[qid]
+            return []
+
+        # Flatten RPM results into per-qubit lists.
+        rpm_by_qid = {qid: [] for qid in range(n_qubits)}
+
+        for file_result in all_files_Qtemp_results_RPMs:
+            qubits = file_result.get("qubits", {})
+
+            for q_key, qrec in qubits.items():
+                try:
+                    qid = int(q_key)
+                except Exception:
+                    continue
+
+                if qid not in rpm_by_qid:
+                    rpm_by_qid[qid] = []
+
+                rpm_by_qid[qid].append(qrec)
+
+        matched_rpm_by_qid = {qid: [] for qid in range(n_qubits)}
+
+        for qid in range(n_qubits):
+
+            ssf_recs = get_q_records(fit_results_g, qid)
+            rpm_recs = rpm_by_qid.get(qid, [])
+
+            qlabel = f"Q{qid + 1}"
+
+            if len(rpm_recs) == 0:
+                if verbose and len(ssf_recs) > 0:
+                    print(f"{qlabel}: no RPM entries available for matching.")
+
+                for rec in ssf_recs:
+                    matched_rpm_by_qid[qid].append({
+                        "matched": False,
+                        "ssf_timestamp": to_datetime(rec.get("timestamp", None)),
+                        "rpm_timestamp": pd.NaT,
+                        "dt_s": np.nan,
+                        "Pe": np.nan,
+                        "Pe_err": np.nan,
+                        "T_mK": np.nan,
+                        "T_mK_err": np.nan,
+                        "rpm_file": None,
+                    })
+
+                continue
+
+            rpm_dates_q = [to_datetime(qrec.get("date", None)) for qrec in rpm_recs]
+
+            rpm_ts_q = np.asarray([
+                pd.Timestamp(dt).timestamp() if not pd.isna(dt) else np.nan
+                for dt in rpm_dates_q], dtype=float)
+
+            n_matched = 0
+
+            for rec in ssf_recs:
+
+                ssf_dt = to_datetime(rec.get("timestamp", None))
+
+                if pd.isna(ssf_dt):
+                    matched_rpm_by_qid[qid].append({
+                        "matched": False,
+                        "ssf_timestamp": pd.NaT,
+                        "rpm_timestamp": pd.NaT,
+                        "dt_s": np.nan,
+                        "Pe": np.nan,
+                        "Pe_err": np.nan,
+                        "T_mK": np.nan,
+                        "T_mK_err": np.nan,
+                        "rpm_file": None,
+                    })
+                    continue
+
+                ssf_ts = pd.Timestamp(ssf_dt).timestamp()
+                dt_s_all = np.abs(rpm_ts_q - ssf_ts)
+
+                if np.all(~np.isfinite(dt_s_all)):
+                    best_idx = None
+                    best_dt_s = np.nan
+                    matched = False
+                else:
+                    best_idx = int(np.nanargmin(dt_s_all))
+                    best_dt_s = float(dt_s_all[best_idx])
+
+                    if max_dt_s is None:
+                        matched = True
+                    else:
+                        matched = best_dt_s <= max_dt_s
+
+                if matched:
+                    n_matched += 1
+                    qrec = rpm_recs[best_idx]
+
+                    matched_rpm_by_qid[qid].append({
+                        "matched": True,
+                        "ssf_timestamp": ssf_dt,
+                        "rpm_timestamp": rpm_dates_q[best_idx],
+                        "dt_s": best_dt_s,
+                        "Pe": float(qrec.get("P_e", np.nan)),
+                        "Pe_err": float(qrec.get("P_e_err_total", np.nan)),
+                        "T_mK": float(qrec.get("T_mK", np.nan)),
+                        "T_mK_err": float(qrec.get("T_mK_err", np.nan)),
+                        "rpm_file": qrec.get("filepath", None),
+                    })
+
+                else:
+                    matched_rpm_by_qid[qid].append({
+                        "matched": False,
+                        "ssf_timestamp": ssf_dt,
+                        "rpm_timestamp": rpm_dates_q[best_idx] if best_idx is not None else pd.NaT,
+                        "dt_s": best_dt_s,
+                        "Pe": np.nan,
+                        "Pe_err": np.nan,
+                        "T_mK": np.nan,
+                        "T_mK_err": np.nan,
+                        "rpm_file": None,
+                    })
+
+            if verbose:
+                if max_dt_s is None:
+                    print(f"{qlabel}: matched {n_matched}/{len(ssf_recs)} SSF scans to nearest RPM scans.")
+                else:
+                    print(
+                        f"{qlabel}: matched {n_matched}/{len(ssf_recs)} SSF scans "
+                        f"to RPM scans within {max_dt_s:g} s."
+                    )
+
+        return matched_rpm_by_qid
+
+    def calculate_ssf_limitations_per_scan(
+            self,
+            run_num,
+            fit_results_g,
+            matched_t1_to_ssf,
+            matched_rpm_to_ssf=None,
+            thermal_population_source="ssf",  # options: "ssf" or "rpm"
+            sensitive_fraction=0.5, # for T1 decay during readout
+            n_qubits=6,
+            save_path=None,
+            verbose=True):
+        """
+        Calculate SSF limitation contributions per accepted SSF scan.
+
+        Contribution logic:
+            - SNR, SSF, ie_new_Pg come from each SSF fit record.
+            - T1 and readout length come from the nearest matched T1 scan.
+            - Pe can come from either:
+                thermal_population_source="ssf":
+                    Pe comes from each SSF fit record, rec["Pe"].
+                thermal_population_source="rpm":
+                    Pe comes from matched_rpm_to_ssf[qid][scan_index].
+
+        Parameters
+        ----------
+        run_num : int or float
+            Run number.
+
+        fit_results_g : dict
+            fit_results_g[qid] = list of accepted SSF fit dictionaries.
+
+        matched_t1_to_ssf : dict
+            matched_t1_to_ssf[qid][scan_index] = matched T1/readout info.
+            This should be produced by match_t1_to_ssf_scans(...).
+
+        matched_rpm_to_ssf : dict or None
+            matched_rpm_to_ssf[qid][scan_index] = matched RPM Pe info.
+            Required only if thermal_population_source="rpm".
+
+        thermal_population_source : str
+            "ssf" or "rpm".
+
+        sensitive_fraction : float
+            Fraction of the readout window used for the caught-T1 estimate.
+            Default 0.5 means first half of readout window.
+
+        save_path : str or None
+            Optional CSV path for the full per-scan table.
+
+        Returns
+        -------
+        per_scan_df : pandas.DataFrame
+            One row per matched SSF scan.
+
+        median_summary_df : pandas.DataFrame
+            Median contribution table grouped by qubit.
+        """
+
+        import os
+        import numpy as np
+        import pandas as pd
+        import math
+
+        def snr_to_overlap_error(snr):
+            if snr is None or not np.isfinite(snr):
+                return np.nan
+            return 0.5 * math.erfc(snr / (2.0 * math.sqrt(2.0)))
+
+        def t1_decay_probability(readout_length_us, t1_us):
+            if not np.isfinite(readout_length_us) or not np.isfinite(t1_us):
+                return np.nan
+            if readout_length_us < 0 or t1_us <= 0:
+                return np.nan
+            return 1.0 - np.exp(-readout_length_us / t1_us)
+
+        def caught_t1_decay_probability(readout_length_us, t1_us, sensitive_fraction=0.5):
+            if not np.isfinite(readout_length_us) or not np.isfinite(t1_us):
+                return np.nan
+            if readout_length_us < 0 or t1_us <= 0:
+                return np.nan
+
+            effective_readout_length_us = sensitive_fraction * readout_length_us
+            return 1.0 - np.exp(-effective_readout_length_us / t1_us)
+
+        def percent(x):
+            if x is None or not np.isfinite(x):
+                return np.nan
+            return 100.0 * x
+
+        def get_q_records(obj, qid):
+            if obj is None:
+                return []
+            if isinstance(obj, dict):
+                return obj.get(qid, obj.get(str(qid), []))
+            if qid < len(obj):
+                return obj[qid]
+            return []
+
+        rows = []
+
+        thermal_population_source = str(thermal_population_source).lower()
+
+        if thermal_population_source not in ["ssf", "rpm"]:
+            raise ValueError("thermal_population_source must be 'ssf' or 'rpm'.")
+
+        if thermal_population_source == "rpm" and matched_rpm_to_ssf is None:
+            raise ValueError(
+                "thermal_population_source='rpm' requires matched_rpm_to_ssf."
+            )
+
+        if verbose:
+            print(f"\n================ SSF LIMITATION ESTIMATES PER SCAN: RUN {run_num} ================")
+            print(f"Using sensitive_fraction = {sensitive_fraction:.2f}")
+            print(f"Thermal population source = {thermal_population_source.upper()}")
+            print("Caught T1 decay uses only this fraction of the readout window.\n")
+
+        for qid in range(n_qubits):
+
+            ssf_recs = get_q_records(fit_results_g, qid)
+            t1_matches = get_q_records(matched_t1_to_ssf, qid)
+            rpm_matches = get_q_records(matched_rpm_to_ssf, qid)
+
+            qlabel = f"Q{qid + 1}"
+
+            if len(ssf_recs) == 0:
+                continue
+
+            if len(t1_matches) == 0:
+                if verbose:
+                    print(f"{qlabel}: no matched T1 list found. Skipping.")
+                continue
+
+            n_scan = min(len(ssf_recs), len(t1_matches))
+
+            if thermal_population_source == "rpm":
+                n_scan = min(n_scan, len(rpm_matches))
+
+            if len(ssf_recs) != len(t1_matches) and verbose:
+                print(
+                    f"{qlabel}: warning, SSF records and T1 matches have different lengths. "
+                    f"Using min length = {n_scan}."
+                )
+
+            if thermal_population_source == "rpm" and len(ssf_recs) != len(rpm_matches) and verbose:
+                print(
+                    f"{qlabel}: warning, SSF records and RPM matches have different lengths. "
+                    f"Using min length = {n_scan}."
+                )
+
+            n_used = 0
+
+            for scan_index in range(n_scan):
+
+                rec = ssf_recs[scan_index]
+                t1_match = t1_matches[scan_index]
+
+                if not t1_match.get("matched", False):
+                    continue
+
+                # -------------------------
+                # Inputs from SSF scan
+                # -------------------------
+                snr = float(rec.get("ssf_SNR", np.nan))
+
+                # -------------------------
+                # Thermal population source
+                # -------------------------
+                if thermal_population_source == "ssf":
+                    Pe = float(rec.get("Pe", np.nan))
+                    Pe_err = float(rec.get("total_sigma_Pe", np.nan))
+                    Pe_source = "SSF"
+                    Pe_timestamp = rec.get("timestamp", None)
+                    Pe_match_dt_s = 0.0
+                    Pe_temperature_mK = float(rec.get("temperature_mK", np.nan))
+                    Pe_temperature_err_mK = float(rec.get("temperature_err_mK", np.nan))
+
+                elif thermal_population_source == "rpm":
+                    rpm_match = rpm_matches[scan_index]
+
+                    if not rpm_match.get("matched", False):
+                        continue
+
+                    Pe = float(rpm_match.get("Pe", np.nan))
+                    Pe_err = float(rpm_match.get("Pe_err", np.nan))
+                    Pe_source = "RPM"
+                    Pe_timestamp = rpm_match.get("rpm_timestamp", None)
+                    Pe_match_dt_s = float(rpm_match.get("dt_s", np.nan))
+                    Pe_temperature_mK = float(rpm_match.get("T_mK", np.nan))
+                    Pe_temperature_err_mK = float(rpm_match.get("T_mK_err", np.nan))
+
+                ie_new_Pg = float(rec.get("ie_new_ground_frac", np.nan))
+                ie_new_Pg_err = float(rec.get("ie_new_ground_frac_err", np.nan))
+
+                SSF = float(rec.get("ssf_fid", np.nan))
+                SSF_err = float(rec.get("ssf_err_total", np.nan))
+
+                ssf_timestamp = rec.get("timestamp", None)
+                dataset = rec.get("dataset", scan_index)
+
+                qfreq_mhz = float(rec.get("qfreq_mhz", np.nan))
+                qfreq_mhz_err = float(rec.get("qfreq_mhz_err", np.nan))
+
+                # -------------------------
+                # Inputs from matched T1 scan
+                # -------------------------
+                T1_us = float(t1_match.get("t1_us", np.nan))
+                T1_err_us = float(t1_match.get("t1_err_us", np.nan))
+                readout_length_us = float(t1_match.get("readout_length_us", np.nan))
+                t1_timestamp = t1_match.get("t1_timestamp", None)
+                t1_match_dt_s = float(t1_match.get("dt_s", np.nan))
+
+                # Skip if the key quantities are missing
+                if not (
+                        np.isfinite(snr)
+                        and np.isfinite(Pe)
+                        and np.isfinite(ie_new_Pg)
+                        and np.isfinite(SSF)
+                        and np.isfinite(T1_us)
+                        and np.isfinite(readout_length_us)
+                ):
+                    continue
+
+                # -------------------------
+                # Calculations
+                # -------------------------
+
+                # 1. Finite-SNR Gaussian overlap error
+                snr_overlap_error = snr_to_overlap_error(snr)
+
+                # 2. Thermal population contribution
+                thermal_error = Pe
+
+                # 3. Full-window T1 decay probability
+                full_window_t1_decay_prob = t1_decay_probability(
+                    readout_length_us=readout_length_us,
+                    t1_us=T1_us,
+                )
+
+                # 4. "Caught T1" decay estimate
+                caught_t1_decay_prob = caught_t1_decay_probability(
+                    readout_length_us=readout_length_us,
+                    t1_us=T1_us,
+                    sensitive_fraction=sensitive_fraction,
+                )
+
+                # 5. Residual unexplained excited-state ground remnant
+                if (
+                        np.isfinite(ie_new_Pg)
+                        and np.isfinite(thermal_error)
+                        and np.isfinite(caught_t1_decay_prob)
+                ):
+                    residual_unexplained_loss = max(
+                        0.0,
+                        ie_new_Pg - thermal_error - caught_t1_decay_prob,
+                    )
+
+                    explained_by_pe_and_t1 = min(
+                        ie_new_Pg,
+                        thermal_error + caught_t1_decay_prob,
+                    )
+
+                    if ie_new_Pg > 0:
+                        fraction_explained_by_pe_and_t1 = (
+                                explained_by_pe_and_t1 / ie_new_Pg
+                        )
+                        fraction_unexplained = residual_unexplained_loss / ie_new_Pg
+                    else:
+                        fraction_explained_by_pe_and_t1 = np.nan
+                        fraction_unexplained = np.nan
+                else:
+                    residual_unexplained_loss = np.nan
+                    explained_by_pe_and_t1 = np.nan
+                    fraction_explained_by_pe_and_t1 = np.nan
+                    fraction_unexplained = np.nan
+
+                # 6. Main rough SSF infidelity budget
+                estimated_total_error = np.nansum([
+                    snr_overlap_error,
+                    thermal_error,
+                    caught_t1_decay_prob,
+                    residual_unexplained_loss,
+                ])
+
+                # Alternative direct budget using observed excited-state loss
+                estimated_total_error_using_iePg = np.nansum([
+                    snr_overlap_error,
+                    ie_new_Pg,
+                ])
+
+                measured_ssf_infidelity = 1.0 - SSF
+
+                row = {
+                    "Run": run_num,
+                    "Qubit_index": qid,
+                    "Qubit": qlabel,
+                    "Scan_index": scan_index,
+                    "Dataset": dataset,
+
+                    # Timestamps / matching
+                    "SSF_timestamp": ssf_timestamp,
+                    "T1_timestamp": t1_timestamp,
+                    "T1_match_dt_s": t1_match_dt_s,
+
+                    # Inputs
+                    "SNR": snr,
+
+                    "SSF_frac": SSF,
+                    "SSF_percent": percent(SSF),
+                    "SSF_err_frac": SSF_err,
+                    "SSF_err_percent": percent(SSF_err),
+
+                    "Measured_SSF_infidelity_frac": measured_ssf_infidelity,
+                    "Measured_SSF_infidelity_percent": percent(measured_ssf_infidelity),
+
+                    # Pe source and thermal population
+                    "Pe_source": Pe_source,
+                    "Pe_timestamp": Pe_timestamp,
+                    "Pe_match_dt_s": Pe_match_dt_s,
+                    "Pe_temperature_mK": Pe_temperature_mK,
+                    "Pe_temperature_err_mK": Pe_temperature_err_mK,
+
+                    "Pe_frac": Pe,
+                    "Pe_percent": percent(Pe),
+                    "Pe_err_frac": Pe_err,
+                    "Pe_err_percent": percent(Pe_err),
+
+                    "ie_new_Pg_frac": ie_new_Pg,
+                    "ie_new_Pg_percent": percent(ie_new_Pg),
+                    "ie_new_Pg_err_frac": ie_new_Pg_err,
+                    "ie_new_Pg_err_percent": percent(ie_new_Pg_err),
+
+                    "T1_us": T1_us,
+                    "T1_err_us": T1_err_us,
+                    "readout_length_us": readout_length_us,
+
+                    "qfreq_mhz": qfreq_mhz,
+                    "qfreq_mhz_err": qfreq_mhz_err,
+
+                    # Finite-SNR contribution
+                    "SNR_overlap_error_frac": snr_overlap_error,
+                    "SNR_overlap_error_percent": percent(snr_overlap_error),
+
+                    # T1 diagnostics
+                    "full_window_T1_decay_prob_frac": full_window_t1_decay_prob,
+                    "full_window_T1_decay_prob_percent": percent(full_window_t1_decay_prob),
+
+                    "caught_T1_decay_frac": caught_t1_decay_prob,
+                    "caught_T1_decay_percent": percent(caught_t1_decay_prob),
+
+                    # Colleague-style decomposition of ie_new_Pg
+                    "Pe_plus_caught_T1_frac": thermal_error + caught_t1_decay_prob,
+                    "Pe_plus_caught_T1_percent": percent(thermal_error + caught_t1_decay_prob),
+
+                    "explained_by_Pe_and_T1_frac": explained_by_pe_and_t1,
+                    "explained_by_Pe_and_T1_percent": percent(explained_by_pe_and_t1),
+
+                    "fraction_explained_by_Pe_and_T1_frac": fraction_explained_by_pe_and_t1,
+                    "fraction_explained_by_Pe_and_T1_percent": percent(fraction_explained_by_pe_and_t1),
+
+                    "residual_unexplained_loss_frac": residual_unexplained_loss,
+                    "residual_unexplained_loss_percent": percent(residual_unexplained_loss),
+
+                    "fraction_unexplained_frac": fraction_unexplained,
+                    "fraction_unexplained_percent": percent(fraction_unexplained),
+
+                    # Main rough totals
+                    "estimated_total_error_frac": estimated_total_error,
+                    "estimated_total_error_percent": percent(estimated_total_error),
+
+                    "estimated_total_error_using_iePg_frac": estimated_total_error_using_iePg,
+                    "estimated_total_error_using_iePg_percent": percent(estimated_total_error_using_iePg),
+                }
+
+                rows.append(row)
+                n_used += 1
+
+            if verbose:
+                print(
+                    f"{qlabel}: calculated contribution budget for "
+                    f"{n_used}/{len(ssf_recs)} SSF scans."
+                )
+
+        per_scan_df = pd.DataFrame(rows)
+
+        if per_scan_df.empty:
+            if verbose:
+                print("No per-scan SSF limitation rows were created.")
+            return per_scan_df, per_scan_df
+
+        # -------------------------
+        # Median summary per qubit and Pe source
+        # -------------------------
+        summary_cols = [
+            "SNR",
+            "SSF_percent",
+            "Measured_SSF_infidelity_percent",
+            "SNR_overlap_error_percent",
+            "Pe_percent",
+            "Pe_err_percent",
+            "Pe_match_dt_s",
+            "Pe_temperature_mK",
+            "Pe_temperature_err_mK",
+            "ie_new_Pg_percent",
+            "ie_new_Pg_err_percent",
+            "T1_us",
+            "T1_err_us",
+            "readout_length_us",
+            "T1_match_dt_s",
+            "caught_T1_decay_percent",
+            "Pe_plus_caught_T1_percent",
+            "residual_unexplained_loss_percent",
+            "fraction_unexplained_percent",
+            "full_window_T1_decay_prob_percent",
+            "estimated_total_error_percent",
+            "estimated_total_error_using_iePg_percent",
+        ]
+
+        median_summary_df = (
+            per_scan_df
+            .groupby(["Run", "Qubit_index", "Qubit", "Pe_source"], as_index=False)[summary_cols]
+            .median(numeric_only=True)
+        )
+
+        counts_df = (
+            per_scan_df
+            .groupby(["Run", "Qubit_index", "Qubit", "Pe_source"], as_index=False)
+            .size()
+            .rename(columns={"size": "N_scans"})
+        )
+
+        median_summary_df = median_summary_df.merge(
+            counts_df,
+            on=["Run", "Qubit_index", "Qubit", "Pe_source"],
+            how="left",
+        )
+
+        median_summary_df = median_summary_df.rename(columns={
+            "SNR": "Median readout SNR",
+            "SSF_percent": "Median SSF (%)",
+            "Measured_SSF_infidelity_percent": "Measured SSF infidelity (%)",
+            "SNR_overlap_error_percent": "Finite-SNR misassignment (%)",
+            "Pe_percent": "Thermal population Pe (%)",
+            "Pe_err_percent": "Pe error (%)",
+            "Pe_match_dt_s": "Pe match dt median (s)",
+            "Pe_temperature_mK": "Pe source temp median (mK)",
+            "Pe_temperature_err_mK": "Pe source temp err median (mK)",
+            "ie_new_Pg_percent": "Observed excited-state loss (%)",
+            "ie_new_Pg_err_percent": "Observed excited-state loss err (%)",
+            "T1_us": "Matched T1 median (us)",
+            "T1_err_us": "Matched T1 err median (us)",
+            "readout_length_us": "Readout length median (us)",
+            "T1_match_dt_s": "T1 match dt median (s)",
+            "caught_T1_decay_percent": "Caught T1 decay estimate (%)",
+            "Pe_plus_caught_T1_percent": "Pe + caught T1 (%)",
+            "residual_unexplained_loss_percent": "Residual unexplained loss (%)",
+            "fraction_unexplained_percent": "Unexplained fraction of observed loss (%)",
+            "full_window_T1_decay_prob_percent": "Full-window T1 decay diagnostic (%)",
+            "estimated_total_error_percent": "Estimated SSF infidelity budget (%)",
+            "estimated_total_error_using_iePg_percent": "SNR + observed e-loss budget (%)",
+        })
+
+        median_summary_df = median_summary_df.round({
+            "Median readout SNR": 4,
+            "Median SSF (%)": 2,
+            "Measured SSF infidelity (%)": 2,
+            "Finite-SNR misassignment (%)": 2,
+            "Thermal population Pe (%)": 3,
+            "Pe error (%)": 3,
+            "Pe match dt median (s)": 3,
+            "Pe source temp median (mK)": 3,
+            "Pe source temp err median (mK)": 3,
+            "Observed excited-state loss (%)": 2,
+            "Observed excited-state loss err (%)": 2,
+            "Matched T1 median (us)": 2,
+            "Matched T1 err median (us)": 2,
+            "Readout length median (us)": 3,
+            "T1 match dt median (s)": 3,
+            "Caught T1 decay estimate (%)": 2,
+            "Pe + caught T1 (%)": 2,
+            "Residual unexplained loss (%)": 2,
+            "Unexplained fraction of observed loss (%)": 1,
+            "Full-window T1 decay diagnostic (%)": 2,
+            "Estimated SSF infidelity budget (%)": 2,
+            "SNR + observed e-loss budget (%)": 2,
+        })
+
+        if verbose:
+            print("\n================ MEDIAN SSF LIMITATION TABLE ================")
+            print(median_summary_df.to_string(index=False))
+
+        if save_path is not None:
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+            per_scan_df.to_csv(save_path, index=False)
+
+            summary_save_path = save_path.replace(".csv", "_median_summary.csv")
+            median_summary_df.to_csv(summary_save_path, index=False)
+
+            if verbose:
+                print(f"\nSaved per-scan table: {save_path}")
+                print(f"Saved median summary: {summary_save_path}")
+
+        return per_scan_df, median_summary_df
+
+    def match_t1_to_ssf_scans(
+            self,
+            fit_results_g,
+            date_times_t1,
+            t1_vals,
+            t1_fit_err,
+            t1_res_lengths,
+            max_dt_s=10.0, # 10us for any run except run 6 SCIENCE RUN, which was 600s.
+            n_qubits=6,
+            verbose=True):
+
+        def to_datetime(x):
+            if x is None:
+                return pd.NaT
+
+            if isinstance(x, pd.Timestamp):
+                return x.to_pydatetime()
+
+            if isinstance(x, datetime.datetime):
+                return x
+
+            if isinstance(x, (int, float, np.integer, np.floating)):
+                if np.isfinite(x):
+                    return pd.to_datetime(x, unit="s").to_pydatetime()
+                return pd.NaT
+
+            return pd.to_datetime(x, errors="coerce").to_pydatetime()
+
+        def get_q_array(obj, qid):
+            if obj is None:
+                return []
+
+            if isinstance(obj, dict):
+                return obj.get(qid, obj.get(str(qid), []))
+
+            if qid < len(obj):
+                return obj[qid]
+
+            return []
+
+        matched_t1_by_qid = {qid: [] for qid in range(n_qubits)}
+
+        for qid in range(n_qubits):
+
+            ssf_recs = fit_results_g.get(qid, fit_results_g.get(str(qid), []))
+
+            t1_dates_q = [to_datetime(x) for x in get_q_array(date_times_t1, qid)]
+            t1_vals_q = np.asarray(get_q_array(t1_vals, qid), dtype=float)
+            t1_errs_q = np.asarray(get_q_array(t1_fit_err, qid), dtype=float)
+            res_lengths_q = np.asarray(get_q_array(t1_res_lengths, qid), dtype=float)
+
+            n_t1 = min(
+                len(t1_dates_q),
+                len(t1_vals_q),
+                len(t1_errs_q),
+                len(res_lengths_q),
+            )
+
+            if n_t1 == 0:
+                if verbose and len(ssf_recs) > 0:
+                    print(f"Q{qid + 1}: no T1 entries available for matching.")
+
+                for rec in ssf_recs:
+                    matched_t1_by_qid[qid].append({
+                        "matched": False,
+                        "ssf_timestamp": to_datetime(rec.get("timestamp", None)),
+                        "t1_timestamp": pd.NaT,
+                        "dt_s": np.nan,
+                        "t1_us": np.nan,
+                        "t1_err_us": np.nan,
+                        "readout_length_us": np.nan,
+                    })
+
+                continue
+
+            t1_dates_q = t1_dates_q[:n_t1]
+            t1_vals_q = t1_vals_q[:n_t1]
+            t1_errs_q = t1_errs_q[:n_t1]
+            res_lengths_q = res_lengths_q[:n_t1]
+
+            t1_ts_q = np.asarray([
+                pd.Timestamp(dt).timestamp() if not pd.isna(dt) else np.nan
+                for dt in t1_dates_q], dtype=float)
+
+            n_matched = 0 # matches it finds
+
+            for rec in ssf_recs:
+                ssf_dt = to_datetime(rec.get("timestamp", None))
+
+                if pd.isna(ssf_dt):
+                    matched_t1_by_qid[qid].append({
+                        "matched": False,
+                        "ssf_timestamp": pd.NaT,
+                        "t1_timestamp": pd.NaT,
+                        "dt_s": np.nan,
+                        "t1_us": np.nan,
+                        "t1_err_us": np.nan,
+                        "readout_length_us": np.nan,
+                    })
+                    continue
+
+                # Find nearest T1 scan to this SSF scan.
+                # If nearest T1 scan is within 10 seconds, use it.
+                # Otherwise, reject the match.
+                ssf_ts = pd.Timestamp(ssf_dt).timestamp()
+                dt_s_all = np.abs(t1_ts_q - ssf_ts)
+                if np.all(~np.isfinite(dt_s_all)):
+                    best_idx = None
+                    best_dt_s = np.nan
+                    matched = False
+                else:
+                    best_idx = int(np.nanargmin(dt_s_all))
+                    best_dt_s = float(dt_s_all[best_idx])
+                    matched = best_dt_s <= max_dt_s
+
+                if matched:
+                    n_matched += 1
+                    matched_t1_by_qid[qid].append({
+                        "matched": True,
+                        "ssf_timestamp": ssf_dt,
+                        "t1_timestamp": t1_dates_q[best_idx],
+                        "dt_s": best_dt_s,
+                        "t1_us": float(t1_vals_q[best_idx]),
+                        "t1_err_us": float(t1_errs_q[best_idx]),
+                        "readout_length_us": float(res_lengths_q[best_idx]),
+                    })
+
+                else:
+                    matched_t1_by_qid[qid].append({
+                        "matched": False,
+                        "ssf_timestamp": ssf_dt,
+                        "t1_timestamp": t1_dates_q[best_idx] if best_idx is not None else pd.NaT,
+                        "dt_s": best_dt_s,
+                        "t1_us": np.nan,
+                        "t1_err_us": np.nan,
+                        "readout_length_us": np.nan,
+                    })
+
+            if verbose:
+                print(
+                    f"Q{qid + 1}: matched {n_matched}/{len(ssf_recs)} SSF scans "
+                    f"to T1 scans within {max_dt_s:g} s."
+                )
+
+        return matched_t1_by_qid
+
     def create_processed_coherence_inputs(
             self,
             coherence_cache_dir,
@@ -3979,6 +4974,7 @@ class combined_Qtemp_studies:
             date_times_t1,
             t1_vals,
             t1_fit_err,
+            t1_res_lengths,
             date_times_t2r,
             t2r_vals,
             t2r_fit_err,
@@ -4029,6 +5025,9 @@ class combined_Qtemp_studies:
 
         t1_fit_err : list or dict
             T1 fit errors.
+
+        t1_res_lengths : list or dict
+            readout/pulse length during T1 measurement.
 
         date_times_t2r : list
             Timestamps for T2 Ramsey measurements.
@@ -4102,6 +5101,7 @@ class combined_Qtemp_studies:
             "t1_fit_err": t1_fit_err,
             "I_per_pt_errs": I_per_pt_errs,
             "Q_per_pt_errs": Q_per_pt_errs,
+            "res_lengths": t1_res_lengths,
         }
 
         t2r_data = {
@@ -4187,6 +5187,9 @@ class combined_Qtemp_studies:
         t1_fit_err : list or dict
             T1 fit errors.
 
+        res_lengths : list or dict
+            readout/pulse length during T1 measurement
+
         date_times_t2r : list
             Timestamps for T2 Ramsey measurements.
 
@@ -4252,6 +5255,7 @@ class combined_Qtemp_studies:
         date_times_t1 = t1_data["date_times_t1"]
         t1_vals = t1_data["t1_vals"]
         t1_fit_err = t1_data["t1_fit_err"]
+        res_lengths_t1_scans = t1_data["res_lengths"]
 
         I_per_pt_errs = t1_data.get("I_per_pt_errs", None)
         Q_per_pt_errs = t1_data.get("Q_per_pt_errs", None)
@@ -4273,6 +5277,7 @@ class combined_Qtemp_studies:
             date_times_t1,
             t1_vals,
             t1_fit_err,
+            res_lengths_t1_scans,
             date_times_t2r,
             t2r_vals,
             t2r_fit_err,
@@ -4312,7 +5317,7 @@ class combined_Qtemp_studies:
         -------
         date_times_res_spec, res_freqs,
         date_times_q_spec, q_freqs, qspec_fit_err,
-        date_times_t1, t1_vals, t1_fit_err,
+        date_times_t1, t1_vals, t1_fit_err, res_lengths
         date_times_t2r, t2r_vals, t2r_fit_err,
         date_times_t2e, t2e_vals, t2e_fit_err,
         I_per_pt_errs, Q_per_pt_errs
@@ -4487,6 +5492,7 @@ class combined_Qtemp_studies:
                     date_times_t1=date_times_t1,
                     t1_vals=t1_vals,
                     t1_fit_err=t1_fit_err,
+                    t1_res_lengths = res_lengths,
                     date_times_t2r=date_times_t2r,
                     t2r_vals=t2r_vals,
                     t2r_fit_err=t2r_fit_err,
@@ -4506,6 +5512,7 @@ class combined_Qtemp_studies:
             date_times_t1,
             t1_vals,
             t1_fit_err,
+            res_lengths, # from T1 scans
             date_times_t2r,
             t2r_vals,
             t2r_fit_err,

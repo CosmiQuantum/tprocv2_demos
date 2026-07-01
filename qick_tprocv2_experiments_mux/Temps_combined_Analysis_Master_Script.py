@@ -31,7 +31,7 @@ from pathlib import Path
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 5 #Options for QUIET: 5(for coherence only),6,7,8,9,9.2(this is run 9c)
+run_num = 9 #Options for QUIET: 5(for coherence only),6,7,8,9,9.2(this is run 9c)
 run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence analysis it's defined in its respective section
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
@@ -52,7 +52,7 @@ pre_sciencerun6_data = True # Do you also want to incorporate the run 6 pre-scie
 use_iminuit_gdoublegauss_ssf = True # do you want to fit the g-state to a double gaussian using iminuit? The default is GMM instead
 #Double gaussian fitting is optimized for lower thermal pops (<2%) if this is set to true:
 low_thermal_pops = True if run_num == 9 else False # This run number is specific to QUIET. Used in SSF qtemps
-calc_SNR_ssfqtemps = False # calculate SNR of SSF scans?
+calc_SNR_ssfqtemps = True # calculate SNR of SSF scans?
 calc_SSF_e_decay = True # calculate the e-state decay population in SSF scans?
 
 # When re-plotting SSF g-state histograms using iminuit, do you want to limit y-axis to see thermal pop region better?:
@@ -88,7 +88,8 @@ alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": Fal
 
 # For coherence-qubit temps combined analysis. These flags act on their own, no need to set anything above to True.
 coh_qtemp_ana_flags = {"run_qtemps_section": False, "run_coherence_section": False, "use_cached_qtemp_files": False, "use_cached_coherence_files": False, "create_cached_qtemp_files": False,"create_cached_coherence_files": False, "load_mcp1_temps": False,
-                       "plot_qtemps_t1_ftemps_qfreq": False, "plot_RPM_qtemps_qfreq_fridge_only": False, "plot_SSF_qtemps_qfreq_fridge_only": False}
+                       "plot_qtemps_t1_ftemps_qfreq": False, "plot_RPM_qtemps_qfreq_fridge_only": False, "plot_SSF_qtemps_qfreq_fridge_only": False,
+                       "SSF_lims_per_scan_viaSSF": True, "SSF_lims_per_scan_viaRPM": False}
 
 ############################################################################## Set up #######################################################################################################################
 #----------------------------------------------------- For qubit temperature calculations via rabi population measurements --------------------------------------------------------------------------------------
@@ -2052,6 +2053,12 @@ ssf_g_temp_errs_by_run  = {}      # matching errors
 ssf_g_Pe_by_run  = {}   # ssf ground-double-gauss Pe
 ssf_g_Pe_errs_by_run = {} # matching Pe errors
 fit_results_g_by_run = {}  # fit_results_g_by_run[run][qid] = list of accepted SSF fit records
+matched_t1_to_ssf_by_run = {} # used for SSF limitations calcs
+matched_rpm_to_ssf_by_run = {} # used for SSF limitations calcs
+ssf_limitations_per_scan_by_run = {}
+ssf_limitations_median_by_run = {}
+ssf_limitations_per_scan_rpmPe_by_run = {}
+ssf_limitations_median_rpmPe_by_run = {}
 
 ssf_ge_temps_by_run = {}   # ssf g-e threshold temps (if you compute them)
 ssf_ge_temp_errs_by_run  = {}      # matching errors
@@ -2060,12 +2067,14 @@ ssf_fid_values_by_run = {} # single shot fidelity values
 ssf_err_values_by_run = {} # single shot fidelity errors (total errs)
 
 t1_vals_by_run  = {}
+date_times_t1_by_run = {}
 t2r_vals_by_run = {}
 t2e_vals_by_run = {}
 qfreq_vals_by_run = {}
 resfreq_vals_by_run = {}
 
 t1_errs_by_run  = {}
+t1_res_lengths_by_run = {}
 t2r_errs_by_run = {}
 t2e_errs_by_run = {}
 qfreq_errs_by_run = {}
@@ -2282,6 +2291,7 @@ if coh_qtemp_ana_flags["run_qtemps_section"]:
                 all_files_Qtemp_results_RPMs,
                 n_qubits=tot_num_of_qubits)
 
+            all_files_Qtemp_results_RPMs_by_run[run_num] = all_files_Qtemp_results_RPMs
             rpm_temps_by_run[run_num] = rpm_temps
             rpm_temps_errs_by_run[run_num] = rpm_temps_errs
             rpm_Pe_by_run[run_num] = rpm_Pe
@@ -2304,6 +2314,7 @@ if coh_qtemp_ana_flags["run_qtemps_section"]:
             for q in range(tot_num_of_qubits):
                 print(f"  Q{q + 1}: {len(ssf_g_temps[q])}")
 
+            fit_results_g_by_run[run_num] = fit_results_g
             ssf_g_temps_by_run[run_num] = ssf_g_temps
             ssf_g_temp_errs_by_run[run_num] = ssf_g_temp_errs
             pe_vals, pe_errs = combined_studies.extract_pe_from_fit_results(fit_results_g, tot_num_of_qubits)
@@ -2327,6 +2338,7 @@ if coh_qtemp_ana_flags["run_qtemps_section"]:
             for q in range(tot_num_of_qubits):
                 print(f"  Q{q + 1}: {len(ssf_g_temps[q])}")
 
+            fit_results_g_by_run[run_num] = fit_results_g
             ssf_g_temps_by_run[run_num] = ssf_g_temps
             ssf_g_temp_errs_by_run[run_num] = ssf_g_temp_errs
             pe_vals, pe_errs = combined_studies.extract_pe_from_fit_results(fit_results_g, tot_num_of_qubits)
@@ -2370,6 +2382,7 @@ if coh_qtemp_ana_flags["run_coherence_section"]:
             date_times_t1,
             t1_vals,
             t1_fit_err,
+            res_lengths_t1,
             date_times_t2r,
             t2r_vals,
             t2r_fit_err,
@@ -2399,6 +2412,8 @@ if coh_qtemp_ana_flags["run_coherence_section"]:
         # ---------------- Another option: store results per run for downstream plotting ----------------
         t1_vals_by_run[run_num] = t1_vals
         t1_errs_by_run[run_num] = t1_fit_err
+        t1_res_lengths_by_run[run_num] = res_lengths_t1
+        date_times_t1_by_run[run_num] = date_times_t1
 
         t2r_vals_by_run[run_num] = t2r_vals
         t2r_errs_by_run[run_num] = t2r_fit_err
@@ -2410,6 +2425,29 @@ if coh_qtemp_ana_flags["run_coherence_section"]:
         qfreq_errs_by_run[run_num] = qspec_fit_err
 
         resfreq_vals_by_run[run_num] = res_freqs
+
+if coh_qtemp_ana_flags["SSF_lims_per_scan_viaSSF"]:
+
+    comb_plots_path = "/home/acolonce/Documents/analysis/combined_qtemps/qtemps_and_coherence/SSF_limitations_calcs"
+
+    ssf_limitations_results_by_run = (
+        combined_studies.run_ssf_limitations_per_scan_for_runs(
+            run_num_list=run_num_list,
+            fit_results_g_by_run=fit_results_g_by_run,
+            date_times_t1_by_run=date_times_t1_by_run,
+            t1_vals_by_run=t1_vals_by_run,
+            t1_errs_by_run=t1_errs_by_run,
+            t1_res_lengths_by_run=t1_res_lengths_by_run,
+            out_dir=comb_plots_path,
+            n_qubits=tot_num_of_qubits,
+            sensitive_fraction=0.5,
+            t1_match_max_dt_s=10.0, #change to 600 for run 6 science run
+            make_ssf_pe_table=True,
+            make_rpm_pe_table=coh_qtemp_ana_flags["SSF_lims_per_scan_viaRPM"],
+            all_files_Qtemp_results_RPMs_by_run=all_files_Qtemp_results_RPMs_by_run,
+            rpm_match_max_dt_s=10, #change to 600 for run 6 science run
+        )
+    )
 
 if coh_qtemp_ana_flags["plot_qtemps_t1_ftemps_qfreq"]:
     if len(run_num_list) != 1:
