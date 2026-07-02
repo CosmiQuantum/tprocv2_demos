@@ -4318,7 +4318,7 @@ class combined_Qtemp_studies:
             matched_t1_to_ssf,
             matched_rpm_to_ssf=None,
             thermal_population_source="ssf",  # options: "ssf" or "rpm"
-            sensitive_fraction=0.5, # for T1 decay during readout
+            sensitive_fraction=0.5,  # for T1 decay during readout
             n_qubits=6,
             save_path=None,
             verbose=True):
@@ -4333,32 +4333,6 @@ class combined_Qtemp_studies:
                     Pe comes from each SSF fit record, rec["Pe"].
                 thermal_population_source="rpm":
                     Pe comes from matched_rpm_to_ssf[qid][scan_index].
-
-        Parameters
-        ----------
-        run_num : int or float
-            Run number.
-
-        fit_results_g : dict
-            fit_results_g[qid] = list of accepted SSF fit dictionaries.
-
-        matched_t1_to_ssf : dict
-            matched_t1_to_ssf[qid][scan_index] = matched T1/readout info.
-            This should be produced by match_t1_to_ssf_scans(...).
-
-        matched_rpm_to_ssf : dict or None
-            matched_rpm_to_ssf[qid][scan_index] = matched RPM Pe info.
-            Required only if thermal_population_source="rpm".
-
-        thermal_population_source : str
-            "ssf" or "rpm".
-
-        sensitive_fraction : float
-            Fraction of the readout window used for the caught-T1 estimate.
-            Default 0.5 means first half of readout window.
-
-        save_path : str or None
-            Optional CSV path for the full per-scan table.
 
         Returns
         -------
@@ -4532,6 +4506,9 @@ class combined_Qtemp_studies:
                 # Calculations
                 # -------------------------
 
+                # 0. Measured SSF infidelity for this scan
+                measured_ssf_infidelity = 1.0 - SSF
+
                 # 1. Finite-SNR Gaussian overlap error
                 snr_overlap_error = snr_to_overlap_error(snr)
 
@@ -4589,13 +4566,16 @@ class combined_Qtemp_studies:
                     residual_unexplained_loss,
                 ])
 
+                # 7. Per-scan difference between measured infidelity and budget
+                # This is the quantity whose median is:
+                # median_i[(1 - SSF_i) - epsilon_budget_i]
+                measured_minus_budget = measured_ssf_infidelity - estimated_total_error
+
                 # Alternative direct budget using observed excited-state loss
                 estimated_total_error_using_iePg = np.nansum([
                     snr_overlap_error,
                     ie_new_Pg,
                 ])
-
-                measured_ssf_infidelity = 1.0 - SSF
 
                 row = {
                     "Run": run_num,
@@ -4655,7 +4635,7 @@ class combined_Qtemp_studies:
                     "caught_T1_decay_frac": caught_t1_decay_prob,
                     "caught_T1_decay_percent": percent(caught_t1_decay_prob),
 
-                    # Colleague-style decomposition of ie_new_Pg
+                    # Decomposition of ie_new_Pg
                     "Pe_plus_caught_T1_frac": thermal_error + caught_t1_decay_prob,
                     "Pe_plus_caught_T1_percent": percent(thermal_error + caught_t1_decay_prob),
 
@@ -4674,6 +4654,11 @@ class combined_Qtemp_studies:
                     # Main rough totals
                     "estimated_total_error_frac": estimated_total_error,
                     "estimated_total_error_percent": percent(estimated_total_error),
+
+                    # This is the per-scan quantity:
+                    # (1 - SSF_i) - epsilon_budget_i
+                    "measured_minus_budget_frac": measured_minus_budget,
+                    "measured_minus_budget_percent": percent(measured_minus_budget),
 
                     "estimated_total_error_using_iePg_frac": estimated_total_error_using_iePg,
                     "estimated_total_error_using_iePg_percent": percent(estimated_total_error_using_iePg),
@@ -4720,6 +4705,7 @@ class combined_Qtemp_studies:
             "fraction_unexplained_percent",
             "full_window_T1_decay_prob_percent",
             "estimated_total_error_percent",
+            "measured_minus_budget_percent",
             "estimated_total_error_using_iePg_percent",
         ]
 
@@ -4745,7 +4731,7 @@ class combined_Qtemp_studies:
         median_summary_df = median_summary_df.rename(columns={
             "SNR": "Median readout SNR",
             "SSF_percent": "Median SSF (%)",
-            "Measured_SSF_infidelity_percent": "Measured SSF infidelity (%)",
+            "Measured_SSF_infidelity_percent": "Median per-scan SSF infidelity (%)",
             "SNR_overlap_error_percent": "Finite-SNR misassignment (%)",
             "Pe_percent": "Thermal population Pe (%)",
             "Pe_err_percent": "Pe error (%)",
@@ -4764,13 +4750,14 @@ class combined_Qtemp_studies:
             "fraction_unexplained_percent": "Unexplained fraction of observed loss (%)",
             "full_window_T1_decay_prob_percent": "Full-window T1 decay diagnostic (%)",
             "estimated_total_error_percent": "Estimated SSF infidelity budget (%)",
+            "measured_minus_budget_percent": "Median [(1-SSF) - budget] (%)",
             "estimated_total_error_using_iePg_percent": "SNR + observed e-loss budget (%)",
         })
 
         median_summary_df = median_summary_df.round({
             "Median readout SNR": 4,
             "Median SSF (%)": 2,
-            "Measured SSF infidelity (%)": 2,
+            "Median per-scan SSF infidelity (%)": 2,
             "Finite-SNR misassignment (%)": 2,
             "Thermal population Pe (%)": 3,
             "Pe error (%)": 3,
@@ -4789,6 +4776,7 @@ class combined_Qtemp_studies:
             "Unexplained fraction of observed loss (%)": 1,
             "Full-window T1 decay diagnostic (%)": 2,
             "Estimated SSF infidelity budget (%)": 2,
+            "Median [(1-SSF) - budget] (%)": 2,
             "SNR + observed e-loss budget (%)": 2,
         })
 
