@@ -4171,7 +4171,7 @@ class combined_Qtemp_studies:
 
             if isinstance(x, (int, float, np.integer, np.floating)):
                 if np.isfinite(x):
-                    return pd.to_datetime(x, unit="s").to_pydatetime()
+                    return datetime.datetime.fromtimestamp(float(x))
                 return pd.NaT
 
             return pd.to_datetime(x, errors="coerce").to_pydatetime()
@@ -4307,8 +4307,7 @@ class combined_Qtemp_studies:
                 else:
                     print(
                         f"{qlabel}: matched {n_matched}/{len(ssf_recs)} SSF scans "
-                        f"to RPM scans within {max_dt_s:g} s."
-                    )
+                        f"to RPM scans within {max_dt_s:g} s.")
 
         return matched_rpm_by_qid
 
@@ -4369,11 +4368,6 @@ class combined_Qtemp_studies:
         median_summary_df : pandas.DataFrame
             Median contribution table grouped by qubit.
         """
-
-        import os
-        import numpy as np
-        import pandas as pd
-        import math
 
         def snr_to_overlap_error(snr):
             if snr is None or not np.isfinite(snr):
@@ -4957,8 +4951,9 @@ class combined_Qtemp_studies:
             if verbose:
                 print(
                     f"Q{qid + 1}: matched {n_matched}/{len(ssf_recs)} SSF scans "
-                    f"to T1 scans within {max_dt_s:g} s."
-                )
+                    f"to T1 scans within {max_dt_s:g} s.")
+                print(f"  First SSF timestamp: {to_datetime(ssf_recs[0].get('timestamp', None))}")
+                print(f"  First T1 timestamp:  {t1_dates_q[0]}")
 
         return matched_t1_by_qid
 

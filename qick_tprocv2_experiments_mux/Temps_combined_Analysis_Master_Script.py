@@ -66,7 +66,7 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": True, "Qtemps_viaSSF_with_fallback": False,
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
                       "combined_studies_Qtemps": False}
 
 # What analysis plots do you want to make?
@@ -87,9 +87,9 @@ london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
 
 # For coherence-qubit temps combined analysis. These flags act on their own, no need to set anything above to True.
-coh_qtemp_ana_flags = {"run_qtemps_section": False, "run_coherence_section": False, "use_cached_qtemp_files": False, "use_cached_coherence_files": False, "create_cached_qtemp_files": False,"create_cached_coherence_files": False, "load_mcp1_temps": False,
+coh_qtemp_ana_flags = {"run_qtemps_section": True, "run_coherence_section": True, "use_cached_qtemp_files": False, "use_cached_coherence_files": False, "create_cached_qtemp_files": False,"create_cached_coherence_files": False, "load_mcp1_temps": False,
                        "plot_qtemps_t1_ftemps_qfreq": False, "plot_RPM_qtemps_qfreq_fridge_only": False, "plot_SSF_qtemps_qfreq_fridge_only": False,
-                       "SSF_lims_per_scan_viaSSF": True, "SSF_lims_per_scan_viaRPM": False}
+                       "SSF_lims_per_scan_viaSSF": True, "SSF_lims_per_scan_viaRPM": True}
 
 ############################################################################## Set up #######################################################################################################################
 #----------------------------------------------------- For qubit temperature calculations via rabi population measurements --------------------------------------------------------------------------------------
@@ -2040,7 +2040,7 @@ use_png_timestamps = False
 restrict_time = False
 start_time = datetime.datetime(2025, 4, 15, 0, 0)
 end_time = datetime.datetime(2025, 5, 8, 16, 0)
-run_num_list = [6]
+run_num_list = [9]
 run6_subfolder="both" # only used for run6 MCP1 csv file data loading. Options: "pre-science-run", "science-run" or "both"
 
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
@@ -2079,6 +2079,7 @@ t2r_errs_by_run = {}
 t2e_errs_by_run = {}
 qfreq_errs_by_run = {}
 
+all_files_Qtemp_results_RPMs_by_run = {}
 # ------------ Initialize class for combined analysis ------------------
 combined_studies = combined_Qtemp_studies(figure_quality, tot_num_of_qubits)
         
@@ -2092,9 +2093,6 @@ cache_dir = f"/home/acolonce/Documents/analysis/cached_processed_data/run{run_nu
 
 if coh_qtemp_ana_flags["use_cached_qtemp_files"]:
     os.makedirs(cache_dir, exist_ok=True)
-
-    fit_results_g_by_run = {}
-    all_files_Qtemp_results_RPMs_by_run = {}
 
     for run_number in run_num_list:
         # Default: no cached qtemp data
