@@ -64,7 +64,7 @@ Qs_to_look_at = [0,1,2,3,4,5] # only list the qubits you want to do the RR for
 # Data saving info
 run_name = 'run9d'
 device_name = '6transmon'
-substudy_txt_notes = ('Initial state of the qubits run 9d up to ef experiments, no readout optimization.\n')
+substudy_txt_notes = ('First batch post readout optimization on July 4th.\n')
 
 # set which of the following you'd like to run to 'True'
 
@@ -72,10 +72,10 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss":
              "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
              "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
 
-# For 25dB DAC, 6/15/2026
-res_leng_vals = [5.4, 5.8, 6.4, 6.8, 7.0, 7.0]
-res_gain = [0.8164, 0.85, 0.8025,0.6, 0.825, 0.8125]
-freq_offsets = [-0.2000, -0.0667,-0.1111,-0.0222,0,-0.0667]
+# For 25dB DAC, 7/4/2026
+res_leng_vals = [5.4, 6.4, 6.2, 6.2, 6.8, 7.0]
+res_gain = [0.8164, 0.8, 0.8156,0.6156, 0.8125, 0.8375]
+freq_offsets = [-0.2000, -0.1111, -0.1111,-0.1111,-0.3000,-0.0667]
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
@@ -88,7 +88,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts, round_robin_benchmark
-sub_study = 'init_batch_withRPM_not_opt_25dBDAC' #initial_batch_not_opt_25dBDAC, opt_sigmas_gains_reps_steps
+sub_study = 'batch1_post_1stopt_25dbDAC' #initial_batch_not_opt_25dBDAC, opt_sigmas_gains_reps_steps
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
