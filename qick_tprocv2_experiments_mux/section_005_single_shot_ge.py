@@ -206,9 +206,10 @@ class SingleShot:
             raw_e = ssp_e.get_raw()
             # thresh = int((np.mean(raw_g[0][:, :, 0]) + np.mean(raw_e[0][:, :, 0])) / 2)
             # fid, angle = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
+            measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
             fid, angle, thresh, g_center, e_center = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex,return_thres=True,active_reset=active_reset)
 
-            return fid, angle, iq_list_g, iq_list_e, self.config, thresh, g_center, e_center
+            return fid, angle, thresh, iq_list_g, iq_list_e, self.config, measurement_timestamp, g_center, e_center
 
         else:
             ssp_g = SingleShotProgram_g(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
@@ -221,27 +222,38 @@ class SingleShot:
 
             measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
 
-            fid, angle = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
+            fid, angle, thresh = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
             # fid, angle = self.plot_results(g_shots, e_shots, self.QubitIndex)
-            return fid, angle, iq_list_g, iq_list_e, self.config, measurement_timestamp
+            return fid, angle, thresh, iq_list_g, iq_list_e, self.config, measurement_timestamp
 
     def plot_results(self, iq_list_g, iq_list_e, QubitIndex,  fig_quality=100, active_reset = False):
+        # Original Method, QICK processed SSF IQ shots
         I_g = iq_list_g[QubitIndex][0].T[0]
         Q_g = iq_list_g[QubitIndex][0].T[1]
         I_e = iq_list_e[QubitIndex][0].T[0]
         Q_e = iq_list_e[QubitIndex][0].T[1]
+
+        # DOnt recall what this was used for. Raw shots?
         # I_g = iq_list_g[self.QubitIndex][:, :, 0, 0][0]
         # Q_g = iq_list_g[self.QubitIndex][:, :, 0, 1][0]
         # I_e = iq_list_e[self.QubitIndex][:, :, 0, 0][0]
         # Q_e = iq_list_e[self.QubitIndex][:, :, 0, 1][0]
 
-        fid, threshold, angle, ig_new, ie_new = self.hist_ssf(QubitIndex, data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=self.save_figs,  fig_quality=fig_quality,
-                                                              active_reset = active_reset)
-        if self.verbose: print('Optimal fidelity after rotation = %.3f' % fid)
-        if self.verbose: print('Optimal angle after rotation = %f' % angle)
-        self.logger.info('Optimal fidelity after rotation = %.3f' % fid)
-        self.logger.info('Optimal angle after rotation = %f' % angle)
-        return fid, angle
+        if active_reset:
+            fid, threshold, angle, ig_new, ie_new, g_center, e_center = self.hist_ssf(QubitIndex, data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=self.save_figs,fig_quality=fig_quality, active_reset=True)
+            if self.verbose: print('Optimal fidelity after rotation = %.3f' % fid)
+            if self.verbose: print('Optimal angle after rotation = %f' % angle)
+            self.logger.info('Optimal fidelity after rotation = %.3f' % fid)
+            self.logger.info('Optimal angle after rotation = %f' % angle)
+            return fid, angle, threshold, g_center, e_center
+        else:
+            fid, threshold, angle, ig_new, ie_new = self.hist_ssf(QubitIndex, data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=self.save_figs,fig_quality=fig_quality,active_reset=False)
+            if self.verbose: print('Optimal fidelity after rotation = %.3f' % fid)
+            if self.verbose: print('Optimal angle after rotation = %f' % angle)
+            self.logger.info('Optimal fidelity after rotation = %.3f' % fid)
+            self.logger.info('Optimal angle after rotation = %f' % angle)
+            return fid, angle, threshold
+
 
     def hist_ssf(self, QubitIndex, data=None, cfg=None, plot=True,  fig_quality = 100, file_ext="", active_reset = False):
 
@@ -330,7 +342,12 @@ class SingleShot:
             fig.savefig(file_name,  dpi=fig_quality, bbox_inches='tight')
             plt.close(fig)
 
-        return fid, threshold, theta, ig_new, ie_new
+        if active_reset:
+            g_center = (np.median(ig_new), np.median(qg_new))
+            e_center = (np.median(ie_new), np.median(qe_new))
+            return fid, threshold, theta, ig_new, ie_new, g_center, e_center
+        else:
+            return fid, threshold, theta, ig_new, ie_new
 
     def only_hist_ssf(self, data=None, cfg=None, plot=True, fig_quality=100, plot_title="Run 3"):
         import math

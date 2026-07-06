@@ -426,7 +426,7 @@ while j < n:
                     ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
                                     experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
                                     reduce_rlx_delay = reduce_rlx_delay_ssf, reduce_rlx_delay_to = reduce_rlx_delay_ssf_to)
-                    fid, angle, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge = ss.run()
+                    fid, angle, thresh, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge = ss.run()
 
                     fid_check = fid
                     # if fid_check < ssf_threshold: # checks if SSF is bad, if it is it tries again

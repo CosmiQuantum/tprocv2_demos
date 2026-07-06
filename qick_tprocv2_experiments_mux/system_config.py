@@ -102,6 +102,9 @@ class QICK_experiment:
                 "res_ring_up_time": 4,  # Olivia May 17th
                 "qubit_is_in_g_threshold": 100000, #100000,#-8837,
                 "edge_of_e_state_threshold": -26046,
+                "n_resets": 3,  # for active reset
+                "g_center": 0,  # for active reset
+                "e_center": 0,  # for active reset
             }
 
             # Qubit Configuration
@@ -215,7 +218,7 @@ class QICK_experiment:
                 "res_gain_ge": [0.4, 0.4, 0.4, 0.3875],  # [0.15]*4, #[1, 1, 1, 1],
                 "res_length": 4.6,  # 10,  # [us] (1.0 for res spec)
                 "res_phase": [0] * 4,
-                "ro_phase": [0, 0, 0, 0]  # [0] * 4,  # Rotation Angle From QICK Function
+                "ro_phase": [0, 0, 0, 0],  # [0] * 4,  # Rotation Angle From QICK Function
             }
 
             # Qubit Configuration

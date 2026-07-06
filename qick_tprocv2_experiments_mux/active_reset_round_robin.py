@@ -149,8 +149,8 @@ for QubitIndex in Qs_to_look_at:
     experiment.qubit_cfg['qubit_freq_ge'] = experiment.qubit_cfg['qubit_freq_ge'][QubitIndex]
     experiment.qubit_cfg['qubit_gain_ge'] = experiment.qubit_cfg['qubit_gain_ge'][QubitIndex]
 
-    experiment.readout_cfg['res_freq_ge'] = freq_offsets[QubitIndex] + 7287.57
-    experiment.qubit_cfg['qubit_freq_ge'] = float(3095.192)
+    experiment.readout_cfg['res_freq_ge'] = freq_offsets[QubitIndex] + 7287.57 # where did this number come from
+    experiment.qubit_cfg['qubit_freq_ge'] = float(3095.192) # where did this number come from
     experiment.qubit_cfg['pi_amp'] =  experiment.qubit_cfg['pi_amp'][QubitIndex]
 
     ############################### Do Res spec once per qubit and store the value ####################################
@@ -197,7 +197,7 @@ for QubitIndex in Qs_to_look_at:
         res_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_rspec
         res_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_resge
 
-        saver_res = Data_H5(optimizationFolder, res_data, 0, save_r)  # save
+        saver_res = Data_H5(optimizationFolder, res_data, batch_num, save_r)  # save
         saver_res.save_to_h5('res_ge')
         del saver_res
         del res_data
@@ -278,7 +278,7 @@ for QubitIndex in Qs_to_look_at:
         qspec_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_qspec
         qspec_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_qspecge
 
-        saver_qspec = Data_H5(optimizationFolder, qspec_data, 0, save_r)
+        saver_qspec = Data_H5(optimizationFolder, qspec_data, batch_num, save_r)
         saver_qspec.save_to_h5('qspec_ge')
         del saver_qspec
         del qspec_data
@@ -350,12 +350,11 @@ for QubitIndex in Qs_to_look_at:
         rabi_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_rabi
         rabi_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_rabige
 
-        saver_rabi = Data_H5(optimizationFolder, rabi_data, 0, save_r)
+        saver_rabi = Data_H5(optimizationFolder, rabi_data, batch_num, save_r)
         saver_rabi.save_to_h5('rabi_ge')
         del saver_rabi
         del rabi_data
-
-        rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits) # reset for safety
+        rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
 
     ############################### g-e Single Shot Measurement, get the rotation angle and update config ############################
     if run_flags["ss"]:
@@ -372,8 +371,7 @@ for QubitIndex in Qs_to_look_at:
             try_num = 0
             fid_check = 0
 
-            ssf_thresholds = [0.85, 0.80, 0.80, 0.8, 0.20,
-                              0.75]  # all Qs are generally above these unless something is wrong
+            ssf_thresholds = [0.85, 0.80, 0.80, 0.8, 0.20,0.75]  # all Qs are generally above these unless something is wrong
             ssf_threshold = ssf_thresholds[QubitIndex]
 
             while fid_check < ssf_threshold and try_num < max_tries:
@@ -383,7 +381,7 @@ for QubitIndex in Qs_to_look_at:
                 ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
                                 experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
                                 reduce_rlx_delay=reduce_rlx_delay_ssf, reduce_rlx_delay_to=reduce_rlx_delay_ssf_to)
-                fid, angle, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge = ss.run()
+                fid, angle, _, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge = ss.run()
 
                 fid_check = fid
                 # if fid_check < ssf_threshold: # checks if SSF is bad, if it is it tries again
@@ -394,10 +392,10 @@ for QubitIndex in Qs_to_look_at:
             # if fid_check < ssf_threshold:
             #     rr_logger.warning(f"Q{QubitIndex + 1} SSF never reached {ssf_threshold}. Keeping last attempt.")
 
-            # I_g = iq_list_g[QubitIndex][0].T[0]
-            # Q_g = iq_list_g[QubitIndex][0].T[1]
-            # I_e = iq_list_e[QubitIndex][0].T[0]
-            # Q_e = iq_list_e[QubitIndex][0].T[1] # fix
+            I_g = iq_list_g[QubitIndex][0].T[0]
+            Q_g = iq_list_g[QubitIndex][0].T[1]
+            I_e = iq_list_e[QubitIndex][0].T[0]
+            Q_e = iq_list_e[QubitIndex][0].T[1]
 
             theta = -np.arctan2(np.median(Q_e) - np.median(Q_g), np.median(I_e) - np.median(I_g))
             # update config ro_phase to rotate blobs onto I for future experiments below this
@@ -427,11 +425,11 @@ for QubitIndex in Qs_to_look_at:
             ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
                             experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
                             reduce_rlx_delay=reduce_rlx_delay_ssf, reduce_rlx_delay_to=reduce_rlx_delay_ssf_to)
-            fid, angle, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge = ss.run()
-            # I_g = iq_list_g[QubitIndex][0].T[0]
-            # Q_g = iq_list_g[QubitIndex][0].T[1]
-            # I_e = iq_list_e[QubitIndex][0].T[0]
-            # Q_e = iq_list_e[QubitIndex][0].T[1] # fix
+            fid, angle, thresh, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge = ss.run()
+            I_g = iq_list_g[QubitIndex][0].T[0]
+            Q_g = iq_list_g[QubitIndex][0].T[1]
+            I_e = iq_list_e[QubitIndex][0].T[0]
+            Q_e = iq_list_e[QubitIndex][0].T[1]
 
             experiment.readout_cfg['threshold'] = thresh
             experiment.readout_cfg['g_center'] = g_center[0] # 0 is I, 1 is Q
@@ -461,11 +459,11 @@ for QubitIndex in Qs_to_look_at:
             ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
             ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs, experiment=experiment,
                             verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
-            fid, angle, iq_list_g, iq_list_e, sys_config_ss, thresh, g_center, e_center = ss.run(return_thres=True, active_reset=True)
-            # I_g = iq_list_g[QubitIndex][0].T[0]
-            # Q_g = iq_list_g[QubitIndex][0].T[1]
-            # I_e = iq_list_e[QubitIndex][0].T[0]
-            # Q_e = iq_list_e[QubitIndex][0].T[1] # fix
+            fid, angle, thresh, iq_list_g, iq_list_e, sys_config_ss, g_center, e_center = ss.run(active_reset=True)
+            I_g = iq_list_g[QubitIndex][0].T[0]
+            Q_g = iq_list_g[QubitIndex][0].T[1]
+            I_e = iq_list_e[QubitIndex][0].T[0]
+            Q_e = iq_list_e[QubitIndex][0].T[1]
 
             experiment.readout_cfg['threshold'] = thresh
             experiment.readout_cfg['g_center'] = g_center[0]  # 0 is I, 1 is Q
@@ -499,83 +497,95 @@ for QubitIndex in Qs_to_look_at:
                 if verbose: print(f'Got the following error in ge ssf, continuing: {e}')
                 continue  # skip the rest of this qubit
 
-    ##################### active reset Rabi with 0 correction to compare to ########################
-    # experiment.readout_cfg['n_resets'] = 0
-    # rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
-    # rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
-    #                                save_figs=save_figs, save_shots=False,
-    #                                experiment=experiment, live_plot=False,
-    #                                increase_qubit_reps=increase_qubit_reps,
-    #                                qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-    #                                multiply_qubit_reps_by=multiply_qubit_reps_by,
-    #                                verbose=verbose, logger=rr_logger, unmasking_resgain=unmask, )
-    #
-    # (rabi_I_corrected0, rabi_Q_corrected0, rabi_gains_corrected0, rabi_fit_corrected0, pi_amp_corrected0,
-    #  sys_config_rabi_corrected0, ss_Q_e20, ss_Q_g20, ss_I_e20, ss_I_g20, I_shots_rabi_corr0,
-    #  Q_shots_rabi_corr0) = rabi.run_active_reset(
-    #     scaling=True, control_test=True)
-    #
-    # rabi_data[QubitIndex]['Dates'][0] = (
-    #     time.mktime(datetime.datetime.now().timetuple()))
-    # rabi_data[QubitIndex]['I'][0] = rabi_I_corrected0
-    # rabi_data[QubitIndex]['Q'][0] = rabi_Q_corrected0
-    # rabi_data[QubitIndex]['Gains'][0] = rabi_gains_corrected0
-    # rabi_data[QubitIndex]['Fit'][0] = rabi_fit_corrected0
-    # rabi_data[QubitIndex]['Round Num'][0] = 0
-    # rabi_data[QubitIndex]['Batch Num'][0] = 0
-    # rabi_data[QubitIndex]['Exp Config'][0] = expt_cfg
-    # rabi_data[QubitIndex]['Syst Config'][0] = sys_config_rabi_corrected0
-    # rabi_data[QubitIndex]['ss_Q_e'][0] = ss_Q_e20
-    # rabi_data[QubitIndex]['ss_Q_g'][0] = ss_Q_g20
-    # rabi_data[QubitIndex]['ss_I_e'][0] = ss_I_e20
-    # rabi_data[QubitIndex]['ss_I_g'][0] = ss_I_g20
-    # rabi_data[QubitIndex]['I_shots'][0] = I_shots_rabi_corr0
-    # rabi_data[QubitIndex]['Q_shots'][0] = Q_shots_rabi_corr0
-    #
-    # saver_rabi = Data_H5(optimizationFolder, rabi_data, 0, save_r)
-    # saver_rabi.save_to_h5('Rabi_corrected_0')
-    # del saver_rabi
-    # del rabi_data
-    # del rabi
+        ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
 
-    # ##################### active reset Rabi with 1 correction ########################
-    # experiment.readout_cfg['n_resets'] = 1
-    # rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
-    # rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
-    #                                save_figs=save_figs, save_shots=False,
-    #                                experiment=experiment, live_plot=False,
-    #                                increase_qubit_reps=increase_qubit_reps,
-    #                                qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-    #                                multiply_qubit_reps_by=multiply_qubit_reps_by,
-    #                                verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,)
-    #
-    # (rabi_I_corrected1, rabi_Q_corrected1, rabi_gains_corrected1, rabi_fit_corrected1, pi_amp_corrected1,
-    #  sys_config_rabi_corrected1, ss_Q_e21, ss_Q_g21, ss_I_e21, ss_I_g21, I_shots_rabi_corr1, Q_shots_rabi_corr1) = rabi.run_active_reset(
-    #     scaling=True)
-    #
-    # rabi_data[QubitIndex]['Dates'][0] = (
-    #     time.mktime(datetime.datetime.now().timetuple()))
-    # rabi_data[QubitIndex]['I'][0] = rabi_I_corrected1
-    # rabi_data[QubitIndex]['Q'][0] = rabi_Q_corrected1
-    # rabi_data[QubitIndex]['Gains'][0] = rabi_gains_corrected1
-    # rabi_data[QubitIndex]['Fit'][0] = rabi_fit_corrected1
-    # rabi_data[QubitIndex]['Round Num'][0] = 0
-    # rabi_data[QubitIndex]['Batch Num'][0] = 0
-    # rabi_data[QubitIndex]['Exp Config'][0] = expt_cfg
-    # rabi_data[QubitIndex]['Syst Config'][0] = sys_config_rabi_corrected1
-    # rabi_data[QubitIndex]['ss_Q_e'][0] = ss_Q_e21
-    # rabi_data[QubitIndex]['ss_Q_g'][0] = ss_Q_g21
-    # rabi_data[QubitIndex]['ss_I_e'][0] = ss_I_e21
-    # rabi_data[QubitIndex]['ss_I_g'][0] = ss_I_g21
-    # rabi_data[QubitIndex]['I_shots'][0] = I_shots_rabi_corr1
-    # rabi_data[QubitIndex]['Q_shots'][0] = Q_shots_rabi_corr1
-    #
-    # saver_rabi = Data_H5(optimizationFolder, rabi_data, 0, save_r)
-    # saver_rabi.save_to_h5('Rabi_corrected_1')
-    # del saver_rabi
-    # del rabi_data
-    # del rabi
-    #
+    ##################### active reset Rabi with 0 correction to compare to ########################
+    if run_flags["act_reset_0corr"]:
+        experiment.readout_cfg['n_resets'] = 0
+        rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
+
+        increase_qubit_reps_gerabi = False  # if you want to increase the reps for a qubit, set to True
+        qubit_to_increase_gerabi_reps_for = None  # only has impact if previous line is True
+        multiply_gerabi_reps_by = 1
+        reduce_rlx_delay_gerabi = False
+        reduce_rlx_delay_gerabi_to = None
+
+        rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
+                                       save_figs=save_figs, save_shots=save_shots_gerabi,
+                                       experiment=experiment, live_plot=False,
+                                       increase_qubit_reps=increase_qubit_reps_gerabi,
+                                       qubit_to_increase_reps_for=qubit_to_increase_gerabi_reps_for,
+                                       multiply_qubit_reps_by=multiply_gerabi_reps_by,
+                                       verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
+                                       reduce_rlx_delay=reduce_rlx_delay_gerabi,
+                                       reduce_rlx_delay_to=reduce_rlx_delay_gerabi_to)
+
+        (rabi_I_corrected0, rabi_Q_corrected0, rabi_gains_corrected0, rabi_fit_corrected0, pi_amp_corrected0,
+         sys_config_rabi_corrected0, ss_Q_e20, ss_Q_g20, ss_I_e20, ss_I_g20, I_shots_rabi_corr0,
+         Q_shots_rabi_corr0) = rabi.run_active_reset(scaling=True, control_test=True)
+
+        rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
+        rabi_data[QubitIndex]['I'][j - batch_num * save_r - 1] = rabi_I_corrected0
+        rabi_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = rabi_Q_corrected0
+        rabi_data[QubitIndex]['Gains'][j - batch_num * save_r - 1] = rabi_gains_corrected0
+        rabi_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = rabi_fit_corrected0
+        rabi_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+        rabi_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+        rabi_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+        rabi_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_rabi_corrected0
+        rabi_data[QubitIndex]['ss_Q_e'][j - batch_num * save_r - 1] = ss_Q_e20
+        rabi_data[QubitIndex]['ss_Q_g'][j - batch_num * save_r - 1] = ss_Q_g20
+        rabi_data[QubitIndex]['ss_I_e'][j - batch_num * save_r - 1] = ss_I_e20
+        rabi_data[QubitIndex]['ss_I_g'][j - batch_num * save_r - 1] = ss_I_g20
+        rabi_data[QubitIndex]['I_shots'][j - batch_num * save_r - 1] = I_shots_rabi_corr0
+        rabi_data[QubitIndex]['Q_shots'][j - batch_num * save_r - 1] = Q_shots_rabi_corr0
+
+        saver_rabi = Data_H5(optimizationFolder, rabi_data, batch_num, save_r)
+        saver_rabi.save_to_h5('ge_rabi_corrected_0')
+        del saver_rabi
+        del rabi_data
+        del rabi
+        rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
+
+    ###################### active reset Rabi with 1 correction ########################
+    if run_flags["act_reset_0corr"]:
+        experiment.readout_cfg['n_resets'] = 1
+        rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
+        rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
+                                       save_figs=save_figs, save_shots=False,
+                                       experiment=experiment, live_plot=False,
+                                       increase_qubit_reps=increase_qubit_reps,
+                                       qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                       multiply_qubit_reps_by=multiply_qubit_reps_by,
+                                       verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,)
+
+        (rabi_I_corrected1, rabi_Q_corrected1, rabi_gains_corrected1, rabi_fit_corrected1, pi_amp_corrected1,
+         sys_config_rabi_corrected1, ss_Q_e21, ss_Q_g21, ss_I_e21, ss_I_g21, I_shots_rabi_corr1, Q_shots_rabi_corr1) = rabi.run_active_reset(scaling=True)
+
+        rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1]  = (
+            time.mktime(datetime.datetime.now().timetuple()))
+        rabi_data[QubitIndex]['I'][j - batch_num * save_r - 1]  = rabi_I_corrected1
+        rabi_data[QubitIndex]['Q'][j - batch_num * save_r - 1]  = rabi_Q_corrected1
+        rabi_data[QubitIndex]['Gains'][j - batch_num * save_r - 1]  = rabi_gains_corrected1
+        rabi_data[QubitIndex]['Fit'][j - batch_num * save_r - 1]  = rabi_fit_corrected1
+        rabi_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1]  = j
+        rabi_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1]  = batch_num
+        rabi_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1]  = expt_cfg
+        rabi_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1]  = sys_config_rabi_corrected1
+        rabi_data[QubitIndex]['ss_Q_e'][j - batch_num * save_r - 1]  = ss_Q_e21
+        rabi_data[QubitIndex]['ss_Q_g'][j - batch_num * save_r - 1]  = ss_Q_g21
+        rabi_data[QubitIndex]['ss_I_e'][j - batch_num * save_r - 1]  = ss_I_e21
+        rabi_data[QubitIndex]['ss_I_g'][j - batch_num * save_r - 1]  = ss_I_g21
+        rabi_data[QubitIndex]['I_shots'][j - batch_num * save_r - 1]  = I_shots_rabi_corr1
+        rabi_data[QubitIndex]['Q_shots'][j - batch_num * save_r - 1]  = Q_shots_rabi_corr1
+
+        saver_rabi = Data_H5(optimizationFolder, rabi_data, batch_num, save_r)
+        saver_rabi.save_to_h5('ge_rabi_corrected_1')
+        del saver_rabi
+        del rabi_data
+        del rabi
+        rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
+
     # ##################### active reset Rabi with 2 corrections ########################
     # experiment.readout_cfg['n_resets'] = 2
     # rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
