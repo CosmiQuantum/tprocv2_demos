@@ -6,7 +6,7 @@ import datetime
 
 # Directory where your HDF5 files are stored
 #For QUIET
-outerFolder = "/data/QICK_data/run9d/6transmon/readout_optimization/initial_opt/2026-07-04_17-09-31/study_data/Data_h5/2D_Gain_Freq_Sweeps"
+outerFolder ="/data/QICK_data/run9d/6transmon/readout_optimization/second_opt/2026-07-05_21-06-21/study_data/Data_h5/2D_Gain_Freq_Sweeps"
 
 print('For files inside: ', outerFolder)
 

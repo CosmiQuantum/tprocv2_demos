@@ -123,16 +123,22 @@ class AmplitudeRabiExperiment:
             return I, Q, gains, q1_fit_cosine, pi_amp, self.config, measurement_timestamp
 
     def run_active_reset(self, scaling=True, control_test=False):
+        # 216/mux change:
+        # Store which qubit/readout channel should be used for the active-reset threshold decision.
+        self.config["active_reset_qidx"] = self.QubitIndex
+
         if scaling:
             from section_005_single_shot_ge import SingleShotProgram_g, SingleShotProgram_e
             q_config = all_qubit_state(self.experiment, self.number_of_qubits)
             ss_exp_cfg = add_qubit_experiment(expt_cfg, 'Readout_Optimization', self.QubitIndex)
             ss_config = {**q_config[self.Qubit], **ss_exp_cfg}
+
             print('performing single shot for g-e calibration')
-            ssp_g = SingleShotProgram_g(self.experiment.soccfg, reps=1, final_delay=4000,cfg=ss_config)
-            iq_list_g = ssp_g.acquire(self.experiment.soc, rounds=1, progress=True)
-            ssp_e = SingleShotProgram_e(self.experiment.soccfg, reps=1, final_delay=4000,cfg=ss_config)
-            iq_list_e = ssp_e.acquire(self.experiment.soc, rounds=1, progress=True)
+            ssp_g = SingleShotProgram_g(self.experiment.soccfg, reps=1, final_delay=4000, cfg=ss_config)
+            iq_list_g = ssp_g.acquire(self.experiment.soc, soft_avgs=1, progress=True)
+
+            ssp_e = SingleShotProgram_e(self.experiment.soccfg, reps=1, final_delay=4000, cfg=ss_config)
+            iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=True)
 
             ss_I_g = iq_list_g[self.QubitIndex][0].T[0]
             ss_Q_g = iq_list_g[self.QubitIndex][0].T[1]
@@ -140,17 +146,32 @@ class AmplitudeRabiExperiment:
             ss_Q_e = iq_list_e[self.QubitIndex][0].T[1]
 
         if control_test:
-            amp_rabi = RabiWithActiveResetControlTest(self.experiment.soccfg, reps=self.config['reps'],
-                                                      final_delay=self.config['relax_delay'], cfg=self.config)
+            amp_rabi = RabiWithActiveResetControlTest(
+                self.experiment.soccfg,
+                reps=self.config['reps'],
+                final_delay=self.config['relax_delay'],
+                cfg=self.config
+            )
         else:
-            amp_rabi = RabiWithActiveReset(self.experiment.soccfg, reps=self.config['reps'],
-                                           final_delay=50, cfg=self.config)  # self.config['relax_delay']
+            amp_rabi = RabiWithActiveReset(
+                self.experiment.soccfg,
+                reps=self.config['reps'],
+                final_delay=50,
+                cfg=self.config
+            )  # self.config['relax_delay']
 
-        iq_list = amp_rabi.acquire(self.experiment.soc, rounds=self.config["rounds"],
-                                   progress=self.qick_verbose)
+        iq_list = amp_rabi.acquire(
+            self.experiment.soc,
+            soft_avgs=self.config["rounds"],
+            progress=self.qick_verbose
+        )
+
         gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
 
-        iq_list = np.array(iq_list[0])
+        # 216/mux change:
+        # Use this qubit's readout channel instead of hard-coded channel 0.
+        iq_list = np.array(iq_list[self.QubitIndex])
+
         print(iq_list.shape)
         n_reads = iq_list.shape[0]
 
@@ -165,20 +186,33 @@ class AmplitudeRabiExperiment:
         #     axs[k].set_ylabel("Amp (a.u.)")
         #     axs[k].set_title(f"Read index {k} (avg over first axis)")
         # plt.show()
+
         I = iq_list[-1, :, 0]
         Q = iq_list[-1, :, 1]
 
         raw = amp_rabi.get_raw()
-        measurement_raw = raw[0][:, :, -1, :]  # (reps, steps, 2)  always the last read
+
+        # 216/mux change:
+        # Use this qubit's raw readout data instead of hard-coded channel 0.
+        measurement_raw = raw[self.QubitIndex][:, :, -1, :]  # (reps, steps, 2)  always the last read
 
         I_shots = measurement_raw[:, :, 0]
         Q_shots = measurement_raw[:, :, 1]
 
         if scaling:
-            q1_fit_cosine, pi_amp = self.plot_results(I, Q, gains, config=self.config,
-                                                      scaling=scaling, Ie=ss_I_e, Ig=ss_I_g, Qe=ss_Q_e, Qg=ss_Q_g)
+            q1_fit_cosine, pi_amp = self.plot_results_scaled_iminuit(
+                I,
+                Q,
+                gains,
+                Ie=ss_I_e,
+                Ig=ss_I_g,
+                Qe=ss_Q_e,
+                Qg=ss_Q_g,
+                config=self.config,
+                n_resets = self.config['n_resets']
+            )
         else:
-            q1_fit_cosine, pi_amp = self.plot_results(I, Q, gains, config=self.config)
+            q1_fit_cosine, pi_amp = self.plot_results(I, Q, gains, config=self.config, use_iminuit_instead = True)
 
         if scaling:
             return I, Q, gains, q1_fit_cosine, pi_amp, self.config, ss_Q_e, ss_Q_g, ss_I_e, ss_I_g, I_shots, Q_shots
@@ -495,6 +529,173 @@ class AmplitudeRabiExperiment:
             if self.verbose:
                 print("Error fitting cosine:", e)
             self.logger.info(f"Error fitting cosine: {e}")
+            return None, None
+
+    def plot_results_scaled_iminuit(
+            self,
+            I,
+            Q,
+            gains,
+            Ie,
+            Ig,
+            Qe,
+            Qg,
+            config=None,
+            fig_quality=100,
+            file_ext='',
+            n_resets = 0):
+        """
+        Scaled Rabi plotting/fitting function.
+
+        Uses single-shot g/e calibration to project the Rabi IQ data onto a
+        population-like axis, then fits that scaled trace using fit_cosine_iminuit().
+
+        Returns:
+            best_signal_fit, pi_amp
+        """
+
+        try:
+            # -------------------- Convert everything to arrays --------------------
+            I = np.asarray(I, dtype=float)
+            Q = np.asarray(Q, dtype=float)
+            gains = np.asarray(gains, dtype=float)
+
+            Ie = np.asarray(Ie, dtype=float)
+            Ig = np.asarray(Ig, dtype=float)
+            Qe = np.asarray(Qe, dtype=float)
+            Qg = np.asarray(Qg, dtype=float)
+
+            # -------------------- Single-shot calibration centers --------------------
+            e = np.mean(Ie + 1j * Qe)
+            g = np.mean(Ig + 1j * Qg)
+
+            # -------------------- Scale Rabi IQ data --------------------
+            # This projects the Rabi IQ trace onto the g -> e direction.
+            # ydata is population-like, so the plot y-axis is "Qubit Population".
+            # This gives a signed population-like coordinate:
+            #   g -> 0
+            #   e -> 1
+
+            z = I + 1j * Q
+            axis = e - g
+
+            if np.abs(axis) == 0:
+                raise ValueError("g and e calibration centers are identical; cannot scale Rabi data.")
+
+            ydata = np.real((z - g) * np.conj(axis) / np.abs(axis) ** 2)
+
+            print("scaled ydata min/max:", np.nanmin(ydata), np.nanmax(ydata))
+            print("g center:", g)
+            print("e center:", e)
+
+            # -------------------- Initial guesses --------------------
+            a_guess = (np.max(ydata) - np.min(ydata)) / 2
+            d_guess = np.mean(ydata)
+
+            if gains[-1] == gains[0]:
+                raise ValueError("gains range is zero, cannot guess Rabi frequency.")
+
+            # Same style as your newer plot_results: assume about one period over the gain range.
+            b_guess = 1 / gains[-1]
+            c_guess = 0
+
+            p0 = [a_guess, b_guess, c_guess, d_guess]
+
+            # -------------------- IMinuit fit --------------------
+            popt, pcov = self.fit_cosine_iminuit(gains, ydata, p0)
+
+            q1_fit_cosine_ydata = self.cosine(gains, *popt)
+
+            # -------------------- Pick pi_amp from fitted scaled trace --------------------
+            first_three_avg_ydata = np.mean(q1_fit_cosine_ydata[:3])
+            last_three_avg_ydata = np.mean(q1_fit_cosine_ydata[-3:])
+
+            best_signal_fit = q1_fit_cosine_ydata
+
+            if last_three_avg_ydata > first_three_avg_ydata:
+                pi_amp = gains[np.argmax(best_signal_fit)]
+            else:
+                pi_amp = gains[np.argmin(best_signal_fit)]
+
+            # -------------------- Plot --------------------
+            fig, ax1 = plt.subplots(1, 1, figsize=(10, 5))
+            plt.rcParams.update({'font.size': 18})
+
+            plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
+
+            ax1.plot(gains, ydata, label="Scaled Rabi data", linewidth=2)
+            ax1.plot(gains, q1_fit_cosine_ydata, '-', color='red', linewidth=3, label="Fit")
+            ax1.axvline(pi_amp, linestyle='--', linewidth=2, color='black', label='pi amp')
+
+            ax1.set_ylabel("Projected population-like signal", fontsize=20)
+            ax1.set_xlabel("Gain (a.u.)", fontsize=20)
+            ax1.tick_params(axis='both', which='major', labelsize=16)
+            ax1.legend()
+
+            if config is not None:
+                fig.text(
+                    plot_middle,
+                    0.98,
+                    f"Rabi Q{self.QubitIndex + 1}"
+                    + f", {config['reps']}*{config['rounds']} avgs"
+                    + f" pi_amp {pi_amp} ",
+                    fontsize=24,
+                    ha='center',
+                    va='top'
+                )
+            else:
+                fig.text(
+                    plot_middle,
+                    0.98,
+                    f"Rabi Q{self.QubitIndex + 1}"
+                    + f" pi_amp {pi_amp} ",
+                    fontsize=24,
+                    ha='center',
+                    va='top'
+                )
+
+            plt.tight_layout()
+            plt.subplots_adjust(top=0.93)
+
+            # -------------------- Save --------------------
+            if self.save_figs:
+                if hasattr(self, "correction") and self.correction:
+                    outerFolder_expt = os.path.join(
+                        self.outerFolder,
+                        self.expt_name + '_correction' + "_plots"
+                    )
+                else:
+                    outerFolder_expt = os.path.join(
+                        self.outerFolder,
+                        self.expt_name + f"_{n_resets}corr"
+                    )
+
+                self.create_folder_if_not_exists(outerFolder_expt)
+
+                now = datetime.datetime.now()
+                formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+
+                file_name = os.path.join(
+                    outerFolder_expt,
+                    f"R_{self.round_num}_"
+                    + f"Q_{self.QubitIndex + 1}_"
+                    + f"{formatted_datetime}_"
+                    + self.expt_name
+                    + f"_q{self.QubitIndex + 1}"
+                    + file_ext
+                    + "_scaled.png"
+                )
+
+                fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
+
+            plt.close(fig)
+
+            return best_signal_fit, pi_amp
+
+        except Exception as e:
+            if self.verbose:
+                print("Error fitting scaled cosine with iminuit:", e)
+            self.logger.info(f"Error fitting scaled cosine with iminuit: {e}")
             return None, None
 
     def plot_QZE(self, I, Q, gains, proj_pulse_gains, fig_quality=100, filter_amp_above=None, mark_w01s=True,
@@ -1875,93 +2076,147 @@ class RabiWithActiveReset(AveragerProgramV2):
         res_ch = cfg['res_ch']
         qubit_ch = cfg['qubit_ch']
 
-        self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'])
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'])
-        self.declare_readout(ch=ro_ch, length=cfg['res_length'])
+        # 216/mux change:
+        # Choose the readout channel for the active-reset decision.
+        active_reset_qidx = cfg.get("active_reset_qidx", 0)
+        self.active_reset_ro_ch = ro_ch[active_reset_qidx]
 
-        self.add_readoutconfig(ch=ro_ch, name="myro",
-                               freq=cfg['res_freq_ge'],
-                               gen_ch=res_ch,
-                               outsel='product')
-        self.send_readoutconfig(ch=ro_ch, name="myro", t=0)
+        # 216/mux change:
+        # Declare muxed resonator generator instead of scalar readout config.
+        self.declare_gen(
+            ch=res_ch,
+            nqz=cfg['nqz_res'],
+            ro_ch=ro_ch[0],
+            mux_freqs=cfg['res_freq_ge'],
+            mux_gains=cfg['res_gain_ge'],
+            mux_phases=cfg['res_phase'],
+            mixer_freq=cfg['mixer_freq']
+        )
 
-        self.add_pulse(ch=res_ch, name="res_pulse", ro_ch=ro_ch,
-                       style="const",
-                       length=cfg["res_length"],
-                       freq=cfg['res_freq_ge'],
-                       phase=cfg['ro_phase'],
-                       gain=cfg['res_gain_ge'])
+        # 216/mux change:
+        # Declare every readout channel.
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['res_phase']):
+            self.declare_readout(
+                ch=ch,
+                length=cfg['res_length'],
+                freq=f,
+                phase=ph,
+                gen_ch=res_ch
+            )
 
-        self.add_gauss(ch=qubit_ch, name="ramp",
-                       sigma=cfg['sigma'],
-                       length=cfg['sigma'] * 4,
-                       even_length=False)
+        # 216/mux change:
+        # Muxed resonator pulse uses mask, not scalar freq/phase/gain.
+        self.add_pulse(
+            ch=res_ch,
+            name="res_pulse",
+            style="const",
+            length=cfg["res_length"],
+            mask=cfg["list_of_all_qubits"]
+        )
 
-        self.add_gauss(ch=qubit_ch, name="ramp_rabi",
-                       sigma=cfg['active_reset_test_sigma'],
-                       length=cfg['active_reset_test_sigma'] * 4,
-                       even_length=False)
+        self.declare_gen(
+            ch=qubit_ch,
+            nqz=cfg['nqz_qubit'],
+            mixer_freq=cfg['qubit_mixer_freq']
+        )
 
-        self.add_pulse(ch=qubit_ch, name="qubit_pulse",
-                       style="arb",
-                       envelope="ramp",#_rabi
-                       freq=cfg['qubit_freq_ge'],
-                       phase=cfg['qubit_phase'],
-                       gain=cfg['qubit_gain_ge'])
+        self.add_gauss(
+            ch=qubit_ch,
+            name="ramp",
+            sigma=cfg['sigma'],
+            length=cfg['sigma'] * 4,
+            even_length=False
+        )
 
-        self.add_pulse(ch=qubit_ch, name="pi_pulse",
-                       style="arb",
-                       envelope="ramp",
-                       freq=cfg['qubit_freq_ge'],
-                       phase=cfg['qubit_phase'],
-                       gain=cfg['pi_amp'])
+        self.add_gauss(
+            ch=qubit_ch,
+            name="ramp_rabi",
+            sigma=cfg['active_reset_test_sigma'],
+            length=cfg['active_reset_test_sigma'] * 4,
+            even_length=False
+        )
+
+        self.add_pulse(
+            ch=qubit_ch,
+            name="qubit_pulse",
+            style="arb",
+            envelope="ramp",  # _rabi
+            freq=cfg['qubit_freq_ge'],
+            phase=cfg['qubit_phase'],
+            gain=cfg['qubit_gain_ge']
+        )
+
+        self.add_pulse(
+            ch=qubit_ch,
+            name="pi_pulse",
+            style="arb",
+            envelope="ramp",
+            freq=cfg['qubit_freq_ge'],
+            phase=cfg['qubit_phase'],
+            gain=cfg['pi_amp']
+        )
+
         self.add_loop("gainloop", cfg["steps"])
 
     def _active_reset_block(self, cfg, prefix):
+        # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        #
+        # # 216/mux change:
+        # # Trigger all muxed readout channels.
+        # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+        #
+        # self.wait_auto(0.01, gens=True, ros=True)
+        # self.resync()
+        # self.delay_auto(t=0.01)
+        #
+        # # 216/mux change:
+        # # read_and_jump still uses one readout channel, but now it is the selected qubit's channel.
+        # self.read_and_jump(
+        #     ro_ch=self.active_reset_ro_ch,
+        #     component='I',
+        #     threshold=int(
+        #         np.round(
+        #             cfg["threshold"]
+        #             * self.soccfg.us2cycles(cfg['res_length'], ro_ch=self.active_reset_ro_ch)
+        #         )
+        #     ),
+        #     test="<",
+        #     label=f'skip_reset{prefix}'
+        # )
+        #
+        # self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
+        # self.label(f'skip_reset{prefix}')
+        # self.delay_auto(t=6)
+
+        # Active reset
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
-        self.trigger(ros=[cfg['ro_ch']], pins=[0], t=cfg['trig_time'])
+
+        # 216/mux version of ros=[cfg['ro_ch']]
+        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+
         self.wait_auto(0.01, gens=True, ros=True)
         self.resync()
         self.delay_auto(t=0.01)
-        self.read_and_jump(ro_ch=cfg['ro_ch'],
-                           component='I',
-                           threshold=int(np.round(cfg["threshold"] * self.soccfg.us2cycles(cfg['res_length'], ro_ch=cfg['ro_ch']))),
-                           test="<", label=f'skip_reset{prefix}')
+
+        self.read_and_jump(
+            ro_ch=self.active_reset_ro_ch,
+            component='I',
+            threshold=int(
+                np.round(
+                    cfg["threshold"]
+                    * self.soccfg.us2cycles(
+                        cfg['res_length'],
+                        ro_ch=self.active_reset_ro_ch
+                    )
+                )
+            ),
+            test="<",
+            label=f'skip_reset{prefix}'
+        )
+
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
         self.label(f'skip_reset{prefix}')
         self.delay_auto(t=6)
-        # Active reset
-        # n_resets = cfg.get('n_resets', 0)
-        # for i in range(n_resets):
-        #     self.label(f'measure_again{i}{prefix}')
-        #     self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
-        #     self.trigger(ros=[cfg['ro_ch']], pins=[0], t=cfg['trig_time'])
-        #     self.wait_auto(0.01, gens=True, ros=True)
-        #     self.resync()
-        #     self.delay_auto(t=0.01)
-        #     self.read_and_jump(ro_ch=cfg['ro_ch'],
-        #                        component='I',
-        #                        threshold=int(np.round(
-        #                            cfg["threshold"] * self.soccfg.us2cycles(cfg['res_length'], ro_ch=cfg['ro_ch']))),
-        #                        test="<", label=f'no_pi_{i}{prefix}')
-        #
-        #     self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
-        #     self.delay_auto(t=6)
-        #
-        #     self.label(f'no_pi_{i}{prefix}')
-        #     self.delay_auto(t=6)
-        #
-        #     #read_jump again
-        #     self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
-        #     self.trigger(ros=[cfg['ro_ch']], pins=[0], t=cfg['trig_time'])
-        #     self.wait_auto(0.01, gens=True, ros=True)
-        #     self.resync()
-        #     self.delay_auto(t=0.01)
-        #     self.read_and_jump(ro_ch=cfg['ro_ch'],
-        #                        component='I',
-        #                        threshold=int(np.round(
-        #                            cfg["g_center"] * self.soccfg.us2cycles(cfg['res_length'], ro_ch=cfg['ro_ch']))),
-        #                        test=">=", label=f'measure_again{i}{prefix}')
 
     def _body(self, cfg):
         # reset before rabi so we can use a tiny final_delay and still make sure to reset
@@ -1975,7 +2230,10 @@ class RabiWithActiveReset(AveragerProgramV2):
 
         # final measurement
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
-        self.trigger(ros=[cfg['ro_ch']], pins=[0], t=cfg['trig_time'])
+
+        # 216/mux change:
+        # Trigger all muxed readout channels.
+        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 class RabiWithActiveResetControlTest(AveragerProgramV2):
     def _initialize(self, cfg):
@@ -1983,57 +2241,98 @@ class RabiWithActiveResetControlTest(AveragerProgramV2):
         res_ch = cfg['res_ch']
         qubit_ch = cfg['qubit_ch']
 
-        self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'])
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'])
-        self.declare_readout(ch=ro_ch, length=cfg['res_length'])
+        # 216/mux change:
+        # Declare muxed resonator generator instead of scalar readout config.
+        self.declare_gen(
+            ch=res_ch,
+            nqz=cfg['nqz_res'],
+            ro_ch=ro_ch[0],
+            mux_freqs=cfg['res_freq_ge'],
+            mux_gains=cfg['res_gain_ge'],
+            mux_phases=cfg['res_phase'],
+            mixer_freq=cfg['mixer_freq']
+        )
 
-        self.add_readoutconfig(ch=ro_ch, name="myro",
-                               freq=cfg['res_freq_ge'],
-                               gen_ch=res_ch,
-                               outsel='product')
-        self.send_readoutconfig(ch=ro_ch, name="myro", t=0)
+        # 216/mux change:
+        # Declare every readout channel.
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['res_phase']):
+            self.declare_readout(
+                ch=ch,
+                length=cfg['res_length'],
+                freq=f,
+                phase=ph,
+                gen_ch=res_ch
+            )
 
-        self.add_pulse(ch=res_ch, name="res_pulse", ro_ch=ro_ch,
-                       style="const",
-                       length=cfg["res_length"],
-                       freq=cfg['res_freq_ge'],
-                       phase=cfg['ro_phase'],
-                       gain=cfg['res_gain_ge'])
+        # 216/mux change:
+        # Muxed resonator pulse uses mask, not scalar freq/phase/gain.
+        self.add_pulse(
+            ch=res_ch,
+            name="res_pulse",
+            style="const",
+            length=cfg["res_length"],
+            mask=cfg["list_of_all_qubits"]
+        )
 
-        self.add_gauss(ch=qubit_ch, name="ramp",
-                       sigma=cfg['sigma'],
-                       length=cfg['sigma'] * 4,
-                       even_length=False)
+        self.declare_gen(
+            ch=qubit_ch,
+            nqz=cfg['nqz_qubit'],
+            mixer_freq=cfg['qubit_mixer_freq']
+        )
 
-        self.add_gauss(ch=qubit_ch, name="ramp_rabi",
-                       sigma=cfg['active_reset_test_sigma'],
-                       length=cfg['active_reset_test_sigma'] * 4,
-                       even_length=False)
+        self.add_gauss(
+            ch=qubit_ch,
+            name="ramp",
+            sigma=cfg['sigma'],
+            length=cfg['sigma'] * 4,
+            even_length=False
+        )
 
-        self.add_pulse(ch=qubit_ch, name="qubit_pulse",
-                       style="arb",
-                       envelope="ramp",#_rabi
-                       freq=cfg['qubit_freq_ge'],
-                       phase=cfg['qubit_phase'],
-                       gain=cfg['qubit_gain_ge'])
+        self.add_gauss(
+            ch=qubit_ch,
+            name="ramp_rabi",
+            sigma=cfg['active_reset_test_sigma'],
+            length=cfg['active_reset_test_sigma'] * 4,
+            even_length=False
+        )
 
-        self.add_pulse(ch=qubit_ch, name="pi_pulse",
-                       style="arb",
-                       envelope="ramp",
-                       freq=cfg['qubit_freq_ge'],
-                       phase=cfg['qubit_phase'],
-                       gain=cfg['pi_amp'])
+        self.add_pulse(
+            ch=qubit_ch,
+            name="qubit_pulse",
+            style="arb",
+            envelope="ramp",  # _rabi
+            freq=cfg['qubit_freq_ge'],
+            phase=cfg['qubit_phase'],
+            gain=cfg['qubit_gain_ge']
+        )
+
+        self.add_pulse(
+            ch=qubit_ch,
+            name="pi_pulse",
+            style="arb",
+            envelope="ramp",
+            freq=cfg['qubit_freq_ge'],
+            phase=cfg['qubit_phase'],
+            gain=cfg['pi_amp']
+        )
+
         print('cfg[threshold]: ', cfg['threshold'])
         print('cfg[pi_amp]: ', cfg['pi_amp'])
+
         self.add_loop("gainloop", cfg["steps"])
 
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
         self.delay_auto(t=0.05, tag='waiting')
-        #self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
-        #self.trigger(ros=[cfg['ro_ch']], pins=[0], t=cfg['trig_time'])
-        #self.delay_auto(t=0)
-        #self.pulse(ch=self.cfg["qubit_ch"], name="pi_pulse", t=0)
-        #self.delay_auto(t=0)
+
+        # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+        # self.delay_auto(t=0)
+        # self.pulse(ch=self.cfg["qubit_ch"], name="pi_pulse", t=0)
+        # self.delay_auto(t=0)
+
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
-        self.trigger(ros=[cfg['ro_ch']], pins=[0], t=cfg['trig_time'])
+
+        # 216/mux change:
+        # Trigger all muxed readout channels.
+        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])

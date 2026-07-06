@@ -47,11 +47,12 @@ run_name = 'run9d'
 device_name = '6transmon'
 substudy_txt_notes = ('testing active reset')
 
-run_flags = {"res_spec": True, "q_spec": True, "rabi": True, "ss": True}
+run_flags = {"res_spec": True, "q_spec": True, "rabi": True, "ss": True,
+             "act_reset_0corr": True, "act_reset_1corr": True}
 
 ################################################ optimization outputs ##################################################
 # Optimization parameters for resonator spectroscopy
-res_leng_vals = [5.4, 6.4, 6.2, 6.2, 6.8, 7.0]
+res_leng_vals = [5.6, 6.4, 6.2, 6.2, 6.8, 7.0]
 res_gain = [0.8164, 0.8, 0.8156,0.6156, 0.8125, 0.8375]
 freq_offsets = [-0.2000, -0.1111, -0.1111,-0.1111,-0.3000,-0.0667]
 
@@ -112,12 +113,12 @@ def create_data_dict(keys, save_r, qs):
 
 # Define what to save to h5 files
 res_keys = ['Dates', 'freq_pts', 'freq_center', 'Amps', 'Found Freqs', 'Round Num', 'Batch Num', 'Exp Config',
-            'Syst Config']
+            'Syst Config', 'measurement_timestamp']
 qspec_keys = ['Dates', 'I', 'Q', 'Frequencies', 'I Fit', 'Q Fit', 'Round Num', 'Batch Num','Recycled QFreq',
-              'Exp Config', 'Syst Config','ss_Q_e', 'ss_Q_g','ss_I_e', 'ss_I_g', 'I_shots', 'Q_shots', 'Gains']
-rabi_keys = ['Dates', 'I', 'Q', 'Gains', 'Fit', 'Round Num', 'Batch Num', 'Exp Config', 'Syst Config',  'ss_Q_e', 'ss_Q_g','ss_I_e', 'ss_I_g', 'I_shots', 'Q_shots']
+              'Exp Config', 'Syst Config','ss_Q_e', 'ss_Q_g','ss_I_e', 'ss_I_g', 'I_shots', 'Q_shots', 'Gains', 'measurement_timestamp']
+rabi_keys = ['Dates', 'I', 'Q', 'Gains', 'Fit', 'Round Num', 'Batch Num', 'Exp Config', 'Syst Config',  'ss_Q_e', 'ss_Q_g','ss_I_e', 'ss_I_g', 'I_shots', 'Q_shots', 'measurement_timestamp']
 ss_keys = ['Fidelity', 'Angle', 'Dates', 'I_g', 'Q_g', 'I_e', 'Q_e', 'Round Num', 'Batch Num', 'Exp Config',
-           'Syst Config', 'I_shots', 'Q_shots']
+           'Syst Config', 'I_shots', 'Q_shots', 'measurement_timestamp']
 
 #initialize a simple list to store the qspec values in incase a fit fails
 stored_qspec_list = [None] * tot_num_of_qubits
@@ -130,6 +131,8 @@ ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
 batch_num=0
 j = 0
 for QubitIndex in Qs_to_look_at:
+    meas_time_RR[QubitIndex] = {}
+    recycled_qfreq = False  # don't change
 
     # Get the config for this qubit
     DAC_attenuator1 = 15
@@ -138,20 +141,14 @@ for QubitIndex in Qs_to_look_at:
                                  qubit_DAC_attenuator1=5,
                                  qubit_DAC_attenuator2=4, ADC_attenuator=17,
                                  fridge=FRIDGE)  # ADC_attenuator MUST be above 16dB
-
     experiment.create_folder_if_not_exists(optimizationFolder)
+    print("DAC atten: ", DAC_attenuator1 + DAC_attenuator2)
 
-    experiment.readout_cfg['res_gain_ge'] = res_gain[QubitIndex]
-    experiment.readout_cfg['res_gain_ef'] = res_gain[QubitIndex]
+    # Mask out all other resonators except this one
+    res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=res_gain[QubitIndex], num_qubits=tot_num_of_qubits)
+    experiment.readout_cfg['res_gain_ge'] = res_gains
+    experiment.readout_cfg['res_gain_ef'] = res_gains
     experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
-    experiment.readout_cfg['res_freq_ge'] = experiment.readout_cfg['res_freq_ge'][QubitIndex]
-
-    experiment.qubit_cfg['qubit_freq_ge'] = experiment.qubit_cfg['qubit_freq_ge'][QubitIndex]
-    experiment.qubit_cfg['qubit_gain_ge'] = experiment.qubit_cfg['qubit_gain_ge'][QubitIndex]
-
-    experiment.readout_cfg['res_freq_ge'] = freq_offsets[QubitIndex] + 7287.57 # where did this number come from
-    experiment.qubit_cfg['qubit_freq_ge'] = float(3095.192) # where did this number come from
-    experiment.qubit_cfg['pi_amp'] =  experiment.qubit_cfg['pi_amp'][QubitIndex]
 
     ############################### Do Res spec once per qubit and store the value ####################################
     ################################################## g-e Res spec ####################################################
@@ -356,7 +353,7 @@ for QubitIndex in Qs_to_look_at:
         del rabi_data
         rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
 
-    ############################### g-e Single Shot Measurement, get the rotation angle and update config ############################
+    ############################### g-e Single Shot Measurement, get the rotation angle and threshold and update config ############################
     if run_flags["ss"]:
         ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
         t0 = time.perf_counter()
@@ -371,7 +368,7 @@ for QubitIndex in Qs_to_look_at:
             try_num = 0
             fid_check = 0
 
-            ssf_thresholds = [0.85, 0.80, 0.80, 0.8, 0.20,0.75]  # all Qs are generally above these unless something is wrong
+            ssf_thresholds = [0.99, 0.99, 0.99, 0.99, 0.99, 0.99]  # dummy values, this isnt used here, but it is used in the main RR script for run 9
             ssf_threshold = ssf_thresholds[QubitIndex]
 
             while fid_check < ssf_threshold and try_num < max_tries:
@@ -381,7 +378,7 @@ for QubitIndex in Qs_to_look_at:
                 ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
                                 experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
                                 reduce_rlx_delay=reduce_rlx_delay_ssf, reduce_rlx_delay_to=reduce_rlx_delay_ssf_to)
-                fid, angle, _, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge = ss.run()
+                fid, angle, thresh, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge, g_center, e_center = ss.run(return_centers = True)
 
                 fid_check = fid
                 # if fid_check < ssf_threshold: # checks if SSF is bad, if it is it tries again
@@ -397,82 +394,20 @@ for QubitIndex in Qs_to_look_at:
             I_e = iq_list_e[QubitIndex][0].T[0]
             Q_e = iq_list_e[QubitIndex][0].T[1]
 
-            theta = -np.arctan2(np.median(Q_e) - np.median(Q_g), np.median(I_e) - np.median(I_g))
-            # update config ro_phase to rotate blobs onto I for future experiments below this
-            experiment.readout_cfg['ro_phase'] = np.degrees(theta)
-
-            ss_data[QubitIndex]['Fidelity'][j - batch_num * save_r - 1] = fid
-            ss_data[QubitIndex]['Angle'][j - batch_num * save_r - 1] = angle
-            ss_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
-            ss_data[QubitIndex]['I_g'][j - batch_num * save_r - 1] = I_g
-            ss_data[QubitIndex]['Q_g'][j - batch_num * save_r - 1] = Q_g
-            ss_data[QubitIndex]['I_e'][j - batch_num * save_r - 1] = I_e
-            ss_data[QubitIndex]['Q_e'][j - batch_num * save_r - 1] = Q_e
-            ss_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-            ss_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-            ss_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-            ss_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_ss
-            ss_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_ssge
-
-            saver_ss = Data_H5(subStudyDataFolder, ss_data, batch_num, save_r)
-            saver_ss.save_to_h5('ss_ge_unpre_rotated')
-            del saver_ss
-            del ss_data
-            del ss
-
-            ##################### g-e Single Shot Measurement, should be rotated all into I ########################
-            ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
-            ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
-                            experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
-                            reduce_rlx_delay=reduce_rlx_delay_ssf, reduce_rlx_delay_to=reduce_rlx_delay_ssf_to)
-            fid, angle, thresh, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge = ss.run()
-            I_g = iq_list_g[QubitIndex][0].T[0]
-            Q_g = iq_list_g[QubitIndex][0].T[1]
-            I_e = iq_list_e[QubitIndex][0].T[0]
-            Q_e = iq_list_e[QubitIndex][0].T[1]
-
-            experiment.readout_cfg['threshold'] = thresh
-            experiment.readout_cfg['g_center'] = g_center[0] # 0 is I, 1 is Q
-            experiment.readout_cfg['e_center'] = e_center[0]
-            print(thresh, e_center, g_center)
-
-            ss_data[QubitIndex]['Fidelity'][j - batch_num * save_r - 1] = fid
-            ss_data[QubitIndex]['Angle'][j - batch_num * save_r - 1] = angle
-            ss_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
-            ss_data[QubitIndex]['I_g'][j - batch_num * save_r - 1] = I_g
-            ss_data[QubitIndex]['Q_g'][j - batch_num * save_r - 1] = Q_g
-            ss_data[QubitIndex]['I_e'][j - batch_num * save_r - 1] = I_e
-            ss_data[QubitIndex]['Q_e'][j - batch_num * save_r - 1] = Q_e
-            ss_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-            ss_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-            ss_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-            ss_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_ss
-            ss_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_ssge
-
-            saver_ss = Data_H5(subStudyDataFolder, ss_data, batch_num, save_r)
-            saver_ss.save_to_h5('ss_ge_phase_fixed')
-            del saver_ss
-            del ss_data
-            del ss
-
-            ###################### g-e Single Shot Measurement, active reset ########################
-            ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
-            ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs, experiment=experiment,
-                            verbose=verbose, logger=rr_logger, unmasking_resgain=unmask)
-            fid, angle, thresh, iq_list_g, iq_list_e, sys_config_ss, g_center, e_center = ss.run(active_reset=True)
-            I_g = iq_list_g[QubitIndex][0].T[0]
-            Q_g = iq_list_g[QubitIndex][0].T[1]
-            I_e = iq_list_e[QubitIndex][0].T[0]
-            Q_e = iq_list_e[QubitIndex][0].T[1]
+            #  Update config ro_phase to rotate blobs onto I for future experiments below this
+            #theta = -np.arctan2(np.median(Q_e) - np.median(Q_g), np.median(I_e) - np.median(I_g)) # no need to do it out here, code returns the angle
+            experiment.readout_cfg['ro_phase'][QubitIndex] = np.degrees(angle)
 
             experiment.readout_cfg['threshold'] = thresh
             experiment.readout_cfg['g_center'] = g_center[0]  # 0 is I, 1 is Q
             experiment.readout_cfg['e_center'] = e_center[0]
+            print('SSF threshold: ', thresh)
+            print('SSF g_center: ', g_center)
+            print('SSF e_center: ', e_center)
 
             ss_data[QubitIndex]['Fidelity'][j - batch_num * save_r - 1] = fid
             ss_data[QubitIndex]['Angle'][j - batch_num * save_r - 1] = angle
-            ss_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
-                time.mktime(datetime.datetime.now().timetuple()))
+            ss_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
             ss_data[QubitIndex]['I_g'][j - batch_num * save_r - 1] = I_g
             ss_data[QubitIndex]['Q_g'][j - batch_num * save_r - 1] = Q_g
             ss_data[QubitIndex]['I_e'][j - batch_num * save_r - 1] = I_e
@@ -483,8 +418,8 @@ for QubitIndex in Qs_to_look_at:
             ss_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_ss
             ss_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_ssge
 
-            saver_ss = Data_H5(subStudyDataFolder, ss_data, batch_num, save_r)
-            saver_ss.save_to_h5('ss_ge_active_reset')
+            saver_ss = Data_H5(optimizationFolder, ss_data, batch_num, save_r)
+            saver_ss.save_to_h5('ss_ge')
             del saver_ss
             del ss_data
             del ss
@@ -548,7 +483,7 @@ for QubitIndex in Qs_to_look_at:
         rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
 
     ###################### active reset Rabi with 1 correction ########################
-    if run_flags["act_reset_0corr"]:
+    if run_flags["act_reset_1corr"]:
         experiment.readout_cfg['n_resets'] = 1
         rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
         rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,

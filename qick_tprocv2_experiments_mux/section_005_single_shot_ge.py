@@ -193,13 +193,13 @@ class SingleShot:
 
         return fidelity
 
-    def run(self, active_reset = False):
+    def run(self, return_centers = False, active_reset = False):
         if active_reset:
             ssp_g = SingleShotProgram_g_active_reset(self.experiment.soccfg, reps=1, final_delay=1000,cfg=self.config)
-            iq_list_g = ssp_g.acquire(self.experiment.soc, rounds=1, progress=True)
+            iq_list_g = ssp_g.acquire(self.experiment.soc, soft_avgs=1, progress=True)
 
             ssp_e = SingleShotProgram_e_active_reset(self.experiment.soccfg, reps=1, final_delay=1000,cfg=self.config)
-            iq_list_e = ssp_e.acquire(self.experiment.soc, rounds=1, progress=True)
+            iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=True)
             arr = np.asarray(iq_list_e)
 
             raw_g = ssp_g.get_raw()
@@ -207,7 +207,7 @@ class SingleShot:
             # thresh = int((np.mean(raw_g[0][:, :, 0]) + np.mean(raw_e[0][:, :, 0])) / 2)
             # fid, angle = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
             measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
-            fid, angle, thresh, g_center, e_center = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex,return_thres=True,active_reset=active_reset)
+            fid, angle, thresh, g_center, e_center = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex, active_reset=active_reset)
 
             return fid, angle, thresh, iq_list_g, iq_list_e, self.config, measurement_timestamp, g_center, e_center
 
@@ -222,11 +222,15 @@ class SingleShot:
 
             measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
 
-            fid, angle, thresh = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
-            # fid, angle = self.plot_results(g_shots, e_shots, self.QubitIndex)
-            return fid, angle, thresh, iq_list_g, iq_list_e, self.config, measurement_timestamp
+            if return_centers:
+                fid, angle, thresh, g_center, e_center = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex, return_centers = return_centers)
+                return fid, angle, thresh, iq_list_g, iq_list_e, self.config, measurement_timestamp, g_center, e_center
+            else:
+                fid, angle, thresh = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
+                # fid, angle = self.plot_results(g_shots, e_shots, self.QubitIndex)
+                return fid, angle, thresh, iq_list_g, iq_list_e, self.config, measurement_timestamp
 
-    def plot_results(self, iq_list_g, iq_list_e, QubitIndex,  fig_quality=100, active_reset = False):
+    def plot_results(self, iq_list_g, iq_list_e, QubitIndex,  fig_quality=100, return_centers = False, active_reset = False):
         # Original Method, QICK processed SSF IQ shots
         I_g = iq_list_g[QubitIndex][0].T[0]
         Q_g = iq_list_g[QubitIndex][0].T[1]
@@ -240,22 +244,38 @@ class SingleShot:
         # Q_e = iq_list_e[self.QubitIndex][:, :, 0, 1][0]
 
         if active_reset:
-            fid, threshold, angle, ig_new, ie_new, g_center, e_center = self.hist_ssf(QubitIndex, data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=self.save_figs,fig_quality=fig_quality, active_reset=True)
+            fid, threshold, angle, ig_new, ie_new, g_center, e_center = self.hist_ssf(QubitIndex, data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=self.save_figs, fig_quality=fig_quality, active_reset=active_reset)
             if self.verbose: print('Optimal fidelity after rotation = %.3f' % fid)
             if self.verbose: print('Optimal angle after rotation = %f' % angle)
             self.logger.info('Optimal fidelity after rotation = %.3f' % fid)
             self.logger.info('Optimal angle after rotation = %f' % angle)
             return fid, angle, threshold, g_center, e_center
         else:
-            fid, threshold, angle, ig_new, ie_new = self.hist_ssf(QubitIndex, data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=self.save_figs,fig_quality=fig_quality,active_reset=False)
-            if self.verbose: print('Optimal fidelity after rotation = %.3f' % fid)
-            if self.verbose: print('Optimal angle after rotation = %f' % angle)
-            self.logger.info('Optimal fidelity after rotation = %.3f' % fid)
-            self.logger.info('Optimal angle after rotation = %f' % angle)
-            return fid, angle, threshold
+            if return_centers:
+                fid, threshold, angle, ig_new, ie_new, g_center, e_center = self.hist_ssf(QubitIndex, data=[I_g, Q_g, I_e, Q_e],
+                                                                      cfg=self.config, plot=self.save_figs,
+                                                                      fig_quality=fig_quality,
+                                                                      return_centers=return_centers,
+                                                                      active_reset=active_reset)
+                if self.verbose: print('Optimal fidelity after rotation = %.3f' % fid)
+                if self.verbose: print('Optimal angle after rotation = %f' % angle)
+                self.logger.info('Optimal fidelity after rotation = %.3f' % fid)
+                self.logger.info('Optimal angle after rotation = %f' % angle)
+                return fid, angle, threshold, g_center, e_center
+            else:
+                fid, threshold, angle, ig_new, ie_new = self.hist_ssf(QubitIndex, data=[I_g, Q_g, I_e, Q_e],
+                                                                      cfg=self.config, plot=self.save_figs,
+                                                                      fig_quality=fig_quality,
+                                                                      return_centers=return_centers,
+                                                                      active_reset=active_reset)
+                if self.verbose: print('Optimal fidelity after rotation = %.3f' % fid)
+                if self.verbose: print('Optimal angle after rotation = %f' % angle)
+                self.logger.info('Optimal fidelity after rotation = %.3f' % fid)
+                self.logger.info('Optimal angle after rotation = %f' % angle)
+                return fid, angle, threshold
 
 
-    def hist_ssf(self, QubitIndex, data=None, cfg=None, plot=True,  fig_quality = 100, file_ext="", active_reset = False):
+    def hist_ssf(self, QubitIndex, data=None, cfg=None, plot=True,  fig_quality = 100, file_ext="", return_centers = False, active_reset = False):
 
         ig = data[0]
         qg = data[1]
@@ -342,7 +362,7 @@ class SingleShot:
             fig.savefig(file_name,  dpi=fig_quality, bbox_inches='tight')
             plt.close(fig)
 
-        if active_reset:
+        if active_reset or return_centers:
             g_center = (np.median(ig_new), np.median(qg_new))
             e_center = (np.median(ie_new), np.median(qe_new))
             return fid, threshold, theta, ig_new, ie_new, g_center, e_center
@@ -506,22 +526,22 @@ class SingleShotProgram_g_active_reset(AveragerProgramV2):
         res_ch = cfg['res_ch']
         qubit_ch = cfg['qubit_ch']
 
-        self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'])
-        self.declare_readout(ch=cfg['ro_ch'], length=cfg['res_length'])
+        self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
+                         mux_freqs=cfg['res_freq_ge'],
+                         mux_gains=cfg['res_gain_ge'],
+                         mux_phases=cfg['res_phase'],
+                         mixer_freq=cfg['mixer_freq'])
 
-        self.add_readoutconfig(ch=ro_chs, name="myro",
-                               freq=cfg['res_freq_ge'],
-                               gen_ch=res_ch,
-                               outsel='product')
-        self.send_readoutconfig(ch=cfg['ro_ch'], name="myro", t=0)
-        self.add_pulse(ch=res_ch, name="res_pulse", ro_ch=ro_chs,
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
+            self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
+
+        self.add_pulse(ch=res_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
-                       freq=cfg['res_freq_ge'],
-                       phase=cfg['ro_phase'],
-                       gain=cfg['res_gain_ge']
+                       mask=cfg["list_of_all_qubits"],
                        )
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'])
+
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
 
         self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
 
@@ -538,49 +558,51 @@ class SingleShotProgram_g_active_reset(AveragerProgramV2):
     def _active_reset_block(self, cfg):
         # Active reset
         n_resets = cfg.get('n_resets', 0)
+        ro_ch_this = cfg['ro_ch'][cfg['list_of_all_qubits'][0]]
+
         for i in range(n_resets):
             self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
-            self.trigger(ros=[cfg['ro_ch']], pins=[0], t=cfg['trig_time'])
+            self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
             self.wait_auto(0.01, gens=True, ros=True)
             self.resync()
             self.delay_auto(t=0.01)
-            self.read_and_jump(ro_ch=cfg['ro_ch'],
+            self.read_and_jump(ro_ch=ro_ch_this,
                                component='I',
                                threshold=int(np.round(
-                                   cfg["threshold"] * self.soccfg.us2cycles(cfg['res_length'], ro_ch=cfg['ro_ch']))),
+                                   cfg["threshold"] * self.soccfg.us2cycles(cfg['res_length'], ro_ch=ro_ch_this))),
                                test="<", label=f'skip_reset_{i}')
             self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
             self.delay_auto(t=6)
             self.label(f'skip_reset_{i}')
+
     def _body(self, cfg):
         self._active_reset_block(cfg)
         self.delay_auto(0.01)
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
-        self.trigger(ros=[cfg['ro_ch']], pins=[0], t=cfg['trig_time'])
+        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 class SingleShotProgram_e_active_reset(AveragerProgramV2):
     def _initialize(self, cfg):
-        ro_ch = cfg['ro_ch']
+        ro_chs = cfg['ro_ch']
         res_ch = cfg['res_ch']
         qubit_ch = cfg['qubit_ch']
 
-        self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'])
-        self.declare_readout(ch=cfg['ro_ch'], length=cfg['res_length'])
+        self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
+                         mux_freqs=cfg['res_freq_ge'],
+                         mux_gains=cfg['res_gain_ge'],
+                         mux_phases=cfg['res_phase'],
+                         mixer_freq=cfg['mixer_freq'])
 
-        self.add_readoutconfig(ch=ro_ch, name="myro",
-                               freq=cfg['res_freq_ge'],
-                               gen_ch=res_ch,
-                               outsel='product')
-        self.send_readoutconfig(ch=cfg['ro_ch'], name="myro", t=0)
-        self.add_pulse(ch=res_ch, name="res_pulse", ro_ch=ro_ch,
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
+            self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
+
+        self.add_pulse(ch=res_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
-                       freq=cfg['res_freq_ge'],
-                       phase=cfg['ro_phase'],
-                       gain=cfg['res_gain_ge']
+                       mask=cfg["list_of_all_qubits"],
                        )
 
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'])
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
 
         self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
 
@@ -591,24 +613,29 @@ class SingleShotProgram_e_active_reset(AveragerProgramV2):
                        phase=cfg['qubit_phase'],
                        gain=cfg['pi_amp'],
                        )
+
         self.add_loop("shotloop", cfg["steps"])  # number of total shots
+
     def _active_reset_block(self, cfg, label_addition=''):
         # Active reset
+        ro_ch_this = cfg['ro_ch'][cfg['list_of_all_qubits'][0]]
+
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
-        self.trigger(ros=[cfg['ro_ch']], pins=[0], t=cfg['trig_time'])
+        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
         self.wait_auto(0.01, gens=True, ros=True)
         self.resync()
         # self.delay_auto(t=0.01)
-        self.read_and_jump(ro_ch=cfg['ro_ch'],
+        self.read_and_jump(ro_ch=ro_ch_this,
                            component='I',
                            threshold=int(np.round(
-                               cfg["threshold"] * self.soccfg.us2cycles(cfg['res_length'], ro_ch=cfg['ro_ch']))),
+                               cfg["threshold"] * self.soccfg.us2cycles(cfg['res_length'], ro_ch=ro_ch_this))),
                            test="<", label=f'skip_reset_{label_addition}')
 
         self.label(f'skip_reset_{label_addition}')
 
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
         self.delay_auto(t=6)
+
     def _body(self, cfg):
         #self._active_reset_block(cfg)
         # self.delay_auto(0.01)
@@ -620,4 +647,4 @@ class SingleShotProgram_e_active_reset(AveragerProgramV2):
         self._active_reset_block(cfg, label_addition='post')
 
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
-        self.trigger(ros=[cfg['ro_ch']], pins=[0], t=cfg['trig_time'])
+        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
