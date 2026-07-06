@@ -29,7 +29,7 @@ number_of_qubits = 6 # for QUIET 6, for NEXUS 4
 list_of_all_qubits = [0,1,2,3,4,5] # for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0, 1, 2, 3]
 
 # For Quiet
-substudy = "initial_opt"
+substudy = "second_opt"
 outerFolder = os.path.join(f"/data/QICK_data/run9d/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 
 opt_flags = {"res_leng_sweep": False, "2d_sweep": True}
@@ -52,7 +52,7 @@ n = 1  # Number of rounds
 n_loops = 4 # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [2]
+Qs = [0,1,2,3,4,5]
 
 # For 25dB DAC, 7/4/2026
 res_leng_vals = [5.4, 6.4, 6.2, 6.2, 6.8, 7.0]
