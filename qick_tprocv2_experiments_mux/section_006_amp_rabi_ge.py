@@ -1804,3 +1804,113 @@ class AmplitudeRabi_QZE_Program(AveragerProgramV2):
         # Trigger the readout channels to collect the data.
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
+
+####################### Arianna is currently testing the class below ###################################################################
+class RabiWithActiveReset(AveragerProgramV2):
+    def _initialize(self, cfg):
+        ro_ch = cfg['ro_ch']
+        res_ch = cfg['res_ch']
+        qubit_ch = cfg['qubit_ch']
+
+        self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'])
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'])
+        self.declare_readout(ch=ro_ch, length=cfg['res_length'])
+
+        self.add_readoutconfig(ch=ro_ch, name="myro",
+                               freq=cfg['res_freq_ge'],
+                               gen_ch=res_ch,
+                               outsel='product')
+        self.send_readoutconfig(ch=ro_ch, name="myro", t=0)
+
+        self.add_pulse(ch=res_ch, name="res_pulse", ro_ch=ro_ch,
+                       style="const",
+                       length=cfg["res_length"],
+                       freq=cfg['res_freq_ge'],
+                       phase=cfg['ro_phase'],
+                       gain=cfg['res_gain_ge'])
+
+        self.add_gauss(ch=qubit_ch, name="ramp",
+                       sigma=cfg['sigma'],
+                       length=cfg['sigma'] * 4,
+                       even_length=False)
+
+        self.add_gauss(ch=qubit_ch, name="ramp_rabi",
+                       sigma=cfg['active_reset_test_sigma'],
+                       length=cfg['active_reset_test_sigma'] * 4,
+                       even_length=False)
+
+        self.add_pulse(ch=qubit_ch, name="qubit_pulse",
+                       style="arb",
+                       envelope="ramp",#_rabi
+                       freq=cfg['qubit_freq_ge'],
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['qubit_gain_ge'])
+
+        self.add_pulse(ch=qubit_ch, name="pi_pulse",
+                       style="arb",
+                       envelope="ramp",
+                       freq=cfg['qubit_freq_ge'],
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['pi_amp'])
+        self.add_loop("gainloop", cfg["steps"])
+
+    def _active_reset_block(self, cfg, prefix):
+        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        self.trigger(ros=[cfg['ro_ch']], pins=[0], t=cfg['trig_time'])
+        self.wait_auto(0.01, gens=True, ros=True)
+        self.resync()
+        self.delay_auto(t=0.01)
+        self.read_and_jump(ro_ch=cfg['ro_ch'],
+                           component='I',
+                           threshold=int(np.round(cfg["threshold"] * self.soccfg.us2cycles(cfg['res_length'], ro_ch=cfg['ro_ch']))),
+                           test="<", label=f'skip_reset{prefix}')
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
+        self.label(f'skip_reset{prefix}')
+        self.delay_auto(t=6)
+        # Active reset
+        # n_resets = cfg.get('n_resets', 0)
+        # for i in range(n_resets):
+        #     self.label(f'measure_again{i}{prefix}')
+        #     self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        #     self.trigger(ros=[cfg['ro_ch']], pins=[0], t=cfg['trig_time'])
+        #     self.wait_auto(0.01, gens=True, ros=True)
+        #     self.resync()
+        #     self.delay_auto(t=0.01)
+        #     self.read_and_jump(ro_ch=cfg['ro_ch'],
+        #                        component='I',
+        #                        threshold=int(np.round(
+        #                            cfg["threshold"] * self.soccfg.us2cycles(cfg['res_length'], ro_ch=cfg['ro_ch']))),
+        #                        test="<", label=f'no_pi_{i}{prefix}')
+        #
+        #     self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
+        #     self.delay_auto(t=6)
+        #
+        #     self.label(f'no_pi_{i}{prefix}')
+        #     self.delay_auto(t=6)
+        #
+        #     #read_jump again
+        #     self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        #     self.trigger(ros=[cfg['ro_ch']], pins=[0], t=cfg['trig_time'])
+        #     self.wait_auto(0.01, gens=True, ros=True)
+        #     self.resync()
+        #     self.delay_auto(t=0.01)
+        #     self.read_and_jump(ro_ch=cfg['ro_ch'],
+        #                        component='I',
+        #                        threshold=int(np.round(
+        #                            cfg["g_center"] * self.soccfg.us2cycles(cfg['res_length'], ro_ch=cfg['ro_ch']))),
+        #                        test=">=", label=f'measure_again{i}{prefix}')
+
+    def _body(self, cfg):
+        # reset before rabi so we can use a tiny final_delay and still make sure to reset
+        self._active_reset_block(cfg, prefix="pre")
+
+        # Rabi pulse
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
+        self.delay_auto(t=0.0, tag='waiting')
+
+        self._active_reset_block(cfg, prefix="post")
+
+        # final measurement
+        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        self.trigger(ros=[cfg['ro_ch']], pins=[0], t=cfg['trig_time'])
+
