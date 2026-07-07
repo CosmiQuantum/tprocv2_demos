@@ -182,7 +182,7 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ge": {
-            "reps": 200,#115,
+            "reps": 150,#115,
             "rounds": 1,  # 5
             "start": [0] * 6,  # [DAC units]
             "stop": [1] * 6,#[1.0] * 6,  # [DAC units]
@@ -431,7 +431,7 @@ if FRIDGE == "QUIET":
         },
 
         "Readout_Optimization":{ # used for SSF
-            "steps": 10000, # shots
+            "steps": 5000, # 10000# shots
             "py_avg": 1,
             "gain_start" : [0, 0, 0, 0], # used in readout-optimization scripts
             "gain_stop" : [1, 0, 0, 0], # used in readout-optimization scripts

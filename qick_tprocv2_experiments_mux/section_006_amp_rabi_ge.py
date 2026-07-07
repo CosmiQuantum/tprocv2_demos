@@ -19,6 +19,7 @@ from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
 import datetime
 import os
+from section_008_save_data_to_h5 import Data_H5
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
 
@@ -122,6 +123,9 @@ class AmplitudeRabiExperiment:
         else:
             return I, Q, gains, q1_fit_cosine, pi_amp, self.config, measurement_timestamp
 
+    def create_data_dict(self,keys, save_r, qs):
+        return {Q: {key: np.empty(save_r, dtype=object) for key in keys} for Q in range(len(qs))}
+
     def run_active_reset(self, scaling=True, control_test=False):
         # 216/mux change:
         # Store which qubit/readout channel should be used for the active-reset threshold decision.
@@ -175,17 +179,42 @@ class AmplitudeRabiExperiment:
         print(iq_list.shape)
         n_reads = iq_list.shape[0]
 
-        # fig, axs = plt.subplots(n_reads, 1, figsize=(10, 3 * n_reads), sharex=True)
-        # if n_reads == 1:
-        #     axs = [axs]
-        #
-        # for k in range(n_reads):
-        #     axs[k].plot(gains, iq_list[k, :, 0], label=f"I read {k}")
-        #     axs[k].plot(gains, iq_list[k, :, 1], label=f"Q read {k}")
-        #     axs[k].legend()
-        #     axs[k].set_ylabel("Amp (a.u.)")
-        #     axs[k].set_title(f"Read index {k} (avg over first axis)")
-        # plt.show()
+        #if scaling and (not control_test) and self.config.get("n_resets", 0) == 1 and n_reads >= 2:
+            # Function currently set up to compare curves for 1 correction case only (compares before and after it)
+            # This does not change your return tuple or H5 saving. It just saves an extra diagnostic plot for the active-reset run.
+            # Expectation:
+            # Before correction: Rabi-like curve
+            # After correction: lower / flatter curve
+
+            # self.plot_active_reset_pre_post_reads( # need to debug
+            #     iq_list=iq_list,
+            #     gains=gains,
+            #     ss_I_e=ss_I_e,
+            #     ss_I_g=ss_I_g,
+            #     ss_Q_e=ss_Q_e,
+            #     ss_Q_g=ss_Q_g,
+            #     save_folder=os.path.join(
+            #         self.outerFolder,
+            #         self.expt_name + f"_active_reset_{self.config['n_resets']}corr_diagnostics"
+            #     ),
+            #     filename_tag="pre_post_read_check",
+            #     ylim=None,
+            #     show=False,
+            #     verbose=self.verbose,
+            # )
+
+            # self.plot_all_active_reset_reads( # need to debug
+            #     iq_list=iq_list,
+            #     gains=gains,
+            #     ss_I_e=ss_I_e,
+            #     ss_I_g=ss_I_g,
+            #     ss_Q_e=ss_Q_e,
+            #     ss_Q_g=ss_Q_g,
+            #     save_folder=os.path.join(
+            #         self.outerFolder,
+            #         self.expt_name + f"_active_reset_{self.config['n_resets']}corr_diagnostics"
+            #     ),
+            # )
 
         I = iq_list[-1, :, 0]
         Q = iq_list[-1, :, 1]
@@ -250,6 +279,101 @@ class AmplitudeRabiExperiment:
     def cosine(self, x, a, b, c, d):
 
         return a * np.cos(2. * np.pi * b * x - c * 2 * np.pi) + d
+
+    def run_and_save_active_reset_rabi(
+            self,
+            n_resets,
+            FolderPath,
+            rabi_keys,
+            save_r,
+            list_of_all_qubits,
+            expt_cfg,
+            batch_num,
+            active_reset_comparison_runs):
+
+        self.experiment.readout_cfg['n_resets'] = n_resets
+
+        # Important: refresh this object's config after changing readout_cfg
+        q_config = all_qubit_state(self.experiment, self.number_of_qubits)
+        self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
+        self.config = {**q_config[self.Qubit], **self.exp_cfg}
+
+        rabi_data = self.create_data_dict(rabi_keys, save_r, list_of_all_qubits)
+
+        (
+            rabi_I_corrected,
+            rabi_Q_corrected,
+            rabi_gains_corrected,
+            rabi_fit_corrected,
+            pi_amp_corrected,
+            sys_config_rabi_corrected,
+            ss_Q_e,
+            ss_Q_g,
+            ss_I_e,
+            ss_I_g,
+            I_shots_rabi_corr,
+            Q_shots_rabi_corr,
+        ) = self.run_active_reset(scaling=True)
+
+        active_reset_comparison_runs.append({
+            "label": f"{n_resets} active reset" if n_resets == 1 else f"{n_resets} active resets",
+            "I": rabi_I_corrected,
+            "Q": rabi_Q_corrected,
+            "gains": rabi_gains_corrected,
+            "ss_I_e": ss_I_e,
+            "ss_I_g": ss_I_g,
+            "ss_Q_e": ss_Q_e,
+            "ss_Q_g": ss_Q_g,
+        })
+
+        save_idx = self.round_num - batch_num * save_r - 1
+
+        rabi_data[self.QubitIndex]['Dates'][save_idx] = time.mktime(datetime.datetime.now().timetuple())
+        rabi_data[self.QubitIndex]['I'][save_idx] = rabi_I_corrected
+        rabi_data[self.QubitIndex]['Q'][save_idx] = rabi_Q_corrected
+        rabi_data[self.QubitIndex]['Gains'][save_idx] = rabi_gains_corrected
+        rabi_data[self.QubitIndex]['Fit'][save_idx] = rabi_fit_corrected
+        rabi_data[self.QubitIndex]['Round Num'][save_idx] = self.round_num
+        rabi_data[self.QubitIndex]['Batch Num'][save_idx] = batch_num
+        rabi_data[self.QubitIndex]['Exp Config'][save_idx] = expt_cfg
+        rabi_data[self.QubitIndex]['Syst Config'][save_idx] = sys_config_rabi_corrected
+        rabi_data[self.QubitIndex]['ss_Q_e'][save_idx] = ss_Q_e
+        rabi_data[self.QubitIndex]['ss_Q_g'][save_idx] = ss_Q_g
+        rabi_data[self.QubitIndex]['ss_I_e'][save_idx] = ss_I_e
+        rabi_data[self.QubitIndex]['ss_I_g'][save_idx] = ss_I_g
+        rabi_data[self.QubitIndex]['I_shots'][save_idx] = I_shots_rabi_corr
+        rabi_data[self.QubitIndex]['Q_shots'][save_idx] = Q_shots_rabi_corr
+
+        if len(active_reset_comparison_runs) >= 2:
+            self.plot_active_reset_comparison(
+                QubitIndex=self.QubitIndex,
+                comparison_runs=active_reset_comparison_runs,
+                save_folder=self.outerFolder,
+                filename_tag="active_reset_rabi_comparison",
+                ylim=None,
+                verbose=self.verbose,
+            )
+
+        saver_rabi = Data_H5(FolderPath, rabi_data, batch_num, save_r)
+        saver_rabi.save_to_h5(f'ge_rabi_corrected_{n_resets}')
+
+        del saver_rabi
+        del rabi_data
+
+        return (
+            rabi_I_corrected,
+            rabi_Q_corrected,
+            rabi_gains_corrected,
+            rabi_fit_corrected,
+            pi_amp_corrected,
+            sys_config_rabi_corrected,
+            ss_Q_e,
+            ss_Q_g,
+            ss_I_e,
+            ss_I_g,
+            I_shots_rabi_corr,
+            Q_shots_rabi_corr,
+        )
 
     def fit_cosine_iminuit(self, x, y, p0, fix_b=None, fix_c=None):
         """
@@ -333,6 +457,186 @@ class AmplitudeRabiExperiment:
                 pcov[:] = np.nan
 
         return popt, pcov
+
+    def plot_all_active_reset_reads(
+            self,
+            iq_list,
+            gains,
+            ss_I_e,
+            ss_I_g,
+            ss_Q_e,
+            ss_Q_g,
+            save_folder=None,
+            filename_tag="all_active_reset_reads",
+            fig_quality=150):
+
+        iq_list = np.asarray(iq_list)
+        gains = np.asarray(gains, dtype=float)
+
+        n_reads = iq_list.shape[0]
+
+        fig, ax = plt.subplots(1, 1, figsize=(12, 6))
+        plt.rcParams.update({'font.size': 14})
+
+        for ridx in range(n_reads):
+            pop = self.project_to_ge_axis(
+                I=iq_list[ridx, :, 0],
+                Q=iq_list[ridx, :, 1],
+                ss_I_e=ss_I_e,
+                ss_I_g=ss_I_g,
+                ss_Q_e=ss_Q_e,
+                ss_Q_g=ss_Q_g,
+            )
+
+            span = np.nanmax(pop) - np.nanmin(pop)
+            mean = np.nanmean(pop)
+
+            print(
+                f"read {ridx}: mean={mean:.4f}, "
+                f"min={np.nanmin(pop):.4f}, max={np.nanmax(pop):.4f}, span={span:.4f}"
+            )
+
+            ax.plot(
+                gains,
+                pop,
+                "o-",
+                linewidth=1.2,
+                markersize=3,
+                alpha=0.8,
+                label=f"read {ridx}, span={span:.3f}"
+            )
+
+        ax.set_title(f"Q{self.QubitIndex + 1} all active-reset reads")
+        ax.set_xlabel("Gain (a.u.)")
+        ax.set_ylabel("Projected readout coordinate")
+        ax.legend(fontsize=9, loc="best")
+        plt.tight_layout()
+
+        if save_folder is None:
+            save_folder = os.path.join(
+                self.outerFolder,
+                self.expt_name + "_active_reset_diagnostics"
+            )
+
+        os.makedirs(save_folder, exist_ok=True)
+
+        now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        plot_file = os.path.join(
+            save_folder,
+            f"R_{self.round_num}_Q_{self.QubitIndex + 1}_{filename_tag}_{now}.png"
+        )
+
+        fig.savefig(plot_file, dpi=fig_quality, bbox_inches="tight")
+        plt.close(fig)
+
+        return plot_file
+
+    def project_to_ge_axis(self, I, Q, ss_I_e, ss_I_g, ss_Q_e, ss_Q_g):
+        """
+        Project IQ data onto the calibrated g -> e axis.
+
+        Returns a population-like coordinate:
+            g center -> 0
+            e center -> 1
+
+        This coordinate can go below 0 or above 1.
+        """
+
+        I = np.asarray(I, dtype=float)
+        Q = np.asarray(Q, dtype=float)
+
+        ss_I_e = np.asarray(ss_I_e, dtype=float)
+        ss_I_g = np.asarray(ss_I_g, dtype=float)
+        ss_Q_e = np.asarray(ss_Q_e, dtype=float)
+        ss_Q_g = np.asarray(ss_Q_g, dtype=float)
+
+        e_center = np.mean(ss_I_e + 1j * ss_Q_e)
+        g_center = np.mean(ss_I_g + 1j * ss_Q_g)
+
+        axis = e_center - g_center
+        if np.abs(axis) == 0:
+            raise ValueError("Ground and excited calibration centers are identical.")
+
+        z = I + 1j * Q
+
+        return np.real((z - g_center) * np.conj(axis) / np.abs(axis) ** 2)
+
+    def plot_active_reset_comparison(self,
+            QubitIndex,
+            comparison_runs,
+            save_folder,
+            filename_tag="active_reset_rabi_comparison",
+            title=None,
+            ylim=None,
+            verbose=False,
+            fig_quality=150):
+        """
+        Plot active-reset Rabi comparison curves.
+
+        Each item in comparison_runs should be a dictionary with:
+            label, I, Q, gains, ss_I_e, ss_I_g, ss_Q_e, ss_Q_g
+        """
+
+        if len(comparison_runs) == 0:
+            raise ValueError("comparison_runs is empty.")
+
+        os.makedirs(save_folder, exist_ok=True)
+
+        fig, ax = plt.subplots(1, 1, figsize=(12, 6))
+        plt.rcParams.update({'font.size': 14})
+
+        colors = plt.cm.viridis(np.linspace(0, 0.9, len(comparison_runs)))
+
+        for idx, run in enumerate(comparison_runs):
+            pop = self.project_to_ge_axis(
+                I=run["I"],
+                Q=run["Q"],
+                ss_I_e=run["ss_I_e"],
+                ss_I_g=run["ss_I_g"],
+                ss_Q_e=run["ss_Q_e"],
+                ss_Q_g=run["ss_Q_g"],
+            )
+
+            gains = np.asarray(run["gains"], dtype=float)
+
+            ax.plot(
+                gains,
+                pop,
+                "o-",
+                color=colors[idx],
+                linewidth=1.5,
+                markersize=3,
+                alpha=0.85,
+                label=run["label"]
+            )
+
+        if title is None:
+            title = f"Amplitude Rabi Q{QubitIndex + 1} Active Reset Comparison"
+
+        ax.set_title(title, fontsize=18)
+        ax.set_xlabel("Gain (a.u.)", fontsize=16)
+        ax.set_ylabel("Projected population-like signal", fontsize=16)
+        ax.legend(fontsize=12, loc="best")
+        ax.tick_params(axis="both", which="major", labelsize=13)
+
+        if ylim is not None:
+            ax.set_ylim(*ylim)
+
+        plt.tight_layout()
+
+        now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        comparison_file = os.path.join(
+            save_folder,
+            f"Q_{QubitIndex + 1}_{filename_tag}_{now}.png"
+        )
+
+        fig.savefig(comparison_file, dpi=fig_quality, bbox_inches="tight")
+        plt.close(fig)
+
+        if verbose:
+            print(f"Saved active reset comparison plot to {comparison_file}")
+
+        return comparison_file
 
     def plot_results(self, I, Q, gains, config=None, fig_quality=100, use_iminuit_instead=True):
         """
@@ -2095,7 +2399,7 @@ class RabiWithActiveReset(AveragerProgramV2):
 
         # 216/mux change:
         # Declare every readout channel.
-        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['res_phase']):
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(
                 ch=ch,
                 length=cfg['res_length'],
@@ -2159,25 +2463,27 @@ class RabiWithActiveReset(AveragerProgramV2):
         self.add_loop("gainloop", cfg["steps"])
 
     def _active_reset_block(self, cfg, prefix):
+        ############################### Simple Active reset, just one correction ###############################################
         # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         #
-        # # 216/mux change:
-        # # Trigger all muxed readout channels.
+        # # 216/mux change: trigger all muxed readout channels
         # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
         #
         # self.wait_auto(0.01, gens=True, ros=True)
         # self.resync()
         # self.delay_auto(t=0.01)
         #
-        # # 216/mux change:
-        # # read_and_jump still uses one readout channel, but now it is the selected qubit's channel.
+        # # 216/mux change: threshold only the selected qubit's readout channel
         # self.read_and_jump(
         #     ro_ch=self.active_reset_ro_ch,
         #     component='I',
         #     threshold=int(
         #         np.round(
         #             cfg["threshold"]
-        #             * self.soccfg.us2cycles(cfg['res_length'], ro_ch=self.active_reset_ro_ch)
+        #             * self.soccfg.us2cycles(
+        #                 cfg['res_length'],
+        #                 ro_ch=self.active_reset_ro_ch
+        #             )
         #         )
         #     ),
         #     test="<",
@@ -2188,35 +2494,76 @@ class RabiWithActiveReset(AveragerProgramV2):
         # self.label(f'skip_reset{prefix}')
         # self.delay_auto(t=6)
 
-        # Active reset
-        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        ############################################# multi-correction version, for cases with crappy SSF #################################
+        n_resets = cfg.get('n_resets', 0)
+        for i in range(n_resets):
+            self.label(f'measure_again{i}{prefix}')
 
-        # 216/mux version of ros=[cfg['ro_ch']]
-        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+            # First readout: check whether qubit is already ground-like
+            self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
 
-        self.wait_auto(0.01, gens=True, ros=True)
-        self.resync()
-        self.delay_auto(t=0.01)
+            # 216/mux change:
+            # Trigger all muxed readout channels instead of ros=[cfg['ro_ch']]
+            self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
-        self.read_and_jump(
-            ro_ch=self.active_reset_ro_ch,
-            component='I',
-            threshold=int(
-                np.round(
-                    cfg["threshold"]
-                    * self.soccfg.us2cycles(
-                        cfg['res_length'],
-                        ro_ch=self.active_reset_ro_ch
+            self.wait_auto(0.01, gens=True, ros=True)
+            self.resync()
+            self.delay_auto(t=0.01)
+
+            # 216/mux change:
+            # read_and_jump acts on selected qubit's readout channel
+            self.read_and_jump(
+                ro_ch=self.active_reset_ro_ch,
+                component='I',
+                threshold=int(
+                    np.round(
+                        cfg["threshold"]
+                        * self.soccfg.us2cycles(
+                            cfg['res_length'],
+                            ro_ch=self.active_reset_ro_ch
+                        )
                     )
-                )
-            ),
-            test="<",
-            label=f'skip_reset{prefix}'
-        )
+                ),
+                test="<",
+                label=f'no_pi_{i}{prefix}'
+            )
 
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
-        self.label(f'skip_reset{prefix}')
-        self.delay_auto(t=6)
+            # Same original logic:
+            # If not ground-like, apply qubit_pulse
+            self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
+            self.delay_auto(t=6)
+
+            self.label(f'no_pi_{i}{prefix}')
+            self.delay_auto(t=6)
+
+            # Second readout: verify whether reset worked
+            self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+
+            # 216/mux change:
+            # Trigger all muxed readout channels
+            self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+
+            self.wait_auto(0.01, gens=True, ros=True)
+            self.resync()
+            self.delay_auto(t=0.01)
+
+            # Same original logic, but on selected mux readout channel:
+            # If still not ground-like enough, go back and try again
+            self.read_and_jump(
+                ro_ch=self.active_reset_ro_ch,
+                component='I',
+                threshold=int(
+                    np.round(
+                        cfg["g_center"]
+                        * self.soccfg.us2cycles(
+                            cfg['res_length'],
+                            ro_ch=self.active_reset_ro_ch
+                        )
+                    )
+                ),
+                test=">=",
+                label=f'measure_again{i}{prefix}'
+            )
 
     def _body(self, cfg):
         # reset before rabi so we can use a tiny final_delay and still make sure to reset
@@ -2255,7 +2602,7 @@ class RabiWithActiveResetControlTest(AveragerProgramV2):
 
         # 216/mux change:
         # Declare every readout channel.
-        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['res_phase']):
+        for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(
                 ch=ch,
                 length=cfg['res_length'],

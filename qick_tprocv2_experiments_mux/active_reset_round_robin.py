@@ -47,17 +47,20 @@ run_name = 'run9d'
 device_name = '6transmon'
 substudy_txt_notes = ('testing active reset')
 
-run_flags = {"res_spec": True, "q_spec": True, "rabi": True, "ss": True,
-             "act_reset_0corr": True, "act_reset_1corr": True}
+run_flags = {"res_spec": True, "q_spec": True, "rabi": True, "ss": True, "check_ssf_theta_thresh": True,
+             "act_reset_0corr": True, "act_reset_1corr": True, "act_reset_multiple_corr": True}
 
 ################################################ optimization outputs ##################################################
 # Optimization parameters for resonator spectroscopy
-res_leng_vals = [5.6, 6.4, 6.2, 6.2, 6.8, 7.0]
-res_gain = [0.8164, 0.8, 0.8156,0.6156, 0.8125, 0.8375]
+res_leng_vals = [5.55, 6.4, 6.2, 6.2, 6.8, 7.0]
+res_gain = [0.816, 0.8, 0.8156,0.6156, 0.8125, 0.8375]
 freq_offsets = [-0.2000, -0.1111, -0.1111,-0.1111,-0.3000,-0.0667]
 
 # To save how long each measurement took for each qubit
 meas_time_RR = {}
+
+# For plotting comparison, we store results here
+active_reset_comparison_runs = []
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'active_reset' #qubit_checkouts, round_robin_benchmark
@@ -396,7 +399,7 @@ for QubitIndex in Qs_to_look_at:
 
             #  Update config ro_phase to rotate blobs onto I for future experiments below this
             #theta = -np.arctan2(np.median(Q_e) - np.median(Q_g), np.median(I_e) - np.median(I_g)) # no need to do it out here, code returns the angle
-            experiment.readout_cfg['ro_phase'][QubitIndex] = np.degrees(angle)
+            experiment.readout_cfg['ro_phase'][QubitIndex] = -np.degrees(angle)
 
             experiment.readout_cfg['threshold'] = thresh
             experiment.readout_cfg['g_center'] = g_center[0]  # 0 is I, 1 is Q
@@ -434,6 +437,42 @@ for QubitIndex in Qs_to_look_at:
 
         ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
 
+    ##################### g-e Single Shot Measurement, should be rotated all into I ########################
+    if run_flags["check_ssf_theta_thresh"]:
+        # values found here do NOT get passed into any experiments afterwards. This is just a diagnostic section.
+        # We want to see theta being really close to zero in this second rotation.
+        ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
+        ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
+                        experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
+                        reduce_rlx_delay=reduce_rlx_delay_ssf, reduce_rlx_delay_to=reduce_rlx_delay_ssf_to)
+        fid, angle, thresh, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge, g_center, e_center = ss.run(return_centers=True)
+
+        I_g = iq_list_g[QubitIndex][0].T[0]
+        Q_g = iq_list_g[QubitIndex][0].T[1]
+        I_e = iq_list_e[QubitIndex][0].T[0]
+        Q_e = iq_list_e[QubitIndex][0].T[1]
+
+        ss_data[QubitIndex]['Fidelity'][j - batch_num * save_r - 1] = fid
+        ss_data[QubitIndex]['Angle'][j - batch_num * save_r - 1] = angle
+        ss_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
+            time.mktime(datetime.datetime.now().timetuple()))
+        ss_data[QubitIndex]['I_g'][j - batch_num * save_r - 1] = I_g
+        ss_data[QubitIndex]['Q_g'][j - batch_num * save_r - 1] = Q_g
+        ss_data[QubitIndex]['I_e'][j - batch_num * save_r - 1] = I_e
+        ss_data[QubitIndex]['Q_e'][j - batch_num * save_r - 1] = Q_e
+        ss_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+        ss_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+        ss_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+        ss_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_ss
+        ss_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_ssge
+
+        saver_ss = Data_H5(subStudyDataFolder, ss_data, batch_num, save_r)
+        saver_ss.save_to_h5('ss_ge_phase_fixed')
+        del saver_ss
+        del ss_data
+        del ss
+        ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
+
     ##################### active reset Rabi with 0 correction to compare to ########################
     if run_flags["act_reset_0corr"]:
         experiment.readout_cfg['n_resets'] = 0
@@ -458,6 +497,17 @@ for QubitIndex in Qs_to_look_at:
         (rabi_I_corrected0, rabi_Q_corrected0, rabi_gains_corrected0, rabi_fit_corrected0, pi_amp_corrected0,
          sys_config_rabi_corrected0, ss_Q_e20, ss_Q_g20, ss_I_e20, ss_I_g20, I_shots_rabi_corr0,
          Q_shots_rabi_corr0) = rabi.run_active_reset(scaling=True, control_test=True)
+
+        active_reset_comparison_runs.append({
+            "label": "No reset",
+            "I": rabi_I_corrected0,
+            "Q": rabi_Q_corrected0,
+            "gains": rabi_gains_corrected0,
+            "ss_I_e": ss_I_e20,
+            "ss_I_g": ss_I_g20,
+            "ss_Q_e": ss_Q_e20,
+            "ss_Q_g": ss_Q_g20,
+        })
 
         rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
         rabi_data[QubitIndex]['I'][j - batch_num * save_r - 1] = rabi_I_corrected0
@@ -497,6 +547,17 @@ for QubitIndex in Qs_to_look_at:
         (rabi_I_corrected1, rabi_Q_corrected1, rabi_gains_corrected1, rabi_fit_corrected1, pi_amp_corrected1,
          sys_config_rabi_corrected1, ss_Q_e21, ss_Q_g21, ss_I_e21, ss_I_g21, I_shots_rabi_corr1, Q_shots_rabi_corr1) = rabi.run_active_reset(scaling=True)
 
+        active_reset_comparison_runs.append({
+            "label": "1 active reset",
+            "I": rabi_I_corrected1,
+            "Q": rabi_Q_corrected1,
+            "gains": rabi_gains_corrected1,
+            "ss_I_e": ss_I_e21,
+            "ss_I_g": ss_I_g21,
+            "ss_Q_e": ss_Q_e21,
+            "ss_Q_g": ss_Q_g21,
+        })
+
         rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1]  = (
             time.mktime(datetime.datetime.now().timetuple()))
         rabi_data[QubitIndex]['I'][j - batch_num * save_r - 1]  = rabi_I_corrected1
@@ -514,6 +575,16 @@ for QubitIndex in Qs_to_look_at:
         rabi_data[QubitIndex]['I_shots'][j - batch_num * save_r - 1]  = I_shots_rabi_corr1
         rabi_data[QubitIndex]['Q_shots'][j - batch_num * save_r - 1]  = Q_shots_rabi_corr1
 
+        if len(active_reset_comparison_runs) >= 2:
+            rabi.plot_active_reset_comparison(
+                QubitIndex=QubitIndex,
+                comparison_runs=active_reset_comparison_runs,
+                save_folder=studyDocumentationFolder,
+                filename_tag="active_reset_rabi_comparison",
+                ylim=None,
+                verbose=verbose,
+            )
+
         saver_rabi = Data_H5(optimizationFolder, rabi_data, batch_num, save_r)
         saver_rabi.save_to_h5('ge_rabi_corrected_1')
         del saver_rabi
@@ -521,115 +592,44 @@ for QubitIndex in Qs_to_look_at:
         del rabi
         rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
 
-    # ##################### active reset Rabi with 2 corrections ########################
-    # experiment.readout_cfg['n_resets'] = 2
-    # rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
-    # rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
-    #                                save_figs=save_figs, save_shots=False,
-    #                                experiment=experiment, live_plot=False,
-    #                                increase_qubit_reps=increase_qubit_reps,
-    #                                qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-    #                                multiply_qubit_reps_by=multiply_qubit_reps_by,
-    #                                verbose=verbose, logger=rr_logger, unmasking_resgain=unmask, )
-    #
-    # (rabi_I_corrected2, rabi_Q_corrected2, rabi_gains_corrected2, rabi_fit_corrected2, pi_amp_corrected2,
-    #  sys_config_rabi_corrected2, ss_Q_e22, ss_Q_g22, ss_I_e22, ss_I_g22, I_shots_rabi_corr2,
-    #  Q_shots_rabi_corr2) = rabi.run_active_reset(
-    #     scaling=True)
-    #
-    # rabi_data[QubitIndex]['Dates'][0] = (
-    #     time.mktime(datetime.datetime.now().timetuple()))
-    # rabi_data[QubitIndex]['I'][0] = rabi_I_corrected2
-    # rabi_data[QubitIndex]['Q'][0] = rabi_Q_corrected2
-    # rabi_data[QubitIndex]['Gains'][0] = rabi_gains_corrected2
-    # rabi_data[QubitIndex]['Fit'][0] = rabi_fit_corrected2
-    # rabi_data[QubitIndex]['Round Num'][0] = 0
-    # rabi_data[QubitIndex]['Batch Num'][0] = 0
-    # rabi_data[QubitIndex]['Exp Config'][0] = expt_cfg
-    # rabi_data[QubitIndex]['Syst Config'][0] = sys_config_rabi_corrected2
-    # rabi_data[QubitIndex]['ss_Q_e'][0] = ss_Q_e22
-    # rabi_data[QubitIndex]['ss_Q_g'][0] = ss_Q_g22
-    # rabi_data[QubitIndex]['ss_I_e'][0] = ss_I_e22
-    # rabi_data[QubitIndex]['ss_I_g'][0] = ss_I_g22
-    # rabi_data[QubitIndex]['I_shots'][0] = I_shots_rabi_corr2
-    # rabi_data[QubitIndex]['Q_shots'][0] = Q_shots_rabi_corr2
-    #
-    # saver_rabi = Data_H5(optimizationFolder, rabi_data, 0, save_r)
-    # saver_rabi.save_to_h5('Rabi_corrected_2')
-    # del saver_rabi
-    # del rabi_data
-    # del rabi
+    ##################### active reset Rabi with n number of  corrections ########################
+    if run_flags["act_reset_multiple_corr"]:
+        n_resets = 3
+        rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
+                                       save_figs=save_figs, save_shots=False,
+                                       experiment=experiment, live_plot=False,
+                                       increase_qubit_reps=increase_qubit_reps,
+                                       qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                       multiply_qubit_reps_by=multiply_qubit_reps_by,
+                                       verbose=verbose, logger=rr_logger, unmasking_resgain=unmask, )
 
-    ##################### active reset Rabi with 5 corrections ########################
-    # experiment.readout_cfg['n_resets'] = 5
-    # rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
-    # rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
-    #                                save_figs=save_figs, save_shots=False,
-    #                                experiment=experiment, live_plot=False,
-    #                                increase_qubit_reps=increase_qubit_reps,
-    #                                qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-    #                                multiply_qubit_reps_by=multiply_qubit_reps_by,
-    #                                verbose=verbose, logger=rr_logger, unmasking_resgain=unmask, )
-    #
-    # (rabi_I_corrected5, rabi_Q_corrected5, rabi_gains_corrected5, rabi_fit_corrected5, pi_amp_corrected5,
-    #  sys_config_rabi_corrected5, ss_Q_e25, ss_Q_g25, ss_I_e25, ss_I_g25, I_shots_rabi_corr5,
-    #  Q_shots_rabi_corr5) = rabi.run_active_reset(
-    #     scaling=True)
-    #
-    # rabi_data[QubitIndex]['Dates'][0] = (
-    #     time.mktime(datetime.datetime.now().timetuple()))
-    # rabi_data[QubitIndex]['I'][0] = rabi_I_corrected5
-    # rabi_data[QubitIndex]['Q'][0] = rabi_Q_corrected5
-    # rabi_data[QubitIndex]['Gains'][0] = rabi_gains_corrected5
-    # rabi_data[QubitIndex]['Fit'][0] = rabi_fit_corrected5
-    # rabi_data[QubitIndex]['Round Num'][0] = 0
-    # rabi_data[QubitIndex]['Batch Num'][0] = 0
-    # rabi_data[QubitIndex]['Exp Config'][0] = expt_cfg
-    # rabi_data[QubitIndex]['Syst Config'][0] = sys_config_rabi_corrected5
-    # rabi_data[QubitIndex]['ss_Q_e'][0] = ss_Q_e25
-    # rabi_data[QubitIndex]['ss_Q_g'][0] = ss_Q_g25
-    # rabi_data[QubitIndex]['ss_I_e'][0] = ss_I_e25
-    # rabi_data[QubitIndex]['ss_I_g'][0] = ss_I_g25
-    # rabi_data[QubitIndex]['I_shots'][0] = I_shots_rabi_corr5
-    # rabi_data[QubitIndex]['Q_shots'][0] = Q_shots_rabi_corr5
-    #
-    # saver_rabi = Data_H5(optimizationFolder, rabi_data, 0, save_r)
-    # saver_rabi.save_to_h5('Rabi_corrected_5')
-    # del saver_rabi
-    # del rabi_data
-    # del rabi
-    ##################### Comparison plot: all Rabi curves ########################
-    # fig, ax = plt.subplots(1, 1, figsize=(12, 6))
-    # plt.rcParams.update({'font.size': 14})
-    #
-    # rabi_runs = [
-    #     (0, rabi_I_corrected0, rabi_Q_corrected0, rabi_gains_corrected0, ss_I_e20, ss_I_g20, ss_Q_e20, ss_Q_g20, 'No reset'),
-    #     # (1, rabi_I_corrected1, rabi_Q_corrected1, rabi_gains_corrected1, ss_I_e21, ss_I_g21, ss_Q_e21, ss_Q_g21, '1 active reset'),
-    #     # (2, rabi_I_corrected2, rabi_Q_corrected2, rabi_gains_corrected2, ss_I_e22, ss_I_g22, ss_Q_e22, ss_Q_g22, '2 active resets'),
-    #     (3, rabi_I_corrected5, rabi_Q_corrected5, rabi_gains_corrected5, ss_I_e25, ss_I_g25, ss_Q_e25, ss_Q_g25, '5 active resets'),
-    #
-    # ]
-    #
-    # colors = cm.viridis(np.linspace(0, 0.9, len(rabi_runs)))
-    #
-    # for idx, (n, I, Q, gains, Ie, Ig, Qe, Qg, label) in enumerate(rabi_runs):
-    #     e = np.mean(np.array(Ie) + 1j * np.array(Qe))
-    #     g = np.mean(np.array(Ig) + 1j * np.array(Qg))
-    #     pop = np.real(((np.array(I) + 1j * np.array(Q)) - g) * np.conj(e - g) / np.abs(e - g) ** 2)
-    #
-    #     ax.plot(gains, pop, 'o-', color=colors[idx], linewidth=1.5, markersize=3, alpha=0.8, label=label)
-    #
-    # ax.set_xlabel('Gain (a.u.)', fontsize=16)
-    # ax.set_ylabel('Qubit Population', fontsize=16)
-    # ax.set_title(f'Amplitude Rabi Q{QubitIndex + 1} Active Reset Comparison', fontsize=18)
-    # ax.legend(fontsize=12, loc='best')
-    # ax.tick_params(axis='both', which='major', labelsize=13)
-    # plt.tight_layout()
-    #
-    # now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    # comparison_file = os.path.join(studyDocumentationFolder,
-    #                                 f"Q_{QubitIndex + 1}_active_reset_rabi_comparison_{now}.png")
-    # fig.savefig(comparison_file, dpi=150, bbox_inches='tight')
-    # if verbose:
-    #     print(f"Saved active reset comparison plot to {comparison_file}")
-    # plt.close(fig)
+        rabi.run_and_save_active_reset_rabi(
+            n_resets=n_resets,
+            FolderPath=optimizationFolder,
+            rabi_keys=rabi_keys,
+            save_r=save_r,
+            list_of_all_qubits=list_of_all_qubits,
+            expt_cfg=expt_cfg,
+            batch_num=batch_num,
+            active_reset_comparison_runs=active_reset_comparison_runs,
+        )
+
+        n_resets = 5
+        rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
+                                       save_figs=save_figs, save_shots=False,
+                                       experiment=experiment, live_plot=False,
+                                       increase_qubit_reps=increase_qubit_reps,
+                                       qubit_to_increase_reps_for=qubit_to_increase_reps_for,
+                                       multiply_qubit_reps_by=multiply_qubit_reps_by,
+                                       verbose=verbose, logger=rr_logger, unmasking_resgain=unmask, )
+
+        rabi.run_and_save_active_reset_rabi(
+            n_resets=n_resets,
+            FolderPath=optimizationFolder,
+            rabi_keys=rabi_keys,
+            save_r=save_r,
+            list_of_all_qubits=list_of_all_qubits,
+            expt_cfg=expt_cfg,
+            batch_num=batch_num,
+            active_reset_comparison_runs=active_reset_comparison_runs,
+        )
