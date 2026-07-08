@@ -89,7 +89,7 @@ rpm_any = False # and rabi population measurements?
 meas_time_RR = {}
 
 ################################################ Data Saving Setup ##################################################
-#Folders
+# Folders
 study = 'round_robin_benchmark' #qubit_checkouts, round_robin_benchmark
 sub_study = 'junk' #batch2_post_1stopt_25dbDAC, opt_sigmas_gains_reps_steps, opt_AB_paper_data
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

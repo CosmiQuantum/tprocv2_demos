@@ -66,7 +66,7 @@ class QICK_experiment:
                 "list_of_all_qubits": [0, 1, 2, 3, 4, 5]
             }
 
-            # Readout Configuration
+            #Readout Configuration
             self.readout_cfg = {
                 "trig_time": 0.75,  # [Clock ticks] - get this value from TOF experiment (updated by Arianna Oct 9 2025 QICK box). Stayed the same for run 9.
                 # Changes related to the resonator output channel

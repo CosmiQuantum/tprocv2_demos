@@ -41,7 +41,7 @@ if FRIDGE == "QUIET":
             "relax_delay": 10,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
-        # "res_spec": { # zooming out
+        # "res_spec": { #zooming out
         #     "reps": 270,
         #     "rounds": 1,
         #     "start": -8.0,  # MHz
