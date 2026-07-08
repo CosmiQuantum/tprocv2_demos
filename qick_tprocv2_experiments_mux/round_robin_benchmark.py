@@ -75,10 +75,10 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss":
              "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
 
-# For 25dB DAC, 7/6/2026
-res_leng_vals = [5.4, 6.4, 6.2, 6.2, 6.8, 7.0]
+# For 25dB DAC, 7/8/2026
+res_leng_vals = [5.55, 6.4, 6.2, 6.2, 6.8, 7.0]
 res_gain = [0.8164, 0.8, 0.83,0.6156, 0.8, 0.82]
-freq_offsets = [0.0222, 0.1556, -0.2000,-0.1111,-0.2111,-0.1556]
+freq_offsets = [-0.2000, 0.1556, -0.2000,-0.1111,-0.2111,-0.1556]
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?

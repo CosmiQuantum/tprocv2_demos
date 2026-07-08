@@ -431,7 +431,7 @@ if FRIDGE == "QUIET":
         },
 
         "Readout_Optimization":{ # used for SSF
-            "steps": 5000, # 10000# shots
+            "steps": 8000, # 10000# shots
             "py_avg": 1,
             "gain_start" : [0, 0, 0, 0], # used in readout-optimization scripts
             "gain_stop" : [1, 0, 0, 0], # used in readout-optimization scripts

@@ -237,26 +237,41 @@ class SingleShot:
         I_e = iq_list_e[QubitIndex][0].T[0]
         Q_e = iq_list_e[QubitIndex][0].T[1]
 
-        # DOnt recall what this was used for. Raw shots?
+        # Dont recall what this was used for. Raw shots I think?
         # I_g = iq_list_g[self.QubitIndex][:, :, 0, 0][0]
         # Q_g = iq_list_g[self.QubitIndex][:, :, 0, 1][0]
         # I_e = iq_list_e[self.QubitIndex][:, :, 0, 0][0]
         # Q_e = iq_list_e[self.QubitIndex][:, :, 0, 1][0]
 
         if active_reset:
-            fid, threshold, angle, ig_new, ie_new, g_center, e_center = self.hist_ssf(QubitIndex, data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=self.save_figs, fig_quality=fig_quality, active_reset=active_reset)
-            if self.verbose: print('Optimal fidelity after rotation = %.3f' % fid)
-            if self.verbose: print('Optimal angle after rotation = %f' % angle)
+            # Active reset programs have multiple readouts.
+            # Use the final readout, not the reset-check readout.
+            iq_g = np.asarray(iq_list_g[QubitIndex])
+            iq_e = np.asarray(iq_list_e[QubitIndex])
+
+            I_g = iq_g[-1, :, 0]
+            Q_g = iq_g[-1, :, 1]
+            I_e = iq_e[-1, :, 0]
+            Q_e = iq_e[-1, :, 1]
+
+            fid, threshold, angle, ig_new, ie_new, g_center, e_center = self.hist_ssf_active_reset(QubitIndex,cfg=self.config,data=[I_g, Q_g, I_e, Q_e],plot=self.save_figs,fig_quality=fig_quality)
+            if self.verbose:
+                print('Optimal fidelity after rotation = %.3f' % fid)
+                print('Optimal angle after rotation = %f' % angle)
             self.logger.info('Optimal fidelity after rotation = %.3f' % fid)
             self.logger.info('Optimal angle after rotation = %f' % angle)
+
+            print("iq_g shape:", iq_g.shape)
+            print("iq_e shape:", iq_e.shape)
+            print("expected reads:", self.config.get("n_resets", 0) + 1)
+
             return fid, angle, threshold, g_center, e_center
         else:
             if return_centers:
                 fid, threshold, angle, ig_new, ie_new, g_center, e_center = self.hist_ssf(QubitIndex, data=[I_g, Q_g, I_e, Q_e],
                                                                       cfg=self.config, plot=self.save_figs,
                                                                       fig_quality=fig_quality,
-                                                                      return_centers=return_centers,
-                                                                      active_reset=active_reset)
+                                                                      return_centers=return_centers)
                 if self.verbose: print('Optimal fidelity after rotation = %.3f' % fid)
                 if self.verbose: print('Optimal angle after rotation = %f' % angle)
                 self.logger.info('Optimal fidelity after rotation = %.3f' % fid)
@@ -266,8 +281,7 @@ class SingleShot:
                 fid, threshold, angle, ig_new, ie_new = self.hist_ssf(QubitIndex, data=[I_g, Q_g, I_e, Q_e],
                                                                       cfg=self.config, plot=self.save_figs,
                                                                       fig_quality=fig_quality,
-                                                                      return_centers=return_centers,
-                                                                      active_reset=active_reset)
+                                                                      return_centers=return_centers)
                 if self.verbose: print('Optimal fidelity after rotation = %.3f' % fid)
                 if self.verbose: print('Optimal angle after rotation = %f' % angle)
                 self.logger.info('Optimal fidelity after rotation = %.3f' % fid)
@@ -275,7 +289,103 @@ class SingleShot:
                 return fid, angle, threshold
 
 
-    def hist_ssf(self, QubitIndex, data=None, cfg=None, plot=True,  fig_quality = 100, file_ext="", return_centers = False, active_reset = False):
+    def hist_ssf_active_reset(self, QubitIndex, cfg, data=None, plot=True,  fig_quality = 100, file_ext=""):
+
+        ig = data[0]
+        qg = data[1]
+        ie = data[2]
+        qe = data[3]
+
+        numbins = round(math.sqrt(float(cfg["steps"])))
+
+        xg, yg = np.median(ig), np.median(qg)
+        xe, ye = np.median(ie), np.median(qe)
+
+        if plot == True:
+            fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(16, 4))
+            fig.tight_layout()
+
+            axs[0].scatter(ig, qg, label='g', color='b', marker='.', alpha=0.2, s=10)
+            axs[0].scatter(ie, qe, label='e', color='r', marker='.', alpha=0.2, s=10)
+            axs[0].scatter(xg, yg, color='k', marker='o')
+            axs[0].scatter(xe, ye, color='k', marker='o')
+            axs[0].set_xlabel('I (a.u.)')
+            axs[0].set_ylabel('Q (a.u.)')
+            axs[0].legend(loc='upper right')
+            axs[0].set_title('Unrotated')
+            axs[0].axis('equal')
+        """Compute the rotation angle"""
+        theta = -np.arctan2((ye - yg), (xe - xg))
+        """Rotate the IQ data"""
+        ig_new = ig * np.cos(theta) - qg * np.sin(theta)
+        qg_new = ig * np.sin(theta) + qg * np.cos(theta)
+        ie_new = ie * np.cos(theta) - qe * np.sin(theta)
+        qe_new = ie * np.sin(theta) + qe * np.cos(theta)
+
+        """New means of each blob"""
+        xg, yg = np.median(ig_new), np.median(qg_new)
+        xe, ye = np.median(ie_new), np.median(qe_new)
+
+        # print(xg, xe)
+        #xlims = [xg - ran, xg + ran]
+        xlims = [np.min(ig_new), np.max(ie_new)]
+
+        if plot == True:
+            axs[1].scatter(ig_new, qg_new, label='g', color='b', marker='.', alpha=0.2, s=10)
+            axs[1].scatter(ie_new, qe_new, label='e', color='r', marker='.', alpha=0.2, s=10)
+            axs[1].scatter(xg, yg, color='k', marker='o')
+            axs[1].scatter(xe, ye, color='k', marker='o')
+            axs[1].set_xlabel('I (a.u.)')
+            axs[1].legend(loc='lower right')
+            axs[1].set_title(f'Rotated Theta:{round(theta, 5)}')
+            axs[1].axis('equal')
+
+            """X and Y ranges for histogram"""
+            ng, binsg, pg = axs[2].hist(ig_new, bins=numbins, range=xlims, color='b', histtype='step', linewidth=2, label='g', alpha=0.5)
+            ne, binse, pe = axs[2].hist(ie_new, bins=numbins, range=xlims, color='r', histtype='step', linewidth=2, label='e', alpha=0.5)
+
+            axs[2].set_xlabel('I(a.u.)')
+        else:
+            ng, binsg = np.histogram(ig_new, bins=numbins, range=xlims)
+            ne, binse = np.histogram(ie_new, bins=numbins, range=xlims)
+
+        # Compute the fidelity using overlap of the histograms
+        contrast = np.abs(((np.cumsum(ng) - np.cumsum(ne)) / (0.5 * ng.sum() + 0.5 * ne.sum())))
+
+        # Use the threshold from the config file instead of finding a new one.
+        threshold = cfg["threshold"]
+        # Find the histogram bin closest to the config threshold.
+        tind = np.argmin(np.abs(binsg[:-1] - threshold))
+        fid = contrast[tind]
+
+        if plot == True:
+            axs[2].axvline(
+                threshold,
+                color='k',
+                linestyle='--',
+                linewidth=1.5,
+                label=f'cfg threshold = {threshold:.3f}')
+            axs[2].legend(loc='best')
+            axs[2].set_title(f"Q{QubitIndex + 1} Fidelity = {fid * 100:.2f}%")
+
+        g_center = (np.median(ig_new), np.median(qg_new))
+        e_center = (np.median(ie_new), np.median(qe_new))
+
+        if plot == True:
+            self.create_folder_if_not_exists(self.outerFolder)
+            outerFolder_expt = os.path.join(self.outerFolder, "ss_ge_plots_active_reset")
+            self.create_folder_if_not_exists(outerFolder_expt)
+            outerFolder_expt = os.path.join(outerFolder_expt, "Q" + str(self.QubitIndex + 1))
+            self.create_folder_if_not_exists(outerFolder_expt)
+            now = datetime.datetime.now()
+            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            file_name = os.path.join(outerFolder_expt,f"Reset_R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_{file_ext}.png")
+            fig.savefig(file_name,  dpi=fig_quality, bbox_inches='tight')
+            plt.close(fig)
+
+        return fid, threshold, theta, ig_new, ie_new, g_center, e_center
+
+    def hist_ssf(self, QubitIndex, data=None, cfg=None, plot=True,  fig_quality = 100, file_ext="", return_centers = False):
 
         ig = data[0]
         qg = data[1]
@@ -343,26 +453,20 @@ class SingleShot:
 
         if plot == True:
             self.create_folder_if_not_exists(self.outerFolder)
-            if active_reset:
-                outerFolder_expt = os.path.join(self.outerFolder, "ss_ge_plots_active_reset")
-            else:
-                outerFolder_expt = os.path.join(self.outerFolder, "ss_ge_plots")
+            outerFolder_expt = os.path.join(self.outerFolder, "ss_ge_plots")
             self.create_folder_if_not_exists(outerFolder_expt)
             outerFolder_expt = os.path.join(outerFolder_expt, "Q" + str(self.QubitIndex + 1))
             self.create_folder_if_not_exists(outerFolder_expt)
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
 
-            if active_reset:
-                file_name = os.path.join(outerFolder_expt,f"Reset_R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_{file_ext}.png")
-            else:
-                file_name = os.path.join(outerFolder_expt,f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_{file_ext}.png")
+            file_name = os.path.join(outerFolder_expt,f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_{file_ext}.png")
 
             axs[2].set_title(f"Q{QubitIndex + 1} Fidelity = {fid * 100:.2f}%")
             fig.savefig(file_name,  dpi=fig_quality, bbox_inches='tight')
             plt.close(fig)
 
-        if active_reset or return_centers:
+        if return_centers:
             g_center = (np.median(ig_new), np.median(qg_new))
             e_center = (np.median(ie_new), np.median(qe_new))
             return fid, threshold, theta, ig_new, ie_new, g_center, e_center
@@ -556,24 +660,77 @@ class SingleShotProgram_g_active_reset(AveragerProgramV2):
         self.add_loop("shotloop", cfg["steps"])  # number of total shots
 
     def _active_reset_block(self, cfg):
-        # Active reset
-        n_resets = cfg.get('n_resets', 0)
-        ro_ch_this = cfg['ro_ch'][cfg['list_of_all_qubits'][0]]
+        """
+        Optional g-state conditional correction + verification block.
 
-        for i in range(n_resets):
-            self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
-            self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
-            self.wait_auto(0.01, gens=True, ros=True)
-            self.resync()
-            self.delay_auto(t=0.01)
-            self.read_and_jump(ro_ch=ro_ch_this,
-                               component='I',
-                               threshold=int(np.round(
-                                   cfg["threshold"] * self.soccfg.us2cycles(cfg['res_length'], ro_ch=ro_ch_this))),
-                               test="<", label=f'skip_reset_{i}')
-            self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
-            self.delay_auto(t=6)
-            self.label(f'skip_reset_{i}')
+        For now this is intentionally disabled/commented out.
+
+        If enabled later:
+            decision readout
+            if ground-like: skip pi
+            if excited-like: apply pi
+            verification readout
+            if still excited-like: try again
+            final readout happens in _body()
+        """
+
+        # -------------------- DISABLED FOR NOW --------------------
+        # n_resets = cfg.get("n_resets", 1)
+        #
+        # active_reset_qidx = cfg.get("active_reset_qidx", 0)
+        # ro_ch_this = cfg["ro_ch"][active_reset_qidx]
+        #
+        # print("n_resets g-block:", n_resets)
+        # print("g active reset ro_ch_this:", ro_ch_this)
+        #
+        # for i in range(n_resets):
+        #     self.label(f"g_measure_again_{i}")
+        #
+        #     # -------------------- Decision readout --------------------
+        #     self.pulse(ch=cfg["res_ch"], name="res_pulse", t=0)
+        #     self.trigger(ros=cfg["ro_ch"], pins=[0], t=cfg["trig_time"])
+        #
+        #     self.wait_auto(0.01, gens=True, ros=True)
+        #     self.resync()
+        #     self.delay_auto(t=0.01)
+        #
+        #     # If ground-like, skip the correction pi pulse.
+        #     # Assumes ground-like means I < threshold.
+        #     self.read_and_jump(
+        #                 ro_ch=ro_ch_this,
+        #                 component="I",
+        #                 threshold= int(np.round(cfg["threshold"])), #for raw units use int(np.round(cfg["threshold"] * self.soccfg.us2cycles(cfg["res_length"],ro_ch=ro_ch_this))),
+        #                 test="<",
+        #                 label=f"no_pi_{label_addition}_{i}"
+        #             )
+        #
+        #     # If excited-like, apply pi correction: |e> -> |g>
+        #     self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
+        #     self.delay_auto(t=6)
+        #
+        #     self.label(f"g_no_pi_{i}")
+        #     self.delay_auto(t=0.01)
+        #
+        #     # -------------------- Verification readout --------------------
+        #     self.pulse(ch=cfg["res_ch"], name="res_pulse", t=0)
+        #     self.trigger(ros=cfg["ro_ch"], pins=[0], t=cfg["trig_time"])
+        #
+        #     self.wait_auto(0.01, gens=True, ros=True)
+        #     self.resync()
+        #     self.delay_auto(t=0.01)
+        #
+            # If verification is still excited-like, try again.
+            # With test=">=", excited-like means I >= threshold.
+            # self.read_and_jump(
+            #     ro_ch=ro_ch_this,
+            #     component="I",
+            #     threshold=int(np.round(cfg["threshold"])), # for raw units use int(np.round(cfg["threshold"] * self.soccfg.us2cycles(cfg["res_length"],ro_ch=ro_ch_this))),
+            #     test=">=",
+            #     label=f"g_measure_again_{i}"
+            # )
+        # ----------------------------------------------------------
+
+        pass
 
     def _body(self, cfg):
         self._active_reset_block(cfg)
@@ -616,25 +773,75 @@ class SingleShotProgram_e_active_reset(AveragerProgramV2):
 
         self.add_loop("shotloop", cfg["steps"])  # number of total shots
 
-    def _active_reset_block(self, cfg, label_addition=''):
-        # Active reset
-        ro_ch_this = cfg['ro_ch'][cfg['list_of_all_qubits'][0]]
+    def _active_reset_block(self, cfg, label_addition=""):
+        """
+        Conditional correction + verification for e-state reset diagnostic.
 
-        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
-        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
-        self.wait_auto(0.01, gens=True, ros=True)
-        self.resync()
-        # self.delay_auto(t=0.01)
-        self.read_and_jump(ro_ch=ro_ch_this,
-                           component='I',
-                           threshold=int(np.round(
-                               cfg["threshold"] * self.soccfg.us2cycles(cfg['res_length'], ro_ch=ro_ch_this))),
-                           test="<", label=f'skip_reset_{label_addition}')
+        Sequence per attempt:
+            1. decision readout
+            2. if ground-like: skip pi
+               if excited-like: apply pi correction
+            3. verification readout
+            4. if still excited-like: repeat
 
-        self.label(f'skip_reset_{label_addition}')
+        Final readout happens in _body().
+        """
 
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
-        self.delay_auto(t=6)
+        n_resets = cfg.get("n_resets", 1)
+
+        active_reset_qidx = cfg.get("active_reset_qidx", 0)
+        ro_ch_this = cfg["ro_ch"][active_reset_qidx]
+
+        print("n_resets e-block:", n_resets)
+        print("e active reset ro_ch_this:", ro_ch_this)
+
+        for i in range(n_resets):
+            self.label(f"measure_again_{label_addition}_{i}")
+
+            # -------------------- Decision readout --------------------
+            self.pulse(ch=cfg["res_ch"], name="res_pulse", t=0)
+            self.trigger(ros=cfg["ro_ch"], pins=[0], t=cfg["trig_time"])
+
+            self.wait_auto(0.01, gens=True, ros=True)
+            self.resync()
+            self.delay_auto(t=0.01)
+
+            # If ground-like, skip correction pi.
+            # Assumes ground-like means I < threshold.
+            self.read_and_jump(
+                ro_ch=ro_ch_this,
+                component="I",
+                threshold= int(np.round(cfg["threshold"])), #for raw units use int(np.round(cfg["threshold"] * self.soccfg.us2cycles(cfg["res_length"],ro_ch=ro_ch_this))),
+                test="<",
+                label=f"no_pi_{label_addition}_{i}"
+            )
+
+            # If excited-like, apply pi correction: |e> -> |g>
+            self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
+            self.delay_auto(t=6)
+
+            # Ground-like shots jump here without getting the pi pulse.
+            self.label(f"no_pi_{label_addition}_{i}")
+            self.delay_auto(t=0.01)
+
+            # -------------------- Verification readout --------------------
+            self.pulse(ch=cfg["res_ch"], name="res_pulse", t=0)
+            self.trigger(ros=cfg["ro_ch"], pins=[0], t=cfg["trig_time"])
+
+            self.wait_auto(0.01, gens=True, ros=True)
+            self.resync()
+            self.delay_auto(t=0.01)
+
+            # If verification still says excited-like, try again.
+            # This assumes excited-like means I >= threshold.
+            self.read_and_jump(
+                ro_ch=ro_ch_this,
+                component="I",
+                threshold=int(np.round(cfg["threshold"])),
+                # for raw units use int(np.round(cfg["threshold"] * self.soccfg.us2cycles(cfg["res_length"],ro_ch=ro_ch_this))),
+                test="<",
+                label=f"no_pi_{label_addition}_{i}"
+            )
 
     def _body(self, cfg):
         #self._active_reset_block(cfg)

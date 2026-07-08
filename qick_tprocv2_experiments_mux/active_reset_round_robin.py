@@ -48,13 +48,13 @@ device_name = '6transmon'
 substudy_txt_notes = ('testing active reset')
 
 run_flags = {"res_spec": True, "q_spec": True, "rabi": True, "ss": True, "check_ssf_theta_thresh": True,
-             "act_reset_0corr": True, "act_reset_1corr": True, "act_reset_multiple_corr": True}
-
+             "act_reset_0corr": False, "act_reset_1corr": False, "act_reset_multiple_corr": False, "act_reset_ss": True}
+n_resets = 1 # number of active reset attempts you want to try
 ################################################ optimization outputs ##################################################
 # Optimization parameters for resonator spectroscopy
 res_leng_vals = [5.55, 6.4, 6.2, 6.2, 6.8, 7.0]
-res_gain = [0.816, 0.8, 0.8156,0.6156, 0.8125, 0.8375]
-freq_offsets = [-0.2000, -0.1111, -0.1111,-0.1111,-0.3000,-0.0667]
+res_gain = [0.8164, 0.8, 0.83,0.6156, 0.8, 0.82]
+freq_offsets = [-0.2000, 0.1556, -0.2000,-0.1111,-0.2111,-0.1556]
 
 # To save how long each measurement took for each qubit
 meas_time_RR = {}
@@ -466,7 +466,7 @@ for QubitIndex in Qs_to_look_at:
         ss_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_ss
         ss_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_ssge
 
-        saver_ss = Data_H5(subStudyDataFolder, ss_data, batch_num, save_r)
+        saver_ss = Data_H5(optimizationFolder, ss_data, batch_num, save_r)
         saver_ss.save_to_h5('ss_ge_phase_fixed')
         del saver_ss
         del ss_data
@@ -525,7 +525,7 @@ for QubitIndex in Qs_to_look_at:
         rabi_data[QubitIndex]['I_shots'][j - batch_num * save_r - 1] = I_shots_rabi_corr0
         rabi_data[QubitIndex]['Q_shots'][j - batch_num * save_r - 1] = Q_shots_rabi_corr0
 
-        saver_rabi = Data_H5(optimizationFolder, rabi_data, batch_num, save_r)
+        saver_rabi = Data_H5(subStudyDataFolder, rabi_data, batch_num, save_r)
         saver_rabi.save_to_h5('ge_rabi_corrected_0')
         del saver_rabi
         del rabi_data
@@ -585,7 +585,7 @@ for QubitIndex in Qs_to_look_at:
                 verbose=verbose,
             )
 
-        saver_rabi = Data_H5(optimizationFolder, rabi_data, batch_num, save_r)
+        saver_rabi = Data_H5(subStudyDataFolder, rabi_data, batch_num, save_r)
         saver_rabi.save_to_h5('ge_rabi_corrected_1')
         del saver_rabi
         del rabi_data
@@ -594,7 +594,6 @@ for QubitIndex in Qs_to_look_at:
 
     ##################### active reset Rabi with n number of  corrections ########################
     if run_flags["act_reset_multiple_corr"]:
-        n_resets = 3
         rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
                                        save_figs=save_figs, save_shots=False,
                                        experiment=experiment, live_plot=False,
@@ -605,7 +604,7 @@ for QubitIndex in Qs_to_look_at:
 
         rabi.run_and_save_active_reset_rabi(
             n_resets=n_resets,
-            FolderPath=optimizationFolder,
+            FolderPath=subStudyDataFolder,
             rabi_keys=rabi_keys,
             save_r=save_r,
             list_of_all_qubits=list_of_all_qubits,
@@ -614,22 +613,84 @@ for QubitIndex in Qs_to_look_at:
             active_reset_comparison_runs=active_reset_comparison_runs,
         )
 
-        n_resets = 5
-        rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
-                                       save_figs=save_figs, save_shots=False,
-                                       experiment=experiment, live_plot=False,
-                                       increase_qubit_reps=increase_qubit_reps,
-                                       qubit_to_increase_reps_for=qubit_to_increase_reps_for,
-                                       multiply_qubit_reps_by=multiply_qubit_reps_by,
-                                       verbose=verbose, logger=rr_logger, unmasking_resgain=unmask, )
+    ############################################ active reset SSF ##################################################
+    if run_flags["act_reset_ss"]:
+        ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
+        experiment.readout_cfg['n_resets'] = n_resets
+        t0 = time.perf_counter()
+        try:
+            reduce_rlx_delay_ssf = False
+            reduce_rlx_delay_ssf_to = None
+            if QubitIndex == 5:
+                reduce_rlx_delay_ssf = True
+                reduce_rlx_delay_ssf_to = 650
 
-        rabi.run_and_save_active_reset_rabi(
-            n_resets=n_resets,
-            FolderPath=optimizationFolder,
-            rabi_keys=rabi_keys,
-            save_r=save_r,
-            list_of_all_qubits=list_of_all_qubits,
-            expt_cfg=expt_cfg,
-            batch_num=batch_num,
-            active_reset_comparison_runs=active_reset_comparison_runs,
-        )
+            max_tries = 1  # 5
+            try_num = 0
+            fid_check = 0
+
+            ssf_thresholds = [0.99, 0.99, 0.99, 0.99, 0.99, 0.99]  # dummy values, this isnt used here, but it is used in the main RR script for run 9
+            ssf_threshold = ssf_thresholds[QubitIndex]
+
+            while fid_check < ssf_threshold and try_num < max_tries:
+                ## after the loop finishes, the code only keeps the data from the last attempt that ran
+                try_num += 1
+
+                ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
+                                experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
+                                reduce_rlx_delay=reduce_rlx_delay_ssf, reduce_rlx_delay_to=reduce_rlx_delay_ssf_to)
+                fid, angle, thresh, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge, g_center, e_center = ss.run(active_reset = True)
+
+                fid_check = fid
+                # if fid_check < ssf_threshold: # checks if SSF is bad, if it is it tries again
+                #     rr_logger.warning(
+                #         f"Q{QubitIndex + 1} SSF fid={fid_check:.3f} below {ssf_threshold}, retrying "
+                #         f"({try_num}/{max_tries})")
+
+            # if fid_check < ssf_threshold:
+            #     rr_logger.warning(f"Q{QubitIndex + 1} SSF never reached {ssf_threshold}. Keeping last attempt.")
+
+            I_g = iq_list_g[QubitIndex][0].T[0]
+            Q_g = iq_list_g[QubitIndex][0].T[1]
+            I_e = iq_list_e[QubitIndex][0].T[0]
+            Q_e = iq_list_e[QubitIndex][0].T[1]
+
+            #  Update config ro_phase to rotate blobs onto I for future experiments below this
+            #theta = -np.arctan2(np.median(Q_e) - np.median(Q_g), np.median(I_e) - np.median(I_g)) # no need to do it out here, code returns the angle
+            experiment.readout_cfg['ro_phase'][QubitIndex] = -np.degrees(angle)
+
+            experiment.readout_cfg['threshold'] = thresh
+            experiment.readout_cfg['g_center'] = g_center[0]  # 0 is I, 1 is Q
+            experiment.readout_cfg['e_center'] = e_center[0]
+            print('SSF threshold: ', thresh)
+            print('SSF g_center: ', g_center)
+            print('SSF e_center: ', e_center)
+
+            ss_data[QubitIndex]['Fidelity'][j - batch_num * save_r - 1] = fid
+            ss_data[QubitIndex]['Angle'][j - batch_num * save_r - 1] = angle
+            ss_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
+            ss_data[QubitIndex]['I_g'][j - batch_num * save_r - 1] = I_g
+            ss_data[QubitIndex]['Q_g'][j - batch_num * save_r - 1] = Q_g
+            ss_data[QubitIndex]['I_e'][j - batch_num * save_r - 1] = I_e
+            ss_data[QubitIndex]['Q_e'][j - batch_num * save_r - 1] = Q_e
+            ss_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+            ss_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+            ss_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+            ss_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_ss
+            ss_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_ssge
+
+            saver_ss = Data_H5(subStudyDataFolder, ss_data, batch_num, save_r)
+            saver_ss.save_to_h5('ss_ge_active_reset')
+            del saver_ss
+            del ss_data
+            del ss
+
+        except Exception as e:
+            if debug_mode:
+                raise e  # In debug mode, re-raise the exception immediately
+            else:
+                rr_logger.exception(f'Got the following error in active reset ge ssf, continuing: {e}')
+                if verbose: print(f'Got the following error in active reset ge ssf, continuing: {e}')
+                continue  # skip the rest of this qubit
+
+        ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
