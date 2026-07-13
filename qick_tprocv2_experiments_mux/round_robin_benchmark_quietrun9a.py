@@ -33,7 +33,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1000000 # number of rounds
+n = 1 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -68,8 +68,8 @@ substudy_txt_notes = ('All qubits except Q5. Quiet run 9 AB paper data \n')
 
 # set which of the following you'd like to run to 'True'
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
-             "t1": True, "t2r": True, "t2e": True, "ef_res_spec": True, "ef_q_spec": True,
-             "rabi_pop_meas": True, "ef_Rabi": False}
+             "t1": True, "t2r": True, "t2e": True, "ef_res_spec": False, "ef_q_spec": False,
+             "rabi_pop_meas": False, "ef_Rabi": False}
 
 # run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True, "ss_gef": False,
 #              "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False,
@@ -96,7 +96,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts
-sub_study = 'AB_paper_data_batch21_25dB_DACatten_noQ5' # DACatten_SSF_inv_allQs_25dB_junk, AB_paper_data_batch20_25dB_DACatten_noQ5, AB_paper_data_25dB_DACatten_noQ5_batch1, AB_paper_data_25dB_DACatten_onlyQ4_batch2
+sub_study = 'AB_paper_data_batch21_25dB_DACatten_noQ5_PT_Tests' # DACatten_SSF_inv_allQs_25dB_junk, AB_paper_data_batch20_25dB_DACatten_noQ5, AB_paper_data_25dB_DACatten_noQ5_batch1, AB_paper_data_25dB_DACatten_onlyQ4_batch2
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):

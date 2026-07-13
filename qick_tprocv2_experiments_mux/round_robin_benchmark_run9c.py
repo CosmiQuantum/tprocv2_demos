@@ -91,7 +91,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts, DAC_filtering_tests
-sub_study = 'optimizing_for_AB_data' #ABpaper_batch3_25dBDAC_ogfilters_noQ5, optimizing_for_AB_data
+sub_study = 'PT_Test_Prep'#'optimizing_for_AB_data' #ABpaper_batch3_25dBDAC_ogfilters_noQ5, optimizing_for_AB_data
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):

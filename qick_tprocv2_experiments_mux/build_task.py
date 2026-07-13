@@ -72,7 +72,9 @@ def add_single_qubit_experiment(expt_cfg, expt_name, QubitIndex):
         exp_cfg.update([('qubit_gain_ef', QickSweep1D('gainloop', start, stop))])
     elif expt_name == 'power_rabi_fh':
         exp_cfg.update([('qubit_gain_fh', QickSweep1D('gainloop', start, stop))])
-
+    elif expt_name == 'correlation_method':
+        exp_cfg.update([('wait_time', QickSweep1D('waitloop', start, stop))])
+        
     return exp_cfg
 
 
