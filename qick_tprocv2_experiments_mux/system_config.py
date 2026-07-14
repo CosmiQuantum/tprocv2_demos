@@ -73,7 +73,7 @@ class QICK_experiment:
                 "mixer_freq": 6000,  # [MHz]
                 #"res_freq_ge": [6217, 6276, 6335, 6407, 6476, 6538],  # MHz, run 5
                 #'res_freq_ge': [6227.237, 6289.175, 6348.550, 6419.665, 6485.315, 6552.300], # run8
-                'res_freq_ge': [6236.357-0.2, 6296.685, 6358.140, 6427.895, 6494.4, 6562.500], # run 9c: 6235.097, 6295.745, 6356.840, 6426.675, 6493.5, 6561.2
+                'res_freq_ge': [6236.277, 6296.685, 6358.140, 6427.895, 6494.4, 6562.500], # run 9c: 6235.097, 6295.745, 6356.840, 6426.675, 6493.5, 6561.2
                 #'res_freq_ge': [6223.097, 6284.55, 6343.95, 6414.934, 6481.4, 6547.250],  # run 7
                 # "res_freq_ge": [6191.419, 6216.1, 6292.361, 6405.77, 6432.759, 6468.481],  # MHz, run 4a
                 # "res_gain_ge": [1] + [0]*5,
@@ -109,7 +109,7 @@ class QICK_experiment:
 
             # Qubit Configuration
             self.qubit_cfg = {
-                "qubit_freq_ge":  [4228.42, 3852.44, 4201.97, 4506.32, 4518.33, 5054.72], # run 9c: 4229.89, 3853.24, 4197.02, 4500.9, 4515.34, 5054.02
+                "qubit_freq_ge":  [4228.48, 3852.44, 4201.97, 4506.32, 4518.33, 5054.72], # run 9c: 4229.89, 3853.24, 4197.02, 4500.9, 4515.34, 5054.02
                 "qubit_freq_chevron_detuned_ge": [4189.7582, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86], # Olivia May 17
                 "qubit_freq_ge_starked": [4189.737678, 3820.4723, 4161.3726, 4463.15226, 4471.4469, 4997.86], # Olivia 4/04 for zeno/stark tone
                 "fwhm_w01_starked": None, #for err bars
@@ -138,8 +138,8 @@ class QICK_experiment:
                 "sigma_ef": [0.12, 0.22, 0.42, 0.23, 0.2, 0.84], #run 9: updated all except Q5 # run 8: [0.1, 0.25, 0.2, 0.25, 0.17, 0.28],
                 "sigma_fh": [0.15, 0.21, 0.25, 0.29, 0.28, 0.5],  # [us] for Gaussian Pulse, #Arianna 3/27
                 "active_reset_test_sigma": 0.102, # just used for testing stuff
-                "pi_amp": [0.83546, 0.68, 0.65, 0.65, 0.66, 0.69], #[0.66, 0.68, 0.65, 0.65, 0.66, 0.69], # Arianna 10/10, run 8
-                "pi_amp_ampl": [0.83546, 0.634499, 0.76542, 0.7754, 0.55393, 0.9], # Joyce 04/07 DAC 0
+                "pi_amp": [0.66, 0.68, 0.65, 0.65, 0.66, 0.69], # Arianna 10/10, run 8
+                "pi_amp_ampl": [0.5942, 0.634499, 0.76542, 0.7754, 0.55393, 0.9], # Joyce 04/07 DAC 0
                 #"pi_amp": [1.0, 0.93, 0.77, 0.8, 0.81, 0.9], # Eyeballed by Sara today (5+10 DAC atten for qubit)
                 #"pi_amp": [0.7, 0.95, 0.75, 0.78, 0.77, 0.8],  # With shorter sigma (5+4 DAC instead of 5+5 DAC atten for qubit)
                 "pi_ef_amp": [0.563, 0.673, 0.511, 0.7018, 0.6751, 0.589], # Arianna 3/27
@@ -251,7 +251,3 @@ class QICK_experiment:
         if 0 <= QUBIT_INDEX < num_qubits: #makes sure you are within the range of options
             filtered_gain_ge[QUBIT_INDEX] = IndexGain  # Set the gain for the selected qubit
         return filtered_gain_ge
-
-
-
-
