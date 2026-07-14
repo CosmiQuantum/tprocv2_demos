@@ -184,9 +184,9 @@ if FRIDGE == "QUIET":
         "power_rabi_ge": {
             "reps": 200,#150#115,
             "rounds": 1,  # 5
-            "start": [0.0] * 6,  # [DAC units]
+            "start": [0.4] * 6,  # [DAC units]
             "stop": [1] * 6,#[1.0] * 6,  # [DAC units]
-            "steps": 150, #50,
+            "steps": 75, #50,
             "relax_delay": 900,#1000,#1000,#1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -386,11 +386,11 @@ if FRIDGE == "QUIET":
         },
 
         "Ramsey_ge": {
-            "reps": 500, #300
+            "reps": 400, #300
             "rounds": 1,#10
             "start": [0.0] * 6, # [us]
             "stop":  [60] * 6, # [us]
-            "steps": 100,
+            "steps": 80,
             "ramsey_freq": 0.12,  # [MHz]
             "relax_delay": 900, # [us] the time to wait to let the qubit to relax to gnd again after exciting it (make it way above T1)
             "wait_time": 0.0, # [us]
@@ -455,13 +455,13 @@ if FRIDGE == "QUIET":
 
         "correlation_method": {
             "reps": 1,#,50, #300                                                                                                                       
-            "reps2":15000, #20000
+            "reps2":5000, #20000
             "rounds": 1, #1                  
             "start":  [0]*6,  # [us] 
             "stop": [10]*6,  # [us] ### Should be ~10x T1! Should change this per qubit.
-            "steps": 20,
-            "relax_delay": 350,  # [us] ### Should be >10x T1!
-            "relax_delay2": 200,
+            "steps": 15,
+            "relax_delay": 600,  # [us] ### Should be >10x T1!
+            "relax_delay2": 600,
             "relax_delay_test": 0.0,
             "wait_time": 0.0,  # [us]                                   
             "list_of_all_qubits": list_of_all_qubits,

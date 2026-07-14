@@ -113,6 +113,9 @@ class Temps_CorrelationExperiment:
             iq_list1_rough = correlation.acquire(self.experiment.soc, progress=True)
             iq_list1_rough = np.array(iq_list1_rough)
             iq_list1_rough = iq_list1_rough.squeeze()
+            #print("DEBUG SHAPE IS:", iq_list1_rough.shape)  # <-- Add this line
+            iq_list1_rough = iq_list1_rough[self.QubitIndex]
+            iq_list1 = iq_list1_rough.transpose(0, 2, 1)
             iq_list1 = iq_list1_rough.transpose(0,2,1)
 
             I1_g = iq_list1[0,0]
@@ -132,8 +135,11 @@ class Temps_CorrelationExperiment:
             iq_list2 = correlation_e.acquire(soc, progress=True)
             iq_list2 = np.array(iq_list2)
             iq_list2 = iq_list2.squeeze()
-            I1_e = iq_list2[:,0]
-            Q1_e = iq_list2[:,1]
+            #I1_e = iq_list2[:,0]
+            #Q1_e = iq_list2[:,1]
+            I1_e = iq_list2[0][0]  # First readout, I component only -> shape (15000,)
+            Q1_e = iq_list2[0][1]  # First readout, Q component only -> shape (15000,)
+
             #print((Q1_e))                                                                                                                                                                      
 
             #crash4=crasher                                                                                                                                                                     
@@ -157,8 +163,9 @@ class Temps_CorrelationExperiment:
         #print(iq_t_rough)                                                                                                                                                                      
         #iq_t = iq_t_rough.transpose(0,2,1)                                                                                                                                                     
 
-        ground1, ground2 = iq_t_rough
-
+        #ground1, ground2 = iq_t_rough
+        ground1, ground2 = iq_t_rough[0]
+        
         ground1_I = ground1[:,:,0]
         #print(ground1)                                                                                                                                                                         
         #print("----------")                                                                                                                                                                    
@@ -585,13 +592,13 @@ class CorrelationExcited(AveragerProgramV2):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch)
 
         
-        self.add_readoutconfig(ch=ro_ch[0], name="myro",
-                               freq=cfg['res_freq_ge'],
-                               gen_ch=gen_ch,
-                               outsel='product')
-        self.send_readoutconfig(ch=cfg['ro_ch'], name="myro", t=0)
+        #self.add_readoutconfig(ch=ro_ch[0], name="myro",
+        #                       freq=cfg['res_freq_ge'],
+        #                       gen_ch=gen_ch,
+        #                       outsel='product')
+        #self.send_readoutconfig(ch=cfg['ro_ch'], name="myro", t=0)
 
-        self.add_pulse(ch=gen_ch, name="res_pulse",ro_ch=ro_ch,
+        self.add_pulse(ch=gen_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
 #                       freq=cfg['res_freq_ge'],
@@ -601,7 +608,7 @@ class CorrelationExcited(AveragerProgramV2):
                        )
 
         #self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'])
-        self.declare_gen(ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
+        self.declare_gen(ch=gen_ch, nqz=cfg['nqz_res'],
                          mux_freqs=cfg['res_freq_ge'],
                          mux_gains=cfg['res_gain_ge'],
                          mux_phases=cfg['res_phase'],
@@ -609,6 +616,8 @@ class CorrelationExcited(AveragerProgramV2):
         
 
         self.add_gauss(ch=qubit_ch, name="ge_ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+        # Make sure this is called inside CorrelationExcited's _initialize before line 615!
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
         self.add_pulse(ch=qubit_ch, name="pi_ge",
                        style="arb",
                        envelope="ge_ramp",
@@ -617,6 +626,17 @@ class CorrelationExcited(AveragerProgramV2):
                        gain=cfg['pi_amp'],
                        )
 
+        #self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+        #self.add_pulse(ch=qubit_ch, name="qubit_pulse",
+        #               style="arb",
+        #               envelope="ramp",
+        #               freq=cfg['qubit_freq_ge'],
+        #               phase=cfg['qubit_phase'],
+        #               gain=cfg['pi_amp'],
+        #               )
+
+
+        
         self.add_loop("shotloop", cfg["reps2"])
         #self.add_loop("shotloop", cfg["reps"])                                                                                                                                                 
 
@@ -625,7 +645,7 @@ class CorrelationExcited(AveragerProgramV2):
         self.delay_auto(t=0.0, tag='waiting')  # wait                                                                                                                                           
         self.delay_auto(t=0.01, tag='waiting after pi')  # Wait til ge pi pulse is done before proceeding                                                                                       
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # probe pulse                                                                                                                      
-        self.trigger(ros=[cfg['ro_ch']], pins=[0], t=cfg['trig_time'])
+        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
         #self.delay_auto(t=cfg['res_length']+0.01, tag = 'waiting for first readout to finish')                                                                                                 
         #self.pulse(ch=self.cfg["qubit_ch"], name="pi_ge", t=0)  # ge pulse                                                                                                                     
         #self.delay_auto(t=0.0, tag='waiting')  # wait                                                                                                                                          
@@ -651,28 +671,42 @@ class CorrelationGround_T_Swept(AveragerProgramV2):
                          mux_phases=cfg['res_phase'],
                          mixer_freq=cfg['mixer_freq'])
 
+        #for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
+        #    self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch)
+
+        # Replace the add_readoutconfig block with this loop:
         for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch)
-
-
+            
         
-        self.add_readoutconfig(ch=ro_ch, name="myro",
-                               freq=cfg['res_freq_ge'],
-                               gen_ch=gen_ch,
-                               outsel='product')
-        self.send_readoutconfig(ch=cfg['ro_ch'], name="myro", t=0)
+        #self.add_readoutconfig(ch=ro_ch, name="myro",
+        #                       freq=cfg['res_freq_ge'],
+        #                       gen_ch=gen_ch,
+        #                       outsel='product')
+        #self.send_readoutconfig(ch=cfg['ro_ch'], name="myro", t=0)
 
-        self.add_pulse(ch=res_ch, name="res_pulse",ro_ch=ro_ch,
-                       style="const",
-                       length=cfg["res_length"],
+        #self.add_pulse(ch=ro_ch, name="res_pulse",ro_ch=ro_ch,
+        #               style="const",
+        #               length=cfg["res_length"],
 #                       freq=cfg['res_freq_ge'],
 #                       phase=cfg['ro_phase'],
 #                       gain=cfg['res_gain_ge'],
-                       mask=cfg["list_of_all_qubits"],
-                       )
+        #               mask=cfg["list_of_all_qubits"],
+        #               )
 
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'])
+        self.add_pulse(ch=gen_ch, name="res_pulse",
+                    style="const",
+                    length=cfg["res_length"],
+#                      freq=cfg['res_freq_ge'],                                                                                                                                                                                 
+#                      phase=cfg['ro_phase'],                                                                                                                                                                                  
+#                      gain=cfg['res_gain_ge'],                                                                                                                                                                                 
+                    mask=cfg["list_of_all_qubits"],
+                    )
 
+        
+        #self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'])
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+        
 
         self.add_gauss(ch=qubit_ch, name="ge_ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
         self.add_pulse(ch=qubit_ch, name="pi_ge",
@@ -696,13 +730,13 @@ class CorrelationGround_T_Swept(AveragerProgramV2):
 
     def _body(self, cfg): #this gives A_e                                  )                                                                                                                    
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # Initial Measurement                                                                                                              
-        self.trigger(ros=[cfg['ro_ch']], pins=[0], t=cfg['trig_time'])
+        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
         #self.delay_auto(cfg['wait_time']+0.01, tag = 'wait')                                                                                                                                   
         self.delay_auto(cfg['wait_time']+1.3, tag='wait')
 	#print(cfg['wait_time'])                                                                                                                                                                
         #print(cfg['wait_time'])                                                                                                                                                                
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # Correlation Second Measurement                                                                                                   
-        self.trigger(ros=[cfg['ro_ch']], pins=[0], t=cfg['trig_time'])
+        self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
         #self.delay(3.0)                                                                                                                                                                        
 
 
