@@ -355,7 +355,7 @@ class AmplitudeRabiExperiment:
             )
 
         saver_rabi = Data_H5(FolderPath, rabi_data, batch_num, save_r)
-        saver_rabi.save_to_h5(f'ge_rabi_corrected_{n_resets}')
+        saver_rabi.save_to_h5(f'ge_rabi_active_reset_{n_resets}corr')
 
         del saver_rabi
         del rabi_data

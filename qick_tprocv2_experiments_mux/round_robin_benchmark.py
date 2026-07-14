@@ -76,7 +76,7 @@ substudy_txt_notes = ('Arianna back from vacation, checking out the qubits\n')
 #              "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
              "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
-             "rabi_pop_meas": False, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
+             "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
 
 # For 25dB DAC, 7/8/2026
 res_leng_vals = [5.55, 6.4, 6.2, 6.2, 6.8, 7.0]
