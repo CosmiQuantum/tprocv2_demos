@@ -51,7 +51,7 @@ substudy_txt_notes = ('testing active reset')
 run_flags = {"res_spec": True, "q_spec": True, "rabi": True, "ss": True, "check_ssf_theta_thresh": False,
              "act_reset_0corr": False, "act_reset_1corr": False, "act_reset_multiple_corr": False, "act_reset_ss": True,
              "t1": True, "act_reset_t1": True}
-n_resets = 1 # number of active reset attempts you want to try
+n_resets = 2 # number of active reset attempts you want to try
 ################################################ optimization outputs ##################################################
 # Optimization parameters for resonator spectroscopy
 res_leng_vals = [5.55, 6.4, 6.2, 6.2, 6.8, 7.0]
@@ -64,7 +64,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'active_reset' #qubit_checkouts, round_robin_benchmark
-sub_study = 'ssf_and_t1_tests' #batch2_post_1stopt_25dbDAC, opt_sigmas_gains_reps_steps
+sub_study = 'ssf_rabi_t1_tests' #batch2_post_1stopt_25dbDAC, opt_sigmas_gains_reps_steps
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -618,7 +618,7 @@ for QubitIndex in Qs_to_look_at:
             list_of_all_qubits=list_of_all_qubits,
             expt_cfg=expt_cfg,
             batch_num=batch_num,
-            rabi_act_reset_comparison_runs=rabi_act_reset_comparison_runs,
+            active_reset_comparison_runs=rabi_act_reset_comparison_runs,
         )
 
     ############################################ active reset SSF ##################################################

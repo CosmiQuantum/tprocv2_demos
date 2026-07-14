@@ -198,7 +198,7 @@ class SingleShot:
             ssp_g = SingleShotProgram_g_active_reset(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'],cfg=self.config)
             iq_list_g = ssp_g.acquire(self.experiment.soc, soft_avgs=1, progress=True)
 
-            ssp_e = SingleShotProgram_e_active_reset(self.experiment.soccfg, reps=1, final_delay=20,cfg=self.config)
+            ssp_e = SingleShotProgram_e_active_reset(self.experiment.soccfg, reps=1, final_delay=10,cfg=self.config)
             iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=True)
             arr = np.asarray(iq_list_e)
 
@@ -263,7 +263,6 @@ class SingleShot:
 
             print("iq_g shape:", iq_g.shape)
             print("iq_e shape:", iq_e.shape)
-            print("expected reads:", self.config.get("n_resets", 0) + 1)
 
             return fid, angle, threshold, g_center, e_center
         else:
@@ -872,60 +871,41 @@ class SingleShotProgram_e_active_reset(AveragerProgramV2):
         active_reset_qidx = cfg.get("active_reset_qidx", 0)
         ro_ch_this = cfg["ro_ch"][active_reset_qidx]
 
-        print("n_resets e-block:", n_resets)
+        print("n_resets SSF e-block:", n_resets)
 
         for i in range(n_resets):
-            self.label(f"measure_again_{label_addition}_{i}")
-
-            # -------------------- Decision readout --------------------
+            # Decision readout
             self.pulse(ch=cfg["res_ch"], name="res_pulse", t=0)
             self.trigger(ros=cfg["ro_ch"], pins=[0], t=cfg["trig_time"])
-
             self.wait_auto(0.0, gens=True, ros=True)
             self.resync()
             self.delay_auto(t=0.0)
 
-            # If ground-like, skip correction pi.
-            # Assumes ground-like means I < threshold.
-            self.read_and_jump(
-                ro_ch=ro_ch_this,
-                component="I",
-                threshold= int(np.round(cfg["threshold"])), #for raw units use int(np.round(cfg["threshold"] * self.soccfg.us2cycles(cfg["res_length"],ro_ch=ro_ch_this))),
-                test="<",
-                label=f"no_pi_{label_addition}_{i}"
-            )
+            # Ground-like skips correction.
+            self.read_and_jump(ro_ch=ro_ch_this, component="I", threshold=int(np.round(cfg["threshold"])),
+                               test="<", label=f"no_pi_{label_addition}_{i}")
 
-            # If excited-like, apply pi correction: |e> -> |g>
-            self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
-            self.delay_auto(t=10) # time to empty out the resonator of residual photons. Should ideally be 4/kappa.
+            # Excited-like correction.
+            self.pulse(ch=cfg["qubit_ch"], name="qubit_pulse", t=0)
 
-            # Ground-like shots jump here without getting the pi pulse.
             self.label(f"no_pi_{label_addition}_{i}")
             self.delay_auto(t=0.0)
 
-            # -------------------- Verification readout --------------------
-            # self.pulse(ch=cfg["res_ch"], name="res_pulse", t=0)
-            # self.trigger(ros=cfg["ro_ch"], pins=[0], t=cfg["trig_time"])
-            #
-            # self.wait_auto(0.0, gens=True, ros=True)
-            # self.resync()
-            # self.delay_auto(t=0.0)
-            #
-            # # If verification still says excited-like, try again.
-            # # This assumes excited-like means I >= threshold.
-            # self.read_and_jump(
-            #     ro_ch=ro_ch_this,
-            #     component="I",
-            #     threshold=int(np.round(cfg["threshold"])),
-            #     # for raw units use int(np.round(cfg["threshold"] * self.soccfg.us2cycles(cfg["res_length"],ro_ch=ro_ch_this))),
-            #     test="<",
-            #     label=f"no_pi_{label_addition}_{i}"
-            # )
+            # Verification readout
+            self.pulse(ch=cfg["res_ch"], name="res_pulse", t=0)
+            self.trigger(ros=cfg["ro_ch"], pins=[0], t=cfg["trig_time"])
+            self.wait_auto(0.0, gens=True, ros=True)
+            self.resync()
+            self.delay_auto(t=0.0)
+
+            # Ground-like verification exits reset.
+            # Excited-like falls through to next attempt.
+            self.read_and_jump(ro_ch=ro_ch_this, component="I", threshold=int(np.round(cfg["threshold"])),
+                               test="<", label=f"reset_done_{label_addition}")
+
+        self.label(f"reset_done_{label_addition}")
 
     def _body(self, cfg):
-        #self._active_reset_block(cfg)
-        # self.delay_auto(0.01)
-
         # ssf e state
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
 

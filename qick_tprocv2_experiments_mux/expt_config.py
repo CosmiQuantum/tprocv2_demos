@@ -255,7 +255,7 @@ if FRIDGE == "QUIET":
             "rounds": 1, #1
             "start": [0.0] * 6,  # [us]
             "stop": [200]*6, #[250.0] * 6,  # [us]
-            "steps": 70,
+            "steps": 80,
             "relax_delay": 900,  # [us] ### Should be >10x T1!
             "wait_time": 0.0,  # [us]
             "list_of_all_qubits": list_of_all_qubits

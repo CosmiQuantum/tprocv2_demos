@@ -105,7 +105,7 @@ class T1Measurement:
     def run(self, thresholding=False, use_iminuit_instead = True, active_reset = False):
         if active_reset:
 
-            t1 = T1Program_active_reset(self.experiment.soccfg, reps=self.config['reps'],final_delay=20, cfg=self.config)
+            t1 = T1Program_active_reset(self.experiment.soccfg, reps=self.config['reps'],final_delay=10, cfg=self.config)
 
             if thresholding:
                 iq_list = t1.acquire(self.experiment.soc, soft_avgs=self.config['rounds'],
@@ -715,41 +715,36 @@ class T1Program_active_reset(AveragerProgramV2):
         print("n_resets T1 block:", n_resets)
 
         for i in range(n_resets):
-            self.label(f"measure_again_{label_addition}_{i}")
-
-            # -------------------- Decision readout --------------------
+            # Decision readout
             self.pulse(ch=cfg["res_ch"], name="res_pulse", t=0)
             self.trigger(ros=cfg["ro_ch"], pins=[0], t=cfg["trig_time"])
-
             self.wait_auto(0.0, gens=True, ros=True)
             self.resync()
             self.delay_auto(t=0.0)
 
-            # If ground-like, skip correction pi.
-            # Assumes ground-like means I < threshold.
-            self.read_and_jump(ro_ch=ro_ch_this, component="I",
-                               threshold=int(np.round(cfg["threshold"])),
+            # Ground-like skips correction.
+            self.read_and_jump(ro_ch=ro_ch_this, component="I", threshold=int(cfg["threshold"]* self.soccfg.us2cycles(cfg['res_length'])),
                                test="<", label=f"no_pi_{label_addition}_{i}")
 
-            # If excited-like, apply pi correction: |e> -> |g>
-            self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
-            self.delay_auto(t=10)
+            # Excited-like correction.
+            self.pulse(ch=cfg["qubit_ch"], name="qubit_pulse", t=0)
 
-            # Ground-like shots jump here without getting the pi pulse.
             self.label(f"no_pi_{label_addition}_{i}")
             self.delay_auto(t=0.0)
 
-            # # -------------------- Verification readout --------------------
-            # self.pulse(ch=cfg["res_ch"], name="res_pulse", t=0)
-            # self.trigger(ros=cfg["ro_ch"], pins=[0], t=cfg["trig_time"])
-            #
-            # self.wait_auto(0.0, gens=True, ros=True)
-            # self.resync()
-            # self.delay_auto(t=0.0)
-            #
-            # self.read_and_jump(ro_ch=ro_ch_this, component="I",
-            #                    threshold=int(np.round(cfg["threshold"])),
-            #                    test="<", label=f"no_pi_{label_addition}_{i}")
+            # Verification readout
+            self.pulse(ch=cfg["res_ch"], name="res_pulse", t=0)
+            self.trigger(ros=cfg["ro_ch"], pins=[0], t=cfg["trig_time"])
+            self.wait_auto(0.0, gens=True, ros=True)
+            self.resync()
+            self.delay_auto(t=0.0)
+
+            # Ground-like verification exits reset.
+            # Excited-like falls through to next attempt.
+            self.read_and_jump(ro_ch=ro_ch_this, component="I", threshold=int(cfg["threshold"]* self.soccfg.us2cycles(cfg['res_length'])),
+                               test="<", label=f"reset_done_{label_addition}")
+
+        self.label(f"reset_done_{label_addition}")
 
     def _body(self, cfg):
         # Reset the unknown state left from the previous repetition.

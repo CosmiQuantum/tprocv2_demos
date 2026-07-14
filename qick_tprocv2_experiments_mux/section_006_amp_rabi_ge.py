@@ -2517,11 +2517,7 @@ class RabiWithActiveReset(AveragerProgramV2):
                 component='I',
                 threshold=int(
                     np.round(
-                        cfg["threshold"]
-                        * self.soccfg.us2cycles(
-                            cfg['res_length'],
-                            ro_ch=self.active_reset_ro_ch
-                        )
+                        cfg["threshold"]* self.soccfg.us2cycles(cfg['res_length'], ro_ch=self.active_reset_ro_ch)
                     )
                 ),
                 test="<",
@@ -2554,7 +2550,7 @@ class RabiWithActiveReset(AveragerProgramV2):
                 component='I',
                 threshold=int(
                     np.round(
-                        cfg["g_center"]
+                        cfg["threshold"] # original used g_center
                         * self.soccfg.us2cycles(
                             cfg['res_length'],
                             ro_ch=self.active_reset_ro_ch
