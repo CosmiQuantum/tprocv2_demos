@@ -204,10 +204,19 @@ class SingleShot:
 
             raw_g = ssp_g.get_raw()
             raw_e = ssp_e.get_raw()
-            # thresh = int((np.mean(raw_g[0][:, :, 0]) + np.mean(raw_e[0][:, :, 0])) / 2)
-            # fid, angle = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
+
             measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
             fid, angle, thresh, g_center, e_center = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex, active_reset=active_reset)
+
+            ############################## Diagnostic Plot: Raw Shots and raw threshold ######################
+            ro_ch_this = self.config["ro_ch"][self.QubitIndex]
+            res_length_cycles = self.experiment.soccfg.us2cycles(us=self.config["res_length"], ro_ch=ro_ch_this)
+            threshold_raw = int(round(thresh * res_length_cycles))
+            raw_ssf_folder = os.path.join(self.outerFolder, "raw_ssf_threshold_diagnostics")
+            self.plot_raw_ssf_shots_with_threshold(raw_g=raw_g, raw_e=raw_e, threshold_raw=threshold_raw,
+                                                   QubitIndex=self.QubitIndex, readout_index=-1,
+                                                   save_folder=raw_ssf_folder, show_plot=False, print_summary=True)
+            ######################################################################################################3
 
             return fid, angle, thresh, iq_list_g, iq_list_e, self.config, measurement_timestamp, g_center, e_center
 
@@ -286,6 +295,259 @@ class SingleShot:
                 self.logger.info('Optimal fidelity after rotation = %.3f' % fid)
                 self.logger.info('Optimal angle after rotation = %f' % angle)
                 return fid, angle, threshold
+
+    def plot_raw_ssf_shots_with_threshold(
+            self,
+            raw_g,
+            raw_e,
+            threshold_raw,
+            QubitIndex=None,
+            readout_index=-1,
+            save_folder=None,
+            filename_tag="raw_SSF_threshold_check",
+            numbins=None,
+            show_plot=False,
+            print_summary=True):
+        """
+        Plot raw ground- and excited-prepared SSF shots together with the
+        raw threshold passed to read_and_jump().
+
+        Expected per-qubit raw shape:
+            (reps, shots, readouts, 2)
+
+        For the current SSF programs:
+            readout_index=-1 selects the final SSF readout.
+
+        The active-reset decision convention is:
+            I < threshold_raw  -> ground-like, skip correction pi
+            I >= threshold_raw -> excited-like, apply correction pi
+        """
+
+        if QubitIndex is None:
+            QubitIndex = self.QubitIndex
+
+        threshold_raw = int(threshold_raw)
+
+        # raw_g and raw_e are the complete lists returned by get_raw().
+        raw_g_q = np.asarray(raw_g[QubitIndex])
+        raw_e_q = np.asarray(raw_e[QubitIndex])
+
+        if print_summary:
+            print("\n--- Raw SSF threshold diagnostic ---")
+            print("Raw ground shape:", raw_g_q.shape)
+            print("Raw excited shape:", raw_e_q.shape)
+            print("Requested readout index:", readout_index)
+
+        if raw_g_q.ndim != 4 or raw_e_q.ndim != 4:
+            raise ValueError(
+                "Expected each per-qubit raw array to have shape "
+                "(reps, shots, readouts, IQ). "
+                f"Got ground {raw_g_q.shape} and excited {raw_e_q.shape}."
+            )
+
+        if raw_g_q.shape[-1] != 2 or raw_e_q.shape[-1] != 2:
+            raise ValueError(
+                "Expected the final raw-data dimension to contain I and Q."
+            )
+
+        # Select the requested readout for all reps and all shots.
+        I_g_raw = np.asarray(
+            raw_g_q[:, :, readout_index, 0],
+            dtype=float
+        ).ravel()
+
+        Q_g_raw = np.asarray(
+            raw_g_q[:, :, readout_index, 1],
+            dtype=float
+        ).ravel()
+
+        I_e_raw = np.asarray(
+            raw_e_q[:, :, readout_index, 0],
+            dtype=float
+        ).ravel()
+
+        Q_e_raw = np.asarray(
+            raw_e_q[:, :, readout_index, 1],
+            dtype=float
+        ).ravel()
+
+        finite_g = np.isfinite(I_g_raw) & np.isfinite(Q_g_raw)
+        finite_e = np.isfinite(I_e_raw) & np.isfinite(Q_e_raw)
+
+        I_g_raw = I_g_raw[finite_g]
+        Q_g_raw = Q_g_raw[finite_g]
+        I_e_raw = I_e_raw[finite_e]
+        Q_e_raw = Q_e_raw[finite_e]
+
+        if I_g_raw.size == 0 or I_e_raw.size == 0:
+            raise ValueError(
+                "No finite raw ground or excited SSF shots were found."
+            )
+
+        if numbins is None:
+            numbins = max(
+                20,
+                int(round(np.sqrt(I_g_raw.size + I_e_raw.size)))
+            )
+
+        # Match the exact FPGA classification convention.
+        g_correct_mask = I_g_raw < threshold_raw
+        e_correct_mask = I_e_raw >= threshold_raw
+
+        ground_correct_fraction = np.mean(g_correct_mask)
+        excited_correct_fraction = np.mean(e_correct_mask)
+        raw_fidelity = 0.5 * (
+                ground_correct_fraction + excited_correct_fraction
+        )
+
+        g_median = float(np.median(I_g_raw))
+        e_median = float(np.median(I_e_raw))
+
+        if print_summary:
+            print("Raw threshold:", threshold_raw)
+            print("Ground raw-I median:", g_median)
+            print("Excited raw-I median:", e_median)
+            print(
+                "Ground correctly classified, I < threshold:",
+                f"{ground_correct_fraction:.4f}"
+            )
+            print(
+                "Excited correctly classified, I >= threshold:",
+                f"{excited_correct_fraction:.4f}"
+            )
+            print("Raw classification fidelity:", f"{raw_fidelity:.4f}")
+
+            if g_median >= e_median:
+                print(
+                    "WARNING: The ground median is not below the excited "
+                    "median, but the current FPGA logic assumes ground is "
+                    "on the I < threshold side."
+                )
+
+        fig, axes = plt.subplots(1, 2, figsize=(13, 5.5))
+
+        # ---------------- Raw-I histograms ----------------
+        ax_hist = axes[0]
+
+        all_I = np.concatenate((I_g_raw, I_e_raw))
+        hist_range = (float(np.min(all_I)), float(np.max(all_I)))
+
+        ax_hist.hist(
+            I_g_raw,
+            bins=numbins,
+            range=hist_range,
+            histtype="step",
+            linewidth=2,
+            color="blue",
+            label="Ground prepared"
+        )
+
+        ax_hist.hist(
+            I_e_raw,
+            bins=numbins,
+            range=hist_range,
+            histtype="step",
+            linewidth=2,
+            color="red",
+            label="Excited prepared"
+        )
+
+        ax_hist.axvline(
+            threshold_raw,
+            linestyle="--",
+            linewidth=2.5,
+            label=f"Raw FPGA threshold = {threshold_raw}"
+        )
+
+        ax_hist.set_xlabel("Raw integrated I")
+        ax_hist.set_ylabel("Shot count")
+        ax_hist.set_title("Raw SSF I distributions")
+        ax_hist.legend()
+        ax_hist.grid(alpha=0.25)
+
+        # ---------------- Raw IQ scatter ----------------
+        ax_iq = axes[1]
+
+        ax_iq.scatter(
+            I_g_raw,
+            Q_g_raw,
+            s=10,
+            alpha=0.35,
+            color="blue",
+            label="Ground prepared"
+        )
+
+        ax_iq.scatter(
+            I_e_raw,
+            Q_e_raw,
+            s=10,
+            alpha=0.35,
+            color="red",
+            label="Excited prepared"
+        )
+
+        ax_iq.axvline(
+            threshold_raw,
+            linestyle="--",
+            linewidth=2.5,
+            label="Decision boundary"
+        )
+
+        ax_iq.set_xlabel("Raw integrated I")
+        ax_iq.set_ylabel("Raw integrated Q")
+        ax_iq.set_title("Raw SSF IQ distributions")
+        ax_iq.legend()
+        ax_iq.grid(alpha=0.25)
+
+        fig.suptitle(
+            f"Q{QubitIndex + 1} raw SSF threshold check\n"
+            f"Classification fidelity = {100 * raw_fidelity:.2f}%",
+            fontsize=14
+        )
+
+        fig.tight_layout(rect=[0, 0, 1, 0.91])
+
+        file_name = None
+
+        if save_folder is not None:
+            os.makedirs(save_folder, exist_ok=True)
+
+            timestamp = datetime.datetime.now().strftime(
+                "%Y-%m-%d_%H-%M-%S"
+            )
+
+            file_name = os.path.join(
+                save_folder,
+                f"Q{QubitIndex + 1}_{filename_tag}_{timestamp}.png"
+            )
+
+            fig.savefig(
+                file_name,
+                dpi=150,
+                bbox_inches="tight"
+            )
+
+            if print_summary:
+                print("Saved raw SSF diagnostic to:", file_name)
+
+        if show_plot:
+            plt.show()
+        else:
+            plt.close(fig)
+
+        return {
+            "I_g_raw": I_g_raw,
+            "Q_g_raw": Q_g_raw,
+            "I_e_raw": I_e_raw,
+            "Q_e_raw": Q_e_raw,
+            "threshold_raw": threshold_raw,
+            "ground_correct_fraction": float(ground_correct_fraction),
+            "excited_correct_fraction": float(excited_correct_fraction),
+            "raw_fidelity": float(raw_fidelity),
+            "ground_I_median": g_median,
+            "excited_I_median": e_median,
+            "file_name": file_name,
+        }
 
     def hist_ssf_active_reset(
             self,

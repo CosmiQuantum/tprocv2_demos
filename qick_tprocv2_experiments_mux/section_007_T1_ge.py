@@ -152,6 +152,24 @@ class T1Measurement:
             if self.save_shots:
                 raw_0 = t1.get_raw()
                 raw_q = np.asarray(raw_0[self.QubitIndex])
+
+                ###########################################################
+                # Diagnostic plot to see threshold used with all shots for one relax delay step
+                # This must be exactly the same numerical threshold passed to read_and_jump().
+                ro_ch_this = self.config["ro_ch"][0]
+                res_length_cycles = self.experiment.soccfg.us2cycles(us=self.config["res_length"], ro_ch=ro_ch_this)
+                threshold_raw = int(round(self.config["threshold"] * res_length_cycles))
+                diagnostic_folder = os.path.join(self.outerFolder, "T1_ge_active_reset","decision_threshold_diagnostics")
+                self.plot_first_delay_reset_decision_shots(
+                    raw_q=raw_q,
+                    decision_threshold=threshold_raw,
+                    delay_times=delay_times,
+                    delay_index=5,
+                    decision_readout_index=0,
+                    save_folder=diagnostic_folder,
+                    show_plot=False,
+                    print_summary=True)
+                ##########################################################
                 Ishots = raw_q[:, :, -1, 0]
                 Qshots = raw_q[:, :, -1, 1]
                 return T1_est, T1_err, I, Q, Ishots, Qshots, delay_times, q1_fit_exponential, self.config, measurement_timestamp
@@ -667,6 +685,236 @@ class T1Measurement:
             fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
 
+    def plot_first_delay_reset_decision_shots(
+            self,
+            raw_q,
+            decision_threshold,
+            delay_times=None,
+            delay_index=0,
+            decision_readout_index=0,
+            save_folder=None,
+            filename_tag="T1_first_delay_reset_decision",
+            show_plot=False,
+            print_summary=True):
+        """
+        Plot the active-reset decision shots at one T1 delay point together
+        with the exact raw-unit threshold passed to read_and_jump().
+
+        Expected raw_q shape:
+            (n_delay_points, reps, n_readouts, 2)
+
+        Indices:
+            raw_q[delay_index, :, decision_readout_index, 0] -> raw I shots
+            raw_q[delay_index, :, decision_readout_index, 1] -> raw Q shots
+
+        For the current active-reset sequence:
+            readout index 0  -> first decision readout
+            readout index 1  -> first verification readout
+            readout index 2  -> second decision readout
+            readout index 3  -> second verification readout
+            ...
+            readout index -1 -> final T1 readout
+
+        The current FPGA decision is:
+            I < threshold  -> ground-like, skip correction pi
+            I >= threshold -> excited-like, apply correction pi
+        """
+
+        raw_q = np.asarray(raw_q)
+        threshold_raw = int(decision_threshold)
+
+        if raw_q.ndim != 4:
+            raise ValueError(
+                "Expected raw_q to have four dimensions "
+                "(delay, repetition, readout, IQ), but got "
+                f"shape {raw_q.shape}."
+            )
+
+        if raw_q.shape[-1] != 2:
+            raise ValueError(
+                f"Expected the final raw_q dimension to contain I and Q, "
+                f"but got shape {raw_q.shape}."
+            )
+
+        n_delays, n_reps, n_readouts, _ = raw_q.shape
+
+        if not 0 <= delay_index < n_delays:
+            raise IndexError(
+                f"delay_index={delay_index} is invalid. "
+                f"Available delay indices are 0 through {n_delays - 1}."
+            )
+
+        # Allow Python-style negative readout indices.
+        resolved_readout_index = decision_readout_index
+        if resolved_readout_index < 0:
+            resolved_readout_index += n_readouts
+
+        if not 0 <= resolved_readout_index < n_readouts:
+            raise IndexError(
+                f"decision_readout_index={decision_readout_index} is invalid. "
+                f"There are {n_readouts} stored readouts."
+            )
+
+        # These are the unnormalized integrated values returned by get_raw().
+        I_decision = np.asarray(
+            raw_q[delay_index, :, resolved_readout_index, 0],
+            dtype=float
+        ).ravel()
+
+        Q_decision = np.asarray(
+            raw_q[delay_index, :, resolved_readout_index, 1],
+            dtype=float
+        ).ravel()
+
+        finite = np.isfinite(I_decision) & np.isfinite(Q_decision)
+        I_decision = I_decision[finite]
+        Q_decision = Q_decision[finite]
+
+        if I_decision.size == 0:
+            raise ValueError(
+                "No finite decision shots were found at the requested indices."
+            )
+
+        # Match the FPGA condition exactly:
+        # read_and_jump(... test='<') means I < threshold skips the pi pulse.
+        ground_like = I_decision < threshold_raw
+        correction_needed = ~ground_like
+
+        n_ground_like = int(np.count_nonzero(ground_like))
+        n_correction = int(np.count_nonzero(correction_needed))
+        n_total = int(I_decision.size)
+
+        ground_fraction = n_ground_like / n_total
+        correction_fraction = n_correction / n_total
+
+        if delay_times is not None:
+            delay_times = np.asarray(delay_times, dtype=float)
+            delay_value = float(delay_times[delay_index])
+            delay_text = f"{delay_value:.4g} us"
+        else:
+            delay_value = None
+            delay_text = f"index {delay_index}"
+
+        if print_summary:
+            print("\n--- Active-reset decision-shot diagnostic ---")
+            print("raw_q shape:", raw_q.shape)
+            print("T1 delay:", delay_text)
+            print("Decision readout index:", decision_readout_index)
+            print("Resolved readout index:", resolved_readout_index)
+            print("Threshold passed to read_and_jump:", threshold_raw)
+            print("Minimum raw I:", np.min(I_decision))
+            print("Maximum raw I:", np.max(I_decision))
+            print("Median raw I:", np.median(I_decision))
+            print(
+                f"Ground-like, I < threshold: "
+                f"{n_ground_like}/{n_total} = {ground_fraction:.4f}"
+            )
+            print(
+                f"Correction needed, I >= threshold: "
+                f"{n_correction}/{n_total} = {correction_fraction:.4f}"
+            )
+
+        fig, axes = plt.subplots(1, 2, figsize=(13, 5.5))
+
+        # ---------------- Raw-I histogram ----------------
+        ax_hist = axes[0]
+
+        ax_hist.hist(
+            I_decision,
+            bins=75,
+            alpha=0.75,
+            label="Decision-readout shots"
+        )
+
+        ax_hist.axvline(
+            threshold_raw,
+            linestyle="--",
+            linewidth=2.5,
+            label=f"FPGA threshold = {threshold_raw}"
+        )
+
+        ax_hist.set_xlabel("Raw integrated I")
+        ax_hist.set_ylabel("Shot count")
+        ax_hist.set_title("Raw-I decision distribution")
+        ax_hist.legend()
+        ax_hist.grid(alpha=0.25)
+
+        # ---------------- Raw IQ scatter ----------------
+        ax_iq = axes[1]
+
+        ax_iq.scatter(
+            I_decision[ground_like],
+            Q_decision[ground_like],
+            s=10,
+            alpha=0.45,
+            label=f"Skip pi: I < {threshold_raw}"
+        )
+
+        ax_iq.scatter(
+            I_decision[correction_needed],
+            Q_decision[correction_needed],
+            s=10,
+            alpha=0.45,
+            label=f"Apply pi: I >= {threshold_raw}"
+        )
+
+        ax_iq.axvline(
+            threshold_raw,
+            linestyle="--",
+            linewidth=2.5,
+            label="Decision boundary"
+        )
+
+        ax_iq.set_xlabel("Raw integrated I")
+        ax_iq.set_ylabel("Raw integrated Q")
+        ax_iq.set_title("Decision shots in the raw IQ frame")
+        ax_iq.legend(fontsize=9)
+        ax_iq.grid(alpha=0.25)
+
+        fig.suptitle(
+            f"Q{self.QubitIndex + 1} active-reset decision at "
+            f"T1 delay {delay_text}\n"
+            f"Correction requested for {100 * correction_fraction:.1f}% of shots",
+            fontsize=14
+        )
+
+        fig.tight_layout(rect=[0, 0, 1, 0.91])
+
+        file_name = None
+
+        if save_folder is not None:
+            os.makedirs(save_folder, exist_ok=True)
+
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            file_name = os.path.join(
+                save_folder,
+                f"Q{self.QubitIndex + 1}_{filename_tag}_{timestamp}.png"
+            )
+
+            fig.savefig(file_name, dpi=150, bbox_inches="tight")
+
+            if print_summary:
+                print("Saved decision diagnostic to:", file_name)
+
+        if show_plot:
+            plt.show()
+        else:
+            plt.close(fig)
+
+        return {
+            "I_decision_raw": I_decision,
+            "Q_decision_raw": Q_decision,
+            "threshold_raw": threshold_raw,
+            "delay_index": delay_index,
+            "delay_value_us": delay_value,
+            "decision_readout_index": resolved_readout_index,
+            "ground_like_mask": ground_like,
+            "correction_needed_mask": correction_needed,
+            "ground_like_fraction": ground_fraction,
+            "correction_needed_fraction": correction_fraction,
+            "file_name": file_name,
+        }
+
 
 class T1Program_active_reset(AveragerProgramV2):
     def _initialize(self, cfg):
@@ -709,8 +957,7 @@ class T1Program_active_reset(AveragerProgramV2):
         """
 
         n_resets = cfg.get("n_resets", 1)
-        active_reset_qidx = cfg.get("active_reset_qidx", 0)
-        ro_ch_this = cfg["ro_ch"][active_reset_qidx]
+        ro_ch_this = cfg["ro_ch"][0]
 
         print("n_resets T1 block:", n_resets)
 
@@ -722,9 +969,10 @@ class T1Program_active_reset(AveragerProgramV2):
             self.resync()
             self.delay_auto(t=0.0)
 
-            # Ground-like skips correction.
-            self.read_and_jump(ro_ch=ro_ch_this, component="I", threshold=int(cfg["threshold"]* self.soccfg.us2cycles(cfg['res_length'])),
-                               test="<", label=f"no_pi_{label_addition}_{i}")
+            # Decision. Ground-like skips correction.
+            res_length_cycles = self.soccfg.us2cycles(us=cfg["res_length"], ro_ch=ro_ch_this)
+            threshold_raw = int(round(cfg["threshold"] * res_length_cycles))
+            self.read_and_jump(ro_ch=ro_ch_this, component="I", threshold=threshold_raw, test="<",label=f"no_pi_{label_addition}_{i}")
 
             # Excited-like correction.
             self.pulse(ch=cfg["qubit_ch"], name="qubit_pulse", t=0)
@@ -741,7 +989,7 @@ class T1Program_active_reset(AveragerProgramV2):
 
             # Ground-like verification exits reset.
             # Excited-like falls through to next attempt.
-            self.read_and_jump(ro_ch=ro_ch_this, component="I", threshold=int(cfg["threshold"]* self.soccfg.us2cycles(cfg['res_length'])),
+            self.read_and_jump(ro_ch=ro_ch_this, component="I", threshold=threshold_raw,
                                test="<", label=f"reset_done_{label_addition}")
 
         self.label(f"reset_done_{label_addition}")
