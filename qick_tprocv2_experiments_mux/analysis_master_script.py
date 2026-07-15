@@ -46,7 +46,7 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
-run_num_list = [9.2] # options: 4,5,6,7,8,9, 9.2 (run 9c)
+run_num_list = [9.3] # options: 4,5,6,7,8,9, 9.2 (run 9c), 9.3 (run 9d)
 t1_vals_by_run  = {}
 res_lengths_by_run = {}
 t2r_vals_by_run = {}
@@ -60,6 +60,34 @@ qfreq_errs_by_run = {}
 
 for run_number in run_num_list:
     print(f'Processing run {run_number} data.')
+    if run_number == 9.3: # run 9d
+        print('(this is actually run 9d, we just label it run 9.3)')
+        process_shots_t1ge = False # the option exists for this run, but for analysis consistency w initial runs we keep it off unless necessary.
+        per_pt_errs_t1 = False
+        run_name = 'run9d/6transmon/round_robin_benchmark'
+        data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
+        plots_path = "/home/acolonce/Documents/analysis/coherence" #cosmiqserver01
+
+        top_folder_dates = [ # Data PT off tests T2R only, run 9d
+                            # "Pre_PT_off_base_T2R/2026-07-15_10-12-25", # testing params/settings
+                            # "Pre_PT_off_base_T2R/2026-07-15_10-07-44", # testing params/settings
+                            # "Pre_PT_off_base_T2R/2026-07-15_09-59-37", # testing params/settings
+                            # "Pre_PT_off_base_T2R/2026-07-15_10-21-04", # testing params/settings
+
+                            "Pre_PT_off_base_T2R/2026-07-15_10-23-07", # began continuous data-taking
+                            "Pre_PT_off_base_T2R/2026-07-15_10-26-42",
+                            "Pre_PT_off_base_T2R/2026-07-15_10-39-32",
+
+                            "PT_off_base_T2R_batch1/2026-07-15_10-55-03",
+                            "Post_PT_off_base_T2R_batch1/2026-07-15_11-09-11",
+                            "PT_off_base_T2R_batch2/2026-07-15_11-26-31",
+                            "Post_PT_off_base_T2R_batch2/2026-07-15_11-37-04",
+                            "PT_off_base_T2R_batch3/2026-07-15_12-00-33",
+                            "Post_PT_off_base_T2R_batch3/2026-07-15_12-09-04",
+                            "PT_off_base_T2R_batch4/2026-07-15_12-31-02",
+                            "Post_PT_off_base_T2R_batch4/2026-07-15_12-41-25",
+                            ]
+
     if run_number == 9.2: # run 9c
         print('(this is actually run 9c, we just label it run 9.2)')
         process_shots_t1ge = False # the option exists for this run, but for analysis consistency w initial runs we keep it off unless necessary.
@@ -116,7 +144,7 @@ for run_number in run_num_list:
             "ABpaper_batch3_25dBDAC_ogfilters_noQ5/2026-06-19_10-53-54"
             ]
 
-    elif run_number == 9:
+    elif run_number == 9: # "9.0", this is run 9a. We did not take data in run 9b.
         process_shots_t1ge = False # the option exists for this run, but for analysis consistency w initial runs we keep it off unless necessary.
         per_pt_errs_t1 = False
         run_name = "run9/6transmon/round_robin_benchmark"
@@ -431,9 +459,9 @@ for run_number in run_num_list:
     run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB attenuator ') #please make it brief for the plot
 
     ################################################ 01: Get all data ######################################################
-    res_spec_vs_time = ResonatorFreqVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                           save_figs, fit_saved, signal, run_name, FRIDGE)
-    date_times_res_spec, res_freqs = res_spec_vs_time.run()
+    # res_spec_vs_time = ResonatorFreqVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+    #                                        save_figs, fit_saved, signal, run_name, FRIDGE)
+    # date_times_res_spec, res_freqs = res_spec_vs_time.run()
     #
     # q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
     #                                   save_figs, fit_saved, signal, run_name, FRIDGE)
@@ -454,10 +482,10 @@ for run_number in run_num_list:
     # else:
     #     date_times_t1, t1_vals, t1_fit_err, res_lengths = t1_vs_time.run(return_errs=True, exp_extension = '_ge')
     #
-    # t2r_vs_time = T2rVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
-    #                         fit_saved, signal, run_name, FRIDGE)
-    # date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True, t1_vals = t1_vals)
-    # #
+    t2r_vs_time = T2rVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+                            fit_saved, signal, run_name, FRIDGE)
+    date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True, t1_vals = None) #t1_vals
+
     # t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
     #                         fit_saved, signal, run_name, FRIDGE)
     # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = t1_vals)
@@ -509,7 +537,7 @@ for run_number in run_num_list:
             #plot_t2r = True, plot_t2e = False, plot_rabis_Qtemps = False)
 
 ########################################### 03: Resonator Freqs vs Time Plots ###########################################
-res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
+#res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
 #
 # ######################################### 04: Qubit Freqs vs Time Plots #############################################
 #q_spec_vs_time.plot_without_errs(date_times_q_spec, q_freqs,show_legends)
@@ -545,8 +573,34 @@ res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
 # ################################################# 07: T2R vs Time Plots ################################################
 # #t2r_vs_time.plot_without_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends)
 #t2r_vs_time.plot_with_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends) # shows error bars, do this one!!
-# t2r_vs_time.plot_with_errs_single_plot(date_times_t2r, t2r_vals, t2r_fit_err, show_legends=True)
-#
+t2r_vs_time.plot_with_errs_single_plot(date_times_t2r, t2r_vals,t2r_fit_err,
+    event_timestamps=[
+        "2026-07-15 10:54:00",
+        "2026-07-15 11:03:00",
+        "2026-07-15 11:26:00",
+        "2026-07-15 11:34:00",
+        "2026-07-15 11:59:00",
+        "2026-07-15 12:07:00",
+        "2026-07-15 12:30:00",
+        "2026-07-15 12:39:00"],
+    event_labels=[
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on"],
+    event_colors=[
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue"])
 # ################################################# 08: T2E vs Time Plots ################################################
 # #t2e_vs_time.plot_without_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
 #t2e_vs_time.plot_with_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends) # shows error bars, do this one!!
