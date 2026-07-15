@@ -4045,7 +4045,7 @@ class combined_Qtemp_studies:
             results[run_num] = {}
 
             # ------------------------------------------------------------
-            # 1. Match nearest T1 scan to each SSF scan
+            # Match nearest T1 scan to each SSF scan
             # ------------------------------------------------------------
             matched_t1_to_ssf = self.match_t1_to_ssf_scans(
                 fit_results_g=fit_results_g_by_run[run_num],
@@ -4061,7 +4061,7 @@ class combined_Qtemp_studies:
             results[run_num]["matched_t1_to_ssf"] = matched_t1_to_ssf
 
             # ------------------------------------------------------------
-            # 2. Calculate table using SSF thermal populations
+            # Calculate table using SSF thermal populations
             # ------------------------------------------------------------
             if make_ssf_pe_table:
                 save_path_ssfPe = os.path.join(
@@ -4086,7 +4086,7 @@ class combined_Qtemp_studies:
                 results[run_num]["median_summary_ssfPe"] = median_summary_df_ssfPe
 
             # ------------------------------------------------------------
-            # 3. Optional: calculate table using RPM thermal populations
+            # Optional: calculate table using RPM thermal populations
             # ------------------------------------------------------------
             if make_rpm_pe_table:
 
