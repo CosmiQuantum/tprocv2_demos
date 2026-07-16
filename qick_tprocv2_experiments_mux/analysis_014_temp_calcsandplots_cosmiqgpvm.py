@@ -4153,6 +4153,8 @@ class combined_Qtemp_studies:
                 "matched_rpm_to_ssf"              if requested
                 "per_scan_ssfPe"
                 "median_summary_ssfPe"
+                "median_error_summary_ssfPe"
+                "median_error_summary_rpmPe"           if requested
                 "per_scan_rpmPe"                 if requested
                 "median_summary_rpmPe"           if requested
         """
@@ -4220,7 +4222,7 @@ class combined_Qtemp_studies:
                     out_dir,
                     f"run{run_num}_ssf_limitations_per_scan_using_SSF_Pe.csv")
 
-                per_scan_df_ssfPe, median_summary_df_ssfPe = (
+                per_scan_df_ssfPe, median_summary_df_ssfPe, median_error_summary_df_ssfPe  = (
                     self.calculate_ssf_limitations_per_scan(
                         run_num=run_num,
                         fit_results_g=fit_results_g_by_run[run_num],
@@ -4236,6 +4238,7 @@ class combined_Qtemp_studies:
 
                 results[run_num]["per_scan_ssfPe"] = per_scan_df_ssfPe
                 results[run_num]["median_summary_ssfPe"] = median_summary_df_ssfPe
+                results[run_num]["median_error_summary_ssfPe"] = median_error_summary_df_ssfPe
 
             # ------------------------------------------------------------
             # Optional: calculate table using RPM thermal populations
@@ -4270,7 +4273,7 @@ class combined_Qtemp_studies:
 
                 save_path_rpmPe = os.path.join(out_dir,f"run{run_num}_ssf_limitations_per_scan_using_RPM_Pe.csv")
 
-                per_scan_df_rpmPe, median_summary_df_rpmPe = (
+                per_scan_df_rpmPe, median_summary_df_rpmPe, median_error_summary_df_rpmPe  = (
                     self.calculate_ssf_limitations_per_scan(
                         run_num=run_num,
                         fit_results_g=fit_results_g_by_run[run_num],
@@ -4286,8 +4289,204 @@ class combined_Qtemp_studies:
 
                 results[run_num]["per_scan_rpmPe"] = per_scan_df_rpmPe
                 results[run_num]["median_summary_rpmPe"] = median_summary_df_rpmPe
+                results[run_num]["median_error_summary_rpmPe"] = median_error_summary_df_rpmPe
 
         return results
+
+    def cal_ssf_limitation_uncertainties_per_scan(
+            self,
+            snr_overlap_uncertainty,
+            Pe_err,
+            ie_new_Pg_err,
+            SSF_err,
+            T1_us,
+            T1_err_us,
+            readout_length_us,
+            sensitive_fraction,
+            ie_new_Pg,
+            thermal_error,
+            caught_t1_decay_prob,
+            residual_unexplained_loss):
+        """
+        Calculate propagated uncertainties for the per-scan SSF limitation quantities.
+
+        This function only calculates uncertainties. All central values should
+        already be calculated in calculate_ssf_limitations_per_scan().
+
+        Assumptions
+        -----------
+        - SNR, Pe, ie_new_Pg, SSF, and T1 uncertainties are independent.
+        - readout_length_us is treated as exact.
+        - sensitive_fraction is treated as exact.
+        - The residual and total-budget uncertainties are propagated piecewise
+          to avoid double-counting Pe and T1 uncertainties.
+
+        Parameters
+        ----------
+        snr_overlap_uncertainty : float
+            Propagated uncertainty on the finite-SNR Gaussian-overlap error.
+        Pe_err : float
+            Uncertainty on the thermal population Pe.
+        ie_new_Pg_err : float
+            Uncertainty on the observed ground-like fraction in excited-prepared data.
+        SSF_err : float
+            Uncertainty on the measured SSF.
+        T1_us : float
+            Matched T1 value in microseconds.
+        T1_err_us : float
+            Uncertainty on the matched T1 value in microseconds.
+        readout_length_us : float
+            Readout length in microseconds.
+        sensitive_fraction : float
+            Fraction of the readout window used for the caught-T1 estimate.
+        ie_new_Pg : float
+            Observed ground-like fraction in excited-prepared data.
+        thermal_error : float
+            Thermal contribution, equal to Pe.
+        caught_t1_decay_prob : float
+            Calculated caught-T1 decay probability.
+        residual_unexplained_loss : float
+            Calculated nonnegative residual unexplained loss.
+
+        Returns
+        -------
+        propagated : dict
+            Dictionary containing all propagated per-scan uncertainties.
+        """
+
+        # -------------------- Initialize outputs --------------------
+        propagated = {
+            "measured_ssf_infidelity_uncertainty": np.nan,
+            "thermal_uncertainty": np.nan,
+            "full_window_t1_uncertainty": np.nan,
+            "caught_t1_uncertainty": np.nan,
+            "pe_plus_caught_t1_uncertainty": np.nan,
+            "residual_raw_uncertainty": np.nan,
+            "residual_unexplained_uncertainty": np.nan,
+            "explained_by_pe_and_t1_uncertainty": np.nan,
+            "fraction_explained_uncertainty": np.nan,
+            "fraction_unexplained_uncertainty": np.nan,
+            "estimated_total_uncertainty": np.nan,
+            "measured_minus_budget_uncertainty": np.nan,
+            "estimated_total_using_iePg_uncertainty": np.nan,
+        }
+
+        # -------------------- Measured SSF infidelity --------------------
+        # epsilon_SSF = 1 - SSF, so its uncertainty is identical to sigma_SSF.
+        if np.isfinite(SSF_err):
+            propagated["measured_ssf_infidelity_uncertainty"] = abs(SSF_err)
+
+        # -------------------- Thermal population contribution --------------------
+        # The thermal contribution is Pe, so its uncertainty is sigma_Pe.
+        if np.isfinite(Pe_err):
+            propagated["thermal_uncertainty"] = abs(Pe_err)
+
+        # -------------------- Full-window T1 uncertainty --------------------
+        # P_T1 = 1 - exp(-L / T1)
+        # sigma_P_T1 = |dP_T1/dT1| sigma_T1
+        if np.isfinite(T1_us) and np.isfinite(T1_err_us) and np.isfinite(
+                readout_length_us) and T1_us > 0 and readout_length_us >= 0:
+            full_window_t1_derivative = -(readout_length_us / T1_us ** 2) * np.exp(-readout_length_us / T1_us)
+            propagated["full_window_t1_uncertainty"] = abs(full_window_t1_derivative) * abs(T1_err_us)
+
+        # -------------------- Caught-T1 uncertainty --------------------
+        # P_caught = 1 - exp(-f L / T1)
+        # sigma_P_caught = |dP_caught/dT1| sigma_T1
+        if np.isfinite(T1_us) and np.isfinite(T1_err_us) and np.isfinite(readout_length_us) and np.isfinite(
+                sensitive_fraction) and T1_us > 0 and readout_length_us >= 0:
+            effective_readout_length_us = sensitive_fraction * readout_length_us
+            caught_t1_derivative = -(effective_readout_length_us / T1_us ** 2) * np.exp(
+                -effective_readout_length_us / T1_us)
+            propagated["caught_t1_uncertainty"] = abs(caught_t1_derivative) * abs(T1_err_us)
+
+        # -------------------- Pe plus caught-T1 uncertainty --------------------
+        # Pe and caught-T1 are treated as independent.
+        if np.isfinite(Pe_err) and np.isfinite(propagated["caught_t1_uncertainty"]):
+            propagated["pe_plus_caught_t1_uncertainty"] = np.sqrt(
+                Pe_err ** 2 + propagated["caught_t1_uncertainty"] ** 2)
+
+        # -------------------- Raw residual uncertainty --------------------
+        # residual_raw = ie_new_Pg - Pe - caught_T1
+        if np.isfinite(ie_new_Pg_err) and np.isfinite(Pe_err) and np.isfinite(propagated["caught_t1_uncertainty"]):
+            propagated["residual_raw_uncertainty"] = np.sqrt(
+                ie_new_Pg_err ** 2 + Pe_err ** 2 + propagated["caught_t1_uncertainty"] ** 2)
+
+        # The central residual is clipped with max(0, residual_raw).
+        # Keep the propagated uncertainty from the corresponding unclipped residual.
+        if np.isfinite(propagated["residual_raw_uncertainty"]):
+            propagated["residual_unexplained_uncertainty"] = propagated["residual_raw_uncertainty"]
+
+        # -------------------- Explained contribution uncertainty --------------------
+        # explained = min(ie_new_Pg, Pe + caught_T1)
+        if np.isfinite(ie_new_Pg) and np.isfinite(thermal_error) and np.isfinite(caught_t1_decay_prob):
+            if thermal_error + caught_t1_decay_prob < ie_new_Pg:
+                propagated["explained_by_pe_and_t1_uncertainty"] = propagated["pe_plus_caught_t1_uncertainty"]
+            elif np.isfinite(ie_new_Pg_err):
+                propagated["explained_by_pe_and_t1_uncertainty"] = abs(ie_new_Pg_err)
+
+        # -------------------- Fraction explained uncertainty --------------------
+        # For Pe + caught_T1 < ie_new_Pg:
+        # fraction_explained = (Pe + caught_T1) / ie_new_Pg
+        if np.isfinite(ie_new_Pg) and ie_new_Pg > 0 and np.isfinite(thermal_error) and np.isfinite(
+                caught_t1_decay_prob):
+            pe_plus_caught_t1 = thermal_error + caught_t1_decay_prob
+
+            if pe_plus_caught_t1 < ie_new_Pg and np.isfinite(
+                    propagated["pe_plus_caught_t1_uncertainty"]) and np.isfinite(ie_new_Pg_err):
+                fraction_explained_variance = (propagated["pe_plus_caught_t1_uncertainty"] / ie_new_Pg) ** 2 + (
+                            pe_plus_caught_t1 * ie_new_Pg_err / ie_new_Pg ** 2) ** 2
+                propagated["fraction_explained_uncertainty"] = np.sqrt(fraction_explained_variance)
+            elif pe_plus_caught_t1 >= ie_new_Pg:
+                # The clipped central value is exactly one within this branch.
+                propagated["fraction_explained_uncertainty"] = 0.0
+
+        # -------------------- Fraction unexplained uncertainty --------------------
+        # For a positive residual:
+        # fraction_unexplained = 1 - (Pe + caught_T1) / ie_new_Pg
+        if np.isfinite(ie_new_Pg) and ie_new_Pg > 0 and np.isfinite(thermal_error) and np.isfinite(
+                caught_t1_decay_prob):
+            pe_plus_caught_t1 = thermal_error + caught_t1_decay_prob
+
+            if residual_unexplained_loss > 0 and np.isfinite(
+                    propagated["pe_plus_caught_t1_uncertainty"]) and np.isfinite(ie_new_Pg_err):
+                fraction_unexplained_variance = (propagated["pe_plus_caught_t1_uncertainty"] / ie_new_Pg) ** 2 + (
+                            pe_plus_caught_t1 * ie_new_Pg_err / ie_new_Pg ** 2) ** 2
+                propagated["fraction_unexplained_uncertainty"] = np.sqrt(fraction_unexplained_variance)
+            elif residual_unexplained_loss == 0:
+                # The clipped central value is zero within this branch.
+                propagated["fraction_unexplained_uncertainty"] = 0.0
+
+        # -------------------- Main budget uncertainty --------------------
+        # If residual > 0:
+        # budget = SNR overlap + ie_new_Pg
+        #
+        # If residual = 0:
+        # budget = SNR overlap + Pe + caught_T1
+        #
+        # This piecewise form avoids double-counting Pe and caught-T1 uncertainty.
+        if residual_unexplained_loss > 0:
+            if np.isfinite(snr_overlap_uncertainty) and np.isfinite(ie_new_Pg_err):
+                propagated["estimated_total_uncertainty"] = np.sqrt(snr_overlap_uncertainty ** 2 + ie_new_Pg_err ** 2)
+        else:
+            if np.isfinite(snr_overlap_uncertainty) and np.isfinite(Pe_err) and np.isfinite(
+                    propagated["caught_t1_uncertainty"]):
+                propagated["estimated_total_uncertainty"] = np.sqrt(
+                    snr_overlap_uncertainty ** 2 + Pe_err ** 2 + propagated["caught_t1_uncertainty"] ** 2)
+
+        # -------------------- Measured minus budget uncertainty --------------------
+        # difference = measured SSF infidelity - estimated budget
+        if np.isfinite(propagated["measured_ssf_infidelity_uncertainty"]) and np.isfinite(
+                propagated["estimated_total_uncertainty"]):
+            propagated["measured_minus_budget_uncertainty"] = np.sqrt(
+                propagated["measured_ssf_infidelity_uncertainty"] ** 2 + propagated["estimated_total_uncertainty"] ** 2)
+
+        # -------------------- Alternative SNR plus observed-loss budget --------------------
+        # budget_iePg = SNR overlap + ie_new_Pg
+        if np.isfinite(snr_overlap_uncertainty) and np.isfinite(ie_new_Pg_err):
+            propagated["estimated_total_using_iePg_uncertainty"] = np.sqrt(
+                snr_overlap_uncertainty ** 2 + ie_new_Pg_err ** 2)
+
+        return propagated
 
     def match_rpm_to_ssf_scans(
             self,
@@ -4492,7 +4691,11 @@ class combined_Qtemp_studies:
             One row per matched SSF scan.
 
         median_summary_df : pandas.DataFrame
-            Median contribution table grouped by qubit.
+            Median contribution table grouped by qubit, with applicable values
+            formatted as value +/- propagated uncertainty.
+
+        median_error_summary_df : pandas.DataFrame
+            Median propagated-error table grouped by qubit.
         """
 
         def snr_to_overlap_error(snr):
@@ -4531,6 +4734,7 @@ class combined_Qtemp_studies:
             return []
 
         rows = []
+        error_rows = []
 
         thermal_population_source = str(thermal_population_source).lower()
 
@@ -4538,9 +4742,7 @@ class combined_Qtemp_studies:
             raise ValueError("thermal_population_source must be 'ssf' or 'rpm'.")
 
         if thermal_population_source == "rpm" and matched_rpm_to_ssf is None:
-            raise ValueError(
-                "thermal_population_source='rpm' requires matched_rpm_to_ssf."
-            )
+            raise ValueError("thermal_population_source='rpm' requires matched_rpm_to_ssf.")
 
         if verbose:
             print(f"\n================ SSF LIMITATION ESTIMATES PER SCAN: RUN {run_num} ================")
@@ -4571,15 +4773,11 @@ class combined_Qtemp_studies:
 
             if len(ssf_recs) != len(t1_matches) and verbose:
                 print(
-                    f"{qlabel}: warning, SSF records and T1 matches have different lengths. "
-                    f"Using min length = {n_scan}."
-                )
+                    f"{qlabel}: warning, SSF records and T1 matches have different lengths. Using min length = {n_scan}.")
 
             if thermal_population_source == "rpm" and len(ssf_recs) != len(rpm_matches) and verbose:
                 print(
-                    f"{qlabel}: warning, SSF records and RPM matches have different lengths. "
-                    f"Using min length = {n_scan}."
-                )
+                    f"{qlabel}: warning, SSF records and RPM matches have different lengths. Using min length = {n_scan}.")
 
             n_used = 0
 
@@ -4645,14 +4843,8 @@ class combined_Qtemp_studies:
                 t1_match_dt_s = float(t1_match.get("dt_s", np.nan))
 
                 # Skip if the key quantities are missing
-                if not (
-                        np.isfinite(snr)
-                        and np.isfinite(Pe)
-                        and np.isfinite(ie_new_Pg)
-                        and np.isfinite(SSF)
-                        and np.isfinite(T1_us)
-                        and np.isfinite(readout_length_us)
-                ):
+                if not (np.isfinite(snr) and np.isfinite(Pe) and np.isfinite(ie_new_Pg) and np.isfinite(
+                        SSF) and np.isfinite(T1_us) and np.isfinite(readout_length_us)):
                     continue
 
                 # -------------------------
@@ -4675,38 +4867,19 @@ class combined_Qtemp_studies:
                 thermal_error = Pe
 
                 # 3. Full-window T1 decay probability
-                full_window_t1_decay_prob = t1_decay_probability(
-                    readout_length_us=readout_length_us,
-                    t1_us=T1_us,
-                )
+                full_window_t1_decay_prob = t1_decay_probability(readout_length_us=readout_length_us, t1_us=T1_us)
 
                 # 4. "Caught T1" decay estimate
-                caught_t1_decay_prob = caught_t1_decay_probability(
-                    readout_length_us=readout_length_us,
-                    t1_us=T1_us,
-                    sensitive_fraction=sensitive_fraction,
-                )
+                caught_t1_decay_prob = caught_t1_decay_probability(readout_length_us=readout_length_us, t1_us=T1_us,
+                                                                   sensitive_fraction=sensitive_fraction)
 
                 # 5. Residual unexplained excited-state ground remnant
-                if (
-                        np.isfinite(ie_new_Pg)
-                        and np.isfinite(thermal_error)
-                        and np.isfinite(caught_t1_decay_prob)
-                ):
-                    residual_unexplained_loss = max(
-                        0.0,
-                        ie_new_Pg - thermal_error - caught_t1_decay_prob,
-                    )
-
-                    explained_by_pe_and_t1 = min(
-                        ie_new_Pg,
-                        thermal_error + caught_t1_decay_prob,
-                    )
+                if np.isfinite(ie_new_Pg) and np.isfinite(thermal_error) and np.isfinite(caught_t1_decay_prob):
+                    residual_unexplained_loss = max(0.0, ie_new_Pg - thermal_error - caught_t1_decay_prob)
+                    explained_by_pe_and_t1 = min(ie_new_Pg, thermal_error + caught_t1_decay_prob)
 
                     if ie_new_Pg > 0:
-                        fraction_explained_by_pe_and_t1 = (
-                                explained_by_pe_and_t1 / ie_new_Pg
-                        )
+                        fraction_explained_by_pe_and_t1 = explained_by_pe_and_t1 / ie_new_Pg
                         fraction_unexplained = residual_unexplained_loss / ie_new_Pg
                     else:
                         fraction_explained_by_pe_and_t1 = np.nan
@@ -4718,12 +4891,7 @@ class combined_Qtemp_studies:
                     fraction_unexplained = np.nan
 
                 # 6. Main rough SSF infidelity budget
-                estimated_total_error = np.nansum([
-                    snr_overlap_error,
-                    thermal_error,
-                    caught_t1_decay_prob,
-                    residual_unexplained_loss,
-                ])
+                estimated_total_error = np.nansum([snr_overlap_error, thermal_error, caught_t1_decay_prob, residual_unexplained_loss])
 
                 # 7. Per-scan difference between measured infidelity and budget
                 # This is the quantity whose median is:
@@ -4731,10 +4899,25 @@ class combined_Qtemp_studies:
                 measured_minus_budget = measured_ssf_infidelity - estimated_total_error
 
                 # Alternative direct budget using observed excited-state loss
-                estimated_total_error_using_iePg = np.nansum([
-                    snr_overlap_error,
-                    ie_new_Pg,
-                ])
+                estimated_total_error_using_iePg = np.nansum([snr_overlap_error, ie_new_Pg])
+
+                # -------------------------
+                # Propagate per-scan uncertainties
+                # -------------------------
+                propagated = self.cal_ssf_limitation_uncertainties(
+                    snr_overlap_uncertainty=snr_overlap_uncertainty,
+                    Pe_err=Pe_err,
+                    ie_new_Pg_err=ie_new_Pg_err,
+                    SSF_err=SSF_err,
+                    T1_us=T1_us,
+                    T1_err_us=T1_err_us,
+                    readout_length_us=readout_length_us,
+                    sensitive_fraction=sensitive_fraction,
+                    ie_new_Pg=ie_new_Pg,
+                    thermal_error=thermal_error,
+                    caught_t1_decay_prob=caught_t1_decay_prob,
+                    residual_unexplained_loss=residual_unexplained_loss,
+                )
 
                 row = {
                     "Run": run_num,
@@ -4826,41 +5009,70 @@ class combined_Qtemp_studies:
                     "estimated_total_error_using_iePg_percent": percent(estimated_total_error_using_iePg),
                 }
 
+                # -------------------------
+                # Separate propagated-error row
+                # -------------------------
+                error_row = {
+                    "Run": run_num,
+                    "Qubit_index": qid,
+                    "Qubit": qlabel,
+                    "Scan_index": scan_index,
+                    "Dataset": dataset,
+                    "Pe_source": Pe_source,
+
+                    # Original input uncertainties
+                    "SNR_fit_uncertainty": snr_err,
+                    "SSF_uncertainty_percent": percent(SSF_err),
+                    "Pe_uncertainty_percent": percent(Pe_err),
+                    "ie_new_Pg_uncertainty_percent": percent(ie_new_Pg_err),
+                    "T1_uncertainty_us": T1_err_us,
+
+                    # Propagated uncertainties
+                    "SNR_overlap_uncertainty_percent": percent(snr_overlap_uncertainty),
+                    "Measured_SSF_infidelity_uncertainty_percent": percent(
+                        propagated["measured_ssf_infidelity_uncertainty"]),
+                    "thermal_uncertainty_percent": percent(propagated["thermal_uncertainty"]),
+                    "full_window_T1_uncertainty_percent": percent(propagated["full_window_t1_uncertainty"]),
+                    "caught_T1_uncertainty_percent": percent(propagated["caught_t1_uncertainty"]),
+                    "Pe_plus_caught_T1_uncertainty_percent": percent(propagated["pe_plus_caught_t1_uncertainty"]),
+                    "residual_unexplained_uncertainty_percent": percent(propagated["residual_unexplained_uncertainty"]),
+                    "fraction_unexplained_uncertainty_percent": percent(propagated["fraction_unexplained_uncertainty"]),
+                    "estimated_total_uncertainty_percent": percent(propagated["estimated_total_uncertainty"]),
+                    "measured_minus_budget_uncertainty_percent": percent(
+                        propagated["measured_minus_budget_uncertainty"]),
+                    "estimated_total_using_iePg_uncertainty_percent": percent(
+                        propagated["estimated_total_using_iePg_uncertainty"]),
+                }
+
                 rows.append(row)
+                error_rows.append(error_row)
                 n_used += 1
 
             if verbose:
-                print(
-                    f"{qlabel}: calculated contribution budget for "
-                    f"{n_used}/{len(ssf_recs)} SSF scans."
-                )
+                print(f"{qlabel}: calculated contribution budget for {n_used}/{len(ssf_recs)} SSF scans.")
 
         per_scan_df = pd.DataFrame(rows)
+        per_scan_error_df = pd.DataFrame(error_rows)
 
         if per_scan_df.empty:
             if verbose:
                 print("No per-scan SSF limitation rows were created.")
-            return per_scan_df, per_scan_df
+            return per_scan_df, per_scan_df, per_scan_error_df
 
         # -------------------------
         # Median summary per qubit and Pe source
         # -------------------------
         summary_cols = [
             "SNR",
-            "SNR_err",
             "SSF_percent",
             "Measured_SSF_infidelity_percent",
             "SNR_overlap_error_percent",
-            "SNR_overlap_uncertainty_percent",
             "Pe_percent",
-            "Pe_err_percent",
             "Pe_match_dt_s",
             "Pe_temperature_mK",
             "Pe_temperature_err_mK",
             "ie_new_Pg_percent",
-            "ie_new_Pg_err_percent",
             "T1_us",
-            "T1_err_us",
             "readout_length_us",
             "T1_match_dt_s",
             "caught_T1_decay_percent",
@@ -4886,28 +5098,48 @@ class combined_Qtemp_studies:
             .rename(columns={"size": "N_scans"})
         )
 
-        median_summary_df = median_summary_df.merge(
-            counts_df,
-            on=["Run", "Qubit_index", "Qubit", "Pe_source"],
-            how="left",
-        )
+        median_summary_df = median_summary_df.merge(counts_df, on=["Run", "Qubit_index", "Qubit", "Pe_source"], how="left")
+
+        # -------------------------
+        # Median propagated-error summary
+        # -------------------------
+        error_summary_cols = [
+            "SNR_fit_uncertainty",
+            "SSF_uncertainty_percent",
+            "Pe_uncertainty_percent",
+            "ie_new_Pg_uncertainty_percent",
+            "T1_uncertainty_us",
+            "SNR_overlap_uncertainty_percent",
+            "Measured_SSF_infidelity_uncertainty_percent",
+            "thermal_uncertainty_percent",
+            "full_window_T1_uncertainty_percent",
+            "caught_T1_uncertainty_percent",
+            "Pe_plus_caught_T1_uncertainty_percent",
+            "residual_unexplained_uncertainty_percent",
+            "fraction_unexplained_uncertainty_percent",
+            "estimated_total_uncertainty_percent",
+            "measured_minus_budget_uncertainty_percent",
+            "estimated_total_using_iePg_uncertainty_percent",
+        ]
+
+        median_error_summary_df = (
+            per_scan_error_df
+            .groupby(["Run", "Qubit_index", "Qubit", "Pe_source"], as_index=False)[error_summary_cols]
+            .median(numeric_only=True))
+
+        median_error_summary_df = median_error_summary_df.merge(counts_df,on=["Run", "Qubit_index", "Qubit", "Pe_source"],how="left")
 
         median_summary_df = median_summary_df.rename(columns={
             "SNR": "Median readout SNR",
-            "SNR_err": "Readout SNR fit uncertainty", #median of the per-scan SNR fit uncertainties, not uncertainty on the median SNR itself.
             "SSF_percent": "Median SSF (%)",
             "Measured_SSF_infidelity_percent": "Median per-scan SSF infidelity (%)",
             "SNR_overlap_error_percent": "Finite-SNR misassignment (%)",
-            "SNR_overlap_uncertainty_percent": "Finite-SNR misassignment uncertainty (%)",
             "Pe_percent": "Thermal population Pe (%)",
-            "Pe_err_percent": "Pe error (%)",
             "Pe_match_dt_s": "Pe match dt median (s)",
             "Pe_temperature_mK": "Pe source temp median (mK)",
             "Pe_temperature_err_mK": "Pe source temp err median (mK)",
             "ie_new_Pg_percent": "Observed excited-state loss (%)",
-            "ie_new_Pg_err_percent": "Observed excited-state loss err (%)",
             "T1_us": "Matched T1 median (us)",
-            "T1_err_us": "Matched T1 err median (us)",
             "readout_length_us": "Readout length median (us)",
             "T1_match_dt_s": "T1 match dt median (s)",
             "caught_T1_decay_percent": "Caught T1 decay estimate (%)",
@@ -4920,22 +5152,36 @@ class combined_Qtemp_studies:
             "estimated_total_error_using_iePg_percent": "SNR + observed e-loss budget (%)",
         })
 
+        median_error_summary_df = median_error_summary_df.rename(columns={
+            "SNR_fit_uncertainty": "Readout SNR fit uncertainty",
+            "SSF_uncertainty_percent": "SSF uncertainty (%)",
+            "Pe_uncertainty_percent": "Thermal population Pe uncertainty (%)",
+            "ie_new_Pg_uncertainty_percent": "Observed excited-state loss uncertainty (%)",
+            "T1_uncertainty_us": "Matched T1 uncertainty (us)",
+            "SNR_overlap_uncertainty_percent": "Finite-SNR misassignment uncertainty (%)",
+            "Measured_SSF_infidelity_uncertainty_percent": "SSF infidelity uncertainty (%)",
+            "thermal_uncertainty_percent": "Thermal contribution uncertainty (%)",
+            "full_window_T1_uncertainty_percent": "Full-window T1 decay uncertainty (%)",
+            "caught_T1_uncertainty_percent": "Caught T1 decay uncertainty (%)",
+            "Pe_plus_caught_T1_uncertainty_percent": "Pe + caught T1 uncertainty (%)",
+            "residual_unexplained_uncertainty_percent": "Residual unexplained loss uncertainty (%)",
+            "fraction_unexplained_uncertainty_percent": "Unexplained fraction uncertainty (%)",
+            "estimated_total_uncertainty_percent": "Estimated SSF infidelity budget uncertainty (%)",
+            "measured_minus_budget_uncertainty_percent": "Measured minus budget uncertainty (%)",
+            "estimated_total_using_iePg_uncertainty_percent": "SNR + observed e-loss budget uncertainty (%)",
+        })
+
         median_summary_df = median_summary_df.round({
             "Median readout SNR": 4,
-            "Readout SNR fit uncertainty": 4,
             "Median SSF (%)": 2,
             "Median per-scan SSF infidelity (%)": 2,
             "Finite-SNR misassignment (%)": 2,
-            "Finite-SNR misassignment uncertainty (%)": 3,
             "Thermal population Pe (%)": 3,
-            "Pe error (%)": 3,
             "Pe match dt median (s)": 3,
             "Pe source temp median (mK)": 3,
             "Pe source temp err median (mK)": 3,
             "Observed excited-state loss (%)": 2,
-            "Observed excited-state loss err (%)": 2,
             "Matched T1 median (us)": 2,
-            "Matched T1 err median (us)": 2,
             "Readout length median (us)": 3,
             "T1 match dt median (s)": 3,
             "Caught T1 decay estimate (%)": 2,
@@ -4948,9 +5194,71 @@ class combined_Qtemp_studies:
             "SNR + observed e-loss budget (%)": 2,
         })
 
+        median_error_summary_df = median_error_summary_df.round({
+            "Readout SNR fit uncertainty": 4,
+            "SSF uncertainty (%)": 2,
+            "Thermal population Pe uncertainty (%)": 3,
+            "Observed excited-state loss uncertainty (%)": 2,
+            "Matched T1 uncertainty (us)": 2,
+            "Finite-SNR misassignment uncertainty (%)": 3,
+            "SSF infidelity uncertainty (%)": 2,
+            "Thermal contribution uncertainty (%)": 3,
+            "Full-window T1 decay uncertainty (%)": 3,
+            "Caught T1 decay uncertainty (%)": 3,
+            "Pe + caught T1 uncertainty (%)": 3,
+            "Residual unexplained loss uncertainty (%)": 3,
+            "Unexplained fraction uncertainty (%)": 2,
+            "Estimated SSF infidelity budget uncertainty (%)": 3,
+            "Measured minus budget uncertainty (%)": 3,
+            "SNR + observed e-loss budget uncertainty (%)": 3,
+        })
+
+        # -------------------------
+        # Add uncertainties to applicable values in the main results table
+        # -------------------------
+        combined_columns = {
+            "Median readout SNR": ("Readout SNR fit uncertainty", 4),
+            "Median SSF (%)": ("SSF uncertainty (%)", 2),
+            "Median per-scan SSF infidelity (%)": ("SSF infidelity uncertainty (%)", 2),
+            "Finite-SNR misassignment (%)": ("Finite-SNR misassignment uncertainty (%)", 3),
+            "Thermal population Pe (%)": ("Thermal population Pe uncertainty (%)", 3),
+            "Observed excited-state loss (%)": ("Observed excited-state loss uncertainty (%)", 2),
+            "Matched T1 median (us)": ("Matched T1 uncertainty (us)", 2),
+            "Caught T1 decay estimate (%)": ("Caught T1 decay uncertainty (%)", 3),
+            "Pe + caught T1 (%)": ("Pe + caught T1 uncertainty (%)", 3),
+            "Residual unexplained loss (%)": ("Residual unexplained loss uncertainty (%)", 3),
+            "Unexplained fraction of observed loss (%)": ("Unexplained fraction uncertainty (%)", 2),
+            "Full-window T1 decay diagnostic (%)": ("Full-window T1 decay uncertainty (%)", 3),
+            "Estimated SSF infidelity budget (%)": ("Estimated SSF infidelity budget uncertainty (%)", 3),
+            "Median [(1-SSF) - budget] (%)": ("Measured minus budget uncertainty (%)", 3),
+            "SNR + observed e-loss budget (%)": ("SNR + observed e-loss budget uncertainty (%)", 3),
+        }
+
+        merge_keys = ["Run", "Qubit_index", "Qubit", "Pe_source"]
+
+        for value_col, (uncertainty_col, decimals) in combined_columns.items():
+            if value_col not in median_summary_df.columns or uncertainty_col not in median_error_summary_df.columns:
+                continue
+
+            uncertainty_lookup = median_error_summary_df[merge_keys + [uncertainty_col]]
+            median_summary_df = median_summary_df.merge(uncertainty_lookup, on=merge_keys, how="left")
+
+            median_summary_df[value_col] = median_summary_df.apply(
+                lambda table_row: (
+                    f"{table_row[value_col]:.{decimals}f} +/- {table_row[uncertainty_col]:.{decimals}f}"
+                    if np.isfinite(table_row[value_col]) and np.isfinite(table_row[uncertainty_col])
+                    else table_row[value_col]
+                ),
+                axis=1,
+            )
+
+            median_summary_df = median_summary_df.drop(columns=[uncertainty_col])
+
         if verbose:
             print("\n================ MEDIAN SSF LIMITATION TABLE ================")
             print(median_summary_df.to_string(index=False))
+            print("\n================ MEDIAN PROPAGATED-ERROR TABLE ================")
+            print(median_error_summary_df.to_string(index=False))
 
         if save_path is not None:
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
@@ -4960,11 +5268,15 @@ class combined_Qtemp_studies:
             summary_save_path = save_path.replace(".csv", "_median_summary.csv")
             median_summary_df.to_csv(summary_save_path, index=False)
 
+            error_summary_save_path = save_path.replace(".csv", "_propagated_error_summary.csv")
+            median_error_summary_df.to_csv(error_summary_save_path, index=False)
+
             if verbose:
                 print(f"\nSaved per-scan table: {save_path}")
                 print(f"Saved median summary: {summary_save_path}")
+                print(f"Saved propagated-error summary: {error_summary_save_path}")
 
-        return per_scan_df, median_summary_df
+        return per_scan_df, median_summary_df, median_error_summary_df
 
     def match_t1_to_ssf_scans(
             self,
