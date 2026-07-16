@@ -736,7 +736,7 @@ class SSFTempCalcAndPlots:
                 snr = np.nan
                 if calc_SNR:
                     save_figs_path_SNR = os.path.join(save_figs_path, "SNR")
-                    snr, snr_info = self.fit_ssf_ge_double_gaussian_SNR_iminuit(ig_new,ie_new, qid, plot = False, qubit_folder = save_figs_path_SNR, dataset = idx)
+                    snr, snr_err, snr_info = self.fit_ssf_ge_double_gaussian_SNR_iminuit(ig_new,ie_new, qid, plot = False, qubit_folder = save_figs_path_SNR, dataset = idx)
                     
                 # -------- optionally estimate e-state population on the left due to T1 decay, failed pi pulses, etc. --------
                 # ---------------- fit excited-prepared SSF data ----------------
@@ -791,6 +791,7 @@ class SSFTempCalcAndPlots:
                     "qfreq_mhz": freq_mhz,
                     "qfreq_mhz_err": freq_mhz_err,
                     "ssf_SNR": snr,
+                    "ssf_SNR_err": snr_err,
 
                     # Excited-prepared ie_new double-Gaussian fit.
                     # ie_new_ground_frac = observed ground-like fraction in intended e-state data.
@@ -3066,6 +3067,151 @@ class SSFTempCalcAndPlots:
         """Normalized 1D Gaussian pdf."""
         return np.exp(-0.5 * ((x - mu) / sigma) ** 2) / (np.sqrt(2 * np.pi) * sigma)
 
+    def calculate_snr_fit_error(self, minuit_fit, order, delta_mu, denom, sigma_g, sigma_e, verbose=False):
+        """
+        Propagate the full Minuit fit covariance matrix into the SNR uncertainty.
+
+        The SNR quantities delta_mu, denom, sigma_g, and sigma_e are calculated
+        in fit_ssf_ge_double_gaussian_SNR_iminuit() and passed into this function.
+
+        Parameters
+        ----------
+        minuit_fit : iminuit.Minuit
+            Completed Minuit fit after migrad() and hesse().
+        order : array-like
+            Mapping from ordered ground/excited components to the original fitted
+            Gaussian components. order[0] is ground and order[1] is excited.
+        delta_mu : float
+            Already calculated mu_e - mu_g.
+        denom : float
+            Already calculated sqrt(0.5 * (sigma_g**2 + sigma_e**2)).
+        sigma_g : float
+            Fitted width of the Gaussian assigned to prepared ground.
+        sigma_e : float
+            Fitted width of the Gaussian assigned to prepared excited.
+        verbose : bool
+            Print diagnostic messages when the error cannot be calculated.
+
+        Returns
+        -------
+        snr_err : float
+            One-standard-deviation fit uncertainty on SNR.
+        """
+
+        # -------------------- Validate supplied quantities --------------------
+        values = np.asarray([delta_mu, denom, sigma_g, sigma_e], dtype=float)
+
+        if not np.all(np.isfinite(values)):
+            if verbose:
+                print("Could not calculate SNR error: supplied quantities are non-finite.")
+            return np.nan
+
+        if denom <= 0 or sigma_g <= 0 or sigma_e <= 0:
+            if verbose:
+                print("Could not calculate SNR error: denominator and sigmas must be positive.")
+            return np.nan
+
+        # The derivative of abs(mu_e - mu_g) is undefined when the means are equal.
+        if np.isclose(delta_mu, 0.0):
+            if verbose:
+                print("Could not calculate SNR error: fitted means are indistinguishable.")
+            return np.nan
+
+        # Confirm that order maps the two raw Gaussian components exactly once.
+        order = np.asarray(order, dtype=int).ravel()
+
+        if order.size != 2 or set(order.tolist()) != {0, 1}:
+            if verbose:
+                print(f"Could not calculate SNR error: invalid component order {order}.")
+            return np.nan
+
+        # -------------------- Check Minuit covariance --------------------
+        if minuit_fit.covariance is None:
+            if verbose:
+                print("Could not calculate SNR error: Minuit covariance is unavailable.")
+            return np.nan
+
+        # SNR does not depend on the mixture weight, so only use the covariance
+        # matrix for mu1, sigma1, mu2, and sigma2.
+        parameter_names = ["mu1", "sigma1", "mu2", "sigma2"]
+
+        try:
+            covariance = np.array(
+                [[float(minuit_fit.covariance[name_i, name_j]) for name_j in parameter_names] for name_i in
+                 parameter_names], dtype=float)
+        except (KeyError, TypeError, ValueError) as exc:
+            if verbose:
+                print(f"Could not extract Minuit covariance: {exc}")
+            return np.nan
+
+        if covariance.shape != (4, 4):
+            if verbose:
+                print(f"Could not calculate SNR error: unexpected covariance shape {covariance.shape}.")
+            return np.nan
+
+        if not np.all(np.isfinite(covariance)):
+            if verbose:
+                print("Could not calculate SNR error: covariance contains non-finite values.")
+            return np.nan
+
+        # -------------------- Calculate SNR derivatives --------------------
+        # SNR = |delta_mu| / denom
+        # denom = sqrt((sigma_g**2 + sigma_e**2) / 2)
+        sign_delta = np.sign(delta_mu)
+        abs_delta = np.abs(delta_mu)
+
+        dsnr_dmu_g = -sign_delta / denom
+        dsnr_dmu_e = sign_delta / denom
+        dsnr_dsigma_g = -(abs_delta * sigma_g) / (2.0 * denom ** 3)
+        dsnr_dsigma_e = -(abs_delta * sigma_e) / (2.0 * denom ** 3)
+
+        # Gradient using the ordered ground/excited convention:
+        # [mu_g, sigma_g, mu_e, sigma_e]
+        gradient_ordered = np.array([dsnr_dmu_g, dsnr_dsigma_g, dsnr_dmu_e, dsnr_dsigma_e], dtype=float)
+
+        # -------------------- Map gradient to Minuit parameter order --------------------
+        # Minuit parameter order:
+        # [mu1, sigma1, mu2, sigma2]
+        gradient_raw = np.zeros(4, dtype=float)
+
+        # order[0] is the original Gaussian assigned to prepared ground.
+        # order[1] is the original Gaussian assigned to prepared excited.
+        ground_raw_idx = int(order[0])
+        excited_raw_idx = int(order[1])
+
+        if ground_raw_idx == 0:
+            gradient_raw[0:2] = gradient_ordered[0:2]
+        else:
+            gradient_raw[2:4] = gradient_ordered[0:2]
+
+        if excited_raw_idx == 0:
+            gradient_raw[0:2] = gradient_ordered[2:4]
+        else:
+            gradient_raw[2:4] = gradient_ordered[2:4]
+
+        # -------------------- Full covariance propagation --------------------
+        # First multiply the covariance matrix by the SNR gradient.
+        covariance_times_gradient = np.dot(covariance, gradient_raw)
+
+        # Then multiply by the gradient to obtain variance(SNR) = J C J^T.
+        snr_variance = float(np.dot(gradient_raw, covariance_times_gradient))
+
+        if not np.isfinite(snr_variance):
+            if verbose:
+                print("Could not calculate SNR error: propagated variance is non-finite.")
+            return np.nan
+
+        # Small negative values can occur from floating-point precision.
+        covariance_scale = np.max(np.abs(covariance))
+        numerical_tolerance = max(1e-15, 1e-12 * covariance_scale)
+
+        if snr_variance < -numerical_tolerance:
+            if verbose:
+                print(f"Could not calculate SNR error: negative propagated variance {snr_variance}.")
+            return np.nan
+
+        return float(np.sqrt(max(0.0, snr_variance)))
+
     def fit_ssf_ge_double_gaussian_SNR_iminuit(self, ig_new, ie_new, q_key, plot = False, qubit_folder = "SSF_SNR_fit_plots",
                                                 dataset = None, ssf_hist_ylim = None):
         """
@@ -3208,12 +3354,17 @@ class SSFTempCalcAndPlots:
         sigma_e = sigmas[excited_idx]
 
         # -------------------- Calculate SNR --------------------
+        delta_mu = mu_e - mu_g
         denom = np.sqrt(0.5 * (sigma_g ** 2 + sigma_e ** 2))
 
         if denom <= 0 or not np.isfinite(denom):
             snr = np.nan
         else:
-            snr = np.abs(mu_e - mu_g) / denom
+            snr = np.abs(delta_mu) / denom
+
+        # -------------------- Calculate SNR fit error --------------------
+        snr_err = self.calculate_snr_fit_error(minuit_fit=m2, order=order, delta_mu=delta_mu, denom=denom,
+                                            sigma_g=sigma_g, sigma_e=sigma_e, verbose=False)
 
         # ------------------ Optional fits plotting --------------
         if plot:
@@ -3234,6 +3385,7 @@ class SSFTempCalcAndPlots:
 
         snr_info = {
             "snr": snr,
+            "snr_err": snr_err,
             "means": means,
             "sigmas": sigmas,
             "weights": weights,
@@ -3255,7 +3407,7 @@ class SSFTempCalcAndPlots:
             "valid": bool(m2.valid),
         }
 
-        return snr, snr_info
+        return snr, snr_err, snr_info
 
     def plot_ie_new_double_gaussian_fit(
             self,
@@ -4443,6 +4595,7 @@ class combined_Qtemp_studies:
                 # Inputs from SSF scan
                 # -------------------------
                 snr = float(rec.get("ssf_SNR", np.nan))
+                snr_err = float(rec.get("ssf_SNR_err", np.nan))
 
                 # -------------------------
                 # Thermal population source
@@ -4510,7 +4663,14 @@ class combined_Qtemp_studies:
                 measured_ssf_infidelity = 1.0 - SSF
 
                 # 1. Finite-SNR Gaussian overlap error
-                snr_overlap_error = snr_to_overlap_error(snr)
+                # Propagate the fitted SNR uncertainty into the Gaussian-overlap error.
+                if np.isfinite(snr) and np.isfinite(snr_err):
+                    snr_overlap_error_err = (
+                            np.exp(-(snr ** 2) / 8.0)
+                            / (2.0 * np.sqrt(2.0 * np.pi))
+                            * snr_err)
+                else:
+                    snr_overlap_error_err = np.nan
 
                 # 2. Thermal population contribution
                 thermal_error = Pe
