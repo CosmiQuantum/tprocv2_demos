@@ -1,6 +1,7 @@
 # from syspurpose.files import three_way_merge
 import sys
 import os
+#sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 sys.path.append(os.path.abspath("/home/molenaar/ab_analysis/Documents/GitHub"))
 from section_008_save_data_to_h5 import Data_H5
 from analysis_000_load_configs import LoadConfigs
@@ -9,8 +10,7 @@ from analysis_002_res_centers_vs_time_plots import ResonatorFreqVsTime
 from analysis_003_q_freqs_vs_time_plots import QubitFreqsVsTime
 from analysis_004_pi_amp_vs_time_plots import PiAmpsVsTime
 from analysis_006_T1_vs_time_plots import T1VsTime
-from analysis_005_Qtemp_vs_time_plots import QTempsVsTime
-from analysis_007_T2R_vs_time_plots import T2rVsTime
+from analysis_007_T2R_vs_time_plots2 import T2rVsTime
 from analysis_008_T2E_vs_time_plots import T2eVsTime
 from analysis_009_T1_hist_cumul_err_plots import T1HistCumulErrPlots
 from analysis_010_T2R_hist_cumul_err_plots import T2rHistCumulErrPlots
@@ -23,15 +23,10 @@ from analysis_016_metrics_vs_temp import (ResonatorFreqVsTemp, GetThermData, Qub
                                           PiAmpsVsTemp, T1VsTemp, T2rVsTemp, T2eVsTemp)
 from analysis_017_plot_metric_dependencies import PlotMetricDependencies
 #from analysis_018_box_whisker import PlotBoxWhisker
-from AB_Paper_Analysis_Plots import boxwhisker_t1t2_per_qubit_vs_run, boxwhisker_qfreq_per_qubit_vs_run
+from AB_Paper_Analysis_Plots2 import boxwhisker_t1t2_per_qubit_vs_run, boxwhisker_qfreq_per_qubit_vs_run, boxwhisker_t1t2_init_vs_final_per_run, boxwhisker_resleng_per_qubit_vs_run
 from analysis_019_allan_welch_stats_plots import AllanWelchStats
 from analysis_022_Qfreq_hist_plots import QfreqHistPlots
 from section_011_qubit_temperatures_efRabi import QubitTemperatureProgram, QubitTemperatureRefProgram
-
-from pure_dephase_plots import PureDephasePlots
-from dephase_vs_t2 import DephaseT2Plots
-from phase_coherence import PhaseCoherencePlots
-
 import matplotlib.pyplot as plt
 # from datetime import datetime
 import datetime
@@ -44,7 +39,7 @@ import h5py
 # from qualang_tools.plot import Fit
 # import visdom
 ###################################################### Set These #######################################################
-save_figs = True  #this is just for RR plots
+save_figs = False  #this is just for RR plots
 fit_saved = False
 show_legends = False
 signal = 'None'
@@ -52,26 +47,142 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
-run_num_list = [8] # options: 4,5,6,7,8,9
+run_num_list = [9.3] # options: 4,5,6,7,8,9, 9.2 (run 9c), 9.3 (run 9d)
 t1_vals_by_run  = {}
+res_lengths_by_run = {}
 t2r_vals_by_run = {}
 t2e_vals_by_run = {}
 qfreq_vals_by_run = {}
 
-t1_errs_by_run  = {9}
+t1_errs_by_run  = {}
 t2r_errs_by_run = {}
 t2e_errs_by_run = {}
 qfreq_errs_by_run = {}
 
 for run_number in run_num_list:
     print(f'Processing run {run_number} data.')
-    if run_number == 9:
+    if run_number == 9.3: # run 9d
+        print('(this is actually run 9d, we just label it run 9.3)')
+        process_shots_t1ge = False # the option exists for this run, but for analysis consistency w initial runs we keep it off unless necessary.
+        per_pt_errs_t1 = False
+        run_name = 'run9d/6transmon/round_robin_benchmark'
+        data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
+        plots_path = "/home/molenaar/ab_analysis/Documents/analysis/t2" #cosmiqserver01
+
+        top_folder_dates = [ # Data PT off tests T2R only, run 9d
+                            # "Pre_PT_off_base_T2R/2026-07-15_10-12-25", # testing params/settings
+                            # "Pre_PT_off_base_T2R/2026-07-15_10-07-44", # testing params/settings
+                            # "Pre_PT_off_base_T2R/2026-07-15_09-59-37", # testing params/settings
+                            # "Pre_PT_off_base_T2R/2026-07-15_10-21-04", # testing params/settings
+
+                            #"Pre_PT_off_base_T2R/2026-07-15_10-23-07", # began continuous data-taking
+                            #"Pre_PT_off_base_T2R/2026-07-15_10-26-42",
+                            #"Pre_PT_off_base_T2R/2026-07-15_10-39-32",
+
+                            #"PT_off_base_T2R_batch1/2026-07-15_10-55-03",
+                            #"Post_PT_off_base_T2R_batch1/2026-07-15_11-09-11",
+                            #"PT_off_base_T2R_batch2/2026-07-15_11-26-31",
+                            #"Post_PT_off_base_T2R_batch2/2026-07-15_11-37-04",
+                            #"PT_off_base_T2R_batch3/2026-07-15_12-00-33",
+                            #"Post_PT_off_base_T2R_batch3/2026-07-15_12-09-04",
+                            #"PT_off_base_T2R_batch4/2026-07-15_12-31-02",
+                            #"Post_PT_off_base_T2R_batch4/2026-07-15_12-41-25",
+                           "Temp_Sweep_1_PT_Off_15mK/2026-07-13_11-50-43",
+                           "Temp_Sweep_2_20mK/2026-07-13_12-02-25",
+                           "Temp_Sweep_2_PT_Off_20mK/2026-07-13_12-08-12",
+                           "Temp_Sweep_3_30mK/2026-07-13_12-22-13",
+                           "Temp_Sweep_3_PT_Off_30mK/2026-07-13_12-25-38",
+                           "Temp_Sweep_4_40mK/2026-07-13_12-39-33",
+                           "Temp_Sweep_5_50mK/2026-07-13_14-11-33",
+                           "Temp_Sweep_5_PT_off_50mK/2026-07-13_14-18-34",
+                           "Temp_Sweep_6_55mK/2026-07-13_14-31-53",
+                           "Temp_Sweep_6_PT_off_55mK/2026-07-13_14-41-05",
+                           "Temp_Sweep_7_60mK/2026-07-13_14-57-36",    
+                           "Temp_Sweep_7_PT_off_60mK/2026-07-13_15-10-15",
+                           "Temp_Sweep_8_70mK/2026-07-13_15-28-34",
+              	      	   "Temp_Sweep_8_70mK/2026-07-13_15-33-25",
+                           "Temp_Sweep_8_PT_off_70mK/2026-07-13_15-35-16",
+                           "Temp_Sweep_9_70mK/2026-07-13_15-46-23",
+                           "Temp_Sweep_10_80mK/2026-07-13_15-54-19",
+                           "Temp_Sweep_10_PT-off_80mK/2026-07-13_15-59-34",
+                           "Temp_Sweep_11_90mK/2026-07-13_16-12-11",
+                           "Temp_Sweep_11_PT_off_90mK/2026-07-13_16-21-28",
+                           "Temp_Sweep_12_100mK/2026-07-13_16-39-06",
+                           "Temp_Sweep_12_PT_off_100mK/2026-07-13_16-47-52",
+                           "Temp_Sweep_14_100mK/2026-07-13_17-05-59",
+                           #"Temp_Sweep_Cooldown_PT_on/2026-07-13_17-16-05",
+                           "Temp_Sweep_PT_Off_base/2026-07-13_11-11-43",
+                           "Temp_Sweep_PT_On_base/2026-07-13_11-27-15",
+            
+                           ]
+        
+        #outerFolder = f"/exp/cosmiq/data/QUIET/QICK_data/run9d/6transmon/round_robin_benchmark/Temp_Sweep_4_40mK/2026-07-13_12-39-33" 
+        
+
+        
+    if run_number == 9.2: # run 9c
+        print('(this is actually run 9c, we just label it run 9.2)')
+        process_shots_t1ge = False # the option exists for this run, but for analysis consistency w initial runs we keep it off unless necessary.
+        per_pt_errs_t1 = False
+        run_name = 'run9c/6transmon/round_robin_benchmark'
+        data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
+        plots_path = "/home/molenaar/ab_analysis/Documents/analysis/t2" #cosmiqserver01
+
+        top_folder_dates = [
+            "Day2_base_not_fully_opt_yet_25dBDAC/2026-06-05_23-17-54",
+
+            "Day4_base_not_fully_opt_yet_25dBDAC/2026-06-09_09-43-21",
+
+            "prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-13-10",
+            "prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-17-55",
+            "prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-18-14",
+            "prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-19-26",
+            "prejul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-14_21-23-30",
+
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-24-54",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-25-34",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-26-35",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-27-31",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_10-34-02",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-46-13",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-46-45",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-51-05",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-52-11",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-54-23",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_15-57-31",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-06-05",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-16-41",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-17-12",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-19-09",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-20-54",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-23-24",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-23-35",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-30-06",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_16-35-48",
+            "postjul15_outage_no_warm_filt_25dBDAC_noQ5/2026-06-15_17-39-03",
+
+            "ABpaper_batch1_25dBDAC_ogfilters_noQ5/2026-06-15_19-38-45",
+            "ABpaper_batch1_25dBDAC_ogfilters_noQ5/2026-06-15_20-57-52",
+            "ABpaper_batch1_25dBDAC_ogfilters_noQ5/2026-06-16_00-22-56",
+
+            "ABpaper_batch2_25dBDAC_ogfilters_noQ5/2026-06-16_12-02-29",
+            "ABpaper_batch2_25dBDAC_ogfilters_noQ5/2026-06-16_15-16-01",
+            "ABpaper_batch2_25dBDAC_ogfilters_noQ5/2026-06-17_09-44-00",
+            "ABpaper_batch2_25dBDAC_ogfilters_noQ5/2026-06-17_11-46-15",
+
+            "ABpaper_batch3_25dBDAC_ogfilters_noQ5/2026-06-18_11-38-44",
+            "ABpaper_batch3_25dBDAC_ogfilters_noQ5/2026-06-18_17-18-45",
+            "ABpaper_batch3_25dBDAC_ogfilters_noQ5/2026-06-19_00-28-27",
+            "ABpaper_batch3_25dBDAC_ogfilters_noQ5/2026-06-19_10-53-54"
+            ]
+
+    elif run_number == 9: # "9.0", this is run 9a. We did not take data in run 9b.
         process_shots_t1ge = False # the option exists for this run, but for analysis consistency w initial runs we keep it off unless necessary.
         per_pt_errs_t1 = False
         run_name = "run9/6transmon/round_robin_benchmark"
         data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
                     # f'/data/QICK_data/{run_name}' #daq01
-        plots_path = "/home/molenaar/ab_analysis/Documents/analysis/coherence" #cosmiqserver01
+        plots_path = "/home/molenaar/ab_analysis/Documents/analysis/t2" #cosmiqserver01
                     # "/data/QICK_data/run9/6transmon/analysis" #daq01
 
         top_folder_dates = [
@@ -167,7 +278,7 @@ for run_number in run_num_list:
                             "AB_paper_data_batch21_25dB_DACatten_noQ5/2026-04-27_11-41-29",
                             "AB_paper_data_batch21_25dB_DACatten_noQ5/2026-04-27_13-07-15"]
 
-    if run_number == 8:
+    elif run_number == 8:
         process_shots_t1ge = True
         per_pt_errs_t1 = True
         run_name = "run8/6transmon/round_robin"
@@ -175,7 +286,7 @@ for run_number in run_num_list:
         # 'run8/6transmon/round_robin/AB_paper_datadump_for_analysis'
         data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
             # f'/data/QICK_data/{run_name}' # daq01
-        plots_path = "/home/molenaar/ab_analysis/Documents/analysis/coherence" #cosmiqserver01
+        plots_path = "/home/molenaar/ab_analysis/Documents/analysis/t2" #cosmiqserver01
             #"/data/QICK_data/run8/6transmon/analysis" #daq01
 
         # all of run 8 data
@@ -230,7 +341,7 @@ for run_number in run_num_list:
         run_name = 'run7/6transmon/round_robin_benchmark/AB_paper_data'
         data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
             # f'/data/QICK_data/{run_name}' #daq01
-        plots_path = "/home/molenaar/ab_analysis/Documents/analysis/coherence" #cosmiqserver01
+        plots_path = "/home/molenaar/ab_analysis/Documents/analysis/t2" #cosmiqserver01
             #"/data/QICK_data/run7/6transmon/analysis" #daq01
 
         # all dates:
@@ -246,50 +357,50 @@ for run_number in run_num_list:
         run_name = 'run6/6transmon'
         data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
             #f'/data/QICK_data/{run_name}' #daq01
-        plots_path = "/home/molenaar/ab_analysis/Documents/analysis/coherence" #cosmiqserver01
+        plots_path = "/home/molenaar/ab_analysis/Documents/analysis/t2" #cosmiqserver01
             #"/data/QICK_data/run6/6transmon/analysis" #daq01
 
         # all pre-science run data (AB paper data):
         # Can be found both locally in daq01 or on CEPH
         top_folder_dates = [
-        #"ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-21",
-        #"ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-22",
-        #"ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-23",
-        #"ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-24",
-        #"ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-26",
-        #"ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-28",
-        #"ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-01",
-        #"ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-02",
+        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-21",
+        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-22",
+        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-23",
+        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-24",
+        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-26",
+        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-02-28",
+        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-01",
+        "ge_round_robin_presciencerun_data/ge_coherence_data/2025-03-02"]
 
         # Science run data: can ONLY be found on CEPH!!
         # If you want to process all "science run" data
-        "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-15_14-47-38",
+        # "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-15_14-47-38",
         # "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-15_18-08-15",
-        "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-15_22-02-12",
+        # "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-15_22-02-12",
         # "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-16_01-28-20",
         # "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-16_04-49-59",
         # "TLS_Comprehensive_Study/source_off_detuning_17MHz_Q1_substudy1/2025-05-16_08-13-47",
         #
-        "TLS_Comprehensive_Study/source_off_detuning_24MHz_Q1_substudy1/2025-05-15_11-19-50",
+        # "TLS_Comprehensive_Study/source_off_detuning_24MHz_Q1_substudy1/2025-05-15_11-19-50",
         # "TLS_Comprehensive_Study/source_off_detuning_24MHz_Q1_substudy1/2025-05-15_18-35-56",
         #
         # "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-14_19-25-55",
-        "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-14_22-50-51",
-        "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-15_02-29-34",
-        "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-15_05-50-12",
-        "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-15_09-13-30",
+        # "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-14_22-50-51",
+        # "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-15_02-29-34",
+        # "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-15_05-50-12",
+        # "TLS_Comprehensive_Study/source_off_post_temperature_sweep_substudy1/2025-05-15_09-13-30",
         #
-        "TLS_Comprehensive_Study/source_off_substudy1/2025-04-15_21-24-46",
+        # "TLS_Comprehensive_Study/source_off_substudy1/2025-04-15_21-24-46",
         #
         # "TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_11-47-09",
-        "TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_12-51-09",
+        # "TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_12-51-09",
         # "TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_17-50-00",
-        "TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_22-47-49",
+        # "TLS_Comprehensive_Study/source_off_substudy2/2025-04-16_22-47-49",
         # "TLS_Comprehensive_Study/source_off_substudy2/2025-04-17_03-42-36",
-        "TLS_Comprehensive_Study/source_off_substudy2/2025-04-17_08-42-24",
+        # "TLS_Comprehensive_Study/source_off_substudy2/2025-04-17_08-42-24",
         #
         # "TLS_Comprehensive_Study/source_off_substudy3/2025-04-17_12-28-37",
-        "TLS_Comprehensive_Study/source_off_substudy3/2025-04-17_17-22-46",
+        # "TLS_Comprehensive_Study/source_off_substudy3/2025-04-17_17-22-46",
         # "TLS_Comprehensive_Study/source_off_substudy3/2025-04-17_22-16-39",
         # "TLS_Comprehensive_Study/source_off_substudy3/2025-04-18_01-45-53",
         # "TLS_Comprehensive_Study/source_off_substudy3/2025-04-18_06-40-55",
@@ -298,43 +409,42 @@ for run_number in run_num_list:
         # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-18_16-56-58",
         # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-18_21-51-13",
         # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-19_02-45-41",
-        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-19_07-39-57",
+        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-19_07-39-57",
         # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-19_12-34-26",
         # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-19_17-48-44",
-        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-19_22-43-02",
+        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-19_22-43-02",
         # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-20_03-37-50",
-        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-20_08-32-36",
+        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-20_08-32-36",
         # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-20_13-26-47",
-        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-20_18-25-13",
+        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-20_18-25-13",
         # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-20_23-25-04",
-        "TLS_Comprehensive_Study/source_off_substudy4/2025-04-21_04-23-31",
+        # "TLS_Comprehensive_Study/source_off_substudy4/2025-04-21_04-23-31",
         #
-        "TLS_Comprehensive_Study/source_off_substudy5/2025-05-04_20-56-05",
-        "TLS_Comprehensive_Study/source_off_substudy5/2025-05-04_23-28-05",
-        "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_03-03-40",
-        "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_06-40-15",
-        "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_10-18-53",
-        "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_13-57-22",
-        "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_17-34-21",
-        "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_21-18-14",
-        "TLS_Comprehensive_Study/source_off_substudy5/2025-05-06_02-18-57",
+        # "TLS_Comprehensive_Study/source_off_substudy5/2025-05-04_20-56-05",
+        # "TLS_Comprehensive_Study/source_off_substudy5/2025-05-04_23-28-05",
+        # "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_03-03-40",
+        # "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_06-40-15",
+        # "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_10-18-53",
+        # "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_13-57-22",
+        # "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_17-34-21",
+        # "TLS_Comprehensive_Study/source_off_substudy5/2025-05-05_21-18-14",
+        # "TLS_Comprehensive_Study/source_off_substudy5/2025-05-06_02-18-57",
         #
-        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-06_11-30-17",
-        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-06_14-50-55",
-        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-06_18-14-29",
-        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-06_21-35-26",
-        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_01-00-14",
-        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_04-23-45",
-        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_07-46-44",
-        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_11-09-17",
-        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_14-30-29",
-        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_17-50-59",
-        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_21-13-50",
-        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_00-36-15",
-        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_03-56-41",
-        "TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_07-19-10"
-        ]
-        #"TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_11-53-46"]
+        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-06_11-30-17",
+        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-06_14-50-55",
+        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-06_18-14-29",
+        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-06_21-35-26",
+        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_01-00-14",
+        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_04-23-45",
+        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_07-46-44",
+        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_11-09-17",
+        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_14-30-29",
+        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_17-50-59",
+        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-07_21-13-50",
+        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_00-36-15",
+        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_03-56-41",
+        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_07-19-10",
+        # "TLS_Comprehensive_Study/source_off_substudy6/2025-05-08_11-53-46"]
 
     elif run_number == 5:
         process_shots_t1ge = False
@@ -342,7 +452,7 @@ for run_number in run_num_list:
         run_name = 'run5/6transmon/Official_Round_Robin_Data_run5/CoolDown_Dec9_to_Dec20'
         data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
             #f'/data/QICK_data/{run_name}' #daq01
-        plots_path = "/home/molenaar/ab_analysis/Documents/analysis/coherence" #cosmiqserver01
+        plots_path = "/home/molenaar/ab_analysis/Documents/analysis/t2" #cosmiqserver01
             #"/data/QICK_data/run5/6transmon/analysis" #daq01
 
         # all dates:
@@ -365,7 +475,7 @@ for run_number in run_num_list:
         run_name = 'run4/6transmon/Official_run4_RR_Data_which_started_Nov21'
         data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
             #f'/data/QICK_data/{run_name}' #daq01
-        plots_path = "/home/molenaar/ab_analysis/Documents/analysis/coherence" #cosmiqserver01
+        plots_path = "/home/acolonce/Documents/analysis/coherence" #cosmiqserver01
             #"/data/QICK_data/run4/6transmon/analysis" #daq01
 
         # all dates:
@@ -381,13 +491,13 @@ for run_number in run_num_list:
     run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB attenuator ') #please make it brief for the plot
 
     ################################################ 01: Get all data ######################################################
-    # res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+    # res_spec_vs_time = ResonatorFreqVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
     #                                        save_figs, fit_saved, signal, run_name, FRIDGE)
     # date_times_res_spec, res_freqs = res_spec_vs_time.run()
-    # #
-    q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                      save_figs, fit_saved, signal, run_name, FRIDGE)
-    date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
+    #
+    # q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+    #                                   save_figs, fit_saved, signal, run_name, FRIDGE)
+    # date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
 
     #print("qspec fit errs Q1: ", qspec_fit_err[0])
     #print("mean qspec fit err Q1: ", np.mean(qspec_fit_err[0]))
@@ -397,43 +507,35 @@ for run_number in run_num_list:
     # date_times_pi_amps, pi_amps = pi_amps_vs_time.run(plot_depths=False)
 
     t1_vs_time = T1VsTime(plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-                     signal, run_name, FRIDGE, run_number, per_pt_errs = per_pt_errs_t1)
-
+                      signal, run_name, FRIDGE, run_number, per_pt_errs = per_pt_errs_t1)
+    
     if per_pt_errs_t1 and process_shots_t1ge: # this will only work if process_shots_t1ge is set to True too
-        date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge)
+         date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs, res_lengths = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge)
     else:
-        date_times_t1, t1_vals, t1_fit_err = t1_vs_time.run(return_errs=True, exp_extension = '_ge')
-
+         date_times_t1, t1_vals, t1_fit_err  = t1_vs_time.run(return_errs=True, exp_extension = '_ge')
+    
     t2r_vs_time = T2rVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
                             fit_saved, signal, run_name, FRIDGE)
-    date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True, t1_vals = t1_vals)
+    date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True, t1_vals = None) #t1_vals
 
-    t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
-                            fit_saved, signal, run_name, FRIDGE)
-    date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = t1_vals)
+    # t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+    #                         fit_saved, signal, run_name, FRIDGE)
+    # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = t1_vals)
 
-    Pure_Dephasing_Plots = PureDephasePlots(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs,fit_saved, signal, run_name, FRIDGE)
-
-    Dephase_T2_Plots = DephaseT2Plots(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs,fit_saved, signal, run_name, FRIDGE)
-    Phase_Coherence_Plots = PhaseCoherencePlots(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                            save_figs,fit_saved, signal, run_name, FRIDGE)
-    
-    
     # ---------------- Store results ----------------
     ## stores data like t1_vals_by_run[6][3], where 6=run number and 3=qubit index (0 based)
     # t1_vals_by_run[run_number] = t1_vals
     # t1_errs_by_run[run_number] = t1_fit_err
+    # res_lengths_by_run[run_number] = res_lengths
     #
     # t2r_vals_by_run[run_number] = t2r_vals
     # t2r_errs_by_run[run_number] = t2r_fit_err
     #
     # t2e_vals_by_run[run_number] = t2e_vals
     # t2e_errs_by_run[run_number] = t2e_fit_err
-
-    qfreq_vals_by_run[run_number] = q_freqs
-    qfreq_errs_by_run[run_number] = qspec_fit_err
+    #
+    # qfreq_vals_by_run[run_number] = q_freqs
+    # qfreq_errs_by_run[run_number] = qspec_fit_err
 
 ######################################## Print QICK soccfg live ###########################################
 # If you want to print out the soccfg QICK output, uncomment this:
@@ -466,12 +568,12 @@ for run_number in run_num_list:
             #plot_ss_hist_only=False,ss_plot_title = None, ss_plot_gef = False, plot_t1 = False,
             #plot_t2r = True, plot_t2e = False, plot_rabis_Qtemps = False)
 
-########################################### 03: Resonator Freqs vs Time Plots ##########################################
+########################################### 03: Resonator Freqs vs Time Plots ###########################################
 #res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
 #
 # ######################################### 04: Qubit Freqs vs Time Plots #############################################
 #q_spec_vs_time.plot_without_errs(date_times_q_spec, q_freqs,show_legends)
-#q_spec_vs_time.plot_with_errs(date_times_q_spec, q_freqs, qspec_fit_err, show_legends) # shows error bars, do this one!!
+#q_spec_vs_time.plot_with_errs(run_number,date_times_q_spec, q_freqs, qspec_fit_err, show_legends, use_global_yaxis=True) # shows error bars, do this one!!
 #q_spec_vs_time.plot_with_errs_single_plot(date_times_q_spec, q_freqs, qspec_fit_err, show_legends=True)
 
 # ############################################## 05: Pi Amp vs Time Plots ###############################################
@@ -484,39 +586,219 @@ for run_number in run_num_list:
 # pi_amps_vs_time.plot_vs_signal_depth(date_times, pi_amps, depths, show_legends)
 # pi_amps_vs_time.plot_signal_depth_vs_time(date_times, pi_amps, depths, show_legends)
 #
-# temps_class_obj = TempCalcAndPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-#                                    save_figs, fit_saved, signal, run_name, fridge = FRIDGE)
+#temps_class_obj = TempCalcAndPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+#                                    save_figs, fit_saved, signal, run_name, outerFolder ,fridge = FRIDGE)
 #
 # temps, qubit_temp_dates = temps_class_obj.get_temps()
 # filtered_pi_amps = temps_class_obj.get_filtered_pi_amps(qubit_temp_dates, date_times, pi_amps)
 # pi_amps_vs_time.plot_vs_temps(date_times, filtered_pi_amps, temps, show_legends)
 #
-# ssf, qubit_ssf_dates = temps_class_obj.get_ssf()
-# filtered_pi_amps = temps_class_obj.get_filtered_pi_amps(qubit_ssf_dates, date_times, pi_amps)
-# pi_amps_vs_time.plot_vs_ssf(date_times, filtered_pi_amps, ssf, show_legends)
+#ssf, qubit_ssf_dates = temps_class_obj.get_ssf()
+#filtered_pi_amps = temps_class_obj.get_filtered_pi_amps(qubit_ssf_dates, date_times, pi_amps)
+#pi_amps_vs_time.plot_vs_ssf(date_times, filtered_pi_amps, ssf, show_legends)
 
-################################################ 06: T1 vs Time Plots #################################################
-#t1_vs_time.plot_without_errs(date_times_t1, t1_vals, show_legends)
+# ################################################ 06: T1 vs Time Plots #################################################
+# t1_vs_time.plot_without_errs(date_times_t1, t1_vals, show_legends)
 #t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends) # shows error bars, do this one!!
 #t1_vs_time.plot_with_errs_single_plot(date_times_t1, t1_vals, t1_fit_err, show_legends=True)
+t1_vs_time.plot_with_errs_single_plot(date_times_t1, t1_vals, t1_fit_err,show_legends=True,
+    event_timestamps=[
+        "2026-07-13 11:11:00",
+        "2026-07-13 11:18:00",
+        "2026-07-13 11:50:00",
+        "2026-07-13 11:56:00",
+        "2026-07-13 12:08:00",
+        "2026-07-13 12:14:00",
+        "2026-07-13 12:25:00",
+        "2026-07-13 12:31:00",
+        "2026-07-13 13:10:00",
+        "2026-07-13 13:16:00",
+        "2026-07-13 13:51:00",
+        "2026-07-13 13:56:00",
+        "2026-07-13 14:18:00",
+        "2026-07-13 14:23:00",
+        "2026-07-13 14:40:00",
+        "2026-07-13 14:44:00",
+        "2026-07-13 15:10:00",
+        "2026-07-13 15:14:00",
+        "2026-07-13 15:34:00",
+        "2026-07-13 15:39:00",
+        "2026-07-13 15:59:00",
+        "2026-07-13 16:03:00",
+        "2026-07-13 16:21:00",
+        "2026-07-13 16:26:00",
+        "2026-07-13 16:46:00",
+        "2026-07-13 16:52:00",
+        #"2026-07-15 10:54:00",                                                                                                                                                                  
+        #"2026-07-15 11:03:00",                                                                                                                                                                  
+        #"2026-07-15 11:26:00",                                                                                                                                                                  
+        #"2026-07-15 11:34:00",                                                                                                                                                                  
+        #"2026-07-15 11:59:00",                                                                                                                                                                  
+        #"2026-07-15 12:07:00",                                                                                                                                                                 #        #"2026-07-15 12:30:00",                                                                                                                                                                  
+        #"2026-07-15 12:39:00"                                                                                                                                                                  # 
+        ],
+    event_labels=[
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+
+        ],
+    event_colors=[
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+
+        ])
+
 #
 # ################################################# 07: T2R vs Time Plots ################################################
-#t2r_vs_time.plot_without_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends)
+# #t2r_vs_time.plot_without_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends)
 #t2r_vs_time.plot_with_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends) # shows error bars, do this one!!
-# t2r_vs_time.plot_with_errs_single_plot(date_times_t2r, t2r_vals, t2r_fit_err, show_legends=True)
-#
+t2r_vs_time.plot_with_errs_single_plot(date_times_t2r, t2r_vals,t2r_fit_err,
+    event_timestamps=[
+        "2026-07-13 11:11:00",
+        "2026-07-13 11:18:00",
+        "2026-07-13 11:50:00",
+        "2026-07-13 11:56:00",
+        "2026-07-13 12:08:00",
+        "2026-07-13 12:14:00",
+        "2026-07-13 12:25:00",
+        "2026-07-13 12:31:00",
+        "2026-07-13 13:10:00",
+        "2026-07-13 13:16:00",
+        "2026-07-13 13:51:00",
+        "2026-07-13 13:56:00",
+        "2026-07-13 14:18:00",
+        "2026-07-13 14:23:00",
+        "2026-07-13 14:40:00",
+        "2026-07-13 14:44:00",
+        "2026-07-13 15:10:00",
+        "2026-07-13 15:14:00",
+        "2026-07-13 15:34:00",
+        "2026-07-13 15:39:00",
+        "2026-07-13 15:59:00",
+        "2026-07-13 16:03:00",
+        "2026-07-13 16:21:00",
+        "2026-07-13 16:26:00",
+        "2026-07-13 16:46:00",
+        "2026-07-13 16:52:00",
+        #"2026-07-15 10:54:00",
+        #"2026-07-15 11:03:00",
+        #"2026-07-15 11:26:00",
+        #"2026-07-15 11:34:00",
+        #"2026-07-15 11:59:00",
+        #"2026-07-15 12:07:00",
+        #"2026-07-15 12:30:00",
+        #"2026-07-15 12:39:00"
+        ],
+    event_labels=[
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+	"PT on",
+        "PT off",
+	"PT on",
+        "PT off",
+	"PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+        "PT off",
+        "PT on",
+
+        ],
+    event_colors=[
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+	"blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        "green",
+        "blue",
+        
+        ])
 # ################################################# 08: T2E vs Time Plots ################################################
-#t2e_vs_time.plot_without_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
+# #t2e_vs_time.plot_without_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
 #t2e_vs_time.plot_with_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends) # shows error bars, do this one!!
 # t2e_vs_time.plot_with_errs_single_plot(date_times_t2e, t2e_vals, t2e_fit_err, show_legends=True)
-
-############################################### Pure Dephase Plots #############################################                                                                                     
-
-#Pure_Dephasing_Plots.plot_with_errs2(date_times_t2r,t2r_vals, t2r_fit_err, date_times_t2e,t2e_vals, t2e_fit_err, show_legends=True)
-Dephase_T2_Plots.plot_with_errs2(date_times_t2r,t2r_vals, t2r_fit_err, date_times_t2e,t2e_vals, t2e_fit_err, show_legends=True)
-#Phase_Coherence_Plots.plot_with_errs2(date_times_t1, t1_vals, t1_fit_err ,date_times_t2r,t2r_vals, t2r_fit_err, date_times_t2e,t2e_vals, t2e_fit_err, show_legends=True)
-
-
 ############################################### Qubit Frequency hist Plots #############################################
 # qfreq_distribution_plots = QfreqHistPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
 #                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)
@@ -731,6 +1013,41 @@ Dephase_T2_Plots.plot_with_errs2(date_times_t2r,t2r_vals, t2r_fit_err, date_time
 #     freq_window=50.0,
 #     save_plt_path = "/home/acolonce/Documents/analysis/multirun/qubit_freqs") # set to 'None' to use plt.show()
 
+# Box and whisker plots, per qubit, showing a comparison between the two runs
+# median_qubit_freqs = { # 4194.77, 3828.69, 4173.69, 4474.04, 4485.38, 5018.12
+#     "Q1": 4195,
+#     "Q2": 3829,
+#     "Q3": 4174,
+#     "Q4": 4474,
+#     #"Q5": 4485,
+#     "Q6": 5018}
+# fig, ax = boxwhisker_t1t2_init_vs_final_per_run(
+#     run_pair=[4, 9],
+#     median_qubit_freqs=median_qubit_freqs,
+#     sort_by_freq = False,
+#     t1_vals_by_run=t1_vals_by_run,
+#     t2r_vals_by_run=t2r_vals_by_run,
+#     t2e_vals_by_run=t2e_vals_by_run,
+#     do_T1=True,
+#     do_T2R=True,
+#     do_T2E=True,
+#     n_qubits=6,
+#     ylims=(0, 140),
+#     yticks=np.arange(0, 141, 20),
+#     #run_override_by_qubit={"Q5": 8}, #Specify the Q you would like to use a different run for. Then write the run you want to use instead
+#     fig_title="Coherence vs Qubit Frequency",
+#     save_plt_path="/home/acolonce/Documents/analysis/multirun/coherence",
+#     show = False
+# )
+
+# boxwhisker_resleng_per_qubit_vs_run(
+#     run_num_list=run_num_list,
+#     res_lengths_by_run=res_lengths_by_run,
+#     n_qubits=tot_num_of_qubits,
+#     ylims=(0, 12.5),
+#     yticks=np.arange(0, 12.0, 1),
+#     showfliers=True,
+#     save_plt_path="/home/acolonce/Documents/analysis/multirun/readout_lengths")
 # # ################################## 18: Allan Deviation/ Welch Spectral Density #########################################
 # stats = AllanWelchStats(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name)

@@ -659,7 +659,8 @@ class T1VsTime:
         print('Plot saved to:', analysis_folder)
         plt.close()
 
-    def plot_with_errs_single_plot(self, date_times, t1_vals, t1_fit_err, show_legends):
+    def plot_with_errs_single_plot(self, date_times, t1_vals, t1_fit_err, show_legends,event_timestamps=None,
+                                   event_labels=None, event_colors=None, event_linestyles=None):
         analysis_folder = f"{self.outerFolder_save_plots}/features_vs_time/"
         self.create_folder_if_not_exists(analysis_folder)
 
@@ -697,11 +698,44 @@ class T1VsTime:
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
         ax.tick_params(axis='x', rotation=45)
         ax.ticklabel_format(style="plain", axis="y")
-        if show_legends:
-            ax.legend(edgecolor='black')
+        #if show_legends:
+        #    ax.legend(edgecolor='black')
         ax.set_xlabel('Time', fontsize=font - 2)
         ax.set_ylabel('T1 (us)', fontsize=font - 2)
         ax.tick_params(axis='both', which='major', labelsize=8)
+
+        if event_timestamps is not None:
+            n_events = len(event_timestamps)
+            event_labels = [None] * n_events if event_labels is None else event_labels
+            event_colors = ["black"] * n_events if event_colors is None else event_colors
+            event_linestyles = ["--"] * n_events if event_linestyles is None else event_linestyles
+
+            if not (len(event_labels) == len(event_colors) == len(event_linestyles) == n_events):
+                raise ValueError("All event argument lists must have the same length.")
+
+            for timestamp, label, line_color, linestyle in zip(event_timestamps, event_labels, event_colors,
+                                                               event_linestyles):
+                if isinstance(timestamp, str):
+                    timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+                ax.axvline(timestamp, color=line_color, linestyle=linestyle, linewidth=2.0, alpha=0.8,
+                           label=label if show_legends else None)
+
+
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
+        ax.tick_params(axis="x", rotation=45)
+
+        handles, labels = ax.get_legend_handles_labels()
+        unique = dict(zip(labels, handles))
+
+        if unique:
+            ax.legend(
+                unique.values(),
+                unique.keys(),
+                edgecolor="black",
+                fontsize=12
+            )
+
+        #ax.legend(edgecolor='black')
         plt.tight_layout()
         plt.savefig(analysis_folder + 'T1_vals_single_plot.pdf', transparent=True, dpi=self.final_figure_quality)
         print('Plot saved to:', analysis_folder)
