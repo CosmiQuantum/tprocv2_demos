@@ -4663,14 +4663,13 @@ class combined_Qtemp_studies:
                 measured_ssf_infidelity = 1.0 - SSF
 
                 # 1. Finite-SNR Gaussian overlap error
-                # Propagate the fitted SNR uncertainty into the Gaussian-overlap error.
+                snr_overlap_error = snr_to_overlap_error(snr)
+
+                # Propagate the fitted SNR uncertainty into the Gaussian-overlap uncertainty.
                 if np.isfinite(snr) and np.isfinite(snr_err):
-                    snr_overlap_error_err = (
-                            np.exp(-(snr ** 2) / 8.0)
-                            / (2.0 * np.sqrt(2.0 * np.pi))
-                            * snr_err)
+                    snr_overlap_uncertainty = np.exp(-(snr ** 2) / 8.0) / (2.0 * np.sqrt(2.0 * np.pi)) * snr_err
                 else:
-                    snr_overlap_error_err = np.nan
+                    snr_overlap_uncertainty = np.nan
 
                 # 2. Thermal population contribution
                 thermal_error = Pe
@@ -4751,6 +4750,7 @@ class combined_Qtemp_studies:
 
                     # Inputs
                     "SNR": snr,
+                    "SNR_err": snr_err,
 
                     "SSF_frac": SSF,
                     "SSF_percent": percent(SSF),
@@ -4787,6 +4787,8 @@ class combined_Qtemp_studies:
                     # Finite-SNR contribution
                     "SNR_overlap_error_frac": snr_overlap_error,
                     "SNR_overlap_error_percent": percent(snr_overlap_error),
+                    "SNR_overlap_uncertainty_frac": snr_overlap_uncertainty,
+                    "SNR_overlap_uncertainty_percent": percent(snr_overlap_uncertainty),
 
                     # T1 diagnostics
                     "full_window_T1_decay_prob_frac": full_window_t1_decay_prob,
@@ -4845,9 +4847,11 @@ class combined_Qtemp_studies:
         # -------------------------
         summary_cols = [
             "SNR",
+            "SNR_err",
             "SSF_percent",
             "Measured_SSF_infidelity_percent",
             "SNR_overlap_error_percent",
+            "SNR_overlap_uncertainty_percent",
             "Pe_percent",
             "Pe_err_percent",
             "Pe_match_dt_s",
@@ -4890,9 +4894,11 @@ class combined_Qtemp_studies:
 
         median_summary_df = median_summary_df.rename(columns={
             "SNR": "Median readout SNR",
+            "SNR_err": "Readout SNR fit uncertainty", #median of the per-scan SNR fit uncertainties, not uncertainty on the median SNR itself.
             "SSF_percent": "Median SSF (%)",
             "Measured_SSF_infidelity_percent": "Median per-scan SSF infidelity (%)",
             "SNR_overlap_error_percent": "Finite-SNR misassignment (%)",
+            "SNR_overlap_uncertainty_percent": "Finite-SNR misassignment uncertainty (%)",
             "Pe_percent": "Thermal population Pe (%)",
             "Pe_err_percent": "Pe error (%)",
             "Pe_match_dt_s": "Pe match dt median (s)",
@@ -4916,9 +4922,11 @@ class combined_Qtemp_studies:
 
         median_summary_df = median_summary_df.round({
             "Median readout SNR": 4,
+            "Readout SNR fit uncertainty": 4,
             "Median SSF (%)": 2,
             "Median per-scan SSF infidelity (%)": 2,
             "Finite-SNR misassignment (%)": 2,
+            "Finite-SNR misassignment uncertainty (%)": 3,
             "Thermal population Pe (%)": 3,
             "Pe error (%)": 3,
             "Pe match dt median (s)": 3,
