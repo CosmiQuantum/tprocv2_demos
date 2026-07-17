@@ -3,8 +3,8 @@ import numpy as np
 FRIDGE = "QUIET"  # change to "NEXUS" as needed
 
 if FRIDGE == "QUIET":
-    VNA_res = np.array([6236.277, 6296.685, 6358.140, 6427.895, 6494.4, 6562.500]) # run 9c: [6235.097, 6295.745, 6356.840, 6426.675, 6493.5, 6561.2]
-    VNA_qubit = np.array([4228.48, 3852.44, 4201.97, 4506.32, 4518.33, 5054.72])  # run 9c: 4229.89, 3853.24, 4197.02, 4500.9, 4515.34, 5054.02
+    VNA_res = np.array([6236.137, 6296.685, 6358.140, 6427.895, 6494.4, 6562.500]) # run 9c: [6235.097, 6295.745, 6356.840, 6426.675, 6493.5, 6561.2]
+    VNA_qubit = np.array([4228.49, 3852.44, 4201.97, 4506.32, 4518.33, 5054.72])  # run 9c: 4229.89, 3853.24, 4197.02, 4500.9, 4515.34, 5054.02
     ef_qfreqs = np.array([4054.38, 3674.86, 4027.53, 4334.48, 4346.29, 4887.39]) # Qubit freqs e/f Transition, run 9c: 4055.94, 3675.69, 4022.54, 4329.42, 4343.53, 4886.5
     fh_qfreqs = np.array([3820.97, 3450.85, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition, old run
     two_photon_qfreqs=np.array([4107.61, 3739.36, 4086.36, 4388.34, 4399.3, 4933.52]) # qubit freqs, two photon peak between ge and ef qubit freqs, old run
@@ -386,11 +386,11 @@ if FRIDGE == "QUIET":
         },
 
         "Ramsey_ge": {
-            "reps": 500, #300
+            "reps": 400, #300
             "rounds": 1,#10
             "start": [0.0] * 6, # [us]
             "stop":  [60] * 6, # [us]
-            "steps": 215,
+            "steps": 215, #215
             "ramsey_freq": 0.12,  # [MHz]
             "relax_delay": 900, # [us] the time to wait to let the qubit to relax to gnd again after exciting it (make it way above T1)
             "wait_time": 0.0, # [us]

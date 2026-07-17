@@ -678,24 +678,22 @@ class T2RMeasurement:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"T2 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
-                         fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
+                         f"Q{self.QubitIndex + 1} T2R {t2r_est:.2f} +/- {t2r_err:.2f}us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         fontsize=24, ha='center', va='top')
             else:
                 fig.text(plot_middle, 0.98,
-                         f"T2 Q{self.QubitIndex + 1}, T2R %.2f us" % float(
-                             t2r_est) + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
+                         f"Q{self.QubitIndex + 1} T2R {t2r_est:.2f} +/- {t2r_err:.2f}us, {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
                          fontsize=24, ha='center', va='top')
 
         else:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"T2 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs," ,
-                         fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
+                         f"T2R Q{self.QubitIndex + 1}, {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         fontsize=24, ha='center', va='top')
             else:
                 fig.text(plot_middle, 0.98,
-                         f"T2 Q{self.QubitIndex + 1}, pi gain %.2f" % float(self.config[
-                                                                                'pi_amp']) + f", {float(self.config['sigma']) * 1000} ns sigma" + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
+                         f"T2R Q{self.QubitIndex + 1}, {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
                          fontsize=24, ha='center', va='top')
 
         # I subplot

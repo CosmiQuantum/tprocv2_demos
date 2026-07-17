@@ -833,6 +833,7 @@ class SingleShot:
 
             file_name = os.path.join(outerFolder_expt,f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_{file_ext}.png")
 
+            axs[2].axvline(threshold, color='k', linestyle='--')
             axs[2].set_title(f"Q{QubitIndex + 1} Fidelity = {fid * 100:.2f}%")
             fig.savefig(file_name,  dpi=fig_quality, bbox_inches='tight')
             plt.close(fig)
