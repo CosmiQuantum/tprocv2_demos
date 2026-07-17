@@ -105,7 +105,7 @@ class T1Measurement:
     def run(self, thresholding=False, use_iminuit_instead = True, active_reset = False):
         if active_reset:
 
-            t1 = T1Program_active_reset(self.experiment.soccfg, reps=self.config['reps'],final_delay=10, cfg=self.config)
+            t1 = T1Program_active_reset(self.experiment.soccfg, reps=self.config['reps'],final_delay=2, cfg=self.config)
 
             if thresholding:
                 iq_list = t1.acquire(self.experiment.soc, soft_avgs=self.config['rounds'],
@@ -116,7 +116,6 @@ class T1Measurement:
 
                 iq_q = np.asarray(iq_list[self.QubitIndex])
                 print("Processed IQ shape:", iq_q.shape)
-                print("Expected number of readouts:", 2 * self.config.get("n_resets", 1) + 1)
                 print("Number of T1 points:", self.config["steps"])
 
                 I = iq_q[-1, :, 0]
@@ -169,6 +168,7 @@ class T1Measurement:
                     save_folder=diagnostic_folder,
                     show_plot=False,
                     print_summary=True)
+
                 ##########################################################
                 Ishots = raw_q[:, :, -1, 0]
                 Qshots = raw_q[:, :, -1, 1]
@@ -978,19 +978,9 @@ class T1Program_active_reset(AveragerProgramV2):
             self.pulse(ch=cfg["qubit_ch"], name="qubit_pulse", t=0)
 
             self.label(f"no_pi_{label_addition}_{i}")
-            self.delay_auto(t=0.0)
+            #self.delay_auto(t=0.0)
 
-            # Verification readout
-            self.pulse(ch=cfg["res_ch"], name="res_pulse", t=0)
-            self.trigger(ros=cfg["ro_ch"], pins=[0], t=cfg["trig_time"])
-            self.wait_auto(0.0, gens=True, ros=True)
-            self.resync()
-            self.delay_auto(t=0.0)
-
-            # Ground-like verification exits reset.
-            # Excited-like falls through to next attempt.
-            self.read_and_jump(ro_ch=ro_ch_this, component="I", threshold=threshold_raw,
-                               test="<", label=f"reset_done_{label_addition}")
+            self.delay_auto(t=12.0)
 
         self.label(f"reset_done_{label_addition}")
 

@@ -36,7 +36,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 100000 # number of rounds
+n = 1 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -67,16 +67,16 @@ Qs_to_look_at = [0] # only list the qubits you want to do the RR for
 # Data saving info
 run_name = 'run9d'
 device_name = '6transmon'
-substudy_txt_notes = ('Last temperature of QUIET run 9d. Res spec Qspec SSF and T1 only. Only Q1.\n')
+substudy_txt_notes = ('Last temperature of QUIET run 9d. Only res spec qspec SSF and T1. Only Q1.\n')
 
 # set which of the following you'd like to run to 'True'
 
 # run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
 #              "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
-#              "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
+#              "rabi_pop_meas": True, "ef_Rabi": False, "t1": False, "t2r": True, "t2e": True}
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
              "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
-             "rabi_pop_meas": False, "ef_Rabi": False, "t1": True, "t2r": False, "t2e": False}
+             "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
 
 # For 25dB DAC, 7/17/2026
 res_leng_vals = [5.4, 6.4, 6.2, 6.2, 6.8, 7.0]
@@ -94,7 +94,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts, round_robin_benchmark
-sub_study = 'Temp_Sweep_07172026_Q1only' #batch2_post_1stopt_25dbDAC, opt_sigmas_gains_reps_steps, opt_AB_paper_data
+sub_study = 'junk' #batch2_post_1stopt_25dbDAC, opt_sigmas_gains_reps_steps, opt_AB_paper_data
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):

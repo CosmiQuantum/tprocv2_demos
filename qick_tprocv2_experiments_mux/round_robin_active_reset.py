@@ -41,6 +41,10 @@ qubit_to_increase_reps_for = 0       # only has impact if previous line is True
 multiply_qubit_reps_by = 2           # only has impact if the line two above is True
 save_shots_gerabi = False
 
+def append_to_notes(text):
+    with open(file_path, "a", encoding="utf-8") as file:
+        file.write("\n" + text)
+
 Qs_to_look_at = [0]        # only list the qubits you want to do the RR for
 
 #Data saving info
@@ -51,12 +55,12 @@ substudy_txt_notes = ('testing active reset')
 run_flags = {"res_spec": True, "q_spec": True, "rabi": True, "ss": True, "check_ssf_theta_thresh": False,
              "act_reset_0corr": False, "act_reset_1corr": False, "act_reset_multiple_corr": False, "act_reset_ss": True,
              "t1": True, "act_reset_t1": True}
-n_resets = 1 # number of active reset attempts you want to try
+n_resets = 1 # number of active reset attempts you want to try. For T1, this must be 1 or T1 dies.
+
 ################################################ optimization outputs ##################################################
-# Optimization parameters for resonator spectroscopy
-res_leng_vals = [5.55, 6.4, 6.2, 6.2, 6.8, 7.0]
-res_gain = [0.8164, 0.8, 0.83,0.6156, 0.8, 0.82]
-freq_offsets = [-0.2000, 0.1556, -0.2000,-0.1111,-0.2111,-0.1556]
+res_leng_vals = [5.4, 6.4, 6.2, 6.2, 6.8, 7.0]
+res_gain = [0.8164, 0.8, 0.84,0.6156, 0.8, 0.82]
+freq_offsets =[-0.2, -0.1556, -0.0667,-0.1111,-0.2111,-0.1556]
 
 # To save how long each measurement took for each qubit
 meas_time_RR = {}
@@ -724,7 +728,7 @@ for QubitIndex in Qs_to_look_at:
                                verbose=verbose, logger=rr_logger, save_shots=True, unmasking_resgain=unmask,
                                reduce_rlx_delay=reduce_rlx_delay_geT1, reduce_rlx_delay_to=reduce_rlx_delay_geT1_to)
             t1_est, t1_err, t1_I, t1_Q, t1_Ishots, t1_Qshots, t1_delay_times, q1_fit_exponential, sys_config_t1, meas_timestamp_t1ge = t1.run(
-                thresholding=thresholding, use_iminuit_instead=True)
+                thresholding=False, use_iminuit_instead=True)
 
             t1.add_and_plot_active_reset_comparison(
                 comparison_runs=t1_act_reset_comparison_runs    ,
@@ -739,6 +743,10 @@ for QubitIndex in Qs_to_look_at:
                 signal=signal,
                 verbose=verbose
             )
+
+            append_to_notes(
+                f"Q{QubitIndex + 1} standard T1: "
+                f"{t1_est:.2f} +/- {t1_err:.2f} us")
             
             del t1
 
@@ -839,6 +847,12 @@ for QubitIndex in Qs_to_look_at:
             save_folder=studyDocumentationFolder,
             signal=signal,
             verbose=verbose
+        )
+
+        append_to_notes(
+            f"Q{QubitIndex + 1} active-reset T1 "
+            f"({n_resets} correction{'s' if n_resets != 1 else ''}): "
+            f"{T1_est_ar:.2f} +/- {T1_err_ar:.2f} us"
         )
 
         del t1
