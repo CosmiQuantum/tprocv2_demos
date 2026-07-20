@@ -251,7 +251,7 @@ if FRIDGE == "QUIET":
             "relax_delay": 900,  # [us]
         },
         "T1_ge": {
-            "reps": 300, #300
+            "reps": 280, #300
             "rounds": 1, #1
             "start": [0.0] * 6,  # [us]
             "stop": [200]*6, #[250.0] * 6,  # [us]
@@ -390,7 +390,7 @@ if FRIDGE == "QUIET":
             "rounds": 1,#10
             "start": [0.0] * 6, # [us]
             "stop":  [60] * 6, # [us]
-            "steps": 215, #215
+            "steps": 215,
             "ramsey_freq": 0.12,  # [MHz]
             "relax_delay": 900, # [us] the time to wait to let the qubit to relax to gnd again after exciting it (make it way above T1)
             "wait_time": 0.0, # [us]

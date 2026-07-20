@@ -29,10 +29,10 @@ number_of_qubits = 6 # for QUIET 6, for NEXUS 4
 list_of_all_qubits = [0,1,2,3,4,5] # for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0, 1, 2, 3]
 
 # For Quiet
-substudy = "junk"
+substudy = "opt_for_last_PT_off_tests"
 outerFolder = os.path.join(f"/data/QICK_data/run9d/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 
-opt_flags = {"res_leng_sweep": True, "2d_sweep": False}
+opt_flags = {"res_leng_sweep": False, "2d_sweep": True}
 save_figs_ss = False # do you want to save SSF pics as you run the readout optimization sweeps?
 
 def create_folder_if_not_exists(folder_path):
@@ -49,15 +49,15 @@ create_folder_if_not_exists(output_folder_length)
 outerfolder_plots = outerFolder + "/documentation/"
 
 n = 1  # Number of rounds
-n_loops = 2 # Number of repetitions per length to average
+n_loops = 1 # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [0]
+Qs = [2]
 
-# For 25dB DAC, 7/17/2026
-res_leng_vals = [5.4, 6.4, 6.2, 6.2, 6.8, 7.0]
-res_gain = [0.8164, 0.8, 0.84,0.6156, 0.8, 0.82]
-freq_offsets =[-0.2, -0.1556, -0.0667,-0.1111,-0.2111,-0.1556]
+# For 25dB DAC, 7/19/2026
+res_leng_vals = [5.2, 6.6, 6.0, 6.8, 6.8, 7.0]
+res_gain = [0.8164, 0.8, 0.8419, 0.6156, 0.8, 0.82]
+freq_offsets =[-0.1556, -0.1111, -0.2,-0.0222,-0.2111,-0.1556]
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_freq_ge = [None] * 6 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
@@ -73,8 +73,10 @@ for QubitIndex in Qs:
         lengs = np.arange(5.0, 5.6, 0.1)
     elif QubitIndex == 5:
         lengs = np.arange(6.6, 9.0, 0.2)
+    elif QubitIndex == 3:
+        lengs = np.arange(7.0, 8.0, 0.1)
     else:
-        lengs = np.arange(5.2, 7.2, 0.2)
+        lengs = np.arange(6.0, 7.2, 0.1) # (5.2, 7.2, 0.2)
 
     recycled_qfreq = False  # don't change
 
@@ -318,7 +320,7 @@ for QubitIndex in Qs:
         # Define sweeping parameters
         if QubitIndex == 0:
             gain_range = [0.80, 0.83] #[0.70, 0.86]
-            gain_steps = 3  # 11 # step = 0.015
+            gain_steps = 6  # 11 # step = 0.015
 
         elif QubitIndex == 1:
             gain_range = [0.70, 0.805]

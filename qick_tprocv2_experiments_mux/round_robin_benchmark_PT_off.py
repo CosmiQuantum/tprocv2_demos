@@ -37,7 +37,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1 # number of rounds
+n = 1000000 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -63,26 +63,26 @@ unmask = True  # Do you want to use the unmasking feature to increase resonator 
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 
-Qs_to_look_at = [0] # only list the qubits you want to do the RR for
+Qs_to_look_at = [0,2] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run9d'
 device_name = '6transmon'
-substudy_txt_notes = ('Taking additional T2R data at base, PT off tests.\n')
+substudy_txt_notes = ('Collecting data the night before final PT off tests of run 9d. Saving H5 files right after each experiment. \n')
 
 # set which of the following you'd like to run to 'True'
 
 # run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
 #              "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
 #              "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
-run_flags = {"tof": False, "res_spec": False, "q_spec": False, "rabi": False, "ss": False,
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": False,
              "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
-             "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": True, "t2e": False,"correlation_method": False}
+             "rabi_pop_meas": False, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": False,"correlation_method": False}
 
-# For 25dB DAC, 7/8/2026
-res_leng_vals = [5.55, 6.4, 6.2, 6.2, 6.8, 7.0]
-res_gain = [0.8164, 0.8, 0.83,0.6156, 0.8, 0.82]
-freq_offsets =[-0.200, 0.1556, -0.2000,-0.1111,-0.2111,-0.1556] #[-0.2000, 0.1556, -0.2000,-0.1111,-0.2111,-0.1556]
+# For 25dB DAC, 7/19/2026
+res_leng_vals = [5.2, 6.6, 6.0, 6.8, 6.8, 7.0]
+res_gain = [0.8164, 0.8, 0.8419, 0.6156, 0.8, 0.82]
+freq_offsets =[-0.1556, -0.1111, -0.2,-0.0222,-0.2111,-0.1556]
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
@@ -95,7 +95,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts, round_robin_benchmark
-sub_study = 'pre_PT_off_test_base_215pts' #Temp_Sweep_Cooldown, opt_sigmas_gains_reps_steps, opt_AB_paper_data
+sub_study = 'Pre_PT_off_overnight_0720'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -185,7 +185,6 @@ ef_rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
 rabi_data_ef_Qtemps = create_data_dict(rabi_keys_ef_Qtemps, save_r, list_of_all_qubits)
 correlation_method_data = create_data_dict(correlation_keys, save_r, list_of_all_qubits)
 
-
 batch_num = 0 # keep as zero
 j = 0 # keep as zero
 angles = []
@@ -225,6 +224,7 @@ while j < n:
 
         ################################################# g-e Res spec ####################################################
         if run_flags["res_spec"]:
+            res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
             t0 = time.perf_counter()
             try:
                 increase_geres_reps = False
@@ -262,8 +262,28 @@ while j < n:
             end_time = time.perf_counter()
             meas_time_RR[QubitIndex]["res_spec_ge"] = end_time - t0
 
+            if save_data_h5:
+                res_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
+                res_data[QubitIndex]['freq_pts'][j - batch_num * save_r - 1] = freq_pts
+                res_data[QubitIndex]['freq_center'][j - batch_num * save_r - 1] = freq_center
+                res_data[QubitIndex]['Amps'][j - batch_num * save_r - 1] = amps
+                res_data[QubitIndex]['Found Freqs'][j - batch_num * save_r - 1] = res_freqs
+                res_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                res_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                res_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                res_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_rspec
+                res_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_resge
+
+                saver_res = Data_H5(subStudyDataFolder, res_data, batch_num, save_r)
+                saver_res.save_to_h5('res_ge')
+                del saver_res
+                del res_data
+
+            res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
+
         ################################################## g-e Qubit spec ##################################################
         if run_flags["q_spec"]:
+            qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
             t0 = time.perf_counter()
             try:
                 increase_qubit_reps_qspec = False
@@ -291,7 +311,7 @@ while j < n:
                 #
                 if QubitIndex == 2:
                     increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 600
+                    qspecge_increase_reps_to = 620
 
                 if QubitIndex == 1:
                     increase_qubit_reps_qspec = True
@@ -346,8 +366,31 @@ while j < n:
             end_time = time.perf_counter()
             meas_time_RR[QubitIndex]["qspec_ge"] = end_time - t0
 
+            if save_data_h5:
+                qspec_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
+                    time.mktime(datetime.datetime.now().timetuple()))
+                qspec_data[QubitIndex]['I'][j - batch_num * save_r - 1] = qspec_I
+                qspec_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = qspec_Q
+                qspec_data[QubitIndex]['Frequencies'][j - batch_num * save_r - 1] = qspec_freqs
+                qspec_data[QubitIndex]['I Fit'][j - batch_num * save_r - 1] = qspec_I_fit
+                qspec_data[QubitIndex]['Q Fit'][j - batch_num * save_r - 1] = qspec_Q_fit
+                qspec_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                qspec_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                qspec_data[QubitIndex]['Recycled QFreq'][j - batch_num * save_r - 1] = recycled_qfreq
+                qspec_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                qspec_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_qspec
+                qspec_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_qspecge
+
+                saver_qspec = Data_H5(subStudyDataFolder, qspec_data, batch_num, save_r)
+                saver_qspec.save_to_h5('qspec_ge')
+                del saver_qspec
+                del qspec_data
+
+            qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
+
         ###################################################### g-e Rabi ####################################################
         if run_flags["rabi"]:
+            rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
             t0 = time.perf_counter()
             try:
                 increase_qubit_reps_gerabi = False  # if you want to increase the reps for a qubit, set to True
@@ -408,8 +451,29 @@ while j < n:
             end_time = time.perf_counter()
             meas_time_RR[QubitIndex]["power_rabi_ge"] = end_time - t0
 
+            if save_data_h5:
+                rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
+                    time.mktime(datetime.datetime.now().timetuple()))
+                rabi_data[QubitIndex]['I'][j - batch_num * save_r - 1] = rabi_I
+                rabi_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = rabi_Q
+                rabi_data[QubitIndex]['Gains'][j - batch_num * save_r - 1] = rabi_gains
+                rabi_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = rabi_fit
+                rabi_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                rabi_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                rabi_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                rabi_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_rabi
+                rabi_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_rabige
+
+                saver_rabi = Data_H5(subStudyDataFolder, rabi_data, batch_num, save_r)
+                saver_rabi.save_to_h5('rabi_ge')
+                del saver_rabi
+                del rabi_data
+
+            rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
+
         ########################################## g-e Single Shot Measurements ############################################
         if run_flags["ss"]:
+            ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
             t0 = time.perf_counter()
             try:
                 reduce_rlx_delay_ssf = False
@@ -470,8 +534,31 @@ while j < n:
             end_time = time.perf_counter()
             meas_time_RR[QubitIndex]["ss_ge"] = end_time - t0
 
+            if save_data_h5:
+                ss_data[QubitIndex]['Fidelity'][j - batch_num * save_r - 1] = fid
+                ss_data[QubitIndex]['Angle'][j - batch_num * save_r - 1] = angle
+                ss_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
+                    time.mktime(datetime.datetime.now().timetuple()))
+                ss_data[QubitIndex]['I_g'][j - batch_num * save_r - 1] = I_g
+                ss_data[QubitIndex]['Q_g'][j - batch_num * save_r - 1] = Q_g
+                ss_data[QubitIndex]['I_e'][j - batch_num * save_r - 1] = I_e
+                ss_data[QubitIndex]['Q_e'][j - batch_num * save_r - 1] = Q_e
+                ss_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                ss_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                ss_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                ss_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_ss
+                ss_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_ssge
+
+                saver_ss = Data_H5(subStudyDataFolder, ss_data, batch_num, save_r)
+                saver_ss.save_to_h5('ss_ge')
+                del saver_ss
+                del ss_data
+
+            ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
+
         ############################################## res spec ef ####################################################
         if run_flags["ef_res_spec"]:
+            ef_res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
             t0 = time.perf_counter()
             ef_res_freqs_samples = []
             for sample in range(ef_res_sample_number):
@@ -528,44 +615,30 @@ while j < n:
             end_time = time.perf_counter()
             meas_time_RR[QubitIndex]["res_spec_ef"] = end_time - t0
 
-        ########################################### g-e-f Single Shot Measurements ############################################
-        # if run_flags["ss_gef"]:
-        #     ss = SingleShot_ef(QubitIndex, number_of_qubits, studyDocumentationFolder, j, save_figs, experiment)
-        #
-        #     iq_list_g, iq_list_e, iq_list_f, theta_ge, threshold_ge, sys_config_ss_gef = ss.run(experiment.soccfg,
-        #                                                                                         experiment.soc)
-        #     # iq_list_g, iq_list_e, iq_list_f, ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge, sys_config_ss_gef
-        #     I_g = iq_list_g[QubitIndex][0].T[0]
-        #     Q_g = iq_list_g[QubitIndex][0].T[1]
-        #     I_e = iq_list_e[QubitIndex][0].T[0]
-        #     Q_e = iq_list_e[QubitIndex][0].T[1]
-        #     I_f = iq_list_f[QubitIndex][0].T[0]
-        #     Q_f = iq_list_f[QubitIndex][0].T[1]
-        #
-        #     if run_flags["ss_gef"]:  # currently saves figs and h5 files every time this is run
-        #         provided_sigma_num = None  # de state circle radius = sigma_num * sigma. Set as None if you want the code to choose an appropriate one for you.
-        #         Analysis = False  # Keep as false, we are in RR mode here, not post-processing (analysis) mode
-        #         RR = True  # Keep as true, we are in RR mode here
-        #         date_analysis = None  # This only matters if you are in post-processing mode (for analysis purposes), keep as None here.
-        #         round_num = j
-        #         # analysis_gef_SSF = GEF_SSF_ANALYSIS(studyDocumentationFolder, QubitIndex, Analysis, RR,
-        #         #                                     date_analysis, round_num)
-        #         # (line_point1, line_point2, center_e, radius_e, T, v, f_outside, line_point1_rot, line_point2_rot,
-        #         #  center_e_rot, radius_e_rot, T_rot, v_rot, f_outside_rot
-        #         #  ) = analysis_gef_SSF.fstate_analysis_plot(I_g, Q_g, I_e, Q_e, I_f, Q_f, ig_new,  ie_new,
-        #         #
-        #         #                                            if_new,  theta_ef, threshold_ef, QubitIndex,
-        #         #                                            provided_sigma_num)
-        #         # # (line_point1, line_point2, center_e, radius_e, T, v, f_outside, line_point1_rot, line_point2_rot,
-        #         #  center_e_rot, radius_e_rot, T_rot, v_rot, f_outside_rot
-        #         #  ) = analysis_gef_SSF.fstate_analysis_plot(I_g, Q_g, I_e, Q_e, I_f, Q_f, ig_new, qg_new, ie_new,
-        #         #                                            qe_new,
-        #         #                                            if_new, qf_new, theta_ge, threshold_ge, QubitIndex,
-        #         #                                            provided_sigma_num)
-        #     del ss
+            if save_data_h5 and ef_res_spec_survived:
+                ef_res_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
+                ef_res_data[QubitIndex]['freq_pts'][j - batch_num * save_r - 1] = ef_freq_pts
+                ef_res_data[QubitIndex]['freq_center'][j - batch_num * save_r - 1] = ef_freq_center
+                ef_res_data[QubitIndex]['Amps'][j - batch_num * save_r - 1] = ef_amps
+                ef_res_data[QubitIndex]['Found Freqs'][j - batch_num * save_r - 1] = ef_res_freqs
+                ef_res_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                ef_res_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                ef_res_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                ef_res_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_rspec_ef
+                ef_res_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_resef
+                #ef_res_any = True
+
+                saver_ef_res = Data_H5(subStudyDataFolder, ef_res_data, batch_num, save_r)  # save
+                saver_ef_res.save_to_h5('res_ef')
+                del saver_ef_res
+                del ef_res_data
+
+            ef_res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
+
         ################################################ Qubit Spec EF ################################################
         if run_flags["ef_q_spec"]:
             if ef_res_spec_survived:
+                ef_qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
                 t0 = time.perf_counter()
                 try:
                     # Qubit 4 usually needs more reps for e-f spec
@@ -616,10 +689,34 @@ while j < n:
                 end_time = time.perf_counter()
                 meas_time_RR[QubitIndex]["qspec_ef"] = end_time - t0
 
+                if save_data_h5 and ef_qspec_survived:
+                    ef_qspec_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (
+                        time.mktime(datetime.datetime.now().timetuple()))
+                    ef_qspec_data[QubitIndex]['I'][j - batch_num * save_r - 1] = efqspec_I
+                    ef_qspec_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = efqspec_Q
+                    ef_qspec_data[QubitIndex]['Frequencies'][j - batch_num * save_r - 1] = efqspec_freqs
+                    ef_qspec_data[QubitIndex]['I Fit'][j - batch_num * save_r - 1] = efqspec_I_fit
+                    ef_qspec_data[QubitIndex]['Q Fit'][j - batch_num * save_r - 1] = efqspec_Q_fit
+                    ef_qspec_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                    ef_qspec_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                    ef_qspec_data[QubitIndex]['Recycled QFreq'][j - batch_num * save_r - 1] = False  # no recycling here
+                    ef_qspec_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                    ef_qspec_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_qspec_ef
+                    ef_qspec_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_qspecef
+                    #ef_qspec_any = True
+
+                    saver_ef_qspec = Data_H5(subStudyDataFolder, ef_qspec_data, batch_num, save_r)
+                    saver_ef_qspec.save_to_h5('qspec_ef')
+                    del saver_ef_qspec
+                    del ef_qspec_data
+
+                ef_qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
+
         ################################################ e-f rabi ################################################
         # NOT needed for rpm qubit temps, rpm itself is an ef rabi experiment. It is ran separately.
         if run_flags["ef_Rabi"]:
             if ef_qspec_survived and ef_res_spec_survived:
+                ef_rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
                 t0 = time.perf_counter()
                 try:
                     increase_qubit_reps_efrabi = False  # if you want to increase the reps for a qubit, set to True
@@ -653,9 +750,30 @@ while j < n:
                 end_time = time.perf_counter()
                 meas_time_RR[QubitIndex]["power_rabi_ef"] = end_time - t0
 
+                if save_data_h5 and ef_qspec_survived and ef_res_spec_survived:
+                    ef_rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = time.mktime(
+                        datetime.datetime.now().timetuple())
+                    ef_rabi_data[QubitIndex]['I'][j - batch_num * save_r - 1] = efrabi_I
+                    ef_rabi_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = efrabi_Q
+                    ef_rabi_data[QubitIndex]['Gains'][j - batch_num * save_r - 1] = efrabi_gains
+                    ef_rabi_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = efrabi_fit
+                    ef_rabi_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                    ef_rabi_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                    ef_rabi_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                    ef_rabi_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = efsys_config_to_save
+                    ef_rabi_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_rabief
+
+                    saver_ef_rabi = Data_H5(subStudyDataFolder, ef_rabi_data, batch_num, save_r)
+                    saver_ef_rabi.save_to_h5('rabi_ef')
+                    del saver_ef_rabi
+                    del ef_rabi_data
+
+                ef_rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
+
         ################################################ e-f amp rabi pop meas. ################################################
         if run_flags["rabi_pop_meas"]:
             if ef_qspec_survived and ef_res_spec_survived:
+                rabi_data_ef_Qtemps = create_data_dict(rabi_keys_ef_Qtemps, save_r, list_of_all_qubits)
                 t0 = time.perf_counter()
                 try:
                     increase_qubit_reps_rpm = False
@@ -727,11 +845,44 @@ while j < n:
                 end_time = time.perf_counter()
                 meas_time_RR[QubitIndex]["rabi_pop_meas"] = end_time - t0
 
+                if save_data_h5 and ef_res_spec_survived and ef_qspec_survived:
+                    rabi_data_ef_Qtemps[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
+                    rabi_data_ef_Qtemps[QubitIndex]['Qfreq_ge'][j - batch_num * save_r - 1] = qubit_freq  # save the g-e qubit freq too for this qubit
+                    rabi_data_ef_Qtemps[QubitIndex]['I1'][j - batch_num * save_r - 1] = I1_qtemp
+                    rabi_data_ef_Qtemps[QubitIndex]['Q1'][j - batch_num * save_r - 1] = Q1_qtemp
+                    rabi_data_ef_Qtemps[QubitIndex]['Gains1'][j - batch_num * save_r - 1] = gains1_qtemp
+                    rabi_data_ef_Qtemps[QubitIndex]['Ishots1'][j - batch_num * save_r - 1] = I1_qtemp_shots
+                    rabi_data_ef_Qtemps[QubitIndex]['Qshots1'][j - batch_num * save_r - 1] = Q1_qtemp_shots
+                    rabi_data_ef_Qtemps[QubitIndex]['Fit1'][j - batch_num * save_r - 1] = fit_cosine1_qtemp
+
+                    rabi_data_ef_Qtemps[QubitIndex]['I2'][j - batch_num * save_r - 1] = I2_qtemp
+                    rabi_data_ef_Qtemps[QubitIndex]['Q2'][j - batch_num * save_r - 1] = Q2_qtemp
+                    rabi_data_ef_Qtemps[QubitIndex]['Gains2'][j - batch_num * save_r - 1] = gains2_qtemp
+                    rabi_data_ef_Qtemps[QubitIndex]['Ishots2'][j - batch_num * save_r - 1] = I2_qtemp_shots
+                    rabi_data_ef_Qtemps[QubitIndex]['Qshots2'][j - batch_num * save_r - 1] = Q2_qtemp_shots
+                    rabi_data_ef_Qtemps[QubitIndex]['Fit2'][j - batch_num * save_r - 1] = fit_cosine2_qtemp
+
+                    rabi_data_ef_Qtemps[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                    rabi_data_ef_Qtemps[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                    rabi_data_ef_Qtemps[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                    rabi_data_ef_Qtemps[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sysconfig_efrabi_Qtemps
+
+                    rabi_data_ef_Qtemps[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_rpm
+                    # rpm_any = True
+
+                    saver_rabi_Qtemps = Data_H5(subStudyDataFolder, rabi_data_ef_Qtemps, batch_num, save_r)
+                    saver_rabi_Qtemps.save_to_h5('q_temperatures')
+                    del saver_rabi_Qtemps
+                    del rabi_data_ef_Qtemps
+
+                rabi_data_ef_Qtemps = create_data_dict(rabi_keys_ef_Qtemps, save_r, list_of_all_qubits)
+
         ############################################ Correlation Method ###################################################                  
         if run_flags["correlation_method"]:
             increase_qubit_reps_cor = False
             qubit_to_increase_cor_reps_for = QubitIndex
             multiply_cor_reps_by = 1
+            correlation_method_data = create_data_dict(correlation_keys, save_r, list_of_all_qubits)
             t0 = time.perf_counter()
             rr_logger.info(
                 "----------------- Starting Correlation Method  Population Measurements -----------------")
@@ -784,9 +935,28 @@ while j < n:
             t1 = time.perf_counter()
             print(f"Correlation Measurement took {t1 - t0:.4f} seconds")
 
-                
+            if save_data_h5:
+                correlation_method_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
+                correlation_method_data[QubitIndex]['Qfreq_ge'][j - batch_num * save_r - 1] = experiment.qubit_cfg['qubit_freq_ge']
+                correlation_method_data[QubitIndex]['P_e'][j - batch_num * save_r - 1] = cor_P_e
+                correlation_method_data[QubitIndex]['I1_g'][j - batch_num * save_r - 1] = cor_I1_g
+                correlation_method_data[QubitIndex]['Q1_g'][j - batch_num * save_r - 1] = cor_Q1_g
+                correlation_method_data[QubitIndex]['I2_g'][j - batch_num * save_r - 1] = cor_I2_g
+                correlation_method_data[QubitIndex]['Q2_g'][j - batch_num * save_r - 1] = cor_Q2_g
+                correlation_method_data[QubitIndex]['I1_e'][j - batch_num * save_r - 1] = cor_I1_e
+                correlation_method_data[QubitIndex]['Q1_e'][j - batch_num * save_r - 1] = cor_Q1_e
+                correlation_method_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = cor_self_config
+
+                saver_correlation_method = Data_H5(subStudyDataFolder, correlation_method_data, batch_num, save_r)
+                saver_correlation_method.save_to_h5('correlation_method')
+                del saver_correlation_method
+                del correlation_method_data
+
+            correlation_method_data = create_data_dict(correlation_keys, save_r, list_of_all_qubits)
+
         ###################################################### g-e T1 ######################################################
         if run_flags["t1"]:
+            t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
             t0 = time.perf_counter()
             try:
                 increase_qubit_reps_t1 = False
@@ -827,8 +997,32 @@ while j < n:
             end_time = time.perf_counter()
             meas_time_RR[QubitIndex]["t1_ge"] = end_time - t0
 
+            if save_data_h5:
+                t1_data[QubitIndex]['T1'][j - batch_num * save_r - 1] = t1_est
+                t1_data[QubitIndex]['Errors'][j - batch_num * save_r - 1] = t1_err
+                t1_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
+                t1_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_t1ge
+                t1_data[QubitIndex]['I'][j - batch_num * save_r - 1] = t1_I
+                t1_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = t1_Q
+                t1_data[QubitIndex]['Ishots'][j - batch_num * save_r - 1] = t1_Ishots
+                t1_data[QubitIndex]['Qshots'][j - batch_num * save_r - 1] = t1_Qshots
+                t1_data[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = t1_delay_times
+                t1_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = q1_fit_exponential
+                t1_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                t1_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                t1_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                t1_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t1
+
+                saver_t1 = Data_H5(subStudyDataFolder, t1_data, batch_num, save_r)
+                saver_t1.save_to_h5('t1_ge')
+                del saver_t1
+                del t1_data
+
+            t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
+
         ###################################################### g-e T2R #####################################################
         if run_flags["t2r"]:
+            t2r_data = create_data_dict(t2r_keys, save_r, list_of_all_qubits)
             t0 = time.perf_counter()
             try:
                 increase_qubit_reps_t2r = False  # if you want to increase the reps for a qubit, set to True
@@ -837,10 +1031,10 @@ while j < n:
                 reduce_rlx_delay_geT2R = False
                 reduce_rlx_delay_geT2R_to = None
 
-                if QubitIndex == 2:
-                    increase_qubit_reps_t2r = True
-                    qubit_to_increase_t2r_reps_for = QubitIndex
-                    increase_t2r_qubit_reps_to = 600 # must be integer
+                # if QubitIndex == 2:
+                #     increase_qubit_reps_t2r = True
+                #     qubit_to_increase_t2r_reps_for = QubitIndex
+                #     increase_t2r_qubit_reps_to = 600 # must be integer
 
                 if QubitIndex == 3:
                     increase_qubit_reps_t2r = True
@@ -884,8 +1078,30 @@ while j < n:
             end_time = time.perf_counter()
             meas_time_RR[QubitIndex]["t2r_ge"] = end_time - t0
 
+            if save_data_h5:
+                t2r_data[QubitIndex]['T2'][j - batch_num * save_r - 1] = t2r_est
+                t2r_data[QubitIndex]['Errors'][j - batch_num * save_r - 1] = t2r_err
+                t2r_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
+                t2r_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_t2r
+                t2r_data[QubitIndex]['I'][j - batch_num * save_r - 1] = t2r_I
+                t2r_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = t2r_Q
+                t2r_data[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = t2r_delay_times
+                t2r_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = fit_ramsey
+                t2r_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                t2r_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                t2r_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                t2r_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t2r
+
+                saver_t2r = Data_H5(subStudyDataFolder, t2r_data, batch_num, save_r)
+                saver_t2r.save_to_h5('t2_ge')
+                del saver_t2r
+                del t2r_data
+
+            t2r_data = create_data_dict(t2r_keys, save_r, list_of_all_qubits)
+
         ##################################################### g-e T2E ######################################################
         if run_flags["t2e"]:
+            t2e_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
             t0 = time.perf_counter()
             try:
                 qubit_to_increase_t2e_reps_for = None
@@ -920,181 +1136,7 @@ while j < n:
             end_time = time.perf_counter()
             meas_time_RR[QubitIndex]["t2e_ge"] = end_time - t0
 
-        ############################################### Collect Results ################################################
-        if save_data_h5:
-            # ---------------------Collect g-e Res Spec Results----------------
-            if run_flags["res_spec"]:
-                res_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
-                res_data[QubitIndex]['freq_pts'][j - batch_num * save_r - 1] = freq_pts
-                res_data[QubitIndex]['freq_center'][j - batch_num * save_r - 1] = freq_center
-                res_data[QubitIndex]['Amps'][j - batch_num * save_r - 1] = amps
-                res_data[QubitIndex]['Found Freqs'][j - batch_num * save_r - 1] = res_freqs
-                res_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-                res_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-                res_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                res_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_rspec
-                res_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_resge
-
-            # ---------------------Collect g-e QSpec Results----------------
-            if run_flags["q_spec"]:
-                qspec_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
-                qspec_data[QubitIndex]['I'][j - batch_num * save_r - 1] = qspec_I
-                qspec_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = qspec_Q
-                qspec_data[QubitIndex]['Frequencies'][j - batch_num * save_r - 1] = qspec_freqs
-                qspec_data[QubitIndex]['I Fit'][j - batch_num * save_r - 1] = qspec_I_fit
-                qspec_data[QubitIndex]['Q Fit'][j - batch_num * save_r - 1] = qspec_Q_fit
-                qspec_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-                qspec_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-                qspec_data[QubitIndex]['Recycled QFreq'][j - batch_num * save_r - 1] = recycled_qfreq
-                qspec_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                qspec_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_qspec
-                qspec_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_qspecge
-
-            # ---------------------Collect g-e Rabi Results----------------
-            if run_flags["rabi"]:
-                rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
-                rabi_data[QubitIndex]['I'][j - batch_num * save_r - 1] = rabi_I
-                rabi_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = rabi_Q
-                rabi_data[QubitIndex]['Gains'][j - batch_num * save_r - 1] = rabi_gains
-                rabi_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = rabi_fit
-                rabi_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-                rabi_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-                rabi_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                rabi_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_rabi
-                rabi_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_rabige
-
-            # ---------------------Collect g-e Single Shot Results----------------
-            if run_flags["ss"]:
-                ss_data[QubitIndex]['Fidelity'][j - batch_num * save_r - 1] = fid
-                ss_data[QubitIndex]['Angle'][j - batch_num * save_r - 1] = angle
-                ss_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
-                ss_data[QubitIndex]['I_g'][j - batch_num * save_r - 1] = I_g
-                ss_data[QubitIndex]['Q_g'][j - batch_num * save_r - 1] = Q_g
-                ss_data[QubitIndex]['I_e'][j - batch_num * save_r - 1] = I_e
-                ss_data[QubitIndex]['Q_e'][j - batch_num * save_r - 1] = Q_e
-                ss_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-                ss_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-                ss_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                ss_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_ss
-                ss_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_ssge
-
-            # ---------------------Collect e-f res spec Results----------------
-            if run_flags["ef_res_spec"] and ef_res_spec_survived:
-                ef_res_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
-                ef_res_data[QubitIndex]['freq_pts'][j - batch_num * save_r - 1] = ef_freq_pts
-                ef_res_data[QubitIndex]['freq_center'][j - batch_num * save_r - 1] = ef_freq_center
-                ef_res_data[QubitIndex]['Amps'][j - batch_num * save_r - 1] = ef_amps
-                ef_res_data[QubitIndex]['Found Freqs'][j - batch_num * save_r - 1] = ef_res_freqs
-                ef_res_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-                ef_res_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-                ef_res_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                ef_res_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_rspec_ef
-                ef_res_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_resef
-                ef_res_any = True
-
-                # ---------------------Collect e-f qspec Results----------------
-            if run_flags["ef_q_spec"] and ef_qspec_survived:
-                ef_qspec_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
-                ef_qspec_data[QubitIndex]['I'][j - batch_num * save_r - 1] = efqspec_I
-                ef_qspec_data[QubitIndex]['Q'][j - batch_num * save_r - 1]= efqspec_Q
-                ef_qspec_data[QubitIndex]['Frequencies'][j - batch_num * save_r - 1] = efqspec_freqs
-                ef_qspec_data[QubitIndex]['I Fit'][j - batch_num * save_r - 1] = efqspec_I_fit
-                ef_qspec_data[QubitIndex]['Q Fit'][j - batch_num * save_r - 1] = efqspec_Q_fit
-                ef_qspec_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-                ef_qspec_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-                ef_qspec_data[QubitIndex]['Recycled QFreq'][j - batch_num * save_r - 1] = False  # no recycling here
-                ef_qspec_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                ef_qspec_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_qspec_ef
-                ef_qspec_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_qspecef
-                ef_qspec_any = True
-
-            if run_flags["ef_Rabi"] and ef_qspec_survived and ef_res_spec_survived:
-                ef_rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
-                ef_rabi_data[QubitIndex]['I'][j - batch_num * save_r - 1] = efrabi_I
-                ef_rabi_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = efrabi_Q
-                ef_rabi_data[QubitIndex]['Gains'][j - batch_num * save_r - 1] = efrabi_gains
-                ef_rabi_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = efrabi_fit
-                ef_rabi_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-                ef_rabi_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-                ef_rabi_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                ef_rabi_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = efsys_config_to_save
-                ef_rabi_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_rabief
-
-            # --------------------Collect rabi population measurements (qubit temperature data) ----------------
-            if run_flags["rabi_pop_meas"] and ef_res_spec_survived and ef_qspec_survived:
-                rabi_data_ef_Qtemps[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
-                rabi_data_ef_Qtemps[QubitIndex]['Qfreq_ge'][j - batch_num * save_r - 1] = qubit_freq  # save the g-e qubit freq too for this qubit
-                rabi_data_ef_Qtemps[QubitIndex]['I1'][j - batch_num * save_r - 1] = I1_qtemp
-                rabi_data_ef_Qtemps[QubitIndex]['Q1'][j - batch_num * save_r - 1]= Q1_qtemp
-                rabi_data_ef_Qtemps[QubitIndex]['Gains1'][j - batch_num * save_r - 1] = gains1_qtemp
-                rabi_data_ef_Qtemps[QubitIndex]['Ishots1'][j - batch_num * save_r - 1] = I1_qtemp_shots
-                rabi_data_ef_Qtemps[QubitIndex]['Qshots1'][j - batch_num * save_r - 1] = Q1_qtemp_shots
-                rabi_data_ef_Qtemps[QubitIndex]['Fit1'][j - batch_num * save_r - 1] = fit_cosine1_qtemp
-
-                rabi_data_ef_Qtemps[QubitIndex]['I2'][j - batch_num * save_r - 1]= I2_qtemp
-                rabi_data_ef_Qtemps[QubitIndex]['Q2'][j - batch_num * save_r - 1]= Q2_qtemp
-                rabi_data_ef_Qtemps[QubitIndex]['Gains2'][j - batch_num * save_r - 1]= gains2_qtemp
-                rabi_data_ef_Qtemps[QubitIndex]['Ishots2'][j - batch_num * save_r - 1] = I2_qtemp_shots
-                rabi_data_ef_Qtemps[QubitIndex]['Qshots2'][j - batch_num * save_r - 1] = Q2_qtemp_shots
-                rabi_data_ef_Qtemps[QubitIndex]['Fit2'][j - batch_num * save_r - 1]= fit_cosine2_qtemp
-
-                rabi_data_ef_Qtemps[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-                rabi_data_ef_Qtemps[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-                rabi_data_ef_Qtemps[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                rabi_data_ef_Qtemps[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sysconfig_efrabi_Qtemps
-
-                rabi_data_ef_Qtemps[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_rpm
-
-                rpm_any = True
-
-
-            #----------Correlation Population Measurement----------------                                                                                                                                                         
-            if run_flags["correlation_method"]:
-                correlation_method_data[QubitIndex]['Dates'][j - batch_num*save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
-                correlation_method_data[QubitIndex]['Qfreq_ge'][j - batch_num*save_r - 1] = experiment.qubit_cfg['qubit_freq_ge']
-                correlation_method_data[QubitIndex]['P_e'][j - batch_num*save_r - 1] = cor_P_e
-                correlation_method_data[QubitIndex]['I1_g'][j - batch_num*save_r - 1] = cor_I1_g
-                correlation_method_data[QubitIndex]['Q1_g'][j - batch_num*save_r - 1] = cor_Q1_g
-                correlation_method_data[QubitIndex]['I2_g'][j - batch_num*save_r - 1] = cor_I2_g
-                correlation_method_data[QubitIndex]['Q2_g'][j - batch_num*save_r - 1] = cor_Q2_g
-                correlation_method_data[QubitIndex]['I1_e'][j - batch_num*save_r - 1] = cor_I1_e
-                correlation_method_data[QubitIndex]['Q1_e'][j - batch_num*save_r - 1] = cor_Q1_e
-                correlation_method_data[QubitIndex]['Syst Config'][j - batch_num*save_r - 1] = cor_self_config
-                
-                # ---------------------Collect g-e T1 Results----------------
-            if run_flags["t1"]:
-                t1_data[QubitIndex]['T1'][j - batch_num * save_r - 1] = t1_est
-                t1_data[QubitIndex]['Errors'][j - batch_num * save_r - 1] = t1_err
-                t1_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
-                t1_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_t1ge
-                t1_data[QubitIndex]['I'][j - batch_num * save_r - 1] = t1_I
-                t1_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = t1_Q
-                t1_data[QubitIndex]['Ishots'][j - batch_num * save_r - 1] = t1_Ishots
-                t1_data[QubitIndex]['Qshots'][j - batch_num * save_r - 1] = t1_Qshots
-                t1_data[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = t1_delay_times
-                t1_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = q1_fit_exponential
-                t1_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-                t1_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-                t1_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                t1_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t1
-
-            # ---------------------Collect g-e T2R Results----------------
-            if run_flags["t2r"]:
-                t2r_data[QubitIndex]['T2'][j - batch_num * save_r - 1] = t2r_est
-                t2r_data[QubitIndex]['Errors'][j - batch_num * save_r - 1] = t2r_err
-                t2r_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
-                t2r_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_t2r
-                t2r_data[QubitIndex]['I'][j - batch_num * save_r - 1] = t2r_I
-                t2r_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = t2r_Q
-                t2r_data[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = t2r_delay_times
-                t2r_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = fit_ramsey
-                t2r_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-                t2r_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-                t2r_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                t2r_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t2r
-
-            # ---------------------Collect g-e T2E Results----------------
-            if run_flags["t2e"]:
+            if save_figs:
                 t2e_data[QubitIndex]['T2E'][j - batch_num * save_r - 1] = t2e_est
                 t2e_data[QubitIndex]['Errors'][j - batch_num * save_r - 1] = t2e_err
                 t2e_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
@@ -1108,6 +1150,14 @@ while j < n:
                 t2e_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
                 t2e_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t2e
 
+                saver_t2e = Data_H5(subStudyDataFolder, t2e_data, batch_num, save_r)
+                saver_t2e.save_to_h5('t2e_ge')
+                del saver_t2e
+                del t2e_data
+
+            t2e_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
+
+        ############################################### Send Timing Summary to Notes File ################################################
         with open(file_path, "a", encoding="utf-8") as f:
             f.write(f"\nTiming summary for Q{QubitIndex + 1}, round {j}:\n")
 
@@ -1116,107 +1166,9 @@ while j < n:
 
         del experiment
 
-    ################################################## Potentially Save ################################################
+    ################################################## Update Batch Number ################################################
     if save_data_h5:
-        # Check if you are at the right round number
-        # If so, then save all of the data and change the round num so you replace data starting next round
-        if j % save_r == 0:
-            batch_num += 1
-
-            # --------------------------save g-e Res Spec-----------------------
-            if run_flags["res_spec"]:
-                saver_res = Data_H5(subStudyDataFolder, res_data, batch_num, save_r)
-                saver_res.save_to_h5('res_ge')
-                del saver_res
-                del res_data
-
-            # --------------------------save g-e QSpec-----------------------
-            if run_flags["q_spec"]:
-                saver_qspec = Data_H5(subStudyDataFolder, qspec_data, batch_num, save_r)
-                saver_qspec.save_to_h5('qspec_ge')
-                del saver_qspec
-                del qspec_data
-
-            # --------------------------save g-e Rabi-----------------------
-            if run_flags["rabi"]:
-                saver_rabi = Data_H5(subStudyDataFolder, rabi_data, batch_num, save_r)
-                saver_rabi.save_to_h5('rabi_ge')
-                del saver_rabi
-                del rabi_data
-
-            # --------------------------save g-e SS-----------------------
-            if run_flags["ss"]:
-                saver_ss = Data_H5(subStudyDataFolder, ss_data, batch_num, save_r)
-                saver_ss.save_to_h5('ss_ge')
-                del saver_ss
-                del ss_data
-
-            # --------------------------save e-f res spec-----------------------
-            if run_flags["ef_res_spec"] and ef_res_any :
-                saver_ef_res = Data_H5(subStudyDataFolder, ef_res_data, batch_num, save_r)  # save
-                saver_ef_res.save_to_h5('res_ef')
-                del saver_ef_res
-                del ef_res_data
-            # --------------------------save e-f qspec-----------------------
-            if run_flags["ef_q_spec"] and ef_qspec_any:
-                saver_ef_qspec = Data_H5(subStudyDataFolder, ef_qspec_data, batch_num, save_r)
-                saver_ef_qspec.save_to_h5('qspec_ef')
-                del saver_ef_qspec
-                del ef_qspec_data
-            #--------------------------save e-f Rabi-----------------------
-            if run_flags["ef_Rabi"]:
-                saver_ef_rabi = Data_H5(subStudyDataFolder, ef_rabi_data, batch_num, save_r)
-                saver_ef_rabi.save_to_h5('rabi_ef')
-                del saver_ef_rabi
-                del ef_rabi_data
-
-            # --------save rabi population measurements (qubit temperature data) -----------------------
-            if run_flags["rabi_pop_meas"] and rpm_any:
-                saver_rabi_Qtemps = Data_H5(subStudyDataFolder, rabi_data_ef_Qtemps, batch_num, save_r)
-                saver_rabi_Qtemps.save_to_h5('q_temperatures')
-                del saver_rabi_Qtemps
-                del rabi_data_ef_Qtemps
-                
-            # ------------Save correlation method measurements -----------------------                                                                 
-            if run_flags["correlation_method"]:
-                saver_correlation_method = Data_H5(subStudyDataFolder, correlation_method_data, batch_num, save_r )
-                saver_correlation_method.save_to_h5('correlation_method')
-                del saver_correlation_method
-                del correlation_method_data
-                
-            # --------------------------save g-e t1-----------------------
-            if run_flags["t1"]:
-                saver_t1 = Data_H5(subStudyDataFolder, t1_data, batch_num, save_r)
-                saver_t1.save_to_h5('t1_ge')
-                del saver_t1
-                del t1_data
-
-            # --------------------------save g-e t2r-----------------------
-            if run_flags["t2r"]:
-                saver_t2r = Data_H5(subStudyDataFolder, t2r_data, batch_num, save_r)
-                saver_t2r.save_to_h5('t2_ge')
-                del saver_t2r
-                del t2r_data
-
-            # --------------------------save g-e t2e-----------------------
-            if run_flags["t2e"]:
-                saver_t2e = Data_H5(subStudyDataFolder, t2e_data, batch_num, save_r)
-                saver_t2e.save_to_h5('t2e_ge')
-                del saver_t2e
-                del t2e_data
-
-    # reset all dictionaries to none for safety
-    res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
-    qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
-    rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
-    ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
-    ef_res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
-    ef_qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
-    rabi_data_ef_Qtemps = create_data_dict(rabi_keys_ef_Qtemps, save_r, list_of_all_qubits)
-    correlation_method_data = create_data_dict(correlation_keys, save_r, list_of_all_qubits)
-    t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
-    t2r_data = create_data_dict(t2r_keys, save_r, list_of_all_qubits)
-    t2e_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
+        batch_num += 1
 
     #reset flags
     ef_res_any = False
