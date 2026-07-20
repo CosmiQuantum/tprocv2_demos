@@ -4293,7 +4293,7 @@ class combined_Qtemp_studies:
 
         return results
 
-    def cal_ssf_limitation_uncertainties_per_scan(
+    def cal_ssf_lim_uncertainties_per_scan(
             self,
             snr_overlap_uncertainty,
             Pe_err,
@@ -4904,7 +4904,7 @@ class combined_Qtemp_studies:
                 # -------------------------
                 # Propagate per-scan uncertainties
                 # -------------------------
-                propagated = self.cal_ssf_limitation_uncertainties(
+                propagated = self.cal_ssf_lim_uncertainties_per_scan(
                     snr_overlap_uncertainty=snr_overlap_uncertainty,
                     Pe_err=Pe_err,
                     ie_new_Pg_err=ie_new_Pg_err,
