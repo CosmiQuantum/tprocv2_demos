@@ -287,7 +287,7 @@ class T1VsTime:
         timestamp_dir = "" ""
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
-                timestamp_dir = f"/exp/cosmiq/data/QUIET/QICK_data/{self.run_name}/{folder_date}"
+                timestamp_dir = f"/data/QICK_data/{self.run_name}/{folder_date}"
                     # f"/exp/cosmiq/data/QUIET/QICK_data/{self.run_name}/{folder_date}" # CEPH
                     # fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\{self.run_name}\{folder_date}" # Arianna's pc
                     # f"/data/QICK_data/{self.run_name}/{folder_date}" # qubituser-daq01
@@ -716,7 +716,7 @@ class T1VsTime:
         print('Plot saved to:', analysis_folder)
         plt.close()
 
-    def plot_with_errs_single_plot(self, date_times, t1_vals, t1_fit_err, show_legends,event_timestamps=None,
+    def plot_with_errs_single_plot(self, date_times, t1_vals, t1_fit_err, show_legends = True,event_timestamps=None,
                                    event_labels=None, event_colors=None, event_linestyles=None):
         analysis_folder = f"{self.outerFolder_save_plots}/features_vs_time/"
         self.create_folder_if_not_exists(analysis_folder)
