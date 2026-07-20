@@ -160,7 +160,7 @@ class AmplitudeRabiExperiment:
             amp_rabi = RabiWithActiveReset(
                 self.experiment.soccfg,
                 reps=self.config['reps'],
-                final_delay=50,
+                final_delay=2,
                 cfg=self.config
             )  # self.config['relax_delay']
 
@@ -2260,43 +2260,6 @@ class AmplitudeRabiProgram(AveragerProgramV2):
         # Trigger the readout channels to start collecting the data
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
-        ################ Active Reset #################################
-        # Wait for readout to be completed
-        # self.wait_auto(cfg['res_length']  + 0.2)
-        # self.delay_auto(cfg['res_length'] + 0.2)
-        # self.label("Readout and check conditions")
-        # # n = n + 1
-        # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
-        # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
-        #
-        # # # Wait for readout to be completed
-        # self.wait_auto(cfg['res_length']  + 0.2)
-        # self.delay_auto(cfg['res_length'] + 0.2)
-        # #
-        # # # Read from ro_ch buffer???
-        # # # print("cfg['ro_ch'][0])", cfg['ro_ch'][0])
-        # # self.read_input(ro_ch=cfg['ro_ch'][0])
-        # # self.write_dmem(addr=0, src='s_port_l')
-        # # self.write_dmem(addr=1, src='s_port_h')
-        # #
-        # # # if whatever is read from ro_ch is greater or equal to threshold 1, skip to label('skip everything'))
-        # self.read_and_jump(ro_ch=cfg['ro_ch'][0],
-        #                    component='I',
-        #                    threshold=cfg['edge_of_e_state_threshold'],
-        #                    test=">=", label='skip everything')
-        #
-        # # if whatever is read from ro_ch is greater or equal to threshold 2 (between_g_and_e), go back to label("Readout and check conditions")
-        # # self.read_and_jump(ro_ch=cfg['ro_ch'][0],
-        # #                    component='I',
-        # #                    threshold=cfg['edge_of_e_state_threshold'],
-        # #                    test=">=", label="Readout and check conditions")
-        # #
-        # # # print('playing pi in active to move e to g')
-        # # # Play a pi pulse if whatever is read from ro_ch is lesser than both thresholds 1 and 2
-        # self.pulse(ch=self.cfg["qubit_ch"], name="pi_pulse", t=0)  # play pulse pi
-        # # self.delay_auto()#(self.cfg['sigma'] * 4)  # ????
-        # self.jump("Readout and check conditions")
-        # self.label('skip everything')
 
 class AmplitudeRabi_QZE_Program(AveragerProgramV2):
     def __init__(self, soccfg, reps, final_delay, final_wait=0, initial_delay=1.0,
@@ -2463,103 +2426,117 @@ class RabiWithActiveReset(AveragerProgramV2):
         self.add_loop("gainloop", cfg["steps"])
 
     def _active_reset_block(self, cfg, prefix):
-        ############################### Simple Active reset, just one correction ###############################################
-        # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
-        #
-        # # 216/mux change: trigger all muxed readout channels
-        # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
-        #
-        # self.wait_auto(0.01, gens=True, ros=True)
-        # self.resync()
-        # self.delay_auto(t=0.01)
-        #
-        # # 216/mux change: threshold only the selected qubit's readout channel
-        # self.read_and_jump(
-        #     ro_ch=self.active_reset_ro_ch,
-        #     component='I',
-        #     threshold=int(
-        #         np.round(
-        #             cfg["threshold"]
-        #             * self.soccfg.us2cycles(
-        #                 cfg['res_length'],
-        #                 ro_ch=self.active_reset_ro_ch
-        #             )
-        #         )
-        #     ),
-        #     test="<",
-        #     label=f'skip_reset{prefix}'
-        # )
-        #
-        # self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
-        # self.label(f'skip_reset{prefix}')
-        # self.delay_auto(t=6)
+        ############################### Simple Active reset, no verification ###############################################
+        n_resets = cfg.get("n_resets", 1)
+        print("n_resets Rabi block:", n_resets)
+
+        for i in range(n_resets):
+            skip_label = f"skip_reset_{prefix}_{i}"
+
+            self.pulse(ch=cfg["res_ch"], name="res_pulse", t=0)
+            self.trigger(
+                ros=cfg["ro_ch"],
+                pins=[0],
+                t=cfg["trig_time"]
+            )
+
+            self.wait_auto(0.0, gens=True, ros=True)
+            self.resync()
+            self.delay_auto(t=0.0)
+
+            threshold_raw = int(
+                np.round(
+                    cfg["threshold"]
+                    * self.soccfg.us2cycles(
+                        cfg["res_length"],
+                        ro_ch=self.active_reset_ro_ch
+                    )
+                )
+            )
+
+            self.read_and_jump(
+                ro_ch=self.active_reset_ro_ch,
+                component="I",
+                threshold=threshold_raw,
+                test="<",
+                label=skip_label
+            )
+
+            self.pulse(
+                ch=cfg["qubit_ch"],
+                name="qubit_pulse",
+                t=0
+            )
+
+            self.label(skip_label)
+            self.delay_auto(t=12)
 
         ############################################# multi-correction version, for cases with crappy SSF #################################
-        n_resets = cfg.get('n_resets', 0)
-        for i in range(n_resets):
-            self.label(f'measure_again{i}{prefix}')
-
-            # First readout: check whether qubit is already ground-like
-            self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
-
-            # 216/mux change:
-            # Trigger all muxed readout channels instead of ros=[cfg['ro_ch']]
-            self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
-
-            self.wait_auto(0.01, gens=True, ros=True)
-            self.resync()
-            self.delay_auto(t=0.01)
-
-            # 216/mux change:
-            # read_and_jump acts on selected qubit's readout channel
-            self.read_and_jump(
-                ro_ch=self.active_reset_ro_ch,
-                component='I',
-                threshold=int(
-                    np.round(
-                        cfg["threshold"]* self.soccfg.us2cycles(cfg['res_length'], ro_ch=self.active_reset_ro_ch)
-                    )
-                ),
-                test="<",
-                label=f'no_pi_{i}{prefix}'
-            )
-
-            # Same original logic:
-            # If not ground-like, apply qubit_pulse
-            self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
-            self.delay_auto(t=6)
-
-            self.label(f'no_pi_{i}{prefix}')
-            self.delay_auto(t=6)
-
-            # Second readout: verify whether reset worked
-            self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
-
-            # 216/mux change:
-            # Trigger all muxed readout channels
-            self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
-
-            self.wait_auto(0.01, gens=True, ros=True)
-            self.resync()
-            self.delay_auto(t=0.01)
-
-            # Same original logic, but on selected mux readout channel:
-            # If still not ground-like enough, go back and try again
-            self.read_and_jump(
-                ro_ch=self.active_reset_ro_ch,
-                component='I',
-                threshold=int(
-                    np.round(
-                        cfg["threshold"] # original used g_center
-                        * self.soccfg.us2cycles(
-                            cfg['res_length'],
-                            ro_ch=self.active_reset_ro_ch
-                        )
-                    )
-                ),
-                test=">=",
-                label=f'measure_again{i}{prefix}'
-            )
+        # n_resets = cfg.get('n_resets', 0)
+        # for i in range(n_resets):
+        #     self.label(f'measure_again{i}{prefix}')
+        #
+        #     # First readout: check whether qubit is already ground-like
+        #     self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        #
+        #     # 216/mux change:
+        #     # Trigger all muxed readout channels instead of ros=[cfg['ro_ch']]
+        #     self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+        #
+        #     self.wait_auto(0.01, gens=True, ros=True)
+        #     self.resync()
+        #     self.delay_auto(t=0.01)
+        #
+        #     # 216/mux change:
+        #     # read_and_jump acts on selected qubit's readout channel
+        #     self.read_and_jump(
+        #         ro_ch=self.active_reset_ro_ch,
+        #         component='I',
+        #         threshold=int(
+        #             np.round(
+        #                 cfg["threshold"]* self.soccfg.us2cycles(cfg['res_length'], ro_ch=self.active_reset_ro_ch)
+        #             )
+        #         ),
+        #         test="<",
+        #         label=f'no_pi_{i}{prefix}'
+        #     )
+        #
+        #     # Same original logic:
+        #     # If not ground-like, apply qubit_pulse
+        #     self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
+        #     self.delay_auto(t=6)
+        #
+        #     self.label(f'no_pi_{i}{prefix}')
+        #     self.delay_auto(t=6)
+        #
+        #     # Second readout: verify whether reset worked
+        #     self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        #
+        #     # 216/mux change:
+        #     # Trigger all muxed readout channels
+        #     self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
+        #
+        #     self.wait_auto(0.01, gens=True, ros=True)
+        #     self.resync()
+        #     self.delay_auto(t=0.01)
+        #
+        #     # Same original logic, but on selected mux readout channel:
+        #     # If still not ground-like enough, go back and try again
+        #     self.read_and_jump(
+        #         ro_ch=self.active_reset_ro_ch,
+        #         component='I',
+        #         threshold=int(
+        #             np.round(
+        #                 cfg["threshold"] # original used g_center
+        #                 * self.soccfg.us2cycles(
+        #                     cfg['res_length'],
+        #                     ro_ch=self.active_reset_ro_ch
+        #                 )
+        #             )
+        #         ),
+        #         test=">=",
+        #         label=f'measure_again{i}{prefix}'
+        #     )
 
     def _body(self, cfg):
         # reset before rabi so we can use a tiny final_delay and still make sure to reset
@@ -2571,7 +2548,7 @@ class RabiWithActiveReset(AveragerProgramV2):
 
         self._active_reset_block(cfg, prefix="post")
 
-        # final measurement
+        # readout pulse
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
 
         # 216/mux change:
@@ -2666,7 +2643,7 @@ class RabiWithActiveResetControlTest(AveragerProgramV2):
 
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
-        self.delay_auto(t=0.05, tag='waiting')
+        self.delay_auto(t=0.0, tag='waiting')
 
         # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
@@ -2674,7 +2651,7 @@ class RabiWithActiveResetControlTest(AveragerProgramV2):
         # self.pulse(ch=self.cfg["qubit_ch"], name="pi_pulse", t=0)
         # self.delay_auto(t=0)
 
-        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
+        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play readout pulse
 
         # 216/mux change:
         # Trigger all muxed readout channels.

@@ -63,26 +63,27 @@ unmask = True  # Do you want to use the unmasking feature to increase resonator 
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 
-Qs_to_look_at = [0,2] # only list the qubits you want to do the RR for
+Qs_to_look_at = [2] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run9d'
 device_name = '6transmon'
-substudy_txt_notes = ('Collecting data the night before final PT off tests of run 9d. Saving H5 files right after each experiment. \n')
+substudy_txt_notes = ('PT off tests of run 9d. Saving H5 files right after each experiment. \n')
 
 # set which of the following you'd like to run to 'True'
 
-# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
-#              "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
-#              "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": False,
+run_flags = {"tof": False, "res_spec": False, "q_spec": False, "rabi": False, "ss": False,
              "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": False,"correlation_method": False}
 
+#run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
+             # "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
+             # "rabi_pop_meas": False, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": False,"correlation_method": False}
+
 # For 25dB DAC, 7/19/2026
 res_leng_vals = [5.2, 6.6, 6.0, 6.8, 6.8, 7.0]
-res_gain = [0.8164, 0.8, 0.8419, 0.6156, 0.8, 0.82]
-freq_offsets =[-0.1556, -0.1111, -0.2,-0.0222,-0.2111,-0.1556]
+res_gain = [0.8164, 0.6, 0.8419, 0.6156, 0.8, 0.82]
+freq_offsets =[-0.1556, -0.0911, -0.2,-0.0222,-0.2111,-0.1556]
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
@@ -95,7 +96,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts, round_robin_benchmark
-sub_study = 'Pre_PT_off_overnight_0720'
+sub_study = 'Post_PT_off_batch4_Q3_0720'#'Post_PT_off_batch2_Q1Q3_0720' #Post_PT_off_batch2_Q3_0720
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -311,7 +312,7 @@ while j < n:
                 #
                 if QubitIndex == 2:
                     increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 620
+                    qspecge_increase_reps_to = 1000
 
                 if QubitIndex == 1:
                     increase_qubit_reps_qspec = True
@@ -1050,10 +1051,10 @@ while j < n:
                     reduce_rlx_delay_geT2R = True
                     reduce_rlx_delay_geT2R_to = 650
 
-                if QubitIndex == 1:
-                    increase_qubit_reps_t2r = True
-                    qubit_to_increase_t2r_reps_for = QubitIndex
-                    increase_t2r_qubit_reps_to = 1000
+                #if QubitIndex == 1:
+                #    increase_qubit_reps_t2r = True
+                #    qubit_to_increase_t2r_reps_for = QubitIndex
+                #    increase_t2r_qubit_reps_to = 1000
 
                 t2r = T2RMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                      experiment=experiment, live_plot=live_plot, fit_data=fit_data,

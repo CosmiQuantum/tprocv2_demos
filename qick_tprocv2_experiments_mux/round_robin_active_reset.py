@@ -52,10 +52,10 @@ run_name = 'run9d'
 device_name = '6transmon'
 substudy_txt_notes = ('testing active reset')
 
-run_flags = {"res_spec": True, "q_spec": True, "rabi": True, "ss": True, "check_ssf_theta_thresh": False,
-             "act_reset_0corr": False, "act_reset_1corr": False, "act_reset_multiple_corr": False, "act_reset_ss": True,
+run_flags = {"res_spec": True, "q_spec": True, "rabi": True, "ss": True, "check_ssf_theta_thresh": True,
+             "act_reset_0corr": True, "act_reset_1corr": False, "act_reset_multiple_corr": True, "act_reset_ss": True,
              "t1": True, "act_reset_t1": True}
-n_resets = 1 # number of active reset attempts you want to try. For T1, this must be 1 or T1 dies.
+n_resets = 3 # number of active reset attempts you want to try. For T1, this must be 1 or T1 dies.
 
 ################################################ optimization outputs ##################################################
 res_leng_vals = [5.4, 6.4, 6.2, 6.2, 6.8, 7.0]
