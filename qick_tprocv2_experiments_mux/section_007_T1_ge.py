@@ -558,7 +558,9 @@ class T1Measurement:
 
 
         if self.fit_data:
-            q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit(I, Q, delay_times)
+            #q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit(I, Q, delay_times)
+            q1_fit_exponential, T1_err, T1_est, fit_info = self.t1_fit_iminuit(I, Q, delay_times)
+            plot_sig = fit_info["plot_sig"]
 
             if 'I' in plot_sig:
                 ax1.plot(delay_times, q1_fit_exponential, '-', color='red', linewidth=3, label="Fit")
@@ -568,12 +570,12 @@ class T1Measurement:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"Q{self.QubitIndex + 1} " + f"T1={T1_est:.2f} us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         f"Q{self.QubitIndex + 1} " + f"T1={T1_est:.2f} +/- {T1_err:.2f} us" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
                          fontsize=24, ha='center',
                          va='top')  # , pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
                 fig.text(plot_middle, 0.98,
-                         f"T1 Q{self.QubitIndex + 1}, T1 %.2f us" % T1_est + f", {self.config['reps']}*{self.config['rounds']} avgs,",
+                         f"T1 Q{self.QubitIndex + 1} " + f"T1={T1_est:.2f} +/- {T1_err:.2f} us" + f", {self.config['reps']}*{self.config['rounds']} avgs,",
                          fontsize=24, ha='center', va='top')
 
         else:
@@ -697,6 +699,8 @@ class T1Measurement:
             show_plot=False,
             print_summary=True):
         """
+        THIS ASSUMES A VERIFICATION BLOCK  IN THE ACTIVE RESET CODE.
+
         Plot the active-reset decision shots at one T1 delay point together
         with the exact raw-unit threshold passed to read_and_jump().
 
@@ -950,8 +954,7 @@ class T1Program_active_reset(AveragerProgramV2):
             1. decision readout
             2. if ground-like: skip pi
                if excited-like: apply pi correction
-            3. verification readout
-            4. if still excited-like: repeat
+            3. if still excited-like: repeat
 
         Final T1 readout happens in _body().
         """
