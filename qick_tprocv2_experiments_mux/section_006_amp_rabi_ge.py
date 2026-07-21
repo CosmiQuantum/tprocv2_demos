@@ -138,10 +138,10 @@ class AmplitudeRabiExperiment:
             ss_config = {**q_config[self.Qubit], **ss_exp_cfg}
 
             print('performing single shot for g-e calibration')
-            ssp_g = SingleShotProgram_g(self.experiment.soccfg, reps=1, final_delay=4000, cfg=ss_config)
+            ssp_g = SingleShotProgram_g(self.experiment.soccfg, reps=1, final_delay=1000, cfg=ss_config)
             iq_list_g = ssp_g.acquire(self.experiment.soc, soft_avgs=1, progress=True)
 
-            ssp_e = SingleShotProgram_e(self.experiment.soccfg, reps=1, final_delay=4000, cfg=ss_config)
+            ssp_e = SingleShotProgram_e(self.experiment.soccfg, reps=1, final_delay=1000, cfg=ss_config)
             iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=True)
 
             ss_I_g = iq_list_g[self.QubitIndex][0].T[0]
@@ -160,7 +160,7 @@ class AmplitudeRabiExperiment:
             amp_rabi = RabiWithActiveReset(
                 self.experiment.soccfg,
                 reps=self.config['reps'],
-                final_delay=1,
+                final_delay=0.01,
                 cfg=self.config
             )  # self.config['relax_delay']
 
@@ -2426,29 +2426,31 @@ class RabiWithActiveReset(AveragerProgramV2):
         self.add_loop("gainloop", cfg["steps"])
 
     def _active_reset_block(self, cfg, label_addition = ""):
-        ############################### Simple Active reset, no verification ###############################################
         n_resets = cfg.get("n_resets", 3)
         ro_ch_this = cfg["ro_ch"][0]
         res_length_cycles = self.soccfg.us2cycles(us=cfg["res_length"], ro_ch=ro_ch_this)
         threshold_raw = int(round(cfg["threshold"] * res_length_cycles))
         delay1_act_reset = cfg.get("delay1_act_reset", 6.0)
+        delay2_act_reset = cfg.get("delay2_act_reset", 6.0)
 
         for i in range(n_resets):
+            skip_label = f"skip_reset_{label_addition}_{i}"
             self.pulse(ch=cfg["res_ch"], name="res_pulse", t=0)
             self.trigger(ros=cfg["ro_ch"], pins=[0], t=cfg["trig_time"])
             self.wait_auto(0.0, gens=True, ros=True)
             self.resync()
             self.delay_auto(t=0.0)
-            self.read_and_jump(ro_ch=ro_ch_this, component="I", threshold=threshold_raw, test="<",
-                               label=f"skip_pi_{label_addition}_{i}")
+            self.read_and_jump(ro_ch=ro_ch_this, component="I", threshold=threshold_raw, test="<", label=skip_label)
             self.pulse(ch=cfg["qubit_ch"], name="qubit_pulse", t=0)
-            self.label(f"skip_pi_{label_addition}_{i}")
+            self.label(skip_label)
             self.delay_auto(t=delay1_act_reset)
 
-        ############################################# multi-correction version, for cases with crappy SSF #################################
+        self.delay_auto(t=delay2_act_reset)
+
+        ####### correction with unlimited verifications version, (and multiple cycles or corrections allowed) for cases with crappy SSF #####
         # n_resets = cfg.get('n_resets', 0)
         # for i in range(n_resets):
-        #     self.label(f'measure_again{i}{prefix}')
+        #     self.label(f'measure_again{i}{label_addition}')
         #
         #     # First readout: check whether qubit is already ground-like
         #     self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
@@ -2472,7 +2474,7 @@ class RabiWithActiveReset(AveragerProgramV2):
         #             )
         #         ),
         #         test="<",
-        #         label=f'no_pi_{i}{prefix}'
+        #         label=f'no_pi_{i}{label_addition}'
         #     )
         #
         #     # Same original logic:
@@ -2480,7 +2482,7 @@ class RabiWithActiveReset(AveragerProgramV2):
         #     self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
         #     self.delay_auto(t=6)
         #
-        #     self.label(f'no_pi_{i}{prefix}')
+        #     self.label(f'no_pi_{i}{label_addition}')
         #     self.delay_auto(t=6)
         #
         #     # Second readout: verify whether reset worked
@@ -2509,18 +2511,18 @@ class RabiWithActiveReset(AveragerProgramV2):
         #             )
         #         ),
         #         test=">=",
-        #         label=f'measure_again{i}{prefix}'
+        #         label=f'measure_again{i}{label_addition}'
         #     )
 
     def _body(self, cfg):
         # reset before rabi so we can use a tiny final_delay and still make sure to reset
-        self._active_reset_block(cfg, prefix="pre")
+        self._active_reset_block(cfg, label_addition="pre")
 
         # Rabi pulse
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
         self.delay_auto(t=0.0, tag='waiting')
 
-        self._active_reset_block(cfg, prefix="post")
+        self._active_reset_block(cfg, label_addition="post")
 
         # readout pulse
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)

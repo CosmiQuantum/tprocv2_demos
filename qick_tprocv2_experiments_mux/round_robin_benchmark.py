@@ -62,12 +62,12 @@ unmask = True  # Do you want to use the unmasking feature to increase resonator 
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 
-Qs_to_look_at = [2] # only list the qubits you want to do the RR for
+Qs_to_look_at = [0] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run9d'
 device_name = '6transmon'
-substudy_txt_notes = ('Last temperature of QUIET run 9d. Only res spec qspec SSF and T1. Only Q1.\n')
+substudy_txt_notes = ('Checking status of qubits.\n')
 
 # set which of the following you'd like to run to 'True'
 
@@ -79,7 +79,7 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss":
              "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
 
 # For 25dB DAC, 7/19/2026
-res_leng_vals = [5.2, 6.6, 6.0, 6.8, 6.8, 7.0]
+res_leng_vals = [5.4, 6.6, 6.0, 6.8, 6.8, 7.0]
 res_gain = [0.8164, 0.8, 0.8419, 0.6156, 0.8, 0.82]
 freq_offsets =[-0.1556, -0.1111, -0.2,-0.0222,-0.2111,-0.1556]
 

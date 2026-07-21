@@ -105,7 +105,7 @@ class T1Measurement:
     def run(self, thresholding=False, use_iminuit_instead = True, active_reset = False):
         if active_reset:
 
-            t1 = T1Program_active_reset(self.experiment.soccfg, reps=self.config['reps'],final_delay=1, cfg=self.config)
+            t1 = T1Program_active_reset(self.experiment.soccfg, reps=self.config['reps'],final_delay=0.01, cfg=self.config)
 
             if thresholding:
                 iq_list = t1.acquire(self.experiment.soc, soft_avgs=self.config['rounds'],
@@ -163,7 +163,7 @@ class T1Measurement:
                     raw_q=raw_q,
                     decision_threshold=threshold_raw,
                     delay_times=delay_times,
-                    delay_index=5,
+                    delay_index=1,
                     decision_readout_index=0,
                     save_folder=diagnostic_folder,
                     show_plot=False,
@@ -292,10 +292,10 @@ class T1Measurement:
             else:
                 curve_label = run["label"]
 
-            ax.plot(x, y, marker="o", markersize=3, linewidth=1.5, label=curve_label)
-
+            color = "C0" if comparison_runs.index(run) == 0 else "C2"
+            ax.plot(x, y, marker="o", markersize=3, linewidth=1.5, color=color, label=curve_label)
             if fit_curve is not None and fit_curve.shape == y.shape:
-                ax.plot(x, fit_curve, linestyle="--", linewidth=2)
+                ax.plot(x, fit_curve, "--", linewidth=2,color=color)
 
         ax.set_xlabel("Delay time (us)", fontsize=14)
         ax.set_ylabel(f"{signal_to_plot} amplitude (a.u.)", fontsize=14)
@@ -952,18 +952,21 @@ class T1Program_active_reset(AveragerProgramV2):
         res_length_cycles = self.soccfg.us2cycles(us=cfg["res_length"], ro_ch=ro_ch_this)
         threshold_raw = int(round(cfg["threshold"] * res_length_cycles))
         delay1_act_reset = cfg.get("delay1_act_reset", 6.0)
+        delay2_act_reset = cfg.get("delay2_act_reset", 6.0)
 
         for i in range(n_resets):
+            skip_label = f"skip_reset_{label_addition}_{i}"
             self.pulse(ch=cfg["res_ch"], name="res_pulse", t=0)
             self.trigger(ros=cfg["ro_ch"], pins=[0], t=cfg["trig_time"])
             self.wait_auto(0.0, gens=True, ros=True)
             self.resync()
             self.delay_auto(t=0.0)
-            self.read_and_jump(ro_ch=ro_ch_this, component="I", threshold=threshold_raw, test="<",
-                               label=f"skip_pi_{label_addition}_{i}")
+            self.read_and_jump(ro_ch=ro_ch_this, component="I", threshold=threshold_raw, test="<", label=skip_label)
             self.pulse(ch=cfg["qubit_ch"], name="qubit_pulse", t=0)
-            self.label(f"skip_pi_{label_addition}_{i}")
+            self.label(skip_label)
             self.delay_auto(t=delay1_act_reset)
+
+        self.delay_auto(t=delay2_act_reset)
 
     def _body(self, cfg):
         # Reset the unknown state left from the previous repetition.

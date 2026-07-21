@@ -24,7 +24,7 @@ zero_qubit_drive_gain = False
 constant_zeno_pulse = True
 adapt_starked_qubit_freq = False
 wait_for_res_ring_up = True
-n= 1
+n= 100
 unmask = True
 save_r = 1                           # how many rounds to save after
 signal = 'None'                      # 'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization
@@ -40,6 +40,7 @@ increase_qubit_reps = False          # if you want to increase the reps for a qu
 qubit_to_increase_reps_for = 0       # only has impact if previous line is True
 multiply_qubit_reps_by = 2           # only has impact if the line two above is True
 save_shots_gerabi = False
+ssf_doublegauss_method = True # instead of default way to find SSF threshold, do you want to use the double gaussian midpoint method?
 
 def append_to_notes(text):
     with open(file_path, "a", encoding="utf-8") as file:
@@ -55,10 +56,10 @@ substudy_txt_notes = ('testing active reset')
 run_flags = {"res_spec": False, "q_spec": False, "rabi": False, "ss": True, "check_ssf_theta_thresh": False,
              "act_reset_0corr": False, "act_reset_1corr": False, "act_reset_multiple_corr": False, "act_reset_ss": True,
              "t1": True, "act_reset_t1": True}
-n_resets = 10 # number of active reset attempts you want to try. For T1, this must be 1 or T1 dies.
+n_resets = 9
 
 ################################################ optimization outputs ##################################################
-res_leng_vals = [5.2, 6.6, 6.0, 6.8, 6.8, 7.0]
+res_leng_vals = [5.4, 6.6, 6.0, 6.8, 6.8, 7.0]
 res_gain = [0.8164, 0.8, 0.8419, 0.6156, 0.8, 0.82]
 freq_offsets =[-0.1556, -0.1111, -0.2,-0.0222,-0.2111,-0.1556]
 
@@ -68,7 +69,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'active_reset' #qubit_checkouts, round_robin_benchmark
-sub_study = 'T1_issue_investigation' #batch2_post_1stopt_25dbDAC, opt_sigmas_gains_reps_steps
+sub_study = 'T1_act_reset_thresh_inv' #batch2_post_1stopt_25dbDAC, opt_sigmas_gains_reps_steps
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -395,7 +396,7 @@ while j < n:
 
                     ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
                                     experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
-                                    reduce_rlx_delay=reduce_rlx_delay_ssf, reduce_rlx_delay_to=reduce_rlx_delay_ssf_to)
+                                    reduce_rlx_delay=reduce_rlx_delay_ssf, reduce_rlx_delay_to=reduce_rlx_delay_ssf_to, doublegauss_thresh = ssf_doublegauss_method)
                     fid, angle, thresh, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge, g_center, e_center = ss.run(return_centers = True)
 
                     fid_check = fid
@@ -459,7 +460,7 @@ while j < n:
             ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
             ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
                             experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
-                            reduce_rlx_delay=reduce_rlx_delay_ssf, reduce_rlx_delay_to=reduce_rlx_delay_ssf_to)
+                            reduce_rlx_delay=reduce_rlx_delay_ssf, reduce_rlx_delay_to=reduce_rlx_delay_ssf_to, doublegauss_thresh = ssf_doublegauss_method)
             fid, angle, thresh, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge, g_center, e_center = ss.run(return_centers=True)
 
             I_g = iq_list_g[QubitIndex][0].T[0]
@@ -640,46 +641,18 @@ while j < n:
                     reduce_rlx_delay_ssf = True
                     reduce_rlx_delay_ssf_to = 650
 
-                max_tries = 1  # 5
-                try_num = 0
-                fid_check = 0
+                ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
+                                experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
+                                reduce_rlx_delay=reduce_rlx_delay_ssf, reduce_rlx_delay_to=reduce_rlx_delay_ssf_to, doublegauss_thresh = ssf_doublegauss_method)
+                fid, angle, thresh, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge, g_center, e_center = ss.run(active_reset = True)
 
-                ssf_thresholds = [0.99, 0.99, 0.99, 0.99, 0.99, 0.99]  # dummy values, this isnt used here, but it is used in the main RR script for run 9
-                ssf_threshold = ssf_thresholds[QubitIndex]
-
-                while fid_check < ssf_threshold and try_num < max_tries:
-                    ## after the loop finishes, the code only keeps the data from the last attempt that ran
-                    try_num += 1
-
-                    ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
-                                    experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
-                                    reduce_rlx_delay=reduce_rlx_delay_ssf, reduce_rlx_delay_to=reduce_rlx_delay_ssf_to)
-                    fid, angle, thresh, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge, g_center, e_center = ss.run(active_reset = True)
-
-                    fid_check = fid
-                    # if fid_check < ssf_threshold: # checks if SSF is bad, if it is it tries again
-                    #     rr_logger.warning(
-                    #         f"Q{QubitIndex + 1} SSF fid={fid_check:.3f} below {ssf_threshold}, retrying "
-                    #         f"({try_num}/{max_tries})")
-
-                # if fid_check < ssf_threshold:
-                #     rr_logger.warning(f"Q{QubitIndex + 1} SSF never reached {ssf_threshold}. Keeping last attempt.")
+                # update threshold. Inside active reset code og threshold gets added an offset.
+                experiment.readout_cfg['threshold'] = thresh
 
                 I_g = iq_list_g[QubitIndex][0].T[0]
                 Q_g = iq_list_g[QubitIndex][0].T[1]
                 I_e = iq_list_e[QubitIndex][0].T[0]
                 Q_e = iq_list_e[QubitIndex][0].T[1]
-
-                #  Update config ro_phase to rotate blobs onto I for future experiments below this
-                #theta = -np.arctan2(np.median(Q_e) - np.median(Q_g), np.median(I_e) - np.median(I_g)) # no need to do it out here, code returns the angle
-                experiment.readout_cfg['ro_phase'][QubitIndex] = -np.degrees(angle)
-
-                experiment.readout_cfg['threshold'] = thresh
-                experiment.readout_cfg['g_center'] = g_center[0]  # 0 is I, 1 is Q
-                experiment.readout_cfg['e_center'] = e_center[0]
-                print('SSF threshold: ', thresh)
-                print('SSF g_center: ', g_center)
-                print('SSF e_center: ', e_center)
 
                 ss_data[QubitIndex]['Fidelity'][j - batch_num * save_r - 1] = fid
                 ss_data[QubitIndex]['Angle'][j - batch_num * save_r - 1] = angle

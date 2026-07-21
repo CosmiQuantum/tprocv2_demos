@@ -105,8 +105,8 @@ class QICK_experiment:
                 "n_resets": 1,  # for active reset
                 "g_center": 0,  # for active reset
                 "e_center": 0,  # for active reset
-                "delay1_act_reset": 6, # for active reset, delay after the correction block, before the verification block
-                "delay2_act_reset": 6 # delay at the end of the entire active reset block
+                "delay1_act_reset": 10, # 10
+                "delay2_act_reset": 1 # 1
 
             }
 

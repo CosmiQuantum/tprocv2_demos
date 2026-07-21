@@ -132,7 +132,8 @@ class SingleShotProgram_e(AveragerProgramV2):
 
 class SingleShot:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, save_figs=False, experiment = None,
-                 verbose = False, logger = None, qick_verbose=True, unmasking_resgain = False, reduce_rlx_delay = False, reduce_rlx_delay_to = False):
+                 verbose = False, logger = None, qick_verbose=True, unmasking_resgain = False, reduce_rlx_delay = False, reduce_rlx_delay_to = False,
+                 doublegauss_thresh = False):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
@@ -141,6 +142,7 @@ class SingleShot:
         self.round_num = round_num
         self.save_figs = save_figs
         self.experiment = experiment
+        self.doublegauss_thresh = doublegauss_thresh
         self.reduce_rlx_delay = reduce_rlx_delay
         self.reduce_rlx_delay_to = reduce_rlx_delay_to
         self.number_of_qubits = number_of_qubits
@@ -198,7 +200,7 @@ class SingleShot:
             ssp_g = SingleShotProgram_g_active_reset(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'],cfg=self.config)
             iq_list_g = ssp_g.acquire(self.experiment.soc, soft_avgs=1, progress=True)
 
-            ssp_e = SingleShotProgram_e_active_reset(self.experiment.soccfg, reps=1, final_delay=1,cfg=self.config)
+            ssp_e = SingleShotProgram_e_active_reset(self.experiment.soccfg, reps=1, final_delay=0.01,cfg=self.config)
             iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=True)
             arr = np.asarray(iq_list_e)
 
@@ -682,7 +684,12 @@ class SingleShot:
         )
 
         # Use the threshold from the config file instead of finding a new one.
-        threshold = cfg["threshold"]
+        threshold = cfg["threshold"] # use the threshold in the system config as is
+
+        # # add a small offset to it
+        threshold_offset = 20 # this was chosen by Arianna after looking at scans by eye and comparing active reset results
+        threshold += threshold_offset
+        print(f'Active reset threshold got a +{threshold_offset} offset. Previous: {threshold-threshold_offset}. New: {threshold}.')
 
         # Find the histogram bin closest to the config threshold.
         tind = np.argmin(np.abs(binsg[:-1] - threshold))
@@ -816,11 +823,17 @@ class SingleShot:
             ng, binsg = np.histogram(ig_new, bins=numbins, range=xlims)
             ne, binse = np.histogram(ie_new, bins=numbins, range=xlims)
 
-        """Compute the fidelity using overlap of the histograms"""
-        contrast = np.abs(((np.cumsum(ng) - np.cumsum(ne)) / (0.5 * ng.sum() + 0.5 * ne.sum())))
-        tind = contrast.argmax()
-        threshold = binsg[tind]
-        fid = contrast[tind]
+        if self.doublegauss_thresh: # alternate method of calculating the SSF threshold. Double gaussian fit.
+            print ("Using alternative method to calculate SSF threshold. Double gaussian fit.")
+            contrast = np.abs((np.cumsum(ng) - np.cumsum(ne)) / (0.5 * ng.sum() + 0.5 * ne.sum()))
+            threshold, mean_g_fit, mean_e_fit = self.gaussian_midpoint_threshold(ig_new, ie_new)
+            tind = int(np.argmin(np.abs(binsg[:-1] - threshold)))
+            fid = contrast[tind]
+        else: # Original method. Compute the fidelity using overlap of the histograms
+            contrast = np.abs(((np.cumsum(ng) - np.cumsum(ne)) / (0.5 * ng.sum() + 0.5 * ne.sum())))
+            tind = contrast.argmax()
+            threshold = binsg[tind]
+            fid = contrast[tind]
 
         if plot == True:
             self.create_folder_if_not_exists(self.outerFolder)
@@ -844,6 +857,44 @@ class SingleShot:
             return fid, threshold, theta, ig_new, ie_new, g_center, e_center
         else:
             return fid, threshold, theta, ig_new, ie_new
+
+    def gaussian_midpoint_threshold(self, ig, ie):
+        def gaussian(x, amplitude, mean, sigma):
+            return amplitude * np.exp(-0.5 * ((x - mean) / sigma) ** 2)
+
+        ig = np.asarray(ig, dtype=float)
+        ie = np.asarray(ie, dtype=float)
+        ig = ig[np.isfinite(ig)]
+        ie = ie[np.isfinite(ie)]
+
+        all_I = np.concatenate((ig, ie))
+        numbins = max(20, int(round(np.sqrt(all_I.size))))
+        hist_range = (float(np.min(all_I)), float(np.max(all_I)))
+
+        ng, edges = np.histogram(ig, bins=numbins, range=hist_range)
+        ne, _ = np.histogram(ie, bins=numbins, range=hist_range)
+        centers = 0.5 * (edges[:-1] + edges[1:])
+
+        sigma_g_guess = max(float(np.std(ig)), 1e-9)
+        sigma_e_guess = max(float(np.std(ie)), 1e-9)
+
+        p0_g = [float(np.max(ng)), float(np.median(ig)), sigma_g_guess]
+        p0_e = [float(np.max(ne)), float(np.median(ie)), sigma_e_guess]
+
+        bounds = ([0.0, hist_range[0], 1e-9], [np.inf, hist_range[1], np.inf])
+
+        try:
+            popt_g, _ = curve_fit(gaussian, centers, ng, p0=p0_g, bounds=bounds, maxfev=20000)
+            popt_e, _ = curve_fit(gaussian, centers, ne, p0=p0_e, bounds=bounds, maxfev=20000)
+            mean_g = float(popt_g[1])
+            mean_e = float(popt_e[1])
+        except (RuntimeError, ValueError):
+            print("Gaussian threshold fit failed; using midpoint of medians.")
+            mean_g = float(np.median(ig))
+            mean_e = float(np.median(ie))
+
+        threshold = 0.5 * (mean_g + mean_e)
+        return threshold, mean_g, mean_e
 
     def only_hist_ssf(self, data=None, cfg=None, plot=True, fig_quality=100, plot_title="Run 3"):
         import math
@@ -1085,25 +1136,28 @@ class SingleShotProgram_e_active_reset(AveragerProgramV2):
         res_length_cycles = self.soccfg.us2cycles(us=cfg["res_length"], ro_ch=ro_ch_this)
         threshold_raw = int(round(cfg["threshold"] * res_length_cycles))
         delay1_act_reset = cfg.get("delay1_act_reset", 6.0)
+        delay2_act_reset = cfg.get("delay2_act_reset", 6.0)
 
         for i in range(n_resets):
+            skip_label = f"skip_reset_{label_addition}_{i}"
             self.pulse(ch=cfg["res_ch"], name="res_pulse", t=0)
             self.trigger(ros=cfg["ro_ch"], pins=[0], t=cfg["trig_time"])
             self.wait_auto(0.0, gens=True, ros=True)
             self.resync()
             self.delay_auto(t=0.0)
-            self.read_and_jump(ro_ch=ro_ch_this, component="I", threshold=threshold_raw, test="<",
-                               label=f"skip_pi_{label_addition}_{i}")
+            self.read_and_jump(ro_ch=ro_ch_this, component="I", threshold=threshold_raw, test="<", label=skip_label)
             self.pulse(ch=cfg["qubit_ch"], name="qubit_pulse", t=0)
-            self.label(f"skip_pi_{label_addition}_{i}")
+            self.label(skip_label)
             self.delay_auto(t=delay1_act_reset)
+
+        self.delay_auto(t=delay2_act_reset)
 
     def _body(self, cfg):
         # ssf e state
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0) # excite the qubit
 
         self.delay_auto(0.0)
-        self._active_reset_block(cfg, label_addition='post')
+        self._active_reset_block(cfg, label_addition='post') #reset (send back to ground on purpose for diagnostics)
 
-        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
+        self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0) #readout
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
