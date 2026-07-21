@@ -105,7 +105,7 @@ class T1Measurement:
     def run(self, thresholding=False, use_iminuit_instead = True, active_reset = False):
         if active_reset:
 
-            t1 = T1Program_active_reset(self.experiment.soccfg, reps=self.config['reps'],final_delay=2, cfg=self.config)
+            t1 = T1Program_active_reset(self.experiment.soccfg, reps=self.config['reps'],final_delay=1, cfg=self.config)
 
             if thresholding:
                 iq_list = t1.acquire(self.experiment.soc, soft_avgs=self.config['rounds'],
@@ -947,45 +947,23 @@ class T1Program_active_reset(AveragerProgramV2):
         self.add_loop("waitloop", cfg["steps"])
 
     def _active_reset_block(self, cfg, label_addition=""):
-        """
-        Conditional correction + verification for T1 active reset.
-
-        Sequence per attempt:
-            1. decision readout
-            2. if ground-like: skip pi
-               if excited-like: apply pi correction
-            3. if still excited-like: repeat
-
-        Final T1 readout happens in _body().
-        """
-
-        n_resets = cfg.get("n_resets", 1)
+        n_resets = cfg.get("n_resets", 3)
         ro_ch_this = cfg["ro_ch"][0]
-
-        print("n_resets T1 block:", n_resets)
+        res_length_cycles = self.soccfg.us2cycles(us=cfg["res_length"], ro_ch=ro_ch_this)
+        threshold_raw = int(round(cfg["threshold"] * res_length_cycles))
+        delay1_act_reset = cfg.get("delay1_act_reset", 6.0)
 
         for i in range(n_resets):
-            # Decision readout
             self.pulse(ch=cfg["res_ch"], name="res_pulse", t=0)
             self.trigger(ros=cfg["ro_ch"], pins=[0], t=cfg["trig_time"])
             self.wait_auto(0.0, gens=True, ros=True)
             self.resync()
             self.delay_auto(t=0.0)
-
-            # Decision. Ground-like skips correction.
-            res_length_cycles = self.soccfg.us2cycles(us=cfg["res_length"], ro_ch=ro_ch_this)
-            threshold_raw = int(round(cfg["threshold"] * res_length_cycles))
-            self.read_and_jump(ro_ch=ro_ch_this, component="I", threshold=threshold_raw, test="<",label=f"no_pi_{label_addition}_{i}")
-
-            # Excited-like correction.
+            self.read_and_jump(ro_ch=ro_ch_this, component="I", threshold=threshold_raw, test="<",
+                               label=f"skip_pi_{label_addition}_{i}")
             self.pulse(ch=cfg["qubit_ch"], name="qubit_pulse", t=0)
-
-            self.label(f"no_pi_{label_addition}_{i}")
-            #self.delay_auto(t=0.0)
-
-            self.delay_auto(t=12.0)
-
-        self.label(f"reset_done_{label_addition}")
+            self.label(f"skip_pi_{label_addition}_{i}")
+            self.delay_auto(t=delay1_act_reset)
 
     def _body(self, cfg):
         # Reset the unknown state left from the previous repetition.

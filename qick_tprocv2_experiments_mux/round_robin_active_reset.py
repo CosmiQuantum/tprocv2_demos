@@ -24,7 +24,7 @@ zero_qubit_drive_gain = False
 constant_zeno_pulse = True
 adapt_starked_qubit_freq = False
 wait_for_res_ring_up = True
-n= 100
+n= 1
 unmask = True
 save_r = 1                           # how many rounds to save after
 signal = 'None'                      # 'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization
@@ -52,15 +52,15 @@ run_name = 'run9d'
 device_name = '6transmon'
 substudy_txt_notes = ('testing active reset')
 
-run_flags = {"res_spec": True, "q_spec": True, "rabi": True, "ss": True, "check_ssf_theta_thresh": True,
-             "act_reset_0corr": True, "act_reset_1corr": False, "act_reset_multiple_corr": True, "act_reset_ss": True,
+run_flags = {"res_spec": False, "q_spec": False, "rabi": False, "ss": True, "check_ssf_theta_thresh": False,
+             "act_reset_0corr": False, "act_reset_1corr": False, "act_reset_multiple_corr": False, "act_reset_ss": True,
              "t1": True, "act_reset_t1": True}
-n_resets = 3 # number of active reset attempts you want to try. For T1, this must be 1 or T1 dies.
+n_resets = 10 # number of active reset attempts you want to try. For T1, this must be 1 or T1 dies.
 
 ################################################ optimization outputs ##################################################
-res_leng_vals = [5.4, 6.4, 6.2, 6.2, 6.8, 7.0]
-res_gain = [0.8164, 0.8, 0.84,0.6156, 0.8, 0.82]
-freq_offsets =[-0.2, -0.1556, -0.0667,-0.1111,-0.2111,-0.1556]
+res_leng_vals = [5.2, 6.6, 6.0, 6.8, 6.8, 7.0]
+res_gain = [0.8164, 0.8, 0.8419, 0.6156, 0.8, 0.82]
+freq_offsets =[-0.1556, -0.1111, -0.2,-0.0222,-0.2111,-0.1556]
 
 # To save how long each measurement took for each qubit
 meas_time_RR = {}
@@ -68,7 +68,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'active_reset' #qubit_checkouts, round_robin_benchmark
-sub_study = 'ssf_rabi_t1_tests' #batch2_post_1stopt_25dbDAC, opt_sigmas_gains_reps_steps
+sub_study = 'T1_issue_investigation' #batch2_post_1stopt_25dbDAC, opt_sigmas_gains_reps_steps
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):

@@ -160,7 +160,7 @@ class AmplitudeRabiExperiment:
             amp_rabi = RabiWithActiveReset(
                 self.experiment.soccfg,
                 reps=self.config['reps'],
-                final_delay=2,
+                final_delay=1,
                 cfg=self.config
             )  # self.config['relax_delay']
 
@@ -2425,51 +2425,25 @@ class RabiWithActiveReset(AveragerProgramV2):
 
         self.add_loop("gainloop", cfg["steps"])
 
-    def _active_reset_block(self, cfg, prefix):
+    def _active_reset_block(self, cfg, label_addition = ""):
         ############################### Simple Active reset, no verification ###############################################
-        n_resets = cfg.get("n_resets", 1)
-        print("n_resets Rabi block:", n_resets)
+        n_resets = cfg.get("n_resets", 3)
+        ro_ch_this = cfg["ro_ch"][0]
+        res_length_cycles = self.soccfg.us2cycles(us=cfg["res_length"], ro_ch=ro_ch_this)
+        threshold_raw = int(round(cfg["threshold"] * res_length_cycles))
+        delay1_act_reset = cfg.get("delay1_act_reset", 6.0)
 
         for i in range(n_resets):
-            skip_label = f"skip_reset_{prefix}_{i}"
-
             self.pulse(ch=cfg["res_ch"], name="res_pulse", t=0)
-            self.trigger(
-                ros=cfg["ro_ch"],
-                pins=[0],
-                t=cfg["trig_time"]
-            )
-
+            self.trigger(ros=cfg["ro_ch"], pins=[0], t=cfg["trig_time"])
             self.wait_auto(0.0, gens=True, ros=True)
             self.resync()
             self.delay_auto(t=0.0)
-
-            threshold_raw = int(
-                np.round(
-                    cfg["threshold"]
-                    * self.soccfg.us2cycles(
-                        cfg["res_length"],
-                        ro_ch=self.active_reset_ro_ch
-                    )
-                )
-            )
-
-            self.read_and_jump(
-                ro_ch=self.active_reset_ro_ch,
-                component="I",
-                threshold=threshold_raw,
-                test="<",
-                label=skip_label
-            )
-
-            self.pulse(
-                ch=cfg["qubit_ch"],
-                name="qubit_pulse",
-                t=0
-            )
-
-            self.label(skip_label)
-            self.delay_auto(t=12)
+            self.read_and_jump(ro_ch=ro_ch_this, component="I", threshold=threshold_raw, test="<",
+                               label=f"skip_pi_{label_addition}_{i}")
+            self.pulse(ch=cfg["qubit_ch"], name="qubit_pulse", t=0)
+            self.label(f"skip_pi_{label_addition}_{i}")
+            self.delay_auto(t=delay1_act_reset)
 
         ############################################# multi-correction version, for cases with crappy SSF #################################
         # n_resets = cfg.get('n_resets', 0)

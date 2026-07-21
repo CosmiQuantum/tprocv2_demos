@@ -102,9 +102,12 @@ class QICK_experiment:
                 "res_ring_up_time": 4,  # Olivia May 17th
                 "qubit_is_in_g_threshold": 100000, #100000,#-8837,
                 "edge_of_e_state_threshold": -26046,
-                "n_resets": 3,  # for active reset
+                "n_resets": 1,  # for active reset
                 "g_center": 0,  # for active reset
                 "e_center": 0,  # for active reset
+                "delay1_act_reset": 6, # for active reset, delay after the correction block, before the verification block
+                "delay2_act_reset": 6 # delay at the end of the entire active reset block
+
             }
 
             # Qubit Configuration
