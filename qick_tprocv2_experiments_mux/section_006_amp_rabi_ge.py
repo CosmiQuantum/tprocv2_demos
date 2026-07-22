@@ -291,6 +291,7 @@ class AmplitudeRabiExperiment:
             batch_num,
             active_reset_comparison_runs):
 
+        t0 = time.perf_counter()
         self.experiment.readout_cfg['n_resets'] = n_resets
 
         # Important: refresh this object's config after changing readout_cfg
@@ -314,6 +315,28 @@ class AmplitudeRabiExperiment:
             I_shots_rabi_corr,
             Q_shots_rabi_corr,
         ) = self.run_active_reset(scaling=True)
+
+        values_to_check = [
+            rabi_I_corrected,
+            rabi_Q_corrected,
+            rabi_gains_corrected,
+            rabi_fit_corrected,
+            pi_amp_corrected,
+            ss_Q_e,
+            ss_Q_g,
+            ss_I_e,
+            ss_I_g,
+            I_shots_rabi_corr,
+            Q_shots_rabi_corr,
+        ]
+
+        if any(value is None for value in values_to_check):
+            raise ValueError("Active-reset Rabi returned None.")
+
+        if not all(np.all(np.isfinite(value)) for value in values_to_check):
+            raise ValueError("Active-reset Rabi returned NaN or inf.")
+
+        end_time = time.perf_counter()
 
         active_reset_comparison_runs.append({
             "label": f"{n_resets} active reset" if n_resets == 1 else f"{n_resets} active resets",
@@ -360,20 +383,7 @@ class AmplitudeRabiExperiment:
         del saver_rabi
         del rabi_data
 
-        return (
-            rabi_I_corrected,
-            rabi_Q_corrected,
-            rabi_gains_corrected,
-            rabi_fit_corrected,
-            pi_amp_corrected,
-            sys_config_rabi_corrected,
-            ss_Q_e,
-            ss_Q_g,
-            ss_I_e,
-            ss_I_g,
-            I_shots_rabi_corr,
-            Q_shots_rabi_corr,
-        )
+        return t0, end_time
 
     def fit_cosine_iminuit(self, x, y, p0, fix_b=None, fix_c=None):
         """
@@ -2527,8 +2537,6 @@ class RabiWithActiveResetControlTest(AveragerProgramV2):
         res_ch = cfg['res_ch']
         qubit_ch = cfg['qubit_ch']
 
-        # 216/mux change:
-        # Declare muxed resonator generator instead of scalar readout config.
         self.declare_gen(
             ch=res_ch,
             nqz=cfg['nqz_res'],
@@ -2539,8 +2547,6 @@ class RabiWithActiveResetControlTest(AveragerProgramV2):
             mixer_freq=cfg['mixer_freq']
         )
 
-        # 216/mux change:
-        # Declare every readout channel.
         for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(
                 ch=ch,
@@ -2550,8 +2556,6 @@ class RabiWithActiveResetControlTest(AveragerProgramV2):
                 gen_ch=res_ch
             )
 
-        # 216/mux change:
-        # Muxed resonator pulse uses mask, not scalar freq/phase/gain.
         self.add_pulse(
             ch=res_ch,
             name="res_pulse",
@@ -2574,14 +2578,6 @@ class RabiWithActiveResetControlTest(AveragerProgramV2):
             even_length=False
         )
 
-        self.add_gauss(
-            ch=qubit_ch,
-            name="ramp_rabi",
-            sigma=cfg['active_reset_test_sigma'],
-            length=cfg['active_reset_test_sigma'] * 4,
-            even_length=False
-        )
-
         self.add_pulse(
             ch=qubit_ch,
             name="qubit_pulse",
@@ -2592,33 +2588,10 @@ class RabiWithActiveResetControlTest(AveragerProgramV2):
             gain=cfg['qubit_gain_ge']
         )
 
-        self.add_pulse(
-            ch=qubit_ch,
-            name="pi_pulse",
-            style="arb",
-            envelope="ramp",
-            freq=cfg['qubit_freq_ge'],
-            phase=cfg['qubit_phase'],
-            gain=cfg['pi_amp']
-        )
-
-        print('cfg[threshold]: ', cfg['threshold'])
-        print('cfg[pi_amp]: ', cfg['pi_amp'])
-
         self.add_loop("gainloop", cfg["steps"])
 
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
         self.delay_auto(t=0.0, tag='waiting')
-
-        # self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
-        # self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
-        # self.delay_auto(t=0)
-        # self.pulse(ch=self.cfg["qubit_ch"], name="pi_pulse", t=0)
-        # self.delay_auto(t=0)
-
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play readout pulse
-
-        # 216/mux change:
-        # Trigger all muxed readout channels.
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
