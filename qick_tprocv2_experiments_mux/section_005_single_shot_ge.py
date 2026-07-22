@@ -211,13 +211,13 @@ class SingleShot:
             fid, angle, thresh, g_center, e_center = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex, active_reset=active_reset)
 
             ############################## Diagnostic Plot: Raw Shots and raw threshold ######################
-            ro_ch_this = self.config["ro_ch"][self.QubitIndex]
-            res_length_cycles = self.experiment.soccfg.us2cycles(us=self.config["res_length"], ro_ch=ro_ch_this)
-            threshold_raw = int(round(thresh * res_length_cycles))
-            raw_ssf_folder = os.path.join(self.outerFolder, "raw_ssf_threshold_diagnostics")
-            self.plot_raw_ssf_shots_with_threshold(raw_g=raw_g, raw_e=raw_e, threshold_raw=threshold_raw,
-                                                   QubitIndex=self.QubitIndex, readout_index=-1,
-                                                   save_folder=raw_ssf_folder, show_plot=False, print_summary=True)
+            # ro_ch_this = self.config["ro_ch"][self.QubitIndex]
+            # res_length_cycles = self.experiment.soccfg.us2cycles(us=self.config["res_length"], ro_ch=ro_ch_this)
+            # threshold_raw = int(round(thresh * res_length_cycles))
+            # raw_ssf_folder = os.path.join(self.outerFolder, "raw_ssf_threshold_diagnostics")
+            # self.plot_raw_ssf_shots_with_threshold(raw_g=raw_g, raw_e=raw_e, threshold_raw=threshold_raw,
+            #                                        QubitIndex=self.QubitIndex, readout_index=-1,
+            #                                        save_folder=raw_ssf_folder, show_plot=False, print_summary=True)
             ######################################################################################################3
 
             return fid, angle, thresh, iq_list_g, iq_list_e, self.config, measurement_timestamp, g_center, e_center
@@ -272,8 +272,8 @@ class SingleShot:
             self.logger.info('Optimal fidelity after rotation = %.3f' % fid)
             self.logger.info('Optimal angle after rotation = %f' % angle)
 
-            print("iq_g shape:", iq_g.shape)
-            print("iq_e shape:", iq_e.shape)
+            # print("iq_g shape:", iq_g.shape)
+            # print("iq_e shape:", iq_e.shape)
 
             return fid, angle, threshold, g_center, e_center
         else:
@@ -292,10 +292,10 @@ class SingleShot:
                                                                       cfg=self.config, plot=self.save_figs,
                                                                       fig_quality=fig_quality,
                                                                       return_centers=return_centers)
-                if self.verbose: print('Optimal fidelity after rotation = %.3f' % fid)
-                if self.verbose: print('Optimal angle after rotation = %f' % angle)
-                self.logger.info('Optimal fidelity after rotation = %.3f' % fid)
-                self.logger.info('Optimal angle after rotation = %f' % angle)
+                if self.verbose: print('Fidelity after rotation = %.3f' % fid)
+                if self.verbose: print('Angle after rotation = %f' % angle)
+                self.logger.info('SSF Fidelity after rotation = %.3f' % fid)
+                self.logger.info('SSF Angle after rotation = %f' % angle)
                 return fid, angle, threshold
 
     def plot_raw_ssf_shots_with_threshold(
@@ -560,6 +560,8 @@ class SingleShot:
             fig_quality=100,
             file_ext=""):
 
+        n_resets = cfg["n_resets"]
+
         ig = data[0]
         qg = data[1]
         ie = data[2]
@@ -686,10 +688,10 @@ class SingleShot:
         # Use the threshold from the config file instead of finding a new one.
         threshold = cfg["threshold"] # use the threshold in the system config as is
 
-        # # add a small offset to it
-        threshold_offset = 20 # this was chosen by Arianna after looking at scans by eye and comparing active reset results
-        threshold += threshold_offset
-        print(f'Active reset threshold got a +{threshold_offset} offset. Previous: {threshold-threshold_offset}. New: {threshold}.')
+        # # add a small offset to it. I commented this out because now I do it in the RR script before this measurement
+        # threshold_offset = 20 # this was chosen by Arianna after looking at scans by eye and comparing active reset results
+        # threshold += threshold_offset
+        # print(f'Active reset threshold got a +{threshold_offset} offset. Previous: {threshold-threshold_offset}. New: {threshold}.')
 
         # Find the histogram bin closest to the config threshold.
         tind = np.argmin(np.abs(binsg[:-1] - threshold))
@@ -739,10 +741,10 @@ class SingleShot:
 
             file_name = os.path.join(
                 outerFolder_expt,
-                f"Reset_R_{self.round_num}_"
+                f"ActReset_Round{self.round_num}_{n_resets}corr_"
                 f"Q_{self.QubitIndex + 1}_"
                 f"{formatted_datetime}_"
-                f"{self.expt_name}_"
+                f"SSF_ge_"
                 f"{file_ext}.png"
             )
 
@@ -844,7 +846,7 @@ class SingleShot:
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
 
-            file_name = os.path.join(outerFolder_expt,f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_{file_ext}.png")
+            file_name = os.path.join(outerFolder_expt,f"Round{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_SSF_ge" + f"_{file_ext}.png")
 
             axs[2].axvline(threshold, color='k', linestyle='--')
             axs[2].set_title(f"Q{QubitIndex + 1} Fidelity = {fid * 100:.2f}%")

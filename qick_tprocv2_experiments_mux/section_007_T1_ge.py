@@ -146,7 +146,7 @@ class T1Measurement:
                 q1_fit_exponential, T1_est, T1_err = None, None, None
 
             if self.plot_results:
-                self.plot_results_active_reset(I, Q, delay_times)
+                self.plot_results_active_reset(I, Q, delay_times, config = self.config)
 
             if self.save_shots:
                 raw_0 = t1.get_raw()
@@ -159,15 +159,16 @@ class T1Measurement:
                 res_length_cycles = self.experiment.soccfg.us2cycles(us=self.config["res_length"], ro_ch=ro_ch_this)
                 threshold_raw = int(round(self.config["threshold"] * res_length_cycles))
                 diagnostic_folder = os.path.join(self.outerFolder, "T1_ge_active_reset","decision_threshold_diagnostics")
-                self.plot_first_delay_reset_decision_shots(
+                self.plot_delay_reset_decision_shots(
                     raw_q=raw_q,
                     decision_threshold=threshold_raw,
+                    n_resets=self.config["n_resets"],
                     delay_times=delay_times,
                     delay_index=1,
                     decision_readout_index=0,
                     save_folder=diagnostic_folder,
                     show_plot=False,
-                    print_summary=True)
+                    print_summary=False)
 
                 ##########################################################
                 Ishots = raw_q[:, :, -1, 0]
@@ -292,10 +293,10 @@ class T1Measurement:
             else:
                 curve_label = run["label"]
 
-            color = "C0" if comparison_runs.index(run) == 0 else "C2"
-            ax.plot(x, y, marker="o", markersize=3, linewidth=1.5, color=color, label=curve_label)
+            color = f"C{comparison_runs.index(run)}"
+            ax.plot(x, y, marker="o", markersize=3, linewidth=1.5, label=curve_label, color=color)
             if fit_curve is not None and fit_curve.shape == y.shape:
-                ax.plot(x, fit_curve, "--", linewidth=2,color=color)
+                ax.plot(x, fit_curve, "--", linewidth=2, color=color) #color=color
 
         ax.set_xlabel("Delay time (us)", fontsize=14)
         ax.set_ylabel(f"{signal_to_plot} amplitude (a.u.)", fontsize=14)
@@ -310,7 +311,7 @@ class T1Measurement:
         fig.tight_layout()
 
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = os.path.join(save_folder, f"Q{QubitIndex + 1}_{filename_tag}_{timestamp}.png")
+        file_name = os.path.join(save_folder, f"Q{QubitIndex + 1}_{filename_tag}_{timestamp}.pdf")
         fig.savefig(file_name, dpi=150, bbox_inches="tight")
         plt.close(fig)
 
@@ -550,6 +551,7 @@ class T1Measurement:
         return q1_fit_exponential, T1_err, T1_est, plot_sig
 
     def plot_results(self, I, Q, delay_times, config = None, fig_quality =100):
+
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
@@ -620,6 +622,11 @@ class T1Measurement:
         plt.close(fig)
 
     def plot_results_active_reset(self, I, Q, delay_times, config = None, fig_quality =100):
+        if config is None:
+            n_resets = "undefined"
+        else:
+            n_resets = config.get("n_resets")
+
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
@@ -683,19 +690,20 @@ class T1Measurement:
             self.create_folder_if_not_exists(outerFolder_expt)
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-            file_name = os.path.join(outerFolder_expt, f"Reset_R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
+            file_name = os.path.join(outerFolder_expt, f"Reset_Round{self.round_num}_{n_resets}corr" + f"_Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
             fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
 
-    def plot_first_delay_reset_decision_shots(
+    def plot_delay_reset_decision_shots(
             self,
             raw_q,
             decision_threshold,
+            n_resets,
             delay_times=None,
             delay_index=0,
             decision_readout_index=0,
             save_folder=None,
-            filename_tag="T1_first_delay_reset_decision",
+            filename_tag="T1_reset_decision_delay_idx",
             show_plot=False,
             print_summary=True):
         """
@@ -801,6 +809,7 @@ class T1Measurement:
 
         if print_summary:
             print("\n--- Active-reset decision-shot diagnostic ---")
+            print(f"Corrections: {n_resets}")
             print("raw_q shape:", raw_q.shape)
             print("T1 delay:", delay_text)
             print("Decision readout index:", decision_readout_index)
@@ -892,7 +901,7 @@ class T1Measurement:
             timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             file_name = os.path.join(
                 save_folder,
-                f"Q{self.QubitIndex + 1}_{filename_tag}_{timestamp}.png"
+                f"Q{self.QubitIndex + 1}_Round{self.round_num}_{n_resets}corr_{filename_tag}{delay_index}_{timestamp}.pdf"
             )
 
             fig.savefig(file_name, dpi=150, bbox_inches="tight")
@@ -904,20 +913,6 @@ class T1Measurement:
             plt.show()
         else:
             plt.close(fig)
-
-        return {
-            "I_decision_raw": I_decision,
-            "Q_decision_raw": Q_decision,
-            "threshold_raw": threshold_raw,
-            "delay_index": delay_index,
-            "delay_value_us": delay_value,
-            "decision_readout_index": resolved_readout_index,
-            "ground_like_mask": ground_like,
-            "correction_needed_mask": correction_needed,
-            "ground_like_fraction": ground_fraction,
-            "correction_needed_fraction": correction_fraction,
-            "file_name": file_name,
-        }
 
 
 class T1Program_active_reset(AveragerProgramV2):

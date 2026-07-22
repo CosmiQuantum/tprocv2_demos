@@ -107,7 +107,6 @@ class QICK_experiment:
                 "e_center": 0,  # for active reset
                 "delay1_act_reset": 10,
                 "delay2_act_reset": 1
-
             }
 
             # Qubit Configuration

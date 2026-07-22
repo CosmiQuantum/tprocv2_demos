@@ -625,10 +625,10 @@ class AmplitudeRabiExperiment:
         plt.tight_layout()
 
         now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        comparison_file = os.path.join(
-            save_folder,
-            f"Q_{QubitIndex + 1}_{filename_tag}_{now}.png"
-        )
+
+        folder_plts = os.path.join(save_folder, "power_rabi_ge_active_reset", "rabi_curves_comparison")
+        self.create_folder_if_not_exists(folder_plts)
+        comparison_file = os.path.join(folder_plts,f"Q{QubitIndex + 1}_{filename_tag}_{now}.png")
 
         fig.savefig(comparison_file, dpi=fig_quality, bbox_inches="tight")
         plt.close(fig)
@@ -963,16 +963,7 @@ class AmplitudeRabiExperiment:
 
             # -------------------- Save --------------------
             if self.save_figs:
-                if hasattr(self, "correction") and self.correction:
-                    outerFolder_expt = os.path.join(
-                        self.outerFolder,
-                        self.expt_name + '_correction' + "_plots"
-                    )
-                else:
-                    outerFolder_expt = os.path.join(
-                        self.outerFolder,
-                        self.expt_name + f"_{n_resets}corr"
-                    )
+                outerFolder_expt = os.path.join(self.outerFolder,self.expt_name + f"_active_reset")
 
                 self.create_folder_if_not_exists(outerFolder_expt)
 
@@ -981,13 +972,12 @@ class AmplitudeRabiExperiment:
 
                 file_name = os.path.join(
                     outerFolder_expt,
-                    f"R_{self.round_num}_"
-                    + f"Q_{self.QubitIndex + 1}_"
-                    + f"{formatted_datetime}_"
+                    f"Round{self.round_num}_"
+                    + f"Q{self.QubitIndex + 1}_"
                     + self.expt_name
-                    + f"_q{self.QubitIndex + 1}"
                     + file_ext
-                    + "_scaled.png"
+                    + f"_scaled_{n_resets}corr"
+                    + f"_{formatted_datetime}.png"
                 )
 
                 fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
