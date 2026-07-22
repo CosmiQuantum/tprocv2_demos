@@ -105,8 +105,8 @@ class QICK_experiment:
                 "n_resets": 1,  # for active reset
                 "g_center": 0,  # for active reset
                 "e_center": 0,  # for active reset
-                "delay1_act_reset": 10, # 10
-                "delay2_act_reset": 1 # 1
+                "delay1_act_reset": 10,
+                "delay2_act_reset": 1
 
             }
 
