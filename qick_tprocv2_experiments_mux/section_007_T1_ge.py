@@ -114,25 +114,27 @@ class T1Measurement:
             else:
                 iq_list = t1.acquire(self.experiment.soc, soft_avgs=self.config['rounds'], progress=True)
 
-                iq_q = np.asarray(iq_list[self.QubitIndex])
-                print("Processed IQ shape:", iq_q.shape)
-                print("Number of T1 points:", self.config["steps"])
+            iq_q = np.asarray(iq_list[self.QubitIndex])
+            # print("Processed IQ shape:", iq_q.shape)
+            # print("Number of T1 points:", self.config["steps"])
+            if iq_q.ndim != 3 or iq_q.shape[-1] != 2:
+                raise ValueError(f"Expected processed IQ shape (readout, delay, IQ), got {iq_q.shape}")
 
-                I = iq_q[-1, :, 0]
-                Q = iq_q[-1, :, 1]
-                delay_times = t1.get_time_param('wait', "t", as_array=True)
+            I = iq_q[-1, :, 0]
+            Q = iq_q[-1, :, 1]
+            delay_times = t1.get_time_param('wait', "t", as_array=True)
 
-                # # plots all of the stored indices throughout the active reset pipeline
-                # fig, ax = plt.subplots(figsize=(10, 6))
-                # for read_idx in range(iq_q.shape[0]):
-                #     ax.plot(delay_times, iq_q[read_idx, :, 0], label=f"Readout {read_idx}")
-                # ax.set_xlabel("Delay time (us)")
-                # ax.set_ylabel("I (a.u.)")
-                # ax.legend()
-                # plt.tight_layout()
-                # debug_file = os.path.join(self.outerFolder, f"active_reset_T1_all_readouts_Q{self.QubitIndex + 1}.png")
-                # fig.savefig(debug_file, dpi=150, bbox_inches="tight")
-                # plt.close(fig)
+            # # plots all of the stored indices throughout the active reset pipeline
+            # fig, ax = plt.subplots(figsize=(10, 6))
+            # for read_idx in range(iq_q.shape[0]):
+            #     ax.plot(delay_times, iq_q[read_idx, :, 0], label=f"Readout {read_idx}")
+            # ax.set_xlabel("Delay time (us)")
+            # ax.set_ylabel("I (a.u.)")
+            # ax.legend()
+            # plt.tight_layout()
+            # debug_file = os.path.join(self.outerFolder, f"active_reset_T1_all_readouts_Q{self.QubitIndex + 1}.png")
+            # fig.savefig(debug_file, dpi=150, bbox_inches="tight")
+            # plt.close(fig)
 
             measurement_timestamp = time.mktime(datetime.datetime.now().timetuple())
 
@@ -148,21 +150,38 @@ class T1Measurement:
             if self.plot_results:
                 self.plot_results_active_reset(I, Q, delay_times, config = self.config)
 
+            Ishots = Qshots = None
+            first_dec_Ishots = first_dec_Qshots = None
+            last_dec_Ishots = last_dec_Qshots = None
+
+            angle_used = float(self.config["ro_phase"][self.QubitIndex])
+            n_resets = self.config["n_resets"]
+            if not isinstance(n_resets, (int, np.integer)):
+                raise TypeError(f"n_resets must be an integer, got {type(n_resets).__name__}: {n_resets}")
+
+            ro_ch_this = self.config["ro_ch"][0]
+            res_length_cycles = self.experiment.soccfg.us2cycles(us=self.config["res_length"], ro_ch=ro_ch_this)
+            threshold_raw = int(round(self.config["threshold"] * res_length_cycles))
+
             if self.save_shots:
                 raw_0 = t1.get_raw()
                 raw_q = np.asarray(raw_0[self.QubitIndex])
 
-                ###########################################################
+                if raw_q.ndim != 4 or raw_q.shape[-1] != 2:
+                    raise ValueError(f"Expected raw IQ shape (delay, reps, readout, IQ), got {raw_q.shape}")
+
+                expected_readouts = n_resets + 1
+                if raw_q.shape[2] != expected_readouts:
+                    raise ValueError(
+                        f"Expected {expected_readouts} readouts for n_resets={n_resets}, got {raw_q.shape[2]}. Full shape: {raw_q.shape}")
+
+                ############################################################################
                 # Diagnostic plot to see threshold used with all shots for one relax delay step
-                # This must be exactly the same numerical threshold passed to read_and_jump().
-                ro_ch_this = self.config["ro_ch"][0]
-                res_length_cycles = self.experiment.soccfg.us2cycles(us=self.config["res_length"], ro_ch=ro_ch_this)
-                threshold_raw = int(round(self.config["threshold"] * res_length_cycles))
                 diagnostic_folder = os.path.join(self.outerFolder, "T1_ge_active_reset","decision_threshold_diagnostics")
                 self.plot_delay_reset_decision_shots(
                     raw_q=raw_q,
                     decision_threshold=threshold_raw,
-                    n_resets=self.config["n_resets"],
+                    n_resets=n_resets,
                     delay_times=delay_times,
                     delay_index=1,
                     decision_readout_index=0,
@@ -170,12 +189,16 @@ class T1Measurement:
                     show_plot=False,
                     print_summary=False)
 
-                ##########################################################
+                ##############################################################################
                 Ishots = raw_q[:, :, -1, 0]
                 Qshots = raw_q[:, :, -1, 1]
-                return T1_est, T1_err, I, Q, Ishots, Qshots, delay_times, q1_fit_exponential, self.config, measurement_timestamp
-            else:
-                return T1_est, T1_err, I, Q, None, None, delay_times, q1_fit_exponential, self.config, measurement_timestamp
+                first_dec_Ishots = raw_q[:, :, 0, 0]
+                first_dec_Qshots = raw_q[:, :, 0, 1]
+                last_dec_Ishots = raw_q[:, :, n_resets - 1, 0]
+                last_dec_Qshots = raw_q[:, :, n_resets - 1, 1]
+
+            return (T1_est, T1_err, I, Q, Ishots, Qshots, delay_times, q1_fit_exponential, self.config, measurement_timestamp,
+                    angle_used, threshold_raw, res_length_cycles, n_resets, first_dec_Ishots, first_dec_Qshots, last_dec_Ishots, last_dec_Qshots)
 
         else: # standard non-active reset code
             t1 = T1Program(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)

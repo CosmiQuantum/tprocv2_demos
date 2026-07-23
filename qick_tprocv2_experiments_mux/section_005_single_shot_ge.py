@@ -202,13 +202,20 @@ class SingleShot:
 
             ssp_e = SingleShotProgram_e_active_reset(self.experiment.soccfg, reps=1, final_delay=0.01,cfg=self.config)
             iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=True)
-            arr = np.asarray(iq_list_e)
 
             raw_g = ssp_g.get_raw()
             raw_e = ssp_e.get_raw()
 
             measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
             fid, angle, thresh, g_center, e_center = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex, active_reset=active_reset)
+
+            n_resets = self.config["n_resets"]
+            if not isinstance(n_resets, (int, np.integer)):
+                raise TypeError(f"n_resets must be an integer, got {type(n_resets).__name__}: {n_resets}")
+
+            ro_ch_this = self.config["ro_ch"][0]
+            res_length_cycles = self.experiment.soccfg.us2cycles(us=self.config["res_length"], ro_ch=ro_ch_this)
+            threshold_raw = int(round(self.config["threshold"] * res_length_cycles))
 
             ############################## Diagnostic Plot: Raw Shots and raw threshold ######################
             # ro_ch_this = self.config["ro_ch"][self.QubitIndex]
@@ -220,7 +227,8 @@ class SingleShot:
             #                                        save_folder=raw_ssf_folder, show_plot=False, print_summary=True)
             ######################################################################################################3
 
-            return fid, angle, thresh, iq_list_g, iq_list_e, self.config, measurement_timestamp, g_center, e_center
+            return (fid, angle, thresh, iq_list_g, iq_list_e, raw_g, raw_e, self.config, measurement_timestamp, g_center, e_center,
+            threshold_raw, res_length_cycles, n_resets)
 
         else:
             ssp_g = SingleShotProgram_g(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)

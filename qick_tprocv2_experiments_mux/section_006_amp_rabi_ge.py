@@ -127,7 +127,6 @@ class AmplitudeRabiExperiment:
         return {Q: {key: np.empty(save_r, dtype=object) for key in keys} for Q in range(len(qs))}
 
     def run_active_reset(self, scaling=True, control_test=False):
-        # 216/mux change:
         # Store which qubit/readout channel should be used for the active-reset threshold decision.
         self.config["active_reset_qidx"] = self.QubitIndex
 
@@ -154,99 +153,58 @@ class AmplitudeRabiExperiment:
                 self.experiment.soccfg,
                 reps=self.config['reps'],
                 final_delay=self.config['relax_delay'],
-                cfg=self.config
-            )
+                cfg=self.config)
         else:
             amp_rabi = RabiWithActiveReset(
                 self.experiment.soccfg,
                 reps=self.config['reps'],
                 final_delay=0.01,
-                cfg=self.config
-            )  # self.config['relax_delay']
+                cfg=self.config) 
 
-        iq_list = amp_rabi.acquire(
-            self.experiment.soc,
-            soft_avgs=self.config["rounds"],
-            progress=self.qick_verbose
-        )
-
+        iq_list = amp_rabi.acquire(self.experiment.soc,soft_avgs=self.config["rounds"],progress=self.qick_verbose)
         gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
+        iq_q = np.asarray(iq_list[self.QubitIndex])
 
-        # 216/mux change:
-        # Use this qubit's readout channel instead of hard-coded channel 0.
-        iq_list = np.array(iq_list[self.QubitIndex])
+        if iq_q.ndim != 3 or iq_q.shape[-1] != 2:
+            raise ValueError(f"Expected processed IQ shape (readout, gain, IQ), got {iq_q.shape}")
 
-        print(iq_list.shape)
-        n_reads = iq_list.shape[0]
+        I = iq_q[-1, :, 0]
+        Q = iq_q[-1, :, 1]
 
-        #if scaling and (not control_test) and self.config.get("n_resets", 0) == 1 and n_reads >= 2:
-            # Function currently set up to compare curves for 1 correction case only (compares before and after it)
-            # This does not change your return tuple or H5 saving. It just saves an extra diagnostic plot for the active-reset run.
-            # Expectation:
-            # Before correction: Rabi-like curve
-            # After correction: lower / flatter curve
+        angle_used = float(self.config["ro_phase"][self.QubitIndex])
+        n_resets = self.config["n_resets"]
+        if not isinstance(n_resets, (int, np.integer)):
+            raise TypeError(f"n_resets must be an integer, got {type(n_resets).__name__}: {n_resets}")
 
-            # self.plot_active_reset_pre_post_reads( # need to debug
-            #     iq_list=iq_list,
-            #     gains=gains,
-            #     ss_I_e=ss_I_e,
-            #     ss_I_g=ss_I_g,
-            #     ss_Q_e=ss_Q_e,
-            #     ss_Q_g=ss_Q_g,
-            #     save_folder=os.path.join(
-            #         self.outerFolder,
-            #         self.expt_name + f"_active_reset_{self.config['n_resets']}corr_diagnostics"
-            #     ),
-            #     filename_tag="pre_post_read_check",
-            #     ylim=None,
-            #     show=False,
-            #     verbose=self.verbose,
-            # )
-
-            # self.plot_all_active_reset_reads( # need to debug
-            #     iq_list=iq_list,
-            #     gains=gains,
-            #     ss_I_e=ss_I_e,
-            #     ss_I_g=ss_I_g,
-            #     ss_Q_e=ss_Q_e,
-            #     ss_Q_g=ss_Q_g,
-            #     save_folder=os.path.join(
-            #         self.outerFolder,
-            #         self.expt_name + f"_active_reset_{self.config['n_resets']}corr_diagnostics"
-            #     ),
-            # )
-
-        I = iq_list[-1, :, 0]
-        Q = iq_list[-1, :, 1]
+        ro_ch_this = self.config["ro_ch"][0]
+        res_length_cycles = self.experiment.soccfg.us2cycles(us=self.config["res_length"], ro_ch=ro_ch_this)
+        threshold_raw = int(round(self.config["threshold"] * res_length_cycles))
 
         raw = amp_rabi.get_raw()
+        raw_q = np.asarray(raw[self.QubitIndex])
 
-        # 216/mux change:
-        # Use this qubit's raw readout data instead of hard-coded channel 0.
-        measurement_raw = raw[self.QubitIndex][:, :, -1, :]  # (reps, steps, 2)  always the last read
+        if raw_q.ndim != 4 or raw_q.shape[-1] != 2:
+            raise ValueError(f"Expected raw IQ shape (reps, gains, readout, IQ), got {raw_q.shape}")
 
-        I_shots = measurement_raw[:, :, 0]
-        Q_shots = measurement_raw[:, :, 1]
+        expected_readouts = 1 if control_test else 2 * n_resets + 1
+        if raw_q.shape[2] != expected_readouts:
+            raise ValueError(
+                f"Expected {expected_readouts} readouts for n_resets={n_resets}, got {raw_q.shape[2]}. Full shape: {raw_q.shape}")
+        
+        # raw array has an extra readout axis in the active-reset program, that is why this is different from regular run() func
+        I_shots = raw_q[:, :, -1, 0]
+        Q_shots = raw_q[:, :, -1, 1]
 
-        if scaling:
-            q1_fit_cosine, pi_amp = self.plot_results_scaled_iminuit(
-                I,
-                Q,
-                gains,
-                Ie=ss_I_e,
-                Ig=ss_I_g,
-                Qe=ss_Q_e,
-                Qg=ss_Q_g,
-                config=self.config,
-                n_resets = self.config['n_resets']
-            )
-        else:
-            q1_fit_cosine, pi_amp = self.plot_results(I, Q, gains, config=self.config, use_iminuit_instead = True)
+        if len(I) != len(gains) or len(Q) != len(gains):
+            raise ValueError(f"Rabi data lengths do not match: I={len(I)}, Q={len(Q)}, gains={len(gains)}")
 
         if scaling:
-            return I, Q, gains, q1_fit_cosine, pi_amp, self.config, ss_Q_e, ss_Q_g, ss_I_e, ss_I_g, I_shots, Q_shots
+            q1_fit_cosine, pi_amp = self.plot_results_scaled_iminuit(I, Q, gains, Ie=ss_I_e, Ig=ss_I_g, Qe=ss_Q_e,
+                                                                     Qg=ss_Q_g, config=self.config, n_resets=n_resets)
+            return I, Q, gains, q1_fit_cosine, pi_amp, self.config, ss_Q_e, ss_Q_g, ss_I_e, ss_I_g, I_shots, Q_shots, angle_used, threshold_raw, res_length_cycles, n_resets
         else:
-            return I, Q, gains, q1_fit_cosine, pi_amp, self.config, I_shots, Q_shots
+            q1_fit_cosine, pi_amp = self.plot_results(I, Q, gains, config=self.config, use_iminuit_instead=True)
+            return I, Q, gains, q1_fit_cosine, pi_amp, self.config, I_shots, Q_shots, angle_used, threshold_raw, res_length_cycles, n_resets
 
     def live_plotting(self, amp_rabi, thresholding):
         I = Q = expt_mags = expt_phases = expt_pop = None
@@ -294,7 +252,6 @@ class AmplitudeRabiExperiment:
         t0 = time.perf_counter()
         self.experiment.readout_cfg['n_resets'] = n_resets
 
-        # Important: refresh this object's config after changing readout_cfg
         q_config = all_qubit_state(self.experiment, self.number_of_qubits)
         self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
         self.config = {**q_config[self.Qubit], **self.exp_cfg}
@@ -314,6 +271,10 @@ class AmplitudeRabiExperiment:
             ss_I_g,
             I_shots_rabi_corr,
             Q_shots_rabi_corr,
+            angle_used_rabi,
+            threshold_raw_rabi,
+            res_length_cycles_rabi,
+            n_resets_rabi
         ) = self.run_active_reset(scaling=True)
 
         values_to_check = [
@@ -328,6 +289,10 @@ class AmplitudeRabiExperiment:
             ss_I_g,
             I_shots_rabi_corr,
             Q_shots_rabi_corr,
+            angle_used_rabi,
+            threshold_raw_rabi,
+            res_length_cycles_rabi,
+            n_resets_rabi
         ]
 
         if any(value is None for value in values_to_check):
@@ -366,6 +331,10 @@ class AmplitudeRabiExperiment:
         rabi_data[self.QubitIndex]['ss_I_g'][save_idx] = ss_I_g
         rabi_data[self.QubitIndex]['I_shots'][save_idx] = I_shots_rabi_corr
         rabi_data[self.QubitIndex]['Q_shots'][save_idx] = Q_shots_rabi_corr
+        rabi_data[self.QubitIndex]['Angle'][save_idx] = angle_used_rabi
+        rabi_data[self.QubitIndex]['Threshold Raw'][save_idx] = threshold_raw_rabi
+        rabi_data[self.QubitIndex]['Res Length Cycles'][save_idx] = res_length_cycles_rabi
+        rabi_data[self.QubitIndex]['n_resets'][save_idx] = n_resets_rabi
 
         if len(active_reset_comparison_runs) >= 2:
             self.plot_active_reset_comparison(
@@ -382,6 +351,7 @@ class AmplitudeRabiExperiment:
 
         del saver_rabi
         del rabi_data
+        del q_config
 
         return t0, end_time
 
