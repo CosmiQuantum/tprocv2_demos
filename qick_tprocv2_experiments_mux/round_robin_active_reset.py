@@ -24,7 +24,7 @@ zero_qubit_drive_gain = False
 constant_zeno_pulse = True
 adapt_starked_qubit_freq = False
 wait_for_res_ring_up = True
-n= 200
+n= 100
 unmask = True
 save_r = 1                           # how many rounds to save after
 signal = 'None'                      # 'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization
@@ -55,7 +55,7 @@ substudy_txt_notes = ('testing active reset')
 
 #SSF WIL ALWAYS RUN, that is why there is NOT an optional flag for it. 
 optional_run_flags = {"res_spec": True, "q_spec": True, "rabi": True,"check_ssf_theta_thresh": False,
-             "ge_rabi_0corr": True, "ge_rabi_multiple_corr": True, "act_reset_ss": True,
+             "ge_rabi_0corr": False, "ge_rabi_multiple_corr": False, "act_reset_ss": False,
              "t1": True, "act_reset_t1": True}
 # n_resets = 9
 n_resets_list = [12]
@@ -70,7 +70,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'active_reset' #qubit_checkouts, round_robin_benchmark
-sub_study = '300_ovrnight_rnds_act_reset' #300_ovrnight_rnds_act_reset,
+sub_study = '100_rnds_T1_reg_and_actreset_final' #300_ovrnight_rnds_act_reset, #78
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -733,6 +733,8 @@ while j < n:
                 append_to_notes(
                     f"Q{QubitIndex + 1} standard T1: "
                     f"{t1_est:.2f} +/- {t1_err:.2f} us")
+
+                t1_was_succesful = True
 
             except Exception as e:
                 if debug_mode:
