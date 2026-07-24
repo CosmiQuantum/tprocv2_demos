@@ -70,10 +70,15 @@ for run_number in run_num_list:
         plots_path =  "/data/plots_temporary" #"/home/acolonce/Documents/analysis/coherence" #cosmiqserver01
 
         top_folder_dates = [
-                             # Active reset test data, ~100 rounds for comparison
-                            "100_plus_rnds_act_reset_final/2026-07-24_00-50-50",
-                            "100_plus_rnds_act_reset_final/2026-07-24_06-20-00",
-                            "100_plus_rnds_act_reset_final/2026-07-24_11-31-40"
+                             # regular T1 data AND active reset T1 data for comparison
+                            "regT1_vs_actreset_T1_12corr/"
+                            "regT1_vs_actreset_T1_12corr/"
+                            "regT1_vs_actreset_T1_12corr/"
+            
+                             # Active reset test data, ~100 rounds or active reset data only
+                            "100plus_rnds_actreset_only_12corr/2026-07-24_00-50-50",
+                            "100plus_rnds_actreset_only_12corr/2026-07-24_06-20-00",
+                            "100plus_rnds_actreset_only_12corr/2026-07-24_11-31-40"
 
         #                     # #Data PT off tests T2R and T1 only, run 9d, Jul 20 tests
         #                     #"Pre_PT_off_overnight_0720/2026-07-20_00-48-59",
