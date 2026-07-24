@@ -560,6 +560,238 @@ class T1VsTime:
         else:
             return date_times, t1_vals, res_lengths
 
+    def run_act_reset(self, return_errs=False, process_shots=False, use_png_timestamps=False):
+        import datetime
+
+        data_type = "t1_ge_active_reset_12corr"
+
+        if use_png_timestamps:
+            map_loader = load_h5_png_map()
+
+        t1_vals = {i: [] for i in range(self.number_of_qubits)}
+        t1_errs = {i: [] for i in range(self.number_of_qubits)}
+        I_per_pt_errs = {i: [] for i in range(self.number_of_qubits)}
+        Q_per_pt_errs = {i: [] for i in range(self.number_of_qubits)}
+        rounds = []
+        reps = []
+        file_names = []
+        date_times = {i: [] for i in range(self.number_of_qubits)}
+        res_lengths = {i: [] for i in range(self.number_of_qubits)}
+        mean_values = {}
+        timestamp_dir = ""
+
+        for folder_date in self.top_folder_dates:
+            if self.fridge.upper() == "QUIET":
+                timestamp_dir = f"/data/QICK_data/{self.run_name}/{folder_date}"
+                # timestamp_dir = f"/exp/cosmiq/data/QUIET/QICK_data/{self.run_name}/{folder_date}"  # CEPH
+                # timestamp_dir = fr"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\{self.run_name}\{folder_date}"
+                outerFolder = timestamp_dir + "/study_data/"
+            elif self.fridge.upper() == "NEXUS":
+                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/{folder_date}/"
+            else:
+                raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+
+            if use_png_timestamps:
+                map_path = os.path.join(timestamp_dir, "documentation/h5_png_timestamp_map.h5")
+                if os.path.exists(map_path):
+                    mapping_data = map_loader.load_map(map_path)
+                else:
+                    print(f"[INFO] Mapping file not found at {map_path}.")
+                    print("[INFO] Attempting to create a new mapping...")
+                    mapper = create_h5_png_map()
+                    try:
+                        records = mapper.collect_matches(Path(timestamp_dir))
+                        mapper.save_to_h5(Path(map_path), Path(timestamp_dir), records)
+                        mapping_data = map_loader.load_map(map_path)
+                        print(f"[INFO] Successfully created mapping at {map_path}.")
+                    except Exception as e:
+                        print(f"[WARN] Failed to create mapping: {e}")
+                        mapping_data = None
+
+            outerFolder_expt = outerFolder + "/Data_h5/t1_ge_active_reset_12corr/"
+            h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+
+            for h5_file in h5_files:
+                save_round = h5_file.split("Num_per_batch")[-1].split(".")[0]
+                H5_class_instance = Data_H5(h5_file)
+                load_data = H5_class_instance.load_from_h5(data_type=data_type, save_r=int(save_round))
+
+                exclude_dates = {
+                    datetime.date(2025, 1, 26),
+                    datetime.date(2025, 1, 29),
+                    datetime.date(2025, 1, 30),
+                    datetime.date(2025, 1, 31)
+                }
+
+                for q_key in load_data[data_type]:
+                    q_idx = int(q_key)
+
+                    if "AB_paper_data_batch1_25dB_DACatten_noQ5/2026-04-17_00-34-47" in folder_date and q_idx == 3:
+                        print(f"Skipping Q4 data due to punchout in {self.run_name}/{folder_date}")
+                        continue
+
+                    if q_idx == 4 and "run9c" in str(self.run_name).replace("\\", "/"):
+                        print(
+                            f"Skipping Q5 for run 9c in {self.run_name}. It is not usable/trustworthy due to TLS effects.",
+                            flush=True)
+                        continue
+
+                    q_data = load_data[data_type][q_key]
+
+                    for dataset in range(len(q_data.get("Dates", [])[0])):
+                        date_raw = q_data.get("Dates", [])[0][dataset]
+                        if "nan" in str(date_raw):
+                            continue
+
+                        date = datetime.datetime.fromtimestamp(date_raw)
+                        cutoff_dt = datetime.datetime(2025, 10, 24, 13, 58, 37)
+
+                        if date.date() in exclude_dates:
+                            print(f"Skipping data for {date} (excluded date)")
+                            continue
+
+                        if folder_date == "2025-10-24_01-41-30":
+                            process_shots = False
+
+                        if date < cutoff_dt:
+                            I_key, Q_key = "I", "Q"
+                        else:
+                            I_key, Q_key = "Ishots", "Qshots"
+
+                        if self.run_number in [4, 5] or (
+                                self.run_number == 6 and ("2025-02-21" in folder_date or "2025-02-22" in folder_date)):
+                            configs_dir = os.path.join(outerFolder, "Data_h5", "configs")
+                            res_length = self.get_res_length_from_old_configs(configs_dir)
+                        else:
+                            exp_config_str = q_data["Exp Config"][0][dataset].decode()
+                            syst_config_str = q_data["Syst Config"][0][dataset].decode()
+                            exp_cfg = self._safe_eval_cfg(exp_config_str)
+                            syst_cfg = self._safe_eval_cfg(syst_config_str)
+                            res_length = float(syst_cfg.get("res_length", np.nan))
+
+                        if process_shots:
+                            print("Processing active-reset T1 shots...")
+                            Ishots_raw = self.process_h5_data(q_data[I_key][0][dataset].decode())
+                            Qshots_raw = self.process_h5_data(q_data[Q_key][0][dataset].decode())
+
+                            if self.run_number == 9:
+                                soccfg_dump_path = "/exp/cosmiq/data/QUIET/QICK_data/run9/6transmon/run9_soccfg_params/soccfg_full_dump_2026-04-20_21-30-15_firmware_during_run9.txt"
+                            elif self.run_number == 8:
+                                soccfg_dump_path = "/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/run8_soccfg_params/soccfg_full_dump_2025-11-10_15-14-35_firmware_during_run8_updated.txt"
+                            elif self.run_number == 6:
+                                soccfg_dump_path = "/data/QICK_data/run6/6transmon/loud2_soccfg_params/soccfg_full_dump_2025-11-04_16-30-54_firmware_during_run6.txt"
+                            else:
+                                raise ValueError(f"Shot processing is not configured for run {self.run_number}.")
+
+                            replica = OfflineAcquireReplica(remove_offset=True, length_norm=True, edge_counting=False)
+                            replica.setup_offline_from_strings(exp_config_str, syst_config_str, soccfg_dump_path,
+                                                               qubit_index=q_idx)
+
+                            exp_cfg = replica._safe_eval_cfg(exp_config_str)
+                            syst_cfg = replica._safe_eval_cfg(syst_config_str)
+                            steps = int(syst_cfg.get("steps"))
+                            reps = int(syst_cfg.get("reps"))
+
+                            Ishots = replica.coerce_to_rounds_N_reps(Ishots_raw, steps, reps)
+                            Qshots = replica.coerce_to_rounds_N_reps(Qshots_raw, steps, reps)
+                            I, Q, I_errs, Q_errs = replica.acquire_offline(Ishots, Qshots, soft_avgs=1,
+                                                                           per_pt_errs=self.per_pt_errs)
+                        else:
+                            I = self.process_h5_data(q_data.get("I", [])[0][dataset].decode())
+                            Q = self.process_h5_data(q_data.get("Q", [])[0][dataset].decode())
+                            I_errs = None
+                            Q_errs = None
+
+                        delay_times = self.process_h5_data(q_data.get("Delay Times", [])[0][dataset].decode())
+                        round_num = q_data.get("Round Num", [])[0][dataset]
+
+                        if len(I) > 0:
+                            T1_class_instance = T1Measurement(q_idx, self.number_of_qubits, self.outerFolder_save_plots,
+                                                              round_num, self.signal, self.save_figs, fit_data=True)
+
+                            try:
+                                q1_fit_exponential, T1_err, T1_est, fit_info = T1_class_instance.t1_fit_iminuit(I, Q,
+                                                                                                                delay_times)
+                            except Exception as e:
+                                print(f"Active-reset T1 fit failed due to error: {e}")
+                                del T1_class_instance
+                                continue
+
+                            if T1_est < 0:
+                                print("The value is negative, continuing...")
+                                del T1_class_instance
+                                continue
+
+                            if T1_est > 600:
+                                print("The value is above 600 us, this is a bad fit, continuing...")
+                                del T1_class_instance
+                                continue
+
+                            t = fit_info["t"]
+                            signal = fit_info["signal"]
+                            sigma = fit_info["sigma"]
+                            flat_obj_val, d_flat = self.fit_flat_model(t, signal, sigma)
+                            k_flat = 1
+                            n = len(t)
+
+                            if sigma is not None:
+                                bic_flat = flat_obj_val + k_flat * np.log(n)
+                            else:
+                                bic_flat = n * np.log(flat_obj_val / n) + k_flat * np.log(n)
+
+                            bic_exp = fit_info["bic_score"]
+                            delta_bic = bic_flat - bic_exp
+
+                            if delta_bic < 35:
+                                continue
+
+                            # T1_class_instance.plot_results(I, Q, delay_times, folder_date, iminuit_fit_instead=True)
+
+                            # if T1_err >= 0.8 * T1_est:
+                            #     print(f"Skipping T1 = {T1_est:.3f} us because its error {T1_err:.3f} us is >= 80% of its value.")
+                            #     continue
+
+                            t1_vals[q_idx].append(T1_est)
+                            t1_errs[q_idx].append(T1_err)
+                            res_lengths[q_idx].append(res_length)
+
+                            if process_shots:
+                                I_per_pt_errs[q_idx].append(I_errs)
+                                Q_per_pt_errs[q_idx].append(Q_errs)
+
+                            if use_png_timestamps:
+                                if mapping_data is not None:
+                                    qubit_in_map = q_idx + 1
+                                    subset = map_loader.filter_by(mapping_data, experiment=data_type,
+                                                                  qubit=qubit_in_map, round=round_num)
+
+                                    if len(subset) > 0:
+                                        png_ts = subset[0]["png_timestamp"].decode()
+                                        try:
+                                            png_dt = datetime.datetime.strptime(png_ts, "%Y-%m-%d_%H-%M-%S")
+                                            date_str = png_dt.strftime("%Y-%m-%d %H:%M:%S")
+                                        except Exception:
+                                            continue
+                                    else:
+                                        continue
+                                else:
+                                    continue
+
+                                date_times[q_idx].append(date_str)
+                            else:
+                                date_times[q_idx].append(date.strftime("%Y-%m-%d %H:%M:%S"))
+
+                            del T1_class_instance
+
+                del H5_class_instance
+
+        if return_errs:
+            if process_shots:
+                return date_times, t1_vals, t1_errs, I_per_pt_errs, Q_per_pt_errs, res_lengths
+            return date_times, t1_vals, t1_errs, res_lengths
+
+        return date_times, t1_vals, res_lengths
+
     def plot_without_errs(self, date_times, t1_vals, show_legends):
         #---------------------------------plot-----------------------------------------------------
         analysis_folder = f"{self.outerFolder_save_plots}/features_vs_time/"
@@ -798,6 +1030,47 @@ class T1VsTime:
         plt.savefig(analysis_folder + 'T1_vals_single_plot.pdf', transparent=True, dpi=self.final_figure_quality)
         print('Plot saved to:', analysis_folder)
         plt.close()
+
+    def plot_t1_histograms_with_active_reset(self, t1_vals, t1_vals_act_reset, n_resets=12, bins=20,out_dir=None):
+        for q in range(self.number_of_qubits):
+            reg = np.asarray(t1_vals[q], dtype=float)
+            act = np.asarray(t1_vals_act_reset[q], dtype=float)
+
+            reg = reg[np.isfinite(reg)]
+            act = act[np.isfinite(act)]
+
+            if len(reg) == 0 and len(act) == 0:
+                print(f"No T1 data for Q{q + 1}, skipping.")
+                continue
+
+            if len(reg) > 0 and len(act) > 0:
+                all_vals = np.concatenate([reg, act])
+            elif len(reg) > 0:
+                all_vals = reg
+            else:
+                all_vals = act
+
+            hist_bins = np.histogram_bin_edges(all_vals, bins=bins)
+
+            plt.figure(figsize=(8, 6))
+            if len(reg) > 0:
+                plt.hist(reg, bins=hist_bins, alpha=0.5,
+                         label=f"Regular T1 (n={len(reg)}, median={np.median(reg):.2f} us)")
+            if len(act) > 0:
+                plt.hist(act, bins=hist_bins, alpha=0.5,
+                         label=f"Active-reset T1 ({n_resets} corrections, n={len(act)}, median={np.median(act):.2f} us)")
+
+            plt.xlabel("T1 (us)")
+            plt.ylabel("Counts")
+            plt.title(f"Q{q + 1} T1 Histogram Comparison")
+            plt.legend()
+            plt.tight_layout()
+
+            if out_dir is None:
+                out_dir = self.outerFolder_save_plots
+            os.makedirs(out_dir, exist_ok=True)
+            plt.savefig(os.path.join(out_dir, f"Q{q + 1}_T1_hist_regular_vs_act_reset_{n_resets}corr.pdf"))
+
 
     def plot_allan_deviation(self, date_times, vals, show_legends, label="T1"):
 

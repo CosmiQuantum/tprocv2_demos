@@ -64,30 +64,36 @@ for run_number in run_num_list:
         print('(this is actually run 9d, we just label it run 9.3)')
         process_shots_t1ge = False # the option exists for this run, but for analysis consistency w initial runs we keep it off unless necessary.
         per_pt_errs_t1 = False
-        run_name = 'run9d/6transmon/round_robin_benchmark'
+        run_name = 'run9d/6transmon/active_reset' # round_robin_benchmark
         data_path =  f"/data/QICK_data/{run_name}" #qubituser-1hw
         # #f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
         plots_path =  "/data/plots_temporary" #"/home/acolonce/Documents/analysis/coherence" #cosmiqserver01
 
-        top_folder_dates = [ # Data PT off tests T2R and T1 only, run 9d, Jul 20 tests
-                            #"Pre_PT_off_overnight_0720/2026-07-20_00-48-59",
-                            "Pre_PT_off_morning_0720/2026-07-20_10-26-18",
-                            "Pre_PT_off_morning_0720/2026-07-20_10-20-45",
-                            "Pre_PT_off_morning_0720/2026-07-20_10-17-44",
-                            "Pre_PT_off_morning_0720/2026-07-20_10-12-56",
-                            "Pre_PT_off_morning_0720/2026-07-20_10-08-10",
-                            "PT_off_batch1_Q1_0720/2026-07-20_10-53-29",
-                            "Post_PT_off_batch1_Q1_0720/2026-07-20_11-04-15",
-                            "Pre_PT_off_batch2_Q3_0720/2026-07-20_11-19-04",
-                            "PT_off_batch2_Q3_0720/2026-07-20_11-46-27",
-                            "Post_PT_off_batch2_Q3_0720/2026-07-20_11-57-22",
-                            "Post_PT_off_batch2_Q1Q3_0720/2026-07-20_12-36-27",
-                            "PT_off_batch3_Q1_0720/2026-07-20_13-32-14",
-                            "Post_PT_off_batch3_Q1_0720/2026-07-20_13-43-37",
-                            "Post_PT_off_batch3_Q1_0720/2026-07-20_13-54-46",
-                            "Pre_PT_off_batch4_Q3_0720/2026-07-20_14-03-11",
-                            "PT_off_batch4_Q3_0720/2026-07-20_14-20-03",
-                            "Post_PT_off_batch4_Q3_0720/2026-07-20_14-31-33",
+        top_folder_dates = [
+                             # Active reset test data, ~100 rounds for comparison
+                            "100_plus_rnds_act_reset_final/2026-07-24_00-50-50",
+                            "100_plus_rnds_act_reset_final/2026-07-24_06-20-00",
+                            "100_plus_rnds_act_reset_final/2026-07-24_11-31-40"
+
+        #                     # #Data PT off tests T2R and T1 only, run 9d, Jul 20 tests
+        #                     #"Pre_PT_off_overnight_0720/2026-07-20_00-48-59",
+        #                     "Pre_PT_off_morning_0720/2026-07-20_10-26-18",
+        #                     "Pre_PT_off_morning_0720/2026-07-20_10-20-45",
+        #                     "Pre_PT_off_morning_0720/2026-07-20_10-17-44",
+        #                     "Pre_PT_off_morning_0720/2026-07-20_10-12-56",
+        #                     "Pre_PT_off_morning_0720/2026-07-20_10-08-10",
+        #                     "PT_off_batch1_Q1_0720/2026-07-20_10-53-29",
+        #                     "Post_PT_off_batch1_Q1_0720/2026-07-20_11-04-15",
+        #                     "Pre_PT_off_batch2_Q3_0720/2026-07-20_11-19-04",
+        #                     "PT_off_batch2_Q3_0720/2026-07-20_11-46-27",
+        #                     "Post_PT_off_batch2_Q3_0720/2026-07-20_11-57-22",
+        #                     "Post_PT_off_batch2_Q1Q3_0720/2026-07-20_12-36-27",
+        #                     "PT_off_batch3_Q1_0720/2026-07-20_13-32-14",
+        #                     "Post_PT_off_batch3_Q1_0720/2026-07-20_13-43-37",
+        #                     "Post_PT_off_batch3_Q1_0720/2026-07-20_13-54-46",
+        #                     "Pre_PT_off_batch4_Q3_0720/2026-07-20_14-03-11",
+        #                     "PT_off_batch4_Q3_0720/2026-07-20_14-20-03",
+        #                     "Post_PT_off_batch4_Q3_0720/2026-07-20_14-31-33",
 
                             # #Data PT off tests T2R only, run 9d, Jul 15 tests
                             # "Pre_PT_off_base_T2R/2026-07-15_10-12-25", # testing params/settings
@@ -496,14 +502,22 @@ for run_number in run_num_list:
     t1_vs_time = T1VsTime(plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
                      signal, run_name, FRIDGE, run_number, per_pt_errs = per_pt_errs_t1)
 
+    #regular t1 data
     if per_pt_errs_t1 and process_shots_t1ge: # this will only work if process_shots_t1ge is set to True too
         date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs, res_lengths = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge)
     else:
         date_times_t1, t1_vals, t1_fit_err, res_lengths = t1_vs_time.run(return_errs=True, exp_extension = '_ge')
 
-    t2r_vs_time = T2rVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
-                            fit_saved, signal, run_name, FRIDGE)
-    date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True, t1_vals = None) #t1_vals
+    # active reset t1 data
+    if per_pt_errs_t1 and process_shots_t1ge:  # only works if process_shots_t1ge is True
+        date_times_t1_act_reset, t1_vals_act_reset, t1_fit_err_act_reset, I_per_pt_errs_act_reset, Q_per_pt_errs_act_reset, res_lengths_act_reset = t1_vs_time.run_act_reset(return_errs=True,process_shots=process_shots_t1ge)
+    else:
+        date_times_t1_act_reset, t1_vals_act_reset, t1_fit_err_act_reset, res_lengths_act_reset = t1_vs_time.run_act_reset(return_errs=True)
+
+
+    # t2r_vs_time = T2rVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+    #                         fit_saved, signal, run_name, FRIDGE)
+    # date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True, t1_vals = None) #t1_vals
 
     # t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
     #                         fit_saved, signal, run_name, FRIDGE)
@@ -586,90 +600,90 @@ for run_number in run_num_list:
 
 # ################################################ 06: T1 vs Time Plots #################################################
 # t1_vs_time.plot_without_errs(date_times_t1, t1_vals, show_legends)
-#t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends) # shows error bars, do this one!!
+t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends) # shows error bars, do this one!!
 
 # For July 20 run 9d tests
-t1_vs_time.plot_with_errs_single_plot(date_times_t1,t1_vals,t1_fit_err,
-    event_timestamps=[
-        #"2026-07-20 10:04:00",
-        "2026-07-20 10:53:00",
-        "2026-07-20 11:04:00",
-        "2026-07-20 11:46:00",
-        "2026-07-20 11:57:00",
-        #"2026-07-20 13:31:00",
-        "2026-07-20 13:32:00",
-        "2026-07-20 13:43:00",
-        "2026-07-20 14:19:00",
-        "2026-07-20 14:31:00"
-    ],
-    event_labels=[
-        #"Heater on",
-        "PT off",
-        "PT on",
-        "PT off",
-        "PT on",
-        #"PT on",
-        "PT off",
-        "PT on",
-        "PT off",
-        "PT on"
-    ],
-    event_colors=[
-        #"purple",
-        "green",
-        "blue",
-        "green",
-        "blue",
-        #"blue",
-        "green",
-        "blue",
-        "green",
-        "blue"
-    ]
-)
+# t1_vs_time.plot_with_errs_single_plot(date_times_t1,t1_vals,t1_fit_err,
+#     event_timestamps=[
+#         #"2026-07-20 10:04:00",
+#         "2026-07-20 10:53:00",
+#         "2026-07-20 11:04:00",
+#         "2026-07-20 11:46:00",
+#         "2026-07-20 11:57:00",
+#         #"2026-07-20 13:31:00",
+#         "2026-07-20 13:32:00",
+#         "2026-07-20 13:43:00",
+#         "2026-07-20 14:19:00",
+#         "2026-07-20 14:31:00"
+#     ],
+#     event_labels=[
+#         #"Heater on",
+#         "PT off",
+#         "PT on",
+#         "PT off",
+#         "PT on",
+#         #"PT on",
+#         "PT off",
+#         "PT on",
+#         "PT off",
+#         "PT on"
+#     ],
+#     event_colors=[
+#         #"purple",
+#         "green",
+#         "blue",
+#         "green",
+#         "blue",
+#         #"blue",
+#         "green",
+#         "blue",
+#         "green",
+#         "blue"
+#     ]
+# )
 # ################################################# 07: T2R vs Time Plots ################################################
 # #t2r_vs_time.plot_without_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends)
 #t2r_vs_time.plot_with_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends) # shows error bars, do this one!!
 
 # For July 20 tests run 9d
-t2r_vs_time.plot_with_errs_single_plot(date_times_t2r,t2r_vals,t2r_fit_err,
-    event_timestamps=[
-        #"2026-07-20 10:04:00",
-        "2026-07-20 10:53:00",
-        "2026-07-20 11:04:00",
-        "2026-07-20 11:46:00",
-        "2026-07-20 11:57:00",
-        #"2026-07-20 13:31:00",
-        "2026-07-20 13:32:00",
-        "2026-07-20 13:43:00",
-        "2026-07-20 14:19:00",
-        "2026-07-20 14:31:00"
-    ],
-    event_labels=[
-        #"Heater on",
-        "PT off",
-        "PT on",
-        "PT off",
-        "PT on",
-        #"PT on",
-        "PT off",
-        "PT on",
-        "PT off",
-        "PT on",
-    ],
-    event_colors=[
-        #"purple",
-        "green",
-        "blue",
-        "green",
-        "blue",
-        #"blue",
-        "green",
-        "blue",
-        "green",
-        "blue"
-    ]
-)
+# t2r_vs_time.plot_with_errs_single_plot(date_times_t2r,t2r_vals,t2r_fit_err,
+#     event_timestamps=[
+#         #"2026-07-20 10:04:00",
+#         "2026-07-20 10:53:00",
+#         "2026-07-20 11:04:00",
+#         "2026-07-20 11:46:00",
+#         "2026-07-20 11:57:00",
+#         #"2026-07-20 13:31:00",
+#         "2026-07-20 13:32:00",
+#         "2026-07-20 13:43:00",
+#         "2026-07-20 14:19:00",
+#         "2026-07-20 14:31:00"
+#     ],
+#     event_labels=[
+#         #"Heater on",
+#         "PT off",
+#         "PT on",
+#         "PT off",
+#         "PT on",
+#         #"PT on",
+#         "PT off",
+#         "PT on",
+#         "PT off",
+#         "PT on",
+#     ],
+#     event_colors=[
+#         #"purple",
+#         "green",
+#         "blue",
+#         "green",
+#         "blue",
+#         #"blue",
+#         "green",
+#         "blue",
+#         "green",
+#         "blue"
+#     ]
+# )
 
 # For Jul 15 tests run 9d
 # t2r_vs_time.plot_with_errs_single_plot(date_times_t2r, t2r_vals,t2r_fit_err,
@@ -714,6 +728,8 @@ t2r_vs_time.plot_with_errs_single_plot(date_times_t2r,t2r_vals,t2r_fit_err,
 # dates, t1_vals, t1_errs = t1_distribution_plots.run(exp_extension="_ge", process_shots = process_shots_t1ge)
 # t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
 
+# compare regular T1 values vs active reset T1 values
+t1_vs_time.plot_t1_histograms_with_active_reset(t1_vals, t1_vals_act_reset,n_resets=12,bins=30)
 # # # # ###################################### 10: T2R hist/cumul/err Plots (not in use anymore; we use box and whisker plots for medians) ############################################
 # t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
 #                                             save_figs, fit_saved, signal, data_path, plots_path, run_name, fridge=FRIDGE)

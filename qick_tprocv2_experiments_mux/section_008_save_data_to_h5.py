@@ -239,6 +239,19 @@ class Data_H5:
                                        'Delay Times': 'Delay Times', 'Fit': 'Fit', 'Round Num': 'Round Num',
                                        'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
                                        'Syst Config': 'Syst Config', 'measurement_timestamp': 'Measurement Timestamp'}
+
+                    elif data_type.startswith("t1_ge_active_reset_") and data_type.endswith(
+                            "corr") and data_type.removeprefix("t1_ge_active_reset_").removesuffix("corr").isdigit():
+                        target_keys = {'T1': 'T1', 'Errors': 'Errors', 'Dates': 'Dates', 'I': 'I', 'Q': 'Q',
+                                       'Ishots': 'Ishots', 'Qshots': 'Qshots', 'Delay Times': 'Delay Times',
+                                       'Fit': 'Fit', 'Round Num': 'Round Num', 'Batch Num': 'Batch Num',
+                                       'Exp Config': 'Exp Config', 'Syst Config': 'Syst Config',
+                                       'measurement_timestamp': 'Measurement Timestamp', 'Angle': 'Angle',
+                                       'Threshold Raw': 'Threshold Raw', 'Res Length Cycles': 'Res Length Cycles',
+                                       'n_resets': 'n_resets', 'First Dec Ishots': 'First Dec Ishots',
+                                       'First Dec Qshots': 'First Dec Qshots', 'Last Dec Ishots': 'Last Dec Ishots',
+                                       'Last Dec Qshots': 'Last Dec Qshots'}
+
                     else:
                         raise ValueError(f"Unsupported data_type: {data_type}")
 
