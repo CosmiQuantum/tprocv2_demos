@@ -24,7 +24,7 @@ zero_qubit_drive_gain = False
 constant_zeno_pulse = True
 adapt_starked_qubit_freq = False
 wait_for_res_ring_up = True
-n= 1
+n= 200
 unmask = True
 save_r = 1                           # how many rounds to save after
 signal = 'None'                      # 'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization
@@ -34,7 +34,7 @@ fit_data = True                     # fit the data here and save or plot the fit
 save_data_h5 = True                  # save all of the data to h5 files?
 
 verbose = True                       # print everything to the console in real time, good for debugging, bad for memory
-debug_mode = True                  # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
+debug_mode = False                  # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 thresholding = False                 # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 increase_qubit_reps = False          # if you want to increase the reps for a qubit, set to True
 qubit_to_increase_reps_for = 0       # only has impact if previous line is True
@@ -70,7 +70,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'active_reset' #qubit_checkouts, round_robin_benchmark
-sub_study = 'optimizing_act_reset' #batch2_post_1stopt_25dbDAC, opt_sigmas_gains_reps_steps
+sub_study = '300_ovrnight_rnds_act_reset' #300_ovrnight_rnds_act_reset,
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
