@@ -36,7 +36,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 5 # number of rounds
+n = 1 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -74,13 +74,13 @@ substudy_txt_notes = ('Checking status of qubits.\n')
 # run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
 #              "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
 #              "rabi_pop_meas": True, "ef_Rabi": False, "t1": False, "t2r": True, "t2e": True}
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
+run_flags = {"tof": True, "res_spec": False, "q_spec": False, "rabi": False, "ss": False,
              "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
 
 # For 25dB DAC, 7/19/2026
 res_leng_vals = [5.4, 6.6, 6.0, 6.8, 6.8, 7.0]
-res_gain = [0.8164, 0.8, 0.8419, 0.6156, 0.8, 0.82]
+res_gain = [0.8164, 0.8, 0.8419, 0.6156, 0.8, 0.82] # Q1: 0.8164
 freq_offsets =[-0.1556, -0.1111, -0.2,-0.0222,-0.2111,-0.1556]
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
@@ -94,7 +94,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts, round_robin_benchmark
-sub_study = 'junk' #batch2_post_1stopt_25dbDAC, opt_sigmas_gains_reps_steps, opt_AB_paper_data
+sub_study = 'tof_ringdown_inv' #batch2_post_1stopt_25dbDAC, opt_sigmas_gains_reps_steps, opt_AB_paper_data
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):

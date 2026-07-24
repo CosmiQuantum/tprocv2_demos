@@ -17,7 +17,7 @@ if FRIDGE == "QUIET":
     expt_cfg = {
         "tof": {
             "reps": 1, #reps doesnt make a difference here, leave it at 1
-            "soft_avgs": 100,
+            "soft_avgs": 200,
             "relax_delay": 0,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },

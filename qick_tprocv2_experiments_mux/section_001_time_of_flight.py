@@ -33,19 +33,24 @@ class TOFExperiment:
     def run(self):
         class MuxProgram(AveragerProgramV2):
             def _initialize(self, cfg):
+                # FOR TEMPORARY RINGDOWN TEST:
+                #acquisition_length = 15.0  # record long enough to see ringdown
+
                 ro_chs = cfg['ro_ch']
                 gen_ch = cfg['res_ch']
 
                 self.declare_gen(
                     ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
-                    mux_freqs=[f+1 for f in cfg['res_freq_ge']],
-                    mux_gains= cfg['res_gain_ge'], #[1,0,0,0,0,0],#cfg['res_gain_ge'], #[1,0,0,0,0,0]
+                    mux_freqs=[f+1 for f in cfg['res_freq_ge']], # original: [f+1 for f in cfg['res_freq_ge']]
+                    mux_gains= cfg['res_gain_ge'],
                     mux_phases=cfg['res_phase'],
                     mixer_freq=cfg['mixer_freq']
                 )
-                for ch, f, ph in zip(cfg['ro_ch'], [f+1 for f in cfg['res_freq_ge']], cfg['ro_phase']):
+                for ch, f, ph in zip(cfg['ro_ch'], [f+1 for f in cfg['res_freq_ge']], cfg['ro_phase']): # original: [f+1 for f in cfg['res_freq_ge']]
                     self.declare_readout(
-                        ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch
+                        ch=ch,
+                        length= cfg['res_length'], #acquisition_length FOR A RINGDOWN TEST # cfg['res_length'], <- FOR NORMAL TOF
+                        freq=f, phase=ph, gen_ch=gen_ch
                     )
 
                 self.add_pulse(
@@ -63,6 +68,13 @@ class TOFExperiment:
         iq_list = prog.acquire_decimated(self.experiment.soc, soft_avgs=self.config['soft_avgs'])
         if self.save_figs:
             (average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, DAC_attenuator1, DAC_attenuator2, ADC_attenuator) = self.plot_results(prog, iq_list)
+            # self.plot_ringdown_test(
+            #     prog,
+            #     iq_list,
+            #     qubit_index=self.QubitIndex,
+            #     x_min=5.0,
+            #     x_max=9.0,
+            #     tick_spacing=0.2)
         else:
             (average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, DAC_attenuator1, DAC_attenuator2, ADC_attenuator) = None, None, None, None, None, None,
 
@@ -147,11 +159,58 @@ class TOFExperiment:
                 file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}" + f"Q_{self.QubitIndex}" + f"{formatted_datetime}_" + self.expt_name + ".png")
             else:
                 file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + ".png")
-            plt.savefig(file_name, dpi=50)
+            plt.savefig(file_name, dpi=300)
             # plt.show()
             # plt.close(fig)
 
         return average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, self.experiment.DAC_attenuator1, self.experiment.DAC_attenuator2, self.experiment.ADC_attenuator
 
+    def plot_ringdown_test(self, prog, iq_list, qubit_index=None, x_min=5.5, x_max=7.0, tick_spacing=0.1):
+        """
+        Simple temporary plot for inspecting resonator ringdown.
 
+        qubit_index:
+            None plots all readout channels.
+            An integer plots only that readout index, e.g. 0 for Q1.
+        """
+
+        t = prog.get_time_axis(ro_index=0)
+
+        print(f"Time-step resolution: {t[1] - t[0]:.6f} us")
+
+        if qubit_index is None:
+            indices = range(len(self.config["ro_ch"]))
+        else:
+            indices = [qubit_index]
+
+        for i in indices:
+            iq = iq_list[i]
+            magnitude = np.abs(iq[:, 0] + 1j * iq[:, 1])
+
+            plt.figure(figsize=(12, 5))
+            plt.plot(t, iq[:, 0], label="I")
+            plt.plot(t, iq[:, 1], label="Q")
+            plt.plot(t, magnitude, label="Magnitude", linewidth=2)
+
+            plt.xlim(x_min, x_max)
+            plt.xticks(np.arange(x_min, x_max + tick_spacing / 2, tick_spacing))
+
+            plt.xlabel("Time (us)")
+            plt.ylabel("a.u.")
+            plt.title(f"Q{i + 1} resonator ringdown")
+            plt.grid(True, axis="x", alpha=0.3)
+            plt.legend()
+            plt.tight_layout()
+            if self.save_figs:
+                outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
+                self.experiment.create_folder_if_not_exists(outerFolder_expt)
+                now = datetime.datetime.now()
+                formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+                if 'All' in self.Qubit:
+                    file_name = os.path.join(outerFolder_expt,
+                                             f"R_{self.round_num}" + f"Q_{self.QubitIndex}" + f"{formatted_datetime}_" + self.expt_name + ".pdf")
+                else:
+                    file_name = os.path.join(outerFolder_expt,
+                                             f"R_{self.round_num}" + f"Q_{self.QubitIndex + 1}" + f"{formatted_datetime}_" + self.expt_name + ".pdf")
+                plt.savefig(file_name)
 
