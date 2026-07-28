@@ -1215,7 +1215,9 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
         title_fs=18,
         label_fs=18,
         tick_fs=18,
-        save_plt_path=None
+        save_plt_path=None,
+        log_y=False, # only available for hybrid mode at the moment
+        log_yticks_mK=(10, 20, 50, 100, 200, 500)
 ):
     """
     Per-qubit box/whisker vs run.
@@ -1285,7 +1287,12 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
         else:
             arr = np.asarray(cell, dtype=float).ravel()
 
-        return arr[np.isfinite(arr)]
+        arr = arr[np.isfinite(arr)]
+
+        if log_y:
+            arr = arr[arr > 0]
+
+        return arr
 
     def get_cell(vals_by_run, run, q):
         if vals_by_run is None or run not in vals_by_run:
@@ -1330,6 +1337,35 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
             f.set_markeredgecolor(color)
             f.set_alpha(0.6)
 
+    def format_y_axis(ax):
+        if log_y:
+            ax.set_yscale("log")
+
+            ymin, ymax = ylims
+            if ymin <= 0:
+                ymin = min(log_yticks_mK) if log_yticks_mK is not None else 1.0
+
+            ax.set_ylim(ymin, ymax)
+
+            if log_yticks_mK is not None:
+                valid_ticks = np.asarray(log_yticks_mK, dtype=float)
+                valid_ticks = valid_ticks[
+                    (valid_ticks > 0) &
+                    (valid_ticks >= ymin) &
+                    (valid_ticks <= ymax)
+                    ]
+
+                ax.yaxis.set_major_locator(mticker.FixedLocator(valid_ticks))
+                ax.yaxis.set_major_formatter(
+                    mticker.FuncFormatter(lambda y, _: f"{y:g}")
+                )
+
+            ax.yaxis.set_minor_formatter(mticker.NullFormatter())
+
+        else:
+            ax.set_ylim(*ylims)
+            ax.set_yticks(yticks)
+
     # ---------------- positions ----------------
     n_runs = len(run_num_list)
     base_pos = np.arange(1, n_runs + 1)
@@ -1339,9 +1375,9 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
     # ---------------- title ----------------
     if fig_title is None:
         if plot_mode == "compare_methods":
-            fig_title = "Effective Qubit Temperatures vs Run Number"
+            fig_title = "Effective Qubit Temperature vs Run Number"
         else:
-            fig_title = "Effective Qubit Temperatures vs Run Number"
+            fig_title = "Effective Qubit Temperature vs Run Number"
 
     # =====================================================
     # =================== SEPARATE MODE ===================
@@ -1443,8 +1479,14 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
 
             # ---------------- axis styling ----------------
             ax.set_title(f"Qubit {q + 1}", fontsize=title_fs)
-            ax.set_ylim(*ylims)
-            ax.set_yticks(yticks)
+
+            # Temporary!! This is just for a specific version of the plot, comment out once done using.
+            if q == 5:
+                ax.set_title(f"Qubit 5", fontsize=title_fs)
+
+            # ax.set_ylim(*ylims) # old way when log-y wasnt an option
+            # ax.set_yticks(yticks) # old way when log-y wasnt an option
+            format_y_axis(ax)
 
             ax.tick_params(axis="both", labelsize=tick_fs)
             ax.grid(True, alpha=0.35)
@@ -1476,17 +1518,35 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
         for k in range(n_plot, len(axes)):
             axes[k].set_visible(False)
 
+        # Show x-tick labels for Qubit 3 when no visible subplot is beneath it
+        if 2 in qubits_to_plot:
+            q3_ax_idx = qubits_to_plot.index(2)
+            below_idx = q3_ax_idx + ncols
+
+            if below_idx >= len(axes) or not axes[below_idx].get_visible():
+                axes[q3_ax_idx].tick_params(
+                    axis="x",
+                    which="both",
+                    bottom=True,
+                    labelbottom=True
+                )
+
         fig.subplots_adjust(
             left=0.12,  # move axes slightly left
             bottom=0.12,  # move axes slightly down
             top=0.90,
+            wspace=0.08,  # horizontal gap. Smaller values bring the boxes/subplots closer together
+            hspace=0.18  # vertical gap
         )
 
         fig.suptitle(fig_title, fontsize=suptitle_fs, y=0.965)
 
         fig.supxlabel("Run Number", fontsize=label_fs, y=0.03)
 
-        fig.supylabel(ylabel, fontsize=label_fs, x=0.02)
+        display_ylabel = ylabel
+        if plot_mode == "hybrid" and log_y:
+            display_ylabel = ylabel + " [log scale]"
+        fig.supylabel(display_ylabel, fontsize=label_fs, x=0.07)
 
         # single figure legend if all qubits use same color
         if not multi_qubit_colors:
@@ -1495,7 +1555,7 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
             if plot_mode == "hybrid":
                 legend_handles = [
                     Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 5 (SSF)"),
-                    Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="Runs >5 (RPM)")
+                    Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="Runs 6-9 (RPM)")
                 ]
             elif plot_mode == "all_ssf":
                 legend_handles = [
@@ -1510,7 +1570,7 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
             fig.legend(
                 handles=legend_handles,
                 loc="center left",
-                bbox_to_anchor=(0.86, 0.5),
+                bbox_to_anchor=(0.65, 0.3), # (horizontal_position, vertical_position)
                 frameon=True,
                 fontsize=label_fs
             )
