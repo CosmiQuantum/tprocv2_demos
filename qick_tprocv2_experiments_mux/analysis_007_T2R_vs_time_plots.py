@@ -238,7 +238,7 @@ class T2rVsTime:
 
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
-                outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
+                outerFolder = f"/exp/cosmiq/data/QUIET/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
                         # f"/exp/cosmiq/data/QUIET/QICK_data/{self.run_name}/" + folder_date + "/study_data/" # CEPH
                         # f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/" #daq01
                 #print('Looking inside: ', outerFolder)

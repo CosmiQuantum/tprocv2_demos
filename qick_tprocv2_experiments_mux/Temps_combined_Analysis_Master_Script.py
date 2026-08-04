@@ -43,7 +43,7 @@ save_figs_SSF = False # Do you want to save gaussian fit plots while calculating
 fit_saved = False # Not used here, set to false.
 exclude_temp_sweeps = True # Do you want to exclude the folders that contain data taken during the heater temperature sweep?
 filter_out_bad_RPM_fits = True # filter out bad rpm fits? this doesn't work perfect but helps a bit
-filter_out_bad_SSF_qtemp_fits = True # filter out SSF data that can't be properly fitted for qubit temp calcs?
+filter_out_bad_SSF_qtemp_fits = False # filter out SSF data that can't be properly fitted for qubit temp calcs?
 get_qtemp_data = True # Do you want to calculate RPM qubit temperatures? This returns RPM qubit temperatures and qubit freqs for specified dates.
 get_london_data = False # This returns RPM qubit temperatures, resonator freqs, and qubit freqs for specified dates. Designed for London Penetration analysis.
 
@@ -76,8 +76,8 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
 comb_analysis_flags = {"load_rpm": False, "load_ssf": False, "use_cached_qtemp_files": True, "create_cached_qtemp_files": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False,
-                       "Pe_vs_time_comb_separate_plts": False, "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": True, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
-                       "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": False, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False, "SNR_vs_RRPM_Pe": False,
+                       "Pe_vs_time_comb_separate_plts": False, "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
+                       "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": True, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False, "SNR_vs_RRPM_Pe": False,
                        "SNR_box_whisker_allruns_allQs": False, "ie_new_Pg_boxwhisk_allruns_allQs": False, "multirun_RPM_Pe_vs_t": False}
 
 # For London Penetration Depth analysis
@@ -1333,7 +1333,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
-run_num_list = [5,6,7,8,9] # for quiet, start at 5. no qtemp data for run 4. use run 9.2 for run 9c
+run_num_list = [9] # for quiet, start at 5. no qtemp data for run 4. use run 9.2 for run 9c
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
 rpm_Pe_by_run = {}      # rpm_Pe_by_run[run][qid] = [P_e, ...]
@@ -1508,23 +1508,23 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
                     fit_results_g_cache_path,
                     rpm_results_cache_path)
 
-                #Temporary: to consider only the last chunk of run 9a AB paper data.
-                if run_num == 9 and all_files_Qtemp_results_RPMs:
-                    start_dt = pd.to_datetime("2026-04-25 00:00:00") # last two days only
-                    filtered = []
-                    for rec in all_files_Qtemp_results_RPMs:
-                        new_qubits = {}
-                        for qid, qrec in rec.get("qubits", {}).items():
-                            qdate = pd.to_datetime(qrec.get("date"), unit="s", errors="coerce")
-                            if pd.notna(qdate) and qdate >= start_dt:
-                                new_qubits[qid] = qrec
-                        if new_qubits:
-                            rec = rec.copy()
-                            rec["qubits"] = new_qubits
-                            filtered.append(rec)
-                    print(f"Run 9 RPM files before filter: {len(all_files_Qtemp_results_RPMs)}")
-                    print(f"Run 9 RPM files after filter: {len(filtered)}")
-                    all_files_Qtemp_results_RPMs = filtered
+                # #Temporary: to consider only the last chunk of run 9a AB paper data.
+                # if run_num == 9 and all_files_Qtemp_results_RPMs:
+                #     start_dt = pd.to_datetime("2026-04-25 00:00:00") # last two days only
+                #     filtered = []
+                #     for rec in all_files_Qtemp_results_RPMs:
+                #         new_qubits = {}
+                #         for qid, qrec in rec.get("qubits", {}).items():
+                #             qdate = pd.to_datetime(qrec.get("date"), unit="s", errors="coerce")
+                #             if pd.notna(qdate) and qdate >= start_dt:
+                #                 new_qubits[qid] = qrec
+                #         if new_qubits:
+                #             rec = rec.copy()
+                #             rec["qubits"] = new_qubits
+                #             filtered.append(rec)
+                #     print(f"Run 9 RPM files before filter: {len(all_files_Qtemp_results_RPMs)}")
+                #     print(f"Run 9 RPM files after filter: {len(filtered)}")
+                #     all_files_Qtemp_results_RPMs = filtered
 
             # Makes sure processing sections are set to False if the user forgot
             comb_analysis_flags["load_rpm"] = False
@@ -1904,13 +1904,13 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             tolerance_seconds=10, # 10 seconds for all runs except Run 6 SCIENCE run data (600s)
             plot_together=True,
             xlims=  (0.0, 0.06),
-            ylims= (0.75, 0.925),
-            RPM_Pe_rel_err_cut = 0.25,
+            ylims= (0.74, 0.925),
+            RPM_Pe_rel_err_cut = None, #0.25,
             plot_with_t_color_gradient = True, # to depict time passed
             plot_ideal_line = False,
             plot_with_t_markers=False, # second option to depict time passed. Only for plot_together case
             nearest_neighbor_average=True,
-            nn_average_neighbors=12)
+            nn_average_neighbors=2)
 
     if comb_analysis_flags["SSF_fid_vs_RRPM_Pe_3D"]:  # only configured to run for one run at a time
         # Plots SSF vs Pe, using Pe values extracted from RPM data, not SSF data

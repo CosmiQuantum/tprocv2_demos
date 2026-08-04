@@ -26,6 +26,7 @@ from matplotlib.ticker import MaxNLocator
 from qicklab.datahandling.datafile_tools import find_h5_files
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 import math
+from matplotlib.ticker import PercentFormatter
 from matplotlib.lines import Line2D
 import datetime
 import pandas as pd
@@ -1285,7 +1286,7 @@ class SSFTempCalcAndPlots:
 
             for rec in records:
                 ig_new = rec["ig_new"] #prepared ground state data (rotated I values)
-                ie_new = rec["ie_new"] #prepared first excited state data (rotated I values)
+                ie_new = rec["ie_new"] #prepared first Excited-State data (rotated I values)
                 ds = rec.get("dataset", "NA")
 
                 # ---------- fit & extract numbers ----------
@@ -1723,7 +1724,7 @@ class SSFTempCalcAndPlots:
     #         plt.axvline(pop_threshold, color='black', linestyle='--', linewidth=1,
     #                 label=f'Threshold ({pop_threshold:.2f})')
     #
-    #     # Add shading for ground and excited state regions
+    #     # Add shading for ground and Excited-State regions
     #     x_vals = np.linspace(np.min(ig_new), np.max(ig_new), 1000)
     #
     #     # Add shading for ground_data points
@@ -2512,7 +2513,7 @@ class SSFTempCalcAndPlots:
                             color='black', label='Weighted Gaussian fit')
 
                 ax.set_title(f"Q{int(q) + 1}  µ={mu_w:.4f},  s={sigma_w:.4f}, n={n_kept}", fontsize=14)
-                ax.set_xlabel("Thermal Population ($P_e$)")
+                ax.set_xlabel("Excited-State Population")
                 ax.set_ylabel("Count")
                 ax.grid(alpha=0.3)
 
@@ -2694,7 +2695,7 @@ class SSFTempCalcAndPlots:
     def fit_double_gaussian_midpoint(self, iq_data): #iq_data is either ig_new or ie_new (IQ data post-rotation)
         """
         This function can fit the SSF ground state data to a double gaussian, and calculate the population threshold by
-        finding the midpoint between the means of the two gaussians. Can also be used on the First excited state SSF data but
+        finding the midpoint between the means of the two gaussians. Can also be used on the First Excited-State SSF data but
         for qubit temperature calculations the user should only provide ig_new.
 
         Serves the same purpose as fit_double_gaussian_with_full_coverage(), but sets the population threshold
@@ -2827,7 +2828,7 @@ class SSFTempCalcAndPlots:
         freq_cache = {}  # for qubit freqs (MHz)
         freq_err_cache = {}  # 1-? error (std) on that freq
         ig_new_cache = {}  # for ground state roated I data (SSF)
-        ie_new_cache = {}  # for first excited state roated I data (SSF)
+        ie_new_cache = {}  # for first Excited-State roated I data (SSF)
         timestamp_ssf_cache = {}  # for ssf data time stamps (qubit temperature time stamps)
         ssf_fid_cache = {}  # for single shot fidelity values
 
@@ -7121,7 +7122,7 @@ class combined_Qtemp_studies:
         1. Rabi population measurements
         2. Fitting the ssf prepared ground state data to a double gaussian and using the means of the two gaussians to calculate
             the midpoint and use that as the population threshold.
-        3. Fitting the ssf prepared ground state data AND the prepared excited state data to a double gaussian and using the means of
+        3. Fitting the ssf prepared ground state data AND the prepared Excited-State data to a double gaussian and using the means of
             the two gaussians to calculate the midpoint and use that as the population threshold (this represents the ssf g-e threshold).
 
         This function returns a plot that contains two rows (one for each qubit) showcasing the results for each method in a
@@ -7295,7 +7296,7 @@ class combined_Qtemp_studies:
         1. Rabi population measurements
         2. Fitting the ssf prepared ground state data to a double gaussian and using the means of the two gaussians to calculate
             the midpoint and use that as the population threshold.
-        3. Fitting the ssf prepared ground state data AND the prepared excited state data to a double gaussian and using the means of
+        3. Fitting the ssf prepared ground state data AND the prepared Excited-State data to a double gaussian and using the means of
             the two gaussians to calculate the midpoint and use that as the population threshold (this represents the ssf g-e threshold).
 
         This function returns a plot that contains two rows (one for each qubit) showcasing the results for each method in a
@@ -7400,7 +7401,7 @@ class combined_Qtemp_studies:
         1. Rabi population measurements
         2. Fitting the ssf prepared ground state data to a double gaussian and using the means of the two gaussians to calculate
             the midpoint and use that as the population threshold.
-        3. Fitting the ssf prepared ground state data AND the prepared excited state data to a double gaussian and using the means of
+        3. Fitting the ssf prepared ground state data AND the prepared Excited-State data to a double gaussian and using the means of
             the two gaussians to calculate the midpoint and use that as the population threshold (this represents the ssf g-e threshold).
 
         This function returns a plot that contains two rows (one for each qubit) showcasing the results for each method in a
@@ -7506,7 +7507,7 @@ class combined_Qtemp_studies:
         1. Rabi population measurements
         2. Fitting the ssf prepared ground state data to a double gaussian and using the means of the two gaussians to calculate
             the midpoint and use that as the population threshold.
-        3. Fitting the ssf prepared ground state data AND the prepared excited state data to a double gaussian and using the means of
+        3. Fitting the ssf prepared ground state data AND the prepared Excited-State data to a double gaussian and using the means of
             the two gaussians to calculate the midpoint and use that as the population threshold (this represents the ssf g-e threshold).
 
         This function returns a plot that contains two rows (one for each qubit) showcasing the results for each method in a
@@ -7581,7 +7582,7 @@ class combined_Qtemp_studies:
                     )
 
             ax.set_title(f"Q{q + 1}", loc="left", fontsize=14, fontweight="bold")
-            ax.set_ylabel("Thermal Population ($P_e$)", fontsize=12)
+            ax.set_ylabel("Excited-State Population", fontsize=12)
             ax.set_ylim(0, 1)
             ax.grid(False)
 
@@ -7846,7 +7847,7 @@ class combined_Qtemp_studies:
             ax.legend(handles, labels, loc="upper left", fontsize=9, frameon=False)
 
         axes[-1].set_xlabel("Time")
-        fig.suptitle("Excited-State Population $P_e$ vs Time (RPM vs SSF)", fontsize=15)
+        fig.suptitle("Excited-State Population vs Time (RPM vs SSF)", fontsize=15)
 
         # -------------------- Save --------------------
         paramvstime_dir = os.path.join(out_dir, "params_vs_time")
@@ -9181,7 +9182,7 @@ class combined_Qtemp_studies:
             all_files_Qtemp_results_RPMs,
             out_dir,
             qubits_to_plot=None,
-            colors=['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred'],
+            colors=['blue', 'orange', 'purple', 'green', 'brown', 'palevioletred'],
             tolerance_seconds=10, # 10s for all runs except QUIET run 6 SCIENCE RUN data (600s)
             plot_together=False,
             sort_by_time=True,
@@ -9192,8 +9193,8 @@ class combined_Qtemp_studies:
             plot_with_t_markers = False, # only implemented for plot_together case currently
             plot_ideal_line = False,
             nearest_neighbor_average=False,
-            nn_average_neighbors=10,
-            nn_average_min_neighbors=3): # This just prevents the last averaged point from being made from only 1 or 2 leftover points.
+            nn_average_neighbors=8,
+            nn_average_min_neighbors=2): # This just prevents the last averaged point from being made from only 1 leftover point.
         """
         Plot SSF fidelity vs RPM-extracted thermal population Pe.
 
@@ -9618,17 +9619,18 @@ class combined_Qtemp_studies:
                 title_extra = "" #f"nearest-time match, tol={tolerance_seconds}s"
 
             ax.set_title(
-                f"SSF Fidelity vs RPM $P_e$ "
-                f"({title_extra})",
-                fontsize=16)
-            ax.set_xlabel("RPM $P_e$", fontsize=14)
-            ax.set_ylabel("Single-Shot Fidelity", fontsize=14)
-            ax.tick_params(axis="both", which="major", labelsize=14)
+                f"Single-Shot Fidelity vs Excited-State Population \n ({title_extra})",
+                fontsize=18)
+            ax.set_xlabel("Excited-State Population, RPM Method", fontsize=18)
+            ax.set_ylabel("Single-Shot Fidelity (%)", fontsize=18)
+            ax.tick_params(axis="both", which="major", labelsize=18)
 
             if xlims is not None:
                 ax.set_xlim(*xlims)
             if ylims is not None:
                 ax.set_ylim(*ylims)
+
+            ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
 
             if plot_ideal_line:
                 cur_xlim = ax.get_xlim()
@@ -9714,8 +9716,8 @@ class combined_Qtemp_studies:
                 time_legend = ax.legend(
                     handles=time_marker_handles,
                     title="Time bin",
-                    fontsize=14,
-                    title_fontsize=14,
+                    fontsize=16,
+                    title_fontsize=16,
                     frameon=True,
                     loc="lower right")
                 ax.add_artist(time_legend)
@@ -9847,10 +9849,10 @@ class combined_Qtemp_studies:
                                 )
 
                 #ax.label_outer()
-                ax.set_title(f"Q{q + 1}", loc="left", fontsize=14, fontweight="bold")
+                ax.set_title(f"Q{q + 1}", loc="left", fontsize=16, fontweight="bold")
                 ax.set_ylabel("SSF")
                 ax.grid(alpha=0.3)
-                ax.tick_params(axis="both", which="major", labelsize=14)
+                ax.tick_params(axis="both", which="major", labelsize=16)
                 #ax.legend(loc="best", fontsize=9, frameon=False)
                 ax.set_box_aspect(1)
 
@@ -9894,9 +9896,9 @@ class combined_Qtemp_studies:
             for k in range(len(qubits_to_plot), len(axes)):
                 axes[k].set_visible(False)
 
-            fig.supxlabel("RPM $P_e$")
+            fig.supxlabel("Excited-State Population, RPM Method")
 
-            fig.supylabel("SSF Fidelity")
+            fig.supylabel("Single-Shot Fidelity")
 
             if nearest_neighbor_average:
                 title_extra = f"nearest-neighbor avg, N={nn_average_neighbors}"
@@ -9904,7 +9906,7 @@ class combined_Qtemp_studies:
                 title_extra = f"nearest-time match, tolerance={tolerance_seconds}s"
 
             fig.suptitle(
-                f"SSF Fidelity vs RPM $P_e$ "
+                f"Single-Shot Fidelity vs Excited-State Population"
                 f"({title_extra})",
                 fontsize=16)
 

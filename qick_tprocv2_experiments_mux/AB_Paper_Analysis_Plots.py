@@ -865,15 +865,15 @@ def boxwhisker_t1t2_per_qubit_vs_run(
     if do_T1:
         if t1_vals_by_run is None:
             raise ValueError("do_T1=True but t1_vals_by_run is None")
-        metric_specs.append(("T1", t1_vals_by_run, color_map["T1"]))
+        metric_specs.append((r"$T_1$", t1_vals_by_run, color_map["T1"]))
     if do_T2R:
         if t2r_vals_by_run is None:
             raise ValueError("do_T2R=True but t2r_vals_by_run is None")
-        metric_specs.append(("T2R", t2r_vals_by_run, color_map["T2R"]))
+        metric_specs.append((r"$T_2 Ramsey$", t2r_vals_by_run, color_map["T2R"]))
     if do_T2E:
         if t2e_vals_by_run is None:
             raise ValueError("do_T2E=True but t2e_vals_by_run is None")
-        metric_specs.append(("T2E", t2e_vals_by_run, color_map["T2E"]))
+        metric_specs.append((r"$T_2 Echo$", t2e_vals_by_run, color_map["T2E"]))
 
     if len(metric_specs) == 0:
         raise ValueError("Enable at least one of do_T1/do_T2R/do_T2E.")
@@ -923,7 +923,8 @@ def boxwhisker_t1t2_per_qubit_vs_run(
         ax.set_yticks(yticks)
         ax.grid(True, alpha=0.35)
         ax.set_xticks(base_pos)
-        ax.set_xticklabels([f"{r}" for r in run_num_list])
+        #ax.set_xticklabels([f"{r}" for r in run_num_list]) # QUIET run labels
+        ax.set_xticklabels([f"{r-3}" for r in run_num_list])  # AB paper adjusted run labels
         ax.tick_params(axis="both", labelsize=16)
 
     # ------------------------- mode: together -------------------------
@@ -968,8 +969,8 @@ def boxwhisker_t1t2_per_qubit_vs_run(
             ax.legend(handles=handles, loc="upper left", fontsize=16)
 
         fig.suptitle(fig_title_prefix, fontsize=18)
-        fig.supxlabel("Run Number", fontsize=16)
-        fig.supylabel("Coherence time (µs)", fontsize=16)
+        fig.supxlabel("Run Number", fontsize=18)
+        fig.supylabel("Coherence time (µs)", fontsize=18, x=0.07)
         plt.show()
         return  # done
 
@@ -1001,7 +1002,7 @@ def boxwhisker_t1t2_per_qubit_vs_run(
                 )
                 style_boxplot(bp, color)
 
-                ax.set_title(f"Qubit {q + 1}")
+                ax.set_title(f"Qubit {q + 1}", fontsize=18)
                 add_common_axis_styling(ax)
 
                 # legend with single entry
@@ -1009,8 +1010,8 @@ def boxwhisker_t1t2_per_qubit_vs_run(
                 # ax.legend(handles=[handle], loc="upper left", fontsize=16)
 
             fig.suptitle(f"{label}{fig_title_prefix}", fontsize=18)
-            fig.supxlabel("Run Number", fontsize=16)
-            fig.supylabel(f"{label} (µs)", fontsize=16)
+            fig.supxlabel("Run Number", fontsize=18)
+            fig.supylabel(f"{label} (µs)", fontsize=18, x=0.07)
 
             if save_plt_path is None:
                 plt.show()
