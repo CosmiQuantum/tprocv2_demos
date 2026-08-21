@@ -5,6 +5,7 @@ import math
 import os
 import datetime
 import matplotlib.ticker as mticker
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
 qtemp_noisetemp_plot = False
 lnPe_vs_qfreq_plots_per_run = False
@@ -217,7 +218,9 @@ if qtemp_noisetemp_plot:
     #   4K-50K line, labeled A11 4K       = 2.44 dB
     #   1K-4K line, labeled A11 still     = 2.08 dB
     #
-    # Assign each line section to the colder endpoint:
+    # Index each inter-stage line loss by its colder endpoint.
+    # This allows cumulative_after_stage() to include the loss
+    # for thermal sources originating at all warmer stages.
     #   patch panel -> 50K      goes at 50K
     #   50K -> 4K              goes at 4K
     #   4K -> still/1K         goes at still
@@ -226,9 +229,9 @@ if qtemp_noisetemp_plot:
     # the relative line lengths:
     #   still/1K -> CP/100mK   = 23.5 cm
     #   CP/100mK -> MXC/10mK   = 30.5 cm
-    A11_total_line_loss_dB = 15.0
+    A11_total_line_loss_dB = 14.0
 
-    A11_line_loss_by_stage_dB = {
+    A11_line_loss_by_stage_dB = { # from VNA measurements, 6GHz
         "50K": 4.95,
         "4K": 2.44,
         "still": 2.08,
@@ -432,6 +435,10 @@ if qtemp_noisetemp_plot:
     fig, axes = plt.subplots(2, 3, figsize=(16, 10), sharex=True, sharey=True)
     axes = axes.ravel()
 
+    # AB paper run labels
+    display_labels = ['2', '3', '4', '5', '6']
+    runs_arr = np.asarray(runs)
+
     for qi in range(nQ):
         ax = axes[qi]
 
@@ -443,7 +450,7 @@ if qtemp_noisetemp_plot:
             color="purple",
             capsize=3,
             elinewidth=1,
-            label=r"$T_{\mathrm{qubit}}$ (Run 5 SSF)"
+            label=r"$T_{\mathrm{eff}}$ (SSF Method)"  # (Run 5 SSF)
         )
 
         # --- Run 6 -> Run 8 segment (palevioletred) ---
@@ -451,10 +458,10 @@ if qtemp_noisetemp_plot:
             runs[1:], T_qubit_mK[qi][1:],
             yerr=T_qubit_err_mK[qi][1:],
             fmt="o-",
-            color="palevioletred",
+            color="darkblue",
             capsize=3,
             elinewidth=1,
-            label=r"$T_{\mathrm{qubit}}$ (Runs 6-9 RPM)"
+            label=r"$T_{\mathrm{eff}}$ (RPM Method)"  # (Runs 6-9 RPM)
         )
 
         # --- Predicted noise temperature ---
@@ -462,51 +469,139 @@ if qtemp_noisetemp_plot:
             runs,
             Te_mK[qi],
             "s--",
-            color="slateblue",
+            color="darkorange",
             linewidth=2,
             label=r"$T_e$ (pred. noise)"
         )
 
-        ax.set_title(f"Q{qi + 1}", fontsize=16)
-        # ax.set_ylim(0, 120)
-        # ax.set_yticks(np.arange(0, 121, 20))
-        ax.set_ylim(0, 400)
-        ax.set_yticks(np.arange(0, 401, 50))
+        # ------------------------------------------------------------
+        # Inset: automatically use last two finite runs for each qubit
+        # ------------------------------------------------------------
+        valid = (
+                np.isfinite(T_qubit_mK[qi]) &
+                np.isfinite(T_qubit_err_mK[qi]) &
+                np.isfinite(Te_mK[qi])
+        )
+
+        valid_idx = np.where(valid)[0]
+
+        if len(valid_idx) >= 2:
+            idx2 = valid_idx[-2:]
+            x_zoom = runs_arr[idx2]
+
+            axins = ax.inset_axes([0.54, 0.48, 0.42, 0.45])
+
+            # --- Measured temperature ---
+            axins.errorbar(
+                x_zoom,
+                T_qubit_mK[qi][idx2],
+                yerr=T_qubit_err_mK[qi][idx2],
+                fmt="o-",
+                color="darkblue",
+                capsize=2,
+                elinewidth=1,
+                markersize=4
+            )
+
+            # --- Predicted noise temperature ---
+            axins.plot(
+                x_zoom,
+                Te_mK[qi][idx2],
+                "s--",
+                color="darkorange",
+                linewidth=1.5,
+                markersize=4
+            )
+
+            # --- Inset x-axis ---
+            axins.set_xlim(x_zoom[0] - 0.15, x_zoom[-1] + 0.15)
+            axins.set_xticks(x_zoom)
+            axins.set_xticklabels(
+                [display_labels[i] for i in idx2],
+                fontsize=18
+            )
+
+            # --- Inset y-axis ---
+            yvals = np.concatenate([
+                T_qubit_mK[qi][idx2] - T_qubit_err_mK[qi][idx2],
+                T_qubit_mK[qi][idx2] + T_qubit_err_mK[qi][idx2],
+                Te_mK[qi][idx2]
+            ])
+
+            yvals = yvals[np.isfinite(yvals)]
+
+            ymin = np.min(yvals)
+            ymax = np.max(yvals)
+
+            pad = max(5, 0.12 * (ymax - ymin))
+
+            axins.set_ylim(
+                ymin - pad,
+                ymax + pad
+            )
+
+            # Exactly 3 y-axis ticks
+            axins.yaxis.set_major_locator(LinearLocator(4))
+            axins.yaxis.set_major_formatter(FormatStrFormatter('%d'))
+
+            axins.tick_params(axis="both", labelsize=16)
+            axins.grid(True, alpha=0.35)
+
+        # ------------------------------------------------------------
+        # Main axis formatting
+        # ------------------------------------------------------------
+        ax.set_title(f"Qubit {qi + 1}", fontsize=22)
+
+        ax.set_ylim(0, 450)
+        ax.set_yticks(np.arange(0, 401, 100))
+
         ax.set_xticks(runs)
-        ax.set_xticklabels(['5', '6', '7', '8', '9'], fontsize=16)
 
-        ax.tick_params(axis='y', labelsize=16)
-        ax.tick_params(axis='x', labelsize=16)
+        # ax.set_xticklabels(['5', '6', '7', '8', '9'], fontsize=22) # original QUIET run labels
+        ax.set_xticklabels(['2', '3', '4', '5', '6'], fontsize=22)  # for AB paper
 
+        ax.tick_params(axis='y', labelsize=22)
+        ax.tick_params(axis='x', labelsize=22)
         ax.grid(True)
 
     # ---------------- Axis labels ----------------
-    fig.supylabel("Effective Temperature (mK)", fontsize=16, x=0.04)  # pushes label left
-    fig.supxlabel("Run Number", fontsize=16, y=0.09)  # pulls label closer to plot
+    fig.supylabel(
+        "Effective Temperature (mK)",
+        fontsize=22,
+        x=0.05
+    )
+
+    fig.supxlabel(
+        "Run Number",
+        fontsize=22,
+        y=0.12
+    )
 
     # ---------------- Big title ----------------
     fig.suptitle(
-        "Effective Qubit Temperature (from $P_e$) vs Predicted Noise Temperature $T_e$",
-        y=0.98,
-        fontsize=18
+        "Measured Effective Qubit Temperature ($T_{eff}$) vs Predicted Noise Temperature ($T_e$)",
+        y=0.96,
+        fontsize=24
     )
 
     # ---------------- Legend ----------------
     handles, labels = axes[0].get_legend_handles_labels()
+
     fig.legend(
-        handles, labels,
+        handles,
+        labels,
         ncol=3,
         frameon=True,
         loc="lower center",
-        bbox_to_anchor=(0.5, -0.02),  # moved slightly down
-        fontsize=16
+        bbox_to_anchor=(0.5, 0.0),
+        fontsize=22
     )
 
     # Leave space at bottom for legend
     fig.tight_layout(rect=[0.05, 0.12, 1, 0.95])
 
     save_path = "/home/acolonce/Documents/analysis/multirun/qubit_temps/combined_ssf_rpm/Tpred_vs_Tmeas_inputlinemodel.pdf"
-    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.savefig(save_path, bbox_inches="tight")
     plt.close()
 
 if lnPe_vs_qfreq_plots_per_run:
@@ -830,7 +925,8 @@ def boxwhisker_t1t2_per_qubit_vs_run(
         whis=1.5,
         mode="together",  # "together" or "separate"
         fig_title_prefix=" vs Run Number",
-        save_plt_path=None  # string
+        save_plt_path=None,  # string
+        fontsize = 22
 ):
     """
     mode="together": each qubit subplot contains multiple metrics (offset boxplots)
@@ -869,11 +965,11 @@ def boxwhisker_t1t2_per_qubit_vs_run(
     if do_T2R:
         if t2r_vals_by_run is None:
             raise ValueError("do_T2R=True but t2r_vals_by_run is None")
-        metric_specs.append((r"$T_2 Ramsey$", t2r_vals_by_run, color_map["T2R"]))
+        metric_specs.append((r"$T_2$ Ramsey", t2r_vals_by_run, color_map["T2R"]))
     if do_T2E:
         if t2e_vals_by_run is None:
             raise ValueError("do_T2E=True but t2e_vals_by_run is None")
-        metric_specs.append((r"$T_2 Echo$", t2e_vals_by_run, color_map["T2E"]))
+        metric_specs.append((r"$T_2$ Echo", t2e_vals_by_run, color_map["T2E"]))
 
     if len(metric_specs) == 0:
         raise ValueError("Enable at least one of do_T1/do_T2R/do_T2E.")
@@ -918,14 +1014,14 @@ def boxwhisker_t1t2_per_qubit_vs_run(
             f.set_markeredgecolor(q_color)
             f.set_alpha(0.6)
 
-    def add_common_axis_styling(ax):
+    def add_common_axis_styling(ax, fontsize):
         ax.set_ylim(*ylims)
         ax.set_yticks(yticks)
         ax.grid(True, alpha=0.35)
         ax.set_xticks(base_pos)
         #ax.set_xticklabels([f"{r}" for r in run_num_list]) # QUIET run labels
         ax.set_xticklabels([f"{r-3}" for r in run_num_list])  # AB paper adjusted run labels
-        ax.tick_params(axis="both", labelsize=16)
+        ax.tick_params(axis="both", labelsize=fontsize)
 
     # ------------------------- mode: together -------------------------
     if mode.lower() == "together":
@@ -962,15 +1058,15 @@ def boxwhisker_t1t2_per_qubit_vs_run(
                 style_boxplot(bp, color)
 
             ax.set_title(f"Qubit {q + 1}")
-            add_common_axis_styling(ax)
+            add_common_axis_styling(ax, fontsize)
 
             # legend: Patch matches box fill
             handles = [Patch(facecolor=ms[2], edgecolor=ms[2], alpha=0.30, label=ms[0]) for ms in metric_specs]
-            ax.legend(handles=handles, loc="upper left", fontsize=16)
+            ax.legend(handles=handles, loc="upper left", fontsize=fontsize)
 
-        fig.suptitle(fig_title_prefix, fontsize=18)
-        fig.supxlabel("Run Number", fontsize=18)
-        fig.supylabel("Coherence time (µs)", fontsize=18, x=0.07)
+        fig.suptitle(fig_title_prefix, fontsize=fontsize)
+        fig.supxlabel("Run Number", fontsize=fontsize)
+        fig.supylabel("Coherence time (µs)", fontsize=fontsize, x=0.06)
         plt.show()
         return  # done
 
@@ -985,6 +1081,8 @@ def boxwhisker_t1t2_per_qubit_vs_run(
                 constrained_layout=False
             )
             axes = axes.ravel()
+
+            fig.subplots_adjust(wspace=0.05, hspace=0.25)
 
             for q in range(n_qubits):
                 ax = axes[q]
@@ -1002,16 +1100,16 @@ def boxwhisker_t1t2_per_qubit_vs_run(
                 )
                 style_boxplot(bp, color)
 
-                ax.set_title(f"Qubit {q + 1}", fontsize=18)
-                add_common_axis_styling(ax)
+                ax.set_title(f"Qubit {q + 1}", fontsize=fontsize)
+                add_common_axis_styling(ax, fontsize)
 
                 # legend with single entry
                 handle = Patch(facecolor=color, edgecolor=color, alpha=0.30, label=label)
                 # ax.legend(handles=[handle], loc="upper left", fontsize=16)
 
-            fig.suptitle(f"{label}{fig_title_prefix}", fontsize=18)
-            fig.supxlabel("Run Number", fontsize=18)
-            fig.supylabel(f"{label} (µs)", fontsize=18, x=0.07)
+            fig.suptitle(f"{label}{fig_title_prefix}", fontsize=fontsize)
+            fig.supxlabel("Run Number", fontsize=fontsize)
+            fig.supylabel(f"{label} (µs)", fontsize=fontsize, x=0.06)
 
             if save_plt_path is None:
                 plt.show()
@@ -1212,10 +1310,10 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
         whis=1.5,
         fig_title=None,
         ylabel="Effective temperature (mK)",
-        suptitle_fs=18,
-        title_fs=18,
-        label_fs=18,
-        tick_fs=18,
+        suptitle_fs=24,
+        title_fs=22,
+        label_fs=22,
+        tick_fs=22,
         save_plt_path=None,
         log_y=False, # only available for hybrid mode at the moment
         log_yticks_mK=(10, 20, 50, 100, 200, 500)
@@ -1370,7 +1468,8 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
     # ---------------- positions ----------------
     n_runs = len(run_num_list)
     base_pos = np.arange(1, n_runs + 1)
-    xtick_labels = [f"{r}" for r in run_num_list]
+    #xtick_labels = [f"{r}" for r in run_num_list] # original QUIET run labels
+    xtick_labels = [f"{r-3}" for r in run_num_list] # for AB paper
     multi_qubit_colors = len(set(colors[:max(qubits_to_plot) + 1])) > 1
 
     # ---------------- title ----------------
@@ -1384,12 +1483,11 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
     # =================== SEPARATE MODE ===================
     # =====================================================
     if layout == "separate":
-
         # dynamic subplot grid
         ncols = min(3, n_plot)
         nrows = math.ceil(n_plot / ncols)
-        fig_w = 6 * ncols
-        fig_h = 4.5 * nrows
+        fig_w = 5.8 * ncols
+        fig_h = 4.6 * nrows
 
         fig, axes = plt.subplots(
             nrows, ncols,
@@ -1418,10 +1516,10 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
                 print("\n")
 
                 main_positions = np.array([
-                    p if r == 5 else p - 0.16
+                    p if r == 5 else p - 0.15
                     for p, r in zip(base_pos, run_num_list)
                 ])
-                main_width = 0.28
+                main_width = 0.25
             else:
                 main_positions = base_pos
                 main_width = 0.55
@@ -1464,13 +1562,13 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
                         continue
                     if arr.size > 0:
                         ssf_overlay_data.append(arr)
-                        ssf_overlay_positions.append(p + 0.16)
+                        ssf_overlay_positions.append(p + 0.15)
 
                 if len(ssf_overlay_data) > 0:
                     bp_ssf = ax.boxplot(
                         ssf_overlay_data,
                         positions=ssf_overlay_positions,
-                        widths=0.28,
+                        widths=0.25,
                         patch_artist=True,
                         showfliers=showfliers,
                         whis=whis,
@@ -1482,8 +1580,8 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
             ax.set_title(f"Qubit {q + 1}", fontsize=title_fs)
 
             # Temporary!! This is just for a specific version of the plot, comment out once done using.
-            if q == 5:
-                ax.set_title(f"Qubit 5", fontsize=title_fs)
+            # if q == 5:
+            #     ax.set_title(f"Qubit 5", fontsize=title_fs)
 
             # ax.set_ylim(*ylims) # old way when log-y wasnt an option
             # ax.set_yticks(yticks) # old way when log-y wasnt an option
@@ -1500,8 +1598,8 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
             if multi_qubit_colors:
                 if plot_mode == "hybrid":
                     legend_handles = [
-                        Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 5 (SSF)"),
-                        Patch(facecolor=q_color, edgecolor=q_color, alpha=0.30, label="Runs >5 (RPM)")
+                        Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 2 (SSF)"),# Run 5 (SSF)
+                        Patch(facecolor=q_color, edgecolor=q_color, alpha=0.30, label="Runs 3-6 (RPM)") # "Runs >5 (RPM)", "Runs 6-9 (RPM)"
                     ]
                 elif plot_mode == "all_ssf":
                     legend_handles = [
@@ -1509,8 +1607,8 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
                     ]
                 else:  # compare_methods
                     legend_handles = [
-                        Patch(facecolor=q_color, edgecolor=q_color, alpha=0.30, label="RPM / hybrid"),
-                        Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF")
+                        Patch(facecolor=q_color, edgecolor=q_color, alpha=0.30, label="RPM Method"),
+                        Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF Method")
                     ]
 
                 ax.legend(handles=legend_handles, loc="upper right", frameon=True, fontsize=tick_fs - 2)
@@ -1532,49 +1630,58 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
                     labelbottom=True
                 )
 
+        left_margin = 0.12 + 0.015 * max(nrows - 1, 0)
+        bottom_margin = 0.14 + 0.025 * max(nrows - 1, 0)
+        top_margin = 0.90 - 0.015 * max(nrows - 1, 0)
+        right_margin = 0.96
+
         fig.subplots_adjust(
-            left=0.12,  # move axes slightly left
-            bottom=0.12,  # move axes slightly down
-            top=0.90,
-            wspace=0.08,  # horizontal gap. Smaller values bring the boxes/subplots closer together
-            hspace=0.18  # vertical gap
-        )
+            left=left_margin,
+            right=right_margin,
+            bottom=bottom_margin,
+            top=top_margin,
+            wspace=0.08,
+            hspace=0.22)
 
-        fig.suptitle(fig_title, fontsize=suptitle_fs, y=0.965)
+        fig.suptitle(fig_title, fontsize=suptitle_fs, y=0.97)
 
-        fig.supxlabel("Run Number", fontsize=label_fs, y=0.03)
+        fig.supxlabel("Run Number", fontsize=label_fs, y=0.04)
 
         display_ylabel = ylabel
-        if plot_mode == "hybrid" and log_y:
+        if log_y:
             display_ylabel = ylabel + " [log scale]"
         fig.supylabel(display_ylabel, fontsize=label_fs, x=0.07)
 
         # single figure legend if all qubits use same color
-        if not multi_qubit_colors:
-            fig.subplots_adjust(right=0.84)
-
+        if not multi_qubit_colors and plot_mode != "compare_methods":
             if plot_mode == "hybrid":
                 legend_handles = [
-                    Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 5 (SSF)"),
-                    Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="Runs 6-9 (RPM)")
+                    Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 2 (SSF Method)"),
+                    Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="Runs 3-6 (RPM Method)")
                 ]
             elif plot_mode == "all_ssf":
                 legend_handles = [
-                    Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF")
-                ]
-            else:
-                legend_handles = [
-                    Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="RPM / hybrid"),
-                    Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF")
+                    Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF Method")
                 ]
 
-            fig.legend(
-                handles=legend_handles,
-                loc="center left",
-                bbox_to_anchor=(0.65, 0.3), # (horizontal_position, vertical_position)
-                frameon=True,
-                fontsize=label_fs
-            )
+            fig.legend(handles=legend_handles, loc="center left", bbox_to_anchor=(0.38, -0.03), frameon=True,
+                       fontsize=label_fs)
+
+        if plot_mode == "compare_methods":
+            legend_handles = [
+                Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="RPM Method"),
+                Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF Method")]
+
+            fig.subplots_adjust(left=0.10, right=0.98, bottom=0.25, top=0.88, wspace=0.08, hspace=0.22)
+            compare_title = f"{fig_title}: SSF and RPM Method Comparison"
+            fig.suptitle(compare_title, fontsize=suptitle_fs, y=1.05)
+            fig.supxlabel("Run Number", fontsize=label_fs, y=0.08)
+            if log_y:
+                fig.supylabel(r"$T_{\mathrm{eff}}$ (mK) [log scale]", fontsize=label_fs, x=0.032)
+            else:
+                fig.supylabel(r"$T_{\mathrm{eff}}$ (mK)", fontsize=label_fs, x=0.032)
+            fig.legend(handles=legend_handles, loc="lower center", bbox_to_anchor=(0.5, -0.07), ncol=2, frameon=True,
+                       fontsize=label_fs - 2)
 
         if save_plt_path is None:
             plt.show()
@@ -1595,7 +1702,7 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
     # =====================================================
     elif layout == "together":
 
-        fig, ax = plt.subplots(figsize=(12, 6))
+        fig, ax = plt.subplots(figsize=(17.4, 9.2))
 
         if plot_mode == "compare_methods":
             # reserve extra width because we may show two methods
@@ -1816,7 +1923,8 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
 
     n_runs = len(run_num_list)
     base_pos = np.arange(1, n_runs + 1)
-    xtick_labels = [f"{r}" for r in run_num_list]
+    #xtick_labels = [f"{r}" for r in run_num_list] # original, QUIET run labels
+    xtick_labels = [f"{r-3}" for r in run_num_list] # for AB paper
 
     # ---------------- dynamic subplot grid ----------------
     if n_plot == 1:
@@ -1900,8 +2008,8 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
 
         # ax.set_title(f"Qubit {q + 1}", fontsize=title_fs)
         title_label = f"Qubit {q + 1}"
-        if q == 5: # for a test only. this is temporary
-            title_label = "Qubit 5"
+        # if q == 5: # for a test only. this is temporary
+        #     title_label = "Qubit 5"
         ax.set_title(title_label, fontsize=title_fs)
 
         # ax.set_ylim(*ylims)
@@ -1951,8 +2059,8 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
         ax.set_xlim(0.5, len(run_num_list) + 0.5)
 
         # Temporarily show run-number tick labels under Qubit 3
-        if q == 2:  # Qubit 3, since q is zero-indexed
-            ax.tick_params(axis="x", labelbottom=True)
+        # if q == 2:  # Qubit 3, since q is zero-indexed
+        #     ax.tick_params(axis="x", labelbottom=True)
 
         # ---------------- optional zoomed inset for last run ----------------
         if add_last_run_inset:
@@ -2040,20 +2148,20 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
             facecolor=ssf_color,
             edgecolor=ssf_color,
             alpha=0.31,
-            label="Run 5 (SSF Method)"
+            label="Run 2 (SSF Method)" # "Run 5 (SSF Method)"
         ),
         Patch(
             facecolor=rpm_legend_color,
             edgecolor=rpm_legend_color,
             alpha=0.31,
-            label="Runs 6-9 (RPM Method)"
+            label="Runs 3-6 (RPM Method)" # "Runs 6-9 (RPM Method)"
         ),
     ]
 
     fig.legend(
         handles=legend_handles,
         loc="lower right",
-        bbox_to_anchor=(0.96, 0.3),
+        bbox_to_anchor=(0.64, -0.07), # (0.96, 0.3) for 5 qubits only
         fontsize=label_fs - 2,
         frameon=True
     )

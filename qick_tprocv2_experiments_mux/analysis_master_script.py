@@ -46,7 +46,7 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
-run_num_list = [4,5,6,7,8,9] # options: 4,5,6,7,8,9, 9.2 (run 9c), 9.3 (run 9d)
+run_num_list = [7] # options: 4,5,6,7,8,9, 9.2 (run 9c), 9.3 (run 9d)
 t1_vals_by_run  = {}
 res_lengths_by_run = {}
 t2r_vals_by_run = {}
@@ -519,14 +519,13 @@ for run_number in run_num_list:
     # else:
     #     date_times_t1_act_reset, t1_vals_act_reset, t1_fit_err_act_reset, res_lengths_act_reset = t1_vs_time.run_act_reset(return_errs=True)
 
-
     t2r_vs_time = T2rVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
                             fit_saved, signal, run_name, FRIDGE)
-    date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True, t1_vals = None) #t1_vals
+    date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True, t1_vals = t1_vals)
 
-    # t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
-    #                         fit_saved, signal, run_name, FRIDGE)
-    # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = t1_vals)
+    t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+                            fit_saved, signal, run_name, FRIDGE)
+    date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = t1_vals)
 
     # ---------------- Store results ----------------
     ## stores data like t1_vals_by_run[6][3], where 6=run number and 3=qubit index (0 based)
@@ -534,11 +533,11 @@ for run_number in run_num_list:
     t1_errs_by_run[run_number] = t1_fit_err
     # res_lengths_by_run[run_number] = res_lengths
     #
-    # t2r_vals_by_run[run_number] = t2r_vals
-    # t2r_errs_by_run[run_number] = t2r_fit_err
+    t2r_vals_by_run[run_number] = t2r_vals
+    t2r_errs_by_run[run_number] = t2r_fit_err
     #
-    # t2e_vals_by_run[run_number] = t2e_vals
-    # t2e_errs_by_run[run_number] = t2e_fit_err
+    t2e_vals_by_run[run_number] = t2e_vals
+    t2e_errs_by_run[run_number] = t2e_fit_err
     #
     # qfreq_vals_by_run[run_number] = q_freqs
     # qfreq_errs_by_run[run_number] = qspec_fit_err
@@ -891,18 +890,18 @@ for run_number in run_num_list:
 
 #------------------------ New way for AB Paper, by Arianna -------------------------------------------
 ## Coherence box plots
-boxwhisker_t1t2_per_qubit_vs_run(
-    run_num_list,
-    t1_vals_by_run=t1_vals_by_run,
-    t2r_vals_by_run=t2r_vals_by_run,
-    t2e_vals_by_run=t2e_vals_by_run,
-    do_T1=True, do_T2R=False, do_T2E=False,
-    ylims=(0, 130),
-    yticks=np.arange(0, 131, 20),
-    mode="separate",
-    save_plt_path = "/home/acolonce/Documents/analysis/multirun/coherence" #cosmiqserver01
-                    # '/data/QICK_data/multirun_analysis/coherence_analysis' #daq01
-)
+# boxwhisker_t1t2_per_qubit_vs_run(
+#     run_num_list,
+#     t1_vals_by_run=t1_vals_by_run,
+#     t2r_vals_by_run=t2r_vals_by_run,
+#     t2e_vals_by_run=t2e_vals_by_run,
+#     do_T1=True, do_T2R=False, do_T2E=False,
+#     ylims=(0, 130),
+#     yticks=np.arange(0, 131, 20),
+#     mode="separate",
+#     save_plt_path = "/home/acolonce/Documents/analysis/multirun/coherence" #cosmiqserver01
+#                     # '/data/QICK_data/multirun_analysis/coherence_analysis' #daq01
+# )
 #
 # boxwhisker_t1t2_per_qubit_vs_run(
 #     run_num_list,
@@ -911,24 +910,24 @@ boxwhisker_t1t2_per_qubit_vs_run(
 #     t2e_vals_by_run=t2e_vals_by_run,
 #     do_T1=False, do_T2R=False, do_T2E=True,
 #     ylims=(0, 180),
-#     yticks=np.arange(0, 181, 20),
+#     yticks=np.arange(0, 181, 30),
 #     mode="separate",
 #     save_plt_path = "/home/acolonce/Documents/analysis/multirun/coherence" #cosmiqserver01
 #                     # '/data/QICK_data/multirun_analysis/coherence_analysis' #daq01
 # )
-#
-# boxwhisker_t1t2_per_qubit_vs_run(
-#     run_num_list,
-#     t1_vals_by_run=t1_vals_by_run,
-#     t2r_vals_by_run=t2r_vals_by_run,
-#     t2e_vals_by_run=t2e_vals_by_run,
-#     do_T1=False, do_T2R=True, do_T2E=False,
-#     ylims=(0, 140),
-#     yticks=np.arange(0, 141, 20),
-#     mode="separate",
-#     save_plt_path = "/home/acolonce/Documents/analysis/multirun/coherence" #cosmiqserver01
-#                     # '/data/QICK_data/multirun_analysis/coherence_analysis' #daq01
-# )
+
+boxwhisker_t1t2_per_qubit_vs_run(
+    run_num_list,
+    t1_vals_by_run=t1_vals_by_run,
+    t2r_vals_by_run=t2r_vals_by_run,
+    t2e_vals_by_run=t2e_vals_by_run,
+    do_T1=False, do_T2R=True, do_T2E=False,
+    ylims=(0, 140),
+    yticks=np.arange(0, 141, 20),
+    mode="separate",
+    save_plt_path = "/home/acolonce/Documents/analysis/multirun/coherence" #cosmiqserver01
+                    # '/data/QICK_data/multirun_analysis/coherence_analysis' #daq01
+)
 ## Qubit freq box plots
 # ge_qfreq_centers = [4189.8773, 3820.4723, 4161.3726, 4463.15226, 4471.43854, 4997.86] # plots will be centered around these vals
 # boxwhisker_qfreq_per_qubit_vs_run(
