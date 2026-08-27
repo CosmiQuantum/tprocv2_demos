@@ -206,33 +206,40 @@ if qtemp_noisetemp_plot:
     # ------------------------------------------------------------
     # A11 input-line loss model at 6 GHz
     # ------------------------------------------------------------
-    # From A11 full input measurement:
-    #   total measured attenuation at 6 GHz = 81 dB
-    #   known in-plate attenuation = 66 dB
-    #   inferred A11 line/feedthrough loss = 15 dB
+    # The thermal-noise model begins at the 300 K fridge feedthrough,
+    # rather than at the external patch panel.
     #
-    # We exclude the ambiguous "patch panel cable" term.
+    # Values below are taken from the same batch of VNA measurements:
+    #   full measured A11 loss, patch panel -> MCP1       = 80.0 +/- 0.3 dB
+    #   patch-panel cable                        = 3.00 dB
+    #   patch panel -> 50 K                      = 4.95 dB
+    #   50 K -> 4 K, labeled A11 4K              = 2.44 dB
+    #   4 K -> Still/1 K, labeled A11 Still      = 2.08 dB
     #
-    # Known pieces from the diagnostic sheet:
-    #   50K plate to patch panel          = 4.95 dB
-    #   4K-50K line, labeled A11 4K       = 2.44 dB
-    #   1K-4K line, labeled A11 still     = 2.08 dB
+    # Since the approximately 3 dB patch-panel cable lies upstream of
+    # the new 300 K model boundary, it is excluded from the attenuation
+    # used in the thermal-noise calculation.
+    #
+    # Therefore:
+    #   full A11 input, 300 K fridge feedthrough -> MCP1 = 80.0 - 3.0 = 77.0 dB
+    #   300 K feedthrough -> 50 K                = 4.95 - 3.0 = 1.95 dB
     #
     # Index each inter-stage line loss by its colder endpoint.
     # This allows cumulative_after_stage() to include the loss
-    # for thermal sources originating at all warmer stages.
-    #   patch panel -> 50K      goes at 50K
-    #   50K -> 4K              goes at 4K
-    #   4K -> still/1K         goes at still
+    # for thermal sources originating at all warmer stages:
+    #   300 K fridge feedthrough -> 50 K   goes at 50K
+    #   50 K -> 4 K                 goes at 4K
+    #   4 K -> Still/1 K            goes at still
     #
-    # The remaining loss is assigned to the lower cold sections using
-    # the relative line lengths:
-    #   still/1K -> CP/100mK   = 23.5 cm
-    #   CP/100mK -> MXC/10mK   = 30.5 cm
-    A11_total_line_loss_dB = 14.0
+    # The remaining line loss is assigned to the lower cold sections
+    # using their relative cable lengths:
+    #   Still/1 K -> CP/100 mK   = 23.5 cm
+    #   CP/100 mK -> MXC/10 mK   = 30.5 cm
+
+    A11_total_line_loss_dB = 11.2 # patch panel to MCP atten minus patch panel cable atten (14.2-3.0 dB)
 
     A11_line_loss_by_stage_dB = { # from VNA measurements, 6GHz
-        "50K": 4.95,
+        "50K": 1.95, # 4.95 - 3.0 dB # atten of patch panel to 50K minus patch panel cable atten
         "4K": 2.44,
         "still": 2.08,
     }
