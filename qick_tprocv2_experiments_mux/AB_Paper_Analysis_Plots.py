@@ -236,10 +236,10 @@ if qtemp_noisetemp_plot:
     #   Still/1 K -> CP/100 mK   = 23.5 cm
     #   CP/100 mK -> MXC/10 mK   = 30.5 cm
 
-    A11_total_line_loss_dB = 11.2 # patch panel to MCP atten minus patch panel cable atten (14.2-3.0 dB)
+    A11_total_line_loss_dB = 11.2 # (patch panel to MCP atten) minus (patch panel cable atten) # 14.2-3.0 dB
 
     A11_line_loss_by_stage_dB = { # from VNA measurements, 6GHz
-        "50K": 1.95, # 4.95 - 3.0 dB # atten of patch panel to 50K minus patch panel cable atten
+        "50K": 1.95, # 4.95 - 3.0 dB # (atten of patch panel to 50K) minus (patch panel cable atten)
         "4K": 2.44,
         "still": 2.08,
     }
