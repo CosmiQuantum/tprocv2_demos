@@ -67,7 +67,7 @@ tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
 qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_Qtemps": False}
+                      "combined_studies_Qtemps": True}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
@@ -75,9 +75,9 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
                   "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": False, "SSF_fid_vs_Pe_viaSSF": False, "ssf_SNR_vs_time": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
-comb_analysis_flags = {"load_rpm": False, "load_ssf": False, "use_cached_qtemp_files": False, "create_cached_qtemp_files": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False,
+comb_analysis_flags = {"load_rpm": False, "load_ssf": False, "use_cached_qtemp_files": True, "create_cached_qtemp_files": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False,
                        "Pe_vs_time_comb_separate_plts": False, "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
-                       "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": False, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False, "SNR_vs_RRPM_Pe": False,
+                       "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": True, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False, "SNR_vs_RRPM_Pe": False,
                        "SNR_box_whisker_allruns_allQs": False, "ie_new_Pg_boxwhisk_allruns_allQs": False, "multirun_RPM_Pe_vs_t": False}
 
 # For London Penetration Depth analysis
@@ -87,8 +87,8 @@ london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
 
 # For coherence-qubit temps combined analysis. These flags act on their own, no need to set anything above to True.
-coh_qtemp_ana_flags = {"run_qtemps_section": True, "run_coherence_section": True, "use_cached_qtemp_files": False, "use_cached_coherence_files": False, "create_cached_qtemp_files": False,"create_cached_coherence_files": False, "load_mcp1_temps": True,
-                       "plot_qtemps_t1_ftemps_qfreq": True, "plot_RPM_qtemps_qfreq_fridge_only": False, "plot_SSF_qtemps_qfreq_fridge_only": False,
+coh_qtemp_ana_flags = {"run_qtemps_section": False, "run_coherence_section": False, "use_cached_qtemp_files": False, "use_cached_coherence_files": False, "create_cached_qtemp_files": False,"create_cached_coherence_files": False, "load_mcp1_temps": False,
+                       "plot_qtemps_t1_ftemps_qfreq": False, "plot_RPM_qtemps_qfreq_fridge_only": False, "plot_SSF_qtemps_qfreq_fridge_only": False,
                        "SSF_lims_per_scan_viaSSF": False, "SSF_lims_per_scan_viaRPM": False}
 
 ############################################################################## Set up #######################################################################################################################
@@ -1339,7 +1339,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
-run_num_list = [5,6,7,8,9] # for quiet, start at 5. no qtemp data for run 4. use run 9.2 for run 9c
+run_num_list = [9] # for quiet, start at 5. no qtemp data for run 4. use run 9.2 for run 9c
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
 rpm_Pe_by_run = {}      # rpm_Pe_by_run[run][qid] = [P_e, ...]
@@ -1754,8 +1754,8 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             rpm_temps_by_run=rpm_temps_by_run,
             ssf_g_temps_by_run=ssf_g_temps_by_run,
             ssf_ge_temps_by_run=ssf_ge_temps_by_run,
-            qubits_to_plot = [0,1,2],
-            plot_mode="compare_methods", # "hybrid" or "all_ssf" or "compare_methods"
+            qubits_to_plot = [0,1,2,3,4,5],
+            plot_mode="hybrid", # "hybrid" or "all_ssf" or "compare_methods"
             ssf_kind="g",
             layout="separate",
             colors=('darkblue', 'darkblue', 'darkblue', # palevioletred

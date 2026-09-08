@@ -9618,12 +9618,10 @@ class combined_Qtemp_studies:
             else:
                 title_extra = "" #f"nearest-time match, tol={tolerance_seconds}s"
 
-            ax.set_title(
-                f"Single-Shot Fidelity vs Excited-State Population \n ({title_extra})",
-                fontsize=18)
-            ax.set_xlabel("Excited-State Population, RPM Method", fontsize=18)
-            ax.set_ylabel("Single-Shot Fidelity (%)", fontsize=18)
-            ax.tick_params(axis="both", which="major", labelsize=18)
+            #ax.set_title(f"Single-Shot Fidelity vs Excited-State Population \n ({title_extra})",fontsize=18)
+            ax.set_xlabel("Excited-State Population (RPM)", fontsize=24)
+            ax.set_ylabel("Single-Shot Fidelity", fontsize=24)
+            ax.tick_params(axis="both", which="major", labelsize=22)
 
             if xlims is not None:
                 ax.set_xlim(*xlims)
