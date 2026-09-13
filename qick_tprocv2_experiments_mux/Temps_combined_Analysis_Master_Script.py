@@ -1754,12 +1754,12 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             rpm_temps_by_run=rpm_temps_by_run,
             ssf_g_temps_by_run=ssf_g_temps_by_run,
             ssf_ge_temps_by_run=ssf_ge_temps_by_run,
-            qubits_to_plot = [0,1,2,3,4,5],
-            plot_mode="hybrid", # "hybrid" or "all_ssf" or "compare_methods"
+            qubits_to_plot = [0,1,2],
+            plot_mode="compare_methods", # "hybrid" or "all_ssf" or "compare_methods"
             ssf_kind="g",
             layout="separate",
-            colors=('darkblue', 'darkblue', 'darkblue', # palevioletred
-                    'darkblue', 'darkblue', 'darkblue'),
+            colors=('brown', 'brown', 'brown',
+                    'brown', 'brown', 'brown'),
             ylims=(0, 620),
             yticks=np.arange(0, 601, 100),
             showfliers=True,  # outliers
@@ -1782,8 +1782,8 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             rpm_pe_by_run=rpm_Pe_by_run,
             ssf_pe_by_run=ssf_g_Pe_by_run,
             qubits_to_plot=[0, 1, 2, 3, 4, 5],
-            colors=('darkblue', 'darkblue', 'darkblue', # palevioletred, forestgreen, darkblue
-                    'darkblue', 'darkblue', 'darkblue'),
+            colors=('brown', 'brown', 'brown',
+                    'brown', 'brown', 'brown'),
             ylims= (0.001, 0.6), #(0, 0.45),
             yticks=np.arange(0.05, 0.46, 0.1),
             showfliers=True,  # outliers

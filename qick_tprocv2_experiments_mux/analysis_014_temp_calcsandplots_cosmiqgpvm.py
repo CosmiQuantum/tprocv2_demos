@@ -7892,16 +7892,8 @@ class combined_Qtemp_studies:
 
         return alphas
 
-    def add_alpha_gradient_bars(
-            self,
-            fig,
-            colors,
-            labels,
-            alpha_min=0.20,
-            alpha_max=0.95,
-            box_pos=(0.75, 0.15, 0.12, 0.20),
-            title="Time\nEarlier $\\rightarrow$ Later"
-    ):
+    def add_alpha_gradient_bars(self, fig, colors, labels, qubits_to_plot, markers, alpha_min=0.20, alpha_max=0.95,
+                                box_pos=(0.75, 0.15, 0.12, 0.20), title="Time\nEarlier $\\rightarrow$ Later"):
         """
         Add small alpha-gradient bars, one per qubit color.
 
@@ -7915,6 +7907,12 @@ class combined_Qtemp_studies:
 
         labels : list
             List of labels, e.g. ["Q1", "Q2", ...].
+
+        qubits_to_plot : list
+            Qubit indices corresponding to the labels/colors.
+
+        markers : list
+            Marker styles used for each qubit.
 
         box_pos : tuple
             Position of inset axes in figure coordinates:
@@ -7940,22 +7938,17 @@ class combined_Qtemp_studies:
 
             y0 = n - i - 1
 
-            ax_grad.imshow(
-                grad,
-                extent=[0, 1, y0, y0 + 0.6],
-                aspect="auto"
-            )
+            ax_grad.imshow(grad, extent=[0, 1, y0, y0 + 0.6], aspect="auto")
 
-            ax_grad.text(
-                -0.08,
-                y0 + 0.3,
-                label,
-                ha="right",
-                va="center",
-                fontsize=14
-            )
+            q = qubits_to_plot[i]
+            q_marker = markers[q % len(markers)]
 
-        ax_grad.set_xlim(-0.25, 1.0)
+            ax_grad.plot(-0.52, y0 + 0.3, marker=q_marker, markersize=7, markerfacecolor=color, markeredgecolor=color,
+                         linestyle="None", clip_on=False)
+
+            ax_grad.text(-0.08, y0 + 0.3, label, ha="right", va="center", fontsize=14)
+
+        ax_grad.set_xlim(-0.35, 1.0)
         ax_grad.set_ylim(0, n)
         ax_grad.set_xticks([0, 1])
         ax_grad.set_xticklabels(["early", "late"], fontsize=14)
@@ -9182,7 +9175,7 @@ class combined_Qtemp_studies:
             all_files_Qtemp_results_RPMs,
             out_dir,
             qubits_to_plot=None,
-            colors=['blue', 'orange', 'purple', 'green', 'brown', 'palevioletred'],
+            colors=['#0072B2', '#E69F00', 'brown', '#009E73', 'purple', '#CC79A7'],
             tolerance_seconds=10, # 10s for all runs except QUIET run 6 SCIENCE RUN data (600s)
             plot_together=False,
             sort_by_time=True,
@@ -9665,14 +9658,8 @@ class combined_Qtemp_studies:
                 qubit_labels = [f"Q{q + 1}" for q in qubits_to_plot]
                 qubit_colors = [colors[q % len(colors)] for q in qubits_to_plot]
 
-                self.add_alpha_gradient_bars(
-                    fig,
-                    qubit_colors,
-                    qubit_labels,
-                    alpha_min=0.20,
-                    alpha_max=0.95,
-                    box_pos=(0.75, 0.65, 0.12, 0.22) # box_pos=(left, bottom, width, height)
-                )
+                self.add_alpha_gradient_bars(fig, qubit_colors, qubit_labels, qubits_to_plot, markers,
+                                             alpha_min=0.20, alpha_max=0.95, box_pos=(0.75, 0.65, 0.12, 0.22))
 
             # Only show marker-fill legend if using early/middle/late marker bins
             if plot_with_t_markers:
@@ -9912,14 +9899,8 @@ class combined_Qtemp_studies:
                 qubit_labels = [f"Q{q + 1}" for q in qubits_to_plot]
                 qubit_colors = [colors[q % len(colors)] for q in qubits_to_plot]
 
-                self.add_alpha_gradient_bars(
-                    fig,
-                    qubit_colors,
-                    qubit_labels,
-                    alpha_min=0.35,
-                    alpha_max=1.0,
-                    box_pos=(0.83, 0.15, 0.12, 0.22) # box_pos=(left, bottom, width, height)
-                )
+                self.add_alpha_gradient_bars(fig, qubit_colors, qubit_labels, qubits_to_plot, markers, alpha_min=0.35,
+                                             alpha_max=1.0, box_pos=(0.83, 0.15, 0.12, 0.22)) # box_pos=(left, bottom, width, height)
 
             out_path = os.path.join(paramvstime_dir, f"SSF_fid_vs_RPM_Pe_Subplots_{stamp}.pdf")
             fig.savefig(out_path, dpi=self.figure_quality)

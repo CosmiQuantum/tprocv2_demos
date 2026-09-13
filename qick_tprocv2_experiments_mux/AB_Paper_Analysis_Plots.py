@@ -817,7 +817,7 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
         ssf_kind="g",  # "g" or "ge"
         layout="separate",  # "separate" or "together"
         colors=('orange', 'blue', 'purple', 'green', 'brown', 'palevioletred'),
-        ssf_color="purple",
+        ssf_color="#E69F00", #color-blind friendly orange
         ylims=(0, 600),
         yticks=np.arange(0, 601, 100),
         showfliers=True,  # show outliers?
@@ -928,7 +928,7 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
         for b in bp["boxes"]:
             b.set_facecolor(color)
             b.set_edgecolor(color)
-            b.set_alpha(0.31)
+            b.set_alpha(0.35)
             b.set_linewidth(1.3)
 
         for m in bp["medians"]:
@@ -1354,7 +1354,7 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
         n_qubits=6,
         qubits_to_plot=None,
         colors=('orange', 'blue', 'purple', 'green', 'brown', 'palevioletred'),
-        ssf_color="purple",
+        ssf_color="#E69F00", #color-blind friendly orange
         ylims=None,
         yticks=None,
         showfliers=True,  # show outliers?
@@ -1426,7 +1426,7 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
         for b in bp["boxes"]:
             b.set_facecolor(color)
             b.set_edgecolor(color)
-            b.set_alpha(0.31)
+            b.set_alpha(0.35)
             b.set_linewidth(1.3)
 
         for m in bp["medians"]:

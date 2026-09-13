@@ -406,23 +406,23 @@ if qtemp_noisetemp_plot:
     for qi in range(nQ):
         ax = axes[qi]
 
-        # --- Run 5 -> Run 6 segment (purple) ---
+        # --- Run 5 -> Run 6 segment  ---
         ax.errorbar(
             runs[:2], T_qubit_mK[qi][:2],
             yerr=T_qubit_err_mK[qi][:2],
             fmt="o-",
-            color="purple",
+            color="#E69F00", #color-blind friendly orange
             capsize=3,
             elinewidth=1,
             label=r"$T_{\mathrm{eff}}$ (SSF)"  # (Run 5 SSF)
         )
 
-        # --- Run 6 -> Run 8 segment (palevioletred) ---
+        # --- Run 6 -> Run 8 segment ---
         ax.errorbar(
             runs[1:], T_qubit_mK[qi][1:],
             yerr=T_qubit_err_mK[qi][1:],
             fmt="o-",
-            color="darkblue",
+            color="brown",
             capsize=3,
             elinewidth=1,
             label=r"$T_{\mathrm{eff}}$ (RPM)"  # (Runs 6-9 RPM)
@@ -433,7 +433,7 @@ if qtemp_noisetemp_plot:
             runs,
             Te_mK[qi],
             "s--",
-            color="darkorange",
+            color="black",
             linewidth=2,
             label=r"$T_e$ (pred. noise)"
         )
@@ -460,7 +460,7 @@ if qtemp_noisetemp_plot:
                 T_qubit_mK[qi][idx2],
                 yerr=T_qubit_err_mK[qi][idx2],
                 fmt="o-",
-                color="darkblue",
+                color="brown",
                 capsize=2,
                 elinewidth=1,
                 markersize=4
@@ -471,7 +471,7 @@ if qtemp_noisetemp_plot:
                 x_zoom,
                 Te_mK[qi][idx2],
                 "s--",
-                color="darkorange",
+                color="black",
                 linewidth=1.5,
                 markersize=4)
 
