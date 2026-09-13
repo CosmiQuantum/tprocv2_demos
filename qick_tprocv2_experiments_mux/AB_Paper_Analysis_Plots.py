@@ -462,8 +462,10 @@ def boxwhisker_t1t2_per_qubit_vs_run(
     # )
     """
 
-    # ---------------- colors (set once, consistent everywhere) ----------------
-    color_map = {"T1": "tab:blue", "T2R": "tab:orange", "T2E": "tab:green"}
+    # ---------------- color-blind friendly colors  ----------------
+    color_map = {"T1": "#0072B2", #blue
+                 "T2R": "#D55E00", #vermilion
+                 "T2E": "#009E73"} #green
 
     metric_specs = []
     if do_T1:
