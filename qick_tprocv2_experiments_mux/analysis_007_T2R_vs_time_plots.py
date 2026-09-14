@@ -472,7 +472,7 @@ class T2rVsTime:
         analysis_folder = f"{self.outerFolder_save_plots}/features_vs_time/"
         self.create_folder_if_not_exists(analysis_folder)
 
-        font = 14
+        font = 24
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8), sharey=True, sharex=True)
@@ -520,7 +520,7 @@ class T2rVsTime:
             if show_legends:
                 ax.legend(edgecolor='black')
             ax.set_xlabel('Time', fontsize=font - 2)
-            ax.set_ylabel('T2R (us)', fontsize=font - 2)
+            ax.set_ylabel('T2R (µs)', fontsize=font - 2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
         plt.tight_layout()
@@ -590,8 +590,113 @@ class T2rVsTime:
             )
 
         ax.set_xlabel("Time", fontsize=font - 2)
-        ax.set_ylabel("T2R (us)", fontsize=font - 2)
+        ax.set_ylabel("T2R (µs)", fontsize=font - 2)
         ax.tick_params(axis="both", which="major", labelsize=12)
         plt.tight_layout()
         plt.savefig(analysis_folder + "T2R_vals_single_plot.pdf", transparent=True, dpi=self.final_figure_quality)
+        plt.close()
+
+    def plot_t2r_t1_single_qubit(self, qubit_index, t2r_date_times, t2r_vals, t2r_fit_err, t1_date_times, t1_vals,
+                                 t1_fit_err, show_legends=True, event_timestamps=None, event_labels=None,
+                                 event_colors=None, event_linestyles=None):
+        analysis_folder = f"{self.outerFolder_save_plots}/features_vs_time/"
+        self.create_folder_if_not_exists(analysis_folder)
+
+        import datetime
+        import matplotlib.pyplot as plt
+        import matplotlib.dates as mdates
+        import numpy as np
+
+        font = 24
+        colors = ["orange", "blue", "purple", "green", "brown", "pink"]
+        qubit_color = colors[qubit_index]
+        qubit_number = qubit_index + 1
+
+        fig, (ax_t2r, ax_t1) = plt.subplots(2, 1, figsize=(12, 10), sharex=True)
+        #fig.suptitle(f"Qubit {qubit_number}: T2R and T1 vs Time", fontsize=font) # commenting out for AB paper
+
+        # T2R
+        x = t2r_date_times[qubit_index]
+        y = t2r_vals[qubit_index]
+        err = t2r_fit_err[qubit_index]
+        datetime_objects = [datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
+        combined = list(zip(datetime_objects, y, err))
+        combined.sort(key=lambda tup: tup[0])
+
+        if len(combined) > 0:
+            sorted_x, sorted_y, sorted_err = zip(*combined)
+            sorted_x = np.asarray(sorted_x)
+            sorted_y = np.asarray(sorted_y, dtype=float)
+            sorted_err = np.asarray(sorted_err, dtype=float)
+            ax_t2r.errorbar(sorted_x, sorted_y, yerr=sorted_err, fmt="none", ecolor='#D55E00', elinewidth=1.7,
+                            capsize=0, label=f"Qubit {qubit_number}" if show_legends else None)
+            ax_t2r.scatter(sorted_x, sorted_y, s=16, color='#D55E00', alpha=0.8)
+
+        # T1
+        x = t1_date_times[qubit_index]
+        y = t1_vals[qubit_index]
+        err = t1_fit_err[qubit_index]
+        datetime_objects = [datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
+        combined = list(zip(datetime_objects, y, err))
+        combined.sort(key=lambda tup: tup[0])
+
+        if len(combined) > 0:
+            sorted_x, sorted_y, sorted_err = zip(*combined)
+            sorted_x = np.asarray(sorted_x)
+            sorted_y = np.asarray(sorted_y, dtype=float)
+            sorted_err = np.asarray(sorted_err, dtype=float)
+            ax_t1.errorbar(sorted_x, sorted_y, yerr=sorted_err, fmt="none", ecolor='#0072B2', elinewidth=1.7, capsize=0,
+                           label=f"Qubit {qubit_number}" if show_legends else None)
+            ax_t1.scatter(sorted_x, sorted_y, s=16, color='#0072B2', alpha=0.8)
+
+        # Event markers
+        if event_timestamps is not None:
+            n_events = len(event_timestamps)
+            event_labels = [None] * n_events if event_labels is None else event_labels
+            event_colors = ["black"] * n_events if event_colors is None else event_colors
+            event_linestyles = ["--"] * n_events if event_linestyles is None else event_linestyles
+
+            if not (len(event_labels) == len(event_colors) == len(event_linestyles) == n_events):
+                raise ValueError("All event argument lists must have the same length.")
+
+            for timestamp, label, line_color, linestyle in zip(event_timestamps, event_labels, event_colors,
+                                                               event_linestyles):
+                if isinstance(timestamp, str):
+                    timestamp = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+                ax_t2r.axvline(timestamp, color=line_color, linestyle=linestyle, linewidth=2.0, alpha=0.8,
+                               label=label if show_legends else None)
+                ax_t1.axvline(timestamp, color=line_color, linestyle=linestyle, linewidth=2.0, alpha=0.8,
+                              label=label if show_legends else None)
+
+        ax_t2r.set_ylabel(r"$T_2$ Ramsey ($\mu s$)", fontsize=font -1)
+        ax_t1.set_ylabel(r"$T_1$ ($\mu s$)", fontsize=font - 1)
+        ax_t1.set_xlabel("Time", fontsize=font - 1)
+
+        ax_t2r.tick_params(axis="y", which="major", labelsize=font -4)
+        ax_t1.tick_params(axis="y", which="major", labelsize=font -4)
+
+        ax_t2r.tick_params(axis="x", which="major", labelsize=font - 8)
+        ax_t1.tick_params(axis="x", which="major", labelsize=font - 8)
+
+        locator = mdates.AutoDateLocator(minticks=8, maxticks=9)
+        ax_t1.xaxis.set_major_locator(locator)
+        ax_t1.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
+        ax_t1.tick_params(axis="x", rotation=45)
+        for label in ax_t1.get_xticklabels():
+            label.set_ha("center")
+
+        ax_t2r.ticklabel_format(style="plain", axis="y")
+        ax_t1.ticklabel_format(style="plain", axis="y")
+
+        if show_legends:
+            for ax in [ax_t2r, ax_t1]:
+                handles, labels = ax.get_legend_handles_labels()
+                unique = dict(zip(labels, handles))
+                if unique:
+                    ax.legend(unique.values(), unique.keys(), edgecolor="black", fontsize=12)
+
+        plt.tight_layout()
+        save_path = analysis_folder + f"Q{qubit_number}_T2R_T1_vs_time_tog.pdf"
+        plt.savefig(save_path, transparent=True, dpi=self.final_figure_quality)
+        print("Plot saved to:", save_path)
         plt.close()
