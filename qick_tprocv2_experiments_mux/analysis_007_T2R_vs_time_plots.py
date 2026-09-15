@@ -612,7 +612,7 @@ class T2rVsTime:
         qubit_color = colors[qubit_index]
         qubit_number = qubit_index + 1
 
-        fig, (ax_t2r, ax_t1) = plt.subplots(2, 1, figsize=(12, 10), sharex=True)
+        fig, (ax_t2r, ax_t1) = plt.subplots(2, 1, figsize=(12, 10), sharex=True, sharey=True)
         #fig.suptitle(f"Qubit {qubit_number}: T2R and T1 vs Time", fontsize=font) # commenting out for AB paper
 
         # T2R
