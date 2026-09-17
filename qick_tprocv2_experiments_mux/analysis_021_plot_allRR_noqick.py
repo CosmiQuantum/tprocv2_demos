@@ -2316,7 +2316,7 @@ class PlotRR_noQick:
                     exp_config = eval(exp_config, safe_globals)
                     rabi_cfg = exp_config['power_rabi_ef']
 
-                    # ----------------------- Inside your per-dataset loop (right after you set round_num / batch_num / file_timestamp) ----------
+                    # ----------------------- Inside the per-dataset loop (right after you set round_num / batch_num / file_timestamp) ----------
                     if combine_IQ_signal and get_qtemp_data:
                         alpha = None
 
@@ -2324,7 +2324,7 @@ class PlotRR_noQick:
                         ssf_entries = ssf_by_qkey_and_time.get(int(q_key), [])
 
                         if run_num == 7 or run_num == 8 or run_num == 4 or run_num == 5 or run_num == 9:
-                            MAX_TIME_DIFF_SSF_RPM = 10.0  # seconds
+                            MAX_TIME_DIFF_SSF_RPM = 10.0  # seconds between saved h5 files in these runs
                         elif run_num == 6:
                             MAX_TIME_DIFF_SSF_RPM = 600
                         else:

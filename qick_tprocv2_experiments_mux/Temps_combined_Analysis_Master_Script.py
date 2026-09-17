@@ -76,8 +76,8 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
 comb_analysis_flags = {"load_rpm": False, "load_ssf": False, "use_cached_qtemp_files": True, "create_cached_qtemp_files": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False,
-                       "Pe_vs_time_comb_separate_plts": False, "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
-                       "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": True, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False, "SNR_vs_RRPM_Pe": False,
+                       "Pe_vs_time_comb_separate_plts": False, "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": True, "Pe_box_whisker_allruns_allQs": True, "ssf_box_whisker_allruns_allQs": False,
+                       "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": False, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False, "SNR_vs_RRPM_Pe": False,
                        "SNR_box_whisker_allruns_allQs": False, "ie_new_Pg_boxwhisk_allruns_allQs": False, "multirun_RPM_Pe_vs_t": False}
 
 # For London Penetration Depth analysis
@@ -1339,7 +1339,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
-run_num_list = [9] # for quiet, start at 5. no qtemp data for run 4. use run 9.2 for run 9c
+run_num_list = [5,6,7,8,9] # for quiet, start at 5. no qtemp data for run 4. use run 9.2 for run 9c
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
 rpm_Pe_by_run = {}      # rpm_Pe_by_run[run][qid] = [P_e, ...]
@@ -1754,8 +1754,8 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             rpm_temps_by_run=rpm_temps_by_run,
             ssf_g_temps_by_run=ssf_g_temps_by_run,
             ssf_ge_temps_by_run=ssf_ge_temps_by_run,
-            qubits_to_plot = [0,1,2],
-            plot_mode="compare_methods", # "hybrid" or "all_ssf" or "compare_methods"
+            qubits_to_plot = [0,1,2,3,4,5],
+            plot_mode="hybrid", # "hybrid" or "all_ssf" or "compare_methods"
             ssf_kind="g",
             layout="separate",
             colors=('brown', 'brown', 'brown',

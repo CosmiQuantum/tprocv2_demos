@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
 class T2rVsTime:
     def __init__(self, outerFolder_save_plots, run_number, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs,
@@ -225,16 +226,13 @@ class T2rVsTime:
         keep_ramsey = (delta_bic >= threshold)
         return keep_ramsey, delta_bic
 
-    def run(self,return_errs=False, t1_vals = None):
+    def run(self,return_errs=False, t1_vals = None, return_rnds = False):
         import datetime
         # ----------Load/get data------------------------
         t2_vals = {i: [] for i in range(self.number_of_qubits)}
         t2_errs = {i: [] for i in range(self.number_of_qubits)}
-        rounds = []
-        reps = []
-        file_names = []
-        date_times = {i: [] for i in range(self.number_of_qubits)}
-        mean_values = {}
+        date_times = {i: [] for i in range(self.number_of_qubits)} # timestamps of when files were saved
+        rounds = {i: [] for i in range(self.number_of_qubits)} # #RR data-taking round numbers
 
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
@@ -404,14 +402,21 @@ class T2rVsTime:
                             t2_vals[q_key].extend([t2r_est])
                             t2_errs[q_key].extend([t2r_err])
                             date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
+                            rounds[q_key].extend([round_num])
 
                             del T2_class_instance
 
                 del H5_class_instance
         if return_errs:
-            return date_times, t2_vals, t2_errs
+            if return_rnds:
+                return date_times, t2_vals, t2_errs, rounds
+            else:
+                return date_times, t2_vals, t2_errs
         else:
-            return date_times, t2_vals
+            if return_rnds:
+                return date_times, t2_vals, rounds
+            else:
+                return date_times, t2_vals
 
     def plot_without_errs(self, date_times, t2_vals, show_legends):
         # ---------------------------------plot-----------------------------------------------------
@@ -596,23 +601,23 @@ class T2rVsTime:
         plt.savefig(analysis_folder + "T2R_vals_single_plot.pdf", transparent=True, dpi=self.final_figure_quality)
         plt.close()
 
-    def plot_t2r_t1_single_qubit(self, qubit_index, t2r_date_times, t2r_vals, t2r_fit_err, t1_date_times, t1_vals,
-                                 t1_fit_err, show_legends=True, event_timestamps=None, event_labels=None,
-                                 event_colors=None, event_linestyles=None):
+    def plot_t2r_t1_single_qubit(self, qubit_index, t2r_date_times, t2r_vals, t2r_fit_err, rounds_t2r, t1_date_times, t1_vals,
+                                 t1_fit_err, rounds_t1, show_legends=True, event_timestamps=None, event_labels=None, event_colors=None, event_linestyles=None,
+                                plot_Tphi=False, font = 24, t1t2_ylims = (45, 95), tphi_ylims = (60, 310)):
+
         analysis_folder = f"{self.outerFolder_save_plots}/features_vs_time/"
         self.create_folder_if_not_exists(analysis_folder)
 
-        import datetime
-        import matplotlib.pyplot as plt
-        import matplotlib.dates as mdates
-        import numpy as np
-
-        font = 24
         colors = ["orange", "blue", "purple", "green", "brown", "pink"]
-        qubit_color = colors[qubit_index]
+        qubit_color = colors[qubit_index] # in case it's needed in the future
         qubit_number = qubit_index + 1
 
-        fig, (ax_t2r, ax_t1) = plt.subplots(2, 1, figsize=(12, 10), sharex=True, sharey=True)
+        if plot_Tphi:
+            fig, (ax_t2r, ax_t1, ax_tphi) = plt.subplots(3, 1, figsize=(12, 14), sharex=True)
+            ax_t1.sharey(ax_t2r)
+        else:
+            fig, (ax_t2r, ax_t1) = plt.subplots(2, 1, figsize=(12, 10), sharex=True, sharey=True)
+
         #fig.suptitle(f"Qubit {qubit_number}: T2R and T1 vs Time", fontsize=font) # commenting out for AB paper
 
         # T2R
@@ -649,6 +654,15 @@ class T2rVsTime:
                            label=f"Qubit {qubit_number}" if show_legends else None)
             ax_t1.scatter(sorted_x, sorted_y, s=16, color='#0072B2', alpha=0.8)
 
+        if plot_Tphi:
+            matched_times, tphi_values, tphi_errors = self.calc_and_plot_tphi_single_qubit(qubit_index, t2r_date_times, t2r_vals, t2r_fit_err,
+                                                                                           rounds_t2r, t1_date_times, t1_vals, t1_fit_err,
+                                                                                           rounds_t1,plot_Tphi_vs_time=False)
+
+            ax_tphi.errorbar(matched_times, tphi_values, yerr=tphi_errors, fmt="none", ecolor="olive", elinewidth=1.7,
+                             capsize=0, label=f"Qubit {qubit_number}" if show_legends else None)
+            ax_tphi.scatter(matched_times, tphi_values, s=16, color="olive", alpha=0.9)
+
         # Event markers
         if event_timestamps is not None:
             n_events = len(event_timestamps)
@@ -667,36 +681,202 @@ class T2rVsTime:
                                label=label if show_legends else None)
                 ax_t1.axvline(timestamp, color=line_color, linestyle=linestyle, linewidth=2.0, alpha=0.8,
                               label=label if show_legends else None)
+                if plot_Tphi:
+                    ax_tphi.axvline(timestamp, color=line_color, linestyle=linestyle, linewidth=2.0, alpha=0.8,
+                                    label=label if show_legends else None)
 
-        ax_t2r.set_ylabel(r"$T_2$ Ramsey ($\mu s$)", fontsize=font -1)
+        ax_t2r.set_ylabel(r"$T_{2}^{\mathrm{Ramsey}}$ ($\mu s$)", fontsize=font -1)
         ax_t1.set_ylabel(r"$T_1$ ($\mu s$)", fontsize=font - 1)
-        ax_t1.set_xlabel("Time", fontsize=font - 1)
+        if plot_Tphi:
+            ax_tphi.set_ylabel(r"$T_{\phi}^{\mathrm{Ramsey}}$ ($\mu s$)", fontsize=font - 1)
+            ax_tphi.set_xlabel("Time", fontsize=font - 1)
+        else:
+            ax_t1.set_xlabel("Time", fontsize=font - 1)
 
-        ax_t2r.tick_params(axis="y", which="major", labelsize=font -4)
-        ax_t1.tick_params(axis="y", which="major", labelsize=font -4)
+        ax_t2r.tick_params(axis="y", which="major", labelsize=font - 4)
+        ax_t1.tick_params(axis="y", which="major", labelsize=font - 4)
+        if plot_Tphi:
+            ax_tphi.tick_params(axis="y", which="major", labelsize=font - 4)
 
-        ax_t2r.tick_params(axis="x", which="major", labelsize=font - 8)
-        ax_t1.tick_params(axis="x", which="major", labelsize=font - 8)
+        # Set y-axis limits and exactly 5 y-ticks
+        ax_t2r.set_ylim(t1t2_ylims)
+        ax_t2r.set_yticks(np.linspace(t1t2_ylims[0], t1t2_ylims[1], 6))
+        ax_t2r.yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
 
+        if plot_Tphi:
+            ax_tphi.set_ylim(tphi_ylims)
+            ax_tphi.set_yticks(np.linspace(tphi_ylims[0], tphi_ylims[1], 6))
+            ax_tphi.yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
+            ax_tphi.tick_params(axis="y", which="major", labelsize=font - 4)
+
+        # xticks
+        bottom_ax = ax_tphi if plot_Tphi else ax_t1
         locator = mdates.AutoDateLocator(minticks=8, maxticks=9)
-        ax_t1.xaxis.set_major_locator(locator)
-        ax_t1.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
-        ax_t1.tick_params(axis="x", rotation=45)
-        for label in ax_t1.get_xticklabels():
+        bottom_ax.xaxis.set_major_locator(locator)
+        bottom_ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
+        bottom_ax.tick_params(axis="x", rotation=45, labelsize=font - 8)
+
+        for label in bottom_ax.get_xticklabels():
             label.set_ha("center")
 
-        ax_t2r.ticklabel_format(style="plain", axis="y")
-        ax_t1.ticklabel_format(style="plain", axis="y")
+        axes = [ax_t2r, ax_t1, ax_tphi] if plot_Tphi else [ax_t2r, ax_t1]
 
         if show_legends:
-            for ax in [ax_t2r, ax_t1]:
+            for ax in axes:
+                handles, labels = ax.get_legend_handles_labels()
+                unique = dict(zip(labels, handles))
+                if unique:
+                    ax.legend(unique.values(), unique.keys(), edgecolor="black", fontsize=14)
+
+        plt.tight_layout()
+        if plot_Tphi:
+            save_path = analysis_folder + f"Q{qubit_number}_T2R_T1_Tphi_vs_time_tog.pdf"
+        else:
+            save_path = analysis_folder + f"Q{qubit_number}_T2R_T1_vs_time_tog.pdf"
+        plt.savefig(save_path, transparent=True, dpi=self.final_figure_quality)
+        print("Plot saved to:", save_path)
+
+    def calc_and_plot_tphi_single_qubit(self, qubit_index, t2r_date_times, t2r_vals, t2r_fit_err, rounds_t2r, t1_date_times,
+                               t1_vals, t1_fit_err, rounds_t1, show_legends=True, event_timestamps=None,
+                               event_labels=None, event_colors=None, event_linestyles=None, plot_Tphi_vs_time = True):
+
+        analysis_folder = f"{self.outerFolder_save_plots}/features_vs_time/"
+        self.create_folder_if_not_exists(analysis_folder)
+
+        font = 24
+        qubit_number = qubit_index + 1
+
+        # T2 Ramsey data
+        t2r_times = [datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in
+                     t2r_date_times[qubit_index]]
+        t2r_values = np.asarray(t2r_vals[qubit_index], dtype=float)
+        t2r_errors = np.asarray(t2r_fit_err[qubit_index], dtype=float)
+        t2r_rounds = np.asarray(rounds_t2r[qubit_index])
+
+        print("Length of T2R values for this qubit:", len(t2r_values))
+
+        # T1 data
+        t1_times = [datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in
+                    t1_date_times[qubit_index]]
+        t1_values = np.asarray(t1_vals[qubit_index], dtype=float)
+        t1_errors = np.asarray(t1_fit_err[qubit_index], dtype=float)
+        t1_rounds = np.asarray(rounds_t1[qubit_index])
+
+        print("Length of T1 values for this qubit:", len(t1_values))
+
+        if len(t2r_values) == 0 or len(t1_values) == 0:
+            print(f"No T1 or T2R data available for Qubit {qubit_number}.")
+            return
+
+        # Keep T2R and T1 data sorted by time
+        t2r_combined = sorted(zip(t2r_times, t2r_values, t2r_errors, t2r_rounds), key=lambda x: x[0])
+        t1_combined = sorted(zip(t1_times, t1_values, t1_errors, t1_rounds), key=lambda x: x[0])
+
+        matched_times = []
+        matched_rounds = []
+        tphi_values = []
+        tphi_errors = []
+
+        for t2_time, t2, sigma_t2, t2_round in t2r_combined:
+
+            same_round_t1 = [(t1_time, t1, sigma_t1) for t1_time, t1, sigma_t1, t1_round in t1_combined if
+                             t1_round == t2_round]
+
+            if len(same_round_t1) == 0:
+                print(
+                    f"Skipping T2R point at {t2_time}, round {t2_round}: no T1 measurement found with the same round number.")
+                continue
+
+            time_differences = np.asarray([abs((t1_time - t2_time).total_seconds()) for t1_time, _, _ in same_round_t1])
+            nearest_index = np.argmin(time_differences)
+
+            matched_t1_time, t1, sigma_t1 = same_round_t1[nearest_index]
+
+            # Calculate T_phi: 1/T_phi = 1/T2R - 1/(2*T1)
+            gamma_phi = (1.0 / t2) - (1.0 / (2.0 * t1))
+
+            if gamma_phi <= 0:
+                print(
+                    f"Skipping T2R point at {t2_time}, round {t2_round}: T2R={t2:.3f} us, T1={t1:.3f} us gives non-positive dephasing rate.")
+                continue
+
+            tphi = 1.0 / gamma_phi
+
+            # Propagate T1 and T2R fit uncertainties
+            d_tphi_d_t2 = (tphi ** 2) / (t2 ** 2)
+            d_tphi_d_t1 = -(tphi ** 2) / (2.0 * t1 ** 2)
+            sigma_tphi = np.sqrt((d_tphi_d_t2 * sigma_t2) ** 2 + (d_tphi_d_t1 * sigma_t1) ** 2)
+
+            matched_times.append(t2_time)
+            matched_rounds.append(t2_round)
+            tphi_values.append(tphi)
+            tphi_errors.append(sigma_tphi)
+
+            print(
+                f"Round {t2_round} | T2R time: {t2_time} | T1 time: {matched_t1_time} | dt = {time_differences[nearest_index] / 60:.2f} min | T2R = {t2:.3f} ± {sigma_t2:.3f} us | T1 = {t1:.3f} ± {sigma_t1:.3f} us | Tphi = {tphi:.3f} ± {sigma_tphi:.3f} us")
+
+        matched_times = np.asarray(matched_times)
+        matched_rounds = np.asarray(matched_rounds)
+        tphi_values = np.asarray(tphi_values)
+        tphi_errors = np.asarray(tphi_errors)
+
+        if len(tphi_values) == 0:
+            print(f"No valid T_phi values calculated for Qubit {qubit_number}.")
+            return
+
+        # Plot T_phi
+        if plot_Tphi_vs_time:
+            fig, ax = plt.subplots(figsize=(12, 6))
+
+            ax.errorbar(matched_times, tphi_values, yerr=tphi_errors, fmt="none", ecolor="#009E73", elinewidth=1.7,
+                        capsize=0, label=f"Qubit {qubit_number}" if show_legends else None)
+            ax.scatter(matched_times, tphi_values, s=16, color="#009E73", alpha=0.8)
+
+            # Event markers
+            if event_timestamps is not None:
+                n_events = len(event_timestamps)
+                event_labels = [None] * n_events if event_labels is None else event_labels
+                event_colors = ["black"] * n_events if event_colors is None else event_colors
+                event_linestyles = ["--"] * n_events if event_linestyles is None else event_linestyles
+
+                if not (len(event_labels) == len(event_colors) == len(event_linestyles) == n_events):
+                    raise ValueError("All event argument lists must have the same length.")
+
+                for timestamp, label, line_color, linestyle in zip(event_timestamps, event_labels, event_colors,
+                                                                   event_linestyles):
+                    if isinstance(timestamp, str):
+                        timestamp = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+                    ax.axvline(timestamp, color=line_color, linestyle=linestyle, linewidth=2.0, alpha=0.8,
+                               label=label if show_legends else None)
+
+            ax.set_ylabel(r"$T_{\phi}^{\mathrm{Ramsey}}$ ($\mu$s)", fontsize=font - 1)
+            ax.set_xlabel("Time", fontsize=font - 1)
+
+            ax.tick_params(axis="y", which="major", labelsize=font - 4)
+            ax.tick_params(axis="x", which="major", labelsize=font - 8)
+
+            locator = mdates.AutoDateLocator(minticks=8, maxticks=9)
+            ax.xaxis.set_major_locator(locator)
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
+            ax.tick_params(axis="x", rotation=45)
+
+            for label in ax.get_xticklabels():
+                label.set_ha("center")
+
+            ax.ticklabel_format(style="plain", axis="y")
+
+            if show_legends:
                 handles, labels = ax.get_legend_handles_labels()
                 unique = dict(zip(labels, handles))
                 if unique:
                     ax.legend(unique.values(), unique.keys(), edgecolor="black", fontsize=12)
 
-        plt.tight_layout()
-        save_path = analysis_folder + f"Q{qubit_number}_T2R_T1_vs_time_tog.pdf"
-        plt.savefig(save_path, transparent=True, dpi=self.final_figure_quality)
-        print("Plot saved to:", save_path)
-        plt.close()
+            plt.tight_layout()
+
+            save_path = analysis_folder + f"Q{qubit_number}_Tphi_vs_time.pdf"
+            plt.savefig(save_path, transparent=True, dpi=self.final_figure_quality)
+
+            print("Plot saved to:", save_path)
+
+        return matched_times, tphi_values, tphi_errors
+

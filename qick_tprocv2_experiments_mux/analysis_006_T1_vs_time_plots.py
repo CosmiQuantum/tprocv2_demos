@@ -263,7 +263,7 @@ class T1VsTime:
         print(f"[WARN] Could not find res_length in any config file in: {configs_dir}")
         return np.nan
 
-    def run(self, return_errs = False, exp_extension='', process_shots = False, use_png_timestamps = False):
+    def run(self, return_errs = False, exp_extension='', process_shots = False, use_png_timestamps = False, return_rnds = False):
         import datetime
 
         if use_png_timestamps:
@@ -277,13 +277,10 @@ class T1VsTime:
         t1_errs = {i: [] for i in range(self.number_of_qubits)}
         I_per_pt_errs = {i: [] for i in range(self.number_of_qubits)} # to store the errors of each point in the I-T1 curve
         Q_per_pt_errs = {i: [] for i in range(self.number_of_qubits)} # to store the errors of each point in the Q-T1 curve
-
-        rounds = []
-        reps = []
-        file_names = []
-        date_times = {i: [] for i in range(self.number_of_qubits)} # to store timestamps
+        rounds = {i: [] for i in range(self.number_of_qubits)} #RR data-taking round numbers
+        date_times = {i: [] for i in range(self.number_of_qubits)} # to store timestamps of when h5 files were saved
         res_lengths = {i: [] for i in range(self.number_of_qubits)} # to store readout/pulse lengths
-        mean_values = {}
+
         timestamp_dir = "" ""
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
@@ -504,15 +501,15 @@ class T1VsTime:
 
                             t1_vals[q_key].extend([T1_est])
                             t1_errs[q_key].extend([T1_err])
-
-                            res_lengths[q_key].append(res_length)
+                            rounds[q_key].extend([round_num])
+                            res_lengths[q_key].extend([res_length])
 
                             # --- store per-point errors too, only if we had process_shots ---
                             if process_shots:
                                 I_per_pt_errs[int(q_key)].append(I_errs)
                                 Q_per_pt_errs[int(q_key)].append(Q_errs)
 
-                            if use_png_timestamps:
+                            if use_png_timestamps: # date_times: not necessarily aligned when use_png_timestamps=True (should fix)
                                 # --- use PNG filename timestamp from mapping if available ------
                                 # the reason for this is bc the png timestamp is more accurate than the h5 file ones
                                 if mapping_data is not None:
@@ -552,13 +549,20 @@ class T1VsTime:
 
         if return_errs:
             if process_shots:
-                # return per-point errors too
-                return date_times, t1_vals, t1_errs, I_per_pt_errs, Q_per_pt_errs, res_lengths
+                if return_rnds:
+                    return date_times, t1_vals, t1_errs, I_per_pt_errs, Q_per_pt_errs, res_lengths, rounds
+                else:
+                    return date_times, t1_vals, t1_errs, I_per_pt_errs, Q_per_pt_errs, res_lengths
             else:
-                # you asked for errs, but we didn't have shots
-                return date_times, t1_vals, t1_errs, res_lengths
+                if return_rnds:
+                    return date_times, t1_vals, t1_errs, res_lengths, rounds
+                else:
+                    return date_times, t1_vals, t1_errs, res_lengths
         else:
-            return date_times, t1_vals, res_lengths
+            if return_rnds:
+                return date_times, t1_vals, res_lengths, rounds
+            else:
+                return date_times, t1_vals, res_lengths
 
     def run_act_reset(self, return_errs=False, process_shots=False, use_png_timestamps=False):
         import datetime

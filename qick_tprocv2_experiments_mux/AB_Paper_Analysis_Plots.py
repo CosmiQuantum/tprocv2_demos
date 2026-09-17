@@ -374,8 +374,8 @@ def print_median_spread_table(run_num_list, box_data, q, units="", mode="q1q3"):
     """
     Prints spread stats for a single qubit q across runs.
 
-    mode="q1q3"  -> prints median (Q1, Q3)  [recommended for papers]
-    mode="iqr2"  -> prints median ± IQR/2
+    mode="q1q3" -> prints median with asymmetric Q1/Q3 bounds: median ^{+(Q3-median)}_{-(median-Q1)}
+    mode="iqr2" -> prints median ± IQR/2
 
     units can be "", "MHz", "mK", "%", etc.
     """
@@ -392,31 +392,25 @@ def print_median_spread_table(run_num_list, box_data, q, units="", mode="q1q3"):
         q1 = np.percentile(arr, 25)
         q3 = np.percentile(arr, 75)
         iqr = q3 - q1
+        lower_spread = med - q1
+        upper_spread = q3 - med
 
-        if "Hz" in units:  # more decimals for qubit freq vals to identify subtle shifts
+        if "Hz" in units:
             if mode.lower() == "iqr2":
                 spread = 0.5 * iqr
-                print(
-                    f"Run {r}, Q{q + 1}: "
-                    f"{med:.6f} ± {spread:.6f} {units}  "
-                    f"(IQR={iqr:.6f} {units}, n={arr.size})")
+                print(f"Run {r}, Q{q + 1}: {med:.6f} ± {spread:.6f} {units}  (IQR={iqr:.6f} {units}, n={arr.size})")
+            elif mode.lower() == "q1q3":
+                print(f"Run {r}, Q{q + 1}: {med:.6f} +{upper_spread:.6f}/-{lower_spread:.6f} {units}  (Q1={q1:.6f}, Q3={q3:.6f}, n={arr.size})")
             else:
-                print(
-                    f"Run {r}, Q{q + 1}: "
-                    f"{med:.6f} ({q1:.6f}, {q3:.6f}) {units}  "
-                    f"[n={arr.size}]")
+                raise ValueError("mode must be 'q1q3' or 'iqr2'")
         else:
             if mode.lower() == "iqr2":
                 spread = 0.5 * iqr
-                print(
-                    f"Run {r}, Q{q + 1}: "
-                    f"{med:.4f} ± {spread:.4f} {units}  "
-                    f"(IQR={iqr:.4f} {units}, n={arr.size})")
+                print(f"Run {r}, Q{q + 1}: {med:.4f} ± {spread:.4f} {units}  (IQR={iqr:.4f} {units}, n={arr.size})")
+            elif mode.lower() == "q1q3":
+                print(f"Run {r}, Q{q + 1}: {med:.4f} +{upper_spread:.4f}/-{lower_spread:.4f} {units}  (Q1={q1:.4f}, Q3={q3:.4f}, n={arr.size})")
             else:
-                print(
-                    f"Run {r}, Q{q + 1}: "
-                    f"{med:.4f} ({q1:.4f}, {q3:.4f}) {units}  "
-                    f"[n={arr.size}]")
+                raise ValueError("mode must be 'q1q3' or 'iqr2'")
 
 def boxwhisker_t1t2_per_qubit_vs_run(
         run_num_list,
@@ -553,7 +547,8 @@ def boxwhisker_t1t2_per_qubit_vs_run(
 
             for (label, vals_by_run, color), off in zip(metric_specs, offsets):
                 box_data = [cell_to_1d(vals_by_run[r][q]) for r in run_num_list]
-                print_median_spread_table(run_num_list, box_data, q, units="µs", mode="iqr2")
+                print(f"{label} Results:")
+                print_median_spread_table(run_num_list, box_data, q, units="µs", mode="q1q3")
                 positions = base_pos + off
 
                 bp = ax.boxplot(
@@ -597,7 +592,7 @@ def boxwhisker_t1t2_per_qubit_vs_run(
             for q in range(n_qubits):
                 ax = axes[q]
                 box_data = [cell_to_1d(vals_by_run[r][q]) for r in run_num_list]
-                print_median_spread_table(run_num_list, box_data, q, units="µs", mode="iqr2")
+                print_median_spread_table(run_num_list, box_data, q, units="µs", mode="q1q3")
 
                 bp = ax.boxplot(
                     box_data,
@@ -759,8 +754,7 @@ def boxwhisker_resleng_per_qubit_vs_run(
             box_data,
             q,
             units="µs",
-            mode="iqr2"
-        )
+            mode="q1q3")
 
         bp = ax.boxplot(
             box_data,
@@ -1022,11 +1016,11 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
 
             if plot_mode == "compare_methods":
                 print(f"\nHybrid summary for Qubit {q + 1}:")
-                print_median_spread_table(run_num_list, box_data, q, units="mK", mode="iqr2")
+                print_median_spread_table(run_num_list, box_data, q, units="mK", mode="q1q3")
 
                 ssf_box_data = [cell_to_1d(get_cell(ssf_dict, r, q)) for r in run_num_list]
                 print(f"\nSSF-only summary for Qubit {q + 1}:")
-                print_median_spread_table(run_num_list, ssf_box_data, q, units="mK", mode="iqr2")
+                print_median_spread_table(run_num_list, ssf_box_data, q, units="mK", mode="q1q3")
                 print("\n")
 
                 main_positions = np.array([
@@ -1037,7 +1031,7 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
             else:
                 main_positions = base_pos
                 main_width = 0.55
-                print_median_spread_table(run_num_list, box_data, q, units="mK", mode="iqr2")
+                print_median_spread_table(run_num_list, box_data, q, units="mK", mode="q1q3")
 
             bp = ax.boxplot(
                 box_data,
@@ -1260,13 +1254,13 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
 
             if plot_mode == "compare_methods":
                 print(f"\nHybrid summary for Qubit {q + 1}:")
-                print_median_spread_table(run_num_list, box_data, q, units="mK", mode="iqr2")
+                print_median_spread_table(run_num_list, box_data, q, units="mK", mode="q1q3")
                 ssf_box_data = [cell_to_1d(get_cell(ssf_dict, r, q)) for r in run_num_list]
                 print(f"\nSSF-only summary for Qubit {q + 1}:")
-                print_median_spread_table(run_num_list, ssf_box_data, q, units="mK", mode="iqr2")
+                print_median_spread_table(run_num_list, ssf_box_data, q, units="mK", mode="q1q3")
                 print("\n")
             else:
-                print_median_spread_table(run_num_list, box_data, q, units="mK", mode="iqr2")
+                print_median_spread_table(run_num_list, box_data, q, units="mK", mode="q1q3")
 
             bp = ax.boxplot(
                 box_data,
@@ -1504,7 +1498,7 @@ def boxwhisker_pe_per_qubit_vs_run_hybrid(
             box_data,
             q,
             units="%",
-            mode="iqr2")  # or "q1q3" if you want paper-style output
+            mode="q1q3")
 
         print(f"\nQubit {q + 1} spread summary:")
         for run, arr, var, std in zip(run_num_list, box_data, variance_per_run, std_per_run):
@@ -1853,7 +1847,7 @@ def boxwhisker_qfreq_per_qubit_vs_run(
             box_data,
             q,
             units="MHz",
-            mode="iqr2"  # or "q1q3" if you want paper-style output
+            mode="q1q3"
         )
 
         bp = ax.boxplot(
@@ -2053,7 +2047,7 @@ def boxwhisker_ssf_per_qubit_vs_run(
             run_num_list,
             box_data,
             q,
-            mode="iqr2"
+            mode="q1q3"
         )
 
         bp = ax.boxplot(
@@ -2257,8 +2251,7 @@ def boxwhisker_snr_per_qubit_vs_run(
             run_num_list,
             box_data,
             q,
-            mode="iqr2"
-        )
+            mode="q1q3")
 
         bp = ax.boxplot(
             box_data,
@@ -2479,8 +2472,7 @@ def boxwhisker_ie_new_Pg_per_Q_vs_run(
             run_num_list,
             box_data,
             q,
-            mode="iqr2"
-        )
+            mode="q1q3")
 
         bp = ax.boxplot(
             box_data,
