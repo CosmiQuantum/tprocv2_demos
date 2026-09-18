@@ -11,26 +11,56 @@ qtemp_noisetemp_plot = True
 extra_noisepwr_calcs = False
 
 # ------------------------------------------------------------
-# Measured Pe values (Run 4 column will be dropped)
+# Pre-computed effective qubit temperatures from box plots
+#
+# Central value = median
+# Lower spread  = median - Q1
+# Upper spread  = Q3 - median
+#
+# rows = qubits 1-6
+# columns = Runs 5-9
 # ------------------------------------------------------------
-# Updated using final values from run 9a
-Pe_meas = [
-    [None, 0.2622, 0.1223, 0.0802, 0.0566, 0.0135],  # Qubit 1
-    [None, 0.3799, 0.1039, 0.0880, 0.0808, 0.0254],  # Qubit 2
-    [None, 0.2306, 0.1376, 0.0766, 0.0738, 0.0292],  # Qubit 3
-    [None, 0.3553, 0.1703, 0.0883, 0.1112, 0.0264 ],  # Qubit 4
-    [None, 0.2206, 0.0610, 0.0806, 0.0521, None],    # Qubit 5
-    [None, 0.2485, 0.0685, 0.0466, 0.0296, 0.0103],  # Qubit 6
-]
 
-Pe_err = [
-    [None, 0.0386, 0.0203, 0.0056, 0.0026, 0.0057],  # Qubit 1
-    [None, 0.0109, 0.0050, 0.0027, 0.0037, 0.0071],  # Qubit 2
-    [None, 0.0109, 0.0173, 0.0029, 0.0054, 0.0103],  # Qubit 3
-    [None, 0.0085, 0.0169, 0.0048, 0.0152, 0.0080],  # Qubit 4
-    [None, 0.0077, 0.0201, 0.0032, 0.0040, None],    # Qubit 5
-    [None, 0.0072, 0.0038, 0.0034, 0.0040, 0.0031],  # Qubit 6
-]
+T_qubit_mK = np.array([
+    [193.9678, 101.6589, 81.9942,  71.2653, 47.0581],  # Q1
+    [374.3313,  84.7427, 78.1897,  75.2878, 50.5346],  # Q2
+    [165.4990, 108.3733, 79.9452,  78.8874, 57.2820],  # Q3
+    [359.0683, 134.7626, 91.4804, 102.8802, 59.7384],  # Q4
+    [170.0469,  78.1949, 87.8694,  73.9253, np.nan],   # Q5
+    [216.8889,  91.5844, 79.2936,  68.7476, 52.8615],  # Q6
+], dtype=float)
+
+
+T_qubit_err_lower_mK = np.array([
+    [49.4010, 11.7431, 2.7645, 1.1609, 3.8532],  # Q1
+    [33.0225,  0.8769, 1.1889, 1.6727, 2.9745],  # Q2
+    [ 8.0601,  8.0518, 1.3146, 2.3091, 4.5796],  # Q3
+    [22.9851,  7.5443, 1.7632, 6.9082, 3.8344],  # Q4
+    [ 5.2266,  3.6156, 1.6989, 2.1162, np.nan],   # Q5
+    [ 6.7077,  1.6694, 2.2182, 2.3415, 4.4683],  # Q6
+], dtype=float)
+
+
+T_qubit_err_upper_mK = np.array([
+    [13.7742,  7.6677, 2.3406, 1.3248, 5.3324],  # Q1
+    [38.3340,  3.3773, 1.0722, 1.4478, 4.8221],  # Q2
+    [ 8.7771,  9.2237, 1.2893, 2.5915, 7.0070],  # Q3
+    [21.1357, 13.2360, 2.9150, 8.3509, 6.2524],  # Q4
+    [ 6.8646, 16.2053, 1.4002, 1.9969, np.nan],   # Q5
+    [ 8.4017,  2.5366, 1.8165, 3.1249, 2.8429],  # Q6
+], dtype=float)
+
+
+# Matplotlib asymmetric yerr format:
+# shape = (2, nQ, nRuns)
+# [0] = lower errors
+# [1] = upper errors
+T_qubit_err_mK = np.array([
+    T_qubit_err_lower_mK,
+    T_qubit_err_upper_mK ])
+
+# Kelvin version, needed later for the extra-noise calculations
+T_qubit_K = T_qubit_mK / 1e3
 
 # ------------------------------------------------------------
 # Qubit frequencies (MHz) (Run 4 column will be dropped to match Pe data)
@@ -48,13 +78,24 @@ f_ge_MHz = [
     [4997.857624, 5000.619729, 4999.514502, 5006.154276, 5018.137806, 5050.780159],
 ]
 
-f_ge_err_MHz = [
-    [0.005543, 0.016434, 0.043895, 0.006612, 0.007951, 0.004289],
-    [0.010961, 0.012449, 0.047455, 0.004619, 0.019305, 0.017819],
-    [0.283516, 0.007821, 0.023028, 0.004171, 0.021618, 0.004278],
-    [0.007703, 0.016245, 0.038586, 0.007740, 0.111560, 0.003931],
-    [0.007780, 0.009108, 3.810132, 0.008955, 0.015478, None],
-    [0.006979, 0.006312, 0.018975, 0.004016, 0.056685, 0.012151],
+# Lower frequency error = median - Q1
+f_ge_err_lower_MHz = [
+    [0.005504, 0.014681, 0.042089, 0.006389, 0.008045, 0.003551],  # Q1
+    [0.010188, 0.015217, 0.052229, 0.004570, 0.025381, 0.021308],  # Q2
+    [0.288242, 0.005879, 0.022725, 0.004876, 0.017929, 0.005338],  # Q3
+    [0.009701, 0.015805, 0.038501, 0.007324, 0.176231, 0.003777],  # Q4
+    [0.010733, 0.008222, 1.499276, 0.009855, 0.015326, None],      # Q5
+    [0.007531, 0.006948, 0.013807, 0.004278, 0.090382, 0.010142],  # Q6
+]
+
+# Upper frequency error = Q3 - median
+f_ge_err_upper_MHz = [
+    [0.005583, 0.018186, 0.045701, 0.006835, 0.007856, 0.005027],  # Q1
+    [0.011733, 0.009682, 0.042681, 0.004667, 0.013229, 0.014331],  # Q2
+    [0.278790, 0.009764, 0.023331, 0.003466, 0.025307, 0.003219],  # Q3
+    [0.005705, 0.016684, 0.038672, 0.008156, 0.046889, 0.004086],  # Q4
+    [0.004826, 0.009995, 6.120989, 0.008055, 0.015631, None],      # Q5
+    [0.006427, 0.005675, 0.024143, 0.003753, 0.022988, 0.014160],  # Q6
 ]
 
 # ------------------------------------------------------------
@@ -62,40 +103,31 @@ f_ge_err_MHz = [
 # ------------------------------------------------------------
 runs = np.array([5, 6, 7, 8, 9], dtype=int)
 
-Pe_meas = np.array(Pe_meas, dtype=object).astype(float)[:, 1:]  # (6,5)
-Pe_err = np.array(Pe_err, dtype=object).astype(float)[:, 1:]  # (6,5)
-
 f_ge_MHz = np.array(f_ge_MHz, dtype=object).astype(float)[:, 1:]
-f_ge_err_MHz = np.array(f_ge_err_MHz, dtype=object).astype(float)[:, 1:]
+f_ge_err_lower_MHz = np.array(f_ge_err_lower_MHz, dtype=object).astype(float)[:, 1:]
+f_ge_err_upper_MHz = np.array(f_ge_err_upper_MHz, dtype=object).astype(float)[:, 1:]
 
 f_ge_Hz = f_ge_MHz * 1e6
-f_ge_err_Hz = f_ge_err_MHz * 1e6
+f_ge_err_lower_Hz = f_ge_err_lower_MHz * 1e6
+f_ge_err_upper_Hz = f_ge_err_upper_MHz * 1e6
 
-if Pe_meas.shape != f_ge_Hz.shape:
-    raise ValueError(f"Shape mismatch: Pe_meas {Pe_meas.shape} vs f_ge_Hz {f_ge_Hz.shape}")
-
+if T_qubit_mK.shape != f_ge_Hz.shape:
+    raise ValueError(
+        f"Shape mismatch: T_qubit_mK {T_qubit_mK.shape} "
+        f"vs f_ge_Hz {f_ge_Hz.shape}"
+    )
 # ------------------------------------------------------------
-# Infer T_qubit from Pe
-# T = hf / (kB * ln((1-Pe)/Pe))
+# Constants
 # ------------------------------------------------------------
 h = 6.62607015e-34
 kB = 1.380649e-23
 
-def T_from_Pe(Pe, f_Hz):
-    return (h * f_Hz) / (kB * np.log((1 - Pe) / Pe))  # Kelvin
-
-T_qubit_K = T_from_Pe(Pe_meas, f_ge_Hz)
-T_qubit_mK = 1e3 * T_qubit_K
-
-# ------------------------------------------------------------
-# Propagate errors: Pe_err (and optionally f_err) -> T_err
-# ------------------------------------------------------------
-L = np.log((1 - Pe_meas) / Pe_meas)
-
-dT_dPe_K = (h * f_ge_Hz / kB) * (1.0 / (L ** 2)) * (1.0 / (1 - Pe_meas) + 1.0 / Pe_meas)
-dT_df_K_per_Hz = h / (kB * L)
-
-T_qubit_err_mK = 1e3 * np.sqrt((dT_dPe_K * Pe_err) ** 2 + (dT_df_K_per_Hz * f_ge_err_Hz) ** 2)
+# --- Not used but here in case needed in the future ---
+# Pe_low = Pe_meas - Pe_err_lower
+# Pe_high = Pe_meas + Pe_err_upper
+# 
+# f_ge_low_Hz = f_ge_Hz - f_ge_err_lower_Hz
+# f_ge_high_Hz = f_ge_Hz + f_ge_err_upper_Hz
 
 # ------------------------------------------------------------
 # Noise temperature model (MIT supplement style)
@@ -251,7 +283,7 @@ if qtemp_noisetemp_plot:
         },
     }
 
-    nQ, nRuns = Pe_meas.shape
+    nQ, nRuns = T_qubit_mK.shape
     Te_mK = np.zeros((nQ, nRuns), dtype=float)
     Pe_pred = np.zeros((nQ, nRuns), dtype=float)
 
@@ -409,7 +441,7 @@ if qtemp_noisetemp_plot:
         # --- Run 5 -> Run 6 segment  ---
         ax.errorbar(
             runs[:2], T_qubit_mK[qi][:2],
-            yerr=T_qubit_err_mK[qi][:2],
+            yerr=T_qubit_err_mK[:, qi, :2], #Note: T_qubit_err_mK[0, qi, ri] = lower error & T_qubit_err_mK[1, qi, ri] = upper error
             fmt="o-",
             color="#E69F00", #color-blind friendly orange
             capsize=3,
@@ -420,7 +452,7 @@ if qtemp_noisetemp_plot:
         # --- Run 6 -> Run 8 segment ---
         ax.errorbar(
             runs[1:], T_qubit_mK[qi][1:],
-            yerr=T_qubit_err_mK[qi][1:],
+            yerr=T_qubit_err_mK[:, qi, 1:],
             fmt="o-",
             color="brown",
             capsize=3,
@@ -443,7 +475,8 @@ if qtemp_noisetemp_plot:
         # ------------------------------------------------------------
         valid = (
                 np.isfinite(T_qubit_mK[qi]) &
-                np.isfinite(T_qubit_err_mK[qi]) &
+                np.isfinite(T_qubit_err_lower_mK[qi]) &
+                np.isfinite(T_qubit_err_upper_mK[qi]) &
                 np.isfinite(Te_mK[qi]) )
 
         valid_idx = np.where(valid)[0]
@@ -458,7 +491,7 @@ if qtemp_noisetemp_plot:
             axins.errorbar(
                 x_zoom,
                 T_qubit_mK[qi][idx2],
-                yerr=T_qubit_err_mK[qi][idx2],
+                yerr=T_qubit_err_mK[:, qi, idx2],
                 fmt="o-",
                 color="brown",
                 capsize=2,
@@ -482,9 +515,10 @@ if qtemp_noisetemp_plot:
 
             # --- Inset y-axis ---
             yvals = np.concatenate([
-                T_qubit_mK[qi][idx2] - T_qubit_err_mK[qi][idx2],
-                T_qubit_mK[qi][idx2] + T_qubit_err_mK[qi][idx2],
-                Te_mK[qi][idx2]])
+                T_qubit_mK[qi][idx2] - T_qubit_err_lower_mK[qi][idx2],
+                T_qubit_mK[qi][idx2] + T_qubit_err_upper_mK[qi][idx2],
+                Te_mK[qi][idx2]
+            ])
 
             yvals = yvals[np.isfinite(yvals)]
 
