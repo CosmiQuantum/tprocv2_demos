@@ -14,6 +14,7 @@ import re
 import datetime
 import ast
 import matplotlib.pyplot as plt
+from iminuit import Minuit
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
@@ -107,15 +108,158 @@ class ResonatorFreqVsTime:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run(self,exp_extension=''):
+    def plot_resonator_fit(self, freqs_MHz, amps, fit_result, q_idx, date, round_num, batch_num):
+        freqs_MHz = np.asarray(freqs_MHz, dtype=float)
+        amps = np.asarray(amps, dtype=float)
+
+        good = np.isfinite(freqs_MHz) & np.isfinite(amps)
+        freqs_MHz = freqs_MHz[good]
+        amps = amps[good]
+
+        f_dense = np.linspace(np.min(freqs_MHz), np.max(freqs_MHz), 1000)
+
+        f0 = fit_result["f0_MHz"]
+        kappa = fit_result["kappa_MHz"]
+        depth = fit_result["depth"]
+        baseline = fit_result["baseline"]
+        slope = fit_result["slope"]
+
+        fit_dense = baseline + slope * (f_dense - f0) - depth / (1.0 + 4.0 * ((f_dense - f0) / kappa) ** 2)
+
+        fig, ax = plt.subplots(figsize=(8, 6))
+
+        ax.plot(freqs_MHz, amps, "o", markersize=4, label="Data")
+        ax.plot(f_dense, fit_dense, linewidth=2, label="Lorentzian fit")
+        ax.axvline(f0, linestyle="--", linewidth=1.5, label=f"$f_r$ = {f0:.4f} MHz")
+
+        ax.set_xlabel("Frequency (MHz)")
+        ax.set_ylabel("Amplitude (a.u.)")
+        ax.set_title(f"Resonator {q_idx + 1} Fit")
+
+        fit_text = f"$f_r$ = {f0:.4f} MHz\n$\\kappa/2\\pi$ = {kappa:.4f} MHz\n$Q_L$ = {fit_result['Q_loaded']:.0f}\n$\\tau_r$ = {fit_result['tau_us']:.4f} $\\mu$s"
+        ax.text(0.03, 0.97, fit_text, transform=ax.transAxes, verticalalignment="top",
+                bbox=dict(boxstyle="round", facecolor="white", alpha=0.8))
+
+        ax.legend()
+        ax.grid(alpha=0.25)
+        plt.tight_layout()
+
+        fit_plot_folder = os.path.join(self.plots_path, "resonator_fits")
+        os.makedirs(fit_plot_folder, exist_ok=True)
+
+        date_string = date.strftime("%Y-%m-%d_%H-%M-%S")
+        save_name = f"Q{q_idx + 1}_res_fit_{date_string}_round{int(round_num)}_batch{int(batch_num)}.png"
+        save_path = os.path.join(fit_plot_folder, save_name)
+
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
+        plt.close(fig)
+
+        print(f"Saved resonator fit plot: {save_path}")
+
+    def fit_resonator_lorentzian(self, freqs_MHz, amps, amp_errs=None):
+        freqs_MHz = np.asarray(freqs_MHz, dtype=float)
+        amps = np.asarray(amps, dtype=float)
+
+        if amp_errs is not None:
+            amp_errs = np.asarray(amp_errs, dtype=float)
+            good = np.isfinite(freqs_MHz) & np.isfinite(amps) & np.isfinite(amp_errs) & (amp_errs > 0)
+            amp_errs = amp_errs[good]
+        else:
+            good = np.isfinite(freqs_MHz) & np.isfinite(amps)
+
+        freqs_MHz = freqs_MHz[good]
+        amps = amps[good]
+
+        if len(freqs_MHz) < 6:
+            return None
+
+        def lorentzian_dip(f, f0, kappa_MHz, depth, baseline, slope):
+            return baseline + slope * (f - f0) - depth / (1.0 + 4.0 * ((f - f0) / kappa_MHz) ** 2)
+
+        min_idx = np.argmin(amps)
+        f0_guess = freqs_MHz[min_idx]
+
+        n_edge = max(2, len(amps) // 10)
+        edge_amps = np.concatenate([amps[:n_edge], amps[-n_edge:]])
+        baseline_guess = np.median(edge_amps)
+        depth_guess = baseline_guess - amps[min_idx]
+
+        if depth_guess <= 0:
+            return None
+
+        half_level = baseline_guess - depth_guess / 2.0
+        below_half = np.where(amps < half_level)[0]
+
+        if len(below_half) >= 2:
+            kappa_guess = freqs_MHz[below_half[-1]] - freqs_MHz[below_half[0]]
+        else:
+            kappa_guess = 0.1 * (np.max(freqs_MHz) - np.min(freqs_MHz))
+
+        freq_step = np.median(np.diff(np.sort(freqs_MHz)))
+        sweep_width = np.max(freqs_MHz) - np.min(freqs_MHz)
+
+        if kappa_guess <= 0:
+            kappa_guess = 5 * freq_step
+
+        if amp_errs is None:
+            def cost(f0, kappa_MHz, depth, baseline, slope):
+                model = lorentzian_dip(freqs_MHz, f0, kappa_MHz, depth, baseline, slope)
+                return np.sum((amps - model) ** 2)
+        else:
+            def cost(f0, kappa_MHz, depth, baseline, slope):
+                model = lorentzian_dip(freqs_MHz, f0, kappa_MHz, depth, baseline, slope)
+                return np.sum(((amps - model) / amp_errs) ** 2)
+
+        m = Minuit(cost, f0=f0_guess, kappa_MHz=kappa_guess, depth=depth_guess, baseline=baseline_guess, slope=0.0)
+
+        m.limits["f0"] = (np.min(freqs_MHz), np.max(freqs_MHz))
+        m.limits["kappa_MHz"] = (freq_step / 2.0, sweep_width)
+        m.limits["depth"] = (0.0, None)
+
+        m.errordef = Minuit.LEAST_SQUARES
+        m.migrad()
+        m.hesse()
+
+        if not m.valid:
+            return None
+
+        f0_fit = m.values["f0"]
+        kappa_MHz = m.values["kappa_MHz"]
+        depth = m.values["depth"]
+        baseline = m.values["baseline"]
+        slope = m.values["slope"]
+
+        f0_err = m.errors["f0"]
+        kappa_err = m.errors["kappa_MHz"]
+
+        fit_amps = lorentzian_dip(freqs_MHz, f0_fit, kappa_MHz, depth, baseline, slope)
+        residuals = amps - fit_amps
+        rms_residual = np.sqrt(np.mean(residuals ** 2))
+        dip_snr = depth / rms_residual if rms_residual > 0 else np.inf
+
+        Q_loaded = f0_fit / kappa_MHz
+        tau_us = 1.0 / (2.0 * np.pi * kappa_MHz)
+
+        if amp_errs is None:
+            chi2 = np.nan
+            reduced_chi2 = np.nan
+        else:
+            chi2 = np.sum((residuals / amp_errs) ** 2)
+            ndof = len(amps) - len(m.parameters)
+            reduced_chi2 = chi2 / ndof if ndof > 0 else np.nan
+
+        return {"f0_MHz": f0_fit, "f0_err_MHz": f0_err, "kappa_MHz": kappa_MHz, "kappa_err_MHz": kappa_err,
+                "Q_loaded": Q_loaded, "tau_us": tau_us, "depth": depth, "baseline": baseline, "slope": slope,
+                "dip_snr": dip_snr, "rms_residual": rms_residual, "chi2": chi2, "reduced_chi2": reduced_chi2,
+                "fit_amps": fit_amps}
+
+    def run(self,exp_extension='_ge', fit_resonators=False):
+        # fit_resonators is to get kappa. No need to fit if you just want the resonator frequencies.
         import datetime
         # ----------Load/get data------------------------
         resonator_centers = {i: [] for i in range(self.number_of_qubits)}
-        rounds = []
-        reps = []
-        file_names = []
         date_times = {i: [] for i in range(self.number_of_qubits)}
-        mean_values = {}
+        resonator_fit_results = {i: [] for i in range(self.number_of_qubits)} # only used when fit_resonators = True
 
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
@@ -134,10 +278,7 @@ class ResonatorFreqVsTime:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
             # ------------------------------------------Load/Plot/Save Res Spec------------------------------------
-            if '_' in exp_extension:
-                outerFolder_expt = outerFolder + f"/Data_h5/res{exp_extension}/"
-            else:
-                outerFolder_expt = outerFolder + "/Data_h5/res_ge/"
+            outerFolder_expt = outerFolder + f"/Data_h5/res{exp_extension}/"
 
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 
@@ -198,9 +339,29 @@ class ResonatorFreqVsTime:
                             resonator_centers[q_key].extend([res_freqs[q_key]])
                             date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
 
+                            if fit_resonators:
+                                q_idx = int(q_key)
+                                absolute_freqs = np.asarray(freq_pts, dtype=float) + float(freq_center[q_idx])
+                                fit_result = self.fit_resonator_lorentzian(absolute_freqs, amps[q_idx])
+
+                                if fit_result is not None:
+                                    fit_result["date"] = date.strftime("%Y-%m-%d %H:%M:%S")
+                                    fit_result["round_num"] = round_num
+                                    fit_result["batch_num"] = batch_num
+                                    resonator_fit_results[q_idx].append(fit_result)
+
+                                    print(f"Q{q_idx + 1}: f0 = {fit_result['f0_MHz']:.6f} MHz, kappa/2pi = {fit_result['kappa_MHz']:.6f} MHz, QL = {fit_result['Q_loaded']:.0f}, tau = {fit_result['tau_us']:.6f} us")
+
+                                    self.plot_resonator_fit(absolute_freqs, amps[q_idx], fit_result, q_idx, date, round_num, batch_num)
+                                else:
+                                    print(f"Q{q_idx + 1}: resonator fit failed.")
+
                             del res_class_instance
 
                 del H5_class_instance
+        if fit_resonators:
+            return date_times, resonator_centers, resonator_fit_results
+
         return date_times, resonator_centers
 
     def plot(self, date_times, resonator_centers, show_legends, exp_extension = ''):
