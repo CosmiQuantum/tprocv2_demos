@@ -2443,7 +2443,6 @@ if coh_qtemp_ana_flags["SSF_lims_per_scan_viaSSF"]:
             fit_results_g_by_run=fit_results_g_by_run,
             date_times_t1_by_run=date_times_t1_by_run,
             t1_vals_by_run=t1_vals_by_run,
-            t1_errs_by_run=t1_errs_by_run,
             t1_res_lengths_by_run=t1_res_lengths_by_run,
             out_dir=comb_plots_path,
             n_qubits=tot_num_of_qubits,

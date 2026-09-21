@@ -4126,7 +4126,6 @@ class combined_Qtemp_studies:
             fit_results_g_by_run,
             date_times_t1_by_run,
             t1_vals_by_run,
-            t1_errs_by_run,
             t1_res_lengths_by_run,
             out_dir,
             n_qubits=6,
@@ -4154,8 +4153,6 @@ class combined_Qtemp_studies:
                 "matched_rpm_to_ssf"              if requested
                 "per_scan_ssfPe"
                 "median_summary_ssfPe"
-                "median_error_summary_ssfPe"
-                "median_error_summary_rpmPe"           if requested
                 "per_scan_rpmPe"                 if requested
                 "median_summary_rpmPe"           if requested
         """
@@ -4185,9 +4182,6 @@ class combined_Qtemp_studies:
             if run_num not in t1_vals_by_run:
                 missing_t1_inputs.append("t1_vals_by_run")
 
-            if run_num not in t1_errs_by_run:
-                missing_t1_inputs.append("t1_errs_by_run")
-
             if run_num not in t1_res_lengths_by_run:
                 missing_t1_inputs.append("t1_res_lengths_by_run")
 
@@ -4206,7 +4200,6 @@ class combined_Qtemp_studies:
                 fit_results_g=fit_results_g_by_run[run_num],
                 date_times_t1=date_times_t1_by_run[run_num],
                 t1_vals=t1_vals_by_run[run_num],
-                t1_fit_err=t1_errs_by_run[run_num],
                 t1_res_lengths=t1_res_lengths_by_run[run_num],
                 max_dt_s=t1_match_max_dt_s,
                 n_qubits=n_qubits,
@@ -4692,10 +4685,6 @@ class combined_Qtemp_studies:
 
         median_summary_df : pandas.DataFrame
             Median contribution table grouped by qubit, with applicable values
-            formatted as value +/- propagated uncertainty.
-
-        median_error_summary_df : pandas.DataFrame
-            Median propagated-error table grouped by qubit.
         """
 
         def snr_to_overlap_error(snr):
@@ -4802,7 +4791,6 @@ class combined_Qtemp_studies:
                     Pe_timestamp = rec.get("timestamp", None)
                     Pe_match_dt_s = 0.0
                     Pe_temperature_mK = float(rec.get("temperature_mK", np.nan))
-                    Pe_temperature_err_mK = float(rec.get("temperature_err_mK", np.nan))
 
                 elif thermal_population_source == "rpm":
                     rpm_match = rpm_matches[scan_index]
@@ -4815,7 +4803,6 @@ class combined_Qtemp_studies:
                     Pe_timestamp = rpm_match.get("rpm_timestamp", None)
                     Pe_match_dt_s = float(rpm_match.get("dt_s", np.nan))
                     Pe_temperature_mK = float(rpm_match.get("T_mK", np.nan))
-                    Pe_temperature_err_mK = float(rpm_match.get("T_mK_err", np.nan))
 
                 ie_new_Pg = float(rec.get("ie_new_ground_frac", np.nan))
 
@@ -4912,7 +4899,6 @@ class combined_Qtemp_studies:
                     "Pe_timestamp": Pe_timestamp,
                     "Pe_match_dt_s": Pe_match_dt_s,
                     "Pe_temperature_mK": Pe_temperature_mK,
-                    "Pe_temperature_err_mK": Pe_temperature_err_mK,
 
                     "Pe_frac": Pe,
                     "Pe_percent": percent(Pe),
@@ -4989,7 +4975,6 @@ class combined_Qtemp_studies:
             "Pe_percent",
             "Pe_match_dt_s",
             "Pe_temperature_mK",
-            "Pe_temperature_err_mK",
             "ie_new_Pg_percent",
             "T1_us",
             "readout_length_us",
@@ -5027,7 +5012,6 @@ class combined_Qtemp_studies:
             "Pe_percent": "Thermal population Pe (%)",
             "Pe_match_dt_s": "Pe match dt median (s)",
             "Pe_temperature_mK": "Pe source temp median (mK)",
-            "Pe_temperature_err_mK": "Pe source temp err median (mK)",
             "ie_new_Pg_percent": "Observed excited-state loss (%)",
             "T1_us": "Matched T1 median (us)",
             "readout_length_us": "Readout length median (us)",
@@ -5050,7 +5034,6 @@ class combined_Qtemp_studies:
             "Thermal population Pe (%)": 3,
             "Pe match dt median (s)": 3,
             "Pe source temp median (mK)": 3,
-            "Pe source temp err median (mK)": 3,
             "Observed excited-state loss (%)": 2,
             "Matched T1 median (us)": 2,
             "Readout length median (us)": 3,
@@ -5088,9 +5071,8 @@ class combined_Qtemp_studies:
             fit_results_g,
             date_times_t1,
             t1_vals,
-            t1_fit_err,
             t1_res_lengths,
-            max_dt_s=10.0, # 10us for any run except run 6 SCIENCE RUN, which was 600s.
+            max_dt_s=10.0, # 10s for any run except run 6 SCIENCE RUN, which was 600s.
             n_qubits=6,
             verbose=True):
 
@@ -5131,13 +5113,11 @@ class combined_Qtemp_studies:
 
             t1_dates_q = [to_datetime(x) for x in get_q_array(date_times_t1, qid)]
             t1_vals_q = np.asarray(get_q_array(t1_vals, qid), dtype=float)
-            t1_errs_q = np.asarray(get_q_array(t1_fit_err, qid), dtype=float)
             res_lengths_q = np.asarray(get_q_array(t1_res_lengths, qid), dtype=float)
 
             n_t1 = min(
                 len(t1_dates_q),
                 len(t1_vals_q),
-                len(t1_errs_q),
                 len(res_lengths_q),
             )
 
@@ -5152,7 +5132,6 @@ class combined_Qtemp_studies:
                         "t1_timestamp": pd.NaT,
                         "dt_s": np.nan,
                         "t1_us": np.nan,
-                        "t1_err_us": np.nan,
                         "readout_length_us": np.nan,
                     })
 
@@ -5160,7 +5139,6 @@ class combined_Qtemp_studies:
 
             t1_dates_q = t1_dates_q[:n_t1]
             t1_vals_q = t1_vals_q[:n_t1]
-            t1_errs_q = t1_errs_q[:n_t1]
             res_lengths_q = res_lengths_q[:n_t1]
 
             t1_ts_q = np.asarray([
@@ -5179,7 +5157,6 @@ class combined_Qtemp_studies:
                         "t1_timestamp": pd.NaT,
                         "dt_s": np.nan,
                         "t1_us": np.nan,
-                        "t1_err_us": np.nan,
                         "readout_length_us": np.nan,
                     })
                     continue
@@ -5206,7 +5183,6 @@ class combined_Qtemp_studies:
                         "t1_timestamp": t1_dates_q[best_idx],
                         "dt_s": best_dt_s,
                         "t1_us": float(t1_vals_q[best_idx]),
-                        "t1_err_us": float(t1_errs_q[best_idx]),
                         "readout_length_us": float(res_lengths_q[best_idx]),
                     })
 
@@ -5217,7 +5193,6 @@ class combined_Qtemp_studies:
                         "t1_timestamp": t1_dates_q[best_idx] if best_idx is not None else pd.NaT,
                         "dt_s": best_dt_s,
                         "t1_us": np.nan,
-                        "t1_err_us": np.nan,
                         "readout_length_us": np.nan,
                     })
 
