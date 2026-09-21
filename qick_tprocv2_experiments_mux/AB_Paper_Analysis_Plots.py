@@ -6,6 +6,7 @@ import os
 import datetime
 import matplotlib.ticker as mticker
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
+from matplotlib.lines import Line2D
 
 lnPe_vs_qfreq_plots_per_run = False
 lnPe_vs_qfreq_plots_per_qubit = False

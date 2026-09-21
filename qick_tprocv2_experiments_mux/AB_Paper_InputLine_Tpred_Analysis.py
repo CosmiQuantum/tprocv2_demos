@@ -63,9 +63,9 @@ T_qubit_err_mK = np.array([
 T_qubit_K = T_qubit_mK / 1e3
 
 # ------------------------------------------------------------
-# Qubit frequencies (MHz) (Run 4 column will be dropped to match Pe data)
+# Qubit frequencies (MHz) (Run 4 column will be dropped to match T_eff data)
 # ------------------------------------------------------------
-# updated to use medians from box plots and IQR/2. Used final data from run 9a
+# Updated to use median frequencies from box plots. Used final data from run 9a
 # rows = qubits 1-6
 # columns = runs 4-9a
 
@@ -104,12 +104,7 @@ f_ge_err_upper_MHz = [
 runs = np.array([5, 6, 7, 8, 9], dtype=int)
 
 f_ge_MHz = np.array(f_ge_MHz, dtype=object).astype(float)[:, 1:]
-f_ge_err_lower_MHz = np.array(f_ge_err_lower_MHz, dtype=object).astype(float)[:, 1:]
-f_ge_err_upper_MHz = np.array(f_ge_err_upper_MHz, dtype=object).astype(float)[:, 1:]
-
 f_ge_Hz = f_ge_MHz * 1e6
-f_ge_err_lower_Hz = f_ge_err_lower_MHz * 1e6
-f_ge_err_upper_Hz = f_ge_err_upper_MHz * 1e6
 
 if T_qubit_mK.shape != f_ge_Hz.shape:
     raise ValueError(
@@ -121,13 +116,6 @@ if T_qubit_mK.shape != f_ge_Hz.shape:
 # ------------------------------------------------------------
 h = 6.62607015e-34
 kB = 1.380649e-23
-
-# --- Not used but here in case needed in the future ---
-# Pe_low = Pe_meas - Pe_err_lower
-# Pe_high = Pe_meas + Pe_err_upper
-# 
-# f_ge_low_Hz = f_ge_Hz - f_ge_err_lower_Hz
-# f_ge_high_Hz = f_ge_Hz + f_ge_err_upper_Hz
 
 # ------------------------------------------------------------
 # Noise temperature model (MIT supplement style)
