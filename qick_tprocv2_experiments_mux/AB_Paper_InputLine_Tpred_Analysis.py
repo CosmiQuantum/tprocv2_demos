@@ -297,6 +297,12 @@ if qtemp_noisetemp_plot:
             Te_mK[qi, ri] = 1e3 * Te_K
             Pe_pred[qi, ri] = Pe
 
+    print("\npredicted_noise_temps_by_run = {")
+    for i, r in enumerate(runs):
+        vals = ", ".join(f"{x:.4f}" for x in Te_mK[:, i])
+        print(f"    {int(r)}: [{vals}],")
+    print("}")
+
     print("\nPredicted Te (mK) and Pe (%) by qubit & run (using per-run f_ge):")
     for qi in range(nQ):
         vals = ", ".join([

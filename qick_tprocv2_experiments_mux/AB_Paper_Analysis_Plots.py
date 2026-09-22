@@ -825,7 +825,8 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
         tick_fs=22,
         save_plt_path=None,
         log_y=False, # only available for hybrid mode at the moment
-        log_yticks_mK=(10, 20, 50, 100, 200, 500)
+        log_yticks_mK=(10, 20, 50, 100, 200, 500),
+        predicted_noise_temps_by_run = None
 ):
     """
     Per-qubit box/whisker vs run.
@@ -1084,6 +1085,20 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
                         manage_ticks=False
                     )
                     style_boxplot(bp_ssf, ssf_color)
+
+            # ---------------- predicted noise temperature ----------------
+            if predicted_noise_temps_by_run is not None:
+                pred_vals = np.array([get_cell(predicted_noise_temps_by_run, r, q) for r in run_num_list], dtype=float)
+                valid_pred = np.isfinite(pred_vals)
+                ax.plot(
+                    base_pos[valid_pred],
+                    pred_vals[valid_pred],
+                    "s--",
+                    color="black",
+                    linewidth=2,
+                    markersize=6,
+                    label=r"$T_e$ (pred. noise)",
+                    zorder=5)
 
             # ---------------- axis styling ----------------
             ax.set_title(f"Qubit {q + 1}", fontsize=title_fs)

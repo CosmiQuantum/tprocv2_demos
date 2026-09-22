@@ -76,7 +76,7 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": Fals
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
 comb_analysis_flags = {"load_rpm": False, "load_ssf": False, "use_cached_qtemp_files": True, "create_cached_qtemp_files": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False,
-                       "Pe_vs_time_comb_separate_plts": False, "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": True, "Pe_box_whisker_allruns_allQs": True, "ssf_box_whisker_allruns_allQs": False,
+                       "Pe_vs_time_comb_separate_plts": False, "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": True, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
                        "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": False, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False, "SNR_vs_RRPM_Pe": False,
                        "SNR_box_whisker_allruns_allQs": False, "ie_new_Pg_boxwhisk_allruns_allQs": False, "multirun_RPM_Pe_vs_t": False}
 
@@ -1744,6 +1744,13 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             )
     # --------------------- box and whiskers plots. Per run and per qubit. Separate or together options -------------------
     if comb_analysis_flags["qtemp_box_whisker_allruns_allQs"]:
+        predicted_noise_temps_by_run = { # this object is calculated in AB_Paper_InputLine_Tpred_Analysis.py
+            5: [37.5077, 34.9556, 37.3189, 39.4454, 39.5346, 43.1726],
+            6: [37.5684, 34.9377, 37.3685, 39.4730, 39.5337, 43.1651],
+            7: [22.0920, 20.4590, 21.9967, 23.3610, 23.3953, 25.7452],
+            8: [22.1400, 20.4830, 22.0454, 23.3911, 23.4409, 25.7979],
+            9: [22.0801, 20.4084, 21.9503, 23.3252, np.nan, 25.7131]}
+
         have_qtemp_inputs = (comb_analysis_flags["use_cached_qtemp_files"] or (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]))
         if not have_qtemp_inputs:
             raise ValueError('This plot requires qtemp inputs. Either set '
@@ -1768,7 +1775,8 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             # "/data/QICK_data/multirun_analysis/qubit_temps/combined" # daq01
             #"/exp/cosmiq/data/home/cosmiq/Analysis_on1hw_temporary/acolonce/QTemperatures/Plots/combined_analysis_RPM_SSF")
             log_y=True, # only goes into effect for hybrid plot_mode at the moment
-            log_yticks_mK= (25, 50, 100, 250, 500))#(10, 20, 50, 100, 200, 500))
+            log_yticks_mK= (15, 30, 75, 200, 500),#(15, 50, 100, 250, 500),
+            predicted_noise_temps_by_run = predicted_noise_temps_by_run)
 
     if comb_analysis_flags["Pe_box_whisker_allruns_allQs"]:
         have_qtemp_inputs = (comb_analysis_flags["use_cached_qtemp_files"] or (comb_analysis_flags["load_rpm"] and comb_analysis_flags["load_ssf"]))

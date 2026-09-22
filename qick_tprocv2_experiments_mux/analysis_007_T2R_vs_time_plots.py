@@ -603,7 +603,7 @@ class T2rVsTime:
 
     def plot_t2r_t1_single_qubit(self, qubit_index, t2r_date_times, t2r_vals, t2r_fit_err, rounds_t2r, t1_date_times, t1_vals,
                                  t1_fit_err, rounds_t1, show_legends=True, event_timestamps=None, event_labels=None, event_colors=None, event_linestyles=None,
-                                plot_Tphi=False, font = 24, t1t2_ylims = (45, 95), tphi_ylims = (60, 310)):
+                                plot_Tphi=False, font = 24, t1t2_ylims = (45, 95), tphi_ylims = (60, 310), time_since_start = False):
 
         analysis_folder = f"{self.outerFolder_save_plots}/features_vs_time/"
         self.create_folder_if_not_exists(analysis_folder)
@@ -620,6 +620,13 @@ class T2rVsTime:
 
         #fig.suptitle(f"Qubit {qubit_number}: T2R and T1 vs Time", fontsize=font) # commenting out for AB paper
 
+        # Common reference time for all panels
+        if time_since_start:
+            all_times = []
+            all_times.extend([datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S")for date_string in t2r_date_times[qubit_index]])
+            all_times.extend([datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in t1_date_times[qubit_index]])
+            start_time = min(all_times)
+
         # T2R
         x = t2r_date_times[qubit_index]
         y = t2r_vals[qubit_index]
@@ -633,9 +640,15 @@ class T2rVsTime:
             sorted_x = np.asarray(sorted_x)
             sorted_y = np.asarray(sorted_y, dtype=float)
             sorted_err = np.asarray(sorted_err, dtype=float)
-            ax_t2r.errorbar(sorted_x, sorted_y, yerr=sorted_err, fmt="none", ecolor='#D55E00', elinewidth=1.7,
+
+            if time_since_start:
+                plot_x = np.asarray([(t - start_time).total_seconds() / 60.0 for t in sorted_x])
+            else:
+                plot_x = sorted_x
+
+            ax_t2r.errorbar(plot_x, sorted_y, yerr=sorted_err, fmt="none", ecolor='#D55E00', elinewidth=1.7,
                             capsize=0, label=f"Qubit {qubit_number}" if show_legends else None)
-            ax_t2r.scatter(sorted_x, sorted_y, s=16, color='#D55E00', alpha=0.8)
+            ax_t2r.scatter(plot_x, sorted_y, s=16, color='#D55E00', alpha=0.8)
 
         # T1
         x = t1_date_times[qubit_index]
@@ -650,18 +663,29 @@ class T2rVsTime:
             sorted_x = np.asarray(sorted_x)
             sorted_y = np.asarray(sorted_y, dtype=float)
             sorted_err = np.asarray(sorted_err, dtype=float)
-            ax_t1.errorbar(sorted_x, sorted_y, yerr=sorted_err, fmt="none", ecolor='#0072B2', elinewidth=1.7, capsize=0,
+
+            if time_since_start:
+                plot_x = np.asarray([(t - start_time).total_seconds() / 60.0 for t in sorted_x])
+            else:
+                plot_x = sorted_x
+
+            ax_t1.errorbar(plot_x, sorted_y, yerr=sorted_err, fmt="none", ecolor='#0072B2', elinewidth=1.7, capsize=0,
                            label=f"Qubit {qubit_number}" if show_legends else None)
-            ax_t1.scatter(sorted_x, sorted_y, s=16, color='#0072B2', alpha=0.8)
+            ax_t1.scatter(plot_x, sorted_y, s=16, color='#0072B2', alpha=0.8)
 
         if plot_Tphi:
             matched_times, tphi_values, tphi_errors = self.calc_and_plot_tphi_single_qubit(qubit_index, t2r_date_times, t2r_vals, t2r_fit_err,
                                                                                            rounds_t2r, t1_date_times, t1_vals, t1_fit_err,
                                                                                            rounds_t1,plot_Tphi_vs_time=False)
 
-            ax_tphi.errorbar(matched_times, tphi_values, yerr=tphi_errors, fmt="none", ecolor="olive", elinewidth=1.7,
+            if time_since_start:
+                tphi_plot_times = np.asarray([(t - start_time).total_seconds() / 60.0 for t in matched_times])
+            else:
+                tphi_plot_times = matched_times
+
+            ax_tphi.errorbar(tphi_plot_times, tphi_values, yerr=tphi_errors, fmt="none", ecolor="olive", elinewidth=1.7,
                              capsize=0, label=f"Qubit {qubit_number}" if show_legends else None)
-            ax_tphi.scatter(matched_times, tphi_values, s=16, color="olive", alpha=0.9)
+            ax_tphi.scatter(tphi_plot_times, tphi_values, s=16, color="olive", alpha=0.9)
 
         # Event markers
         if event_timestamps is not None:
@@ -677,21 +701,27 @@ class T2rVsTime:
                                                                event_linestyles):
                 if isinstance(timestamp, str):
                     timestamp = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
-                ax_t2r.axvline(timestamp, color=line_color, linestyle=linestyle, linewidth=2.0, alpha=0.8,
+
+                if time_since_start:
+                    event_x = (timestamp - start_time).total_seconds() / 60.0
+                else:
+                    event_x = timestamp
+
+                ax_t2r.axvline(event_x, color=line_color, linestyle=linestyle, linewidth=2.0, alpha=0.8,
                                label=label if show_legends else None)
-                ax_t1.axvline(timestamp, color=line_color, linestyle=linestyle, linewidth=2.0, alpha=0.8,
+                ax_t1.axvline(event_x, color=line_color, linestyle=linestyle, linewidth=2.0, alpha=0.8,
                               label=label if show_legends else None)
                 if plot_Tphi:
-                    ax_tphi.axvline(timestamp, color=line_color, linestyle=linestyle, linewidth=2.0, alpha=0.8,
+                    ax_tphi.axvline(event_x, color=line_color, linestyle=linestyle, linewidth=2.0, alpha=0.8,
                                     label=label if show_legends else None)
 
         ax_t2r.set_ylabel(r"$T_{2}^{\mathrm{Ramsey}}$ ($\mu s$)", fontsize=font -1)
         ax_t1.set_ylabel(r"$T_1$ ($\mu s$)", fontsize=font - 1)
         if plot_Tphi:
             ax_tphi.set_ylabel(r"$T_{\phi}^{\mathrm{Ramsey}}$ ($\mu s$)", fontsize=font - 1)
-            ax_tphi.set_xlabel("Time", fontsize=font - 1)
+            ax_tphi.set_xlabel("Time Since Start (min)" if time_since_start else "Time", fontsize=font - 1)
         else:
-            ax_t1.set_xlabel("Time", fontsize=font - 1)
+            ax_t1.set_xlabel("Time Since Start (min)" if time_since_start else "Time", fontsize=font - 1)
 
         ax_t2r.tick_params(axis="y", which="major", labelsize=font - 4)
         ax_t1.tick_params(axis="y", which="major", labelsize=font - 4)
@@ -711,13 +741,18 @@ class T2rVsTime:
 
         # xticks
         bottom_ax = ax_tphi if plot_Tphi else ax_t1
-        locator = mdates.AutoDateLocator(minticks=8, maxticks=9)
-        bottom_ax.xaxis.set_major_locator(locator)
-        bottom_ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
-        bottom_ax.tick_params(axis="x", rotation=45, labelsize=font - 8)
 
-        for label in bottom_ax.get_xticklabels():
-            label.set_ha("center")
+        if time_since_start:
+            bottom_ax.set_xlabel("Time Since Start (min)", fontsize=font - 1, labelpad=12)
+            bottom_ax.tick_params(axis="x", labelsize=font - 4)
+        else:
+            bottom_ax.set_xlabel("Time", fontsize=font - 1)
+            locator = mdates.AutoDateLocator(minticks=8, maxticks=9)
+            bottom_ax.xaxis.set_major_locator(locator)
+            bottom_ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
+            bottom_ax.tick_params(axis="x", rotation=45, labelsize=font - 8)
+            for label in bottom_ax.get_xticklabels():
+                label.set_ha("center")
 
         axes = [ax_t2r, ax_t1, ax_tphi] if plot_Tphi else [ax_t2r, ax_t1]
 
@@ -738,7 +773,7 @@ class T2rVsTime:
 
     def calc_and_plot_tphi_single_qubit(self, qubit_index, t2r_date_times, t2r_vals, t2r_fit_err, rounds_t2r, t1_date_times,
                                t1_vals, t1_fit_err, rounds_t1, show_legends=True, event_timestamps=None,
-                               event_labels=None, event_colors=None, event_linestyles=None, plot_Tphi_vs_time = True):
+                               event_labels=None, event_colors=None, event_linestyles=None, plot_Tphi_vs_time = True, time_since_start = False):
 
         analysis_folder = f"{self.outerFolder_save_plots}/features_vs_time/"
         self.create_folder_if_not_exists(analysis_folder)
@@ -828,9 +863,15 @@ class T2rVsTime:
         if plot_Tphi_vs_time:
             fig, ax = plt.subplots(figsize=(12, 6))
 
-            ax.errorbar(matched_times, tphi_values, yerr=tphi_errors, fmt="none", ecolor="#009E73", elinewidth=1.7,
+            if time_since_start:
+                start_time = matched_times[0]
+                plot_times = np.asarray([(t - start_time).total_seconds() / 60.0 for t in matched_times])
+            else:
+                plot_times = matched_times
+
+            ax.errorbar(plot_times, tphi_values, yerr=tphi_errors, fmt="none", ecolor="#009E73", elinewidth=1.7,
                         capsize=0, label=f"Qubit {qubit_number}" if show_legends else None)
-            ax.scatter(matched_times, tphi_values, s=16, color="#009E73", alpha=0.8)
+            ax.scatter(plot_times, tphi_values, s=16, color="#009E73", alpha=0.8)
 
             # Event markers
             if event_timestamps is not None:
@@ -846,22 +887,32 @@ class T2rVsTime:
                                                                    event_linestyles):
                     if isinstance(timestamp, str):
                         timestamp = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
-                    ax.axvline(timestamp, color=line_color, linestyle=linestyle, linewidth=2.0, alpha=0.8,
+
+                    if time_since_start:
+                        event_x = (timestamp - start_time).total_seconds() / 60.0
+                    else:
+                        event_x = timestamp
+
+                    ax.axvline(event_x, color=line_color, linestyle=linestyle, linewidth=2.0, alpha=0.8,
                                label=label if show_legends else None)
 
-            ax.set_ylabel(r"$T_{\phi}^{\mathrm{Ramsey}}$ ($\mu$s)", fontsize=font - 1)
-            ax.set_xlabel("Time", fontsize=font - 1)
+            if time_since_start:
+                ax.set_xlabel("Time Since Start (min)", fontsize=font - 1)
+                ax.tick_params(axis="x", which="major", labelsize=font - 4)
+            else:
+                ax.set_xlabel("Time", fontsize=font - 1)
+
+                ax.tick_params(axis="x", which="major", labelsize=font - 8)
+
+                locator = mdates.AutoDateLocator(minticks=8, maxticks=9)
+                ax.xaxis.set_major_locator(locator)
+                ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
+                ax.tick_params(axis="x", rotation=45)
+
+                for label in ax.get_xticklabels():
+                    label.set_ha("center")
 
             ax.tick_params(axis="y", which="major", labelsize=font - 4)
-            ax.tick_params(axis="x", which="major", labelsize=font - 8)
-
-            locator = mdates.AutoDateLocator(minticks=8, maxticks=9)
-            ax.xaxis.set_major_locator(locator)
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
-            ax.tick_params(axis="x", rotation=45)
-
-            for label in ax.get_xticklabels():
-                label.set_ha("center")
 
             ax.ticklabel_format(style="plain", axis="y")
 
@@ -875,7 +926,6 @@ class T2rVsTime:
 
             save_path = analysis_folder + f"Q{qubit_number}_Tphi_vs_time.pdf"
             plt.savefig(save_path, transparent=True, dpi=self.final_figure_quality)
-
             print("Plot saved to:", save_path)
 
         return matched_times, tphi_values, tphi_errors

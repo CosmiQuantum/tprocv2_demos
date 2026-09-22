@@ -46,7 +46,7 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
-run_num_list = [9] # options: 4,5,6,7,8,9, 9.2 (run 9c), 9.3 (run 9d)
+run_num_list = [9.3] # options: 4,5,6,7,8,9, 9.2 (run 9c), 9.3 (run 9d)
 t1_vals_by_run  = {}
 res_lengths_by_run = {}
 t2r_vals_by_run = {}
@@ -488,9 +488,9 @@ for run_number in run_num_list:
     run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB attenuator ') #please make it brief for the plot
 
     ################################################ 01: Get all data ######################################################
-    res_spec_vs_time = ResonatorFreqVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                           save_figs, fit_saved, signal, run_name, FRIDGE)
-    date_times_res_spec, res_freqs = res_spec_vs_time.run(exp_extension='_ge', fit_resonators=True)
+    # res_spec_vs_time = ResonatorFreqVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+    #                                        save_figs, fit_saved, signal, run_name, FRIDGE)
+    # date_times_res_spec, res_freqs = res_spec_vs_time.run(exp_extension='_ge')
 
     # q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
     #                                   save_figs, fit_saved, signal, run_name, FRIDGE)
@@ -503,14 +503,14 @@ for run_number in run_num_list:
     #                               fit_saved,signal, run_name)
     # date_times_pi_amps, pi_amps = pi_amps_vs_time.run(plot_depths=False)
 
-    # t1_vs_time = T1VsTime(plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-    #                  signal, run_name, FRIDGE, run_number, per_pt_errs = per_pt_errs_t1)
-    #
-    # # For regular t1 data
-    # if per_pt_errs_t1 and process_shots_t1ge: # this will only work if process_shots_t1ge is set to True too
-    #     date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs, res_lengths, rounds_t1 = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge, return_rnds = True)
-    # else:
-    #     date_times_t1, t1_vals, t1_fit_err, res_lengths, rounds_t1 = t1_vs_time.run(return_errs=True, exp_extension = '_ge', return_rnds = True)
+    t1_vs_time = T1VsTime(plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
+                     signal, run_name, FRIDGE, run_number, per_pt_errs = per_pt_errs_t1)
+
+    # For regular t1 data
+    if per_pt_errs_t1 and process_shots_t1ge: # this will only work if process_shots_t1ge is set to True too
+        date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs, res_lengths, rounds_t1 = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge, return_rnds = True)
+    else:
+        date_times_t1, t1_vals, t1_fit_err, res_lengths, rounds_t1 = t1_vs_time.run(return_errs=True, exp_extension = '_ge', return_rnds = True)
 
     # # For active reset t1 data
     # if per_pt_errs_t1 and process_shots_t1ge:  # only works if process_shots_t1ge is True
@@ -518,22 +518,22 @@ for run_number in run_num_list:
     # else:
     #     date_times_t1_act_reset, t1_vals_act_reset, t1_fit_err_act_reset, res_lengths_act_reset = t1_vs_time.run_act_reset(return_errs=True)
 
-    # t2r_vs_time = T2rVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
-    #                         fit_saved, signal, run_name, FRIDGE)
-    # date_times_t2r, t2r_vals, t2r_fit_err, rounds_t2r = t2r_vs_time.run(return_errs=True, t1_vals = t1_vals, return_rnds = True)
-    #
+    t2r_vs_time = T2rVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+                            fit_saved, signal, run_name, FRIDGE)
+    date_times_t2r, t2r_vals, t2r_fit_err, rounds_t2r = t2r_vs_time.run(return_errs=True, t1_vals = t1_vals, return_rnds = True)
+
     # t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
     #                         fit_saved, signal, run_name, FRIDGE)
     # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = t1_vals)
 
     # ---------------- Store results ----------------
     ## stores data like t1_vals_by_run[6][3], where 6=run number and 3=qubit index (0 based)
-    # t1_vals_by_run[run_number] = t1_vals
-    # t1_errs_by_run[run_number] = t1_fit_err
-    # # res_lengths_by_run[run_number] = res_lengths
-    # #
-    # t2r_vals_by_run[run_number] = t2r_vals
-    # t2r_errs_by_run[run_number] = t2r_fit_err
+    t1_vals_by_run[run_number] = t1_vals
+    t1_errs_by_run[run_number] = t1_fit_err
+    # res_lengths_by_run[run_number] = res_lengths
+    #
+    t2r_vals_by_run[run_number] = t2r_vals
+    t2r_errs_by_run[run_number] = t2r_fit_err
     # #
     # t2e_vals_by_run[run_number] = t2e_vals
     # t2e_errs_by_run[run_number] = t2e_fit_err
@@ -763,52 +763,52 @@ for run_number in run_num_list:
 # ])
 
 ###################################################### Combined T1 and T2R vs time (and optionally Tphi) #########################################
-# t2r_vs_time.plot_t2r_t1_single_qubit(qubit_index=2, t2r_date_times=date_times_t2r, t2r_vals=t2r_vals, t2r_fit_err=t2r_fit_err, rounds_t2r = rounds_t2r,
-#                                      t1_date_times=date_times_t1, t1_vals=t1_vals, t1_fit_err=t1_fit_err, rounds_t1 =rounds_t1, plot_Tphi= True,
-# event_timestamps=[
-#     #"2026-07-20 10:04:00", # heater turned on, stabilizing period begins
-#     "2026-07-20 10:53:00", # first time PT turned off
-#     "2026-07-20 11:04:00", # Turned back on
-#     "2026-07-20 11:46:00",
-#     "2026-07-20 11:57:00",
-#     "2026-07-20 13:32:00",
-#     "2026-07-20 13:43:00",
-#     "2026-07-20 14:19:00",
-#     "2026-07-20 14:31:00"
-# ],
-# event_labels=[
-#  # "Heater on",
-#  "PT off",
-#  "PT on",
-#  "PT off",
-#  "PT on",
-#  "PT off",
-#  "PT on",
-#  "PT off",
-#  "PT on",
-# ],
-# event_colors=[
-#  # "purple",
-#  "black",
-#  "black",
-#  "black",
-#  "black",
-#  "black",
-#  "black",
-#  "black",
-#  "black"
-# ],
-# event_linestyles=[
-# # "--",
-#  "-.",
-#  ":",
-#  "-.",
-#  ":",
-#  "-.",
-#  ":",
-#  "-.",
-#  ":"
-# ])
+t2r_vs_time.plot_t2r_t1_single_qubit(qubit_index=2, t2r_date_times=date_times_t2r, t2r_vals=t2r_vals, t2r_fit_err=t2r_fit_err, rounds_t2r = rounds_t2r,
+                                     t1_date_times=date_times_t1, t1_vals=t1_vals, t1_fit_err=t1_fit_err, rounds_t1 =rounds_t1, plot_Tphi= True, time_since_start = True,
+event_timestamps=[
+    #"2026-07-20 10:04:00", # heater turned on, stabilizing period begins
+    "2026-07-20 10:53:00", # first time PT turned off
+    "2026-07-20 11:04:00", # Turned back on
+    "2026-07-20 11:46:00",
+    "2026-07-20 11:57:00",
+    "2026-07-20 13:32:00",
+    "2026-07-20 13:43:00",
+    "2026-07-20 14:19:00",
+    "2026-07-20 14:31:00"
+],
+event_labels=[
+ # "Heater on",
+ "PT off",
+ "PT on",
+ "PT off",
+ "PT on",
+ "PT off",
+ "PT on",
+ "PT off",
+ "PT on",
+],
+event_colors=[
+ # "purple",
+ "black",
+ "black",
+ "black",
+ "black",
+ "black",
+ "black",
+ "black",
+ "black"
+],
+event_linestyles=[
+# "--",
+ "-.",
+ ":",
+ "-.",
+ ":",
+ "-.",
+ ":",
+ "-.",
+ ":"
+])
 # ################################################# 08: T2E vs Time Plots ################################################
 # #t2e_vs_time.plot_without_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
 #t2e_vs_time.plot_with_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends) # shows error bars, do this one!!
