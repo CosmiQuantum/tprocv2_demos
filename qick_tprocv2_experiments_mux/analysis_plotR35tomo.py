@@ -42,9 +42,9 @@ def tomo_colorplot(vsweep, qindex, qid, qdata, rows_written, timestamps = None, 
     # X-axis handling
     if timestamps is not None:
         time_min = decode_time(timestamps, rows_written)
-
-        x_vals = time_min
-        x_label = "Time (min)"
+        print(time_min[1]-time_min[0])
+        x_vals = time_min / 60
+        x_label = "Time (hr)"
     else:
         x_vals = np.arange(rows_written)
         x_label = "Round"
@@ -97,7 +97,7 @@ def tomo_colorplot_amp(vsweep, qindex, qid, qdata, rows_written, timestamps = No
     fig, ax = plt.subplots(figsize=(10, 5))
 
     im = ax.imshow(
-        amps,
+        I_data, #amps,
         aspect='auto',
         origin='lower',
         extent=[x_vals[0], x_vals[-1], vsweep_mV[0], vsweep_mV[-1]]
@@ -107,15 +107,23 @@ def tomo_colorplot_amp(vsweep, qindex, qid, qdata, rows_written, timestamps = No
     ax.set_ylabel('Applied Voltage Bias (mV)')
 
     cbar = fig.colorbar(im, ax=ax)
-    cbar.set_label('Amplitude (a.u.)')
+    cbar.set_label('Signal Amplitude (a.u.)')
 
-    ax.set_title(f'Charge Tomography Q{qid}', fontsize=14)
+    ax.set_title(f'Charge Tomography Q{qid}', fontsize=16)
 
     plt.tight_layout()
     plt.show()
 
     #fig_name = 'poster_plot_Q2_set1.png' #os.path.join('/home/nexusadmin/Documents/Data/run35/4charge/PostCsTomography/Dataset2/2026-03-23_16-15-38/analysis_plots/', 'Tomography_Qs1234_2026-03-24_17-06-21_plot.png') #Hardcode, fix
     #plt.savefig(fig_name)
+    # plt.savefig(
+    #     r"/home/nexusadmin/Documents/Data/run35/4charge/PostCsTomography/Dataset1/2026-03-20_15-42-57/NicePlots/chunk3_I2d.png",
+    #     dpi=600,
+    #     bbox_inches="tight")
+    # plt.savefig(
+    #     r"/home/nexusadmin/Documents/Data/run35/4charge/BackgroundTomography/Dataset1/2026-03-13_21-12-14/NicePlots/chunk1_I2d.png",
+    #     dpi=600,
+    #     bbox_inches="tight")
 
 
 def tomo_rndplot(vsweep, qindex, qid, qdata, round):
@@ -146,6 +154,37 @@ def tomo_rndplot(vsweep, qindex, qid, qdata, round):
     plt.tight_layout()
     plt.subplots_adjust(top=0.9)
 
+    plt.show()
+
+def tomo_rndplot_amp(vsweep, qindex, qid, qdata, round):
+    I_data = qdata[:, qindex, 0, :].T
+    Q_data = qdata[:, qindex, 1, :].T
+    amps = np.sqrt(I_data ** 2 + Q_data ** 2)
+    vsweep_mV = vsweep * 1000
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.set_ylabel("Singal Amplitude (a.u.)")
+    ax.set_xlabel("Applied Voltage Bias (mV)")
+    if type(qindex) is int:
+        if type(round) is int:
+            ax.plot(vsweep * 1000, qdata[round, qindex, 0, :], color = 'black')
+            fig.suptitle(f"Charge Tomography Q{qid}, Round {round}")
+        else:
+            for r in range(round[0], round[1]):
+                ax.plot(vsweep * 1000, qdata[r, qindex, 0, :], label = f"rnd {r}")
+            fig.suptitle(f"Charge Tomography Q{qid}, Rounds {round[0]}-{round[1]}")
+            ax.legend()
+    else:
+        for index, q in enumerate(qindex):
+            ax.plot(vsweep * 1000, qdata[round, q, 0, :], label=f"Q{qid[index]}")
+        fig.suptitle(f"Charge Tomography, Round {round}")
+        ax.legend()
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.9)
+
+    # plt.savefig(rf"/home/nexusadmin/Documents/Data/run35/4charge/BackgroundTomography/Dataset1/2026-03-13_21-12-14/NicePlots/chunk1_I_rnd{round}.png",
+    #             dpi = 600,
+    #             bbox_inches = "tight")
     plt.show()
 
 def fit_func(n_g, d, nu, Vconv, phi):
@@ -212,16 +251,26 @@ def fitdata(fit_params, vsweep, qindex, qid, qdata, rd, signal = "amp", plot = F
 
 #def fit_single_scan()
 
+plt.rcParams.update({
+    'font.size': 14,  # Base font size
+    'axes.titlesize': 16,  # Title font size
+    'axes.labelsize': 16,  # Axis label font size
+    'xtick.labelsize': 14,  # X-axis tick label size
+    'ytick.labelsize': 14,  # Y-axis tick label size
+    'legend.fontsize': 14,  # Legend font size
+})
+
 ## Add saving with proper names and folders
 
-run = 'run37'
-study = 'BackgroundTomography' #'PostCsTomography' #'EndOfRunData' #'PostCsTomography' #'BackgroundTomography'
-substudy = 'Dataset1' #'Dataset2' #'Dataset2_neg'
-timestamp = '2026-06-11_23-01-38' #'2026-06-09_23-56-29' #'2026-03-23_16-15-38' #'2026-04-03_11-55-28'
-file = 'Tomography_Qs1234_2026-06-14_12-32-54.h5' #'Tomography_Qs1234_2026-03-24_17-06-21.h5'
+run = 'run35' #'run37'
+study = 'PostCsTomography' #'EndOfRunData' #'PostCsTomography' #'BackgroundTomography'
+substudy = 'Dataset3' #'Dataset2' #'Dataset2_neg
+timestamp = '2026-03-26_15-46-17' #'2026-06-11_23-01-38' #'2026-06-09_23-56-29' #'2026-03-23_16-15-38' #'2026-04-03_11-55-28'
+file = 'Tomography_Qs1234_2026-03-26_16-05-49.h5' #'Tomography_Qs1234_2026-06-14_12-32-54.h5' #'Tomography_Qs1234_2026-03-24_17-06-21.h5'
 path = f'/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}/{timestamp}/study_data/{file}'
 
 vsweep, qubits, qdata, timestamps, rounds = load_singleh5(path)
+print(len(vsweep))
 print(rounds)
 #print(timestamps)
 qindex = 0
@@ -232,4 +281,4 @@ rd = 0
 for qindex in range(0, 4):
     tomo_colorplot(vsweep, qindex, qindex+1, qdata, rounds, timestamps = timestamps)
     #tomo_colorplot_amp(vsweep, qindex, qindex+1, qdata, rounds, timestamps = timestamps)
-#tomo_rndplot(vsweep, qindex, qid, qdata, [10, 30])
+#tomo_rndplot_amp(vsweep, qindex, qid, qdata, 20) #[10, 30])
