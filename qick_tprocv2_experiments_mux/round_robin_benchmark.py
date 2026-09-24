@@ -64,7 +64,9 @@ unmask = True  # Do you want to use the unmasking feature to increase resonator 
 save_shots_t1 = True
 save_shots_t2r = True
 save_shots_t2e = True
+save_shots_ssf = True
 save_shots_qspecge = True
+save_shots_rspecge = True
 save_shots_gerabi = False
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 save_shots_rpm = True
@@ -148,12 +150,12 @@ def create_data_dict(keys, save_r, qs):
     return {Q: {key: np.empty(save_r, dtype=object) for key in keys} for Q in range(len(qs))}
 
 # Define what to save to h5 files
-res_keys = ['Dates', 'freq_pts', 'freq_center', 'Amps', 'Found Freqs', 'Round Num', 'Batch Num', 'Exp Config',
+res_keys = ['Dates', 'freq_pts', 'freq_center', 'Amps', 'I', 'Q', 'Ishots', 'Qshots', 'Found Freqs', 'Round Num', 'Batch Num', 'Exp Config',
             'Syst Config', 'measurement_timestamp']
 qspec_keys = ['Dates', 'I', 'Q', 'Ishots', 'Qshots', 'Frequencies', 'I Fit', 'Q Fit', 'Round Num', 'Batch Num', 'Recycled QFreq',
               'Exp Config', 'Syst Config', 'measurement_timestamp']
 rabi_keys = ['Dates', 'I', 'Q', 'Gains', 'Fit', 'Round Num', 'Batch Num', 'Exp Config', 'Syst Config', 'measurement_timestamp']
-ss_keys = ['Fidelity', 'Angle', 'Dates', 'I_g', 'Q_g', 'I_e', 'Q_e', 'Round Num', 'Batch Num', 'Exp Config',
+ss_keys = ['Fidelity', 'Angle', 'Dates', 'I_g', 'Q_g', 'I_e', 'Q_e', 'raw_g', 'raw_e', 'Round Num', 'Batch Num', 'Exp Config',
            'Syst Config', 'measurement_timestamp']
 t1_keys = ['T1', 'Errors', 'Dates', 'I', 'Q', 'Ishots', 'Qshots', 'Delay Times', 'Fit', 'Round Num', 'Batch Num', 'Exp Config',
            'Syst Config', 'measurement_timestamp']
@@ -249,8 +251,9 @@ while j < n:
 
                 res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs, increase_geres_reps,
                                                  increase_geres_reps_to, experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
-                                                 use_savgol_smoothing = use_savgol_smoothing_rspec)
-                res_freqs, freq_pts, freq_center, amps, config_rspec, meas_timestamp_resge = res_spec.run()
+                                                 use_savgol_smoothing = use_savgol_smoothing_rspec, save_shots = save_shots_rspecge)
+
+                res_freqs, freq_pts, freq_center, amps, res_I, res_Q, res_Ishots, res_Qshots, config_rspec, meas_timestamp_resge = res_spec.run()
                 offset = freq_offsets[QubitIndex]  # use optimized offset values or whats set at top of script based on pre_optimize flag
                 offset_res_freqs = [r + offset for r in res_freqs]
                 experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
@@ -423,11 +426,11 @@ while j < n:
                     reduce_rlx_delay_ssf = True
                     reduce_rlx_delay_ssf_to = 650
 
-                max_tries = 1 # 5
+                max_tries = 1
                 try_num = 0
                 fid_check = 0
 
-                ssf_thresholds = [0.85, 0.80, 0.80, 0.8, 0.20, 0.75] # all Qs are generally above these unless something is wrong
+                ssf_thresholds = [0.6, 0.6, 0.6, 0.6, 0.6, 0.6] # all Qs are above these unless something is wrong
                 ssf_threshold = ssf_thresholds[QubitIndex]
 
                 while fid_check < ssf_threshold and try_num < max_tries:
@@ -436,8 +439,8 @@ while j < n:
 
                     ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
                                     experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
-                                    reduce_rlx_delay = reduce_rlx_delay_ssf, reduce_rlx_delay_to = reduce_rlx_delay_ssf_to)
-                    fid, angle, thresh, iq_list_g, iq_list_e, config_ss, meas_timestamp_ssge = ss.run()
+                                    reduce_rlx_delay = reduce_rlx_delay_ssf, reduce_rlx_delay_to = reduce_rlx_delay_ssf_to, save_shots = save_shots_ssf)
+                    fid, angle, thresh, iq_list_g, iq_list_e, raw_g, raw_e, config_ss, meas_timestamp_ssge = ss.run()
 
                     fid_check = fid
                     # if fid_check < ssf_threshold: # checks if SSF is bad, if it is it tries again
@@ -452,6 +455,10 @@ while j < n:
                 Q_g = iq_list_g[QubitIndex][0].T[1]
                 I_e = iq_list_e[QubitIndex][0].T[0]
                 Q_e = iq_list_e[QubitIndex][0].T[1]
+
+                if raw_g is not None:
+                    raw_g = np.asarray(raw_g[QubitIndex])
+                    raw_e = np.asarray(raw_e[QubitIndex])
 
             except Exception as e:
                 if debug_mode:
@@ -892,6 +899,10 @@ while j < n:
                 res_data[QubitIndex]['freq_pts'][j - batch_num * save_r - 1] = freq_pts
                 res_data[QubitIndex]['freq_center'][j - batch_num * save_r - 1] = freq_center
                 res_data[QubitIndex]['Amps'][j - batch_num * save_r - 1] = amps
+                res_data[QubitIndex]['I'][j - batch_num * save_r - 1] = res_I
+                res_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = res_Q
+                res_data[QubitIndex]['Ishots'][j - batch_num * save_r - 1] = res_Ishots
+                res_data[QubitIndex]['Qshots'][j - batch_num * save_r - 1] = res_Qshots
                 res_data[QubitIndex]['Found Freqs'][j - batch_num * save_r - 1] = res_freqs
                 res_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
                 res_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
@@ -938,6 +949,8 @@ while j < n:
                 ss_data[QubitIndex]['Q_g'][j - batch_num * save_r - 1] = Q_g
                 ss_data[QubitIndex]['I_e'][j - batch_num * save_r - 1] = I_e
                 ss_data[QubitIndex]['Q_e'][j - batch_num * save_r - 1] = Q_e
+                ss_data[QubitIndex]['raw_g'][j - batch_num * save_r - 1] = raw_g
+                ss_data[QubitIndex]['raw_e'][j - batch_num * save_r - 1] = raw_e
                 ss_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
                 ss_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 ss_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg

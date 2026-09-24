@@ -189,7 +189,8 @@ class Data_H5:
                     # Attempt to map HDF5 keys to the target dictionaries' keys.
                     if data_type == 'Res' or data_type == 'Res_ge' or  data_type == 'Res_ef':
                         target_keys = {'Dates': 'Dates', 'freq_pts': 'freq_pts', 'freq_center': 'freq_center',
-                                       'Amps': 'Amps', 'Found Freqs': 'Found Freqs', 'Round Num': 'Round Num',
+                                       'Amps': 'Amps', 'I': 'I', 'Q': 'Q', 'Ishots': 'Ishots', 'Qshots': 'Qshots',
+                                       'Found Freqs': 'Found Freqs', 'Round Num': 'Round Num',
                                        'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
                                        'Syst Config': 'Syst Config', 'measurement_timestamp': 'measurement_timestamp'}
                     elif data_type == 'tof':
@@ -221,7 +222,7 @@ class Data_H5:
                                        'Syst Config': 'Syst Config'}
                     elif data_type == 'SS':
                         target_keys = {'Fidelity': 'Fidelity', 'Angle': 'Angle', 'Dates': 'Dates', 'I_g': 'I_g',
-                                       'Q_g': 'Q_g', 'I_e': 'I_e', 'Q_e': 'Q_e',
+                                       'Q_g': 'Q_g', 'I_e': 'I_e', 'Q_e': 'Q_e', 'raw_g': 'raw_g', 'raw_e': 'raw_e',
                                        'Round Num': 'Round Num', 'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
                                        'Syst Config': 'Syst Config', 'measurement_timestamp': 'measurement_timestamp'}
 

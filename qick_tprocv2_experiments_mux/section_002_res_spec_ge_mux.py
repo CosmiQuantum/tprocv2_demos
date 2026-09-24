@@ -37,7 +37,7 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
 class ResonanceSpectroscopy:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, save_figs, increase_res_reps = False,
                  increase_res_reps_to = None, experiment = None, verbose = False, logger = None, qick_verbose=True,
-                 unmasking_resgain = False, use_savgol_smoothing = False):
+                 unmasking_resgain = False, use_savgol_smoothing = False, save_shots = True):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.use_savgol_smoothing = use_savgol_smoothing
@@ -47,6 +47,7 @@ class ResonanceSpectroscopy:
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.round_num = round_num
         self.save_figs = save_figs
+        self.save_shots = save_shots
         self.increase_res_reps = increase_res_reps
         self.increase_res_reps_to = increase_res_reps_to
         self.experiment = experiment
@@ -71,16 +72,46 @@ class ResonanceSpectroscopy:
     def run(self):
         fpts = self.exp_cfg["start"] + self.exp_cfg["step_size"] * np.arange(self.exp_cfg["steps"])
         fcenter = self.config['res_freq_ge']
-        amps = np.zeros((len(fcenter), len(fpts)))
+
+        I = np.zeros((len(fcenter), len(fpts)))
+        Q = np.zeros((len(fcenter), len(fpts)))
+        amps = np.zeros((len(fcenter), len(fpts))) # magnitude values, which is what we plot
+
+        if self.save_shots:
+            Ishots = [[] for _ in range(len(fcenter))]
+            Qshots = [[] for _ in range(len(fcenter))]
+        else:
+            Ishots = None
+            Qshots = None
 
         for index, f in enumerate(tqdm(fpts)):
             self.config["res_freq_ge"] = fcenter + f
             prog = SingleToneSpectroscopyProgram(self.experiment.soccfg, reps=self.exp_cfg["reps"], final_delay=self.config['relax_delay'], cfg=self.config)
             iq_list = prog.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=self.qick_verbose)
+
+            if self.save_shots:
+                raw_0 = prog.get_raw()
+
             for i in range(len(self.config['res_freq_ge'])):
-                #amps[i][index]= iq_list[i][:,0]
+                I[i][index] = iq_list[i][0, 0]
+                Q[i][index] = iq_list[i][0, 1]
                 amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])
+
+                if self.save_shots:
+                    raw_i = np.asarray(raw_0[i])
+                    if raw_i.ndim != 3 or raw_i.shape[-1] != 2:
+                        raise ValueError(f"Expected raw resonator IQ shape (reps, readout, IQ), got {raw_i.shape}")
+                    Ishots[i].append(raw_i[:, 0, 0])
+                    Qshots[i].append(raw_i[:, 0, 1])
+
+        I = np.array(I)
+        Q = np.array(Q)
         amps = np.array(amps)
+
+        if self.save_shots:
+            Ishots = np.array(Ishots)
+            Qshots = np.array(Qshots)
+
         measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
 
         # New, can comment out (optional). Smooths out res spec amps curve to extract the minima
@@ -90,7 +121,7 @@ class ResonanceSpectroscopy:
         else:
             res_freqs = self.plot_results(fpts, fcenter, amps) #return freqs from plotting loop so we can use to update experiment
 
-        return res_freqs, fpts, fcenter, amps, self.config, measurement_timestamp
+        return res_freqs, fpts, fcenter, amps, I, Q, Ishots, Qshots, self.config, measurement_timestamp
 
     def plot_results(self, fpts, fcenter, amps, reloaded_config = None, fig_quality = 100, smoothed_amps = False):
         res_freqs = []

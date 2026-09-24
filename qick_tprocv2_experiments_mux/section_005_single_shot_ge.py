@@ -133,7 +133,7 @@ class SingleShotProgram_e(AveragerProgramV2):
 class SingleShot:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder, round_num, save_figs=False, experiment = None,
                  verbose = False, logger = None, qick_verbose=True, unmasking_resgain = False, reduce_rlx_delay = False, reduce_rlx_delay_to = False,
-                 doublegauss_thresh = False):
+                 doublegauss_thresh = False, save_shots = True):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
@@ -141,6 +141,7 @@ class SingleShot:
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.round_num = round_num
         self.save_figs = save_figs
+        self.save_shots = save_shots
         self.experiment = experiment
         self.doublegauss_thresh = doublegauss_thresh
         self.reduce_rlx_delay = reduce_rlx_delay
@@ -233,21 +234,26 @@ class SingleShot:
         else:
             ssp_g = SingleShotProgram_g(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
             iq_list_g = ssp_g.acquire(self.experiment.soc, soft_avgs=1, progress=True)
-            g_shots= ssp_g.get_raw()
 
             ssp_e = SingleShotProgram_e(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
             iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=True)
-            e_shots= ssp_e.get_raw()
+
+            if self.save_shots:
+                raw_g = ssp_g.get_raw()
+                raw_e = ssp_e.get_raw()
+            else:
+                raw_g = None
+                raw_e = None
 
             measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
 
             if return_centers:
                 fid, angle, thresh, g_center, e_center = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex, return_centers = return_centers)
-                return fid, angle, thresh, iq_list_g, iq_list_e, self.config, measurement_timestamp, g_center, e_center
+                return fid, angle, thresh, iq_list_g, iq_list_e, raw_g, raw_e, self.config, measurement_timestamp, g_center, e_center
             else:
                 fid, angle, thresh = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
                 # fid, angle = self.plot_results(g_shots, e_shots, self.QubitIndex)
-                return fid, angle, thresh, iq_list_g, iq_list_e, self.config, measurement_timestamp
+                return fid, angle, thresh, iq_list_g, iq_list_e, raw_g, raw_e, self.config, measurement_timestamp
 
     def plot_results(self, iq_list_g, iq_list_e, QubitIndex,  fig_quality=100, return_centers = False, active_reset = False):
         # Original Method, QICK processed SSF IQ shots
@@ -256,7 +262,7 @@ class SingleShot:
         I_e = iq_list_e[QubitIndex][0].T[0]
         Q_e = iq_list_e[QubitIndex][0].T[1]
 
-        # Dont recall what this was used for. Raw shots I think?
+        # Dont recall what this was used for. Here in case we need it later
         # I_g = iq_list_g[self.QubitIndex][:, :, 0, 0][0]
         # Q_g = iq_list_g[self.QubitIndex][:, :, 0, 1][0]
         # I_e = iq_list_e[self.QubitIndex][:, :, 0, 0][0]
