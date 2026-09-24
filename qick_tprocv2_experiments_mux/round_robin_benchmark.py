@@ -65,15 +65,12 @@ save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want
 Qs_to_look_at = [0] # only list the qubits you want to do the RR for
 
 # Data saving info
-run_name = 'run9d'
+run_name = 'run10'
 device_name = '6transmon'
 substudy_txt_notes = ('Checking status of qubits.\n')
 
 # set which of the following you'd like to run to 'True'
 
-# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
-#              "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
-#              "rabi_pop_meas": True, "ef_Rabi": False, "t1": False, "t2r": True, "t2e": True}
 run_flags = {"tof": True, "res_spec": False, "q_spec": False, "rabi": False, "ss": False,
              "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
@@ -94,7 +91,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts, round_robin_benchmark
-sub_study = 'tof_ringdown_inv' #batch2_post_1stopt_25dbDAC, opt_sigmas_gains_reps_steps, opt_AB_paper_data
+sub_study = 'qubit_checkouts'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -159,6 +156,8 @@ t2e_keys = ['T2E', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num
             'Syst Config', 'measurement_timestamp']
 rabi_keys_ef_Qtemps = ['Dates', 'Qfreq_ge', 'I1', 'Q1', 'Gains1', 'Ishots1', 'Qshots1', 'Fit1', 'I2', 'Q2', 'Gains2', 'Ishots2', 'Qshots2', 'Fit2', 'Round Num',
                        'Batch Num', 'Exp Config', 'Syst Config', 'measurement_timestamp']
+tof_keys = ['Dates', 'Time', 'I', 'Q', 'Avg Mag Last', 'Avg Mag Mid', 'Avg Mag Oct', 'Round Num', 'Batch Num', 'Exp Config', 'Syst Config', 'measurement_timestamp']
+
 # initialize a simple list to store the qspec values in incase a fit fails
 stored_qspec_list = [None] * tot_num_of_qubits
 
@@ -169,6 +168,7 @@ if live_plot:
                            "http://localhost:8097/ on firefox")
 
 # initialize a dictionary to store the values
+tof_data = create_data_dict(tof_keys, save_r, list_of_all_qubits)
 res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
 qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
 rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
@@ -176,13 +176,10 @@ ss_data = create_data_dict(ss_keys, save_r, list_of_all_qubits)
 t1_data = create_data_dict(t1_keys, save_r, list_of_all_qubits)
 t2r_data = create_data_dict(t2r_keys, save_r, list_of_all_qubits)
 t2e_data = create_data_dict(t2e_keys, save_r, list_of_all_qubits)
-
 ef_res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
 ef_qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
 ef_rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)
 rabi_data_ef_Qtemps = create_data_dict(rabi_keys_ef_Qtemps, save_r, list_of_all_qubits)
-
-
 
 batch_num = 0 # keep as zero
 j = 0 # keep as zero
@@ -218,7 +215,10 @@ while j < n:
         if run_flags["tof"]:
             tof = TOFExperiment(QubitIndex, studyDocumentationFolder, experiment, j, save_figs,
                                 unmasking_resgain=unmask)
-            tof.run()
+            t, iq_list, avg_y_mag_values_last, avg_y_mag_values_mid, avg_y_mag_values_oct, sys_config_tof, meas_timestamp_tof = tof.run()
+            tof_I = np.array([iq[:, 0] for iq in iq_list])
+            tof_Q = np.array([iq[:, 1] for iq in iq_list])
+
             del tof
 
         ################################################# g-e Res spec ####################################################
@@ -862,6 +862,21 @@ while j < n:
 
         ############################################### Collect Results ################################################
         if save_data_h5:
+            # ---------------------Collect TOF Results----------------
+            if run_flags["tof"]:
+                tof_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = meas_timestamp_tof
+                tof_data[QubitIndex]['Time'][j - batch_num * save_r - 1] = t
+                tof_data[QubitIndex]['I'][j - batch_num * save_r - 1] = tof_I
+                tof_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = tof_Q
+                tof_data[QubitIndex]['Avg Mag Last'][j - batch_num * save_r - 1] = avg_y_mag_values_last
+                tof_data[QubitIndex]['Avg Mag Mid'][j - batch_num * save_r - 1] = avg_y_mag_values_mid
+                tof_data[QubitIndex]['Avg Mag Oct'][j - batch_num * save_r - 1] = avg_y_mag_values_oct
+                tof_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+                tof_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+                tof_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
+                tof_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_tof
+                tof_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_tof
+
             # ---------------------Collect g-e Res Spec Results----------------
             if run_flags["res_spec"]:
                 res_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
@@ -1049,6 +1064,13 @@ while j < n:
         if j % save_r == 0:
             batch_num += 1
 
+            # --------------------------save TOF-----------------------
+            if run_flags["tof"]:
+                saver_tof = Data_H5(subStudyDataFolder, tof_data, batch_num, save_r)
+                saver_tof.save_to_h5('tof')
+                del saver_tof
+                del tof_data
+
             # --------------------------save g-e Res Spec-----------------------
             if run_flags["res_spec"]:
                 saver_res = Data_H5(subStudyDataFolder, res_data, batch_num, save_r)
@@ -1125,6 +1147,7 @@ while j < n:
                 del t2e_data
 
     # reset all dictionaries to none for safety
+    tof_data = create_data_dict(tof_keys, save_r, list_of_all_qubits)
     res_data = create_data_dict(res_keys, save_r, list_of_all_qubits)
     qspec_data = create_data_dict(qspec_keys, save_r, list_of_all_qubits)
     rabi_data = create_data_dict(rabi_keys, save_r, list_of_all_qubits)

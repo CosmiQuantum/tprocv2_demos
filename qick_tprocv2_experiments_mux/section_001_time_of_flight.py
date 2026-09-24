@@ -1,5 +1,7 @@
 from qick.asm_v2 import AveragerProgramV2
 import matplotlib.pyplot as plt
+import time
+import datetime
 from build_state import *
 from expt_config import *
 from system_config import *
@@ -44,21 +46,19 @@ class TOFExperiment:
                     mux_freqs=[f+1 for f in cfg['res_freq_ge']], # original: [f+1 for f in cfg['res_freq_ge']]
                     mux_gains= cfg['res_gain_ge'],
                     mux_phases=cfg['res_phase'],
-                    mixer_freq=cfg['mixer_freq']
-                )
+                    mixer_freq=cfg['mixer_freq'])
+                
                 for ch, f, ph in zip(cfg['ro_ch'], [f+1 for f in cfg['res_freq_ge']], cfg['ro_phase']): # original: [f+1 for f in cfg['res_freq_ge']]
                     self.declare_readout(
                         ch=ch,
                         length= cfg['res_length'], #acquisition_length FOR A RINGDOWN TEST # cfg['res_length'], <- FOR NORMAL TOF
-                        freq=f, phase=ph, gen_ch=gen_ch
-                    )
+                        freq=f, phase=ph, gen_ch=gen_ch)
 
                 self.add_pulse(
                     ch=gen_ch, name="mymux",
                     style="const",
                     length=cfg["res_length"],
-                    mask=cfg["list_of_all_qubits"],
-                )
+                    mask=cfg["list_of_all_qubits"])
 
             def _body(self, cfg):
                 self.trigger(ros=cfg['ro_ch'], pins=[0], t=0, ddr4=True)
@@ -66,19 +66,18 @@ class TOFExperiment:
 
         prog = MuxProgram(self.experiment.soccfg, reps=1, final_delay=0.5, cfg=self.config)
         iq_list = prog.acquire_decimated(self.experiment.soc, soft_avgs=self.config['soft_avgs'])
-        if self.save_figs:
-            (average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, DAC_attenuator1, DAC_attenuator2, ADC_attenuator) = self.plot_results(prog, iq_list)
-            # self.plot_ringdown_test(
-            #     prog,
-            #     iq_list,
-            #     qubit_index=self.QubitIndex,
-            #     x_min=5.0,
-            #     x_max=9.0,
-            #     tick_spacing=0.2)
-        else:
-            (average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, DAC_attenuator1, DAC_attenuator2, ADC_attenuator) = None, None, None, None, None, None,
-
-        return (average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, DAC_attenuator1, DAC_attenuator2, ADC_attenuator)
+        measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
+        t, iq_list, average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct = self.plot_results(prog, iq_list)
+        
+        # self.plot_ringdown_test(
+        #     prog,
+        #     iq_list,
+        #     qubit_index=self.QubitIndex,
+        #     x_min=5.0,
+        #     x_max=9.0,
+        #     tick_spacing=0.2)
+        
+        return t, iq_list, average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, self.config, measurement_timestamp
 
 
     def plot_results(self, prog, iq_list):
@@ -148,7 +147,6 @@ class TOFExperiment:
         if self.title:
             plt.suptitle(f"TOF DAC_Att_1:{self.experiment.DAC_attenuator1} DAC_Att_2:{self.experiment.DAC_attenuator2} ADC_Att:{self.experiment.ADC_attenuator}", fontsize=24, y=0.95)
 
-
         # Save
         if self.save_figs:
             outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
@@ -159,11 +157,9 @@ class TOFExperiment:
                 file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}" + f"Q_{self.QubitIndex}" + f"{formatted_datetime}_" + self.expt_name + ".png")
             else:
                 file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + ".png")
-            plt.savefig(file_name, dpi=300)
-            # plt.show()
-            # plt.close(fig)
+            plt.savefig(file_name, dpi=600)
 
-        return average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, self.experiment.DAC_attenuator1, self.experiment.DAC_attenuator2, self.experiment.ADC_attenuator
+        return t, iq_list, average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct
 
     def plot_ringdown_test(self, prog, iq_list, qubit_index=None, x_min=5.5, x_max=7.0, tick_spacing=0.1):
         """
