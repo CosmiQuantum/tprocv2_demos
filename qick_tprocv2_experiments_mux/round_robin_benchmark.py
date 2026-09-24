@@ -59,8 +59,15 @@ debug_mode = False  # if True, it disables the continuing function of RR if an e
 
 thresholding = False  # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 unmask = True  # Do you want to use the unmasking feature to increase resonator gain? This may not apply to LOUD
-save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi
+
+# Save raw shots instead of averaged IQ data for each experiment?
+save_shots_t1 = True
+save_shots_t2r = True
+save_shots_t2e = True
+save_shots_qspecge = True
+save_shots_gerabi = False
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
+save_shots_rpm = True
 
 Qs_to_look_at = [0] # only list the qubits you want to do the RR for
 
@@ -143,16 +150,16 @@ def create_data_dict(keys, save_r, qs):
 # Define what to save to h5 files
 res_keys = ['Dates', 'freq_pts', 'freq_center', 'Amps', 'Found Freqs', 'Round Num', 'Batch Num', 'Exp Config',
             'Syst Config', 'measurement_timestamp']
-qspec_keys = ['Dates', 'I', 'Q', 'Frequencies', 'I Fit', 'Q Fit', 'Round Num', 'Batch Num', 'Recycled QFreq',
+qspec_keys = ['Dates', 'I', 'Q', 'Ishots', 'Qshots', 'Frequencies', 'I Fit', 'Q Fit', 'Round Num', 'Batch Num', 'Recycled QFreq',
               'Exp Config', 'Syst Config', 'measurement_timestamp']
 rabi_keys = ['Dates', 'I', 'Q', 'Gains', 'Fit', 'Round Num', 'Batch Num', 'Exp Config', 'Syst Config', 'measurement_timestamp']
 ss_keys = ['Fidelity', 'Angle', 'Dates', 'I_g', 'Q_g', 'I_e', 'Q_e', 'Round Num', 'Batch Num', 'Exp Config',
            'Syst Config', 'measurement_timestamp']
 t1_keys = ['T1', 'Errors', 'Dates', 'I', 'Q', 'Ishots', 'Qshots', 'Delay Times', 'Fit', 'Round Num', 'Batch Num', 'Exp Config',
            'Syst Config', 'measurement_timestamp']
-t2r_keys = ['T2', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num', 'Batch Num', 'Exp Config',
+t2r_keys = ['T2', 'Errors', 'Dates', 'I', 'Q', 'Ishots', 'Qshots', 'Delay Times', 'Fit', 'Round Num', 'Batch Num', 'Exp Config',
             'Syst Config', 'measurement_timestamp']
-t2e_keys = ['T2E', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num', 'Batch Num', 'Exp Config',
+t2e_keys = ['T2E', 'Errors', 'Dates', 'I', 'Q', 'Ishots', 'Qshots', 'Delay Times', 'Fit', 'Round Num', 'Batch Num', 'Exp Config',
             'Syst Config', 'measurement_timestamp']
 rabi_keys_ef_Qtemps = ['Dates', 'Qfreq_ge', 'I1', 'Q1', 'Gains1', 'Ishots1', 'Qshots1', 'Fit1', 'I2', 'Q2', 'Gains2', 'Ishots2', 'Qshots2', 'Fit2', 'Round Num',
                        'Batch Num', 'Exp Config', 'Syst Config', 'measurement_timestamp']
@@ -215,7 +222,7 @@ while j < n:
         if run_flags["tof"]:
             tof = TOFExperiment(QubitIndex, studyDocumentationFolder, experiment, j, save_figs,
                                 unmasking_resgain=unmask)
-            t, iq_list, avg_y_mag_values_last, avg_y_mag_values_mid, avg_y_mag_values_oct, sys_config_tof, meas_timestamp_tof = tof.run()
+            t, iq_list, avg_y_mag_values_last, avg_y_mag_values_mid, avg_y_mag_values_oct, config_tof, meas_timestamp_tof = tof.run()
             tof_I = np.array([iq[:, 0] for iq in iq_list])
             tof_Q = np.array([iq[:, 1] for iq in iq_list])
 
@@ -243,7 +250,7 @@ while j < n:
                 res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs, increase_geres_reps,
                                                  increase_geres_reps_to, experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
                                                  use_savgol_smoothing = use_savgol_smoothing_rspec)
-                res_freqs, freq_pts, freq_center, amps, sys_config_rspec, meas_timestamp_resge = res_spec.run()
+                res_freqs, freq_pts, freq_center, amps, config_rspec, meas_timestamp_resge = res_spec.run()
                 offset = freq_offsets[QubitIndex]  # use optimized offset values or whats set at top of script based on pre_optimize flag
                 offset_res_freqs = [r + offset for r in res_freqs]
                 experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
@@ -303,8 +310,8 @@ while j < n:
                                            signal, save_figs, increase_reps = increase_qubit_reps_qspec, increase_rounds =increase_qspec_rounds,
                                            increase_reps_to = qspecge_increase_reps_to, increase_rounds_to = increase_qspec_rounds_to,
                                            plot_fit=True, experiment=experiment, live_plot=live_plot, verbose=verbose,
-                                           logger=rr_logger, unmasking_resgain=unmask)
-                (qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq, sys_config_qspec, meas_timestamp_qspecge) = q_spec.run()
+                                           logger=rr_logger, unmasking_resgain=unmask, save_shots = save_shots_qspecge)
+                (qspec_I, qspec_Q, qspec_Ishots, qspec_Qshots, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq, config_qspec, meas_timestamp_qspecge) = q_spec.run()
 
                 if qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None:
                     if stored_qspec_list[QubitIndex] is not None:
@@ -382,7 +389,7 @@ while j < n:
                                                multiply_qubit_reps_by=multiply_gerabi_reps_by,
                                                verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
                                                reduce_rlx_delay = reduce_rlx_delay_gerabi, reduce_rlx_delay_to = reduce_rlx_delay_gerabi_to)
-                (rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_rabi, meas_timestamp_rabige) = rabi.run(thresholding=thresholding, use_iminuit_instead = use_iminuit_instead)
+                (rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, config_rabi, meas_timestamp_rabige) = rabi.run(thresholding=thresholding, use_iminuit_instead = use_iminuit_instead)
 
                 # if these are None, fit didnt work
                 if (rabi_fit is None and pi_amp is None):
@@ -430,7 +437,7 @@ while j < n:
                     ss = SingleShot(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs,
                                     experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
                                     reduce_rlx_delay = reduce_rlx_delay_ssf, reduce_rlx_delay_to = reduce_rlx_delay_ssf_to)
-                    fid, angle, thresh, iq_list_g, iq_list_e, sys_config_ss, meas_timestamp_ssge = ss.run()
+                    fid, angle, thresh, iq_list_g, iq_list_e, config_ss, meas_timestamp_ssge = ss.run()
 
                     fid_check = fid
                     # if fid_check < ssf_threshold: # checks if SSF is bad, if it is it tries again
@@ -497,7 +504,7 @@ while j < n:
                                                           logger=rr_logger, qick_verbose=qick_verbose,
                                                           unmasking_resgain=unmask, reduce_rlx_delay = reduce_rlx_delay_efrspec,
                                                           reduce_rlx_delay_to = reduce_rlx_delay_efrspec_to)
-                    ef_res_freqs, ef_freq_pts, ef_freq_center, ef_amps, sys_config_rspec_ef, meas_timestamp_resef = ef_res_spec.run()
+                    ef_res_freqs, ef_freq_pts, ef_freq_center, ef_amps, config_rspec_ef, meas_timestamp_resef = ef_res_spec.run()
                     ef_res_freqs_samples.append(ef_res_freqs)
                     rr_logger.info(f"EF ResSpec sample {sample} for qubit {QubitIndex + 1}: {ef_res_freqs}")
 
@@ -530,9 +537,9 @@ while j < n:
         # if run_flags["ss_gef"]:
         #     ss = SingleShot_ef(QubitIndex, number_of_qubits, studyDocumentationFolder, j, save_figs, experiment)
         #
-        #     iq_list_g, iq_list_e, iq_list_f, theta_ge, threshold_ge, sys_config_ss_gef = ss.run(experiment.soccfg,
+        #     iq_list_g, iq_list_e, iq_list_f, theta_ge, threshold_ge, config_ss_gef = ss.run(experiment.soccfg,
         #                                                                                         experiment.soc)
-        #     # iq_list_g, iq_list_e, iq_list_f, ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge, sys_config_ss_gef
+        #     # iq_list_g, iq_list_e, iq_list_f, ig_new, qg_new, ie_new, qe_new, if_new, qf_new, theta_ge, threshold_ge, config_ss_gef
         #     I_g = iq_list_g[QubitIndex][0].T[0]
         #     Q_g = iq_list_g[QubitIndex][0].T[1]
         #     I_e = iq_list_e[QubitIndex][0].T[0]
@@ -594,7 +601,7 @@ while j < n:
                                                     increase_ef_qspec_rounds_to = increase_ef_qspec_rounds_to, unmasking_resgain=unmask,
                                                     reduce_rlx_delay = reduce_rlx_delay_efqspec, reduce_rlx_delay_to = reduce_rlx_delay_efqspec_to)
 
-                    efqspec_I, efqspec_Q, efqspec_freqs, sys_config_qspec_ef, efqspec_I_fit, efqspec_Q_fit, efqubit_freq, meas_timestamp_qspecef = ef_q_spec.run()
+                    efqspec_I, efqspec_Q, efqspec_freqs, config_qspec_ef, efqspec_I_fit, efqspec_Q_fit, efqubit_freq, meas_timestamp_qspecef = ef_q_spec.run()
                     qubit_freqs_ef[QubitIndex] = efqubit_freq
                     experiment.qubit_cfg['qubit_freq_ef'][QubitIndex] = float(efqubit_freq)
 
@@ -632,7 +639,7 @@ while j < n:
                                                         qubit_to_increase_reps_for=qubit_to_increase_efrabi_reps_for,
                                                         multiply_qubit_reps_by=multiply_efrabi_reps_by,
                                                         unmasking_resgain=unmask)
-                    efrabi_I, efrabi_Q, efrabi_gains, efrabi_fit, efpi_amp, efsys_config_to_save, meas_timestamp_rabief = efrabi.run(use_iminuit_instead = use_iminuit_instead)
+                    efrabi_I, efrabi_Q, efrabi_gains, efrabi_fit, efpi_amp, efrabi_config, meas_timestamp_rabief = efrabi.run(use_iminuit_instead = use_iminuit_instead)
                     # if these are None, fit didnt work
                     if (efrabi_fit is None and efpi_amp is None):
                         print('EF Rabi fit didnt work for this qubit.')
@@ -688,7 +695,7 @@ while j < n:
                                                                  experiment, live_plot,
                                                                  increase_qubit_reps = increase_qubit_reps_rpm, increase_qubit_reps_to = increase_qubit_reps_rpm_to,
                                                                  increase_qubit_reps2 = increase_qubit_reps2_rpm, increase_qubit_reps2_to = increase_qubit_reps2_rpm_to,
-                                                                 unmasking_resgain=unmask, save_shots = True, reduce_rlx_delay = reduce_rlx_delay_rpm, reduce_rlx_delay_to = reduce_rlx_delay_rpm_to,
+                                                                 unmasking_resgain=unmask, save_shots = save_shots_rpm, reduce_rlx_delay = reduce_rlx_delay_rpm, reduce_rlx_delay_to = reduce_rlx_delay_rpm_to,
                                                                  logger=rr_logger)
 
                     (I1_qtemp, Q1_qtemp, gains1_qtemp, I1_qtemp_shots, Q1_qtemp_shots, I2_qtemp, Q2_qtemp, gains2_qtemp, I2_qtemp_shots, Q2_qtemp_shots,
@@ -750,9 +757,9 @@ while j < n:
                                    increase_qubit_reps=increase_qubit_reps_t1,
                                    qubit_to_increase_reps_for=t1_qubit_to_increase_reps_for,
                                    multiply_qubit_reps_by=t1_multiply_qubit_reps_by,
-                                   verbose=verbose, logger=rr_logger, save_shots = True, unmasking_resgain=unmask,
+                                   verbose=verbose, logger=rr_logger, save_shots = save_shots_t1, unmasking_resgain=unmask,
                                    reduce_rlx_delay = reduce_rlx_delay_geT1, reduce_rlx_delay_to = reduce_rlx_delay_geT1_to)
-                t1_est, t1_err, t1_I, t1_Q, t1_Ishots, t1_Qshots, t1_delay_times, q1_fit_exponential, sys_config_t1, meas_timestamp_t1ge = t1.run(
+                t1_est, t1_err, t1_I, t1_Q, t1_Ishots, t1_Qshots, t1_delay_times, q1_fit_exponential, config_t1, meas_timestamp_t1ge = t1.run(
                     thresholding=thresholding, use_iminuit_instead = use_iminuit_instead)
                 del t1
 
@@ -807,9 +814,10 @@ while j < n:
                                      qubit_to_increase_reps_for=qubit_to_increase_t2r_reps_for,
                                      increase_qubit_reps_to=increase_t2r_qubit_reps_to,
                                      verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
-                                     reduce_rlx_delay = reduce_rlx_delay_geT2R, reduce_rlx_delay_to = reduce_rlx_delay_geT2R_to)
+                                     reduce_rlx_delay = reduce_rlx_delay_geT2R, reduce_rlx_delay_to = reduce_rlx_delay_geT2R_to,
+                                     save_shots = save_shots_t2r)
 
-                t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey, sys_config_t2r, meas_timestamp_t2r = t2r.run(
+                t2r_est, t2r_err, t2r_I, t2r_Q, t2r_Ishots, t2r_Qshots, t2r_delay_times, fit_ramsey, config_t2r, meas_timestamp_t2r = t2r.run(
                     thresholding=thresholding, use_iminuit_instead = use_iminuit_instead)
                 del t2r
 
@@ -844,9 +852,10 @@ while j < n:
                                      qubit_to_increase_reps_for=qubit_to_increase_t2e_reps_for,
                                      multiply_qubit_reps_by=multiply_qubit_t2e_reps_by,
                                      verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
-                                     reduce_rlx_delay = reduce_rlx_delay_geT2E, reduce_rlx_delay_to = reduce_rlx_delay_geT2E_to)
-                (t2e_est, t2e_err, t2e_I, t2e_Q, t2e_delay_times,
-                 fit_t2e, sys_config_t2e, meas_timestamp_t2e) = t2e.run(thresholding=thresholding, use_iminuit_instead = use_iminuit_instead)
+                                     reduce_rlx_delay = reduce_rlx_delay_geT2E, reduce_rlx_delay_to = reduce_rlx_delay_geT2E_to,
+                                     save_shots = save_shots_t2e)
+                (t2e_est, t2e_err, t2e_I, t2e_Q, t2e_Ishots, t2e_Qshots, t2e_delay_times,
+                 fit_t2e, config_t2e, meas_timestamp_t2e) = t2e.run(thresholding=thresholding, use_iminuit_instead = use_iminuit_instead)
                 del t2e
 
             except Exception as e:
@@ -874,7 +883,7 @@ while j < n:
                 tof_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
                 tof_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 tof_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                tof_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_tof
+                tof_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = config_tof
                 tof_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_tof
 
             # ---------------------Collect g-e Res Spec Results----------------
@@ -887,7 +896,7 @@ while j < n:
                 res_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
                 res_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 res_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                res_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_rspec
+                res_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = config_rspec
                 res_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_resge
 
             # ---------------------Collect g-e QSpec Results----------------
@@ -895,6 +904,8 @@ while j < n:
                 qspec_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
                 qspec_data[QubitIndex]['I'][j - batch_num * save_r - 1] = qspec_I
                 qspec_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = qspec_Q
+                qspec_data[QubitIndex]['Ishots'][j - batch_num * save_r - 1] = qspec_Ishots
+                qspec_data[QubitIndex]['Qshots'][j - batch_num * save_r - 1] = qspec_Qshots
                 qspec_data[QubitIndex]['Frequencies'][j - batch_num * save_r - 1] = qspec_freqs
                 qspec_data[QubitIndex]['I Fit'][j - batch_num * save_r - 1] = qspec_I_fit
                 qspec_data[QubitIndex]['Q Fit'][j - batch_num * save_r - 1] = qspec_Q_fit
@@ -902,7 +913,7 @@ while j < n:
                 qspec_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 qspec_data[QubitIndex]['Recycled QFreq'][j - batch_num * save_r - 1] = recycled_qfreq
                 qspec_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                qspec_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_qspec
+                qspec_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = config_qspec
                 qspec_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_qspecge
 
             # ---------------------Collect g-e Rabi Results----------------
@@ -915,7 +926,7 @@ while j < n:
                 rabi_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
                 rabi_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 rabi_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                rabi_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_rabi
+                rabi_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = config_rabi
                 rabi_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_rabige
 
             # ---------------------Collect g-e Single Shot Results----------------
@@ -930,7 +941,7 @@ while j < n:
                 ss_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
                 ss_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 ss_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                ss_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_ss
+                ss_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = config_ss
                 ss_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_ssge
 
             # ---------------------Collect e-f res spec Results----------------
@@ -943,7 +954,7 @@ while j < n:
                 ef_res_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
                 ef_res_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 ef_res_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                ef_res_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_rspec_ef
+                ef_res_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = config_rspec_ef
                 ef_res_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_resef
                 ef_res_any = True
 
@@ -959,7 +970,7 @@ while j < n:
                 ef_qspec_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 ef_qspec_data[QubitIndex]['Recycled QFreq'][j - batch_num * save_r - 1] = False  # no recycling here
                 ef_qspec_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                ef_qspec_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_qspec_ef
+                ef_qspec_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = config_qspec_ef
                 ef_qspec_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_qspecef
                 ef_qspec_any = True
 
@@ -972,7 +983,7 @@ while j < n:
                 ef_rabi_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
                 ef_rabi_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 ef_rabi_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                ef_rabi_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = efsys_config_to_save
+                ef_rabi_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = efrabi_config
                 ef_rabi_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_rabief
 
             # --------------------Collect rabi population measurements (qubit temperature data) ----------------
@@ -1017,7 +1028,7 @@ while j < n:
                 t1_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
                 t1_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 t1_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                t1_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t1
+                t1_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = config_t1
 
             # ---------------------Collect g-e T2R Results----------------
             if run_flags["t2r"]:
@@ -1027,12 +1038,14 @@ while j < n:
                 t2r_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_t2r
                 t2r_data[QubitIndex]['I'][j - batch_num * save_r - 1] = t2r_I
                 t2r_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = t2r_Q
+                t2r_data[QubitIndex]['Ishots'][j - batch_num * save_r - 1] = t2r_Ishots
+                t2r_data[QubitIndex]['Qshots'][j - batch_num * save_r - 1] = t2r_Qshots
                 t2r_data[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = t2r_delay_times
                 t2r_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = fit_ramsey
                 t2r_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
                 t2r_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 t2r_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                t2r_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t2r
+                t2r_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = config_t2r
 
             # ---------------------Collect g-e T2E Results----------------
             if run_flags["t2e"]:
@@ -1042,12 +1055,14 @@ while j < n:
                 t2e_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_t2e
                 t2e_data[QubitIndex]['I'][j - batch_num * save_r - 1] = t2e_I
                 t2e_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = t2e_Q
+                t2e_data[QubitIndex]['Ishots'][j - batch_num * save_r - 1] = t2e_Ishots
+                t2e_data[QubitIndex]['Qshots'][j - batch_num * save_r - 1] = t2e_Qshots
                 t2e_data[QubitIndex]['Delay Times'][j - batch_num * save_r - 1] = t2e_delay_times
                 t2e_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = fit_t2e
                 t2e_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
                 t2e_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 t2e_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
-                t2e_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = sys_config_t2e
+                t2e_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = config_t2e
 
         with open(file_path, "a", encoding="utf-8") as f:
             f.write(f"\nTiming summary for Q{QubitIndex + 1}, round {j}:\n")

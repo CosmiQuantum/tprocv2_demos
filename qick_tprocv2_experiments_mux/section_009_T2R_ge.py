@@ -201,7 +201,7 @@ class T2RMeasurement:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_figs, experiment = None,
                  live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
                  multiply_qubit_reps_by = 1, increase_qubit_reps_to = 500, verbose = False, logger = None, qick_verbose=True,
-                 unmasking_resgain = False, reduce_rlx_delay = False, reduce_rlx_delay_to = 1000):
+                 unmasking_resgain = False, reduce_rlx_delay = False, reduce_rlx_delay_to = 1000, save_shots = True):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
@@ -215,6 +215,7 @@ class T2RMeasurement:
         self.reduce_rlx_delay_to = reduce_rlx_delay_to
         self.increase_qubit_reps_to = increase_qubit_reps_to
         self.signal = signal
+        self.save_shots = save_shots
         self.number_of_qubits = number_of_qubits
         self.save_figs = save_figs
         self.live_plot = live_plot
@@ -617,7 +618,14 @@ class T2RMeasurement:
         if self.save_figs:
             self.plot_results(I, Q, delay_times, now, fit, t2r_est, t2r_err, plot_sig)
 
-        return  t2r_est, t2r_err, I, Q, delay_times, fit, self.config, measurement_timestamp
+        if self.save_shots:
+            raw_0 = ramsey.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
+            Ishots = raw_0[self.QubitIndex][:, :, 0, 0]
+            Qshots = raw_0[self.QubitIndex][:, :, 0, 1]
+            return t2r_est, t2r_err, I, Q, Ishots, Qshots, delay_times, fit, self.config, measurement_timestamp
+
+        else:
+            return t2r_est, t2r_err, I, Q, None, None, delay_times, fit, self.config, measurement_timestamp
 
     def live_plotting(self, ramsey, thresholding):
         I = Q = expt_mags = expt_phases = expt_pop = None

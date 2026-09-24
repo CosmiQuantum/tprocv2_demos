@@ -14,7 +14,7 @@ class QubitSpectroscopy:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder,  round_num, signal, save_figs, experiment = None,
                  live_plot = None, verbose = False, logger = None, qick_verbose=True, increase_reps = False, increase_rounds = False,
                  increase_reps_to = 500, increase_rounds_to = 2, plot_fit=True, zeno_stark=False, zeno_stark_pulse_gain=None,
-                 ext_q_spec=False, high_gain_q_spec=False, fit_data=True, unmasking_resgain = False):
+                 ext_q_spec=False, high_gain_q_spec=False, fit_data=True, unmasking_resgain = False, save_shots = True):
 
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
@@ -24,6 +24,7 @@ class QubitSpectroscopy:
         self.zeno_stark_pulse_gain = zeno_stark_pulse_gain
         self.ext_q_spec = ext_q_spec
         self.fit_data = fit_data
+        self.save_shots = save_shots
         self.increase_rounds = increase_rounds
         self.increase_rounds_to = increase_rounds_to
         self.high_gain_q_spec = high_gain_q_spec
@@ -93,19 +94,27 @@ class QubitSpectroscopy:
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
             freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
-            measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
-            self.plot_results(I, Q, freqs, config=self.config, return_fwhm=return_fwhm)
+
+        measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
+
+        if self.save_shots:
+            raw_0 = qspec.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
+            Ishots = raw_0[self.QubitIndex][:, :, 0, 0]
+            Qshots = raw_0[self.QubitIndex][:, :, 0, 1]
+        else:
+            Ishots = None
+            Qshots = None
 
         if self.fit_data:
             if return_fwhm:
-                largest_amp_curve_mean, I_fit, Q_fit, fwhm = self.plot_results(I, Q, freqs, config=self.config, return_fwhm=return_fwhm)
-                return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config, fwhm, measurement_timestamp
+                largest_amp_curve_mean, I_fit, Q_fit, fwhm = self.plot_results(I, Q, freqs, config=self.config,return_fwhm=return_fwhm)
+                return I, Q, Ishots, Qshots, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config, fwhm, measurement_timestamp
             else:
-                largest_amp_curve_mean, I_fit, Q_fit = self.plot_results(I, Q, freqs, config=self.config, return_fwhm=return_fwhm)
-                return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config, measurement_timestamp
+                largest_amp_curve_mean, I_fit, Q_fit = self.plot_results(I, Q, freqs, config=self.config,return_fwhm=return_fwhm)
+                return I, Q, Ishots, Qshots, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config, measurement_timestamp
         else:
-            return I, Q, freqs, None, None, None, self.config, measurement_timestamp
-        # return I, Q, freqs, None, None, None, self.config
+            self.plot_results(I, Q, freqs, config=self.config, return_fwhm=return_fwhm)
+            return I, Q, Ishots, Qshots, freqs, None, None, None, self.config, measurement_timestamp
 
     def run_with_stark_tone(self, wait_for_res_ring_up=False):
 

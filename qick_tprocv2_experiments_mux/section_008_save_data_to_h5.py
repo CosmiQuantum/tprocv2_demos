@@ -198,8 +198,8 @@ class Data_H5:
                                        'Avg Mag Oct': 'Avg Mag Oct', 'Round Num': 'Round Num', 'Batch Num': 'Batch Num',
                                        'Exp Config': 'Exp Config', 'Syst Config': 'Syst Config',
                                        'measurement_timestamp': 'measurement_timestamp'}
-                    elif data_type == 'QSpec' or data_type == 'QSpec_ge' or  data_type == 'QSpec_ef' or data_type == 'qspec_ge':
-                        target_keys = {'Dates': 'Dates', 'I': 'I', 'Q': 'Q', 'Frequencies': 'Frequencies',
+                    elif data_type == 'QSpec' or data_type == 'QSpec_ge' or  data_type == 'QSpec_ef' or data_type == 'qspec_ge' or data_type == 'qspec_ef':
+                        target_keys = {'Dates': 'Dates', 'I': 'I', 'Q': 'Q', 'Ishots': 'Ishots', 'Qshots': 'Qshots', 'Frequencies': 'Frequencies',
                                        'I Fit': 'I Fit', 'Q Fit': 'Q Fit', 'Round Num': 'Round Num',
                                        'Batch Num': 'Batch Num', 'Recycled QFreq': 'Recycled QFreq',
                                        'Exp Config': 'Exp Config', 'Syst Config': 'Syst Config', 'measurement_timestamp': 'measurement_timestamp'}
@@ -234,12 +234,12 @@ class Data_H5:
                                        'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
                                        'Syst Config': 'Syst Config', 'measurement_timestamp': 'measurement_timestamp'}
                     elif data_type == 'T2':
-                        target_keys = {'T2': 'T2', 'Errors': 'Errors', 'Dates': 'Dates', 'I': 'I', 'Q': 'Q',
+                        target_keys = {'T2': 'T2', 'Errors': 'Errors', 'Dates': 'Dates', 'I': 'I', 'Q': 'Q', 'Ishots': 'Ishots', 'Qshots': 'Qshots',
                                        'Delay Times': 'Delay Times', 'Fit': 'Fit', 'Round Num': 'Round Num',
                                        'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
                                        'Syst Config': 'Syst Config', 'measurement_timestamp': 'measurement_timestamp'}
                     elif data_type == 'T2E':
-                        target_keys = {'T2E': 'T2E', 'Errors': 'Errors', 'Dates': 'Dates', 'I': 'I', 'Q': 'Q',
+                        target_keys = {'T2E': 'T2E', 'Errors': 'Errors', 'Dates': 'Dates', 'I': 'I', 'Q': 'Q', 'Ishots': 'Ishots', 'Qshots': 'Qshots',
                                        'Delay Times': 'Delay Times', 'Fit': 'Fit', 'Round Num': 'Round Num',
                                        'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
                                        'Syst Config': 'Syst Config', 'measurement_timestamp': 'measurement_timestamp'}
