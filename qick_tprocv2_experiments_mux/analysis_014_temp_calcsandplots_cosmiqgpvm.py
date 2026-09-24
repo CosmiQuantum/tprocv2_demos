@@ -4989,11 +4989,19 @@ class combined_Qtemp_studies:
             "estimated_total_error_using_iePg_percent",
         ]
 
-        median_summary_df = (
-            per_scan_df
-            .groupby(["Run", "Qubit_index", "Qubit", "Pe_source"], as_index=False)[summary_cols]
-            .median(numeric_only=True)
-        )
+        # Calculating medians
+        group_cols = ["Run", "Qubit_index", "Qubit", "Pe_source"]
+        grouped = per_scan_df.groupby(group_cols)
+        median_df = grouped[summary_cols].median()
+        q1_df = grouped[summary_cols].quantile(0.25)
+        q3_df = grouped[summary_cols].quantile(0.75)
+        lower_err_df = median_df - q1_df
+        upper_err_df = q3_df - median_df
+        median_summary_df = median_df.reset_index()
+
+        for col in summary_cols:
+            median_summary_df[f"{col}_lower_err"] = lower_err_df[col].values
+            median_summary_df[f"{col}_upper_err"] = upper_err_df[col].values
 
         counts_df = (
             per_scan_df
@@ -5006,47 +5014,112 @@ class combined_Qtemp_studies:
 
         median_summary_df = median_summary_df.rename(columns={
             "SNR": "Median readout SNR",
+            "SNR_lower_err": "Median readout SNR lower spread",
+            "SNR_upper_err": "Median readout SNR upper spread",
+
             "SSF_percent": "Median SSF (%)",
+            "SSF_percent_lower_err": "Median SSF lower spread (%)",
+            "SSF_percent_upper_err": "Median SSF upper spread (%)",
+
             "Measured_SSF_infidelity_percent": "Median per-scan SSF infidelity (%)",
+            "Measured_SSF_infidelity_percent_lower_err": "Median per-scan SSF infidelity lower spread (%)",
+            "Measured_SSF_infidelity_percent_upper_err": "Median per-scan SSF infidelity upper spread (%)",
+
             "SNR_overlap_error_percent": "Finite-SNR misassignment (%)",
+            "SNR_overlap_error_percent_lower_err": "Finite-SNR misassignment lower spread (%)",
+            "SNR_overlap_error_percent_upper_err": "Finite-SNR misassignment upper spread (%)",
+
             "Pe_percent": "Thermal population Pe (%)",
+            "Pe_percent_lower_err": "Thermal population Pe lower spread (%)",
+            "Pe_percent_upper_err": "Thermal population Pe upper spread (%)",
+
             "Pe_match_dt_s": "Pe match dt median (s)",
+            "Pe_match_dt_s_lower_err": "Pe match dt lower spread (s)",
+            "Pe_match_dt_s_upper_err": "Pe match dt upper spread (s)",
+
             "Pe_temperature_mK": "Pe source temp median (mK)",
+            "Pe_temperature_mK_lower_err": "Pe source temp lower spread (mK)",
+            "Pe_temperature_mK_upper_err": "Pe source temp upper spread (mK)",
+
             "ie_new_Pg_percent": "Observed excited-state loss (%)",
+            "ie_new_Pg_percent_lower_err": "Observed excited-state loss lower spread (%)",
+            "ie_new_Pg_percent_upper_err": "Observed excited-state loss upper spread (%)",
+
             "T1_us": "Matched T1 median (us)",
+            "T1_us_lower_err": "Matched T1 lower spread (us)",
+            "T1_us_upper_err": "Matched T1 upper spread (us)",
+
             "readout_length_us": "Readout length median (us)",
+            "readout_length_us_lower_err": "Readout length lower spread (us)",
+            "readout_length_us_upper_err": "Readout length upper spread (us)",
+
             "T1_match_dt_s": "T1 match dt median (s)",
+            "T1_match_dt_s_lower_err": "T1 match dt lower spread (s)",
+            "T1_match_dt_s_upper_err": "T1 match dt upper spread (s)",
+
             "caught_T1_decay_percent": "Caught T1 decay estimate (%)",
+            "caught_T1_decay_percent_lower_err": "Caught T1 decay lower spread (%)",
+            "caught_T1_decay_percent_upper_err": "Caught T1 decay upper spread (%)",
+
             "Pe_plus_caught_T1_percent": "Pe + caught T1 (%)",
+            "Pe_plus_caught_T1_percent_lower_err": "Pe + caught T1 lower spread (%)",
+            "Pe_plus_caught_T1_percent_upper_err": "Pe + caught T1 upper spread (%)",
+
             "residual_unexplained_loss_percent": "Residual unexplained loss (%)",
+            "residual_unexplained_loss_percent_lower_err": "Residual unexplained loss lower spread (%)",
+            "residual_unexplained_loss_percent_upper_err": "Residual unexplained loss upper spread (%)",
+
             "fraction_unexplained_percent": "Unexplained fraction of observed loss (%)",
+            "fraction_unexplained_percent_lower_err": "Unexplained fraction lower spread (%)",
+            "fraction_unexplained_percent_upper_err": "Unexplained fraction upper spread (%)",
+
             "full_window_T1_decay_prob_percent": "Full-window T1 decay diagnostic (%)",
+            "full_window_T1_decay_prob_percent_lower_err": "Full-window T1 decay lower spread (%)",
+            "full_window_T1_decay_prob_percent_upper_err": "Full-window T1 decay upper spread (%)",
+
             "estimated_total_error_percent": "Estimated SSF infidelity budget (%)",
+            "estimated_total_error_percent_lower_err": "Estimated SSF infidelity budget lower spread (%)",
+            "estimated_total_error_percent_upper_err": "Estimated SSF infidelity budget upper spread (%)",
+
             "measured_minus_budget_percent": "Median [(1-SSF) - budget] (%)",
+            "measured_minus_budget_percent_lower_err": "[(1-SSF) - budget] lower spread (%)",
+            "measured_minus_budget_percent_upper_err": "[(1-SSF) - budget] upper spread (%)",
+
             "estimated_total_error_using_iePg_percent": "SNR + observed e-loss budget (%)",
+            "estimated_total_error_using_iePg_percent_lower_err": "SNR + observed e-loss lower spread (%)",
+            "estimated_total_error_using_iePg_percent_upper_err": "SNR + observed e-loss upper spread (%)",
         })
 
-        median_summary_df = median_summary_df.round({
-            "Median readout SNR": 4,
-            "Median SSF (%)": 2,
-            "Median per-scan SSF infidelity (%)": 2,
-            "Finite-SNR misassignment (%)": 2,
-            "Thermal population Pe (%)": 3,
-            "Pe match dt median (s)": 3,
-            "Pe source temp median (mK)": 3,
-            "Observed excited-state loss (%)": 2,
-            "Matched T1 median (us)": 2,
-            "Readout length median (us)": 3,
-            "T1 match dt median (s)": 3,
-            "Caught T1 decay estimate (%)": 2,
-            "Pe + caught T1 (%)": 2,
-            "Residual unexplained loss (%)": 2,
-            "Unexplained fraction of observed loss (%)": 1,
-            "Full-window T1 decay diagnostic (%)": 2,
-            "Estimated SSF infidelity budget (%)": 2,
-            "Median [(1-SSF) - budget] (%)": 2,
-            "SNR + observed e-loss budget (%)": 2,
-        })
+        numeric_cols = median_summary_df.select_dtypes(include=[np.number]).columns
+        median_summary_df[numeric_cols] = median_summary_df[numeric_cols].round(2)
+
+        if verbose:
+            print("\n================ MEDIAN ± ASYMMETRIC QUARTILE SPREADS ================")
+
+            for group_key, group in grouped:
+                run_val, qidx, qlabel, pe_source = group_key
+
+                print(f"\nRun {run_val}, {qlabel}, Pe source = {pe_source}")
+
+                for col in summary_cols:
+                    vals = group[col].dropna()
+
+                    if len(vals) == 0:
+                        continue
+
+                    med = vals.median()
+                    q1 = vals.quantile(0.25)
+                    q3 = vals.quantile(0.75)
+
+                    lower_err = med - q1
+                    upper_err = q3 - med
+
+                    print(
+                        f"{col}: "
+                        f"{med:.2f} "
+                        f"+{upper_err:.2f} "
+                        f"-{lower_err:.2f}"
+                    )
 
         if verbose:
             print("\n================ MEDIAN SSF LIMITATION TABLE ================")
@@ -5058,9 +5131,10 @@ class combined_Qtemp_studies:
             per_scan_df.to_csv(save_path, index=False)
 
             summary_save_path = save_path.replace(".csv", "_median_summary.csv")
-            median_summary_df.to_csv(summary_save_path, index=False)
+            median_summary_df.to_csv(summary_save_path, index=False, float_format="%.2f")
 
             if verbose:
+                print('Saved two files.')
                 print(f"\nSaved per-scan table: {save_path}")
                 print(f"Saved median summary: {summary_save_path}")
 

@@ -31,7 +31,7 @@ from pathlib import Path
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-run_num = 8 #Options for QUIET: 5(for coherence only),6,7,8,9,9.2(this is run 9c)
+run_num = 9 #Options for QUIET: 5(for coherence only),6,7,8,9,9.2(this is run 9c)
 run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence analysis it's defined in its respective section
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
@@ -67,7 +67,7 @@ tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
 qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_Qtemps": True}
+                      "combined_studies_Qtemps": False}
 
 # What analysis plots do you want to make?
 analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
@@ -87,9 +87,9 @@ london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
 
 # For coherence-qubit temps combined analysis. These flags act on their own, no need to set anything above to True.
-coh_qtemp_ana_flags = {"run_qtemps_section": False, "run_coherence_section": False, "use_cached_qtemp_files": False, "use_cached_coherence_files": False, "create_cached_qtemp_files": False,"create_cached_coherence_files": False, "load_mcp1_temps": False,
+coh_qtemp_ana_flags = {"run_qtemps_section": True, "run_coherence_section": True, "use_cached_qtemp_files": False, "use_cached_coherence_files": False, "create_cached_qtemp_files": False,"create_cached_coherence_files": False, "load_mcp1_temps": False,
                        "plot_qtemps_t1_ftemps_qfreq": False, "plot_RPM_qtemps_qfreq_fridge_only": False, "plot_SSF_qtemps_qfreq_fridge_only": False,
-                       "SSF_lims_per_scan_viaSSF": False, "SSF_lims_per_scan_viaRPM": False}
+                       "SSF_lims_per_scan_viaSSF": True, "SSF_lims_per_scan_viaRPM": False}
 
 ############################################################################## Set up #######################################################################################################################
 #----------------------------------------------------- For qubit temperature calculations via rabi population measurements --------------------------------------------------------------------------------------
@@ -1339,7 +1339,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
-run_num_list = [5,6,7,8,9] # for quiet, start at 5. no qtemp data for run 4. use run 9.2 for run 9c
+run_num_list = [9] # for quiet, start at 5. no qtemp data for run 4. use run 9.2 for run 9c
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
 rpm_Pe_by_run = {}      # rpm_Pe_by_run[run][qid] = [P_e, ...]
@@ -2053,10 +2053,10 @@ t2e_vals = None
 Pe_dist_err_dict = None
 use_png_timestamps = False
 
-restrict_time = True
+restrict_time = False
 start_time = datetime.datetime(2025, 11, 18, 6, 0)
 end_time = datetime.datetime(2025, 11, 21, 12, 0)
-run_num_list = [8]
+run_num_list = [9]
 run6_subfolder="both" # only used for run6 MCP1 csv file data loading. Options: "pre-science-run", "science-run" or "both"
 run8_temp_sweep = True
 
@@ -2427,7 +2427,7 @@ if coh_qtemp_ana_flags["run_coherence_section"]:
         # ---------------- Another option: store results per run for downstream plotting ----------------
         t1_vals_by_run[run_num] = t1_vals
         t1_errs_by_run[run_num] = t1_fit_err
-        #t1_res_lengths_by_run[run_num] = res_lengths_t1
+        t1_res_lengths_by_run[run_num] = res_lengths_t1
         date_times_t1_by_run[run_num] = date_times_t1
 
         t2r_vals_by_run[run_num] = t2r_vals
@@ -2445,7 +2445,7 @@ if coh_qtemp_ana_flags["SSF_lims_per_scan_viaSSF"]:
 
     comb_plots_path = "/home/acolonce/Documents/analysis/combined_qtemps/qtemps_and_coherence/SSF_limitations_calcs"
 
-    ssf_limitations_results_by_run = (
+    ssf_limitations_results_by_run = ( # currently only works if u process both qtemp and coherence data live
         combined_studies.run_ssf_limitations_per_scan_for_runs(
             run_num_list=run_num_list,
             fit_results_g_by_run=fit_results_g_by_run,
@@ -2455,11 +2455,11 @@ if coh_qtemp_ana_flags["SSF_lims_per_scan_viaSSF"]:
             out_dir=comb_plots_path,
             n_qubits=tot_num_of_qubits,
             sensitive_fraction=0.5,
-            t1_match_max_dt_s=10.0, #change to 600 for run 6 science run
+            t1_match_max_dt_s=10.0, #change to 600 for QUIET run 6 science run
             make_ssf_pe_table=True,
             make_rpm_pe_table=coh_qtemp_ana_flags["SSF_lims_per_scan_viaRPM"],
             all_files_Qtemp_results_RPMs_by_run=all_files_Qtemp_results_RPMs_by_run,
-            rpm_match_max_dt_s=10, #change to 600 for run 6 science run
+            rpm_match_max_dt_s=10.0, #change to 600 for QUIET run 6 science run
         )
     )
 

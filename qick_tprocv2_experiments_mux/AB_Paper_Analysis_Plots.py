@@ -1122,8 +1122,8 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
             if multi_qubit_colors:
                 if plot_mode == "hybrid":
                     legend_handles = [
-                        Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 2 (SSF)"),# Run 5 (SSF)
-                        Patch(facecolor=q_color, edgecolor=q_color, alpha=0.30, label="Runs 3-6 (RPM)") # "Runs >5 (RPM)", "Runs 6-9 (RPM)"
+                        Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 2 ($T_{\mathrm{eff}}$ SSF)"),# Run 5 (SSF)
+                        Patch(facecolor=q_color, edgecolor=q_color, alpha=0.30, label="Runs 3-6 ($T_{\mathrm{eff}}$ RPM)") # "Runs >5 (RPM)", "Runs 6-9 (RPM)"
                     ]
                 elif plot_mode == "all_ssf":
                     legend_handles = [
@@ -1184,23 +1184,34 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
         if not multi_qubit_colors and plot_mode != "compare_methods":
             if plot_mode == "hybrid":
                 legend_handles = [
-                    Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 2 (SSF)"), # QUIET run 5
-                    Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="Runs 3-6 (RPM)")] # QUIET runs 6-9
+                    Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="Run 2 ($T_{\mathrm{eff}}$ SSF)"), # QUIET run 5
+                    Patch(facecolor=colors[0], edgecolor=colors[0], alpha=0.30, label="Runs 3-6 ($T_{\mathrm{eff}}$ RPM)")] # QUIET runs 6-9
 
             elif plot_mode == "all_ssf":
                 legend_handles = [Patch(facecolor=ssf_color, edgecolor=ssf_color, alpha=0.30, label="SSF")]
 
+            second_col_ax = axes[1]
+            second_col_pos = second_col_ax.get_position()
+            second_col_center = second_col_pos.x0 + second_col_pos.width / 2
+
             # only put legend in Q3 subplot (if this qubit is plotted)
-            if 2 in qubits_to_plot:
-                q3_ax_idx = qubits_to_plot.index(2)
-                axes[q3_ax_idx].legend(
-                    handles=legend_handles,
-                    loc="best",
-                    frameon=True,
-                    fontsize=label_fs - 2)
-            else:
+            if predicted_noise_temps_by_run is not None:
+                legend_handles.append(Line2D([0], [0], color="black", marker="s", linestyle="--", linewidth=1.5, markersize=5, label=r"$T_e$ (pred. noise)"))
+
                 # figure-level legend
-                fig.legend(handles=legend_handles, loc="center left", bbox_to_anchor=(0.38, -0.03), frameon=True, fontsize=label_fs)
+                fig.legend(handles=legend_handles, loc="center", bbox_to_anchor=(second_col_center, 0.99), frameon=True,
+                           fontsize=label_fs, ncol = 3)
+            else:
+                if 2 in qubits_to_plot:
+                    q3_ax_idx = qubits_to_plot.index(2)
+                    axes[q3_ax_idx].legend(
+                        handles=legend_handles,
+                        loc="best",
+                        frameon=True,
+                        fontsize=label_fs - 2)
+                else:
+                    # figure-level legend
+                    fig.legend(handles=legend_handles, loc="center", bbox_to_anchor=(second_col_center, 0.99), frameon=True, fontsize=label_fs, ncol = 3)
 
         if plot_mode == "compare_methods":
             legend_handles = [
@@ -1214,6 +1225,7 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
             second_col_ax = axes[1]
             second_col_pos = second_col_ax.get_position()
             second_col_center = second_col_pos.x0 + second_col_pos.width / 2
+
             fig.supxlabel("Run Number", fontsize=label_fs, x=second_col_center, y=0.08)
 
             if log_y:
@@ -1221,19 +1233,29 @@ def boxwhisker_qtemps_per_qubit_vs_run_choice(
             else:
                 fig.supylabel(r"$T_{\mathrm{eff}}$ (mK)", fontsize=label_fs, x=0.032)
 
-            if 2 in qubits_to_plot:
-                q3_ax_idx = qubits_to_plot.index(2)
-                axes[q3_ax_idx].legend(
-                    handles=legend_handles,
-                    loc="best",
-                    frameon=True,
-                    fontsize=label_fs - 2)
+            # only put legend in Q3 subplot (if this qubit is plotted)
+            if predicted_noise_temps_by_run is not None:
+                legend_handles.append(
+                    Line2D([0], [0], color="black", marker="s", linestyle="--", linewidth=1.5, markersize=5,label=r"$T_e$ (pred. noise)"))
+
+                # figure-level legend
+                fig.legend(handles=legend_handles, loc="center", bbox_to_anchor=(second_col_center, 0.99), frameon=True,
+                           fontsize=label_fs, ncol = 3)
             else:
-                fig.legend(handles=legend_handles, loc="lower center", bbox_to_anchor=(0.5, -0.07), ncol=2, frameon=True,
-                           fontsize=label_fs - 2)
+                if 2 in qubits_to_plot:
+                    q3_ax_idx = qubits_to_plot.index(2)
+                    axes[q3_ax_idx].legend(
+                        handles=legend_handles,
+                        loc="best",
+                        frameon=True,
+                        fontsize=label_fs - 2)
+                else:
+                    # figure-level legend
+                    fig.legend(handles=legend_handles, loc="center", bbox_to_anchor=(second_col_center, 0.99),
+                               frameon=True, fontsize=label_fs, ncol = 3)
 
         if save_plt_path is None:
-            plt.show()
+                plt.show()
         else:
             os.makedirs(save_plt_path, exist_ok=True)
             now = datetime.datetime.now()
