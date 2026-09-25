@@ -61,22 +61,24 @@ thresholding = False  # use internal QICK threshold for ratio of Binary values o
 unmask = True  # Do you want to use the unmasking feature to increase resonator gain? This may not apply to LOUD
 
 # Save raw shots instead of averaged IQ data for each experiment?
+save_shots_rspec_ge = True
+save_shots_qspec_ge = True
+save_shots_ssf = True
+save_shots_gerabi = False
+save_shots_efrabi = False 
+save_shots_rpm = True
 save_shots_t1 = True
 save_shots_t2r = True
 save_shots_t2e = True
-save_shots_ssf = True
-save_shots_qspecge = True
-save_shots_rspecge = True
-save_shots_gerabi = False
-save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
-save_shots_rpm = True
+save_shots_qspec_ef = True
+save_shots_rspec_ef = True
 
 Qs_to_look_at = [0] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run10'
 device_name = '6transmon'
-substudy_txt_notes = ('Checking status of qubits.\n')
+substudy_txt_notes = ('Checking out the qubits.\n')
 
 # set which of the following you'd like to run to 'True'
 
@@ -154,7 +156,7 @@ res_keys = ['Dates', 'freq_pts', 'freq_center', 'Amps', 'I', 'Q', 'Ishots', 'Qsh
             'Syst Config', 'measurement_timestamp']
 qspec_keys = ['Dates', 'I', 'Q', 'Ishots', 'Qshots', 'Frequencies', 'I Fit', 'Q Fit', 'Round Num', 'Batch Num', 'Recycled QFreq',
               'Exp Config', 'Syst Config', 'measurement_timestamp']
-rabi_keys = ['Dates', 'I', 'Q', 'Gains', 'Fit', 'Round Num', 'Batch Num', 'Exp Config', 'Syst Config', 'measurement_timestamp']
+rabi_keys = ['Dates', 'I', 'Q', 'Ishots', 'Qshots', 'Gains', 'Fit', 'Round Num', 'Batch Num', 'Exp Config', 'Syst Config', 'measurement_timestamp']
 ss_keys = ['Fidelity', 'Angle', 'Dates', 'I_g', 'Q_g', 'I_e', 'Q_e', 'raw_g', 'raw_e', 'Round Num', 'Batch Num', 'Exp Config',
            'Syst Config', 'measurement_timestamp']
 t1_keys = ['T1', 'Errors', 'Dates', 'I', 'Q', 'Ishots', 'Qshots', 'Delay Times', 'Fit', 'Round Num', 'Batch Num', 'Exp Config',
@@ -251,7 +253,7 @@ while j < n:
 
                 res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, save_figs, increase_geres_reps,
                                                  increase_geres_reps_to, experiment=experiment, verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
-                                                 use_savgol_smoothing = use_savgol_smoothing_rspec, save_shots = save_shots_rspecge)
+                                                 use_savgol_smoothing = use_savgol_smoothing_rspec, save_shots = save_shots_rspec_ge)
 
                 res_freqs, freq_pts, freq_center, amps, res_I, res_Q, res_Ishots, res_Qshots, config_rspec, meas_timestamp_resge = res_spec.run()
                 offset = freq_offsets[QubitIndex]  # use optimized offset values or whats set at top of script based on pre_optimize flag
@@ -313,7 +315,7 @@ while j < n:
                                            signal, save_figs, increase_reps = increase_qubit_reps_qspec, increase_rounds =increase_qspec_rounds,
                                            increase_reps_to = qspecge_increase_reps_to, increase_rounds_to = increase_qspec_rounds_to,
                                            plot_fit=True, experiment=experiment, live_plot=live_plot, verbose=verbose,
-                                           logger=rr_logger, unmasking_resgain=unmask, save_shots = save_shots_qspecge)
+                                           logger=rr_logger, unmasking_resgain=unmask, save_shots = save_shots_qspec_ge)
                 (qspec_I, qspec_Q, qspec_Ishots, qspec_Qshots, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq, config_qspec, meas_timestamp_qspecge) = q_spec.run()
 
                 if qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None:
@@ -392,7 +394,7 @@ while j < n:
                                                multiply_qubit_reps_by=multiply_gerabi_reps_by,
                                                verbose=verbose, logger=rr_logger, unmasking_resgain=unmask,
                                                reduce_rlx_delay = reduce_rlx_delay_gerabi, reduce_rlx_delay_to = reduce_rlx_delay_gerabi_to)
-                (rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, config_rabi, meas_timestamp_rabige) = rabi.run(thresholding=thresholding, use_iminuit_instead = use_iminuit_instead)
+                (rabi_I, rabi_Q, rabi_Ishots, rabi_Qshots, rabi_gains, rabi_fit, pi_amp, config_rabi, meas_timestamp_rabige) = rabi.run(thresholding=thresholding, use_iminuit_instead = use_iminuit_instead)
 
                 # if these are None, fit didnt work
                 if (rabi_fit is None and pi_amp is None):
@@ -510,8 +512,8 @@ while j < n:
                                                           experiment=experiment, verbose=verbose,
                                                           logger=rr_logger, qick_verbose=qick_verbose,
                                                           unmasking_resgain=unmask, reduce_rlx_delay = reduce_rlx_delay_efrspec,
-                                                          reduce_rlx_delay_to = reduce_rlx_delay_efrspec_to)
-                    ef_res_freqs, ef_freq_pts, ef_freq_center, ef_amps, config_rspec_ef, meas_timestamp_resef = ef_res_spec.run()
+                                                          reduce_rlx_delay_to = reduce_rlx_delay_efrspec_to, save_shots = save_shots_rspec_ef)
+                    ef_res_freqs, ef_freq_pts, ef_freq_center, ef_amps, efres_I, efres_Q, efres_Ishots, efres_Qshots, config_rspec_ef, meas_timestamp_resef = ef_res_spec.run()
                     ef_res_freqs_samples.append(ef_res_freqs)
                     rr_logger.info(f"EF ResSpec sample {sample} for qubit {QubitIndex + 1}: {ef_res_freqs}")
 
@@ -606,9 +608,10 @@ while j < n:
                                                     save_figs, experiment, live_plot, logger=rr_logger, increase_reps = increase_qubit_reps_ef,
                                                     increase_reps_to = increase_reps_to_ef, increase_ef_qspec_rounds = increase_ef_qspec_rounds,
                                                     increase_ef_qspec_rounds_to = increase_ef_qspec_rounds_to, unmasking_resgain=unmask,
-                                                    reduce_rlx_delay = reduce_rlx_delay_efqspec, reduce_rlx_delay_to = reduce_rlx_delay_efqspec_to)
+                                                    reduce_rlx_delay = reduce_rlx_delay_efqspec, reduce_rlx_delay_to = reduce_rlx_delay_efqspec_to,
+                                                    save_shots = save_shots_qspec_ef)
 
-                    efqspec_I, efqspec_Q, efqspec_freqs, config_qspec_ef, efqspec_I_fit, efqspec_Q_fit, efqubit_freq, meas_timestamp_qspecef = ef_q_spec.run()
+                    efqspec_I, efqspec_Q, efqspec_Ishots, efqspec_Qshots, efqspec_freqs, config_qspec_ef, efqspec_I_fit, efqspec_Q_fit, efqubit_freq, meas_timestamp_qspecef = ef_q_spec.run()
                     qubit_freqs_ef[QubitIndex] = efqubit_freq
                     experiment.qubit_cfg['qubit_freq_ef'][QubitIndex] = float(efqubit_freq)
 
@@ -640,14 +643,14 @@ while j < n:
                     ## have not incorporated reduce_rlx_delay feature yet
 
                     efrabi = EF_AmplitudeRabiExperiment(QubitIndex, number_of_qubits, studyDocumentationFolder, j,
-                                                        signal, save_shots_efrabi, experiment=experiment,
+                                                        signal, save_shots = save_shots_efrabi, experiment=experiment,
                                                         live_plot=live_plot,
                                                         increase_qubit_reps=increase_qubit_reps_efrabi,
                                                         qubit_to_increase_reps_for=qubit_to_increase_efrabi_reps_for,
                                                         multiply_qubit_reps_by=multiply_efrabi_reps_by,
                                                         unmasking_resgain=unmask)
-                    efrabi_I, efrabi_Q, efrabi_gains, efrabi_fit, efpi_amp, efrabi_config, meas_timestamp_rabief = efrabi.run(use_iminuit_instead = use_iminuit_instead)
-                    # if these are None, fit didnt work
+                    efrabi_I, efrabi_Q, efrabi_Ishots, efrabi_Qshots, efrabi_gains, efrabi_fit, efpi_amp, efrabi_config, meas_timestamp_rabief = efrabi.run(use_iminuit_instead = use_iminuit_instead)
+            
                     if (efrabi_fit is None and efpi_amp is None):
                         print('EF Rabi fit didnt work for this qubit.')
                         continue  # skip the rest of this qubit
@@ -932,6 +935,8 @@ while j < n:
                 rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
                 rabi_data[QubitIndex]['I'][j - batch_num * save_r - 1] = rabi_I
                 rabi_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = rabi_Q
+                rabi_data[QubitIndex]['Ishots'][j - batch_num * save_r - 1] = rabi_Ishots
+                rabi_data[QubitIndex]['Qshots'][j - batch_num * save_r - 1] = rabi_Qshots
                 rabi_data[QubitIndex]['Gains'][j - batch_num * save_r - 1] = rabi_gains
                 rabi_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = rabi_fit
                 rabi_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
@@ -963,6 +968,10 @@ while j < n:
                 ef_res_data[QubitIndex]['freq_pts'][j - batch_num * save_r - 1] = ef_freq_pts
                 ef_res_data[QubitIndex]['freq_center'][j - batch_num * save_r - 1] = ef_freq_center
                 ef_res_data[QubitIndex]['Amps'][j - batch_num * save_r - 1] = ef_amps
+                ef_res_data[QubitIndex]['I'][j - batch_num * save_r - 1] = efres_I
+                ef_res_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = efres_Q
+                ef_res_data[QubitIndex]['Ishots'][j - batch_num * save_r - 1] = efres_Ishots
+                ef_res_data[QubitIndex]['Qshots'][j - batch_num * save_r - 1] = efres_Qshots
                 ef_res_data[QubitIndex]['Found Freqs'][j - batch_num * save_r - 1] = ef_res_freqs
                 ef_res_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
                 ef_res_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
@@ -976,6 +985,8 @@ while j < n:
                 ef_qspec_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = (time.mktime(datetime.datetime.now().timetuple()))
                 ef_qspec_data[QubitIndex]['I'][j - batch_num * save_r - 1] = efqspec_I
                 ef_qspec_data[QubitIndex]['Q'][j - batch_num * save_r - 1]= efqspec_Q
+                ef_qspec_data[QubitIndex]['Ishots'][j - batch_num * save_r - 1] = efqspec_Ishots
+                ef_qspec_data[QubitIndex]['Qshots'][j - batch_num * save_r - 1] = efqspec_Qshots
                 ef_qspec_data[QubitIndex]['Frequencies'][j - batch_num * save_r - 1] = efqspec_freqs
                 ef_qspec_data[QubitIndex]['I Fit'][j - batch_num * save_r - 1] = efqspec_I_fit
                 ef_qspec_data[QubitIndex]['Q Fit'][j - batch_num * save_r - 1] = efqspec_Q_fit
@@ -991,6 +1002,8 @@ while j < n:
                 ef_rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
                 ef_rabi_data[QubitIndex]['I'][j - batch_num * save_r - 1] = efrabi_I
                 ef_rabi_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = efrabi_Q
+                ef_rabi_data[QubitIndex]['Ishots'][j - batch_num * save_r - 1] = efrabi_Ishots
+                ef_rabi_data[QubitIndex]['Qshots'][j - batch_num * save_r - 1] = efrabi_Qshots
                 ef_rabi_data[QubitIndex]['Gains'][j - batch_num * save_r - 1] = efrabi_gains
                 ef_rabi_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = efrabi_fit
                 ef_rabi_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j

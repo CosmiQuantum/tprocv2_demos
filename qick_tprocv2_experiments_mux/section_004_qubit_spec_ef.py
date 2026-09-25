@@ -15,7 +15,8 @@ class EFQubitSpectroscopy:
     def __init__(self, QubitIndex, number_of_qubits,  outerFolder,  round_num, signal, save_figs, experiment = None,
                  live_plot = None, verbose = False, logger = None, qick_verbose=True, increase_reps = False,
                  increase_reps_to = 500, increase_ef_qspec_rounds = False, increase_ef_qspec_rounds_to = 2, plot_fit=True, zeno_stark=False, zeno_stark_pulse_gain=None,
-                 ext_q_spec=False, high_gain_q_spec=False, fit_data=True, unmasking_resgain = False, reduce_rlx_delay = False, reduce_rlx_delay_to = 1000):
+                 ext_q_spec=False, high_gain_q_spec=False, fit_data=True, unmasking_resgain = False, reduce_rlx_delay = False, reduce_rlx_delay_to = 1000,
+                 save_shots = True):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
@@ -24,6 +25,7 @@ class EFQubitSpectroscopy:
         self.zeno_stark_pulse_gain = zeno_stark_pulse_gain
         self.ext_q_spec = ext_q_spec
         self.fit_data = fit_data
+        self.save_shots = save_shots
         self.high_gain_q_spec = high_gain_q_spec
         # if self.zeno_stark:
         #     self.expt_name = "qubit_spec_ge_zeno_stark"
@@ -74,7 +76,6 @@ class EFQubitSpectroscopy:
 
         efqspec = EFPulseProbeSpectroscopyProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=0.5, cfg=self.config)
 
-        # iq_lists= []
         if self.live_plot:
             efI, efQ, effreqs = self.live_plotting(efqspec, self.experiment.soc)
         else:
@@ -82,11 +83,19 @@ class EFQubitSpectroscopy:
             efI = efiq_list[self.QubitIndex][0, :, 0]
             efQ = efiq_list[self.QubitIndex][0, :, 1]
             effreqs = efqspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
-            #print(effreqs)
+
         measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
-        # self.plot_results(efI, efQ, effreqs, config=self.config)
         largest_amp_curve_mean, efI_fit, efQ_fit = self.plot_results(efI, efQ, effreqs, config = self.config)
-        return efI, efQ, effreqs , self.config, efI_fit, efQ_fit , largest_amp_curve_mean, measurement_timestamp
+
+        if self.save_shots:
+            raw_0 = efqspec.get_raw()
+            efIshots = raw_0[self.QubitIndex][:, :, 0, 0]
+            efQshots = raw_0[self.QubitIndex][:, :, 0, 1]
+        else:
+            efIshots = None
+            efQshots = None
+
+        return efI, efQ, efIshots, efQshots, effreqs , self.config, efI_fit, efQ_fit , largest_amp_curve_mean, measurement_timestamp
 
     def live_plotting(self, qspec, soc):
         I = Q = expt_mags = expt_phases = expt_pop = None

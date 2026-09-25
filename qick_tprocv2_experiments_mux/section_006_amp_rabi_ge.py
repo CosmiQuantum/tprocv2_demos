@@ -121,7 +121,7 @@ class AmplitudeRabiExperiment:
             return I, Q, Ishots, Qshots, gains, q1_fit_cosine, pi_amp, self.config, measurement_timestamp
 
         else:
-            return I, Q, gains, q1_fit_cosine, pi_amp, self.config, measurement_timestamp
+            return I, Q, None, None, gains, q1_fit_cosine, pi_amp, self.config, measurement_timestamp
 
     def create_data_dict(self,keys, save_r, qs):
         return {Q: {key: np.empty(save_r, dtype=object) for key in keys} for Q in range(len(qs))}

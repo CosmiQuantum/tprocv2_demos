@@ -39,52 +39,41 @@ class EF_AmplitudeRabiExperiment:
         if unmasking_resgain:
             self.exp_cfg["list_of_all_qubits"] = [QubitIndex]
 
-            if experiment is not None:
-                self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
-                self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
-                self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-                if increase_qubit_reps:
-                    if self.QubitIndex==qubit_to_increase_reps_for:
-                        print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
-                        self.config["reps"] *= multiply_qubit_reps_by
-                print(f'Q {self.QubitIndex + 1} Round {self.round_num} EF Rabi configuration: ', self.config)
+        if experiment is not None:
+            self.q_config = all_qubit_state(self.experiment, self.number_of_qubits)
+            self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
+            self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            if increase_qubit_reps:
+                if self.QubitIndex==qubit_to_increase_reps_for:
+                    print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
+                    self.config["reps"] *= multiply_qubit_reps_by
+            print(f'Q {self.QubitIndex + 1} Round {self.round_num} EF Rabi configuration: ', self.config)
 
 
     def run(self, thresholding=False, use_iminuit_instead = True):
-        print(self.config)
-
-        amp_rabi = EF_AmplitudeRabiProgram(self.experiment.soccfg, reps=self.config['reps'],
-                                        final_delay=self.config['relax_delay'], cfg=self.config)
+        amp_rabi = EF_AmplitudeRabiProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
 
         if self.live_plot:
             I, Q, gains = self.live_plotting(amp_rabi, thresholding)
         else:
-            # Send the complied program that was set above to the qick hardware using soc
-            # Tell how many times to repeat using the rounds function, and the definition will do that many measurements
-            # and average over those
-            # progress=True shows you the bar as data is being collected. maybe disable for speed in the future
-            # The QICK will run the 'body' method in AmplitudeRabiProgram repeatedly for the iterations set in the
-            # initalize loop when this aquire def is used
-            # if thresholding:
-            #     iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=self.config["rounds"],
-            #                                threshold=self.experiment.readout_cfg["threshold"],
-            #                                angle=self.experiment.readout_cfg["ro_phase"], progress=self.qick_verbose)
-            # else:
-            #     iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=self.config["rounds"],
-            #                                progress=self.qick_verbose)
             iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=self.config["rounds"], progress=self.qick_verbose)
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
-        # get the gains that were used so you can use to plot on the x axis
+
         gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
-            # print('gains', gains)
-            # print('I: ', I)
-            # print('Q: ', Q)
         measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
-        q1_fit_cosine, pi_amp = self.plot_results( I, Q, gains, config = self.config, use_iminuit_instead = use_iminuit_instead)
-        # self.plot_results(I, Q, gains, config=self.config)
-        return I, Q, gains, q1_fit_cosine, pi_amp, self.config, measurement_timestamp
-        #return I, Q, gains, self.config
+
+        q1_fit_cosine, pi_amp = self.plot_results(I, Q, gains, config = self.config, use_iminuit_instead = use_iminuit_instead)
+
+        if self.save_shots:
+            raw_0 = amp_rabi.get_raw()
+            Ishots = raw_0[self.QubitIndex][:, :, 0, 0]
+            Qshots = raw_0[self.QubitIndex][:, :, 0, 1]
+        else:
+            Ishots = None
+            Qshots = None
+
+        return I, Q, Ishots, Qshots, gains, q1_fit_cosine, pi_amp, self.config, measurement_timestamp
 
     def live_plotting(self, amp_rabi, soc):
         I = Q = expt_mags = expt_phases = expt_pop = None

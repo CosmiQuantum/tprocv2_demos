@@ -204,11 +204,11 @@ class Data_H5:
                                        'I Fit': 'I Fit', 'Q Fit': 'Q Fit', 'Round Num': 'Round Num',
                                        'Batch Num': 'Batch Num', 'Recycled QFreq': 'Recycled QFreq',
                                        'Exp Config': 'Exp Config', 'Syst Config': 'Syst Config', 'measurement_timestamp': 'measurement_timestamp'}
-                    elif data_type == 'Rabi' or data_type == 'Rabi_ge' or  data_type == 'Rabi_ef':
-                        target_keys = {'Dates': 'Dates', 'I': 'I', 'Q': 'Q', 'Gains': 'Gains', 'Fit': 'Fit',
-                                       'Round Num': 'Round Num', 'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
-                                       'Syst Config': 'Syst Config', 'measurement_timestamp': 'measurement_timestamp'}
-
+                    elif data_type == 'Rabi' or data_type == 'Rabi_ge' or  data_type == 'Rabi_ef' or data_type == 'rabi_ge' or data_type == 'rabi_ef':
+                        target_keys = {'Dates': 'Dates', 'I': 'I', 'Q': 'Q', 'Ishots': 'Ishots', 'Qshots': 'Qshots',
+                                       'Gains': 'Gains', 'Fit': 'Fit','Round Num': 'Round Num', 'Batch Num': 'Batch Num',
+                                       'Exp Config': 'Exp Config','Syst Config': 'Syst Config',
+                                       'measurement_timestamp': 'measurement_timestamp'}
                     elif data_type == 'q_temperatures':
                         target_keys = {'Dates': 'Dates', 'Qfreq_ge': 'Qfreq_ge',
                                        'I1': 'I1', 'Q1': 'Q1', 'Gains1': 'Gains1', 'Ishots1': 'Ishots1', 'Qshots1': 'Qshots1', 'Fit1': 'Fit1',
