@@ -40,7 +40,7 @@ from analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
 ################################################ Run Configurations ####################################################
 st = time.time()
 #
-n= 2
+n= 1
 pre_optimize = False
 freq_offset_steps = 10
 ssf_avgs_per_opt_pt = 5
@@ -61,7 +61,7 @@ multiply_qubit_reps_by = 2           # only has impact if the line two above is 
 
 res_IQ = True                        # if True, plots res specs I and Q, False plots amps
 
-Qs_to_look_at =[3] #[0,1,2,3]    # only list the qubits you want to do the RR for
+Qs_to_look_at =[0, 1, 2, 3] #[0,1,2,3]    # only list the qubits you want to do the RR for
 
 #One round take 11.27 minutes for all 4 qubits: Rspec, Qspec, Rabi, SS, and T1
 
@@ -69,20 +69,21 @@ Qs_to_look_at =[3] #[0,1,2,3]    # only list the qubits you want to do the RR fo
 print(FRIDGE)
 
 #Data saving info
-run_name = 'run37'
+run_name = 'run39'
 device_name = '4charge'
-substudy_txt_notes = ('checking Q4 bc after re opt bc it went bad during tomo') #'all Qs, post opt, not degen')
+substudy_txt_notes = ('ToF, res spec, and qspec after handover')
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": True, "rabi": True, "ss_gef": False, "test_act":False, "fh_rabi": False,
-             "t1": True, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False, "fh_q_spec":False, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "ss": False, "rabi": False, "ss_gef": False, "test_act":False, "fh_rabi": False,
+             "t1": False, "t2r": False, "t2e": False, "ef_res_spec": False, "ef_q_spec": False, "fh_q_spec":False, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 # run_flags = {"tof": False, "res_spec": False, "q_spec": False, "ss": False, "rabi": False, "ss_gef": False, "test_act":False,
 #              "t1": False, "t2r": False, "t2e": False, "ef_res_spec":False, "ef_q_spec": True, "fh_q_spec":True, "rabi_pop_meas": False, "ef_Rabi":False, "ef_ss": False}
 
 # optimization outputs from qick board, unmasking set to true
+# units in MHz (consistent across QICK)
 res_leng_vals = [4.5, 4.75, 5.5, 4.75] #[5.75, 5, 6.25, 6] #[4.75, 4, 4, 5] #Q4 4
 res_gain = [0.3875, 0.425, 0.3875, 0.425] #[0.35, 0.36, 0.36, 0.425] #[0.3, 0.3, 0.3, 0.3] #[0.7, 0.375, 0.475, 0.5062] #Q4 0.475
-freq_offsets = [0, 0, -0.075, -0.225] #[-0.225, -0.075, 0, -0.15]
+freq_offsets = [-.5, 0, 0, 0] #[0, 0, -0.075, -0.225] #[-0.225, -0.075, 0, -0.15]
 
 qubit_freqs_ef = [None]*4
 # increase_qubit_steps_ef = False #if you want to increase the step for all qubits, set to True, if you only want to set it to true for 1 qubit, see e-f qubit spec section
@@ -93,7 +94,7 @@ figure_quality = 200
 ################################################ Data Saving Setup ##################################################
 #Folders
 study = 'Initial Checkout' #'readout_optimization' #'Initial Checkout' #'Punchout Study'
-sub_study = 'RR_Q4' #'TOF_punchout'#'RR_Q4_postopt'
+sub_study = 'ToF_Res_QSpec' #'TOF_punchout'#'RR_Q4_postopt'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/home/nexusadmin/Documents/Data/{run_name}/"):

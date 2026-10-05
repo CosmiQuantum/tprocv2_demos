@@ -216,10 +216,10 @@ class QICK_experiment:
 
             # Readout Configuration
             self.readout_cfg = {
-                "trig_time": 0.75, # [Clock ticks] - get this value from TOF experiment, Updated 9/3
+                "trig_time": 0.75, # [Clock ticks] - get this value from TOF experiment, Updated 9/24/26
                 # Changes related to the resonator output channel
                 "mixer_freq": 5500, # [MHz]
-                "res_freq_ge": [6187.98, 5828.48, 6074.59, 5959.344], #Run 37 #[6187.72, 5828.52, 6074.58, 5959.364] #Run36a
+                "res_freq_ge": [6188.33, 5829.05, 6074.240, 5959.824], #NR39 [6187.98, 5828.48, 6074.59, 5959.344], #Run 37 #[6187.72, 5828.52, 6074.58, 5959.364] #Run36a
                 "res_gain_ge": [0.3875, 0.425, 0.3875, 0.425], #[0.3, 0.3, 0.28, 0.3], #[0.625, 0.375, 0.1, 0.475]
                 "res_length": 5.0, #5.75, #4.0, #[9.25, 5.5, 6.25, 7.0], #5 #4.6,  # 10,  # [us] (1.0 for res spec)
                 "res_phase": [0] * 4,
