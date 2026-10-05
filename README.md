@@ -1,6 +1,6 @@
 # tprocv2_demos
 
-Note: This is the main branch used at NEXUS in run 35 (branched from gb_nexusquiet_r33).
+Note: This is the main branch used at NEXUS in run 39 (branched from gb_nexusquiet_r37).
 
 Some basic qubit demo scripts using the QICK tProcessorv2
 
