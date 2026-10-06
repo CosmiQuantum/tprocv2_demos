@@ -5,15 +5,14 @@ np.set_printoptions(threshold=int(1e15)) #need this so it saves absolutely every
 import datetime
 import time
 sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
-from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
+from expt_config import tot_num_of_qubits
 from analysis_001_plot_all_RR_h5 import PlotAllRR
 import os
 import sys
 import h5py
 from sklearn.mixture import GaussianMixture
-import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
-from analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
+from qick_tprocv2_experiments_mux.UnusedAtNEXUS.analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
 
 #---------------------------------------------------------Folders and Paths-------------------------------------------------------------------
 sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))

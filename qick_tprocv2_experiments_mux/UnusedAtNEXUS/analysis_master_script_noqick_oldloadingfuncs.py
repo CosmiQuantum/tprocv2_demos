@@ -1,7 +1,7 @@
 from analysis_021_plot_allRR_noqick import QubitFreqsVsTime
 from analysis_021_plot_allRR_noqick import T1VsTime
-from analysis_017_plot_metric_dependencies import PlotMetricDependencies
-from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
+from qick_tprocv2_experiments_mux.UnusedAtNEXUS.analysis_017_plot_metric_dependencies import PlotMetricDependencies
+from expt_config import tot_num_of_qubits
 
 ###################################################### Set These #######################################################
 save_figs = False

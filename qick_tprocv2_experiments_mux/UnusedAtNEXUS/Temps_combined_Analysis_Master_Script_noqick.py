@@ -3,19 +3,16 @@ import numpy as np
 np.set_printoptions(threshold=int(1e15)) #need this so it saves absolutely everything returned from the classes
 import os
 sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
-from analysis_021_plot_allRR_noqick import QubitSpectroscopy
 from qicklab.analysis import qspec, ssf
-from section_008_save_data_to_h5 import Data_H5
-from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots, combined_Qtemp_studies, RPMTempCalcAndPlots
+from qick_tprocv2_experiments_mux.UnusedAtNEXUS.analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots, combined_Qtemp_studies, RPMTempCalcAndPlots
 import glob
 import re
 import datetime
 import ast
 from sklearn.mixture import GaussianMixture
-import matplotlib.pyplot as plt
 import math
 import h5py
-from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
+from expt_config import list_of_all_qubits
 from analysis_021_plot_allRR_noqick import PlotRR_noQick
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------

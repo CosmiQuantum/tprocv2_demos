@@ -7,19 +7,11 @@ import time
 import matplotlib.pyplot as plt
 sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
-from section_002_res_spec_ef import ResonanceSpectroscopyEF
 from section_004_qubit_spec_ge import QubitSpectroscopy
-from section_004_qubit_spec_ef import EFQubitSpectroscopy
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
-from section_005_single_shot_gef import SingleShot_ef
 from section_008_save_data_to_h5 import Data_H5
-from section_006_amp_rabi_ef import EF_AmplitudeRabiExperiment
-from section_007_T1_ef import EF_T1Measurement
-from section_007_T1_ge import T1Measurement
 from system_config import QICK_experiment
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
-from f_to_res_swap_spec import FtoResQubitSpectroscopy
-from analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
 from section_005_single_shot_ge import SingleShot
 import copy
 ################################################ Run Configurations ####################################################

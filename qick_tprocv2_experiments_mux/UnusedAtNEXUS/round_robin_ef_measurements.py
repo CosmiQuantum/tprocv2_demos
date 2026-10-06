@@ -18,8 +18,8 @@ from section_007_T1_ef import EF_T1Measurement
 from section_007_T1_ge import T1Measurement
 from system_config import QICK_experiment
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
-from f_to_res_swap_spec import FtoResQubitSpectroscopy
-from analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
+from qick_tprocv2_experiments_mux.UnusedAtNEXUS.f_to_res_swap_spec import FtoResQubitSpectroscopy
+from qick_tprocv2_experiments_mux.UnusedAtNEXUS.analysis_020_gef_ssf_fstate_plots import GEF_SSF_ANALYSIS
 
 ################################################ Run Configurations ####################################################
 n= 1

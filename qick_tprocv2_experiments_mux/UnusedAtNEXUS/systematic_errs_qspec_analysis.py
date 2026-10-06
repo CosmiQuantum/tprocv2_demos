@@ -1,12 +1,11 @@
 import re
-from analysis_003_q_freqs_vs_time_plots import QubitFreqsVsTime
+from qick_tprocv2_experiments_mux.UnusedAtNEXUS.analysis_003_q_freqs_vs_time_plots import QubitFreqsVsTime
 import matplotlib.pyplot as plt
 # from datetime import datetime
 import datetime
 import pytz
 import os
-from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
-from system_config import QICK_experiment
+from expt_config import tot_num_of_qubits
 import numpy as np
 import json
 import h5py

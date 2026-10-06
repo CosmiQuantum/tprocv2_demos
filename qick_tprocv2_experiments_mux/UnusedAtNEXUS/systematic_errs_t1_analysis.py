@@ -4,14 +4,13 @@ import matplotlib.pyplot as plt
 import datetime
 import pytz
 import os
-from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
-from system_config import QICK_experiment
+from expt_config import tot_num_of_qubits
 import numpy as np
 import json
 import h5py
 from qualang_tools.plot import Fit
 import visdom
-from analysis_006_T1_vs_time_plots import T1VsTime
+from qick_tprocv2_experiments_mux.UnusedAtNEXUS.analysis_006_T1_vs_time_plots import T1VsTime
 ###################################################### Set These #######################################################
 save_figs = True
 fit_saved = False
