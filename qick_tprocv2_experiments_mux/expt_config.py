@@ -434,8 +434,9 @@ if FRIDGE == "QUIET":
     }
 
 elif FRIDGE == "NEXUS":
-    VNA_res = np.array([6187.72, 5828.52, 6074.58, 5959.364]) #Run 34 #[6187.9, 5828.5, 6074.6, 5959.3]) #Run 33 VNA low power   # Old [6187.8, 5828.3, 6074.6, 5959.3])
-    VNA_qubit = np.array([4931, 4788.8, 4584.4, 4801.23]) #Run36a: [4928.5, 4779.98, 4586.61, 4802.8] #NR35: [4943.5, 4773, 4579, 4805]) #4913., 4764.2, 4577, 4782
+    # Res_freq is unused, Qubit freq is used to set range for qspec and bias qspec, need to update from RR
+    res_freq = np.array([6187.72, 5828.52, 6074.58, 5959.364]) #Run 34 #[6187.9, 5828.5, 6074.6, 5959.3]) #Run 33 VNA low power   # Old [6187.8, 5828.3, 6074.6, 5959.3])
+    qubit_freq = np.array([4931, 4788.8, 4584.4, 4801.23]) #Run36a: [4928.5, 4779.98, 4586.61, 4802.8] #NR35: [4943.5, 4773, 4579, 4805]) #4913., 4764.2, 4577, 4782
     # #np.array([4909, 4749.4, 4569, 4759])  # Found on NR25 with the QICK
 
     tot_num_of_qubits = 4
@@ -481,8 +482,8 @@ elif FRIDGE == "NEXUS":
         "qubit_spec_ge": {
             "reps": 2000,  # 100
             "rounds": 1,  # 10
-            "start": list(VNA_qubit - 15), #70),  # [MHz]
-            "stop": list(VNA_qubit + 15), #70),  # [MHz]
+            "start": list(qubit_freq - 15), #70),  # [MHz]
+            "stop": list(qubit_freq + 15), #70),  # [MHz]
             "steps": 300,
             "relax_delay": 10,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
@@ -491,8 +492,8 @@ elif FRIDGE == "NEXUS":
         "bias_qubit_spec_ge": {
             "reps": 2100,  # 100
             "rounds": 1,  # 10
-            "start": list(VNA_qubit - 2.5),  # [MHz]
-            "stop": list(VNA_qubit + 2.5),  # [MHz]
+            "start": list(qubit_freq - 2.5),  # [MHz]
+            "stop": list(qubit_freq + 2.5),  # [MHz]
             "steps": 100,
             "relax_delay": 10,  # [us]
             "list_of_all_qubits": list_of_all_qubits,

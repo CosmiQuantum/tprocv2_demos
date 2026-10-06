@@ -310,7 +310,7 @@ class AllQubitTomographyMeasurement:
             'legend.fontsize': 14,  # Legend font size
         })
         if plot_together:
-            fig, (ax1, ax2) = plt.subplot(2, 1, figzise=(10,8), sharex='all')
+            fig, (ax1, ax2) = plt.subplot(2, 1, figsize=(10,8), sharex='all')
             ax1.set_ylabel("I Amplitude (a.u.)", fontsize=16)
             ax1.tick_params(axis='both', which='major', labelsize=14)
             ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=16)

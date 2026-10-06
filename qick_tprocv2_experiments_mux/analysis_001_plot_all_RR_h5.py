@@ -7,8 +7,8 @@ from section_008_save_data_to_h5 import Data_H5
 from section_005_single_shot_ge import SingleShot
 from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
-from section_005_single_shot_gef import SingleShot_ef
-from section_011_qubit_temperatures_efRabipt3 import Temps_EFAmpRabiExperiment
+from qick_tprocv2_experiments_mux.UnusedAtNEXUS.section_005_single_shot_gef import SingleShot_ef
+from qick_tprocv2_experiments_mux.UnusedAtNEXUS.section_011_qubit_temperatures_efRabipt3 import Temps_EFAmpRabiExperiment
 import matplotlib.dates as mdates
 from typing import List
 from matplotlib.axes import Axes

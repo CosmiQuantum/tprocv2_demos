@@ -7,7 +7,7 @@ from matplotlib.lines import Line2D
 from matplotlib import cm, colors as mcolors
 import sys
 # from section_011_qubit_temperatures_efRabipt3 import Temps_EFAmpRabiExperiment #uses qick modoule
-from section_011_qubit_temperatures_efRabipt3_noqick_analysis import Temps_EFAmpRabiExperiment
+from qick_tprocv2_experiments_mux.UnusedAtNEXUS.section_011_qubit_temperatures_efRabipt3_noqick_analysis import Temps_EFAmpRabiExperiment
 import math
 from collections import defaultdict
 from bisect import bisect_left

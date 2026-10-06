@@ -9,16 +9,19 @@ import datetime
 
 number_of_qubits = 4  #currently 4 for NEXUS, 6 for QUIET
 
+run = 'run39'
 study = 'Initial Checkout' # 'Punchout Study'
 substudy = 'Punchout_lowgains'
-outerFolder = os.path.join(f"/home/nexusadmin/Documents/Data/run35/4charge/{study}/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
+outerFolder = os.path.join(f"/home/nexusadmin/Documents/Data/{run}/4charge/{study}/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 outerfolder_plots = outerFolder + "/documentation/"
 
-
+### QICK box settings - meaningless for NEXUS but required to run scripts
 DAC_att_1=10
 DAC_att_2=15
 DAC_att=DAC_att_1+DAC_att_2
 ADC_att=17
+###
+
 from expt_config import FRIDGE
 experiment = QICK_experiment(outerfolder_plots, DAC_attenuator1 = DAC_att_1, DAC_attenuator2 = DAC_att_2, qubit_DAC_attenuator1 = 5 , qubit_DAC_attenuator2 = 4 ,ADC_attenuator = ADC_att, fridge=FRIDGE)
 qubits = [0] #[0, 1, 2, 3]

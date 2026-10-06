@@ -35,8 +35,9 @@ list_of_all_qubits = [0, 1, 2, 3] #for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0, 1
 # outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30", str(datetime.date.today())) #change run number in each new run
 run_name ='run37'
 device_name = '4charge'
+study = 'readout_optimization'
 substudy = "opt_Q4_pt2" #unmasking_resgain"
-outerFolder = os.path.join(f"/home/nexusadmin/Documents/Data/{run_name}/{device_name}/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
+outerFolder = os.path.join(f"/home/nexusadmin/Documents/Data/{run_name}/{device_name}/{study}/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 
 def create_folder_if_not_exists(folder_path):
     """Creates a folder at the given path if it doesn't already exist."""
@@ -59,7 +60,6 @@ opt_flags = {"res_len_sweep": False, "2d_sweep": True}
 # List of qubits to measure
 Qs = [3] #0, 1, 2, 3
 
-#Change for NEXUS vs QUIET
 res_leng_vals = [4.5, 4.75, 5.5, 4.75] #[5.75, 5, 6.25, 4.75]
 res_gain = [0.3875, 0.35, 0.3875, 0.425] #[0.45, 0.36, 0.36, 0.425]  #NR35: [0.3, 0.3, 0.3, 0.3] #[0.48, 0.475, 0.1, 0.45]
 freq_offsets = [0.225, 0, -0.075, -0.225] #[0.15, -0.075, 0, -0.15]  #NR35: [-0.15, -0.075, 0, 0] #[-0.2, -0.1, 0, -0.1] #Q1 -0.1667
@@ -67,8 +67,6 @@ punch_out_vals = [0.48, 0.4, 0.19, 0.4]
 
 optimal_lengths = [None] * 4 #[None] * 4 # Q2 found, creates list where the script will be storing the optimal readout lengths for each qubit
 res_freq_ge = [None] * 4 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
-
-len_sweep = True
 
 j=0 #round number, from RR code. Not really used here since we just run it once for each qubit
 

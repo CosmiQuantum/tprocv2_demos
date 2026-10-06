@@ -4,26 +4,9 @@ import numpy as np
 import datetime
 
 sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
-from section_001_time_of_flight import TOFExperiment
-from section_002_res_spec_ge_mux import ResonanceSpectroscopy
-from section_002_res_spec_ef import ResonanceSpectroscopyEF
-from section_004_qubit_spec_ge import QubitSpectroscopy
-from section_004_qubit_spec_ef import EFQubitSpectroscopy
-from section_006_amp_rabi_ge import AmplitudeRabiExperiment
-from section_006_amp_rabi_ef import EF_AmplitudeRabiExperiment
-from section_011_qubit_temperatures_efRabipt3 import Temps_EFAmpRabiExperiment
-from section_005_single_shot_ge import GainFrequencySweep
-from section_005_single_shot_ef import GainFrequencySweep
-from section_007_T1_ge import T1Measurement
-from section_005_single_shot_ge import SingleShot
-from section_005_single_shot_ef import SingleShot_ef
-from section_008_save_data_to_h5 import Data_H5
-from section_009_T2R_ge import T2RMeasurement
-from section_010_T2E_ge import T2EMeasurement
-from section_003_punch_out_ge_mux import PunchOut
+from qick_tprocv2_experiments_mux.UnusedAtNEXUS.section_005_single_shot_ef import SingleShot_ef
 from section_005_single_shot_ge import SingleShot
 from system_config import QICK_experiment
-from expt_config import *
 import h5py
 import time
 import matplotlib.pyplot as plt

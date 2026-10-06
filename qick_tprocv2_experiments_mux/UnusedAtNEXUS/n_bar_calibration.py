@@ -12,14 +12,11 @@ import visdom
 sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_004_qubit_spec_ge import QubitSpectroscopy
-from section_006_amp_rabi_ge import AmplitudeRabiExperiment
-from section_006p5_length_rabi_ge import LengthRabiExperiment
-from section_005_single_shot_ge import SingleShot
-from starkshift import ResStarkShift2D
+from qick_tprocv2_experiments_mux.UnusedAtNEXUS.starkshift import ResStarkShift2D
 from section_008_save_data_to_h5 import Data_H5
 from system_config import QICK_experiment
 from expt_config import expt_cfg, list_of_all_qubits, tot_num_of_qubits, FRIDGE
-from section_007_T1_ge_IBM_zeno import T1Measurement_with_Zeno
+
 ################################################ Run Configurations ####################################################
 zero_qubit_drive_gain = False
 constant_zeno_pulse = True
