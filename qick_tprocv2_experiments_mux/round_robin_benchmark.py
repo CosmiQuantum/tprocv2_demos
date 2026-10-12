@@ -73,23 +73,23 @@ save_shots_t2e = True
 save_shots_qspec_ef = True
 save_shots_rspec_ef = True
 
-Qs_to_look_at = [0] # only list the qubits you want to do the RR for
+Qs_to_look_at = [4] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run10'
 device_name = '6transmon'
-substudy_txt_notes = ('Checking out the qubits.\n')
+substudy_txt_notes = ('Checking out the resonators and qubits.\n')
 
 # set which of the following you'd like to run to 'True'
 
-run_flags = {"tof": True, "res_spec": False, "q_spec": False, "rabi": False, "ss": False,
-             "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": False,
+             "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
              "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
 
 # For 25dB DAC, 7/19/2026
-res_leng_vals = [5.4, 6.6, 6.0, 6.8, 6.8, 7.0]
-res_gain = [0.8164, 0.8, 0.8419, 0.6156, 0.8, 0.82] # Q1: 0.8164
-freq_offsets =[-0.1556, -0.1111, -0.2,-0.0222,-0.2111,-0.1556]
+res_leng_vals = [5.4, 7.0, 8.0, 8.0, 6.8, 7.0] # 5.4, 6.6, 6.5, 6.8, 6.8, 7.0
+res_gain = [0.8164, 0.75, 0.6, 0.4, 0.7667, 0.7833]
+freq_offsets =[-0.1111,0,0,0,-0.5111,-0.1556]
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
@@ -240,12 +240,15 @@ while j < n:
                 increase_geres_reps_to = None
                 use_savgol_smoothing_rspec = False
 
-                if QubitIndex == 5:
-                    increase_geres_reps = True
-                    increase_geres_reps_to = 400 #400
+                # if QubitIndex == 5:
+                #     increase_geres_reps = True
+                #     increase_geres_reps_to = 400 #400
                 # if QubitIndex == 3:
                 #     increase_geres_reps = True
                 #     increase_geres_reps_to = 600
+                if QubitIndex == 1:
+                    increase_geres_reps = True
+                    increase_geres_reps_to = 1000
                 # if QubitIndex == 4:
                 #     use_savgol_smoothing_rspec = True
                 #     increase_geres_reps = True
@@ -373,18 +376,19 @@ while j < n:
                 if QubitIndex == 4:
                     increase_qubit_reps_gerabi = True
                     qubit_to_increase_gerabi_reps_for = QubitIndex
-                    multiply_gerabi_reps_by = 2
+                    multiply_gerabi_reps_by = 4
 
                 # if QubitIndex == 0:
                 #     increase_qubit_reps_gerabi = True
                 #     qubit_to_increase_gerabi_reps_for = QubitIndex
                 #     multiply_gerabi_reps_by = 2
 
-                # if QubitIndex == 5:
-                # #     increase_qubit_reps_gerabi = True
-                # #     qubit_to_increase_gerabi_reps_for = QubitIndex
-                #     reduce_rlx_delay_gerabi = True
-                #     reduce_rlx_delay_gerabi_to = 700
+                if QubitIndex == 5:
+                    increase_qubit_reps_gerabi = True
+                    qubit_to_increase_gerabi_reps_for = QubitIndex
+                    multiply_gerabi_reps_by = 2
+                    reduce_rlx_delay_gerabi = True
+                    reduce_rlx_delay_gerabi_to = 650
 
                 rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
                                                save_figs=save_figs, save_shots=save_shots_gerabi,
@@ -487,7 +491,7 @@ while j < n:
         ############################################## res spec ef ####################################################
         if run_flags["ef_res_spec"]:
             t0 = time.perf_counter()
-            ef_res_freqs_samples = []
+            ef_res_freq_samples = []
             for sample in range(ef_res_sample_number):
                 try:
                     increase_efres_reps = False
@@ -513,9 +517,16 @@ while j < n:
                                                           logger=rr_logger, qick_verbose=qick_verbose,
                                                           unmasking_resgain=unmask, reduce_rlx_delay = reduce_rlx_delay_efrspec,
                                                           reduce_rlx_delay_to = reduce_rlx_delay_efrspec_to, save_shots = save_shots_rspec_ef)
-                    ef_res_freqs, ef_freq_pts, ef_freq_center, ef_amps, efres_I, efres_Q, efres_Ishots, efres_Qshots, config_rspec_ef, meas_timestamp_resef = ef_res_spec.run()
-                    ef_res_freqs_samples.append(ef_res_freqs)
-                    rr_logger.info(f"EF ResSpec sample {sample} for qubit {QubitIndex + 1}: {ef_res_freqs}")
+                    ef_res_freq, ef_freq_pts, ef_freq_center, ef_amps, efres_I, efres_Q, efres_Ishots, efres_Qshots, config_rspec_ef, meas_timestamp_resef = ef_res_spec.run()
+
+                    # ---Temporary: new ---------------------
+                    if QubitIndex == 4:
+                        offset = freq_offsets[QubitIndex]
+                        ef_res_freq[QubitIndex] += offset
+                     # ----------------------------------------
+
+                    ef_res_freq_samples.append(ef_res_freq)
+                    rr_logger.info(f"EF ResSpec sample {sample} for qubit {QubitIndex + 1}: {ef_res_freq}")
 
                     del ef_res_spec
 
@@ -525,16 +536,16 @@ while j < n:
                     rr_logger.exception(f"EF ResSpec error on qubit {QubitIndex + 1} sample {sample}: {e}")
                     # we don't skip the qubit if this throws an err because we want to save the rest of the data that was taken
 
-            if ef_res_freqs_samples:
+            if ef_res_freq_samples:
                 # Average the ef resonator frequency values across samples
-                avg_ef_res_freqs = np.mean(np.array(ef_res_freqs_samples), axis=0).tolist()
+                avg_ef_res_freq = np.mean(np.array(ef_res_freq_samples), axis=0).tolist()
                 ef_res_spec_survived = True
 
-                experiment.readout_cfg['res_freq_ef'] = ef_res_freqs_samples[-1]  # use the last e-f res spec frequency to update the sys config
+                experiment.readout_cfg['res_freq_ef'] = ef_res_freq_samples[-1]  # use the last e-f res spec frequency to update the sys config
 
-                rr_logger.info(f"Avg. EF resonator frequencies for qubit {QubitIndex + 1}: {avg_ef_res_freqs[QubitIndex]}")
+                rr_logger.info(f"Avg. EF resonator frequencies for qubit {QubitIndex + 1}: {avg_ef_res_freq[QubitIndex]}")
                 if verbose:
-                    print(f"Avg. EF resonator frequencies for qubit {QubitIndex + 1}: {avg_ef_res_freqs}")
+                    print(f"Avg. EF resonator frequencies for qubit {QubitIndex + 1}: {avg_ef_res_freq}")
 
             else:
                 rr_logger.error(f"No ef resonator spectroscopy data collected for qubit {QubitIndex + 1}.")
@@ -599,6 +610,10 @@ while j < n:
                     if QubitIndex == 2:
                         increase_qubit_reps_ef = True  # if you want to increase the reps for a qubit, set to True
                         increase_reps_to_ef = 2600
+
+                    if QubitIndex == 4:
+                        increase_qubit_reps_ef = True  # if you want to increase the reps for a qubit, set to True
+                        increase_reps_to_ef = 2000
 
                     if QubitIndex == 5:
                         reduce_rlx_delay_efqspec = True
@@ -853,6 +868,10 @@ while j < n:
                 reduce_rlx_delay_geT2E_to = None
 
                 if QubitIndex == 5:
+                    increase_qubit_reps_t2e = True
+                    qubit_to_increase_t2e_reps_for = 5
+                    multiply_qubit_t2e_reps_by = 2
+
                     reduce_rlx_delay_geT2E = True
                     reduce_rlx_delay_geT2E_to = 650
 
@@ -972,7 +991,7 @@ while j < n:
                 ef_res_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = efres_Q
                 ef_res_data[QubitIndex]['Ishots'][j - batch_num * save_r - 1] = efres_Ishots
                 ef_res_data[QubitIndex]['Qshots'][j - batch_num * save_r - 1] = efres_Qshots
-                ef_res_data[QubitIndex]['Found Freqs'][j - batch_num * save_r - 1] = ef_res_freqs
+                ef_res_data[QubitIndex]['Found Freqs'][j - batch_num * save_r - 1] = ef_res_freq
                 ef_res_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
                 ef_res_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 ef_res_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg

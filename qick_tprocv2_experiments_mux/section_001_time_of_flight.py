@@ -154,9 +154,9 @@ class TOFExperiment:
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
             if 'All' in self.Qubit:
-                file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}" + f"Q_{self.QubitIndex}" + f"{formatted_datetime}_" + self.expt_name + ".png")
+                file_name = os.path.join(outerFolder_expt, f"Rnd{self.round_num}_" + f"Q{self.QubitIndex}_" + f"{formatted_datetime}_" + self.expt_name + ".png")
             else:
-                file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + ".png")
+                file_name = os.path.join(outerFolder_expt, f"Rnd{self.round_num}_" + f"Q{self.QubitIndex+1}_" + f"{formatted_datetime}_" + self.expt_name + ".png")
             plt.savefig(file_name, dpi=600)
 
         return t, iq_list, average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct

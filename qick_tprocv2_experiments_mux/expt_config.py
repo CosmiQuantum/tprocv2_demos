@@ -3,9 +3,9 @@ import numpy as np
 FRIDGE = "QUIET"  # change to "NEXUS" as needed
 
 if FRIDGE == "QUIET":
-    VNA_res = np.array([6236.2014, 6296.685, 6358.0, 6427.895, 6494.4, 6562.500]) # run 9c: [6235.097, 6295.745, 6356.840, 6426.675, 6493.5, 6561.2]
-    VNA_qubit = np.array([4228.49, 3852.44, 4201.92, 4506.32, 4518.33, 5054.72])  # 4228.49 # run 9c: 4229.89, 3853.24, 4197.02, 4500.9, 4515.34, 5054.02
-    ef_qfreqs = np.array([4054.38, 3674.86, 4027.53, 4334.48, 4346.29, 4887.39]) # Qubit freqs e/f Transition, run 9c: 4055.94, 3675.69, 4022.54, 4329.42, 4343.53, 4886.5
+    VNA_res = np.array([6235.301, 6295.735, 6356.840, 6426.895, 6493.5,6561.740]) # run 9d: [6236.2014, 6296.685, 6358.0, 6427.895, 6494.4, 6562.500]
+    VNA_qubit = np.array([4233.85, 3852.44, 4201.92, 4506.32, 4525.47, 5071.18])  # run 9d: 4228.49, 3852.44, 4201.92, 4506.32, 4518.33, 5054.72
+    ef_qfreqs = np.array([4059.98, 3674.86, 4027.53, 4334.48, 4356.70, 4903.91]) # Qubit freqs e/f Transition, run 9c: 4055.94, 3675.69, 4022.54, 4329.42, 4343.53, 4886.5
     fh_qfreqs = np.array([3820.97, 3450.85, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition, old run
     two_photon_qfreqs=np.array([4107.61, 3739.36, 4086.36, 4388.34, 4399.3, 4933.52]) # qubit freqs, two photon peak between ge and ef qubit freqs, old run
 
@@ -32,8 +32,8 @@ if FRIDGE == "QUIET":
         #     "list_of_all_qubits": list_of_all_qubits,
         # },
 
-        "res_spec": { # run 9a and 9c
-            "reps": 500, # 300
+        "res_spec": {
+            "reps": 1000, #500 # 300
             "rounds": 1,
             "start": -1.7,   # -1.7   # MHz
             "step_size": 0.04,  #0.04 # MHz
@@ -65,9 +65,9 @@ if FRIDGE == "QUIET":
         "res_spec_ef": {
             "reps": 500, # 300
             "rounds": 1,
-            "start": -1.7,       # MHz
+            "start": -1.2,       # MHz
             "step_size": 0.04,   # MHz
-            "steps": 90,
+            "steps": 70,
             "relax_delay": 900,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -97,7 +97,7 @@ if FRIDGE == "QUIET":
             "rounds": 1, #10
             "start": list(VNA_qubit-2.0), # [MHz], -2.0
             "stop": list(VNA_qubit+2.0), # [MHz], +2.0
-            "steps": 215, # 215 for -2 +2, 220 for -3 +3, 400 for -40, +40, 320 for -6 +6
+            "steps": 215, # 215 for -2 +2, 320 for -6 +6
             "relax_delay":10,#1000 # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
