@@ -6,7 +6,7 @@ from expt_config import *
 import copy
 import datetime
 import time
-from windfreak import SynthHD
+#from windfreak import SynthHD
 
 class SingleToneSpectroscopyProgram(AveragerProgramV2):
     def _initialize(self, cfg):

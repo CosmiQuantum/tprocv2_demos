@@ -35,17 +35,18 @@ class TOFExperiment:
             def _initialize(self, cfg):
                 ro_chs = cfg['ro_ch']
                 gen_ch = cfg['res_ch']
-
+                qubit_ch = cfg['qubit_ch']
+                
                 self.declare_gen(
                     ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
-                    mux_freqs=[f+1 for f in cfg['res_freq_ge']],
+                    mux_freqs= [f+1 for f in cfg['res_freq_ge']],
                     mux_gains= cfg['res_gain_ge'], #[1,0,0,0,0,0],#cfg['res_gain_ge'], #[1,0,0,0,0,0]
                     mux_phases=cfg['res_phase'],
                     mixer_freq=cfg['mixer_freq']
                 )
                 for ch, f, ph in zip(cfg['ro_ch'], [f+1 for f in cfg['res_freq_ge']], cfg['ro_phase']):
                     self.declare_readout(
-                        ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch
+                        ch=ch, length= cfg['res_length']+6, freq=f, phase=ph, gen_ch=gen_ch
                     )
 
                 self.add_pulse(
@@ -55,8 +56,19 @@ class TOFExperiment:
                     mask=cfg["list_of_all_qubits"],
                 )
 
+                self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
+
+                self.add_pulse(ch=qubit_ch, name="qubit_pulse",
+                    style="arb",
+                    envelope="ramp",
+                    freq=cfg['qubit_freq_ge'],
+                    phase=cfg['qubit_phase'],
+                    gain=cfg['pi_amp'],
+                    )
+                
             def _body(self, cfg):
                 self.trigger(ros=cfg['ro_ch'], pins=[0], t=0, ddr4=True)
+                self.pulse(ch=cfg['qubit_ch'], name="qubit_pulse", t=0)
                 self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
         prog = MuxProgram(self.experiment.soccfg, reps=1, final_delay=0.5, cfg=self.config)
