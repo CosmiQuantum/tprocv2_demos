@@ -14,6 +14,7 @@ from expt_config import *
 from system_config import QICK_experiment
 import copy
 import os
+from tqdm import tqdm
 
 # Both g and e during the same experiment.
 class SingleShotProgram(AveragerProgramV2):
@@ -261,7 +262,7 @@ class SingleShot:
             axs[1].scatter(xe, ye, color='k', marker='o')
             axs[1].set_xlabel('I (a.u.)')
             axs[1].legend(loc='lower right')
-            axs[1].set_title(f'Rotated Theta:{round(theta, 5)}\n res_gain={self.experiment.readout_cfg["res_gain_ge"][self.QubitIndex]} \n res_freq={self.experiment.readout_cfg["res_freq_ge"][self.QubitIndex]}')
+            axs[1].set_title(f'Rotated Theta:{round(theta, 5)}\n res_gain={self.experiment.readout_cfg["res_gain_ge"][self.QubitIndex]} \n res_freq={self.experiment.readout_cfg["res_freq_ge"][self.QubitIndex]} \n res_len={self.experiment.readout_cfg["res_length"]}')
             axs[1].axis('equal')
 
             """X and Y ranges for histogram"""
@@ -418,7 +419,7 @@ class GainFrequencySweep:
 
         # Use the optimal readout length for the current qubit
         readout_length = self.optimal_lengths[self.qubit_index]
-        for freq_step in range(freq_steps):
+        for freq_step in tqdm(range(freq_steps)):
             freq = freq_range[0] + freq_step * freq_step_size
             #print('Running for res_freq: ', freq, '...')
             fid_results = []

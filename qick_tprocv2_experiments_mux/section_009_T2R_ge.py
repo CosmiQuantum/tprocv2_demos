@@ -198,7 +198,7 @@ class T2RProgram(AveragerProgramV2):
 class T2RMeasurement:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_figs, experiment = None,
                  live_plot = None, fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
-                 multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True, unmasking_resgain = False):
+                 multiply_qubit_reps_by = 0, verbose = False, logger = None, qick_verbose=True,save_shots=True, unmasking_resgain = False):
         self.qick_verbose = qick_verbose
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
@@ -213,6 +213,7 @@ class T2RMeasurement:
         self.save_figs = save_figs
         self.live_plot = live_plot
         self.verbose = verbose
+        self.save_shots=save_shots
         self.logger = logger if logger is not None else logging.getLogger("custom_logger_for_rr_only")
 
         if unmasking_resgain:
@@ -405,7 +406,12 @@ class T2RMeasurement:
         if self.save_figs:
             self.plot_results(I, Q, delay_times, now, fit, t2r_est, t2r_err, plot_sig)
 
-        return  t2r_est, t2r_err, I, Q, delay_times, fit, self.config
+        if self.save_shots:
+            raw_0 = ramsey.get_raw()  # I,Q data without normalizing to readout window, subtracting readout offset, or rotation/thresholding
+            Ishots = raw_0[self.QubitIndex][:, :, 0, 0]
+            Qshots = raw_0[self.QubitIndex][:, :, 0, 1]
+
+        return  t2r_est, t2r_err, I, Q, Ishots, Qshots, delay_times, fit, self.config
 
     def live_plotting(self, ramsey, thresholding):
         I = Q = expt_mags = expt_phases = expt_pop = None

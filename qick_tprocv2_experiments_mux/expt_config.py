@@ -3,11 +3,17 @@ import numpy as np
 FRIDGE = "QUIET"  # change to "NEXUS" as needed
 
 if FRIDGE == "QUIET":
-    #[4194.77, 3949.66, 3815.34, 4087.17, 4433.97, 4800.55]
-    VNA_res = np.array([6170.26, 6227.45, 6291.93, 6394.350, 6407.85,6456.00])# ge resonator freqs, updated 11/21 during run 8
-    VNA_qubit = np.array([4194.77, 3953.35, 3812.34, 4087.07, 4433.97, 4801.86])  # Qubit freqs g/e Transition, updated during run 8 on 10/10
-    ef_freqs = np.array([4020.48, 3650.81, 3999.01, 4302.33, 4313.06, 4848.81]) # Qubit freqs e/f Transition,Arianna 10/13
-    fh_freqs = np.array([3820.97, 3450.85, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition
+    #[4194.77, 3949.66, 3818.45, 4087.17, 4433.97, 4800.55]
+    #VNA_res = np.array([6211.953, 6269.230, 6338.71, 6400.203, 6442.223,6518.91])# This resonators was for Run7
+    #VNA_res = np.array([6217.723, 6277.845, 6345.245, 6406.928, 6450.697,6525.845])#
+    VNA_res = np.array([6222.123, 6282.780, 6349.430, 6411.213, 6456.037,6530.800])#7C
+    #Vna_res = np.array([6211.953, 6268.610, 6338.820, 6400.263, 6442.562,6517.56])# This is for High power 0.38
+    #VNA_qubit = np.array([4200.52, 3961.65, 3819.92, 4085.06, 4438.67, 4792.33]) Values in run 7
+    #VNA_qubit = np.array([4173.52, 3961.10, 3820.68, 4084.71, 4439.89, 4790.84])#Run 7B
+    VNA_qubit = np.array([4173.52, 3964.64, 3823.95, 4094.93, 4442.12, 4794.68])
+    # Qubit freqs g/e Transition, updated during run 8 on 10/10
+    ef_freqs = np.array([4020.48, 3786.07, 3646.05, 3919.67, 4269.83, 4534.59]) # Qubit freqs e/f Transition,Arianna 10/13
+    fh_freqs = np.array([3820.97, 3450.85, 3824.01, 4095, 4660, 4660.28]) # Qubit freqs f/h Transition
     two_photon_freqs=np.array([4107.61, 3739.36, 4086.36, 4388.34, 4399.3, 4933.52]) # qubit freqs, two photon peak between ge and ef qubit freqs
 
     # Set this for your experiment
@@ -34,12 +40,12 @@ if FRIDGE == "QUIET":
         # },
 
         "res_spec": {
-            "reps": 1000, # 300
+            "reps": 1000, # 3000 for qubit 2
             "rounds": 1 ,
-            "start":  -2,       # MHz (expanded by +0.20 on each side)
-            "step_size":  0.01,    # MHz (same resolution)
+            "start":  -0.5,       # MHz (expanded by +0.20 on each side) -1.5
+            "step_size": 0.0025,    # MHz (same resolution) 0.01
             "steps": 400,          # matches the wider span
-            "relax_delay": 10,  # [us]
+            "relax_delay": 40,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
@@ -55,7 +61,7 @@ if FRIDGE == "QUIET":
         # },
 
         "res_spec_ef": {
-            "reps": 1000,
+            "reps": 1500,
             "rounds": 1,
             "start": -0.5,  # [MHz]
             "step_size": 0.0125,  # [MHz]
@@ -85,21 +91,21 @@ if FRIDGE == "QUIET":
         # },
 
         "qubit_spec_ge": {
-            "reps": 4000, #300
+            "reps": 1500, #3000
             "rounds": 1, #10
-            "start": list(VNA_qubit-2), # [MHz] #-300 #-15
-            "stop": list(VNA_qubit+2), # [MHz] #+15
-            "steps": 200, #100
-            "relax_delay":10,#1000 # [us]
+            "start": list(VNA_qubit-0.7), # [MHz] #-300 #-15
+            "stop": list(VNA_qubit+0.7), # [MHz] #+15
+            "steps": 300, #100
+            "relax_delay":20,#1000 # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
         "qubit_spec_ge_extended": {
             "reps": 500,  # 300
             "rounds": 1,  # 10
-            "start": list(VNA_qubit - 250),  # [MHz]
-            "stop": list(VNA_qubit + 100),  # [MHz]
-            "steps": 1000,  # 100
+            "start": list(VNA_qubit - 450),  # [MHz]
+            "stop": list(VNA_qubit + 250),  # [MHz]
+            "steps": 100,  # 100
             "relax_delay": 10,  # 1000, # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -128,11 +134,11 @@ if FRIDGE == "QUIET":
         },
 
         "qubit_spec_ef": {
-            "reps": 3100,  # 300
+            "reps": 5000,  # 300
             "rounds": 1,  # 10
-            "start": list(ef_freqs - 1.5),  # [MHz] #-300
-            "stop": list(ef_freqs + 1.5),  # [MHz]
-            "steps": 300,
+            "start": list(ef_freqs - 7),  # [MHz] #-300
+            "stop": list(ef_freqs + 7),  # [MHz]
+            "steps": 200,
             "relax_delay": 1000, #1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -166,11 +172,11 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ge": {
-            "reps":  1000,#500,
+            "reps":  1200,#3000 the good
             "rounds": 1,  # 5
             "start": [0] * 6,  # [DAC units]
             "stop": [1] * 6,#[1.0] * 6,  # [DAC units]
-            "steps": 100, #50,
+            "steps": 70, #50,
             "relax_delay": 1000,#1000,#1000,#1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -180,7 +186,7 @@ if FRIDGE == "QUIET":
             "rounds": 1,
             "start": [0.01] * 6,  # [us]
             "stop": [25] * 6,#[0.7] * 6,  # [us]
-            "steps": 500,
+            "steps": 100,
             "relax_delay": 1000,# [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -217,7 +223,7 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ef": {
-            "reps": 550,#400, # for Pg pulse sequence during rpm, or regular ef rabi
+            "reps": 1000,#400, # for Pg pulse sequence during rpm, or regular ef rabi
             "reps2": 1500, #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures (rpm). Pe pulse sequence
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
@@ -235,11 +241,11 @@ if FRIDGE == "QUIET":
             "relax_delay": 1000,  # [us]
         },
         "T1_ge": {
-            "reps": 1500, #300
+            "reps": 600, #1250
             "rounds": 1, #1
             "start": [0.0] * 6,  # [us]
             "stop": [200]*6, #[250.0] * 6,  # [us]
-            "steps": 70,
+            "steps": 50,
             "relax_delay": 1000,  # [us] ### Should be >10x T1!
             "wait_time": 0.0,  # [us]
             "list_of_all_qubits": list_of_all_qubits
@@ -370,11 +376,11 @@ if FRIDGE == "QUIET":
         },
 
         "Ramsey_ge": {
-            "reps": 350, #300
+            "reps": 600, #300
             "rounds": 1,#10
             "start": [0.0] * 6, # [us]
-            "stop":  [60] * 6, # [us]
-            "steps": 200,
+            "stop":  [75] * 6, # [us]
+            "steps": 90,
             "ramsey_freq": 0.12,  # [MHz]
             "relax_delay": 1000, # [us] the time to wait to let the qubit to relax to gnd again after exciting it (make it way above T1)
             "wait_time": 0.0, # [us]
@@ -385,8 +391,8 @@ if FRIDGE == "QUIET":
             "reps": 500,
             "rounds": 1,
             "start": [0.0] * 6, # [us]
-            "stop":  [80] * 6, # [us]
-            "steps": 100,
+            "stop":  [150] * 6, # [us]
+            "steps": 150,
             "ramsey_freq": 0.12,  # [MHz]
             "relax_delay": 1000, # [us]
             "wait_time": 0.0, # [us]
@@ -490,7 +496,7 @@ elif FRIDGE == "NEXUS":
         },
 
         "res_spec": {
-            "reps": 500,
+            "reps": 300,
             "rounds": 1,
             "start": -3.5,  # [MHz]
             "step_size": 0.12,  # [MHz]
@@ -574,7 +580,7 @@ elif FRIDGE == "NEXUS":
         },
 
         "Ramsey_ge": {
-            "reps": 2000,  # 300
+            "reps": 1000,  # 2000
             "rounds": 1,  # 10
             "start": [0.0] * 6,  # [us]
             "stop": [8.0] * 6,  # [us]
