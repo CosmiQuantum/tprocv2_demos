@@ -23,7 +23,7 @@ print('DAC atten: ', DAC_att)
 ADC_att=17
 print('ADC atten: ', ADC_att)
 
-substudy = f'punchout_{DAC_att}dBDAC'
+substudy = f'punchout_{DAC_att}dBDAC_newQICKbox'
 
 outerFolder = os.path.join(f"/data/QICK_data/run10/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 outerfolder_plots = outerFolder + "/documentation/"

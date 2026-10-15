@@ -90,7 +90,7 @@ class QubitSpectroscopy:
         else:
             # print("rounds for this qubit: ", self.exp_cfg["rounds"])
             # print("rounds for this qubit config: ", self.config["rounds"])
-            iq_list = qspec.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=self.qick_verbose)
+            iq_list = qspec.acquire(self.experiment.soc, rounds=self.exp_cfg["rounds"], progress=self.qick_verbose) # rounds used to be soft_avgs before
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
             freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)

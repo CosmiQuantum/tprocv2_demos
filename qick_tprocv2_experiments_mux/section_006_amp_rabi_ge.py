@@ -100,10 +100,10 @@ class AmplitudeRabiExperiment:
                 # The QICK will run the 'body' method in AmplitudeRabiProgram repeatedly for the iterations set in the
                 # initalize loop when this aquire def is used
                 if thresholding:
-                    iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=self.config["rounds"], threshold=self.experiment.readout_cfg["threshold"],
+                    iq_list = amp_rabi.acquire(self.experiment.soc, rounds=self.config["rounds"], threshold=self.experiment.readout_cfg["threshold"], # rounds used to be soft_avgs
                                                angle=self.experiment.readout_cfg["ro_phase"], progress=self.qick_verbose)
                 else:
-                    iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=self.config["rounds"], progress=self.qick_verbose)
+                    iq_list = amp_rabi.acquire(self.experiment.soc, rounds=self.config["rounds"], progress=self.qick_verbose)
 
                 I = iq_list[self.QubitIndex][0][ :, 0]
                 Q = iq_list[self.QubitIndex][0][ :, 1]

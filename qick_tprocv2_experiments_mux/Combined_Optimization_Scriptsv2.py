@@ -29,7 +29,7 @@ number_of_qubits = 6 # for QUIET 6, for NEXUS 4
 list_of_all_qubits = [0,1,2,3,4,5] # for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0, 1, 2, 3]
 
 # For Quiet
-substudy = "initial_opt_Q1Q5Q6"
+substudy = "1st_opt_newBox_allQs"
 outerFolder = os.path.join(f"/data/QICK_data/run10/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 
 opt_flags = {"res_leng_sweep": False, "2d_sweep": True}
@@ -52,12 +52,12 @@ n = 1  # Number of rounds
 n_loops = 1 # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [4]
+Qs = [0,1,2,3,4,5]
 
 # For 25dB DAC
-res_leng_vals = [5.4, 7.0, 8.0, 8.0, 6.8, 7.0] # 5.4, 6.6, 6.5, 6.8, 6.8, 7.0
-res_gain = [0.8164, 0.75, 0.6, 0.4, 0.7, 0.75]
-freq_offsets =[0,0,0,0,0,0]
+res_leng_vals = [5.4, 8.0, 8.0, 8.0, 6.8, 7.0]
+res_gain = [0.816, 0.415, 0.425, 0.35, 0.7667, 0.7833]
+freq_offsets =[-0.1111,0.0,-0.1,0,-0.5111,-0.1556]
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_freq_ge = [None] * 6 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
@@ -323,15 +323,15 @@ for QubitIndex in Qs:
             gain_steps = 6
 
         elif QubitIndex == 1:
-            gain_range = [0.70, 0.805]
+            gain_range = [0.40, 0.60]
             gain_steps = 6
 
         elif QubitIndex == 2:
-            gain_range = [0.55, 0.655] # [0.75, 0.855]
+            gain_range = [0.4, 0.6] # [0.75, 0.855]
             gain_steps = 6
 
         elif QubitIndex == 3:
-            gain_range = [0.35, 0.455]  # [0.55, 0.655]
+            gain_range = [0.3, 0.5]  # [0.55, 0.655]
             gain_steps = 6
 
         elif QubitIndex == 4:
@@ -349,7 +349,7 @@ for QubitIndex in Qs:
         reference_frequency = res_freq_ge[QubitIndex]
 
         if QubitIndex == 4:
-            freq_range = [reference_frequency - 0.6, reference_frequency - 0.2]  # Frequency range in MHz
+            freq_range = [reference_frequency - 0.4, reference_frequency - 0.0]  # Frequency range in MHz
         else:
             freq_range = [reference_frequency - 0.2, reference_frequency + 0.2] # Frequency range in MHz
 
