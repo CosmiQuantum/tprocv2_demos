@@ -73,7 +73,7 @@ save_shots_t2e = True
 save_shots_qspec_ef = True
 save_shots_rspec_ef = True
 
-Qs_to_look_at = [0,1,2,3,4,5] # only list the qubits you want to do the RR for
+Qs_to_look_at = [5] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run10'
@@ -91,9 +91,12 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss":
              "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
 
 # For 25dB DAC, 7/19/2026
-res_leng_vals = [5.4, 8.0, 8.0, 8.0, 6.8, 7.0]
-res_gain = [0.816, 0.415, 0.425, 0.35, 0.7667, 0.7833]
-freq_offsets =[-0.1111,0.0,-0.1,0,-0.5111,-0.1556]
+res_leng_vals = [5.5, 7.0, 6.75, 6.5, 6.2, 7.75]
+res_gain = [0.8157, 0.39, 0.425, 0.342, 0.7667, 0.7833]
+freq_offsets =[0.1111,0.0,-0.1,0,-0.5111,-0.1556]
+
+# res_gain = [0.816, 0.5667, 0.5667, 0.45, 0.7333, 0.7667]
+# freq_offsets =[0.1111, 0.0222, -0.2000,-0.2000,-0.0444,-0.1556]
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
@@ -106,7 +109,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts, round_robin_benchmark
-sub_study = 'new_QICK_box_tests' # Q1_cooldown_data, debugging_rspec_noise
+sub_study = 'new_QICK_box_optimizing' # Q1_cooldown_data, debugging_rspec_noise
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -247,15 +250,15 @@ while j < n:
                 # if QubitIndex == 5:
                 #     increase_geres_reps = True
                 #     increase_geres_reps_to = 400 #400
-                # if QubitIndex == 3:
-                #     increase_geres_reps = True
-                #     increase_geres_reps_to = 600
+                if QubitIndex == 3:
+                    increase_geres_reps = True
+                    increase_geres_reps_to = 900
                 if QubitIndex == 1:
                     increase_geres_reps = True
-                    increase_geres_reps_to = 1500
+                    increase_geres_reps_to = 900
                 if QubitIndex == 2:
                     increase_geres_reps = True
-                    increase_geres_reps_to = 1500
+                    increase_geres_reps_to = 900
                 # if QubitIndex == 4:
                 #     use_savgol_smoothing_rspec = True
                 #     increase_geres_reps = True
@@ -291,21 +294,21 @@ while j < n:
                 qspecge_increase_reps_to = None
                 increase_qspec_rounds_to = None
 
-                # if QubitIndex == 5:
-                    # increase_qubit_reps_qspec = True
-                    # qspecge_increase_reps_to = 650
+                if QubitIndex == 5:
+                    increase_qubit_reps_qspec = True
+                    qspecge_increase_reps_to = 700
                     # increase_qspec_rounds = True
                     # increase_qspec_rounds_to = 2
 
-                if QubitIndex == 4:
-                    increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 1800
-                    # increase_qspec_rounds = True
-                    # increase_qspec_rounds_to = 2
+                # if QubitIndex == 4:
+                #     increase_qubit_reps_qspec = True
+                #     qspecge_increase_reps_to = 800
+                #     # increase_qspec_rounds = True
+                #     # increase_qspec_rounds_to = 2
 
                 if QubitIndex == 3:
                     increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 1200
+                    qspecge_increase_reps_to = 1600
                 #     # increase_qspec_rounds = True
                 #     # increase_qspec_rounds_to = 3
                 #
@@ -376,14 +379,25 @@ while j < n:
                 reduce_rlx_delay_gerabi = False
                 reduce_rlx_delay_gerabi_to = None
 
-                # if QubitIndex == 3:
-                #     increase_qubit_reps_gerabi = True
-                #     qubit_to_increase_gerabi_reps_for = QubitIndex
-
-                if QubitIndex == 4:
+                if QubitIndex == 3:
                     increase_qubit_reps_gerabi = True
                     qubit_to_increase_gerabi_reps_for = QubitIndex
-                    multiply_gerabi_reps_by = 4
+                    multiply_gerabi_reps_by = 3
+
+                # if QubitIndex == 4:
+                #     increase_qubit_reps_gerabi = True
+                #     qubit_to_increase_gerabi_reps_for = QubitIndex
+                #     multiply_gerabi_reps_by = 4
+
+                if QubitIndex == 1:
+                    increase_qubit_reps_gerabi = True
+                    qubit_to_increase_gerabi_reps_for = QubitIndex
+                    multiply_gerabi_reps_by = 3
+
+                if QubitIndex == 2:
+                    increase_qubit_reps_gerabi = True
+                    qubit_to_increase_gerabi_reps_for = QubitIndex
+                    multiply_gerabi_reps_by = 3
 
                 # if QubitIndex == 0:
                 #     increase_qubit_reps_gerabi = True
@@ -391,9 +405,9 @@ while j < n:
                 #     multiply_gerabi_reps_by = 2
 
                 if QubitIndex == 5:
-                    increase_qubit_reps_gerabi = True
-                    qubit_to_increase_gerabi_reps_for = QubitIndex
-                    multiply_gerabi_reps_by = 2
+                    # increase_qubit_reps_gerabi = True
+                    # qubit_to_increase_gerabi_reps_for = QubitIndex
+                    # multiply_gerabi_reps_by = 2
                     reduce_rlx_delay_gerabi = True
                     reduce_rlx_delay_gerabi_to = 650
 
