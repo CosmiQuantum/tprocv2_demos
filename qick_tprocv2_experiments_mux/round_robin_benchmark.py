@@ -73,7 +73,7 @@ save_shots_t2e = True
 save_shots_qspec_ef = True
 save_shots_rspec_ef = True
 
-Qs_to_look_at = [5] # only list the qubits you want to do the RR for
+Qs_to_look_at = [4] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run10'
@@ -86,14 +86,14 @@ substudy_txt_notes = ('debugging\n')
 #              "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
 #              "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
 
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
-             "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
-             "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": False,
+             "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
+             "rabi_pop_meas": True, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
 
-# For 25dB DAC, 7/19/2026
+# For 25dB DAC
 res_leng_vals = [5.5, 7.0, 6.75, 6.5, 6.2, 7.75]
-res_gain = [0.8157, 0.39, 0.425, 0.342, 0.7667, 0.7833]
-freq_offsets =[0.1111,0.0,-0.1,0,-0.5111,-0.1556]
+res_gain = [0.8157, 0.4667, 0.445, 0.4833, 0.7667, 0.7917]
+freq_offsets =[0.1111,0.0667,-0.1111,-0.2,-0.5111,-0.1111]
 
 # res_gain = [0.816, 0.5667, 0.5667, 0.45, 0.7333, 0.7667]
 # freq_offsets =[0.1111, 0.0222, -0.2000,-0.2000,-0.0444,-0.1556]

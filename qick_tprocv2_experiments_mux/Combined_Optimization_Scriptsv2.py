@@ -52,12 +52,12 @@ n = 1  # Number of rounds
 n_loops = 1 # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [1,2,3,5]
+Qs = [5]
 
 # For 25dB DAC
 res_leng_vals = [5.5, 7.0, 6.75, 6.5, 6.2, 7.75]
-res_gain = [0.8157, 0.39, 0.425, 0.342, 0.7667, 0.7833]
-freq_offsets =[0.1111,0.0,-0.1,0,-0.5111,-0.1556]
+res_gain = [0.8157, 0.4667, 0.4500, 0.4833, 0.7667, 0.7917]
+freq_offsets =[0.1111,0.0667,-0.1111,-0.2,-0.5111,-0.1111]
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_freq_ge = [None] * 6 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
