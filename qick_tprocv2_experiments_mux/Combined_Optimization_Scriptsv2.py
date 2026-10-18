@@ -32,8 +32,8 @@ list_of_all_qubits = [0,1,2,3,4,5] # for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0,
 substudy = "1st_opt_newBox_allQs"
 outerFolder = os.path.join(f"/data/QICK_data/run10/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 
-opt_flags = {"res_leng_sweep": False, "2d_sweep": True}
-save_figs_ss = False # do you want to save SSF pics as you run the readout optimization sweeps?
+opt_flags = {"res_leng_sweep": True, "2d_sweep": False}
+save_figs_ss = True # do you want to save SSF pics as you run the readout optimization sweeps?
 
 def create_folder_if_not_exists(folder_path):
     """Creates a folder at the given path if it doesn't already exist."""
@@ -55,8 +55,8 @@ n_loops = 1 # Number of repetitions per length to average
 Qs = [5]
 
 # For 25dB DAC
-res_leng_vals = [5.5, 7.0, 6.75, 6.5, 6.2, 7.75]
-res_gain = [0.8157, 0.4667, 0.4500, 0.4833, 0.7667, 0.7917]
+res_leng_vals = [5.2, 5.5, 6.75, 6.5, 6.5, 8.25]
+res_gain = [0.816, 0.37, 0.41, 0.4833, 0.66, 0.85]
 freq_offsets =[0.1111,0.0667,-0.1111,-0.2,-0.5111,-0.1111]
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
@@ -72,9 +72,9 @@ for QubitIndex in Qs:
     if QubitIndex == 0:
         lengs = np.arange(5.0, 5.8, 0.1)
     elif QubitIndex == 5:
-        lengs = np.arange(5.0, 9.0, 0.25)
+        lengs = np.arange(7.0, 8.0, 0.1)
     else:
-        lengs = np.arange(4.0, 8.0, 0.25)
+        lengs = np.arange(5.0, 8.0, 0.25)
 
     recycled_qfreq = False  # don't change
 

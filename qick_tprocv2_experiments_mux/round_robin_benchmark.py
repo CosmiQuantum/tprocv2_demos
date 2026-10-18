@@ -55,7 +55,7 @@ save_data_h5 = True  # save all of the data to h5 files?
 
 verbose = True  # print everything to the console in real time, good for debugging, bad for memory
 qick_verbose = True  # qick verbose prints the progress bar for each qick experiment as it is happening (the red bar that fills out as more experiment rounds/reps are being done)
-debug_mode = True  # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
+debug_mode = False  # if True, it disables the continuing function of RR if an error pops up in a class -- errors now stop the RR script
 
 thresholding = False  # use internal QICK threshold for ratio of Binary values on y for rabi/t1/t2r/t2e, or analog avg when false
 unmask = True  # Do you want to use the unmasking feature to increase resonator gain? This may not apply to LOUD
@@ -73,12 +73,12 @@ save_shots_t2e = True
 save_shots_qspec_ef = True
 save_shots_rspec_ef = True
 
-Qs_to_look_at = [4] # only list the qubits you want to do the RR for
+Qs_to_look_at = [5] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run10'
 device_name = '6transmon'
-substudy_txt_notes = ('debugging\n')
+substudy_txt_notes = ('Qubit environment is still cooling.\n')
 
 # set which of the following you'd like to run to 'True'
 
@@ -86,13 +86,13 @@ substudy_txt_notes = ('debugging\n')
 #              "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
 #              "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
 
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": False,
-             "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
-             "rabi_pop_meas": True, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
+run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
+             "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
+             "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
 
 # For 25dB DAC
-res_leng_vals = [5.5, 7.0, 6.75, 6.5, 6.2, 7.75]
-res_gain = [0.8157, 0.4667, 0.445, 0.4833, 0.7667, 0.7917]
+res_leng_vals = [5.2, 5.5, 6.75, 6.5, 6.5, 7.8]
+res_gain = [0.816, 0.37, 0.41, 0.4833, 0.66, 0.845]
 freq_offsets =[0.1111,0.0667,-0.1111,-0.2,-0.5111,-0.1111]
 
 # res_gain = [0.816, 0.5667, 0.5667, 0.45, 0.7333, 0.7667]
@@ -300,9 +300,9 @@ while j < n:
                     # increase_qspec_rounds = True
                     # increase_qspec_rounds_to = 2
 
-                # if QubitIndex == 4:
-                #     increase_qubit_reps_qspec = True
-                #     qspecge_increase_reps_to = 800
+                if QubitIndex == 4:
+                    increase_qubit_reps_qspec = True
+                    qspecge_increase_reps_to = 600
                 #     # increase_qspec_rounds = True
                 #     # increase_qspec_rounds_to = 2
 
@@ -392,12 +392,12 @@ while j < n:
                 if QubitIndex == 1:
                     increase_qubit_reps_gerabi = True
                     qubit_to_increase_gerabi_reps_for = QubitIndex
-                    multiply_gerabi_reps_by = 3
+                    multiply_gerabi_reps_by = 4
 
                 if QubitIndex == 2:
                     increase_qubit_reps_gerabi = True
                     qubit_to_increase_gerabi_reps_for = QubitIndex
-                    multiply_gerabi_reps_by = 3
+                    multiply_gerabi_reps_by = 4
 
                 # if QubitIndex == 0:
                 #     increase_qubit_reps_gerabi = True
@@ -540,11 +540,11 @@ while j < n:
                                                           reduce_rlx_delay_to = reduce_rlx_delay_efrspec_to, save_shots = save_shots_rspec_ef)
                     ef_res_freq, ef_freq_pts, ef_freq_center, ef_amps, efres_I, efres_Q, efres_Ishots, efres_Qshots, config_rspec_ef, meas_timestamp_resef = ef_res_spec.run()
 
-                    # ---Temporary: new ---------------------
-                    if QubitIndex == 4:
-                        offset = freq_offsets[QubitIndex]
-                        ef_res_freq[QubitIndex] += offset
-                     # ----------------------------------------
+                    # # ---Temporary: new ---------------------
+                    # if QubitIndex == 4:
+                    #     offset = freq_offsets[QubitIndex]
+                    #     ef_res_freq[QubitIndex] += offset
+                    #  # ----------------------------------------
 
                     ef_res_freq_samples.append(ef_res_freq)
                     rr_logger.info(f"EF ResSpec sample {sample} for qubit {QubitIndex + 1}: {ef_res_freq}")
@@ -718,13 +718,13 @@ while j < n:
 
                     if QubitIndex == 5:
                         increase_qubit_reps2_rpm = True
-                        increase_qubit_reps2_rpm_to = 7400 # 7400, 20000
+                        increase_qubit_reps2_rpm_to = 7000 # 7400, 20000
                         reduce_rlx_delay_rpm = True
                         reduce_rlx_delay_rpm_to = 650
                     #
-                    if QubitIndex == 4:
-                        increase_qubit_reps2_rpm = True
-                        increase_qubit_reps2_rpm_to = 3400
+                    # if QubitIndex == 4:
+                    #     increase_qubit_reps2_rpm = True
+                    #     increase_qubit_reps2_rpm_to = 3400
                     #
                     # if QubitIndex == 3:
                     #     increase_qubit_reps_rpm = True

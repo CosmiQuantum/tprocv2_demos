@@ -33,7 +33,7 @@ if FRIDGE == "QUIET":
         # },
 
         "res_spec": {
-            "reps": 500, #500 # 300
+            "reps": 400, #500 # 300
             "rounds": 1,
             "start": -1.55,   # -1.7   # MHz
             "step_size": 0.035,  # MHz
@@ -63,7 +63,7 @@ if FRIDGE == "QUIET":
         # },
 
         "res_spec_ef": {
-            "reps": 500, # 300
+            "reps": 400, # 300
             "rounds": 1,
             "start": -1.4,       # MHz
             "step_size": 0.04,   # MHz
@@ -182,7 +182,7 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ge": {
-            "reps": 105,#115,
+            "reps": 115,#115,
             "rounds": 1,  # 5
             "start": [0] * 6,  # [DAC units]
             "stop": [1] * 6,#[1.0] * 6,  # [DAC units]
@@ -234,7 +234,7 @@ if FRIDGE == "QUIET":
 
         "power_rabi_ef": {
             "reps": 280,#120,400 # for Pg pulse sequence during rpm, or regular ef rabi
-            "reps2": 5000, #5500 #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures (rpm). Pe pulse sequence
+            "reps2": 4000, #5000 #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures (rpm). Pe pulse sequence
             "rounds": 1,
             "start": [0.0] * 6,  # [DAC units]
             "stop": [1.0] * 6,  # [DAC units]
