@@ -173,6 +173,9 @@ class SingleShot:
 
 
     def fidelity_test(self, soccfg, soc):
+        ### This program is used to return fidelities from the 2D sweeps during readout optimization
+        ### Should change the name of the function in the future to be more intuitive
+
         # Run the single shot programs (g and e)
         ssp_g = SingleShotProgram_g(soccfg,  reps=1, final_delay=self.config['relax_delay'],
                                     cfg=self.config)
@@ -985,10 +988,6 @@ class SingleShot:
             fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
             plt.close(fig)
 
-
-
-
-
         return fid, threshold, theta, ig_new, ie_new
 
     def create_folder_if_not_exists(self, folder):
@@ -1053,7 +1052,7 @@ class GainFrequencySweep:
                 # Initialize SingleShotGE instance for fidelity calculation
                 round_num = 0
                 plots_path = self.output_folder + "/documentation/"
-                single_shot = SingleShot(self.qubit_index, self.number_of_qubits,  plots_path, round_num, self.save_figs, fresh_experiment, unmasking_resgain = self.unmasking_resgain)
+                single_shot = SingleShot(self.qubit_index, self.number_of_qubits,  plots_path, round_num, self.save_figs, fresh_experiment, unmasking_resgain = self.unmasking_resgain, save_shots = False)
                 fidelity = single_shot.fidelity_test(fresh_experiment.soccfg, fresh_experiment.soc)
                 fid_results.append(fidelity)
                 del fresh_experiment

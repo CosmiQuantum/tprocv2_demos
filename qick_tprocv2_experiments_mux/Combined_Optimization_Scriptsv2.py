@@ -52,12 +52,12 @@ n = 1  # Number of rounds
 n_loops = 1 # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [5]
+Qs = [2]
 
 # For 25dB DAC
-res_leng_vals = [5.2, 5.5, 6.75, 6.5, 6.5, 8.25]
-res_gain = [0.816, 0.37, 0.41, 0.4833, 0.66, 0.85]
-freq_offsets =[0.1111,0.0667,-0.1111,-0.2,-0.5111,-0.1111]
+res_leng_vals = [5.2, 6.5, 6.75, 6.5, 6.5, 7.8]
+res_gain = [0.816, 0.285, 0.4, 0.482, 0.66, 0.845]
+freq_offsets =[0.1111,0.0222,-0.1111,-0.2,-0.5111,-0.1111]
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_freq_ge = [None] * 6 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
@@ -74,7 +74,7 @@ for QubitIndex in Qs:
     elif QubitIndex == 5:
         lengs = np.arange(7.0, 8.0, 0.1)
     else:
-        lengs = np.arange(5.0, 8.0, 0.25)
+        lengs = np.arange(8.0, 9.6, 0.2)
 
     recycled_qfreq = False  # don't change
 
@@ -161,7 +161,7 @@ for QubitIndex in Qs:
     #
     if QubitIndex == 2:
         increase_qubit_reps_qspec = True
-        qspecge_increase_reps_to = 1300
+        qspecge_increase_reps_to = 1400
 
     if QubitIndex == 1:
         increase_qubit_reps_qspec = True
@@ -366,17 +366,17 @@ for QubitIndex in Qs:
 
         ## punchout thresholds run 9d: [1.0, 0.886, 1.0, 0.85, 0.825, 1.0] 25dB, [0.8, 0.75, 0.8, 0.5, 0.65, 0.8] 20dB
         # Define sweeping parameters
-        # [0.8157, 0.39, 0.425, 0.342, 0.7667, 0.7833]
+        # [0.816, 0.363, 0.41, 0.482, 0.66, 0.845]
         if QubitIndex == 0:
             gain_range = [0.80, 0.83] #[0.70, 0.86]
             gain_steps = 6
 
         elif QubitIndex == 1:
-            gain_range = [0.30, 0.50]
-            gain_steps = 12
+            gain_range = [0.363, 0.3635]
+            gain_steps = 1
 
         elif QubitIndex == 2:
-            gain_range = [0.3, 0.5] # [0.75, 0.855]
+            gain_range = [0.3, 0.45] # [0.75, 0.855]
             gain_steps = 12
 
         elif QubitIndex == 3:
