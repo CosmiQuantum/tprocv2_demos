@@ -46,7 +46,7 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 200
 
-run_num_list = [9.3] # options: 4,5,6,7,8,9, 9.2 (run 9c), 9.3 (run 9d)
+run_num_list = [10] # options: 4,5,6,7,8,9, 9.2 (run 9c), 9.3 (run 9d), 10
 t1_vals_by_run  = {}
 res_lengths_by_run = {}
 t2r_vals_by_run = {}
@@ -60,6 +60,29 @@ qfreq_errs_by_run = {}
 
 for run_number in run_num_list:
     print(f'Processing run {run_number} data.')
+    if run_number == 10: # run 10
+        process_shots_t1ge = False # the option exists for this run, but for analysis consistency w initial runs we keep it off unless necessary.
+        per_pt_errs_t1 = False
+        run_name = 'run10/6transmon/round_robin_benchmark' # round_robin_benchmark, active_reset
+        data_path =  f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
+        plots_path =  "/home/acolonce/Documents/analysis/coherence" #cosmiqserver01
+
+        top_folder_dates = [
+            f"Q1_cooldown_data_1/2026-10-12_23-07-56",
+            f"Q1_cooldown_data_1/2026-10-12_22-53-24",
+
+            f"Q1_cooldown_data_2/2026-10-14_00-46-04",
+            f"Q1_cooldown_data_2/2026-10-14_00-27-25"
+
+            f"Q1Q3Q5Q6_cooldown_data/2026-10-19_16-23-46",
+            f"Q1Q3Q5Q6_cooldown_data/2026-10-19_15-35-38",
+            f"Q1Q3Q5Q6_cooldown_data/2026-10-19_14-35-31",
+            f"Q1Q3Q5Q6_cooldown_data/2026-10-19_13-12-28",
+            f"Q1Q3Q5Q6_cooldown_data/2026-10-19_11-57-25",
+
+            f"cooldown_data_noQ2/2026-10-19_23-40-06"
+        ]
+
     if run_number == 9.3: # run 9d
         print('(this is actually run 9d, we just label it run 9.3)')
         process_shots_t1ge = False # the option exists for this run, but for analysis consistency w initial runs we keep it off unless necessary.
@@ -603,7 +626,7 @@ for run_number in run_num_list:
 
 # ################################################ 06: T1 vs Time Plots #################################################
 # t1_vs_time.plot_without_errs(date_times_t1, t1_vals, show_legends)
-#t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends) # shows error bars, do this one!!
+t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends) # shows error bars, do this one!!
 
 # For July 20 run 9d tests
 # t1_vs_time.plot_with_errs_single_plot(date_times_t1,t1_vals,t1_fit_err,
@@ -981,18 +1004,18 @@ for run_number in run_num_list:
 
 #------------------------ New way for AB Paper, by Arianna -------------------------------------------
 ## Coherence box plots
-boxwhisker_t1t2_per_qubit_vs_run(
-    run_num_list,
-    t1_vals_by_run=t1_vals_by_run,
-    t2r_vals_by_run=t2r_vals_by_run,
-    t2e_vals_by_run=t2e_vals_by_run,
-    do_T1=True, do_T2R=False, do_T2E=False,
-    ylims=(0, 130),
-    yticks=np.arange(0, 131, 20),
-    mode="separate",
-    save_plt_path = "/home/acolonce/Documents/analysis/multirun/coherence" #cosmiqserver01
-                    # '/data/QICK_data/multirun_analysis/coherence_analysis' #daq01
-)
+# boxwhisker_t1t2_per_qubit_vs_run(
+#     run_num_list,
+#     t1_vals_by_run=t1_vals_by_run,
+#     t2r_vals_by_run=t2r_vals_by_run,
+#     t2e_vals_by_run=t2e_vals_by_run,
+#     do_T1=True, do_T2R=False, do_T2E=False,
+#     ylims=(0, 130),
+#     yticks=np.arange(0, 131, 20),
+#     mode="separate",
+#     save_plt_path = "/home/acolonce/Documents/analysis/multirun/coherence" #cosmiqserver01
+#                     # '/data/QICK_data/multirun_analysis/coherence_analysis' #daq01
+# )
 #
 # boxwhisker_t1t2_per_qubit_vs_run(
 #     run_num_list,
