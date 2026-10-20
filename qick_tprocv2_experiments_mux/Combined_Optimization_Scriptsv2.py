@@ -52,12 +52,12 @@ n = 1  # Number of rounds
 n_loops = 1 # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [2]
+Qs = [1]
 
 # For 25dB DAC
-res_leng_vals = [5.2, 6.5, 6.75, 6.5, 6.5, 7.8]
-res_gain = [0.816, 0.285, 0.4, 0.482, 0.66, 0.845]
-freq_offsets =[0.1111,0.0222,-0.1111,-0.2,-0.5111,-0.1111]
+res_leng_vals = [5.6, 8.8, 8.8, 8.8, 6.5, 7.8]
+res_gain = [0.8124, 0.283, 0.4, 0.4, 0.66, 0.84]
+freq_offsets =[0.1111,-0.0222,-0.1111,-0.2,-0.5111,-0.1111]
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_freq_ge = [None] * 6 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
@@ -70,11 +70,11 @@ start=time.time()
 
 for QubitIndex in Qs:
     if QubitIndex == 0:
-        lengs = np.arange(5.0, 5.8, 0.1)
+        lengs = np.arange(5.1, 5.7, 0.1)
     elif QubitIndex == 5:
         lengs = np.arange(7.0, 8.0, 0.1)
     else:
-        lengs = np.arange(8.0, 9.6, 0.2)
+        lengs = np.arange(8.4, 9.6, 0.2)
 
     recycled_qfreq = False  # don't change
 
@@ -198,7 +198,7 @@ for QubitIndex in Qs:
     if QubitIndex == 3:
         increase_qubit_reps_gerabi = True
         qubit_to_increase_gerabi_reps_for = QubitIndex
-        multiply_gerabi_reps_by = 3
+        multiply_gerabi_reps_by = 4
 
     # if QubitIndex == 4:
     #     increase_qubit_reps_gerabi = True
@@ -372,7 +372,7 @@ for QubitIndex in Qs:
             gain_steps = 6
 
         elif QubitIndex == 1:
-            gain_range = [0.363, 0.3635]
+            gain_range = [0.285, 0.2855]
             gain_steps = 1
 
         elif QubitIndex == 2:

@@ -48,7 +48,7 @@ for QubitIndex in Qs:
     increase_geres_reps = False
     increase_geres_reps_to = None
 
-    start_gain, stop_gain, num_points = 0.25, 0.3, 5
+    start_gain, stop_gain, num_points = 0.15, 0.32, 5
 
     # if QubitIndex == 0:
     #     start_gain, stop_gain, num_points =  0.70, 0.86, 5 # 0.8, 0.97, 5

@@ -5,7 +5,7 @@ FRIDGE = "QUIET"  # change to "NEXUS" as needed
 if FRIDGE == "QUIET":
     VNA_res = np.array([6235.301, 6295.915, 6356.9, 6426.875, 6493.5,6561.740]) # run 9d: [6236.2014, 6296.685, 6358.0, 6427.895, 6494.4, 6562.500]
     VNA_qubit = np.array([4233.85, 3862.62, 4205.25, 4518.66, 4525.54, 5071.19])  # run 9d: 4228.49, 3852.44, 4201.92, 4506.32, 4518.33, 5054.72
-    ef_qfreqs = np.array([4059.98, 3674.86, 4030.90, 4334.48, 4349.49, 4903.91]) # Qubit freqs e/f Transition, run 9c: 4055.94, 3675.69, 4022.54, 4329.42, 4343.53, 4886.5
+    ef_qfreqs = np.array([4059.98, 3674.86, 4030.90, 4347.03, 4350.37, 4903.91]) # Qubit freqs e/f Transition, run 9c: 4055.94, 3675.69, 4022.54, 4329.42, 4343.53, 4886.5
     fh_qfreqs = np.array([3820.97, 3450.85, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition, old run
     two_photon_qfreqs=np.array([4107.61, 3739.36, 4086.36, 4388.34, 4399.3, 4933.52]) # qubit freqs, two photon peak between ge and ef qubit freqs, old run
 
@@ -33,7 +33,7 @@ if FRIDGE == "QUIET":
         # },
 
         "res_spec": {
-            "reps": 400, #500 # 300
+            "reps": 1000, #415 # 300
             "rounds": 1,
             "start": -1.5,   # -1.7   # MHz
             "step_size": 0.03,  # MHz
@@ -63,37 +63,17 @@ if FRIDGE == "QUIET":
         # },
 
         "res_spec_ef": {
-            "reps": 400, # 300
+            "reps": 300, # 300
             "rounds": 1,
-            "start": -1.4,       # MHz
-            "step_size": 0.04,   # MHz
-            "steps": 70,
+            "start": -1.45,       # MHz
+            "step_size": 0.03,   # MHz
+            "steps": 95,
             "relax_delay": 900,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
 
-        # "qubit_spec_ge": { # broad search
-        #     "reps": 600,  # 300
-        #     "rounds": 1,  # 10
-        #     "start": list(VNA_qubit - 50),  # [MHz] #-300 #-15
-        #     "stop": list(VNA_qubit + 50),  # [MHz] #+15
-        #     "steps": 300,  # 100
-        #     "relax_delay": 10,  # 1000 # [us]
-        #     "list_of_all_qubits": list_of_all_qubits,
-        # },
-
-        # "qubit_spec_ge": { # Q5
-        #     "reps": 600,  # 300
-        #     "rounds": 1,  # 10
-        #     "start": list(VNA_qubit - 6),  # [MHz] #-300 #-15
-        #     "stop": list(VNA_qubit + 6),  # [MHz] #+15
-        #     "steps": 250,  # 100
-        #     "relax_delay": 10,  # 1000 # [us]
-        #     "list_of_all_qubits": list_of_all_qubits,
-        # },
-
         "qubit_spec_ge": { # RR
-            "reps": 500, #300
+            "reps": 300, #300
             "rounds": 1, #10
             "start": list(VNA_qubit-2.0), # [MHz], -2.0
             "stop": list(VNA_qubit+2.0), # [MHz], +2.0
@@ -134,17 +114,8 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
             "qze_mask": [],
         },
-        # "qubit_spec_ef": {
-        #     "reps": 2200,  # 300
-        #     "rounds": 1,  # 10
-        #     "start": list(ef_qfreqs - 195),  # [MHz] #-300
-        #     "stop": list(ef_qfreqs + 10),  # [MHz]
-        #     "steps": 400,  # 205 for -2 +2
-        #     "relax_delay": 900,  # 1000,  # [us]
-        #     "list_of_all_qubits": list_of_all_qubits,
-        # },
         "qubit_spec_ef": {
-            "reps": 1600,  # 2200
+            "reps": 1400,  # 2200
             "rounds": 1,  # 10
             "start": list(ef_qfreqs - 4),  # [MHz] #-4
             "stop": list(ef_qfreqs + 4),  # [MHz] +4
@@ -182,7 +153,7 @@ if FRIDGE == "QUIET":
         },
 
         "power_rabi_ge": {
-            "reps": 115,#115,
+            "reps": 105,#115,
             "rounds": 1,  # 5
             "start": [0] * 6,  # [DAC units]
             "stop": [1] * 6,#[1.0] * 6,  # [DAC units]
@@ -251,7 +222,7 @@ if FRIDGE == "QUIET":
             "relax_delay": 900,  # [us]
         },
         "T1_ge": {
-            "reps": 280, #300
+            "reps": 270, #300
             "rounds": 1, #1
             "start": [0.0] * 6,  # [us]
             "stop": [200]*6, #[250.0] * 6,  # [us]
@@ -386,7 +357,7 @@ if FRIDGE == "QUIET":
         },
 
         "Ramsey_ge": {
-            "reps": 400, #300
+            "reps": 380, #300
             "rounds": 1,#10
             "start": [0.0] * 6, # [us]
             "stop":  [60] * 6, # [us]
@@ -410,7 +381,7 @@ if FRIDGE == "QUIET":
         },
 
         "SpinEcho_ge": {
-            "reps": 370,
+            "reps": 345,
             "rounds": 1,
             "start": [0.0] * 6, # [us]
             "stop":  [80] * 6, # [us]
