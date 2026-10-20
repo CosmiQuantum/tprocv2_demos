@@ -36,7 +36,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1000000 # number of rounds
+n = 10000 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -49,7 +49,7 @@ figure_quality = 200
 
 signal = 'None'  # 'I', or 'Q' depending on where the signal is (after optimization). Keep as None
 save_figs = True  # save plots for everything as you go along the RR script?
-live_plot = False  # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
+live_plot = False  # Not currently working in this branch. for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
 fit_data = True  # fit the data here and save or plot the fits?
 save_data_h5 = True  # save all of the data to h5 files?
 
@@ -83,26 +83,22 @@ substudy_txt_notes = ('Qubit environment is still cooling.\n')
 # set which of the following you'd like to run to 'True'
 
 # run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
-#              "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
-#              "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": True, "t2e": True}
+#              "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
+#              "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
 
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
              "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
              "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
 
 # For 25dB DAC
-res_leng_vals = [5.6, 8.8, 8.8, 8.8, 6.5, 7.8]
-res_gain = [0.8124, 0.283, 0.4, 0.4, 0.66, 0.84]
+res_leng_vals = [5.3, 8.8, 8.6, 8.8, 5.8, 7.9]
+res_gain = [0.8124, 0.283, 0.4, 0.39, 0.72, 0.845]
 freq_offsets =[0.1111,-0.0222,-0.1111,-0.2,-0.5111,-0.1111]
-
-# res_gain = [0.816, 0.5667, 0.5667, 0.45, 0.7333, 0.7667]
-# freq_offsets =[0.1111, 0.0222, -0.2000,-0.2000,-0.0444,-0.1556]
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
 ef_qspec_any = False # what about ef qspec?
 rpm_any = False # and rabi population measurements?
-
 tof_any = False # same logic
 res_any = False
 qspec_any = False
@@ -119,7 +115,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts, round_robin_benchmark
-sub_study = 'cooldown_data_noQ2' # Q1_cooldown_data, debugging_rspec_noise, Q1Q3Q5Q6_cooldown_data
+sub_study = 'cooldown_data_noQ2_2' # Q1_cooldown_data, debugging_rspec_noise, Q1Q3Q5Q6_cooldown_data, new_QICK_box_optimizing
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -219,13 +215,11 @@ while j < n:
 
         recycled_qfreq = False # don't change
 
-        # keep these as False
+        # DO NOT TOUCH: keep these as False
         tof_survived = False
         ss_survived = False
-
         ef_res_spec_survived = False
         ef_qspec_survived = False
-
         ef_rabi_survived = False
         rpm_survived = False
         t1_survived = False
@@ -980,7 +974,7 @@ while j < n:
         if save_data_h5:
             # ---------------------Collect TOF Results----------------
             if run_flags["tof"] and tof_survived:
-                tof_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = meas_timestamp_tof
+                tof_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = meas_timestamp_tof # this is the file timsetamp
                 tof_data[QubitIndex]['Time'][j - batch_num * save_r - 1] = t
                 tof_data[QubitIndex]['I'][j - batch_num * save_r - 1] = tof_I
                 tof_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = tof_Q
@@ -991,7 +985,7 @@ while j < n:
                 tof_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
                 tof_data[QubitIndex]['Exp Config'][j - batch_num * save_r - 1] = expt_cfg
                 tof_data[QubitIndex]['Syst Config'][j - batch_num * save_r - 1] = config_tof
-                tof_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_tof
+                tof_data[QubitIndex]['measurement_timestamp'][j - batch_num * save_r - 1] = meas_timestamp_tof # this is the measurement timestamp
                 tof_any = True
 
             # ---------------------Collect g-e Res Spec Results----------------

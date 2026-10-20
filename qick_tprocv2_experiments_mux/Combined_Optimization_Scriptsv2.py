@@ -29,7 +29,7 @@ number_of_qubits = 6 # for QUIET 6, for NEXUS 4
 list_of_all_qubits = [0,1,2,3,4,5] # for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0, 1, 2, 3]
 
 # For Quiet
-substudy = "1st_opt_newBox_allQs"
+substudy = "opt_newBox_allQs"
 outerFolder = os.path.join(f"/data/QICK_data/run10/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 
 opt_flags = {"res_leng_sweep": True, "2d_sweep": False}
@@ -52,11 +52,11 @@ n = 1  # Number of rounds
 n_loops = 1 # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [1]
+Qs = [3]
 
 # For 25dB DAC
 res_leng_vals = [5.6, 8.8, 8.8, 8.8, 6.5, 7.8]
-res_gain = [0.8124, 0.283, 0.4, 0.4, 0.66, 0.84]
+res_gain = [0.8124, 0.283, 0.4, 0.39, 0.72, 0.84]
 freq_offsets =[0.1111,-0.0222,-0.1111,-0.2,-0.5111,-0.1111]
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
@@ -70,11 +70,11 @@ start=time.time()
 
 for QubitIndex in Qs:
     if QubitIndex == 0:
-        lengs = np.arange(5.1, 5.7, 0.1)
+        lengs = np.arange(5.0, 5.6, 0.1)
     elif QubitIndex == 5:
-        lengs = np.arange(7.0, 8.0, 0.1)
+        lengs = np.arange(7.6, 8.0, 0.1)
     else:
-        lengs = np.arange(8.4, 9.6, 0.2)
+        lengs = np.arange(8.6, 9.4, 0.1)
 
     recycled_qfreq = False  # don't change
 
