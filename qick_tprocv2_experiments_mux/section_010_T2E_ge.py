@@ -595,11 +595,11 @@ class T2EMeasurement:
             I, Q, delay_times = self.live_plotting(echo, thresholding)
         else:
             if thresholding:
-                iq_list = echo.acquire(self.experiment.soc, rounds=self.config['rounds'], # rounds qick param used to be soft_avgs
+                iq_list = echo.acquire(self.experiment.soc, soft_avgs=self.config['rounds'],
                                            threshold=self.experiment.readout_cfg["threshold"],
                                            angle=self.experiment.readout_cfg["ro_phase"], progress=self.qick_verbose)
             else:
-                iq_list = echo.acquire(self.experiment.soc, rounds=self.config['rounds'], progress=self.qick_verbose) # rounds qick param used to be soft_avgs
+                iq_list = echo.acquire(self.experiment.soc, soft_avgs=self.config['rounds'], progress=self.qick_verbose)
 
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]

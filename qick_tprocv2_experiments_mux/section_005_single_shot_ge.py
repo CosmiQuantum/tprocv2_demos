@@ -179,11 +179,11 @@ class SingleShot:
         # Run the single shot programs (g and e)
         ssp_g = SingleShotProgram_g(soccfg,  reps=1, final_delay=self.config['relax_delay'],
                                     cfg=self.config)
-        iq_list_g = ssp_g.acquire(soc, rounds=1, progress=False) # rounds used to be soft_avgs
+        iq_list_g = ssp_g.acquire(soc, soft_avgs=1, progress=False)
 
         ssp_e = SingleShotProgram_e(soccfg,  reps=1, final_delay=self.config['relax_delay'],
                                     cfg=self.config)
-        iq_list_e = ssp_e.acquire(soc, rounds=1, progress=False) # rounds used to be soft_avgs
+        iq_list_e = ssp_e.acquire(soc, soft_avgs=1, progress=False)
 
         # Use the fidelity calculation from SingleShotGE
 
@@ -202,10 +202,10 @@ class SingleShot:
     def run(self, return_centers = False, active_reset = False):
         if active_reset:
             ssp_g = SingleShotProgram_g_active_reset(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'],cfg=self.config)
-            iq_list_g = ssp_g.acquire(self.experiment.soc, rounds=1, progress=True) # rounds used to be soft_avgs
+            iq_list_g = ssp_g.acquire(self.experiment.soc, soft_avgs=1, progress=True)
 
             ssp_e = SingleShotProgram_e_active_reset(self.experiment.soccfg, reps=1, final_delay=0.01,cfg=self.config)
-            iq_list_e = ssp_e.acquire(self.experiment.soc, rounds=1, progress=True) # rounds used to be soft_avgs
+            iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=True)
 
             raw_g = ssp_g.get_raw()
             raw_e = ssp_e.get_raw()
@@ -236,10 +236,10 @@ class SingleShot:
 
         else:
             ssp_g = SingleShotProgram_g(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
-            iq_list_g = ssp_g.acquire(self.experiment.soc, rounds=1, progress=True) # rounds used to be soft_avgs
+            iq_list_g = ssp_g.acquire(self.experiment.soc, soft_avgs=1, progress=True)
 
             ssp_e = SingleShotProgram_e(self.experiment.soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
-            iq_list_e = ssp_e.acquire(self.experiment.soc, rounds=1, progress=True) # # rounds used to be soft_avgs
+            iq_list_e = ssp_e.acquire(self.experiment.soc, soft_avgs=1, progress=True)
 
             if self.save_shots:
                 raw_g = ssp_g.get_raw()

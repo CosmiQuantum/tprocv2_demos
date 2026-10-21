@@ -56,7 +56,7 @@ class EF_AmplitudeRabiExperiment:
         if self.live_plot:
             I, Q, gains = self.live_plotting(amp_rabi, thresholding)
         else:
-            iq_list = amp_rabi.acquire(self.experiment.soc, rounds=self.config["rounds"], progress=self.qick_verbose) # rounds used to be soft_avgs
+            iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=self.config["rounds"], progress=self.qick_verbose)
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
 

@@ -65,7 +65,7 @@ class TOFExperiment:
                 self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
         prog = MuxProgram(self.experiment.soccfg, reps=1, final_delay=0.5, cfg=self.config)
-        iq_list = prog.acquire_decimated(self.experiment.soc, rounds=self.config['soft_avgs']) # rounds used to be called soft_avgs
+        iq_list = prog.acquire_decimated(self.experiment.soc, soft_avgs=self.config['soft_avgs'])
         measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
         t, iq_list, average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct = self.plot_results(prog, iq_list)
         

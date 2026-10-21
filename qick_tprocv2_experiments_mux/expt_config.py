@@ -33,7 +33,7 @@ if FRIDGE == "QUIET":
         # },
 
         "res_spec": {
-            "reps": 1000, #415 # 300
+            "reps": 400, #415 # 300
             "rounds": 1,
             "start": -1.5,   # -1.7   # MHz
             "step_size": 0.03,  # MHz
@@ -41,17 +41,6 @@ if FRIDGE == "QUIET":
             "relax_delay": 10,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
-        # "res_spec": { #zooming out
-        #     "reps": 270,
-        #     "rounds": 1,
-        #     "start": -8.0,  # MHz
-        #     "step_size": 0.16,  # MHz
-        #     "steps": 101,
-        #     "relax_delay": 10,  # us
-        #     "list_of_all_qubits": list_of_all_qubits,
-        # },
-
-
         # "res_spec_ef": { # for thomas roth data
         #     "reps": 3000,
         #     "rounds": 1,
@@ -73,11 +62,11 @@ if FRIDGE == "QUIET":
         },
 
         "qubit_spec_ge": { # RR
-            "reps": 300, #300
+            "reps": 270, #300
             "rounds": 1, #10
             "start": list(VNA_qubit-2.0), # [MHz], -2.0
             "stop": list(VNA_qubit+2.0), # [MHz], +2.0
-            "steps": 215, # 215 for -2 +2, 320 for -6 +6
+            "steps": 200, # 215 for -2 +2, 320 for -6 +6
             "relax_delay":10,#1000 # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -115,7 +104,7 @@ if FRIDGE == "QUIET":
             "qze_mask": [],
         },
         "qubit_spec_ef": {
-            "reps": 1400,  # 2200
+            "reps": 1350,  # 2200
             "rounds": 1,  # 10
             "start": list(ef_qfreqs - 4),  # [MHz] #-4
             "stop": list(ef_qfreqs + 4),  # [MHz] +4
@@ -157,7 +146,7 @@ if FRIDGE == "QUIET":
             "rounds": 1,  # 5
             "start": [0] * 6,  # [DAC units]
             "stop": [1] * 6,#[1.0] * 6,  # [DAC units]
-            "steps": 90, #50,
+            "steps": 88, #50,
             "relax_delay": 900,#1000,#1000,#1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
         },
@@ -381,7 +370,7 @@ if FRIDGE == "QUIET":
         },
 
         "SpinEcho_ge": {
-            "reps": 345,
+            "reps": 340,
             "rounds": 1,
             "start": [0.0] * 6, # [us]
             "stop":  [80] * 6, # [us]

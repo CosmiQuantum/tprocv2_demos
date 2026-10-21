@@ -69,7 +69,7 @@ class Temps_EFAmpRabiExperiment:
         if self.live_plot:
             I1, Q1, gains1 = self.live_plotting(amp_rabi1, soc)
         else:
-            iq_list1 = amp_rabi1.acquire(soc, rounds=self.config["rounds"], progress=True) # rounds qick param used to be soft_avgs
+            iq_list1 = amp_rabi1.acquire(soc, soft_avgs=self.config["rounds"], progress=True)
             I1 = iq_list1[self.QubitIndex][0, :, 0]
             Q1 = iq_list1[self.QubitIndex][0, :, 1]
             gains1 = amp_rabi1.get_pulse_param('qubit_pulse', "gain", as_array=True)
@@ -81,7 +81,7 @@ class Temps_EFAmpRabiExperiment:
         if self.live_plot:
             I2, Q2, gains2 = self.live_plotting(amp_rabi2, soc)
         else:
-            iq_list2 = amp_rabi2.acquire(soc, rounds=self.config["rounds"], progress=True) # rounds qick param used to be soft_avgs
+            iq_list2 = amp_rabi2.acquire(soc, soft_avgs=self.config["rounds"], progress=True)
             I2 = iq_list2[self.QubitIndex][0, :, 0]
             Q2 = iq_list2[self.QubitIndex][0, :, 1]
             gains2 = amp_rabi2.get_pulse_param('qubit_pulse', "gain", as_array=True)
@@ -117,7 +117,7 @@ class Temps_EFAmpRabiExperiment:
         assert viz.check_connection(timeout_seconds=5), "Visdom server not connected!"
 
         for ii in range(self.config["rounds"]):
-            iq_list = amp_rabi.acquire(soc, rounds=1, progress=True) # rounds qick param used to be soft_avgs
+            iq_list = amp_rabi.acquire(soc, soft_avgs=1, progress=True)
             gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
 
             this_I = iq_list[self.QubitIndex][0, :, 0]

@@ -108,11 +108,11 @@ class T1Measurement:
             t1 = T1Program_active_reset(self.experiment.soccfg, reps=self.config['reps'],final_delay=0.01, cfg=self.config)
 
             if thresholding:
-                iq_list = t1.acquire(self.experiment.soc, rounds=self.config['rounds'], # rounds qick param used to be soft_avgs
+                iq_list = t1.acquire(self.experiment.soc, soft_avgs=self.config['rounds'],
                                      threshold=self.experiment.readout_cfg["threshold"],
                                      angle=self.experiment.readout_cfg["ro_phase"], progress=True)
             else:
-                iq_list = t1.acquire(self.experiment.soc, rounds=self.config['rounds'], progress=True) # rounds uparam sed to be soft_avgs
+                iq_list = t1.acquire(self.experiment.soc, soft_avgs=self.config['rounds'], progress=True)
 
             iq_q = np.asarray(iq_list[self.QubitIndex])
             # print("Processed IQ shape:", iq_q.shape)
@@ -207,11 +207,11 @@ class T1Measurement:
                 I, Q, delay_times = self.live_plotting(t1, thresholding)
             else:
                 if thresholding:
-                    iq_list = t1.acquire(self.experiment.soc, rounds=self.config['rounds'], # rounds qick param used to be soft_avgs
+                    iq_list = t1.acquire(self.experiment.soc, soft_avgs=self.config['rounds'],
                                                threshold=self.experiment.readout_cfg["threshold"],
                                                angle=self.experiment.readout_cfg["ro_phase"], progress=True)
                 else:
-                    iq_list = t1.acquire(self.experiment.soc, rounds=self.config['rounds'], progress=True) # rounds qick param used to be soft_avgs
+                    iq_list = t1.acquire(self.experiment.soc, soft_avgs=self.config['rounds'], progress=True)
 
 
                 I = iq_list[self.QubitIndex][0, :, 0]
