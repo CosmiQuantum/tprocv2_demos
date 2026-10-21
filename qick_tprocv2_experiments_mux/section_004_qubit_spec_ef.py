@@ -8,7 +8,6 @@ from scipy.optimize import curve_fit
 import datetime
 import copy
 import logging
-import visdom
 import time
 
 class EFQubitSpectroscopy:
@@ -76,13 +75,10 @@ class EFQubitSpectroscopy:
 
         efqspec = EFPulseProbeSpectroscopyProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=0.5, cfg=self.config)
 
-        if self.live_plot:
-            efI, efQ, effreqs = self.live_plotting(efqspec, self.experiment.soc)
-        else:
-            efiq_list = efqspec.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=self.qick_verbose)
-            efI = efiq_list[self.QubitIndex][0, :, 0]
-            efQ = efiq_list[self.QubitIndex][0, :, 1]
-            effreqs = efqspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
+        efiq_list = efqspec.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=self.qick_verbose)
+        efI = efiq_list[self.QubitIndex][0, :, 0]
+        efQ = efiq_list[self.QubitIndex][0, :, 1]
+        effreqs = efqspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
 
         measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
         largest_amp_curve_mean, efI_fit, efQ_fit = self.plot_results(efI, efQ, effreqs, config = self.config)
@@ -96,28 +92,6 @@ class EFQubitSpectroscopy:
             efQshots = None
 
         return efI, efQ, efIshots, efQshots, effreqs , self.config, efI_fit, efQ_fit , largest_amp_curve_mean, measurement_timestamp
-
-    def live_plotting(self, qspec, soc):
-        I = Q = expt_mags = expt_phases = expt_pop = None
-        viz = visdom.Visdom()
-        assert viz.check_connection(timeout_seconds=5), "Visdom server not connected!"
-        viz.close(win=None)  # close previous plots
-        for ii in range(self.config["rounds"]):
-            iq_list = qspec.acquire(soc, soft_avgs=1, progress=True)
-            freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
-
-            this_I = iq_list[self.QubitIndex][0, :, 0]
-            this_Q = iq_list[self.QubitIndex][0, :, 1]
-
-            if I is None:  # ii == 0
-                I, Q = this_I, this_Q
-            else:
-                I = (I * ii + this_I) / (ii + 1.0)
-                Q = (Q * ii + this_Q) / (ii + 1.0)
-
-            viz.line(X=freqs, Y=I, opts=dict(height=400, width=700, title='Qubit Spectroscopy I', showlegend=True, xlabel='expt_pts'),win='QSpec_I')
-            viz.line(X=freqs, Y=Q, opts=dict(height=400, width=700, title='Qubit Spectroscopy Q', showlegend=True, xlabel='expt_pts'),win='QSpec_Q')
-        return I, Q, freqs
 
     def plot_results(self, I, Q, freqs, config=None, fig_quality=100):
         freqs = np.array(freqs)

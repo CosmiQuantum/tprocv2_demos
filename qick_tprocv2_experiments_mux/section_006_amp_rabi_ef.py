@@ -10,7 +10,6 @@ import copy
 from iminuit import Minuit
 import time
 import logging
-import visdom
 
 class EF_AmplitudeRabiExperiment:
     def __init__(self, QubitIndex, number_of_qubits, outerFolder, round_num, signal, save_shots=False, save_figs = True, experiment = None,
@@ -53,12 +52,9 @@ class EF_AmplitudeRabiExperiment:
     def run(self, thresholding=False, use_iminuit_instead = True):
         amp_rabi = EF_AmplitudeRabiProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
 
-        if self.live_plot:
-            I, Q, gains = self.live_plotting(amp_rabi, thresholding)
-        else:
-            iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=self.config["rounds"], progress=self.qick_verbose)
-            I = iq_list[self.QubitIndex][0, :, 0]
-            Q = iq_list[self.QubitIndex][0, :, 1]
+        iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=self.config["rounds"], progress=self.qick_verbose)
+        I = iq_list[self.QubitIndex][0, :, 0]
+        Q = iq_list[self.QubitIndex][0, :, 1]
 
         gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
         measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
@@ -74,28 +70,6 @@ class EF_AmplitudeRabiExperiment:
             Qshots = None
 
         return I, Q, Ishots, Qshots, gains, q1_fit_cosine, pi_amp, self.config, measurement_timestamp
-
-    def live_plotting(self, amp_rabi, soc):
-        I = Q = expt_mags = expt_phases = expt_pop = None
-        viz = visdom.Visdom()
-        assert viz.check_connection(timeout_seconds=5), "Visdom server not connected!"
-
-        for ii in range(self.config["rounds"]):
-            iq_list = amp_rabi.acquire(soc, soft_avgs=1, progress=True)
-            gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
-
-            this_I = iq_list[self.QubitIndex][0, :, 0]
-            this_Q = iq_list[self.QubitIndex][0, :, 1]
-
-            if I is None:  # ii == 0
-                I, Q = this_I, this_Q
-            else:
-                I = (I * ii + this_I) / (ii + 1.0)
-                Q = (Q * ii + this_Q) / (ii + 1.0)
-
-            viz.line(X=gains, Y=I, opts=dict(height=400, width=700, title='Rabi I', showlegend=True, xlabel='expt_pts'),win='Rabi_I')
-            viz.line(X=gains, Y=Q, opts=dict(height=400, width=700, title='Rabi Q', showlegend=True, xlabel='expt_pts'),win='Rabi_Q')
-        return I, Q, gains
 
     def cosine(self, x, a, b, c, d):
 

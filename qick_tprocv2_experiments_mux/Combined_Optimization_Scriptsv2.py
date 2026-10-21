@@ -2,7 +2,6 @@ import sys
 import os
 import numpy as np
 import datetime
-#sys.path.append(os.path.abspath("/home/qubituser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_004_qubit_spec_ge import QubitSpectroscopy
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
@@ -19,18 +18,18 @@ import copy
 
 signal = 'None' # Keep as 'None'
 save_figs = True   # save plots for everything as you go along the RR script?
-live_plot = False    # for live plotting open http://localhost:8097/ on firefox
+live_plot = False    # unused, live plotting has been removed
 fit_data = False # always set to False
 unmask = True
 FRIDGE = "QUIET"
 use_iminuit_instead = True # fitting options: iminuit or curve fit
 multiply_qubit_reps_by = 2 # (only used if other flags are set to True during RR)
-number_of_qubits = 6 # for QUIET 6, for NEXUS 4
-list_of_all_qubits = [0,1,2,3,4,5] # for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0, 1, 2, 3]
+number_of_qubits = 4
+list_of_all_qubits = [0,1,2,3]
 
 # For Quiet
 substudy = "opt_newBox_allQs"
-outerFolder = os.path.join(f"/data/QICK_data/run10/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
+outerFolder = os.path.join(f"/data/QICK_data/run10/entangling_chip/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 
 opt_flags = {"res_leng_sweep": False, "2d_sweep": True}
 save_figs_ss = False # do you want to save SSF pics as you run the readout optimization sweeps?
@@ -55,12 +54,17 @@ n_loops = 1 # Number of repetitions per length to average
 Qs = [1]
 
 # For 25dB DAC
-res_leng_vals = [5.3, 8.0, 8.6, 8.8, 5.8, 7.9]
-res_gain = [0.8124, 0.25, 0.4, 0.387, 0.72, 0.845]
-freq_offsets =[0.1111,-0.0222,-0.1111,-0.2,-0.5111,-0.1111]
+res_leng_vals = [5.3, 8.0, 8.6, 8.8]
+res_gain = [0.8124, 0.25, 0.4, 0.387]
+freq_offsets =[0.1111,-0.0222,-0.1111,-0.2]
 
-optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
-res_freq_ge = [None] * 6 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
+# Per-qubit sweep settings
+leng_sweep_ranges = [(5.0, 5.6, 0.1), (8.0, 10.0, 0.25), (8.0, 10.0, 0.25), (8.0, 10.0, 0.25)] # (start, stop, step) for the res length sweep
+gain_ranges = [[0.80, 0.83], [0.28, 0.281], [0.3, 0.45], [0.3, 0.5]] # res gain range for the 2D sweep
+gain_steps_list = [6, 1, 12, 12]
+
+optimal_lengths = [None] * number_of_qubits # creates list where the script will be storing the optimal readout lengths for each qubit.
+res_freq_ge = [None] * number_of_qubits # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
 
 j=0 # round number, from RR code. Not really used here since we just run it once for each qubit
 
@@ -69,12 +73,7 @@ j=0 # round number, from RR code. Not really used here since we just run it once
 start=time.time()
 
 for QubitIndex in Qs:
-    if QubitIndex == 0:
-        lengs = np.arange(5.0, 5.6, 0.1)
-    elif QubitIndex == 5:
-        lengs = np.arange(7.6, 8.0, 0.1)
-    else:
-        lengs = np.arange(8.0, 10.0, 0.25)
+    lengs = np.arange(*leng_sweep_ranges[QubitIndex])
 
     recycled_qfreq = False  # don't change
 
@@ -103,23 +102,6 @@ for QubitIndex in Qs:
     increase_geres_reps_to = None
     use_savgol_smoothing_rspec = False
 
-    # if QubitIndex == 5:
-    #     increase_geres_reps = True
-    #     increase_geres_reps_to = 400 #400
-    if QubitIndex == 3:
-        increase_geres_reps = True
-        increase_geres_reps_to = 900
-    if QubitIndex == 1:
-        increase_geres_reps = True
-        increase_geres_reps_to = 1000
-    if QubitIndex == 2:
-        increase_geres_reps = True
-        increase_geres_reps_to = 900
-    # if QubitIndex == 4:
-    #     use_savgol_smoothing_rspec = True
-    #     increase_geres_reps = True
-    #     increase_geres_reps_to = 1800
-
     res_spec = ResonanceSpectroscopy(QubitIndex, tot_num_of_qubits, outerfolder_plots, j, save_figs,
                                      increase_geres_reps,
                                      increase_geres_reps_to, experiment=experiment, unmasking_resgain=unmask,
@@ -140,36 +122,6 @@ for QubitIndex in Qs:
     increase_qspec_rounds = False
     qspecge_increase_reps_to = None
     increase_qspec_rounds_to = None
-
-    if QubitIndex == 5:
-        increase_qubit_reps_qspec = True
-        qspecge_increase_reps_to = 700
-        # increase_qspec_rounds = True
-        # increase_qspec_rounds_to = 2
-
-    # if QubitIndex == 4:
-    #     increase_qubit_reps_qspec = True
-    #     qspecge_increase_reps_to = 800
-    #     # increase_qspec_rounds = True
-    #     # increase_qspec_rounds_to = 2
-
-    if QubitIndex == 3:
-        increase_qubit_reps_qspec = True
-        qspecge_increase_reps_to = 1600
-    #     # increase_qspec_rounds = True
-    #     # increase_qspec_rounds_to = 3
-    #
-    if QubitIndex == 2:
-        increase_qubit_reps_qspec = True
-        qspecge_increase_reps_to = 1400
-
-    if QubitIndex == 1:
-        increase_qubit_reps_qspec = True
-        qspecge_increase_reps_to = 1200
-
-    # if QubitIndex == 0:
-    #     increase_qubit_reps_qspec = True
-    #     qspecge_increase_reps_to = 800
 
     q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, outerfolder_plots, j,
                                signal, save_figs, increase_reps=increase_qubit_reps_qspec,
@@ -194,38 +146,6 @@ for QubitIndex in Qs:
     multiply_gerabi_reps_by = 1
     reduce_rlx_delay_gerabi = False
     reduce_rlx_delay_gerabi_to = None
-
-    if QubitIndex == 3:
-        increase_qubit_reps_gerabi = True
-        qubit_to_increase_gerabi_reps_for = QubitIndex
-        multiply_gerabi_reps_by = 4
-
-    # if QubitIndex == 4:
-    #     increase_qubit_reps_gerabi = True
-    #     qubit_to_increase_gerabi_reps_for = QubitIndex
-    #     multiply_gerabi_reps_by = 4
-
-    if QubitIndex == 1:
-        increase_qubit_reps_gerabi = True
-        qubit_to_increase_gerabi_reps_for = QubitIndex
-        multiply_gerabi_reps_by = 4
-
-    if QubitIndex == 2:
-        increase_qubit_reps_gerabi = True
-        qubit_to_increase_gerabi_reps_for = QubitIndex
-        multiply_gerabi_reps_by = 3
-
-    # if QubitIndex == 0:
-    #     increase_qubit_reps_gerabi = True
-    #     qubit_to_increase_gerabi_reps_for = QubitIndex
-    #     multiply_gerabi_reps_by = 2
-
-    if QubitIndex == 5:
-        # increase_qubit_reps_gerabi = True
-        # qubit_to_increase_gerabi_reps_for = QubitIndex
-        # multiply_gerabi_reps_by = 2
-        reduce_rlx_delay_gerabi = True
-        reduce_rlx_delay_gerabi_to = 650
 
     rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, outerfolder_plots, j, signal,
                                    save_figs=save_figs, save_shots=False,
@@ -285,15 +205,7 @@ for QubitIndex in Qs:
                     res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=gain)
                     experiment.readout_cfg['res_gain_ge'] = res_gains
 
-                    # --- new (has not been implemented for the 2D sweep, only here for the res length one) ---
-                    reduce_rlx_delay_ssf = False
-                    reduce_rlx_delay_ssf_to = None
-                    if QubitIndex == 5:
-                        reduce_rlx_delay_ssf = True
-                        reduce_rlx_delay_ssf_to = 650
-                    #-------------------------------------------------------
-
-                    ss = SingleShot(QubitIndex, number_of_qubits, outerfolder_plots,  j, save_figs_ss, experiment, unmasking_resgain = unmask, reduce_rlx_delay = reduce_rlx_delay_ssf, reduce_rlx_delay_to = reduce_rlx_delay_ssf_to)
+                    ss = SingleShot(QubitIndex, number_of_qubits, outerfolder_plots,  j, save_figs_ss, experiment, unmasking_resgain = unmask)
                     fid, angle, thresh, iq_list_g, iq_list_e, raw_g, raw_e, ss_config, meas_timestamp_ssge = ss.run()
                     print(ss_config)
                     fids.append(fid)
@@ -366,31 +278,8 @@ for QubitIndex in Qs:
 
         ## punchout thresholds run 9d: [1.0, 0.886, 1.0, 0.85, 0.825, 1.0] 25dB, [0.8, 0.75, 0.8, 0.5, 0.65, 0.8] 20dB
         # Define sweeping parameters
-        # [0.816, 0.363, 0.41, 0.482, 0.66, 0.845]
-        if QubitIndex == 0:
-            gain_range = [0.80, 0.83] #[0.70, 0.86]
-            gain_steps = 6
-
-        elif QubitIndex == 1:
-            gain_range = [0.28, 0.281]
-            gain_steps = 1
-
-        elif QubitIndex == 2:
-            gain_range = [0.3, 0.45] # [0.75, 0.855]
-            gain_steps = 12
-
-        elif QubitIndex == 3:
-            gain_range = [0.3, 0.5]  # [0.55, 0.655]
-            gain_steps = 12
-
-        elif QubitIndex == 4:
-            gain_range = [0.60, 0.8]
-            gain_steps = 6
-
-        elif QubitIndex == 5:
-            gain_range = [0.70, 0.80]
-            gain_steps = 12
-
+        gain_range = gain_ranges[QubitIndex]
+        gain_steps = gain_steps_list[QubitIndex]
         freq_steps = 12 #9
 
         print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')

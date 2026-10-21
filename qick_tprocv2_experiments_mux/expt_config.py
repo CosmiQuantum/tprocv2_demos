@@ -3,14 +3,14 @@ import numpy as np
 FRIDGE = "QUIET"  # change to "NEXUS" as needed
 
 if FRIDGE == "QUIET":
-    VNA_res = np.array([6235.301, 6295.915, 6356.9, 6426.875, 6493.5,6561.740]) # run 9d: [6236.2014, 6296.685, 6358.0, 6427.895, 6494.4, 6562.500]
-    VNA_qubit = np.array([4233.85, 3862.62, 4205.25, 4518.66, 4525.54, 5071.19])  # run 9d: 4228.49, 3852.44, 4201.92, 4506.32, 4518.33, 5054.72
-    ef_qfreqs = np.array([4059.98, 3674.86, 4030.90, 4347.03, 4350.37, 4903.91]) # Qubit freqs e/f Transition, run 9c: 4055.94, 3675.69, 4022.54, 4329.42, 4343.53, 4886.5
-    fh_qfreqs = np.array([3820.97, 3450.85, 3798.97, 4110, 4660, 4660.28]) # Qubit freqs f/h Transition, old run
-    two_photon_qfreqs=np.array([4107.61, 3739.36, 4086.36, 4388.34, 4399.3, 4933.52]) # qubit freqs, two photon peak between ge and ef qubit freqs, old run
+    VNA_res = np.array([6235.301, 6295.915, 6356.9, 6426.875]) # run 9d: [6236.2014, 6296.685, 6358.0, 6427.895, 6494.4, 6562.500]
+    VNA_qubit = np.array([4233.85, 3862.62, 4205.25, 4518.66])  # run 9d: 4228.49, 3852.44, 4201.92, 4506.32, 4518.33, 5054.72
+    ef_qfreqs = np.array([4059.98, 3674.86, 4030.90, 4347.03]) # Qubit freqs e/f Transition, run 9c: 4055.94, 3675.69, 4022.54, 4329.42, 4343.53, 4886.5
+    fh_qfreqs = np.array([3820.97, 3450.85, 3798.97, 4110]) # Qubit freqs f/h Transition, old run
+    two_photon_qfreqs=np.array([4107.61, 3739.36, 4086.36, 4388.34]) # qubit freqs, two photon peak between ge and ef qubit freqs, old run
 
     # Set this for your experiment
-    tot_num_of_qubits = 6
+    tot_num_of_qubits = 4
 
     list_of_all_qubits = list(range(tot_num_of_qubits))
 
@@ -144,8 +144,8 @@ if FRIDGE == "QUIET":
         "power_rabi_ge": {
             "reps": 105,#115,
             "rounds": 1,  # 5
-            "start": [0] * 6,  # [DAC units]
-            "stop": [1] * 6,#[1.0] * 6,  # [DAC units]
+            "start": [0] * tot_num_of_qubits,  # [DAC units]
+            "stop": [1] * tot_num_of_qubits,#[1.0] * tot_num_of_qubits,  # [DAC units]
             "steps": 88, #50,
             "relax_delay": 900,#1000,#1000,#1000,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
@@ -154,8 +154,8 @@ if FRIDGE == "QUIET":
         "length_rabi_ge": {
             "reps": 100,#500,
             "rounds": 1,
-            "start": [0.01] * 6,  # [us]
-            "stop": [25] * 6,#[0.7] * 6,  # [us]
+            "start": [0.01] * tot_num_of_qubits,  # [us]
+            "stop": [25] * tot_num_of_qubits,#[0.7] * tot_num_of_qubits,  # [us]
             "steps": 500,
             "relax_delay": 900,# [us]
             "list_of_all_qubits": list_of_all_qubits,
@@ -164,8 +164,8 @@ if FRIDGE == "QUIET":
         "length_rabi_Qtemps": {
             "reps": 400,#500,
             "rounds": 1,
-            "start": [0.02] * 6,  # [us]
-            "stop": [2] * 6,#[0.7] * 6,  # [us]
+            "start": [0.02] * tot_num_of_qubits,  # [us]
+            "stop": [2] * tot_num_of_qubits,#[0.7] * tot_num_of_qubits,  # [us]
             "steps": 200,
             "relax_delay": 900,# [us]
             "list_of_all_qubits": list_of_all_qubits,
@@ -173,8 +173,8 @@ if FRIDGE == "QUIET":
         "length_rabi_ge_pi_len": { #for the zeno tests, bare qubit frequency rabi
             "reps": 300,  # 500,
             "rounds": 1,
-            "start": [0.01] * 6,  # [us]
-            "stop": [4] * 6,  # [0.7] * 6,  # [us]
+            "start": [0.01] * tot_num_of_qubits,  # [us]
+            "stop": [4] * tot_num_of_qubits,  # [0.7] * tot_num_of_qubits,  # [us]
             "steps": 60,
             "relax_delay": 900,  # [us]
             "list_of_all_qubits": list_of_all_qubits,
@@ -182,8 +182,8 @@ if FRIDGE == "QUIET":
         "length_rabi_ge_qze": {
             "reps": 400,  # 500,
             "rounds": 1, #600
-            "start": [0.01] * 6,  # [us]
-            "stop": [10] * 6,   #[3] * 6,   # [us]
+            "start": [0.01] * tot_num_of_qubits,  # [us]
+            "stop": [10] * tot_num_of_qubits,   #[3] * tot_num_of_qubits,   # [us]
             "steps": 150,  # 140,
             "relax_delay": 900,# [us]
             "list_of_all_qubits": list_of_all_qubits,
@@ -196,8 +196,8 @@ if FRIDGE == "QUIET":
             "reps": 280,#120,400 # for Pg pulse sequence during rpm, or regular ef rabi
             "reps2": 4000, #5000 #this is only used for the experiment that uses e-f rabi to calculate qubit temperatures (rpm). Pe pulse sequence
             "rounds": 1,
-            "start": [0.0] * 6,  # [DAC units]
-            "stop": [1.0] * 6,  # [DAC units]
+            "start": [0.0] * tot_num_of_qubits,  # [DAC units]
+            "stop": [1.0] * tot_num_of_qubits,  # [DAC units]
             "steps": 90, #110, 80 (run 9a)
             "relax_delay": 900,  # [us]
         },
@@ -205,16 +205,16 @@ if FRIDGE == "QUIET":
             "reps": 200,
             "reps2": 850,  # this is only used for the experiment that uses e-f rabi to calculate qubit temperatures.
             "rounds": 1,
-            "start": [0.0] * 6,  # [DAC units]
-            "stop": [1.0] * 6,  # [DAC units]
+            "start": [0.0] * tot_num_of_qubits,  # [DAC units]
+            "stop": [1.0] * tot_num_of_qubits,  # [DAC units]
             "steps": 155,
             "relax_delay": 900,  # [us]
         },
         "T1_ge": {
             "reps": 270, #300
             "rounds": 1, #1
-            "start": [0.0] * 6,  # [us]
-            "stop": [200]*6, #[250.0] * 6,  # [us]
+            "start": [0.0] * tot_num_of_qubits,  # [us]
+            "stop": [200] * tot_num_of_qubits, #[250.0] * tot_num_of_qubits,  # [us]
             "steps": 80,
             "relax_delay": 900,  # [us] ### Should be >10x T1!
             "wait_time": 0.0,  # [us]
@@ -224,8 +224,8 @@ if FRIDGE == "QUIET":
         "T1_IBM_qze": {
             "reps": 1000,  # 300
             "rounds": 1,  # 1
-            "start": [30] * 6,  # [us]
-            "stop": [31] * 6,  # [250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
+            "start": [30] * tot_num_of_qubits,  # [us]
+            "stop": [31] * tot_num_of_qubits,  # [250.0] * tot_num_of_qubits,  # [us] ### Should be ~10x T1! Should change this per qubit.
             "steps": 1,
             "relax_delay": 900,  # [us] ### Should be >10x T1!
             "wait_time": 30,  # [us]
@@ -235,8 +235,8 @@ if FRIDGE == "QUIET":
         "T1_fe": {
             "reps": 200,  # 300
             "rounds": 1,  # 1
-            "start": [0.0] * 6,  # [us]
-            "stop": [200] * 6,  # [250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
+            "start": [0.0] * tot_num_of_qubits,  # [us]
+            "stop": [200] * tot_num_of_qubits,  # [250.0] * tot_num_of_qubits,  # [us] ### Should be ~10x T1! Should change this per qubit.
             "steps": 150,
             "relax_delay": 900,  # [us] ### Should be >10x T1!
             "wait_time": 0.0,  # [us]
@@ -246,8 +246,8 @@ if FRIDGE == "QUIET":
         "T1_fg": {
             "reps": 200,  # 300
             "rounds": 1,  # 1
-            "start": [0.0] * 6,  # [us]
-            "stop": [200] * 6,  # [250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
+            "start": [0.0] * tot_num_of_qubits,  # [us]
+            "stop": [200] * tot_num_of_qubits,  # [250.0] * tot_num_of_qubits,  # [us] ### Should be ~10x T1! Should change this per qubit.
             "steps": 150,
             "relax_delay": 900,  # [us] ### Should be >10x T1!
             "wait_time": 0.0,  # [us]
@@ -288,7 +288,7 @@ if FRIDGE == "QUIET":
             "start_freq": 0,
             "end_freq": 0,
             "readout_pulse_delay": 2,  # 2/kappa
-            "detuning": [-20, -10, -10, -10, -15, -10],  # [MHz]
+            "detuning": [-20, -10, -10, -10],  # [MHz]
             "stark_gain": [],
         },
 
@@ -298,16 +298,16 @@ if FRIDGE == "QUIET":
             "list_of_all_qubits": list_of_all_qubits,
             "stark_length": 25, # [us] stark tone length for TLS spectroscopy, try 10-30% of T1
             "max_shift": 20, # [MHz] specify frequency range of stark shift
-            "duffing_constant": [500000,500000,50000,50000,500000,500000], #constant for duffing oscillator model from stark ramsey measurement, update for each qubit
+            "duffing_constant": [500000,500000,50000,50000], #constant for duffing oscillator model from stark ramsey measurement, update for each qubit
             "gain_steps": 100, #for each branch of pos,neg detuning stark and for entire res stark
             "start_gain": 0.0,
             "end_gain": 1.0, #res gain values between -1 and 1, convert to qubit freq shift w/ stark ramsey
             "readout_pulse_delay": 2, #2/kappa
             "relax_delay": 400, #[us]
-            "detuning": [-20, -10, -10, -10, -15, -10], #[MHz] start w/negative detuning, script flips to positive halfway thru scan
+            "detuning": [-20, -10, -10, -10], #[MHz] start w/negative detuning, script flips to positive halfway thru scan
             "stark_sigma": 0.01,  # [us] 10 ns
             "stark_gain": [],
-            "anharmonicity": [172.34, 176.38, 167.13, 172.57, 172.03, 161.14],
+            "anharmonicity": [172.34, 176.38, 167.13, 172.57],
             "res_gain_stark": [],
             "res_freq_stark": [],
             "res_phase_stark": [],
@@ -317,8 +317,8 @@ if FRIDGE == "QUIET":
         "Ramsey_stark": {
             "reps": 200,  # 300
             "rounds": 1,  # 10
-            "start": [0.02] * 6,  # [us]
-            "stop": [10] * 6,  # [us]
+            "start": [0.02] * tot_num_of_qubits,  # [us]
+            "stop": [10] * tot_num_of_qubits,  # [us]
             "steps": 100,
             "start_gain": 0.0,
             "end_gain": 1.0,
@@ -330,7 +330,7 @@ if FRIDGE == "QUIET":
             "detuning": -20, # [MHz]
             "stark_sigma": 0.01, # [us] 10 ns
             "list_of_all_qubits": list_of_all_qubits,
-            "anharmonicity": [172.34, 176.38, 167.13, 172.57, 172.03, 161.14],
+            "anharmonicity": [172.34, 176.38, 167.13, 172.57],
         },
 
         "FastRelEx":{
@@ -348,8 +348,8 @@ if FRIDGE == "QUIET":
         "Ramsey_ge": {
             "reps": 380, #300
             "rounds": 1,#10
-            "start": [0.0] * 6, # [us]
-            "stop":  [60] * 6, # [us]
+            "start": [0.0] * tot_num_of_qubits, # [us]
+            "stop":  [60] * tot_num_of_qubits, # [us]
             "steps": 215,
             "ramsey_freq": 0.12,  # [MHz]
             "relax_delay": 900, # [us] the time to wait to let the qubit to relax to gnd again after exciting it (make it way above T1)
@@ -372,8 +372,8 @@ if FRIDGE == "QUIET":
         "SpinEcho_ge": {
             "reps": 340,
             "rounds": 1,
-            "start": [0.0] * 6, # [us]
-            "stop":  [80] * 6, # [us]
+            "start": [0.0] * tot_num_of_qubits, # [us]
+            "stop":  [80] * tot_num_of_qubits, # [us]
             "steps": 100,
             "ramsey_freq": 0.12,  # [MHz]
             "relax_delay": 900, # [us]

@@ -6,7 +6,6 @@ from build_task import *
 from build_state import *
 from expt_config import *
 import copy
-import visdom
 import logging
 import time
 from iminuit import Minuit
@@ -90,23 +89,20 @@ class AmplitudeRabiExperiment:
             amp_rabi = AmplitudeRabiProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
             print("using self.config['sigma']: ",self.config['sigma'])
 
-            if self.live_plot:
-                I, Q, gains = self.live_plotting(amp_rabi, thresholding)
+            # Send the complied program that was set above to the qick hardware using soc
+            # Tell how many times to repeat using the rounds function, and the definition will do that many measurements
+            # and average over those
+            # progress=True shows you the bar as data is being collected. maybe disable for speed in the future
+            # The QICK will run the 'body' method in AmplitudeRabiProgram repeatedly for the iterations set in the
+            # initalize loop when this aquire def is used
+            if thresholding:
+                iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=self.config["rounds"], threshold=self.experiment.readout_cfg["threshold"],
+                                           angle=self.experiment.readout_cfg["ro_phase"], progress=self.qick_verbose)
             else:
-                # Send the complied program that was set above to the qick hardware using soc
-                # Tell how many times to repeat using the rounds function, and the definition will do that many measurements
-                # and average over those
-                # progress=True shows you the bar as data is being collected. maybe disable for speed in the future
-                # The QICK will run the 'body' method in AmplitudeRabiProgram repeatedly for the iterations set in the
-                # initalize loop when this aquire def is used
-                if thresholding:
-                    iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=self.config["rounds"], threshold=self.experiment.readout_cfg["threshold"],
-                                               angle=self.experiment.readout_cfg["ro_phase"], progress=self.qick_verbose)
-                else:
-                    iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=self.config["rounds"], progress=self.qick_verbose)
+                iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=self.config["rounds"], progress=self.qick_verbose)
 
-                I = iq_list[self.QubitIndex][0][ :, 0]
-                Q = iq_list[self.QubitIndex][0][ :, 1]
+            I = iq_list[self.QubitIndex][0][ :, 0]
+            Q = iq_list[self.QubitIndex][0][ :, 1]
 
             #get the gains that were used so you can use to plot on the x axis
             gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
@@ -205,34 +201,6 @@ class AmplitudeRabiExperiment:
         else:
             q1_fit_cosine, pi_amp = self.plot_results(I, Q, gains, config=self.config, use_iminuit_instead=True)
             return I, Q, gains, q1_fit_cosine, pi_amp, self.config, I_shots, Q_shots, angle_used, threshold_raw, res_length_cycles, n_resets
-
-    def live_plotting(self, amp_rabi, thresholding):
-        I = Q = expt_mags = expt_phases = expt_pop = None
-        viz = visdom.Visdom()
-        if not viz.check_connection(timeout_seconds=5):
-            raise RuntimeError("Visdom server not connected!")
-
-        for ii in range(self.config["rounds"]):
-            if thresholding:
-                iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=1,
-                                           threshold=self.experiment.readout_cfg["threshold"],
-                                           angle=self.experiment.readout_cfg["ro_phase"], progress=self.qick_verbose)
-            else:
-                iq_list = amp_rabi.acquire(self.experiment.soc, soft_avgs=1, progress=self.qick_verbose)
-            gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
-
-            this_I = iq_list[self.QubitIndex][0, :, 0]
-            this_Q = iq_list[self.QubitIndex][0, :, 1]
-
-            if I is None:  # ii == 0
-                I, Q = this_I, this_Q
-            else:
-                I = (I * ii + this_I) / (ii + 1.0)
-                Q = (Q * ii + this_Q) / (ii + 1.0)
-
-            viz.line(X=gains, Y=I, opts=dict(height=400, width=700, title='Rabi I', showlegend=True, xlabel='expt_pts'),win='Rabi_I')
-            viz.line(X=gains, Y=Q, opts=dict(height=400, width=700, title='Rabi Q', showlegend=True, xlabel='expt_pts'),win='Rabi_Q')
-        return I, Q, gains
 
     def cosine(self, x, a, b, c, d):
 

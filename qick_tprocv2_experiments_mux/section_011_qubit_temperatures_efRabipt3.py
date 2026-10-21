@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import visdom
 from scipy.optimize import curve_fit
 import datetime
 from build_task import *
@@ -11,7 +10,6 @@ import time
 from iminuit import Minuit
 import logging
 import copy
-# import visdom
 from scipy.signal import argrelextrema
 
 class Temps_EFAmpRabiExperiment:
@@ -66,25 +64,19 @@ class Temps_EFAmpRabiExperiment:
 
         # --- Pe sequence ---
         amp_rabi1 = AmplitudeRabiProgram1(soccfg, reps=self.config['reps2'], final_delay=self.config['relax_delay'], cfg=self.config)
-        if self.live_plot:
-            I1, Q1, gains1 = self.live_plotting(amp_rabi1, soc)
-        else:
-            iq_list1 = amp_rabi1.acquire(soc, soft_avgs=self.config["rounds"], progress=True)
-            I1 = iq_list1[self.QubitIndex][0, :, 0]
-            Q1 = iq_list1[self.QubitIndex][0, :, 1]
-            gains1 = amp_rabi1.get_pulse_param('qubit_pulse', "gain", as_array=True)
+        iq_list1 = amp_rabi1.acquire(soc, soft_avgs=self.config["rounds"], progress=True)
+        I1 = iq_list1[self.QubitIndex][0, :, 0]
+        Q1 = iq_list1[self.QubitIndex][0, :, 1]
+        gains1 = amp_rabi1.get_pulse_param('qubit_pulse', "gain", as_array=True)
         A_amp_IQ1, A_amp_IQ_err1, fit_params1 = self.plot_results( I1, Q1, gains1, config = self.config, use_iminuit_instead = use_iminuit_instead)
         fit_IQ_1 = fit_params1["fit_IQ"]
 
         # --- Pg sequence ---
         amp_rabi2 = AmplitudeRabiProgram2(soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
-        if self.live_plot:
-            I2, Q2, gains2 = self.live_plotting(amp_rabi2, soc)
-        else:
-            iq_list2 = amp_rabi2.acquire(soc, soft_avgs=self.config["rounds"], progress=True)
-            I2 = iq_list2[self.QubitIndex][0, :, 0]
-            Q2 = iq_list2[self.QubitIndex][0, :, 1]
-            gains2 = amp_rabi2.get_pulse_param('qubit_pulse', "gain", as_array=True)
+        iq_list2 = amp_rabi2.acquire(soc, soft_avgs=self.config["rounds"], progress=True)
+        I2 = iq_list2[self.QubitIndex][0, :, 0]
+        Q2 = iq_list2[self.QubitIndex][0, :, 1]
+        gains2 = amp_rabi2.get_pulse_param('qubit_pulse', "gain", as_array=True)
 
         A_amp_IQ2, A_amp_IQ_err2, fit_params2 = self.plot_results(I2, Q2, gains2, config=self.config, use_iminuit_instead = use_iminuit_instead)
         fit_IQ_2 = fit_params2["fit_IQ"]
@@ -109,29 +101,6 @@ class Temps_EFAmpRabiExperiment:
             Qshots2 = raw_0_pg[self.QubitIndex][:, :, 0, 1]
 
         return I1, Q1, gains1, Ishots1, Qshots1, I2, Q2, gains2, Ishots2, Qshots2, A_amp_IQ1, A_amp_IQ2, A_amp_IQ_err1, A_amp_IQ_err2, fit_IQ_1, fit_IQ_2, self.config, measurement_timestamp
-
-
-    def live_plotting(self, amp_rabi, soc):
-        I = Q = expt_mags = expt_phases = expt_pop = None
-        viz = visdom.Visdom()
-        assert viz.check_connection(timeout_seconds=5), "Visdom server not connected!"
-
-        for ii in range(self.config["rounds"]):
-            iq_list = amp_rabi.acquire(soc, soft_avgs=1, progress=True)
-            gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
-
-            this_I = iq_list[self.QubitIndex][0, :, 0]
-            this_Q = iq_list[self.QubitIndex][0, :, 1]
-
-            if I is None:  # ii == 0
-                I, Q = this_I, this_Q
-            else:
-                I = (I * ii + this_I) / (ii + 1.0)
-                Q = (Q * ii + this_Q) / (ii + 1.0)
-
-            viz.line(X=gains, Y=I, opts=dict(height=400, width=700, title='Rabi I', showlegend=True, xlabel='expt_pts'),win='Rabi_I')
-            viz.line(X=gains, Y=Q, opts=dict(height=400, width=700, title='Rabi Q', showlegend=True, xlabel='expt_pts'),win='Rabi_Q')
-        return I, Q, gains
 
     def cosine(self, x, a, b, c, d):
 

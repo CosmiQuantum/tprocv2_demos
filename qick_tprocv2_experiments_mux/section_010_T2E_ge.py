@@ -6,7 +6,6 @@ from build_state import *
 from expt_config import *
 from system_config import *
 import copy
-import visdom
 from scipy import optimize
 from sklearn import preprocessing
 import matplotlib.pyplot as plt
@@ -590,22 +589,18 @@ class T2EMeasurement:
         now = datetime.datetime.now()
         echo = T2EProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
                          cfg=self.config)
-        # for live plotting open http://localhost:8097/ on firefox
-        if self.live_plot:
-            I, Q, delay_times = self.live_plotting(echo, thresholding)
+        if thresholding:
+            iq_list = echo.acquire(self.experiment.soc, soft_avgs=self.config['rounds'],
+                                       threshold=self.experiment.readout_cfg["threshold"],
+                                       angle=self.experiment.readout_cfg["ro_phase"], progress=self.qick_verbose)
         else:
-            if thresholding:
-                iq_list = echo.acquire(self.experiment.soc, soft_avgs=self.config['rounds'],
-                                           threshold=self.experiment.readout_cfg["threshold"],
-                                           angle=self.experiment.readout_cfg["ro_phase"], progress=self.qick_verbose)
-            else:
-                iq_list = echo.acquire(self.experiment.soc, soft_avgs=self.config['rounds'], progress=self.qick_verbose)
+            iq_list = echo.acquire(self.experiment.soc, soft_avgs=self.config['rounds'], progress=self.qick_verbose)
 
-            I = iq_list[self.QubitIndex][0, :, 0]
-            Q = iq_list[self.QubitIndex][0, :, 1]
-            delay_times1 = echo.get_time_param('wait1', "t", as_array=True)
-            delay_times2 = echo.get_time_param('wait2', "t", as_array=True)
-            delay_times = delay_times1+delay_times2
+        I = iq_list[self.QubitIndex][0, :, 0]
+        Q = iq_list[self.QubitIndex][0, :, 1]
+        delay_times1 = echo.get_time_param('wait1', "t", as_array=True)
+        delay_times2 = echo.get_time_param('wait2', "t", as_array=True)
+        delay_times = delay_times1+delay_times2
 
         measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
         if self.fit_data:
@@ -627,36 +622,6 @@ class T2EMeasurement:
 
         else:
             return t2e_est, t2e_err, I, Q, None, None, delay_times, fit, self.config, measurement_timestamp
-
-    def live_plotting(self, echo,thresholding):
-        I = Q = expt_mags = expt_phases = expt_pop = None
-        viz = visdom.Visdom()
-        if not viz.check_connection(timeout_seconds=5):
-            raise RuntimeError("Visdom server not connected!")
-        for ii in range(self.config["rounds"]):
-            if thresholding:
-                iq_list = echo.acquire(self.experiment.soc, soft_avgs=1,
-                                       threshold=self.experiment.readout_cfg["threshold"],
-                                       angle=self.experiment.readout_cfg["ro_phase"], progress=self.qick_verbose)
-            else:
-                iq_list = echo.acquire(self.experiment.soc, soft_avgs=1, progress=self.qick_verbose)
-
-            delay_times1 = echo.get_time_param('wait1', "t", as_array=True)
-            delay_times2 = echo.get_time_param('wait2', "t", as_array=True)
-            delay_times = delay_times1 + delay_times2
-
-            this_I = iq_list[self.QubitIndex][0, :, 0]
-            this_Q = iq_list[self.QubitIndex][0, :, 1]
-
-            if I is None:  # ii == 0
-                I, Q = this_I, this_Q
-            else:
-                I = (I * ii + this_I) / (ii + 1.0)
-                Q = (Q * ii + this_Q) / (ii + 1.0)
-
-            viz.line(X=delay_times, Y=I, opts=dict(height=400, width=700, title='T2 Echo I', showlegend=True, xlabel='expt_pts'),win='T2E_I')
-            viz.line(X=delay_times, Y=Q, opts=dict(height=400, width=700, title='T2 Echo Q', showlegend=True, xlabel='expt_pts'),win='T2E_Q')
-        return I, Q, delay_times
 
     def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):
         """Sets the gain for the selected qubit to 1, others to 0."""

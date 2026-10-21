@@ -7,7 +7,6 @@ from scipy.optimize import curve_fit
 import datetime
 import time
 import copy
-import visdom
 import logging
 
 class QubitSpectroscopy:
@@ -85,15 +84,12 @@ class QubitSpectroscopy:
         qspec = PulseProbeSpectroscopyProgram(self.experiment.soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
 
         # iq_lists= []
-        if self.live_plot:
-            I, Q, freqs = self.live_plotting(qspec)
-        else:
-            # print("rounds for this qubit: ", self.exp_cfg["rounds"])
-            # print("rounds for this qubit config: ", self.config["rounds"])
-            iq_list = qspec.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=self.qick_verbose)
-            I = iq_list[self.QubitIndex][0, :, 0]
-            Q = iq_list[self.QubitIndex][0, :, 1]
-            freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
+        # print("rounds for this qubit: ", self.exp_cfg["rounds"])
+        # print("rounds for this qubit config: ", self.config["rounds"])
+        iq_list = qspec.acquire(self.experiment.soc, soft_avgs=self.exp_cfg["rounds"], progress=self.qick_verbose)
+        I = iq_list[self.QubitIndex][0, :, 0]
+        Q = iq_list[self.QubitIndex][0, :, 1]
+        freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
 
         measurement_timestamp = (time.mktime(datetime.datetime.now().timetuple()))
 
@@ -138,29 +134,6 @@ class QubitSpectroscopy:
 
         largest_amp_curve_mean, I_fit, Q_fit, fwhm = self.plot_results(I, Q, freqs, config = self.config, sigma_guess = 10, return_fwhm=True)
         return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean, self.config, fwhm
-
-    def live_plotting(self, qspec):
-        I = Q = expt_mags = expt_phases = expt_pop = None
-        viz = visdom.Visdom()
-        if not viz.check_connection(timeout_seconds=5):
-            raise RuntimeError("Visdom server not connected!")
-        viz.close(win=None)  # close previous plots
-        for ii in range(self.config["rounds"]):
-            iq_list = qspec.acquire(self.experiment.soc, soft_avgs=1, progress=self.qick_verbose)
-            freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
-
-            this_I = iq_list[self.QubitIndex][0, :, 0]
-            this_Q = iq_list[self.QubitIndex][0, :, 1]
-
-            if I is None:  # ii == 0
-                I, Q = this_I, this_Q
-            else:
-                I = (I * ii + this_I) / (ii + 1.0)
-                Q = (Q * ii + this_Q) / (ii + 1.0)
-
-            viz.line(X=freqs, Y=I, opts=dict(height=400, width=700, title='Qubit Spectroscopy I', showlegend=True, xlabel='expt_pts'),win='QSpec_I')
-            viz.line(X=freqs, Y=Q, opts=dict(height=400, width=700, title='Qubit Spectroscopy Q', showlegend=True, xlabel='expt_pts'),win='QSpec_Q')
-        return I, Q, freqs
 
     def plot_results(self, I, Q, freqs, config=None, fig_quality=100, sigma_guess=1, return_fwhm=False):
         freqs = np.array(freqs)
