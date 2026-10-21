@@ -33,7 +33,7 @@ if FRIDGE == "QUIET":
         # },
 
         "res_spec": {
-            "reps": 400, #415 # 300
+            "reps": 1000, #400 # 300
             "rounds": 1,
             "start": -1.5,   # -1.7   # MHz
             "step_size": 0.03,  # MHz
@@ -104,7 +104,7 @@ if FRIDGE == "QUIET":
             "qze_mask": [],
         },
         "qubit_spec_ef": {
-            "reps": 1350,  # 2200
+            "reps": 1300,  # 2200
             "rounds": 1,  # 10
             "start": list(ef_qfreqs - 4),  # [MHz] #-4
             "stop": list(ef_qfreqs + 4),  # [MHz] +4

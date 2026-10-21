@@ -32,8 +32,8 @@ list_of_all_qubits = [0,1,2,3,4,5] # for QUIET [0, 1, 2, 3, 4, 5], for NEXUS [0,
 substudy = "opt_newBox_allQs"
 outerFolder = os.path.join(f"/data/QICK_data/run10/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 
-opt_flags = {"res_leng_sweep": True, "2d_sweep": False}
-save_figs_ss = True # do you want to save SSF pics as you run the readout optimization sweeps?
+opt_flags = {"res_leng_sweep": False, "2d_sweep": True}
+save_figs_ss = False # do you want to save SSF pics as you run the readout optimization sweeps?
 
 def create_folder_if_not_exists(folder_path):
     """Creates a folder at the given path if it doesn't already exist."""
@@ -52,11 +52,11 @@ n = 1  # Number of rounds
 n_loops = 1 # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [3]
+Qs = [1]
 
 # For 25dB DAC
-res_leng_vals = [5.6, 8.8, 8.8, 8.8, 6.5, 7.8]
-res_gain = [0.8124, 0.283, 0.4, 0.39, 0.72, 0.84]
+res_leng_vals = [5.3, 8.0, 8.6, 8.8, 5.8, 7.9]
+res_gain = [0.8124, 0.25, 0.4, 0.387, 0.72, 0.845]
 freq_offsets =[0.1111,-0.0222,-0.1111,-0.2,-0.5111,-0.1111]
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
@@ -74,7 +74,7 @@ for QubitIndex in Qs:
     elif QubitIndex == 5:
         lengs = np.arange(7.6, 8.0, 0.1)
     else:
-        lengs = np.arange(8.6, 9.4, 0.1)
+        lengs = np.arange(8.0, 10.0, 0.25)
 
     recycled_qfreq = False  # don't change
 
@@ -111,7 +111,7 @@ for QubitIndex in Qs:
         increase_geres_reps_to = 900
     if QubitIndex == 1:
         increase_geres_reps = True
-        increase_geres_reps_to = 900
+        increase_geres_reps_to = 1000
     if QubitIndex == 2:
         increase_geres_reps = True
         increase_geres_reps_to = 900
@@ -208,7 +208,7 @@ for QubitIndex in Qs:
     if QubitIndex == 1:
         increase_qubit_reps_gerabi = True
         qubit_to_increase_gerabi_reps_for = QubitIndex
-        multiply_gerabi_reps_by = 3
+        multiply_gerabi_reps_by = 4
 
     if QubitIndex == 2:
         increase_qubit_reps_gerabi = True
@@ -372,7 +372,7 @@ for QubitIndex in Qs:
             gain_steps = 6
 
         elif QubitIndex == 1:
-            gain_range = [0.285, 0.2855]
+            gain_range = [0.28, 0.281]
             gain_steps = 1
 
         elif QubitIndex == 2:
@@ -391,7 +391,7 @@ for QubitIndex in Qs:
             gain_range = [0.70, 0.80]
             gain_steps = 12
 
-        freq_steps = 9
+        freq_steps = 12 #9
 
         print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')
         # Select the reference frequency for the current resonator
