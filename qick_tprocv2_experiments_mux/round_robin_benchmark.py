@@ -92,7 +92,7 @@ run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss":
 
 # For 25dB DAC
 res_leng_vals = [5.3, 8.0, 8.7, 8.8, 5.7, 5.48]
-res_gain = [0.8112, 0.23, 0.345, 0.36, 0.73, 0.841]
+res_gain = [0.811, 0.23, 0.345, 0.36, 0.73, 0.841]
 freq_offsets =[-0.2000,-0.0222,-0.2000,0.1111,-0.2000,-0.2000]
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
