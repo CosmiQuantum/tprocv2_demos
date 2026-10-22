@@ -3,9 +3,6 @@ from qick.pyro import make_proxy
 import system_config
 import copy
 
-# soc, soccfg = make_proxy(ns_host="192.168.1.144", ns_port=8000, proxy_name="rfsoc")
-# print(soccfg)
-
 # Add DAC and ADC Channels
 def add_qubit_channel(system_config, QubitIndex):
     hw_config = copy.deepcopy(system_config.hw_cfg)

@@ -82,7 +82,12 @@ class PunchOut:
                 self.config["res_freq_ge"] = fcenter + f
                 prog = SingleToneSpectroscopyProgram(soccfg, reps=self.exp_cfg["reps"], final_delay=0.5,
                                                      cfg=self.config)
+		
                 iq_list = prog.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=False)
+                #print("iq_list length:", len(iq_list))
+                #print("iq_list[0] shape:", np.array(iq_list[0]).shape)
+                #print("iq_list[0]:", iq_list[0])
+          
                 for i in range(len(self.config['res_freq_ge'])):
                     amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])
             amps = np.array(amps)

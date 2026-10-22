@@ -36,21 +36,19 @@ class QICK_experiment:
             self.FSGEN_CH      = 0 # 0 for "old QICK", 5 for RF board 7/21/2025
             self.FSGEN_AMPL_CH = 2
             self.MIXMUXGEN_CH  = 4 # Readout resonator DAC channel
-            self.MUXRO_CH = [2, 3, 4, 5]
-
+            self.MUXRO_CH = [2, 3, 4, 5]	
             ### for the QICK Box,
-            self.qubit_center_freq = 4350
-            self.res_center_freq   = 6330 
-            self.soc.rfb_set_gen_filter(self.MIXMUXGEN_CH, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0) # bw is in units of GHz
-            self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.7) # 4350 + 1700/2 = 5200 MHz, so freqs above that get filtered out
-            self.soc.rfb_set_ro_filter(self.MUXRO_CH[0], fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0) #readout ADC
-            # Set attenuator on DAC.
-            self.soc.rfb_set_gen_rf(self.MIXMUXGEN_CH, self.DAC_attenuator1, self.DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
-            self.soc.rfb_set_gen_rf(self.FSGEN_CH, self.qubit_DAC_attenuator1, self.qubit_DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
-            # Set attenuator on ADC.
-            ### IMPORTANT: set this to 30 and you get 60 dB of warm gain. Set to 0 and you get 90 dB of warm gain
-            self.soc.rfb_set_ro_rf(self.MUXRO_CH[0], self.ADC_attenuator)  # Verified 30->25 see increased gain in loopback
-
+#           self.qubit_center_freq = 4350
+#           self.res_center_freq   = 6330 
+#           self.soc.rfb_set_gen_filter(self.MIXMUXGEN_CH, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0) # bw is in units of GHz
+#           self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.7) # 4350 + 1700/2 = 5200 MHz, so freqs above that get filtered out
+#           self.soc.rfb_set_ro_filter(self.MUXRO_CH[0], fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0) #readout ADC
+#           # Set attenuator on DAC.
+#           self.soc.rfb_set_gen_rf(self.MIXMUXGEN_CH, self.DAC_attenuator1, self.DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
+#           self.soc.rfb_set_gen_rf(self.FSGEN_CH, self.qubit_DAC_attenuator1, self.qubit_DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
+#           # Set attenuator on ADC.
+#           ### IMPORTANT: set this to 30 and you get 60 dB of warm gain. Set to 0 and you get 90 dB of warm gain
+#           self.soc.rfb_set_ro_rf(self.MUXRO_CH[0], self.ADC_attenuator)  # Verified 30->25 see increased gain in loopback
 
             # Qubit you want to work with
             self.QUBIT_INDEX = 5
@@ -69,9 +67,10 @@ class QICK_experiment:
                 "list_of_all_qubits": [0, 1, 2, 3]
             }
 
+
             #Readout Configuration
             self.readout_cfg = {
-                "trig_time": 0.75,  # [Clock ticks] - get this value from TOF experiment
+                "trig_time": 0.7,  # [Clock ticks] - get this value from TOF experiment
                 # Changes related to the resonator output channel
                 "mixer_freq": 6000,  # [MHz]
                 'res_freq_ge': [6318.8,6276.7,6232.2,6174.7], 
@@ -84,14 +83,14 @@ class QICK_experiment:
                 "res_phase": [0,0,0,0],
                 "ro_phase": [0, 0, 0, 0],# Rotation Angle From QICK Function
                 "threshold": [0,0,0,0], # Threshold for Distinguish g/e, from QICK Function
-                "res_ring_up_time": 4,  # Olivia May 17th
-                "qubit_is_in_g_threshold": 100000,
-                "edge_of_e_state_threshold": -26046,
-                "n_resets": 1,  # for active reset
-                "g_center": 0,  # for active reset
-                "e_center": 0,  # for active reset
-                "delay1_act_reset": 10,
-                "delay2_act_reset": 1
+                #"res_ring_up_time": 4,  # Olivia May 17th
+                #"qubit_is_in_g_threshold": 100000,
+                #"edge_of_e_state_threshold": -26046,
+                #"n_resets": 1,  # for active reset
+                #"g_center": 0,  # for active reset
+                #"e_center": 0,  # for active reset
+                #"delay1_act_reset": 10,
+                #"delay2_act_reset": 1
             }
 
             # Qubit Configuration
