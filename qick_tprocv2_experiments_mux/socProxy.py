@@ -12,5 +12,5 @@ def makeProxy():
     ns = Pyro4.locateNS(host=ns_host, port=ns_port)
     soc = Pyro4.Proxy(ns.lookup(proxy_name))
     soccfg = QickConfig(soc.get_cfg())
-    print(soccfg)
+    #print(soccfg)
     return(soc,soccfg)

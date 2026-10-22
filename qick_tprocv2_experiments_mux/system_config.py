@@ -31,24 +31,25 @@ class QICK_experiment:
 
             # Make proxy to the QICK
             self.soc, self.soccfg = makeProxy()
-            print(self.soccfg)
+            # print(self.soccfg)
 
             self.FSGEN_CH      = 0 # 0 for "old QICK", 5 for RF board 7/21/2025
             self.FSGEN_AMPL_CH = 2
             self.MIXMUXGEN_CH  = 4 # Readout resonator DAC channel
-            self.MUXRO_CH = [2, 3, 4, 5]	
+            self.MUXRO_CH = [2, 3, 4, 5]
+            
             ### for the QICK Box,
-#           self.qubit_center_freq = 4350
-#           self.res_center_freq   = 6330 
-#           self.soc.rfb_set_gen_filter(self.MIXMUXGEN_CH, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0) # bw is in units of GHz
-#           self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.7) # 4350 + 1700/2 = 5200 MHz, so freqs above that get filtered out
-#           self.soc.rfb_set_ro_filter(self.MUXRO_CH[0], fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0) #readout ADC
-#           # Set attenuator on DAC.
-#           self.soc.rfb_set_gen_rf(self.MIXMUXGEN_CH, self.DAC_attenuator1, self.DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
-#           self.soc.rfb_set_gen_rf(self.FSGEN_CH, self.qubit_DAC_attenuator1, self.qubit_DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
-#           # Set attenuator on ADC.
-#           ### IMPORTANT: set this to 30 and you get 60 dB of warm gain. Set to 0 and you get 90 dB of warm gain
-#           self.soc.rfb_set_ro_rf(self.MUXRO_CH[0], self.ADC_attenuator)  # Verified 30->25 see increased gain in loopback
+        #   self.qubit_center_freq = 4350
+        #   self.res_center_freq   = 6330 
+        #   self.soc.rfb_set_gen_filter(self.MIXMUXGEN_CH, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0) # bw is in units of GHz
+        #   self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.7) # 4350 + 1700/2 = 5200 MHz, so freqs above that get filtered out
+        #   self.soc.rfb_set_ro_filter(self.MUXRO_CH[0], fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0) #readout ADC
+        #   # Set attenuator on DAC.
+        #   self.soc.rfb_set_gen_rf(self.MIXMUXGEN_CH, self.DAC_attenuator1, self.DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
+        #   self.soc.rfb_set_gen_rf(self.FSGEN_CH, self.qubit_DAC_attenuator1, self.qubit_DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
+        #   # Set attenuator on ADC.
+        #   ### IMPORTANT: set this to 30 and you get 60 dB of warm gain. Set to 0 and you get 90 dB of warm gain
+        #   self.soc.rfb_set_ro_rf(self.MUXRO_CH[0], self.ADC_attenuator)  # Verified 30->25 see increased gain in loopback
 
             # Qubit you want to work with
             self.QUBIT_INDEX = 0
