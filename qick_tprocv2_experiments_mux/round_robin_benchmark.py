@@ -34,7 +34,7 @@ pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
 ssf_avgs_per_opt_pt = 5 # ignore
 save_r = 1  # how many rounds to save after. KEEP THIS AS ONE!!!!!!!!
-number_of_qubits = 4 # total
+number_of_qubits = 6 # total
 figure_quality = 200
 
 signal = 'None'  # 'I', or 'Q' depending on where the signal is (after optimization). Keep as None
@@ -266,6 +266,36 @@ while j < n:
                 qspecge_increase_reps_to = None
                 increase_qspec_rounds_to = None
 
+                if QubitIndex == 5:
+                    increase_qubit_reps_qspec = True
+                    qspecge_increase_reps_to = 700
+                    # increase_qspec_rounds = True
+                    # increase_qspec_rounds_to = 2
+
+                # if QubitIndex == 4:
+                #     increase_qubit_reps_qspec = True
+                #     qspecge_increase_reps_to = 600
+                #     # increase_qspec_rounds = True
+                #     # increase_qspec_rounds_to = 2
+
+                if QubitIndex == 3:
+                    increase_qubit_reps_qspec = True
+                    qspecge_increase_reps_to = 1500
+                #     # increase_qspec_rounds = True
+                #     # increase_qspec_rounds_to = 3
+                #
+                if QubitIndex == 2:
+                    increase_qubit_reps_qspec = True
+                    qspecge_increase_reps_to = 1500
+
+                if QubitIndex == 1:
+                    increase_qubit_reps_qspec = True
+                    qspecge_increase_reps_to = 1200
+
+                # if QubitIndex == 0:
+                #     increase_qubit_reps_qspec = True
+                #     qspecge_increase_reps_to = 800
+
                 q_spec = QubitSpectroscopy(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j,
                                            signal, save_figs, increase_reps = increase_qubit_reps_qspec, increase_rounds =increase_qspec_rounds,
                                            increase_reps_to = qspecge_increase_reps_to, increase_rounds_to = increase_qspec_rounds_to,
@@ -321,6 +351,38 @@ while j < n:
                 reduce_rlx_delay_gerabi = False
                 reduce_rlx_delay_gerabi_to = None
 
+                if QubitIndex == 3:
+                    increase_qubit_reps_gerabi = True
+                    qubit_to_increase_gerabi_reps_for = QubitIndex
+                    multiply_gerabi_reps_by = 3
+
+                # if QubitIndex == 4:
+                #     increase_qubit_reps_gerabi = True
+                #     qubit_to_increase_gerabi_reps_for = QubitIndex
+                #     multiply_gerabi_reps_by = 4
+
+                if QubitIndex == 1:
+                    increase_qubit_reps_gerabi = True
+                    qubit_to_increase_gerabi_reps_for = QubitIndex
+                    multiply_gerabi_reps_by = 3
+
+                if QubitIndex == 2:
+                    increase_qubit_reps_gerabi = True
+                    qubit_to_increase_gerabi_reps_for = QubitIndex
+                    multiply_gerabi_reps_by = 3
+
+                # if QubitIndex == 0:
+                #     increase_qubit_reps_gerabi = True
+                #     qubit_to_increase_gerabi_reps_for = QubitIndex
+                #     multiply_gerabi_reps_by = 2
+
+                if QubitIndex == 5:
+                    # increase_qubit_reps_gerabi = True
+                    # qubit_to_increase_gerabi_reps_for = QubitIndex
+                    # multiply_gerabi_reps_by = 2
+                    reduce_rlx_delay_gerabi = True
+                    reduce_rlx_delay_gerabi_to = 650
+
                 rabi = AmplitudeRabiExperiment(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal,
                                                save_figs=save_figs, save_shots=save_shots_gerabi,
                                                experiment=experiment, live_plot=live_plot,
@@ -358,12 +420,15 @@ while j < n:
             try:
                 reduce_rlx_delay_ssf = False
                 reduce_rlx_delay_ssf_to = None
+                if QubitIndex == 5:
+                    reduce_rlx_delay_ssf = True
+                    reduce_rlx_delay_ssf_to = 650
 
                 max_tries = 1
                 try_num = 0
                 fid_check = 0
 
-                ssf_thresholds = [0.6, 0.6, 0.6, 0.6] # all Qs are above these unless something is wrong
+                ssf_thresholds = [0.6, 0.6, 0.6, 0.6, 0.6, 0.6] # all Qs are above these unless something is wrong
                 ssf_threshold = ssf_thresholds[QubitIndex]
 
                 while fid_check < ssf_threshold and try_num < max_tries:
@@ -428,6 +493,25 @@ while j < n:
                 reduce_rlx_delay_geT1= False
                 reduce_rlx_delay_geT1_to = None
 
+                # if QubitIndex == 4:
+                #     increase_qubit_reps_t1 = True
+                #     t1_qubit_to_increase_reps_for = QubitIndex
+                #     t1_multiply_qubit_reps_by = 2
+
+                if QubitIndex == 2:
+                    increase_qubit_reps_t1 = True
+                    t1_qubit_to_increase_reps_for = QubitIndex
+                    t1_multiply_qubit_reps_by = 2
+
+                if QubitIndex == 3:
+                    increase_qubit_reps_t1 = True
+                    t1_qubit_to_increase_reps_for = QubitIndex
+                    t1_multiply_qubit_reps_by = 2
+
+                if QubitIndex == 5:
+                    reduce_rlx_delay_geT1 = True
+                    reduce_rlx_delay_geT1_to = 650
+
                 t1 = T1Measurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                    experiment=experiment,
                                    live_plot=live_plot, fit_data=fit_data,
@@ -462,6 +546,30 @@ while j < n:
                 increase_t2r_qubit_reps_to = 1 # doesn't apply unless the above flags are updated and set to True
                 reduce_rlx_delay_geT2R = False
                 reduce_rlx_delay_geT2R_to = None
+
+                if QubitIndex == 2:
+                    increase_qubit_reps_t2r = True
+                    qubit_to_increase_t2r_reps_for = QubitIndex
+                    increase_t2r_qubit_reps_to = 700 # must be integer
+
+                if QubitIndex == 3:
+                    increase_qubit_reps_t2r = True
+                    qubit_to_increase_t2r_reps_for = QubitIndex
+                    increase_t2r_qubit_reps_to = 600 # must be integer
+
+                if QubitIndex == 4:
+                    increase_qubit_reps_t2r = True
+                    qubit_to_increase_t2r_reps_for = QubitIndex
+                    increase_t2r_qubit_reps_to = 1500 # must be integer
+
+                if QubitIndex == 5:
+                    reduce_rlx_delay_geT2R = True
+                    reduce_rlx_delay_geT2R_to = 650
+
+                if QubitIndex == 1:
+                    increase_qubit_reps_t2r = True
+                    qubit_to_increase_t2r_reps_for = QubitIndex
+                    increase_t2r_qubit_reps_to = 1000
 
                 t2r = T2RMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                      experiment=experiment, live_plot=live_plot, fit_data=fit_data,
@@ -498,6 +606,24 @@ while j < n:
                 increase_qubit_reps_t2e = False
                 reduce_rlx_delay_geT2E = False
                 reduce_rlx_delay_geT2E_to = None
+
+                if QubitIndex == 2:
+                    increase_qubit_reps_t2e = True
+                    qubit_to_increase_t2e_reps_for = QubitIndex
+                    multiply_qubit_t2e_reps_by = 2
+
+                if QubitIndex == 3:
+                    increase_qubit_reps_t2e = True
+                    qubit_to_increase_t2e_reps_for = QubitIndex
+                    multiply_qubit_t2e_reps_by = 2
+
+                if QubitIndex == 5:
+                    # increase_qubit_reps_t2e = True
+                    # qubit_to_increase_t2e_reps_for = QubitIndex
+                    # multiply_qubit_t2e_reps_by = 2
+
+                    reduce_rlx_delay_geT2E = True
+                    reduce_rlx_delay_geT2E_to = 650
 
                 t2e = T2EMeasurement(QubitIndex, tot_num_of_qubits, studyDocumentationFolder, j, signal, save_figs,
                                      experiment=experiment, live_plot=live_plot, fit_data=fit_data,

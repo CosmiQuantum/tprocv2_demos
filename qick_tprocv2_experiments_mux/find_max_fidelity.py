@@ -6,7 +6,7 @@ import datetime
 
 # Directory where your HDF5 files are stored
 #For QUIET
-outerFolder = "/data/QICK_data/run10/6transmon/readout_optimization/1st_opt_newBox_allQs/2026-10-19_22-41-52/study_data/Data_h5/2D_Gain_Freq_Sweeps"
+outerFolder = "/data/QICK_data/run10/entangling_chip/readout_optimization/1st_opt_newBox_allQs/2026-10-19_22-41-52/study_data/Data_h5/2D_Gain_Freq_Sweeps"
 print('For files inside: ', outerFolder)
 
 def find_max_fidelity(file_path):
