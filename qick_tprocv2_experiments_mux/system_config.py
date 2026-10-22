@@ -51,7 +51,7 @@ class QICK_experiment:
 #           self.soc.rfb_set_ro_rf(self.MUXRO_CH[0], self.ADC_attenuator)  # Verified 30->25 see increased gain in loopback
 
             # Qubit you want to work with
-            self.QUBIT_INDEX = 5
+            self.QUBIT_INDEX = 0
 
             # Hardware Configuration
             self.hw_cfg = {
