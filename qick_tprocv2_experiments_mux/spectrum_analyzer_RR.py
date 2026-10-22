@@ -59,20 +59,27 @@ unmask = True  # Do you want to use the unmasking feature to increase resonator 
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 
-Qs_to_look_at = [5] # only list the qubits you want to do the RR for
+Qs_to_look_at = [3] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run9c'
 device_name = '6transmon'
-substudy_txt_notes = ('Spectrum anlayzer measurements using the Qick Box. \n')
+substudy_txt_notes = ('Spectrum anlayzer measurements using the NEW Qick Box in run 10. \n')
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"long_tof": True, "long_qdrive": False}
-stop_qubit_pulse = False
+run_flags = {"long_tof": False, "long_qdrive": True}
+stop_qubit_pulse = True
 
 # For 25dB DAC, 6/5/2026
-res_gain = [0.80, 0.6556, 0.7808, 0.6115, 0.825, 0.8308]  # 0.8125,25dB, [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97], [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
-freq_offsets = [0.0,0.0,0.0,0.0,0.0,0.0]  # -0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222
+
+# New (run 10)
+res_gain = [0.6, 0.25, 0.37, 0.39, 0.72, 0.845]
+# freq_offsets =[0.1111,-0.0222,-0.1111,-0.2,-0.5111,-0.1111]
+freq_offsets = [0.0,0.0,0.0,0.0,0.0,0.0]
+
+# Old (run 9)
+# res_gain = [0.80, 0.6556, 0.7808, 0.6115, 0.825, 0.8308]  # 0.8125,25dB, [0.8125, 0.836, 0.915, 0.6218, 0.95, 0.97], [0.825, 0.835, 0.915, 0.634, 0.95, 0.97]
+# freq_offsets = [0.0,0.0,0.0,0.0,0.0,0.0]  # -0.1500, -0.1286, -0.3000, -0.1556, 0.0, -0.0222
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
@@ -85,7 +92,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'spectrum_analyzer_meas' #qubit_checkouts
-sub_study = 'QickBox_Rcenter6330_bw1.0_Qcenter4365_bw1.53'
+sub_study = 'new_QICKbox_res_pulses'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):

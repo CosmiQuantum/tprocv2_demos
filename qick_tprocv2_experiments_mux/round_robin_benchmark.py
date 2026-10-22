@@ -36,7 +36,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1000 # number of rounds
+n = 1 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -73,7 +73,7 @@ save_shots_t2e = True
 save_shots_qspec_ef = True
 save_shots_rspec_ef = True
 
-Qs_to_look_at = [0,2,3,4,5] # only list the qubits you want to do the RR for.
+Qs_to_look_at = [0] # only list the qubits you want to do the RR for.
 
 # Data saving info
 run_name = 'run10'
@@ -83,12 +83,12 @@ substudy_txt_notes = ('Qubit environment is still cooling.\n')
 # set which of the following you'd like to run to 'True'
 
 # run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
-#              "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
-#              "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
+#              "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
+#              "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
 
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
-             "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
-             "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
+             "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
+             "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
 
 # For 25dB DAC
 res_leng_vals = [5.3, 8.0, 8.7, 8.8, 5.8, 7.9]
@@ -115,7 +115,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts, round_robin_benchmark
-sub_study = 'cooldown_data_noQ2_3' # Q1_cooldown_data, debugging_rspec_noise, Q1Q3Q5Q6_cooldown_data, new_QICK_box_optimizing
+sub_study = 'new_QICK_box_optimizing_wfilters' # Q1_cooldown_data, debugging_rspec_noise, Q1Q3Q5Q6_cooldown_data, new_QICK_box_optimizing, new_QICKBox_warm_filters_Q1Q5Q6
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -320,9 +320,9 @@ while j < n:
                 qspecge_increase_reps_to = None
                 increase_qspec_rounds_to = None
 
-                if QubitIndex == 5:
-                    increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 700
+                # if QubitIndex == 5:
+                #     increase_qubit_reps_qspec = True
+                #     qspecge_increase_reps_to = 700
                     # increase_qspec_rounds = True
                     # increase_qspec_rounds_to = 2
 
@@ -665,7 +665,7 @@ while j < n:
 
                     if QubitIndex == 5:
                         increase_qubit_reps_ef = True  # if you want to increase the reps for a qubit, set to True
-                        increase_reps_to_ef = 145
+                        increase_reps_to_ef = 1450
                         reduce_rlx_delay_efqspec = True
                         reduce_rlx_delay_efqspec_to = 650
 
