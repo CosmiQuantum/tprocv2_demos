@@ -36,7 +36,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1 # number of rounds
+n = 1000000 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -73,7 +73,7 @@ save_shots_t2e = True
 save_shots_qspec_ef = True
 save_shots_rspec_ef = True
 
-Qs_to_look_at = [0] # only list the qubits you want to do the RR for.
+Qs_to_look_at = [0,4,5] # only list the qubits you want to do the RR for.
 
 # Data saving info
 run_name = 'run10'
@@ -82,18 +82,18 @@ substudy_txt_notes = ('Qubit environment is still cooling.\n')
 
 # set which of the following you'd like to run to 'True'
 
-# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
-#              "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
-#              "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
-
 run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
-             "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
-             "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
+             "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
+             "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
+
+# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
+#              "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
+#              "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
 
 # For 25dB DAC
-res_leng_vals = [5.3, 8.0, 8.7, 8.8, 5.8, 7.9]
-res_gain = [0.8124, 0.25, 0.37, 0.39, 0.72, 0.845]
-freq_offsets =[0.1111,-0.0222,-0.1111,-0.2,-0.5111,-0.1111]
+res_leng_vals = [5.3, 8.0, 8.7, 8.8, 5.7, 5.48]
+res_gain = [0.8112, 0.23, 0.345, 0.36, 0.73, 0.841]
+freq_offsets =[-0.2000,-0.0222,-0.2000,0.1111,-0.2000,-0.2000]
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
@@ -115,7 +115,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts, round_robin_benchmark
-sub_study = 'new_QICK_box_optimizing_wfilters' # Q1_cooldown_data, debugging_rspec_noise, Q1Q3Q5Q6_cooldown_data, new_QICK_box_optimizing, new_QICKBox_warm_filters_Q1Q5Q6
+sub_study = 'new_QICKBox_warm_filters_Q1Q5Q6_opt' # Q1_cooldown_data, debugging_rspec_noise, Q1Q3Q5Q6_cooldown_data, new_QICK_box_optimizing, new_QICKBox_warm_filters_Q1Q5Q6
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -281,10 +281,10 @@ while j < n:
                     increase_geres_reps_to = 1800
                 if QubitIndex == 1:
                     increase_geres_reps = True
-                    increase_geres_reps_to = 1300
+                    increase_geres_reps_to = 1800
                 if QubitIndex == 2:
                     increase_geres_reps = True
-                    increase_geres_reps_to = 1100
+                    increase_geres_reps_to = 1800
                 # if QubitIndex == 4:
                 #     use_savgol_smoothing_rspec = True
                 #     increase_geres_reps = True
@@ -344,7 +344,7 @@ while j < n:
 
                 if QubitIndex == 1:
                     increase_qubit_reps_qspec = True
-                    qspecge_increase_reps_to = 1200
+                    qspecge_increase_reps_to = 1500
 
                 # if QubitIndex == 0:
                 #     increase_qubit_reps_qspec = True

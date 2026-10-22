@@ -52,12 +52,12 @@ n = 1  # Number of rounds
 n_loops = 1 # Number of repetitions per length to average
 
 # List of qubits to measure
-Qs = [0]
+Qs = [4]
 
 # For 25dB DAC
-res_leng_vals = [5.3, 8.0, 8.7, 8.8, 5.8, 7.9]
-res_gain = [0.8124, 0.25, 0.37, 0.39, 0.72, 0.845]
-freq_offsets =[0.1111,-0.0222,-0.1111,-0.2,-0.5111,-0.1111]
+res_leng_vals = [5.3, 8.0, 8.7, 8.8, 5.6, 5.4]
+res_gain = [0.8122, 0.23, 0.345, 0.36, 0.73, 0.841]
+freq_offsets =[-0.2000,-0.0222,-0.2000,0.1111,-0.2000,-0.2000]
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_freq_ge = [None] * 6 # creates list where the script will be storing the freq of each resonator, to use in the 2d sweep
@@ -72,9 +72,9 @@ for QubitIndex in Qs:
     if QubitIndex == 0:
         lengs = np.arange(5.0, 5.6, 0.1)
     elif QubitIndex == 5:
-        lengs = np.arange(7.6, 8.0, 0.1)
+        lengs = np.arange(5.0, 5.6, 0.1)
     else:
-        lengs = np.arange(8.0, 10.0, 0.25)
+        lengs = np.arange(5.0, 6.0, 0.1)
 
     recycled_qfreq = False  # don't change
 
@@ -108,13 +108,13 @@ for QubitIndex in Qs:
     #     increase_geres_reps_to = 400 #400
     if QubitIndex == 3:
         increase_geres_reps = True
-        increase_geres_reps_to = 900
+        increase_geres_reps_to = 1800
     if QubitIndex == 1:
         increase_geres_reps = True
-        increase_geres_reps_to = 1000
+        increase_geres_reps_to = 1800
     if QubitIndex == 2:
         increase_geres_reps = True
-        increase_geres_reps_to = 900
+        increase_geres_reps_to = 1800
     # if QubitIndex == 4:
     #     use_savgol_smoothing_rspec = True
     #     increase_geres_reps = True
@@ -141,31 +141,31 @@ for QubitIndex in Qs:
     qspecge_increase_reps_to = None
     increase_qspec_rounds_to = None
 
-    if QubitIndex == 5:
-        increase_qubit_reps_qspec = True
-        qspecge_increase_reps_to = 700
-        # increase_qspec_rounds = True
-        # increase_qspec_rounds_to = 2
+    # if QubitIndex == 5:
+    #     increase_qubit_reps_qspec = True
+    #     qspecge_increase_reps_to = 700
+    # increase_qspec_rounds = True
+    # increase_qspec_rounds_to = 2
 
     # if QubitIndex == 4:
     #     increase_qubit_reps_qspec = True
-    #     qspecge_increase_reps_to = 800
+    #     qspecge_increase_reps_to = 600
     #     # increase_qspec_rounds = True
     #     # increase_qspec_rounds_to = 2
 
     if QubitIndex == 3:
         increase_qubit_reps_qspec = True
-        qspecge_increase_reps_to = 1600
+        qspecge_increase_reps_to = 1500
     #     # increase_qspec_rounds = True
     #     # increase_qspec_rounds_to = 3
     #
     if QubitIndex == 2:
         increase_qubit_reps_qspec = True
-        qspecge_increase_reps_to = 1400
+        qspecge_increase_reps_to = 1500
 
     if QubitIndex == 1:
         increase_qubit_reps_qspec = True
-        qspecge_increase_reps_to = 1200
+        qspecge_increase_reps_to = 1500
 
     # if QubitIndex == 0:
     #     increase_qubit_reps_qspec = True
@@ -366,32 +366,32 @@ for QubitIndex in Qs:
 
         ## punchout thresholds run 9d: [1.0, 0.886, 1.0, 0.85, 0.825, 1.0] 25dB, [0.8, 0.75, 0.8, 0.5, 0.65, 0.8] 20dB
         # Define sweeping parameters
-        # [0.816, 0.363, 0.41, 0.482, 0.66, 0.845]
+        # 0.8124, 0.23, 0.345, 0.36, 0.73, 0.845
         if QubitIndex == 0:
-            gain_range = [0.80, 0.83] #[0.70, 0.86]
-            gain_steps = 6
+            gain_range = [0.8123, 0.8126] #[0.70, 0.86]
+            gain_steps = 1
 
         elif QubitIndex == 1:
-            gain_range = [0.28, 0.281]
+            gain_range = [0.231, 0.233]
             gain_steps = 1
 
         elif QubitIndex == 2:
-            gain_range = [0.3, 0.45] # [0.75, 0.855]
-            gain_steps = 12
+            gain_range = [0.344, 0.346] # [0.75, 0.855]
+            gain_steps = 1
 
         elif QubitIndex == 3:
-            gain_range = [0.3, 0.5]  # [0.55, 0.655]
-            gain_steps = 12
+            gain_range = [0.361, 0.363]  # [0.55, 0.655]
+            gain_steps = 1
 
         elif QubitIndex == 4:
-            gain_range = [0.60, 0.8]
-            gain_steps = 6
+            gain_range = [0.731, 0.733]
+            gain_steps = 1
 
         elif QubitIndex == 5:
-            gain_range = [0.70, 0.80]
-            gain_steps = 12
+            gain_range = [0.844, 0.846]
+            gain_steps = 1
 
-        freq_steps = 12 #9
+        freq_steps = 9
 
         print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')
         # Select the reference frequency for the current resonator
