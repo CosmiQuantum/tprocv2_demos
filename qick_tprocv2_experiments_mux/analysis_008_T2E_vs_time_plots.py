@@ -370,14 +370,19 @@ class T2eVsTime:
                             # You want to keep data below the threshold. We expect good fits to have small residuals.
                             # small NRMSE = good fit = keep, and large NRMSE = poor fit = reject
 
-                            nrmse_threshold = 0.14 # tested for QUIET runs 4-9 and it worked well for all!
+                            if self.run_number == 10:
+                                nrmse_threshold = 0.12
+                            else:
+                                nrmse_threshold = 0.14 # tested for QUIET runs 4-9 and it worked well for all
                             nrmse_score = out["nrmse"]
                             if nrmse_score > nrmse_threshold:
                                 print(f"Rejected due to NRMSE cut. Value was above threshold of {nrmse_threshold}")
+                                #If you want to see which scans got cut here:
+                                T2E_class_instance.t2_fit_iminuit(delay_times, I, Q, make_plots = True, title_ext = f"nrmse_score:{nrmse_score:.4f}")
                                 continue
 
                             # If you want to plot the data that made it through, uncomment this:
-                            # T2E_class_instance.t2_fit_iminuit(delay_times, I, Q, make_plots = True)
+                            #T2E_class_instance.t2_fit_iminuit(delay_times, I, Q, make_plots = True, title_ext = f"nrmse_score:{nrmse_score:.4f}")
 
                             t2e_vals[q_key].extend([t2e_est])
                             t2e_errs[q_key].extend([t2e_err])
@@ -466,7 +471,7 @@ class T2eVsTime:
             ax.tick_params(axis='both', which='major', labelsize=8)
 
         plt.tight_layout()
-        plt.savefig(analysis_folder + 'T2E_vals.png', transparent=False, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'T2E_vals.pdf', transparent=False, dpi=self.final_figure_quality)
         print('Plot saved at: ', analysis_folder)
         plt.close()
 
@@ -489,7 +494,7 @@ class T2eVsTime:
 
         font = 14
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
-        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8), sharey=True, sharex=True)
         plt.suptitle('T2E Values vs Time', fontsize=font)
         axes = axes.flatten()
@@ -531,7 +536,7 @@ class T2eVsTime:
                 alpha=0.5
             )
 
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H"))
             ax.tick_params(axis='x', rotation=45)
 
             ax.ticklabel_format(style="plain", axis="y")
@@ -540,10 +545,10 @@ class T2eVsTime:
                 ax.legend(edgecolor='black')
             ax.set_xlabel('Time', fontsize=font - 2)
             ax.set_ylabel('T2E (us)', fontsize=font - 2)
-            ax.tick_params(axis='both', which='major', labelsize=8)
+            ax.tick_params(axis='both', which='major', labelsize=14)
 
         plt.tight_layout()
-        plt.savefig(analysis_folder + 'T2E_vals.png', transparent=False, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'T2E_vals.pdf', transparent=False, dpi=self.final_figure_quality)
         print('Plot saved to: ', analysis_folder)
         plt.close()
 

@@ -38,13 +38,13 @@ import h5py
 # from qualang_tools.plot import Fit
 # import visdom
 ###################################################### Set These #######################################################
-save_figs = False  #this is just for RR plots
+save_figs = True  #this is just for RR plots as the data is being processed
 fit_saved = False
 show_legends = False
 signal = 'None'
 
 figure_quality = 100 #ramp this up to like 500 for presentation plots
-final_figure_quality = 200
+final_figure_quality = 600
 
 run_num_list = [10] # options: 4,5,6,7,8,9, 9.2 (run 9c), 9.3 (run 9d), 10
 t1_vals_by_run  = {}
@@ -68,19 +68,29 @@ for run_number in run_num_list:
         plots_path =  "/home/acolonce/Documents/analysis/coherence" #cosmiqserver01
 
         top_folder_dates = [
-            f"Q1_cooldown_data_1/2026-10-12_23-07-56",
-            f"Q1_cooldown_data_1/2026-10-12_22-53-24",
+            "Q1_cooldown_data_1/2026-10-12_23-07-56",
+            "Q1_cooldown_data_1/2026-10-12_22-53-24",
 
-            f"Q1_cooldown_data_2/2026-10-14_00-46-04",
-            f"Q1_cooldown_data_2/2026-10-14_00-27-25"
+            "Q1_cooldown_data_2/2026-10-14_00-46-04",
+            "Q1_cooldown_data_2/2026-10-14_00-27-25"
 
-            f"Q1Q3Q5Q6_cooldown_data/2026-10-19_16-23-46",
-            f"Q1Q3Q5Q6_cooldown_data/2026-10-19_15-35-38",
-            f"Q1Q3Q5Q6_cooldown_data/2026-10-19_14-35-31",
-            f"Q1Q3Q5Q6_cooldown_data/2026-10-19_13-12-28",
-            f"Q1Q3Q5Q6_cooldown_data/2026-10-19_11-57-25",
+            "Q1Q3Q5Q6_cooldown_data/2026-10-19_16-23-46",
+            "Q1Q3Q5Q6_cooldown_data/2026-10-19_15-35-38",
+            "Q1Q3Q5Q6_cooldown_data/2026-10-19_14-35-31",
+            "Q1Q3Q5Q6_cooldown_data/2026-10-19_13-12-28",
+            "Q1Q3Q5Q6_cooldown_data/2026-10-19_11-57-25",
 
-            f"cooldown_data_noQ2/2026-10-19_23-40-06"
+            "cooldown_data_noQ2/2026-10-19_23-40-06",
+
+            "cooldown_data_noQ2_2/2026-10-20_16-00-05",
+            "cooldown_data_noQ2_2/2026-10-20_23-41-29",
+            "cooldown_data_noQ2_2/2026-10-20_23-53-21",
+
+            f"cooldown_data_noQ2_3/2026-10-21_01-27-31",
+
+            "new_QICKBox_warm_filters_Q1Q5Q6_opt/2026-10-21_23-34-58",
+            "new_QICKBox_warm_filters_Q1Q5Q6_opt/2026-10-21_23-55-47",
+            "new_QICKBox_warm_filters_Q1Q5Q6_opt/2026-10-22_00-04-46"
         ]
 
     if run_number == 9.3: # run 9d
@@ -545,9 +555,9 @@ for run_number in run_num_list:
     #                         fit_saved, signal, run_name, FRIDGE)
     # date_times_t2r, t2r_vals, t2r_fit_err, rounds_t2r = t2r_vs_time.run(return_errs=True, t1_vals = t1_vals, return_rnds = True)
 
-    # t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
-    #                         fit_saved, signal, run_name, FRIDGE)
-    # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = t1_vals)
+    t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+                            fit_saved, signal, run_name, FRIDGE)
+    date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = t1_vals)
 
     # ---------------- Store results ----------------
     ## stores data like t1_vals_by_run[6][3], where 6=run number and 3=qubit index (0 based)
@@ -558,8 +568,8 @@ for run_number in run_num_list:
     # t2r_vals_by_run[run_number] = t2r_vals
     # t2r_errs_by_run[run_number] = t2r_fit_err
     # #
-    # t2e_vals_by_run[run_number] = t2e_vals
-    # t2e_errs_by_run[run_number] = t2e_fit_err
+    t2e_vals_by_run[run_number] = t2e_vals
+    t2e_errs_by_run[run_number] = t2e_fit_err
     # #
     # qfreq_vals_by_run[run_number] = q_freqs
     # qfreq_errs_by_run[run_number] = qspec_fit_err
@@ -834,7 +844,7 @@ t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends) # sh
 # ])
 # ################################################# 08: T2E vs Time Plots ################################################
 # #t2e_vs_time.plot_without_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
-#t2e_vs_time.plot_with_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends) # shows error bars, do this one!!
+t2e_vs_time.plot_with_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends) # shows error bars, do this one!!
 # t2e_vs_time.plot_with_errs_single_plot(date_times_t2e, t2e_vals, t2e_fit_err, show_legends=True)
 ############################################### Qubit Frequency hist Plots #############################################
 # qfreq_distribution_plots = QfreqHistPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,

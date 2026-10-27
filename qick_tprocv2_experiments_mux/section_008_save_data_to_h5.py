@@ -187,7 +187,7 @@ class Data_H5:
 
                 for dataset_name in group.keys():
                     # Attempt to map HDF5 keys to the target dictionaries' keys.
-                    if data_type == 'Res' or data_type == 'Res_ge' or data_type == 'Res_ef':
+                    if data_type == 'Res' or data_type == 'Res_ge' or  data_type == 'Res_ef' or data_type == 'res_ge' or data_type == 'res_ef' or data_type == 'res':
                         target_keys = {'Dates': 'Dates', 'freq_pts': 'freq_pts', 'freq_center': 'freq_center',
                                        'Amps': 'Amps', 'I': 'I', 'Q': 'Q', 'Ishots': 'Ishots', 'Qshots': 'Qshots',
                                        'Found Freqs': 'Found Freqs', 'Round Num': 'Round Num',
@@ -199,20 +199,20 @@ class Data_H5:
                                        'Avg Mag Oct': 'Avg Mag Oct', 'Round Num': 'Round Num', 'Batch Num': 'Batch Num',
                                        'Exp Config': 'Exp Config', 'Syst Config': 'Syst Config',
                                        'measurement_timestamp': 'measurement_timestamp'}
-                    elif data_type == 'QSpec' or data_type == 'QSpec_ge' or data_type == 'QSpec_ef' or data_type == 'qspec_ge' or data_type == 'qspec_ef':
+                    elif data_type == 'QSpec' or data_type == 'QSpec_ge' or  data_type == 'QSpec_ef' or data_type == 'qspec_ge' or data_type == 'qspec_ef' or data_type == 'qspec':
                         target_keys = {'Dates': 'Dates', 'I': 'I', 'Q': 'Q', 'Ishots': 'Ishots', 'Qshots': 'Qshots',
                                        'Frequencies': 'Frequencies',
                                        'I Fit': 'I Fit', 'Q Fit': 'Q Fit', 'Round Num': 'Round Num',
                                        'Batch Num': 'Batch Num', 'Recycled QFreq': 'Recycled QFreq',
                                        'Exp Config': 'Exp Config', 'Syst Config': 'Syst Config',
                                        'measurement_timestamp': 'measurement_timestamp'}
-                    elif data_type == 'Rabi' or data_type == 'Rabi_ge' or data_type == 'Rabi_ef' or data_type == 'rabi_ge' or data_type == 'rabi_ef':
+                    elif data_type == 'Rabi' or data_type == 'Rabi_ge' or  data_type == 'Rabi_ef' or data_type == 'rabi_ge' or data_type == 'rabi_ef' or data_type == 'rabi':
                         target_keys = {'Dates': 'Dates', 'I': 'I', 'Q': 'Q', 'Ishots': 'Ishots', 'Qshots': 'Qshots',
                                        'Gains': 'Gains', 'Fit': 'Fit', 'Round Num': 'Round Num',
                                        'Batch Num': 'Batch Num',
                                        'Exp Config': 'Exp Config', 'Syst Config': 'Syst Config',
                                        'measurement_timestamp': 'measurement_timestamp'}
-                    elif data_type == 'q_temperatures':
+                    elif data_type == 'q_temperatures' or data_type == 'Qtemps':
                         target_keys = {'Dates': 'Dates', 'Qfreq_ge': 'Qfreq_ge',
                                        'I1': 'I1', 'Q1': 'Q1', 'Gains1': 'Gains1', 'Ishots1': 'Ishots1',
                                        'Qshots1': 'Qshots1', 'Fit1': 'Fit1',
@@ -226,13 +226,13 @@ class Data_H5:
                                        'Fit': 'Fit',
                                        'Round Num': 'Round Num', 'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
                                        'Syst Config': 'Syst Config'}
-                    elif data_type == 'SS':
+                    elif data_type == 'SS' or data_type == 'ss_ge' or data_type == 'SS_ge' or data_type == 'ss':
                         target_keys = {'Fidelity': 'Fidelity', 'Angle': 'Angle', 'Dates': 'Dates', 'I_g': 'I_g',
                                        'Q_g': 'Q_g', 'I_e': 'I_e', 'Q_e': 'Q_e', 'raw_g': 'raw_g', 'raw_e': 'raw_e',
                                        'Round Num': 'Round Num', 'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
                                        'Syst Config': 'Syst Config', 'measurement_timestamp': 'measurement_timestamp'}
 
-                    elif data_type == 'SS_gef':
+                    elif data_type == 'SS_gef' or data_type == 'ss_gef':
                         target_keys = {'Fidelity': 'Fidelity', 'Angle_ge': 'Angle_ge', 'Dates': 'Dates', 'I_g': 'I_g',
                                        'Q_g': 'Q_g', 'I_e': 'I_e', 'Q_e': 'Q_e', 'I_f': 'I_f', 'Q_f': 'Q_f',
                                        'Round Num': 'Round Num', 'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
@@ -243,18 +243,30 @@ class Data_H5:
                                        'Delay Times': 'Delay Times', 'Fit': 'Fit', 'Round Num': 'Round Num',
                                        'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
                                        'Syst Config': 'Syst Config', 'measurement_timestamp': 'measurement_timestamp'}
-                    elif data_type == 'T2':
+                    elif data_type == 'T2' or data_type == 't2' or data_type == 't2_ge':
                         target_keys = {'T2': 'T2', 'Errors': 'Errors', 'Dates': 'Dates', 'I': 'I', 'Q': 'Q',
                                        'Ishots': 'Ishots', 'Qshots': 'Qshots',
                                        'Delay Times': 'Delay Times', 'Fit': 'Fit', 'Round Num': 'Round Num',
                                        'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
                                        'Syst Config': 'Syst Config', 'measurement_timestamp': 'measurement_timestamp'}
-                    elif data_type == 'T2E':
+                    elif data_type == 'T2E' or data_type == 't2e' or data_type == 't2e_ge' or data_type == 'T2E_ge':
                         target_keys = {'T2E': 'T2E', 'Errors': 'Errors', 'Dates': 'Dates', 'I': 'I', 'Q': 'Q',
                                        'Ishots': 'Ishots', 'Qshots': 'Qshots',
                                        'Delay Times': 'Delay Times', 'Fit': 'Fit', 'Round Num': 'Round Num',
                                        'Batch Num': 'Batch Num', 'Exp Config': 'Exp Config',
                                        'Syst Config': 'Syst Config', 'measurement_timestamp': 'measurement_timestamp'}
+
+                    elif data_type.startswith("t1_ge_active_reset_") and data_type.endswith("corr") and data_type.removeprefix("t1_ge_active_reset_").removesuffix("corr").isdigit():
+                        target_keys = {'T1': 'T1', 'Errors': 'Errors', 'Dates': 'Dates', 'I': 'I', 'Q': 'Q',
+                                       'Ishots': 'Ishots', 'Qshots': 'Qshots', 'Delay Times': 'Delay Times',
+                                       'Fit': 'Fit', 'Round Num': 'Round Num', 'Batch Num': 'Batch Num',
+                                       'Exp Config': 'Exp Config', 'Syst Config': 'Syst Config',
+                                       'measurement_timestamp': 'Measurement Timestamp', 'Angle': 'Angle',
+                                       'Threshold Raw': 'Threshold Raw', 'Res Length Cycles': 'Res Length Cycles',
+                                       'n_resets': 'n_resets', 'First Dec Ishots': 'First Dec Ishots',
+                                       'First Dec Qshots': 'First Dec Qshots', 'Last Dec Ishots': 'Last Dec Ishots',
+                                       'Last Dec Qshots': 'Last Dec Qshots'}
+
                     else:
                         raise ValueError(f"Unsupported data_type: {data_type}")
 

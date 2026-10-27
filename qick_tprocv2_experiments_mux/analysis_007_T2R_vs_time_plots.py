@@ -340,7 +340,7 @@ class T2rVsTime:
                             if self.run_number == 9:
                                 LIN_Rams_BIC_thresh = 100
                             else: #runs 4-8
-                                LIN_Rams_BIC_thresh = 35 # threshold is good for runs 4-8
+                                LIN_Rams_BIC_thresh = 35 # threshold is good for runs 4-8 and run 10
 
                             keep_ramsey, delta_bic = self.flat_vs_ramsey_bic(y, fitted, k_fit=6, k0=1, threshold=LIN_Rams_BIC_thresh)
                             if not keep_ramsey:
@@ -355,7 +355,7 @@ class T2rVsTime:
                             if self.run_number == 9:
                                 EXP_Rams_BIC_thresh = 100
                             else: #runs 4-8
-                                EXP_Rams_BIC_thresh = 10 # threshold is good for runs 4-8
+                                EXP_Rams_BIC_thresh = 10 # threshold is good for runs 4-8 and run 10
 
                             keep_ramsey, delta_bic_exp = self.exp_vs_ramsey_bic(delay_times, y, fitted, k_fit=6, k_exp=3, threshold=EXP_Rams_BIC_thresh)
                             if not keep_ramsey:
@@ -387,7 +387,9 @@ class T2rVsTime:
                                 nrmse_threshold = 0.15 # all run 4 plots were good so threshold here is just a dummy that doesn't filter anything
                             elif self.run_number == 9:
                                 nrmse_threshold = 0.079
-                            else: # default for runs with great plots / no major issues
+                            elif self.run_number == 10:
+                                nrmse_threshold = 0.10
+                            else: # default for runs with no major issues
                                 nrmse_threshold = 0.15
 
                             nrmse_score = out["nrmse"]
@@ -479,7 +481,7 @@ class T2rVsTime:
 
         font = 24
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
-        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8), sharey=True, sharex=True)
         plt.suptitle('T2R Values vs Time', fontsize=font)
         axes = axes.flatten()
@@ -519,14 +521,14 @@ class T2rVsTime:
             )
 
             #ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H"))
             ax.tick_params(axis='x', rotation=45)
 
             if show_legends:
                 ax.legend(edgecolor='black')
             ax.set_xlabel('Time', fontsize=font - 2)
             ax.set_ylabel('T2R (µs)', fontsize=font - 2)
-            ax.tick_params(axis='both', which='major', labelsize=8)
+            ax.tick_params(axis='both', which='major', labelsize=14)
 
         plt.tight_layout()
         plt.savefig(analysis_folder + 'T2R_vals.pdf', transparent=True, dpi=self.final_figure_quality)

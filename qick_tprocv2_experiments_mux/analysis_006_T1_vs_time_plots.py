@@ -406,6 +406,8 @@ class T1VsTime:
                             Qshots_raw = self.process_h5_data(load_data[f't1{exp_extension}'][q_key][Q_key][0][dataset].decode())
 
                             # --- path to the soccfg dump (txt file made with save_run_soccfg_params.py) ---
+                            if self.run_number == 10: # This should work
+                                soccfg_dump_path = "/exp/cosmiq/data/QUIET/QICK_data/run10/6transmon/run10_soccfg_params/soccfg_full_dump_2026-10-27_11-18-01_firmware_during_run10.txt"
                             if self.run_number == 9: #This works
                                 soccfg_dump_path = "/exp/cosmiq/data/QUIET/QICK_data/run9/6transmon/run9_soccfg_params/soccfg_full_dump_2026-04-20_21-30-15_firmware_during_run9.txt"
                                     #"/data/QICK_data/run9/6transmon/run9_soccfg_params/soccfg_full_dump_2026-04-20_21-30-15_firmware_during_run9.txt" #daq01
@@ -486,7 +488,7 @@ class T1VsTime:
                             delta_bic = bic_flat - bic_exp
 
                             if delta_bic < 35:
-                                # I verified this BIC score for runs 4-9 and it worked well for ALL of them! No bad fits left.
+                                # I verified this BIC score for runs 4-10 and it worked well for ALL of them! No bad fits left.
                                 continue
                             #---------------------------------------------------------------------------------------------
 
@@ -895,7 +897,7 @@ class T1VsTime:
 
         font = 14
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
-        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8), sharey=True, sharex=True)
         ext = exp_extension.replace('_', '')
         plt.suptitle(f'T1 Values vs Time {ext}', fontsize=font)
@@ -936,7 +938,7 @@ class T1VsTime:
                 alpha=0.5
             )
 
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H"))
             ax.tick_params(axis='x', rotation=45)
 
             ax.ticklabel_format(style="plain", axis="y")
@@ -945,7 +947,7 @@ class T1VsTime:
                 ax.legend(edgecolor='black')
             ax.set_xlabel('Time', fontsize=font - 2)
             ax.set_ylabel('T1 (us)', fontsize=font - 2)
-            ax.tick_params(axis='both', which='major', labelsize=8)
+            ax.tick_params(axis='both', which='major', labelsize=14)
 
         plt.tight_layout()
         plt.savefig(analysis_folder + f'T1_vals{exp_extension}.pdf', transparent=True, dpi=self.final_figure_quality)

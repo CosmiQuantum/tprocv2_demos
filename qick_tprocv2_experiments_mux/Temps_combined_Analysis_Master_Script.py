@@ -343,7 +343,7 @@ filter_keywords_run9c = [
 base_dir_run10 = "/exp/cosmiq/data/QUIET/QICK_data/run10/6transmon/round_robin_benchmark"
 
 target_dates_qtemps_RPM_run10 = ["2026-10-12", "2026-10-14",
-                                 "2026-10-19"]
+                                 "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22"]
 
 # To save plots
 r10_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
@@ -354,7 +354,8 @@ outerFolder_qtemps_plots_RR_run10 =  f"{r10_plts_prefix}/rpm_qtemps/replotted_RR
 outerFolder_qtemps_plots_run10 = f"{r10_plts_prefix}/rpm_qtemps"
 
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name. These are substudies.
-filter_keywords_run10 = ["Q1_cooldown_data_1", "Q1_cooldown_data_2", "Q1Q3Q5Q6_cooldown_data", "cooldown_data_noQ2"]
+filter_keywords_run10 = ["Q1_cooldown_data_1", "Q1_cooldown_data_2", "Q1Q3Q5Q6_cooldown_data", "cooldown_data_noQ2", "cooldown_data_noQ2_2", "cooldown_data_noQ2_3",
+                         "new_QICKBox_warm_filters_Q1Q5Q6_opt"]
 
 #-------------------------------------------------------------------------------- Assign func variables depending on run number ---------------------------------------------------------------------------
 if run_num == 6: # We have science-run data as well as pre-science-run data available
@@ -808,7 +809,17 @@ paths_SSFmethods_run10 = [
     f"{r10_path_prefix}/6transmon/round_robin_benchmark/Q1Q3Q5Q6_cooldown_data/2026-10-19_13-12-28",
     f"{r10_path_prefix}/6transmon/round_robin_benchmark/Q1Q3Q5Q6_cooldown_data/2026-10-19_11-57-25",
 
-    f"{r10_path_prefix}/6transmon/round_robin_benchmark/cooldown_data_noQ2/2026-10-19_23-40-06"
+    f"{r10_path_prefix}/6transmon/round_robin_benchmark/cooldown_data_noQ2/2026-10-19_23-40-06",
+
+    f"{r10_path_prefix}/6transmon/round_robin_benchmark/cooldown_data_noQ2_2/2026-10-20_16-00-05",
+    f"{r10_path_prefix}/6transmon/round_robin_benchmark/cooldown_data_noQ2_2/2026-10-20_23-41-29",
+    f"{r10_path_prefix}/6transmon/round_robin_benchmark/cooldown_data_noQ2_2/2026-10-20_23-53-21",
+
+    f"{r10_path_prefix}/6transmon/round_robin_benchmark/cooldown_data_noQ2_3/2026-10-21_01-27-31",
+
+    f"{r10_path_prefix}/6transmon/round_robin_benchmark/new_QICKBox_warm_filters_Q1Q5Q6_opt/2026-10-21_23-34-58",
+    f"{r10_path_prefix}/6transmon/round_robin_benchmark/new_QICKBox_warm_filters_Q1Q5Q6_opt/2026-10-21_23-55-47",
+    f"{r10_path_prefix}/6transmon/round_robin_benchmark/new_QICKBox_warm_filters_Q1Q5Q6_opt/2026-10-22_00-04-46",
     ]
 # To save plots
 r10_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
