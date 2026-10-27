@@ -12,16 +12,16 @@ in clock cycles for each qubit.
 """
 # ============================================================
 # FLAGS
-RUN_SOCCFG_DUMP = True
-RUN_RO_LENGTH_FROM_H5 = False
+RUN_SOCCFG_DUMP = True # to save all soccfg info into a txt file
+RUN_RO_LENGTH_FROM_H5 = False # to print ro_cycles info from h5 file data
 # ============================================================
-
+run_num = 10
 if RUN_SOCCFG_DUMP:
     # --- Set output path ---
-    save_dir = "/data/QICK_data/run9/6transmon/run9_soccfg_params"   # <--- change to where you want it
+    save_dir = f"/data/QICK_data/run10/6transmon/run{run_num}_soccfg_params"   # <--- change to where you want it
     os.makedirs(save_dir, exist_ok=True)
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    save_path = os.path.join(save_dir, f"soccfg_full_dump_{timestamp}_firmware_during_run9.txt")
+    save_path = os.path.join(save_dir, f"soccfg_full_dump_{timestamp}_firmware_during_run{run_num}.txt")
 
     # --- Connect to QICK ---
     soc, soccfg = makeProxy()
