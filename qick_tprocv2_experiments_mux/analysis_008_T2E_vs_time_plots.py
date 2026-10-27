@@ -378,7 +378,7 @@ class T2eVsTime:
                             if nrmse_score > nrmse_threshold:
                                 print(f"Rejected due to NRMSE cut. Value was above threshold of {nrmse_threshold}")
                                 #If you want to see which scans got cut here:
-                                T2E_class_instance.t2_fit_iminuit(delay_times, I, Q, make_plots = True, title_ext = f"nrmse_score:{nrmse_score:.4f}")
+                                #T2E_class_instance.t2_fit_iminuit(delay_times, I, Q, make_plots = True, title_ext = f"nrmse_score:{nrmse_score:.4f}")
                                 continue
 
                             # If you want to plot the data that made it through, uncomment this:
@@ -538,6 +538,7 @@ class T2eVsTime:
 
             ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H"))
             ax.tick_params(axis='x', rotation=45)
+            plt.setp(ax.get_xticklabels(), ha='right', rotation_mode='anchor')
 
             ax.ticklabel_format(style="plain", axis="y")
 

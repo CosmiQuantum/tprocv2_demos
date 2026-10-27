@@ -17,6 +17,8 @@ import matplotlib.pyplot as plt
 from iminuit import Minuit
 from scipy.stats import norm
 from scipy.optimize import curve_fit
+import matplotlib.dates as mdates
+from matplotlib.ticker import StrMethodFormatter, LinearLocator
 
 class ResonatorFreqVsTime:
     def __init__(self, base_data_path, plots_path, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
@@ -364,62 +366,105 @@ class ResonatorFreqVsTime:
 
         return date_times, resonator_centers
 
-    def plot(self, date_times, resonator_centers, show_legends, exp_extension = ''):
-        #---------------------------------plot-----------------------------------------------------
+    def plot(self, date_times, resonator_centers, show_legends, exp_extension='', use_global_yaxis=True):
+        # ---------------------------------plot-----------------------------------------------------
         self.create_folder_if_not_exists(self.plots_path)
         analysis_folder = os.path.join(self.plots_path, "features_vs_time/")
         self.create_folder_if_not_exists(analysis_folder)
 
-        font = 14
-        colors = ['orange','blue','purple','green','brown','pink']
+        font = 16
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
         ext = exp_extension.split('_')[0]
-        plt.title(f'Resonator centers vs Time {ext}',fontsize = font)
+        plt.title(f'Resonator centers vs Time {ext}', fontsize=font)
         axes = axes.flatten()
-        titles = [f"Res {i + 1}" for i in range(self.number_of_qubits)]
+        titles = [f"Resonator {i + 1}" for i in range(self.number_of_qubits)]
         from datetime import datetime
-        for i, ax in enumerate(axes):
 
-            ax.set_title(titles[i], fontsize = font)
+        # -------- preprocess once: sort/store data and find common width --------
+        processed_data = []
+        global_width = 0
 
+        for i in range(self.number_of_qubits):
             x = date_times[i]
             y = resonator_centers[i]
 
-            # Convert strings to datetime objects.
             datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
-
-            # Combine datetime objects and y values into a list of tuples and sort by datetime.
             combined = list(zip(datetime_objects, y))
 
             if len(combined) == 0:
-                # If this qubit has no data, just skip
-                ax.set_visible(False)
+                processed_data.append(None)
                 continue
 
             combined.sort(reverse=True, key=lambda x: x[0])
-
-            # Unpack them back into separate lists, in order from latest to most recent.
             sorted_x, sorted_y = zip(*combined)
+
+            sorted_x = np.array(sorted_x)
+            sorted_y = np.array(sorted_y, dtype=float)
+
+            if use_global_yaxis:
+                local_min = np.min(sorted_y)
+                local_max = np.max(sorted_y)
+                global_width = max(global_width, local_max - local_min)
+
+            processed_data.append((sorted_x, sorted_y))
+
+        # add padding so points are not pressed against the borders
+        padding_fraction = 0.15
+
+        if use_global_yaxis:
+            global_width *= (1 + 2 * padding_fraction)
+
+        # -------- plotting loop --------
+        for i, ax in enumerate(axes):
+
+            ax.set_title(titles[i], fontsize=font)
+
+            if i >= self.number_of_qubits or processed_data[i] is None:
+                ax.set_visible(False)
+                continue
+
+            sorted_x, sorted_y = processed_data[i]
+
+            if use_global_yaxis:
+                center = np.mean(sorted_y)
+                ax.set_ylim(center - global_width / 2, center + global_width / 2)
+
+            else:
+                local_min = np.min(sorted_y)
+                local_max = np.max(sorted_y)
+                local_width = local_max - local_min
+
+                if local_width == 0:
+                    padding = 0.001
+                else:
+                    padding = padding_fraction * local_width
+
+                ax.set_ylim(local_min - padding, local_max + padding)
+
             ax.scatter(sorted_x, sorted_y, color=colors[i])
 
-            sorted_x = np.asarray(sorted(x))
+            sorted_x = np.asarray(sorted(sorted_x))
 
             num_points = 5
             indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
 
             # Set new x-ticks using the datetime objects at the selected indices
             ax.set_xticks(sorted_x[indices])
-            ax.set_xticklabels([dt for dt in sorted_x[indices]], rotation=45)
+            ax.xaxis.set_major_locator(LinearLocator(6))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
+            plt.setp(ax.get_xticklabels(), rotation=45, ha='right', rotation_mode='anchor')
 
-            ax.scatter(x, y, color=colors[i])
+            ax.scatter(sorted_x, sorted_y, color=colors[i])
             if show_legends:
                 ax.legend(edgecolor='black')
-            ax.set_xlabel('Time (Days)', fontsize=font-2)
-            ax.set_ylabel('Resonator Center (MHz)', fontsize=font-2)
-            ax.tick_params(axis='both', which='major', labelsize=8)
+            ax.set_xlabel('Time', fontsize=font - 2)
+            ax.set_ylabel('Resonator Freq (MHz)', fontsize=font - 2)
+            ax.tick_params(axis='both', which='major', labelsize=12)
 
         plt.tight_layout()
-        plt.savefig(analysis_folder + f'Res_Centers{exp_extension}.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + f'Res_Freqs{exp_extension}.pdf', transparent=True, dpi=self.final_figure_quality)
         print('Plot saved to:', analysis_folder)
 
-        #plt.show()
+
+

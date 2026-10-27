@@ -10604,7 +10604,7 @@ class combined_Qtemp_studies:
                 handles.append(plt.Line2D([], [], color='none'))
                 labels.append(mean_diff_str)
 
-            ax.legend(handles, labels, loc="upper left", fontsize=9, frameon=False)
+            ax.legend(handles, labels, loc="upper right", fontsize=12, frameon=True)
 
         axes[-1].set_xlabel("Time")
         fig.suptitle("Effective Qubit Temperatures vs Time", fontsize=15)

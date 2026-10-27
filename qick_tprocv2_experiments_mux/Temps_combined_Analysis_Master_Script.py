@@ -75,7 +75,7 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True
                   "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": False, "SSF_fid_vs_Pe_viaSSF": False, "ssf_SNR_vs_time": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
-comb_analysis_flags = {"load_rpm": False, "load_ssf": False, "use_cached_qtemp_files": False, "create_cached_qtemp_files": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False,
+comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "use_cached_qtemp_files": False, "create_cached_qtemp_files": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False,
                        "Pe_vs_time_comb_separate_plts": False, "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
                        "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": False, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False, "SNR_vs_RRPM_Pe": False,
                        "SNR_box_whisker_allruns_allQs": False, "ie_new_Pg_boxwhisk_allruns_allQs": False, "multirun_RPM_Pe_vs_t": False}
@@ -342,7 +342,7 @@ filter_keywords_run9c = [
 #Base path of where the data is stored up to the Study Name (round_robin_benchmark)
 base_dir_run10 = "/exp/cosmiq/data/QUIET/QICK_data/run10/6transmon/round_robin_benchmark"
 
-target_dates_qtemps_RPM_run10 = ["2026-10-12", "2026-10-14",
+target_dates_qtemps_RPM_run10 = [#"2026-10-12", "2026-10-14",
                                  "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22"]
 
 # To save plots
@@ -1268,9 +1268,9 @@ if qtemp_method_flags["Qtemps_viaRPM"]:
 
     if analysis_flags["Qtemps_vs_time_viaRPM"]:
         #------------------------------------------------------------------- Qubit temperatures vs time via RPMs ----------------------------------------------------
-        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 50, yaxis_max = 100, rel_err_cutoff = 0.8, restrict_time_xaxis = False,
+        RPM_plotter.plot_qubit_temperatures_vs_time_RPMs(combined_qtemp_data, num_qubits=tot_num_of_qubits, yaxis_min = 60, yaxis_max = 170, rel_err_cutoff = 0.8, restrict_time_xaxis = False,
                                                          plot_extra_event_lines = False, rad_events_plot_lines = False, plot_error_bars = True, fit_to_line=False, average_per_heater_step=False,
-                                                         fit_to_exp = False)
+                                                         fit_to_exp = True)
 
     if analysis_flags["Qtemps_hists_viaRPM"]:
         #----------------------------------------------------------------- Histograms of Qubit temperatures (via RPMs) -----------------------------------------------
@@ -1403,7 +1403,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
-run_num_list = [9] # for quiet, start at 5. no qtemp data for run 4. use run 9.2 for run 9c
+run_num_list = [10] # for quiet, start at 5. no qtemp data for run 4. use run 9.2 for run 9c
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
 rpm_Pe_by_run = {}      # rpm_Pe_by_run[run][qid] = [P_e, ...]
@@ -1535,6 +1535,20 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             paths_SSFmethods = paths_SSFmethods_run9c
             path_saveplots_fits = path_saveplots_fits_run9c
             path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run9c
+
+        elif run_num == 10:
+            # ---------------- RPM ----------------
+            Science_Qubits = [0, 2, 3, 5]
+            base_dir = base_dir_run10
+            filter_keywords = filter_keywords_run10
+            outerFolder_qtemps_plots_RR = outerFolder_qtemps_plots_RR_run10
+            outerFolder_qtemps_plots = outerFolder_qtemps_plots_run10
+            target_dates_qtemps_RPM = target_dates_qtemps_RPM_run10
+
+            # ---------------- SSF ----------------
+            paths_SSFmethods = paths_SSFmethods_run10
+            path_saveplots_fits = path_saveplots_fits_run10
+            path_saveplots_ssf_qtemps_vsT = path_saveplots_ssf_qtemps_vsT_run10
 
         else:
             raise ValueError(f"Unsupported run_num={run_num}")
@@ -1959,8 +1973,8 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
         # Makes 1 subplot per qubit (and all methods in a single plot). Note: I removed the ge SSF method from being plotted since we haven't been using that one lately.
         # Plots error bars always, unless you pass None instead of all_qubit_temps_errs_g.
         combined_studies.Qtemps_vs_time_comb_allQs_1col(all_qubit_temps_g, all_qubit_times_g, outerFolder_qtemps_plots,
-                                                     all_files_Qtemp_results_RPMs, all_qubit_temps_errs_g, restrict_time_yaxis = True, ylims = [70,160],
-                                                        rad_events_plot_lines = False, qubits_to_plot = [0,1,2,3,5], # 0-based indexing
+                                                     all_files_Qtemp_results_RPMs, all_qubit_temps_errs_g, restrict_time_yaxis = True, ylims = [60,170],
+                                                        rad_events_plot_lines = False, qubits_to_plot = [0,5], # 0-based indexing
                                                         plot_rpm_I_only=False, plot_rpm_Q_only=False)
 
     if comb_analysis_flags["SSF_fid_vs_RRPM_Pe_2D"]: # only configured to run for one run at a time

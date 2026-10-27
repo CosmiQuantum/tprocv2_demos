@@ -479,7 +479,7 @@ class T2rVsTime:
         analysis_folder = f"{self.outerFolder_save_plots}/features_vs_time/"
         self.create_folder_if_not_exists(analysis_folder)
 
-        font = 24
+        font = 14
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
         colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8), sharey=True, sharex=True)
@@ -523,6 +523,7 @@ class T2rVsTime:
             #ax.xaxis.set_major_locator(mdates.AutoDateLocator())
             ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H"))
             ax.tick_params(axis='x', rotation=45)
+            plt.setp(ax.get_xticklabels(), ha='right', rotation_mode='anchor')
 
             if show_legends:
                 ax.legend(edgecolor='black')

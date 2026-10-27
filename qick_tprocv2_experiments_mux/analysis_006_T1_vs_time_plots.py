@@ -940,6 +940,7 @@ class T1VsTime:
 
             ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H"))
             ax.tick_params(axis='x', rotation=45)
+            plt.setp(ax.get_xticklabels(), ha='right', rotation_mode='anchor')
 
             ax.ticklabel_format(style="plain", axis="y")
 

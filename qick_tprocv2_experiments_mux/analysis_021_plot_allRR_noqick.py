@@ -2993,8 +2993,8 @@ class PlotRR_noQick:
         # date_to_plot = datetime.date(2025, 4, 17)
         # start_datetime = datetime.time(0, 0)  # Start of the window
         # end_datetime = datetime.time(23, 59)
-        start_datetime = datetime.datetime(2025, 5, 7, 16, 20)
-        end_datetime = datetime.datetime(2025, 5, 16, 23, 59)
+        start_datetime = datetime.datetime(2026, 10, 12, 15,0)
+        end_datetime = datetime.datetime(2026, 10, 22, 15, 0)
 
         for q in range(num_qubits):
             times = []

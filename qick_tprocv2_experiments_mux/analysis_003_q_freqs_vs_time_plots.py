@@ -313,10 +313,11 @@ class QubitFreqsVsTime:
                                 else:
                                     date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])  # og way, from h5 file
 
-                            ## If you want to look at scans that failed quality cuts, uncomment this:
-                            # else:
-                            #     if (q_key == 1 or q_key == 4) and "run6" in self.run_name:
-                            #         qspec_class_instance.plot_results(I, Q, freqs)
+
+                            else:
+                                print("Cut a Qspec scan that did not pass quality cuts.")
+                                ## If you want to look at scans that failed quality cuts, uncomment this:
+                                #qspec_class_instance.plot_results(I, Q, freqs)
                             del qspec_class_instance
 
                 del H5_class_instance
@@ -342,7 +343,7 @@ class QubitFreqsVsTime:
 
         font = 14
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
-        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
         plt.title('Qubit Frequencies vs Time', fontsize=font)
         axes = axes.flatten()
@@ -411,7 +412,7 @@ class QubitFreqsVsTime:
         # ----------------Histogram Plotting of Qubit Frequencies------------------
         font = 14
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
-        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
         plt.suptitle('Histogram of Qubit Frequencies', fontsize=font)
         axes = axes.flatten()
@@ -484,7 +485,7 @@ class QubitFreqsVsTime:
 
         font = 18
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
-        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8), sharex=True)
 
         # ext = exp_extension.split('_')[0]
@@ -579,7 +580,8 @@ class QubitFreqsVsTime:
             ax.xaxis.set_major_locator(LinearLocator(6))
             ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
             ax.tick_params(axis='x', rotation=45)
-            ax.tick_params(axis='both', which='major', labelsize=10)
+            plt.setp(ax.get_xticklabels(), ha='right', rotation_mode='anchor')
+            ax.tick_params(axis='both', which='major', labelsize=14)
 
             ymin, ymax = ax.get_ylim()
             ax.set_yticks(np.linspace(ymin, ymax, 8))
@@ -588,8 +590,8 @@ class QubitFreqsVsTime:
             if show_legends:
                 ax.legend(edgecolor='black')
 
-            ax.set_xlabel('Time', fontsize=16)
-            ax.set_ylabel('Qubit Freq (MHz)', fontsize=16)
+            ax.set_xlabel('Time', fontsize=14)
+            ax.set_ylabel('Qubit Freq (MHz)', fontsize=14)
 
         plt.tight_layout()
         plt.savefig(analysis_folder + f'{exp_extension}QFreqs_run{run_label}.pdf')
