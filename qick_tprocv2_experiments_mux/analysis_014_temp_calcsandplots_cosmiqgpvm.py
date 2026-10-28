@@ -610,7 +610,6 @@ class SSFTempCalcAndPlots:
                  lr_stat, nll1, nll2) = self.fit_double_gaussian_midpoint_iminuit(ig_new, dontuse_midpt_thresh, low_leakage_mode)
 
                 # ---------- quality cut limits (do 2 gaussians fit the data better than a single one?) ---------------------
-
                 LR_STAT_LIMITS = {
                     5: {0: 706,
                         1: 619,
@@ -640,7 +639,7 @@ class SSFTempCalcAndPlots:
                         4: 645,
                         5: 645,  # No good data for this qubit in this run
                         },
-                    9: {0: 250, # not optimized yet for any of the Qs
+                    9: {0: 250, # not optimized yet for any of the Qs. We rely on other cuts for this run, see below.
                         1: 200,
                         2: 200,
                         3: 200,
@@ -649,7 +648,7 @@ class SSFTempCalcAndPlots:
                         }
                 }
 
-                DEFAULT_LR_STAT_LIMIT = 645.0
+                DEFAULT_LR_STAT_LIMIT = 645.0 # good enough for run 10, I checked. Can optimize further later.
                 if run_num in LR_STAT_LIMITS: # extract the limit for this qubit in this run, or use default
                     lr_stat_limit = LR_STAT_LIMITS[run_num].get(qid, DEFAULT_LR_STAT_LIMIT)
                 else:

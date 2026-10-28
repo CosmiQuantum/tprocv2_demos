@@ -66,24 +66,24 @@ threshold = 0
 tot_num_of_qubits = 6 # Total number of qubits currently at QUIET
 
 # What method or methods do you want to use to calculate qubit temperatures?
-qtemp_method_flags = {"Qtemps_viaRPM": True, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
-                      "combined_studies_Qtemps": False}
+qtemp_method_flags = {"Qtemps_viaRPM": False, "Qtemps_viaSSF_ge_thresh": False, "Qtemps_viaSSF_gmeans_thresh": False, "Qtemps_viaSSF_with_fallback": False,
+                      "combined_studies_Qtemps": True}
 
 # What analysis plots do you want to make?
-analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
+analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": False, "Threshold_Check_Qtemps_viaSSF": False, "ge_thresh_check_ssf": False,
                   "Qtemps_hists_viaRPM": False, "Pe_hists_viaRPM": False, "Qtemps_hists_viaSSF": False, "Pe_hists_viaSSF": False, "Pe_vs_time_viaRPM": False,
                   "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": False, "SSF_fid_vs_Pe_viaSSF": False, "ssf_SNR_vs_time": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
-comb_analysis_flags = {"load_rpm": True, "load_ssf": False, "use_cached_qtemp_files": False, "create_cached_qtemp_files": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False,
+comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "use_cached_qtemp_files": False, "create_cached_qtemp_files": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False,
                        "Pe_vs_time_comb_separate_plts": False, "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
-                       "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": False, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False, "SNR_vs_RRPM_Pe": False,
-                       "SNR_box_whisker_allruns_allQs": False, "ie_new_Pg_boxwhisk_allruns_allQs": False, "multirun_RPM_Pe_vs_t": False, "multirun_RPM_Temp_vs_t": True}
+                       "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": True, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False, "SNR_vs_RRPM_Pe": False,
+                       "SNR_box_whisker_allruns_allQs": False, "ie_new_Pg_boxwhisk_allruns_allQs": False, "multirun_RPM_Pe_vs_t": False, "multirun_RPM_Temp_vs_t": False}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 
-# For double-gaussian SSF analysis using alternative methods (does not require any other flags to be set to True above!)
+# For double-gaussian SSF analysis using alternative methods (does NOT require any other flags to be set to True above!)
 alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
 
 # For coherence-qubit temps combined analysis. These flags act on their own, no need to set anything above to True.
@@ -790,7 +790,7 @@ paths_SSFmethods_run9c = [
 # To save plots
 r9c_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
 
-path_saveplots_fits_run9c = f"{r9c_plts_prefix}/ssf_qtemps/gaussfitsfits"
+path_saveplots_fits_run9c = f"{r9c_plts_prefix}/ssf_qtemps/gaussfits"
 path_saveplots_ssf_qtemps_vsT_run9c = f"{r9c_plts_prefix}/ssf_qtemps"
 
 # ---------------------------------------------------------------------------------------------- run 10 ----------------------------------------------------------------------------------------------------------
@@ -823,7 +823,7 @@ paths_SSFmethods_run10 = [
     ]
 # To save plots
 r10_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
-path_saveplots_fits_run10 = f"{r10_plts_prefix}/ssf_qtemps/gaussfitsfits"
+path_saveplots_fits_run10 = f"{r10_plts_prefix}/ssf_qtemps/gaussfits"
 path_saveplots_ssf_qtemps_vsT_run10= f"{r10_plts_prefix}/ssf_qtemps"
 
 #------------------------------------------------------------------------------ Assign func variables depending on run number ---------------------------------------
@@ -1403,7 +1403,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
-run_num_list = [9,10] # for quiet, start at 5. no qtemp data for run 4. use run 9.2 for run 9c
+run_num_list = [10] # for quiet, start at 5. no qtemp data for run 4. use run 9.2 for run 9c
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
 rpm_Pe_by_run = {}      # rpm_Pe_by_run[run][qid] = [P_e, ...]
@@ -2023,9 +2023,9 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             ssf_fit_results=fit_results_g,
             all_files_Qtemp_results_RPMs=all_files_Qtemp_results_RPMs,
             out_dir=outerFolder_qtemps_plots,
-            qubits_to_plot=[0, 1, 2, 3, 5],
+            qubits_to_plot=[0, 2, 3, 4, 5],
             tolerance_seconds=10, # 10 seconds for all runs except Run 6 SCIENCE run data (600s)
-            plot_together=True,
+            plot_together=False,
             xlims=  (0.0, 0.06),
             ylims= (0.74, 0.925),
             RPM_Pe_rel_err_cut = None, #0.25,
