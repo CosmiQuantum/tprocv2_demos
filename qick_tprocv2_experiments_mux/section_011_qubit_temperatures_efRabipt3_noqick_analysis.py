@@ -243,7 +243,7 @@ class Temps_EFAmpRabiExperiment:
             fig_quality=200,
             use_iminuit_instead=True,  # kept for API compatibility; joint iminuit only
             filename_ext="",
-            show_mag_fit=True,
+            show_mag_fit=False,
             rotate_using_ssf=False,  # kept for API compatibility; NOT used here
             ssf_angle=None,  # kept for API compatibility; NOT used here
     ):

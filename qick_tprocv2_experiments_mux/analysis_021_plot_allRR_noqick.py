@@ -2408,7 +2408,7 @@ class PlotRR_noQick:
                     sigma_A_Q_Pg = fit_params_Pg.get("sigma_A_Q", None)
 
                     if filter_out_bad_RPM_fits and len(I1) > 0 and len(I2) > 0:
-                        print(f'\n inside filter_out_bad_RPM_fits block for {q_key + 1}')
+                        print(f'\n inside filter_out_bad_RPM_fits block for Q{q_key + 1}')
 
                         # -------------------- BIC filtering: cosine must beat line AND exp in at least one quadrature ------------
                         # sometimes all the oscillation is in I, and sometimes all the oscillation is in Q.
@@ -3201,7 +3201,13 @@ class PlotRR_noQick:
                 times_arr = np.array([t.timestamp() for t in times])
                 temps_arr = np.array(temps)
 
-                fit_start_time = datetime.datetime(2026, 4, 19, 0, 0)
+                if self.run_num == 9:
+                    fit_start_time = datetime.datetime(2026, 4, 19, 0, 0)
+                elif self.run_num == 10:
+                    fit_start_time = datetime.datetime(2026, 10, 14, 6, 0)
+                else:
+                    fit_start_time = datetime.datetime(2024, 1, 1, 0, 0) # applies to all AB paper data range
+
                 fit_start_ts = fit_start_time.timestamp()
                 mask_exp = times_arr >= fit_start_ts
 

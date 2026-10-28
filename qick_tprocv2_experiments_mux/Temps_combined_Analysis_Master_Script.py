@@ -36,8 +36,8 @@ run_name = f'run{run_num}/6transmon' # this is for temps analysis, for coherence
 signal = 'None' # Do not change
 final_figure_quality = 200 # plot quality
 plot_ssf_gef = False # Do you want to re-plot g-e-f SSF data and save the plots?
-replot_RPMs = False # Do you want to re-plot rabi population measurements from RR data but not extract temps? Only make plots
-save_figsRR = False # Do you want to save (or not save) the RR RPM plots as you process the data? aka when get_qtemp_data = True
+replot_RPMs = False # Do you want to re-plot rabi population measurements from RR data but not extract temps?
+save_figsRR = False # Do you want to save the RR RPM plots? Note: when replot_RPMs = True this flag still has to be True
 save_figs = False # To be used in general for any function or class to save (or not save) plots.
 save_figs_SSF = False # Do you want to save gaussian fit plots while calculating ssf qtemps? iminuit case only
 fit_saved = False # Not used here, set to false.
@@ -75,10 +75,10 @@ analysis_flags = {"Qtemps_vs_time_viaSSF": False,  "Qtemps_vs_time_viaRPM": True
                   "qtemps_Pe_vs_time_viaRPM": False, "qtemps_Pe_gefreq_vs_time_viaRPM": False, "SSF_vs_time": False, "SSF_fid_vs_Pe_viaSSF": False, "ssf_SNR_vs_time": False}
 
 # For combined analysis (SSF qtemps + RPM qtemps analyses OR analyses across multiple runs). To enable these set "combined_studies_Qtemps" to True in qtemp_method_flags
-comb_analysis_flags = {"load_rpm": True, "load_ssf": True, "use_cached_qtemp_files": False, "create_cached_qtemp_files": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False,
+comb_analysis_flags = {"load_rpm": True, "load_ssf": False, "use_cached_qtemp_files": False, "create_cached_qtemp_files": False, "Qtemps_vs_time_comb_separate_plts": False,"Qtemps_vs_time_comb_single_plt": False,
                        "Pe_vs_time_comb_separate_plts": False, "Pe_vs_time_comb_single_plt": False, "qtemp_box_whisker_allruns_allQs": False, "Pe_box_whisker_allruns_allQs": False, "ssf_box_whisker_allruns_allQs": False,
                        "plot_ssf_log_curves": False, "SSF_fid_vs_RRPM_Pe_2D": False, "SSF_fid_vs_RRPM_Pe_3D": False, "SSF_fid_vs_RRPM_Pe_video": False, "SNR_vs_RRPM_Pe": False,
-                       "SNR_box_whisker_allruns_allQs": False, "ie_new_Pg_boxwhisk_allruns_allQs": False, "multirun_RPM_Pe_vs_t": False}
+                       "SNR_box_whisker_allruns_allQs": False, "ie_new_Pg_boxwhisk_allruns_allQs": False, "multirun_RPM_Pe_vs_t": False, "multirun_RPM_Temp_vs_t": True}
 
 # For London Penetration Depth analysis
 london_flags = {"get_qfreqs_resfreqs_qtemps": False}
@@ -342,7 +342,7 @@ filter_keywords_run9c = [
 #Base path of where the data is stored up to the Study Name (round_robin_benchmark)
 base_dir_run10 = "/exp/cosmiq/data/QUIET/QICK_data/run10/6transmon/round_robin_benchmark"
 
-target_dates_qtemps_RPM_run10 = [#"2026-10-12", "2026-10-14",
+target_dates_qtemps_RPM_run10 = ["2026-10-12", "2026-10-14",
                                  "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22"]
 
 # To save plots
@@ -1403,7 +1403,7 @@ elif alt_ssf_analysis_flags["iminuit_method"]:
 
 ################################################### Combined Qubit Temperature Analyses ##########################################################
 #################################### Analyses combining multiple qubit temp methods AND/OR multiple runs #########################################
-run_num_list = [10] # for quiet, start at 5. no qtemp data for run 4. use run 9.2 for run 9c
+run_num_list = [9,10] # for quiet, start at 5. no qtemp data for run 4. use run 9.2 for run 9c
 rpm_temps_by_run = {}      # rpm_temps_by_run[run][qid] = [T_mK, ...]
 rpm_temps_errs_by_run  = {}      # matching errors
 rpm_Pe_by_run = {}      # rpm_Pe_by_run[run][qid] = [P_e, ...]
@@ -1784,6 +1784,37 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             plot_percent=True,
             ylim=None,
             save_plt_path="/home/acolonce/Documents/analysis/multirun/Pe_vs_t/",
+        )
+
+    if comb_analysis_flags["multirun_RPM_Temp_vs_t"]:
+        have_qtemp_inputs = (comb_analysis_flags["use_cached_qtemp_files"] or comb_analysis_flags["load_rpm"])
+        if not have_qtemp_inputs:
+            raise ValueError('This plot requires qtemp inputs. Either set '
+                             'comb_analysis_flags["use_cached_qtemp_files"] = True, or set '
+                             'comb_analysis_flags["load_rpm"] to True.')
+
+        condensing_times_by_run = {
+            9: datetime.datetime(2026, 4, 8, 18, 20),
+            10: datetime.datetime(2026, 10, 9, 20, 28)}
+        fit_start_times_by_run = {
+            9: datetime.datetime(2026, 4, 19, 0, 0),
+            10: datetime.datetime(2026, 10, 14, 6, 0)}
+
+        combined_studies.plot_rpm_TvsTime_since_condensing_by_run(
+            run_num_list=[9, 10],
+            rpm_times_by_run=rpm_times_by_run,
+            rpm_temps_by_run=rpm_temps_by_run,
+            rpm_temps_errs_by_run=rpm_temps_errs_by_run,
+            condensing_times_by_run=condensing_times_by_run,
+            qubits_to_plot=[0],
+            time_units="days", # days or hours
+            plot_error_bars=True,
+            fit_to_exp=True,
+            rel_err_cutoff = 0.8,
+            ylim=(20, 170),
+            fit_start_days_since_condensing=None, # a number or None if using fit_start_times_by_run
+            fit_start_times_by_run=fit_start_times_by_run, # fit_start_times_by_run or None if using fit_start_days_since_condensing
+            save_plt_path="/home/acolonce/Documents/analysis/multirun/Temps_vs_t/"
         )
 
     if comb_analysis_flags["plot_ssf_log_curves"]:

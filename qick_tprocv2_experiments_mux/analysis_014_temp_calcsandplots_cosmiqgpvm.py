@@ -37,6 +37,7 @@ from bisect import bisect_left
 from matplotlib.dates import DateFormatter
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from scipy.optimize import curve_fit
 
 save_figs = True
 figure_quality = 100 #ramp this up to like 500 for presentation plots
@@ -7724,6 +7725,239 @@ class combined_Qtemp_studies:
         plt.close(fig)
         print("Saved Pe comparison plot:", out_path)
         return out_path
+
+    def get_exp_fit_curve(self, times, temps, n_fit_pts=200):
+        """
+        Fits T(t) = C + A * exp(-t / tau)
+
+        Returns:
+            times_fit, temps_fit, tau_hours, plateau_hours, popt
+        """
+        if len(times) < 4:
+            return None, None, None, None, None
+
+        # Sort by time
+        data = sorted(zip(times, temps), key=lambda z: z[0])
+        times_sorted = [d[0] for d in data]
+        temps_sorted = [d[1] for d in data]
+
+        print(f"helper first fit time = {times_sorted[0]}")
+        print(f"helper last fit time  = {times_sorted[-1]}")
+
+        t0 = times_sorted[0].timestamp()
+        t = np.array([(tt.timestamp() - t0) / 3600 for tt in times_sorted], dtype=float)  # hours
+        y = np.array(temps_sorted, dtype=float)
+
+        def exp_func(t, C, A, tau):
+            return C + A * np.exp(-t / tau)
+
+        # guesses
+        C_guess = y[-1]
+        A_guess = y[0] - y[-1]
+        tau_guess = max((t[-1] - t[0]) / 3, 1.0)
+
+        try:
+            popt, _ = curve_fit(
+                exp_func,
+                t,
+                y,
+                p0=[C_guess, A_guess, tau_guess],
+                bounds=(
+                    [-np.inf, -np.inf, 1e-3],  # tau > 0
+                    [np.inf, np.inf, np.inf]
+                ),
+                maxfev=10000
+            )
+
+            C, A, tau_hours = popt # at t=tau the system has moved ~63% of the way to the plateau
+
+            t_fit = np.linspace(t.min(), t.max(), n_fit_pts)
+            temps_fit = exp_func(t_fit, C, A, tau_hours)
+
+            times_fit = [
+                datetime.datetime.fromtimestamp(t0 + th * 3600)
+                for th in t_fit
+            ]
+
+            plateau_hours = 3 * tau_hours  # ~95% settled
+
+            return times_fit, temps_fit, tau_hours, plateau_hours, popt
+
+        except Exception as e:
+            print(f"Exponential fit failed: {e}")
+            return None, None, None, None, None
+
+
+    def plot_rpm_TvsTime_since_condensing_by_run(self, run_num_list, rpm_times_by_run, rpm_temps_by_run, rpm_temps_errs_by_run, condensing_times_by_run,
+                                                 qubits_to_plot=None, num_qubits=6, time_units="hours", ylim=None,
+                                                 rel_err_cutoff=None, plot_error_bars=True, fit_to_exp=True,
+                                                 fit_start_times_by_run=None, fit_end_times_by_run=None,
+                                                 save_plt_path=None, fig_title="RPM Effective Temperature", font=14, fit_start_days_since_condensing=None):
+        """
+        Compare RPM effective temperatures across runs, aligned to each run's condensation timestamp.
+        Creates one figure per selected qubit.
+
+        rpm_times_by_run[run_num][qid] = list of measurement datetimes
+        rpm_temps_by_run[run_num][qid] = list of effective temperatures (mK)
+        rpm_temps_errs_by_run[run_num][qid] = list of temperature uncertainties (mK)
+        condensing_times_by_run[run_num] = datetime object for condensation
+        qubits_to_plot = zero-based indices, e.g. [0, 1, 2, 3, 5]
+        fit_start_times_by_run / fit_end_times_by_run = optional datetime cutoffs for fitting only
+        Returns fit_results[qid][run_num] with fitted parameters.
+        """
+        if qubits_to_plot is None:
+            qubits_to_plot = list(range(num_qubits))
+        if time_units not in ["hours", "days"]:
+            raise ValueError("time_units must be 'hours' or 'days'.")
+        if fit_start_times_by_run is None:
+            fit_start_times_by_run = {}
+        if fit_end_times_by_run is None:
+            fit_end_times_by_run = {}
+
+        for run_num in run_num_list:
+            if run_num not in rpm_times_by_run:
+                raise KeyError(f"Missing RPM timestamps for Run {run_num}")
+            if run_num not in rpm_temps_by_run:
+                raise KeyError(f"Missing RPM temperatures for Run {run_num}")
+            if run_num not in rpm_temps_errs_by_run:
+                raise KeyError(f"Missing RPM temperature errors for Run {run_num}")
+            if run_num not in condensing_times_by_run:
+                raise KeyError(f"Missing condensation timestamp for Run {run_num}")
+
+        colors = ["orange", "blue", "purple", "green", "brown", "pink", "gray", "red"]
+        linestyles = ["--", "-."]  # Dashed, dash-dot # for fits
+        hours_per_unit = 1.0 if time_units == "hours" else 24.0
+        fit_results = {}
+
+        for qid in qubits_to_plot:
+            fig, ax = plt.subplots(figsize=(9, 6), constrained_layout=True)
+            fig.suptitle(f"{fig_title}, Q{qid + 1}", fontsize=font + 2)
+            fit_results[qid] = {}
+
+            for run_i, run_num in enumerate(run_num_list):
+                color = colors[run_i % len(colors)]
+                linestyle = linestyles[run_i % len(linestyles)]
+                condensing_time = condensing_times_by_run[run_num]
+
+                # Extract RPM temperatures directly from the per-qubit lists
+                times = rpm_times_by_run[run_num][qid]
+                temps = rpm_temps_by_run[run_num][qid]
+                errs = rpm_temps_errs_by_run[run_num][qid]
+
+                if len(times) == 0:
+                    print(f"Q{qid + 1}, Run {run_num}: no valid data")
+                    continue
+
+                # Convert to arrays
+                times = np.asarray(times, dtype=object)
+                temps = np.asarray(temps, dtype=float)
+                errs = np.asarray(errs, dtype=float)
+
+                if not (len(times) == len(temps) == len(errs)):
+                    raise ValueError(f"Mismatched data lengths for Q{qid + 1}, Run {run_num}")
+
+                # Filter invalid temperatures and apply optional relative error cutoff
+                mask = np.isfinite(temps) & (temps > 0)
+                if rel_err_cutoff is not None:
+                    # Checks that temps are valid and applies relative error cutoff
+                    mask &= np.isfinite(errs) & (errs >= 0) & (errs / np.where(temps > 0, temps, np.nan) < rel_err_cutoff)
+
+                times, temps, errs = times[mask], temps[mask], errs[mask]
+
+                if len(times) == 0:
+                    print(f"Q{qid + 1}, Run {run_num}: no valid data after filtering")
+                    continue
+
+                # Sort measurements chronologically
+                order = np.argsort(times)
+                times, temps, errs = times[order], temps[order], errs[order]
+
+                # Convert measurement timestamps to elapsed time since condensation
+                elapsed_hours = np.asarray([(t - condensing_time).total_seconds() / 3600.0 for t in times])
+                elapsed_plot = elapsed_hours / hours_per_unit
+
+                # Plot measurements
+                if plot_error_bars:
+                    ax.errorbar(elapsed_plot, temps, yerr=errs, fmt="o", markersize=4, color=color, ecolor=color,
+                                elinewidth=1, capsize=2, alpha=0.75, linestyle="none", label=f"Run {run_num} data")
+                else:
+                    ax.scatter(elapsed_plot, temps, s=18, color=color, alpha=0.75, label=f"Run {run_num} data")
+
+                print(f"\nQ{qid + 1}, Run {run_num}:")
+                print(f"  Condensing time: {condensing_time}")
+                print(f"  First RPM: {times[0]}, Last RPM: {times[-1]}")
+                print(f"  Elapsed time: {elapsed_hours[0]:.2f} to {elapsed_hours[-1]:.2f} h")
+                print(f"  First temperature: {temps[0]:.3f} mK, Last temperature: {temps[-1]:.3f} mK")
+
+
+                # Independently fit each run using the existing exponential fitting helper
+                if fit_to_exp:
+                    times_arr = np.array([t.timestamp() for t in times])
+                    temps_arr = np.array(temps)
+
+                    # Existing run-specific fit start time
+                    fit_start_time = fit_start_times_by_run.get(run_num, condensing_time)
+
+                    # Optional: start fitting X days after condensation
+                    if fit_start_days_since_condensing is not None:
+                        start_from_condensing = condensing_time + datetime.timedelta(days=fit_start_days_since_condensing)
+                        fit_start_time = max(fit_start_time, start_from_condensing)
+
+                    mask_exp = times_arr >= fit_start_time.timestamp()
+
+                    # Optional run-specific fit end time
+                    if run_num in fit_end_times_by_run:
+                        mask_exp &= times_arr <= fit_end_times_by_run[run_num].timestamp()
+
+                    times_for_fit = list(np.array(times, dtype=object)[mask_exp])
+                    temps_for_fit = list(temps_arr[mask_exp])
+
+                    times_fit, temps_fit, tau_hours, plateau_hours, popt = self.get_exp_fit_curve(times_for_fit, temps_for_fit)
+
+                    if times_fit is not None:
+                        shifted_times_fit = np.array([(t - condensing_time).total_seconds() / 3600.0 for t in times_fit]) / hours_per_unit
+
+                        ax.plot(shifted_times_fit, temps_fit, linestyle=linestyle, color="black", linewidth=2.5, zorder=100,
+                                label=f"Run {run_num} fit: $\\tau$ = {tau_hours:.1f} h, plateau ~ {plateau_hours:.1f} h")
+
+                        fit_results[qid][run_num] = {"tau_hours": tau_hours, "plateau_hours": plateau_hours, "popt": popt}
+
+                        print(f"\nQ{qid + 1}, Run {run_num} exponential fit:")
+                        print(f"  C = {popt[0]:.3f} mK, A = {popt[1]:.3f} mK")
+                        print(f"  tau = {tau_hours:.2f} h")
+                        print(f"  Plateau ~ {plateau_hours:.2f} h (3*tau)")
+                        print(f"  Fit starts at {min(times_for_fit)}")
+                        print(f"  Fit ends at {max(times_for_fit)}\n")
+                    else:
+                        print(f"Q{qid + 1}, Run {run_num}: not enough valid points or fit failed")
+
+
+            # Figure formatting
+            ax.set_xlabel(f"Time since condensation ({time_units})", fontsize=font)
+            ax.set_ylabel("Effective Qubit Temperature (mK)", fontsize=font)
+            if ylim is not None:
+                ax.set_ylim(*ylim) if isinstance(ylim, tuple) else ax.set_ylim(0, ylim)
+            ax.set_xlim(left=0)
+            ax.tick_params(axis="both", labelsize=12)
+            ax.grid(True, alpha=0.25)
+            handles, labels = ax.get_legend_handles_labels()
+            if handles:
+                ax.legend(fontsize=10, loc="best")
+
+            # Save one PDF per qubit
+            if save_plt_path is not None:
+                os.makedirs(save_plt_path, exist_ok=True)
+                timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                runs_string = "_vs_".join(str(run) for run in run_num_list)
+                save_file = os.path.join(save_plt_path,
+                                         f"RPM_Temps_Q{qid + 1}_Run_{runs_string}_Since_Condensing_{timestamp}.pdf")
+                fig.savefig(save_file, bbox_inches="tight")
+                print("Plot saved to:", save_file)
+                plt.close(fig)
+            else:
+                plt.show()
+
+        return fit_results
 
     def get_time_alphas(self, times, alpha_min=0.20, alpha_max=0.95, gamma=1.25):
         """
