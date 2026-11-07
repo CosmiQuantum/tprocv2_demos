@@ -1869,7 +1869,7 @@ if qtemp_method_flags["combined_studies_Qtemps"]:
             )
     # --------------------- box and whiskers plots. Per run and per qubit. Separate or together options -------------------
     if comb_analysis_flags["qtemp_box_whisker_allruns_allQs"]:
-        predicted_noise_temps_by_run = { # this object is calculated in AB_Paper_Qubits_InputLine_Tpred_Analysis.py
+        predicted_noise_temps_by_run = { # this object is calculated in AB_Paper_InputLine_Tpred_Analysis.py
             5: [37.5077, 34.9556, 37.3189, 39.4454, 39.5346, 43.1726],
             6: [37.5684, 34.9377, 37.3685, 39.4730, 39.5337, 43.1651],
             7: [22.0920, 20.4590, 21.9967, 23.3610, 23.3953, 25.7452],
