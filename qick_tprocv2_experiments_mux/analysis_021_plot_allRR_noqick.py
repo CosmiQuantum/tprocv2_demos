@@ -2180,8 +2180,10 @@ class PlotRR_noQick:
         In other words, at the end of the script, you assign values inside 'qubits'.
         """
         if use_png_timestamps:
+            print("Using timestamps from png filenames instead of the h5 files.")
             # This is a setting used to extract the timestamps in the png file names instead of using the ones
             # stored inside the h5 files (which mark the time that the file was saved, not when the meas was done).
+            # This is useful for QUIET data before run 9. Run 9 onward started saving measurement timestamp itself.
             # --- loader for the h5–png map -----------------
             map_loader = load_h5_png_map()
         # -----------------------------------------Load/Plot/Save Rabi pop. meas. and qspec ---------------------------------------
@@ -2198,14 +2200,12 @@ class PlotRR_noQick:
             map_path = os.path.join(timestamp_dir, "documentation/h5_png_timestamp_map.h5")
             if os.path.exists(map_path):
                 mapping_data = map_loader.load_map(map_path)
-
             else:
                 print(f"[INFO] Mapping file not found at {map_path}.")
                 print(f"[INFO] Attempting to create a new mapping...")
 
                 # Instantiate mapping creator
                 mapper = create_h5_png_map()
-
                 try:
                     # Run mapping creation for this timestamp_dir
                     records = mapper.collect_matches(Path(timestamp_dir))
@@ -2629,7 +2629,7 @@ class PlotRR_noQick:
 
                         if use_png_timestamps:
                             # --- use PNG filename timestamp from mapping if available ------
-                            # the reason for this is bc the png timestamp is more accurate than the h5 file ones
+                            # the reason for this is bc the png timestamp is more accurate than the h5 file ones before QUIET run 9
                             if mapping_data is not None:
                                 # mapping uses experiment='t1_ge', qubit as 1-indexed
                                 qubit_in_map = q_key + 1

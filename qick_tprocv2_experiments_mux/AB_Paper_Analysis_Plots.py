@@ -1935,6 +1935,147 @@ def boxwhisker_qfreq_per_qubit_vs_run(
         fig.savefig(fname, bbox_inches="tight")
         plt.close(fig)
 
+def boxwhisker_rspec_per_qubit_vs_run(
+        run_num_list,
+        rspec_vals_by_run,
+        rspec_errs_by_run=None,
+        qfreq_centers=None,
+        n_qubits=6,
+        freq_window=75.0,
+        yticks_per_qubit=None,
+        showfliers=True,
+        whis=1.5,
+        rel_err_cutoff=None,
+        fig_title="Resonator Frequency vs Run Number (per qubit)",
+        ylabel="Resonator Frequency (MHz)",
+        save_plt_path=None
+):
+    """
+    Makes 6 subplots (one per resonator). X-axis is run number.
+    At each run, draws a box-and-whisker distribution of resonator frequencies.
+    If rspec_errs_by_run is None, frequencies are filtered without requiring errors.
+    """
+    colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
+
+    def to_1d_array(cell):
+        if cell is None:
+            return np.array([], dtype=float)
+        if np.isscalar(cell):
+            return np.array([cell], dtype=float)
+        return np.asarray(cell, dtype=float).ravel()
+
+    def filter_freq_cell(freq_cell, err_cell=None):
+        freqs = to_1d_array(freq_cell)
+
+        if freqs.size == 0:
+            return np.array([], dtype=float)
+
+        if err_cell is None:
+            return freqs[np.isfinite(freqs) & (freqs > 0)]
+
+        errs = to_1d_array(err_cell)
+        if errs.size == 0:
+            return np.array([], dtype=float)
+
+        n = min(len(freqs), len(errs))
+        freqs, errs = freqs[:n], errs[:n]
+        mask = np.isfinite(freqs) & np.isfinite(errs) & (freqs > 0) & (errs >= 0)
+
+        if rel_err_cutoff is not None:
+            mask &= (errs / np.where(freqs > 0, freqs, np.inf)) <= rel_err_cutoff
+
+        return freqs[mask]
+
+    def style_boxplot(bp, q_color):
+        for b in bp["boxes"]:
+            b.set_facecolor(q_color)
+            b.set_edgecolor(q_color)
+            b.set_alpha(0.30)
+            b.set_linewidth(1.3)
+
+        for m in bp["medians"]:
+            m.set_color(q_color)
+            m.set_linewidth(2.0)
+
+        for w in bp["whiskers"]:
+            w.set_color(q_color)
+            w.set_linewidth(1.2)
+
+        for c in bp["caps"]:
+            c.set_color(q_color)
+            c.set_linewidth(1.2)
+
+        for f in bp["fliers"]:
+            f.set_marker("o")
+            f.set_markersize(3.5)
+            f.set_markerfacecolor(q_color)
+            f.set_markeredgecolor(q_color)
+            f.set_alpha(0.6)
+
+    if qfreq_centers is None or len(qfreq_centers) < n_qubits:
+        raise ValueError("Provide one resonator center frequency per qubit.")
+
+    base_pos = np.arange(1, len(run_num_list) + 1)
+    half_window = freq_window / 2.0
+
+    fig, axes = plt.subplots(2, 3, figsize=(18, 9), sharex=True, sharey=False)
+    axes = axes.ravel()
+
+    for q in range(n_qubits):
+        ax = axes[q]
+        q_color = colors[q % len(colors)]
+
+        box_data = []
+        for run in run_num_list:
+            freq_cell = rspec_vals_by_run[run][q]
+            err_cell = rspec_errs_by_run[run][q] if rspec_errs_by_run is not None else None
+            freqs_filtered = filter_freq_cell(freq_cell, err_cell)
+            box_data.append(freqs_filtered)
+
+        print(f"\nResonator {q + 1} frequency summary:")
+        print_median_spread_table(run_num_list, box_data, q, units="MHz", mode="q1q3")
+
+        # Matplotlib requires nonempty data for meaningful boxplots.
+        valid_positions = [i for i, data in enumerate(box_data) if len(data) > 0]
+
+        if valid_positions:
+            bp = ax.boxplot(
+                [box_data[i] for i in valid_positions],
+                positions=base_pos[valid_positions],
+                widths=0.55,
+                patch_artist=True,
+                showfliers=showfliers,
+                whis=whis,
+                manage_ticks=False
+            )
+            style_boxplot(bp, q_color)
+
+        center = qfreq_centers[q]
+        ax.set_ylim(center - half_window, center + half_window)
+
+        if yticks_per_qubit is not None:
+            ax.set_yticks(yticks_per_qubit[q])
+
+        ax.set_title(f"Resonator {q + 1}", fontsize=16)
+        ax.set_xticks(base_pos)
+        ax.set_xticklabels([f"{r}" for r in run_num_list])
+        ax.tick_params(axis="both", labelsize=14)
+        ax.grid(True, alpha=0.35)
+
+    fig.suptitle(fig_title, fontsize=18)
+    fig.supxlabel("Run Number", fontsize=16)
+    fig.supylabel(ylabel, fontsize=16)
+
+    plt.tight_layout(rect=[0.03, 0.03, 1, 0.95])
+
+    if save_plt_path is None:
+        plt.show()
+    else:
+        os.makedirs(save_plt_path, exist_ok=True)
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        fname = os.path.join(save_plt_path, f"boxwhisk_rspec_vs_run_num_{timestamp}.pdf")
+        fig.savefig(fname, bbox_inches="tight")
+        plt.close(fig)
 
 def boxwhisker_ssf_per_qubit_vs_run(
         run_num_list,

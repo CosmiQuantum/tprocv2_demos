@@ -9,6 +9,8 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
 qtemp_noisetemp_plot = True
 extra_noisepwr_calcs = False
+compare_qubit_resonator_nbar = True
+compare_qubit_resonator_Te = True
 
 # ------------------------------------------------------------
 # Pre-computed effective qubit temperatures from box plots
@@ -574,3 +576,281 @@ if qtemp_noisetemp_plot:
     save_path = "/home/acolonce/Documents/analysis/multirun/qubit_temps/combined_ssf_rpm/Tpred_vs_Tmeas_inputlinemodel.pdf"
     plt.savefig(save_path, bbox_inches="tight")
     plt.close()
+
+# ------------------------------------------------------------
+# Compare predicted photon occupation at qubit and resonator frequencies
+# ------------------------------------------------------------
+if compare_qubit_resonator_nbar:
+
+    # Median resonator frequencies (MHz)
+    # Rows = resonators 1-6; columns = Runs 4-9
+    f_res_MHz = [
+        [6191.519000, 6209.030000, 6217.070000, 6223.097380, 6227.287000, 6228.497000],
+        [6215.960000, 6261.310000, 6275.950000, 6284.550000, 6289.125000, 6290.145000],
+        [6292.341000, 6321.125000, 6335.405000, 6343.950000, 6348.550000, 6349.860000],
+        [6405.750000, 6401.452000, 6407.212000, 6414.933800, 6419.740000, 6420.595000],
+        [6432.859000, 6466.983000, 6476.223000, 6481.400000, 6485.115000, None],
+        [6468.461000, 6520.441400, 6537.961400, 6547.300000, 6551.900000, 6553.600000],
+    ]
+
+    # Convert to Hz and drop Run 4 to match Runs 5-9
+    f_res_MHz = np.array(f_res_MHz, dtype=float)[:, 1:]
+    f_res_Hz = f_res_MHz * 1e6
+
+    if f_res_Hz.shape != f_ge_Hz.shape:
+        raise ValueError(f"Frequency shape mismatch: f_res_Hz {f_res_Hz.shape} vs f_ge_Hz {f_ge_Hz.shape}")
+
+    # Predicted mean photon occupation at each frequency
+    nbar_qubit = np.full((nQ, nRuns), np.nan, dtype=float)
+    nbar_resonator = np.full((nQ, nRuns), np.nan, dtype=float)
+
+    for qi in range(nQ):
+        for ri, r in enumerate(runs):
+            r = int(r)
+            cfg = dict(atten_config_by_run[r])
+
+            # Same distributed line-loss model used above
+            for stage, loss_dB in lineloss_by_stage_until_MCP1_dB.items():
+                cfg[stage] = cfg.get(stage, 0.0) + loss_dB
+
+            cfg["MXC"] = cfg.get("MXC", 0.0) + mcp1_to_device_line_loss_by_run_dB[r]
+            A_after = cumulative_after_stage(cfg, order)
+
+            # Evaluate the same thermal-noise model at both frequencies
+            for freq_array, result_array in [(f_ge_Hz, nbar_qubit), (f_res_Hz, nbar_resonator)]:
+                f_hz = freq_array[qi, ri]
+                if not np.isfinite(f_hz) or f_hz <= 0:
+                    continue
+
+                n_eff = 0.0
+                for stage, T in stage_temps_K.items():
+                    A_lin = 10 ** (-A_after[stage] / 10.0)
+                    n_eff += A_lin * nbar_thermal(f_hz, T)
+
+                result_array[qi, ri] = n_eff
+
+    # ------------------------------------------------------------
+    # Print predicted photon occupations and ratios
+    # ------------------------------------------------------------
+    print("\nPredicted thermal photon occupation at qubit and resonator frequencies:")
+    for qi in range(nQ):
+        print(f"\nQubit {qi + 1} / Resonator {qi + 1}:")
+        for ri, r in enumerate(runs):
+            nq = nbar_qubit[qi, ri]
+            nr = nbar_resonator[qi, ri]
+            ratio = nr / nq if np.isfinite(nq) and np.isfinite(nr) and nq > 0 else np.nan
+            print(f"  Run {int(r)}: nbar_qubit={nq:.6e}, nbar_resonator={nr:.6e}, ratio(res/qubit)={ratio:.4f}")
+
+    print("\npredicted_nbar_qubit_by_run = {")
+    for ri, r in enumerate(runs):
+        vals = ", ".join(f"{x:.6e}" for x in nbar_qubit[:, ri])
+        print(f"    {int(r)}: [{vals}],")
+    print("}")
+
+    print("\npredicted_nbar_resonator_by_run = {")
+    for ri, r in enumerate(runs):
+        vals = ", ".join(f"{x:.6e}" for x in nbar_resonator[:, ri])
+        print(f"    {int(r)}: [{vals}],")
+    print("}")
+
+    # ------------------------------------------------------------
+    # Plot: predicted photon occupation vs run number
+    # ------------------------------------------------------------
+    fig, axes = plt.subplots(2, 3, figsize=(16, 10), sharex=True, sharey=True)
+    axes = axes.ravel()
+
+    display_labels = ['2', '3', '4', '5', '6']  # AB paper run labels
+
+    for qi in range(nQ):
+        ax = axes[qi]
+
+        ax.plot(runs, nbar_qubit[qi], "o-", color="#E69F00", linewidth=2, markersize=7,
+                label=r"Qubit frequency ($f_{ge}$)")
+
+        ax.plot(runs, nbar_resonator[qi], "s--", color="blue", linewidth=2, markersize=7,
+                label=r"Resonator frequency ($f_r$)")
+
+        ax.set_title(f"Qubit {qi + 1}", fontsize=22)
+        ax.set_xticks(runs)
+        ax.set_xticklabels(display_labels, fontsize=22)
+        ax.tick_params(axis="both", labelsize=22)
+        ax.grid(True, alpha=0.35)
+        ax.yaxis.set_major_formatter(mticker.ScalarFormatter(useMathText=True))
+        ax.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
+
+    fig.supylabel(r"Predicted Thermal Photon Occupation ($\bar{n}$)", fontsize=22, x=0.03)
+
+    fig.tight_layout(rect=[0.05, 0.12, 1, 0.95])
+
+    second_col_pos = axes[1].get_position()
+    second_col_center = second_col_pos.x0 + second_col_pos.width / 2
+
+    fig.supxlabel("Run Number", fontsize=22, x=second_col_center, y=0.12)
+
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, ncol=2, frameon=True, loc="upper center",
+               bbox_to_anchor=(second_col_center, 1.04), fontsize=18)
+
+    fig.tight_layout(rect=[0.05, 0.12, 1, 0.95])
+
+    save_path = "/home/acolonce/Documents/analysis/multirun/qubit_temps/combined_ssf_rpm/predicted_nbar_qubit_vs_resonator.pdf"
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    fig.savefig(save_path, bbox_inches="tight")
+    plt.close(fig)
+
+# ------------------------------------------------------------
+# Compare predicted photon occupation and effective noise
+# temperature at qubit and resonator frequencies
+# ------------------------------------------------------------
+if compare_qubit_resonator_nbar or compare_qubit_resonator_Te:
+
+    # Median resonator frequencies (MHz)
+    # Rows = resonators 1-6; columns = Runs 4-9
+    f_res_MHz = [
+        [6191.519000, 6209.030000, 6217.070000, 6223.097380, 6227.287000, 6228.497000],
+        [6215.960000, 6261.310000, 6275.950000, 6284.550000, 6289.125000, 6290.145000],
+        [6292.341000, 6321.125000, 6335.405000, 6343.950000, 6348.550000, 6349.860000],
+        [6405.750000, 6401.452000, 6407.212000, 6414.933800, 6419.740000, 6420.595000],
+        [6432.859000, 6466.983000, 6476.223000, 6481.400000, 6485.115000, None],
+        [6468.461000, 6520.441400, 6537.961400, 6547.300000, 6551.900000, 6553.600000],
+    ]
+
+    # Convert to Hz and drop Run 4 to match Runs 5-9
+    f_res_MHz = np.array(f_res_MHz, dtype=float)[:, 1:]
+    f_res_Hz = f_res_MHz * 1e6
+
+    if f_res_Hz.shape != f_ge_Hz.shape:
+        raise ValueError(f"Frequency shape mismatch: f_res_Hz {f_res_Hz.shape} vs f_ge_Hz {f_ge_Hz.shape}")
+
+    # ------------------------------------------------------------
+    # Calculate predicted photon occupations and noise temperatures
+    # ------------------------------------------------------------
+    nbar_qubit = np.full((nQ, nRuns), np.nan, dtype=float)
+    nbar_resonator = np.full((nQ, nRuns), np.nan, dtype=float)
+    Te_qubit_mK = np.full((nQ, nRuns), np.nan, dtype=float)
+    Te_resonator_mK = np.full((nQ, nRuns), np.nan, dtype=float)
+
+    for qi in range(nQ):
+        for ri, r in enumerate(runs):
+            r = int(r)
+            cfg = dict(atten_config_by_run[r])
+
+            # Same distributed line-loss model used above
+            for stage, loss_dB in lineloss_by_stage_until_MCP1_dB.items():
+                cfg[stage] = cfg.get(stage, 0.0) + loss_dB
+
+            cfg["MXC"] = cfg.get("MXC", 0.0) + mcp1_to_device_line_loss_by_run_dB[r]
+            A_after = cumulative_after_stage(cfg, order)
+
+            # Evaluate the model at both frequencies
+            for freq_array, nbar_array, Te_array in [
+                (f_ge_Hz, nbar_qubit, Te_qubit_mK),
+                (f_res_Hz, nbar_resonator, Te_resonator_mK)
+            ]:
+                f_hz = freq_array[qi, ri]
+                if not np.isfinite(f_hz) or f_hz <= 0:
+                    continue
+
+                n_eff = 0.0
+                for stage, T in stage_temps_K.items():
+                    A_lin = 10 ** (-A_after[stage] / 10.0)
+                    n_eff += A_lin * nbar_thermal(f_hz, T)
+
+                nbar_array[qi, ri] = n_eff
+                Te_array[qi, ri] = 1e3 * Te_from_nbar(f_hz, n_eff)
+
+    # ------------------------------------------------------------
+    # Print results
+    # ------------------------------------------------------------
+    print("\nPredicted photon occupations and effective noise temperatures:")
+    for qi in range(nQ):
+        print(f"\nQubit {qi + 1} / Resonator {qi + 1}:")
+        for ri, r in enumerate(runs):
+            nq, nr = nbar_qubit[qi, ri], nbar_resonator[qi, ri]
+            tq, tr = Te_qubit_mK[qi, ri], Te_resonator_mK[qi, ri]
+            ratio = nr / nq if np.isfinite(nq) and np.isfinite(nr) and nq > 0 else np.nan
+            print(f"  Run {int(r)}: nbar_q={nq:.6e}, nbar_r={nr:.6e}, ratio(r/q)={ratio:.4f}, Te_q={tq:.4f} mK, Te_r={tr:.4f} mK")
+
+    print("\npredicted_nbar_qubit_by_run = {")
+    for ri, r in enumerate(runs):
+        vals = ", ".join(f"{x:.6e}" for x in nbar_qubit[:, ri])
+        print(f"    {int(r)}: [{vals}],")
+    print("}")
+
+    print("\npredicted_nbar_resonator_by_run = {")
+    for ri, r in enumerate(runs):
+        vals = ", ".join(f"{x:.6e}" for x in nbar_resonator[:, ri])
+        print(f"    {int(r)}: [{vals}],")
+    print("}")
+
+    print("\npredicted_Te_qubit_mK_by_run = {")
+    for ri, r in enumerate(runs):
+        vals = ", ".join(f"{x:.4f}" for x in Te_qubit_mK[:, ri])
+        print(f"    {int(r)}: [{vals}],")
+    print("}")
+
+    print("\npredicted_Te_resonator_mK_by_run = {")
+    for ri, r in enumerate(runs):
+        vals = ", ".join(f"{x:.4f}" for x in Te_resonator_mK[:, ri])
+        print(f"    {int(r)}: [{vals}],")
+    print("}")
+
+    # ------------------------------------------------------------
+    # Plot both quantities using the same formatting
+    # ------------------------------------------------------------
+    save_dir = "/home/acolonce/Documents/analysis/multirun/qubit_temps/combined_ssf_rpm/"
+    os.makedirs(save_dir, exist_ok=True)
+
+    display_labels = ['2', '3', '4', '5', '6']  # AB paper run labels
+
+    plot_configs = [
+        (compare_qubit_resonator_nbar, nbar_qubit, nbar_resonator,
+         r"Predicted Thermal Photon Occupation ($\bar{n}$)",
+         "predicted_nbar_qubit_vs_resonator.pdf"),
+        (compare_qubit_resonator_Te, Te_qubit_mK, Te_resonator_mK,
+         "Predicted Effective Noise Temperature (mK)",
+         "predicted_Te_qubit_vs_resonator.pdf")
+    ]
+
+    for enabled, qubit_vals, resonator_vals, ylabel, filename in plot_configs:
+        if not enabled:
+            continue
+
+        fig, axes = plt.subplots(2, 3, figsize=(16, 10), sharex=True, sharey=True)
+        axes = axes.ravel()
+
+        for qi in range(nQ):
+            ax = axes[qi]
+
+            ax.plot(runs, qubit_vals[qi], "o-", color="#E69F00", linewidth=2, markersize=7,
+                    label=r"Qubit frequency ($f_{ge}$)")
+
+            ax.plot(runs, resonator_vals[qi], "s--", color="blue", linewidth=2, markersize=7,
+                    label=r"Resonator frequency ($f_r$)")
+
+            ax.set_title(f"Qubit {qi + 1}", fontsize=22)
+            ax.set_xticks(runs)
+            ax.set_xticklabels(display_labels, fontsize=22)
+            ax.tick_params(axis="both", labelsize=22)
+            ax.grid(True, alpha=0.35)
+
+            if enabled == compare_qubit_resonator_nbar and filename.startswith("predicted_nbar"):
+                ax.yaxis.set_major_formatter(mticker.ScalarFormatter(useMathText=True))
+                ax.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
+
+        fig.supylabel(ylabel, fontsize=22, x=0.03)
+        fig.tight_layout(rect=[0.05, 0.12, 1, 0.95])
+
+        # Center legend and x-label with second column
+        second_col_pos = axes[1].get_position()
+        second_col_center = second_col_pos.x0 + second_col_pos.width / 2
+
+        fig.supxlabel("Run Number", fontsize=22, x=second_col_center, y=0.12)
+
+        handles, labels = axes[0].get_legend_handles_labels()
+        fig.legend(handles, labels, ncol=2, frameon=True, loc="upper center",
+                   bbox_to_anchor=(second_col_center, 1.04), fontsize=18)
+
+        fig.tight_layout(rect=[0.05, 0.12, 1, 0.95])
+        fig.savefig(os.path.join(save_dir, filename), bbox_inches="tight")
+        plt.close(fig)

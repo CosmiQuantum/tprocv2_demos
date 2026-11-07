@@ -2029,7 +2029,7 @@ class SSFTempCalcAndPlots:
             # Filter out temperature data with error > 300 mK
             filtered = [(t, T, e)
                 for t, T, e in zip(times, temps, errs)
-                if T > 0 and T < 600] # and e / T < rel_err_cutoff. rel_err_cutoff is the relative error, it should be a decimal (aka 0.4 = 40% relative error and so forth)
+                if 0 < T < 600 and (rel_err_cutoff is None or e / T < rel_err_cutoff)] # rel_err_cutoff is relative error. Should be in decimal form
             if not filtered:
                 continue
 
@@ -5585,7 +5585,7 @@ class combined_Qtemp_studies:
         date_times_t1 = t1_data["date_times_t1"]
         t1_vals = t1_data["t1_vals"]
         t1_fit_err = t1_data["t1_fit_err"]
-        #res_lengths_t1_scans = t1_data["res_lengths"]
+        res_lengths_t1_scans = t1_data["res_lengths"]
 
         I_per_pt_errs = t1_data.get("I_per_pt_errs", None)
         Q_per_pt_errs = t1_data.get("Q_per_pt_errs", None)
@@ -5607,7 +5607,7 @@ class combined_Qtemp_studies:
             date_times_t1,
             t1_vals,
             t1_fit_err,
-            #res_lengths_t1_scans,
+            res_lengths_t1_scans,
             date_times_t2r,
             t2r_vals,
             t2r_fit_err,
@@ -11572,7 +11572,7 @@ class combined_Qtemp_studies:
                                       t1_vals = None, t1_dates = None, t1_fit_err = None, qfreqs_vals = None, qfreqs_dates = None, qfreqs_errs = None, resfreqs_vals=None,
                                         resfreqs_dates=None, t2r_vals=None, t2r_dates=None, t2r_errs=None, t2e_vals=None, t2e_dates=None,
                                       restrict_time_xaxis=False, start_time = None, end_time = None, plot_extra_event_lines=False,
-                                      rad_events_plot_lines=False, run_num ="", qubits_to_plot = [], fig_width = 26, fig_height = None, fnt_sz = 24):
+                                      rad_events_plot_lines=False, run_num ="", qubits_to_plot = [], fig_width = 26, fig_height = None, fnt_sz = 26):
         """
         One subplot per qubit.
         Plots (only if provided):
@@ -11628,8 +11628,19 @@ class combined_Qtemp_studies:
         fridge_times = None
         if fridge_temps is not None and fridge_dates is not None:
             time_fmt = "%Y-%m-%d %H:%M:%S"
-            fridge_times = [
-                datetime.datetime.strptime(d, time_fmt) for d in fridge_dates]
+            fridge_times = [datetime.datetime.strptime(d, time_fmt) for d in fridge_dates]
+
+        # Qubit 1 (index 0), printing out Teff below a certain MCP1 temp
+        # for t, T, err in zip(times_RPM[0], temps_RPM[0], errs_RPM[0]):
+        #     # Find the closest fridge temperature measurement in time
+        #     idx = np.argmin([abs(ft - t) for ft in fridge_times])
+        #     fridge_T = fridge_temps[idx]
+
+            # if fridge_T <= 30:
+            #     print(
+            #         f"Time: {t}, "
+            #         f"Fridge T: {fridge_T:.2f} mK, "
+            #         f"Q1 effective T: {T:.2f} ± {err:.2f} mK")
 
         # ------------------------------------------------------------------
         # T1 per qubit (2D lists: t1_dates[q] -> list[str], t1_vals[q] -> list[float])
@@ -11790,7 +11801,7 @@ class combined_Qtemp_studies:
         else:
             f_height = 8 * nrows
         fig, axes = plt.subplots(nrows, 1, figsize=(fig_width, f_height), sharex=True, constrained_layout=False)
-        ln_style = "-"
+        ln_style = "none"
 
         if nrows == 1:
             axes = [axes]
@@ -11800,7 +11811,7 @@ class combined_Qtemp_studies:
 
         # Qtemp methods
         methods = [
-            (r"RPM $T_{eff}$", times_RPM, temps_RPM, errs_RPM, "darkblue"),
+            (r"RPM $T_{eff} (mK)$", times_RPM, temps_RPM, errs_RPM, "brown"),
             (r"SSF g-only $T_{eff}$", times_g, temps_g, None, "yellow"),
         ]
 
@@ -11838,9 +11849,21 @@ class combined_Qtemp_studies:
                         label=label,
                     )
 
+            # Optional: this is to plot a line at a certain temp to visualize steps
+            # temp_val = 130
+            # ax.axhline(y=temp_val, color="#E69F00", linestyle="--", linewidth=3.0, alpha=0.85,label=rf"{temp_val} mK $T_{{\mathrm{{eff}}}}$")
+            #
+            # if q == 0:
+            #     drop_time = datetime.datetime(2025, 11, 20, 15, 0, 0)
+            #     ax.axvline(drop_time, color="#E69F00", linestyle="--", linewidth=3.0, alpha=0.85,
+            #                label="Onset of T1 / Qfreq drop")
+            #     idx = np.argmin([abs((t - drop_time).total_seconds()) for t in times_RPM[q]])
+            #     print(f"Qubit {q + 1} | Drop time: {drop_time} | Teff: {temps_RPM[q][idx]:.2f} ± {errs_RPM[q][idx]:.2f} mK")
+
             ax.set_title(f"Qubit {q + 1}", loc="left", fontsize=fnt_sz + 4) # fontweight="bold"
-            ax.set_ylabel(r"$T_{eff}$ (mK)", fontsize=fnt_sz + 4, labelpad=16, color="darkblue")
-            ax.tick_params(axis="y", labelsize=fnt_sz-2, colors="darkblue")
+            ax.set_ylabel(r"$T_{eff}$ (mK)", fontsize=fnt_sz + 4, labelpad=16, color="black")
+            ax.tick_params(axis="y", labelsize=fnt_sz-2, colors="black")
+            ax.set_ylim(60, 170)
             ax.yaxis.set_major_locator(mticker.LinearLocator(6))
             ax.grid(False)
 
@@ -11886,13 +11909,19 @@ class combined_Qtemp_studies:
                 fridge_ax.plot(
                     fridge_times,
                     fridge_temps,
-                    color="green",
-                    alpha=0.5,
-                    linewidth=1.5,
-                    label="Fridge MCP1 (mK)",
+                    color="#009E73", # color-blind friendly green
+                    alpha=0.85,
+                    linewidth=3.0,
+                    label="MCP1 Temperature (mK)",
                 )
-                fridge_ax.set_ylabel("MCP1 Temperature (mK)", color="green", fontsize=fnt_sz + 4, labelpad=16)
-                fridge_ax.tick_params(axis="y", labelcolor="green", labelsize=fnt_sz-2, pad=8)
+
+                # Optional: this is to plot a line at a certain temp to visualize steps
+                #temp_val = 20
+                #fridge_ax.axhline(y=temp_val, color="purple", linestyle="--", linewidth=3.0, alpha=0.8, label=f"{temp_val} mK, MCP1")
+
+                fridge_ax.set_ylabel("MCP1 Temperature (mK)", color="black", fontsize=fnt_sz + 4, labelpad=16)
+                fridge_ax.tick_params(axis="y", labelcolor="black", labelsize=fnt_sz-2, pad=8)
+                fridge_ax.set_ylim(3, 235)
                 fridge_ax.yaxis.set_major_locator(mticker.LinearLocator(6))
 
                 # # Match Qtemps axis limits
@@ -11917,14 +11946,15 @@ class combined_Qtemp_studies:
                     marker="^",
                     markersize=8,
                     linestyle=ln_style,
-                    color="red",
-                    alpha=0.8,
+                    color="#0072B2",# color-blind friednly blue
+                    alpha=0.85,
                     capsize=8,
                     elinewidth=1,
                     label="T1 (µs)",
                 )
-                t1_ax.set_ylabel("T1 (µs)", color="red", fontsize=fnt_sz + 4, labelpad=24)
-                t1_ax.tick_params(axis="y", labelcolor="red", labelsize=fnt_sz-2, pad=12)
+                t1_ax.set_ylabel(r"T$_1$ (µs)", color="black", fontsize=fnt_sz + 4, labelpad=24)
+                t1_ax.tick_params(axis="y", labelcolor="black", labelsize=fnt_sz-2, pad=12)
+                t1_ax.set_ylim(1, 93)
                 t1_ax.yaxis.set_major_locator(mticker.LinearLocator(6))
                 h3, l3 = t1_ax.get_legend_handles_labels()
                 handles += h3
@@ -11966,12 +11996,12 @@ class combined_Qtemp_studies:
                     marker="D",
                     markersize=8,
                     linestyle=ln_style,
-                    color="green",
+                    color="#009E73", # color-blind friendly green
                     alpha=0.8,
                     label="T2E (µs)",
                 )
-                t2e_ax.set_ylabel("T2E (µs)", color="green", fontsize=fnt_sz)
-                t2e_ax.tick_params(axis="y", labelcolor="green", labelsize=fnt_sz)
+                t2e_ax.set_ylabel("T2E (µs)", color="#009E73", fontsize=fnt_sz)
+                t2e_ax.tick_params(axis="y", labelcolor="#009E73", labelsize=fnt_sz)
                 h_t2e, l_t2e = t2e_ax.get_legend_handles_labels()
                 handles += h_t2e
                 labels += l_t2e
@@ -11994,7 +12024,7 @@ class combined_Qtemp_studies:
                     markersize=8,
                     linestyle=ln_style,
                     color="black",
-                    alpha=0.8,
+                    alpha=0.85,
                     capsize=8,
                     elinewidth=1,
                     label="Qubit Frequency (MHz)",

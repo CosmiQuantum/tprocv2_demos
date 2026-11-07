@@ -22,7 +22,7 @@ from analysis_016_metrics_vs_temp import (ResonatorFreqVsTemp, GetThermData, Qub
                                           PiAmpsVsTemp, T1VsTemp, T2rVsTemp, T2eVsTemp)
 from analysis_017_plot_metric_dependencies import PlotMetricDependencies
 #from analysis_018_box_whisker import PlotBoxWhisker
-from AB_Paper_Analysis_Plots import boxwhisker_t1t2_per_qubit_vs_run, boxwhisker_qfreq_per_qubit_vs_run, boxwhisker_t1t2_init_vs_final_per_run, boxwhisker_resleng_per_qubit_vs_run
+from AB_Paper_Analysis_Plots import boxwhisker_t1t2_per_qubit_vs_run, boxwhisker_qfreq_per_qubit_vs_run, boxwhisker_t1t2_init_vs_final_per_run, boxwhisker_resleng_per_qubit_vs_run, boxwhisker_rspec_per_qubit_vs_run
 from analysis_019_allan_welch_stats_plots import AllanWelchStats
 from analysis_022_Qfreq_hist_plots import QfreqHistPlots
 from section_011_qubit_temperatures_efRabi import QubitTemperatureProgram, QubitTemperatureRefProgram
@@ -46,12 +46,13 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 600
 
-run_num_list = [10] # options: 4,5,6,7,8,9, 9.2 (run 9c), 9.3 (run 9d), 10
+run_num_list = [7] # options: 4,5,6,7,8,9, 9.2 (run 9c), 9.3 (run 9d), 10
 t1_vals_by_run  = {}
 res_lengths_by_run = {}
 t2r_vals_by_run = {}
 t2e_vals_by_run = {}
 qfreq_vals_by_run = {}
+rspec_vals_by_run = {}
 
 t1_errs_by_run  = {}
 t2r_errs_by_run = {}
@@ -368,18 +369,32 @@ for run_number in run_num_list:
     elif run_number == 7:
         process_shots_t1ge = False
         per_pt_errs_t1 = False
-        run_name = 'run7/6transmon/round_robin_benchmark/AB_paper_data'
+        run_name = 'run7/6transmon/round_robin_benchmark'
         data_path = f"/exp/cosmiq/data/QUIET/QICK_data/{run_name}" #CEPH
             # f'/data/QICK_data/{run_name}' #daq01
         plots_path = "/home/acolonce/Documents/analysis/coherence" #cosmiqserver01
             #"/data/QICK_data/run7/6transmon/analysis" #daq01
 
         # all dates:
-        top_folder_dates = ["2025-07-19_08-34-39",
-                            "2025-07-19_16-16-14",
-                            "2025-07-19_16-56-45",
-                            "2025-07-19_23-11-39",
-                            "2025-07-20_06-33-03" ]
+        top_folder_dates = ["AB_paper_data/-07-19_08-34-39",
+                            "AB_paper_data/2025-07-19_16-16-14",
+                            "AB_paper_data/2025-07-19_16-56-45",
+                            "AB_paper_data/2025-07-19_23-11-39",
+                            "AB_paper_data/2025-07-20_06-33-03",
+
+                            # # Data below is not AB paper data. It was taken with QICK Box for other studies post switch
+                            # "AB_data_relax_delays_1000us/2025-08-04_09-01-44",
+                            # "AB_data_relax_delays_1000us/2025-08-04_08-37-10",
+                            # "AB_data_relax_delays_2000us/2025-08-04_09-35-44",
+                            # "AB_data_relax_delays_2000us/2025-08-04_09-33-07",
+                            # "Checking Filters/2025-07-29_13-19-53",
+                            # "Checking Filters/2025-07-29_12-44-01",
+                            # "Checking Filters/2025-07-29_12-41-45",
+                            # "Checking Filters/2025-07-29_12-35-57",
+                            # "Checking Filters/2025-07-29_12-34-47",
+                            # "Checking Filters/2025-07-29_12-33-13",
+                            # "Checking Filters/2025-07-29_12-31-46"
+                            ]
 
     elif run_number == 6:
         process_shots_t1ge = False
@@ -521,13 +536,13 @@ for run_number in run_num_list:
     run_notes = ('Added IR shielding, better cryo terminators, thermalizing with 0dB attenuator ') #please make it brief for the plot
 
     ################################################ 01: Get all data ######################################################
-    res_spec_vs_time = ResonatorFreqVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                           save_figs, fit_saved, signal, run_name, FRIDGE)
-    date_times_res_spec, res_freqs = res_spec_vs_time.run(exp_extension='_ge')
+    # res_spec_vs_time = ResonatorFreqVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+    #                                        save_figs, fit_saved, signal, run_name, FRIDGE)
+    # date_times_res_spec, res_freqs = res_spec_vs_time.run(exp_extension='_ge')
 
-    q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
-                                      save_figs, fit_saved, signal, run_name, FRIDGE)
-    date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
+    # q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+    #                                   save_figs, fit_saved, signal, run_name, FRIDGE)
+    # date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = False)
 
     #print("qspec fit errs Q1: ", qspec_fit_err[0])
     #print("mean qspec fit err Q1: ", np.mean(qspec_fit_err[0]))
@@ -536,14 +551,14 @@ for run_number in run_num_list:
     #                               fit_saved,signal, run_name)
     # date_times_pi_amps, pi_amps = pi_amps_vs_time.run(plot_depths=False)
 
-    # t1_vs_time = T1VsTime(plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
-    #                  signal, run_name, FRIDGE, run_number, per_pt_errs = per_pt_errs_t1)
-    #
-    # # For regular t1 data
-    # if per_pt_errs_t1 and process_shots_t1ge: # this will only work if process_shots_t1ge is set to True too
-    #     date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs, res_lengths, rounds_t1 = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge, return_rnds = True)
-    # else:
-    #     date_times_t1, t1_vals, t1_fit_err, res_lengths, rounds_t1 = t1_vs_time.run(return_errs=True, exp_extension = '_ge', return_rnds = True)
+    t1_vs_time = T1VsTime(plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs, fit_saved,
+                     signal, run_name, FRIDGE, run_number, per_pt_errs = per_pt_errs_t1)
+
+    # For regular t1 data
+    if per_pt_errs_t1 and process_shots_t1ge: # this will only work if process_shots_t1ge is set to True too
+        date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs, res_lengths, rounds_t1 = t1_vs_time.run(return_errs=True, exp_extension = '_ge', process_shots = process_shots_t1ge, return_rnds = True)
+    else:
+        date_times_t1, t1_vals, t1_fit_err, res_lengths, rounds_t1 = t1_vs_time.run(return_errs=True, exp_extension = '_ge', return_rnds = True)
 
     # # For active reset t1 data
     # if per_pt_errs_t1 and process_shots_t1ge:  # only works if process_shots_t1ge is True
@@ -551,13 +566,13 @@ for run_number in run_num_list:
     # else:
     #     date_times_t1_act_reset, t1_vals_act_reset, t1_fit_err_act_reset, res_lengths_act_reset = t1_vs_time.run_act_reset(return_errs=True)
 
-    # t2r_vs_time = T2rVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
-    #                         fit_saved, signal, run_name, FRIDGE)
-    # date_times_t2r, t2r_vals, t2r_fit_err, rounds_t2r = t2r_vs_time.run(return_errs=True, t1_vals = t1_vals, return_rnds = True)
+    t2r_vs_time = T2rVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+                            fit_saved, signal, run_name, FRIDGE)
+    date_times_t2r, t2r_vals, t2r_fit_err, rounds_t2r = t2r_vs_time.run(return_errs=True, t1_vals = t1_vals, return_rnds = True)
 
-    # t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
-    #                         fit_saved, signal, run_name, FRIDGE)
-    # date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = t1_vals)
+    t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates, save_figs,
+                            fit_saved, signal, run_name, FRIDGE)
+    date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals = t1_vals)
 
     # ---------------- Store results ----------------
     ## stores data like t1_vals_by_run[6][3], where 6=run number and 3=qubit index (0 based)
@@ -573,6 +588,8 @@ for run_number in run_num_list:
     # #
     # qfreq_vals_by_run[run_number] = q_freqs
     # qfreq_errs_by_run[run_number] = qspec_fit_err
+
+    #rspec_vals_by_run[run_number] = res_freqs
 
 ######################################## Print QICK soccfg live ###########################################
 # If you want to print out the soccfg QICK output, uncomment this:
@@ -606,7 +623,7 @@ for run_number in run_num_list:
             #plot_t2r = True, plot_t2e = False, plot_rabis_Qtemps = False)
 
 ########################################### 03: Resonator Freqs vs Time Plots ###########################################
-res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends, use_global_yaxis = True)
+#res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends, use_global_yaxis = True)
 #
 # ######################################### 04: Qubit Freqs vs Time Plots #############################################
 #q_spec_vs_time.plot_without_errs(date_times_q_spec, q_freqs,show_legends)
@@ -636,7 +653,7 @@ res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends, use_global_y
 
 # ################################################ 06: T1 vs Time Plots #################################################
 # t1_vs_time.plot_without_errs(date_times_t1, t1_vals, show_legends)
-#t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends) # shows error bars, do this one!!
+t1_vs_time.plot_with_errs(date_times_t1, t1_vals, t1_fit_err, show_legends) # shows error bars, do this one!!
 
 # For July 20 run 9d tests
 # t1_vs_time.plot_with_errs_single_plot(date_times_t1,t1_vals,t1_fit_err,
@@ -676,7 +693,7 @@ res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends, use_global_y
 # )
 # ################################################# 07: T2R vs Time Plots ################################################
 # #t2r_vs_time.plot_without_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends)
-#t2r_vs_time.plot_with_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends) # shows error bars, do this one!!
+t2r_vs_time.plot_with_errs(date_times_t2r, t2r_vals, t2r_fit_err, show_legends) # shows error bars, do this one!!
 
 # For July 20 tests run 9d
 # t2r_vs_time.plot_with_errs_single_plot(date_times_t2r,t2r_vals,t2r_fit_err,
@@ -844,7 +861,7 @@ res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends, use_global_y
 # ])
 # ################################################# 08: T2E vs Time Plots ################################################
 # #t2e_vs_time.plot_without_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends)
-#t2e_vs_time.plot_with_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends) # shows error bars, do this one!!
+t2e_vs_time.plot_with_errs(date_times_t2e, t2e_vals, t2e_fit_err, show_legends) # shows error bars, do this one!!
 # t2e_vs_time.plot_with_errs_single_plot(date_times_t2e, t2e_vals, t2e_fit_err, show_legends=True)
 ############################################### Qubit Frequency hist Plots #############################################
 # qfreq_distribution_plots = QfreqHistPlots(figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
@@ -1062,6 +1079,16 @@ res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends, use_global_y
 #     qfreq_centers=ge_qfreq_centers,
 #     freq_window=75.0,
 #     save_plt_path = "/home/acolonce/Documents/analysis/multirun/qubit_freqs") # set to 'None' to use plt.show()
+
+# ge_rspec_centers = [6236.2014, 6296.685, 6358.0, 6427.895, 6494.4, 6562.500] # plots will be centered around these vals
+# ef_rspec_centers = [6236.157, 6296.658, 6358.029, 6427.713, 6494.240, 6562.153] # for ef res spec plots
+# boxwhisker_rspec_per_qubit_vs_run(
+#     run_num_list,
+#     rspec_vals_by_run=rspec_vals_by_run,
+#     rspec_errs_by_run=None, # we use the minimum of each resonator dip, we don't fit
+#     qfreq_centers=ge_rspec_centers,
+#     freq_window=75.0,
+#     save_plt_path = "/home/acolonce/Documents/analysis/multirun/res_freqs") # set to 'None' to use plt.show()
 
 # Box and whisker plots, per qubit, showing a comparison between the two runs
 # median_qubit_freqs = { # 4194.77, 3828.69, 4173.69, 4474.04, 4485.38, 5018.12
