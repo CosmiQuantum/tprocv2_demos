@@ -38,6 +38,8 @@ from matplotlib.dates import DateFormatter
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from scipy.optimize import curve_fit
+from match_h5files_to_pngs_get_timestamps import load_h5_png_map, create_h5_png_map
+from pathlib import Path
 
 save_figs = True
 figure_quality = 100 #ramp this up to like 500 for presentation plots
@@ -2807,7 +2809,7 @@ class SSFTempCalcAndPlots:
 
         return threshold, thresh_err, means, sigmas, weights, ground_idx, excited_idx
 
-    def process_ssf_and_qfreq_data_qtemps(self, Science_Qubits, paths):
+    def process_ssf_and_qfreq_data_qtemps(self, Science_Qubits, paths, use_png_timestamps=False):
         """
         This function processes the ssf and g-e quit spec data for each qubit found inside the files in CEPH and returns the dictionary:
 
@@ -2825,8 +2827,14 @@ class SSFTempCalcAndPlots:
         use the returned dictionary to calculate qubit temperatures using SSF data and the qubit freq that was measured at around the same time that the SSF data was taken.
         """
         print('Processing SSF and g-e quit spec data for temperature analysis...')
+
+        if use_png_timestamps:
+            # Use PNG timestamps only for final effective qubit temperature timestamps, not QSpec-SSF matching.
+            map_loader = load_h5_png_map()
+            mapping_cache = {}  # Rebuild each date folder's mapping only once
+
         freq_cache = {}  # for qubit freqs (MHz)
-        freq_err_cache = {}  # 1-? error (std) on that freq
+        freq_err_cache = {}  # 1-sigma error (std) on that freq
         ig_new_cache = {}  # for ground state roated I data (SSF)
         ie_new_cache = {}  # for first Excited-State roated I data (SSF)
         timestamp_ssf_cache = {}  # for ssf data time stamps (qubit temperature time stamps)
@@ -3058,6 +3066,49 @@ class SSFTempCalcAndPlots:
                 if fq_key not in freq_cache or ss_key not in ig_new_cache:
                     continue  # skip incomplete pair
 
+                # --- Use PNG filename timestamp from SSF mapping if requested ---
+                if use_png_timestamps:
+                    ssf_h5_path = Path(ssf_path).resolve()
+                    timestamp_dir = ssf_h5_path.parents[3]  # Date folder above study_data/Data_h5/ss_ge
+                    map_path = timestamp_dir / "documentation" / "h5_png_timestamp_map.h5"
+
+                    # Recreate the mapping once per date folder, then reuse it for the other qubits
+                    if timestamp_dir not in mapping_cache:
+                        try:
+                            mapping_cache[timestamp_dir] = map_loader.load_map(map_path)
+                        except FileNotFoundError:
+                            raise  # Preserve errors when required PNG files are missing
+                        except Exception as e:
+                            print(f"[WARN] Failed to regenerate mapping for {timestamp_dir}: {e}")
+                            mapping_cache[timestamp_dir] = None
+
+                    mapping_data = mapping_cache[timestamp_dir]
+                    if mapping_data is None:
+                        continue
+
+                    # Find the PNG belonging to this exact SSF H5 file and qubit
+                    subset = map_loader.filter_by(mapping_data, experiment=expt_name_ssf, qubit=q + 1)
+                    ssf_relpath = str(ssf_h5_path.relative_to(timestamp_dir))
+
+                    subset = [
+                        row for row in subset
+                        if map_loader._as_str(row["h5_relpath"]) == ssf_relpath
+                    ]
+
+                    if len(subset) == 0:
+                        print(f"[WARN] No PNG match for SSF Q{q + 1}, {ssf_h5_path.name}. Skipping.")
+                        continue
+
+                    try:
+                        png_ts = map_loader._as_str(subset[0]["png_timestamp"])
+                        png_dt = datetime.datetime.strptime(png_ts, "%Y-%m-%d_%H-%M-%S")
+                        data_timestamp = png_dt.timestamp()
+                    except (ValueError, TypeError, AttributeError):
+                        print(f"[WARN] Invalid PNG timestamp for SSF Q{q + 1}, {ssf_h5_path.name}. Skipping.")
+                        continue
+                else:
+                    data_timestamp = timestamp_ssf_cache[ss_key].timestamp()
+
                 pairs_info[q].append({
                     "qspec_path": qspec_path,
                     "ssf_path": ssf_path,
@@ -3071,7 +3122,7 @@ class SSFTempCalcAndPlots:
                     "ssf_err_fit": ssf_err_fit_cache[ss_key], # additional SSF uncertainty from the fitted Gaussian threshold; zero for max_contrast
                     "ssf_err_total": ssf_err_total_cache[ss_key], # total SSF uncertainty, combining shot, binning, and fit contributions in quadrature
                     "ssf_vs_bins": ssf_vs_bins_cache[ss_key], # diagnostic array of SSF values obtained when recalculating SSF with different numbins values
-                    "data_timestamp": timestamp_ssf_cache[ss_key].timestamp(),  # unix-timestamps
+                    "data_timestamp": data_timestamp,  # unix-timestamps
                 })
         return pairs_info
 
@@ -5636,6 +5687,7 @@ class combined_Qtemp_studies:
             plots_path,
             per_pt_errs_t1=False,
             process_shots_t1ge=False,
+            use_png_timestamps = False
     ):
         """
         Either load cached processed coherence inputs or process the coherence data
@@ -5711,7 +5763,7 @@ class combined_Qtemp_studies:
                 FRIDGE
             )
 
-            date_times_res_spec, res_freqs = res_spec_vs_time.run()
+            date_times_res_spec, res_freqs = res_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = use_png_timestamps)
 
             q_spec_vs_time = QubitFreqsVsTime(
                 data_path,
@@ -5729,7 +5781,7 @@ class combined_Qtemp_studies:
 
             date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(
                 exp_extension="_ge",
-                use_png_timestamps=False
+                use_png_timestamps=use_png_timestamps
             )
 
             t1_vs_time = T1VsTime(
@@ -5761,12 +5813,14 @@ class combined_Qtemp_studies:
                 ) = t1_vs_time.run(
                     return_errs=True,
                     exp_extension="_ge",
-                    process_shots=process_shots_t1ge
+                    process_shots=process_shots_t1ge,
+                    use_png_timestamps = use_png_timestamps
                 )
             else:
                 date_times_t1, t1_vals, t1_fit_err, res_lengths = t1_vs_time.run(
                     return_errs=True,
-                    exp_extension="_ge"
+                    exp_extension="_ge",
+                    use_png_timestamps = use_png_timestamps
                 )
 
             t2r_vs_time = T2rVsTime(
@@ -5785,7 +5839,8 @@ class combined_Qtemp_studies:
 
             date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(
                 return_errs=True,
-                t1_vals=t1_vals
+                t1_vals=t1_vals,
+                use_png_timestamps = use_png_timestamps
             )
 
             t2e_vs_time = T2eVsTime(
@@ -5804,7 +5859,8 @@ class combined_Qtemp_studies:
 
             date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(
                 return_errs=True,
-                t1_vals=t1_vals
+                t1_vals=t1_vals,
+                use_png_timestamps = use_png_timestamps
             )
 
             # ------------------------------------------------------------
@@ -11567,7 +11623,7 @@ class combined_Qtemp_studies:
 
         return out_path
 
-    def plot_qtemps_and_coherence_res(self, out_dir, all_qubit_temperatures_ssf_g = None, all_qubit_timestamps_ssf_g = None,
+    def plot_qtemps_and_coherence_res(self, out_dir, SSF_qtemps_fit_results_g = None,
                                       all_files_Qtemp_results_RPMs = None, fridge_temps = None, fridge_dates = None,
                                       t1_vals = None, t1_dates = None, t1_fit_err = None, qfreqs_vals = None, qfreqs_dates = None, qfreqs_errs = None, resfreqs_vals=None,
                                         resfreqs_dates=None, t2r_vals=None, t2r_dates=None, t2r_errs=None, t2e_vals=None, t2e_dates=None,
@@ -11608,17 +11664,40 @@ class combined_Qtemp_studies:
                         errs_RPM[q].append(d["T_mK_err"])
 
         # ------------------------------------------------------------------
-        # SSF g-only Qtemps (expect dicts {q: [datetimes]} and {q: [floats]})
+        # SSF g-only Qtemps: reconstruct directly from fit_results_g records.
+        # Expected: fit_results_g[q] = [{"temperature_mK": ..., "timestamp": ...}, ...]
         # ------------------------------------------------------------------
-        if all_qubit_timestamps_ssf_g is not None:
-            times_g = all_qubit_timestamps_ssf_g
-        else:
-            times_g = {q: [] for q in range(num_qubits)}
+        times_g = {q: [] for q in range(num_qubits)}
+        temps_g = {q: [] for q in range(num_qubits)}
 
-        if all_qubit_temperatures_ssf_g is not None:
-            temps_g = all_qubit_temperatures_ssf_g
-        else:
-            temps_g = {q: [] for q in range(num_qubits)}
+        if SSF_qtemps_fit_results_g is not None:
+            for q in range(num_qubits):
+                records = SSF_qtemps_fit_results_g.get(q, []) if isinstance(SSF_qtemps_fit_results_g, dict) else (
+                    SSF_qtemps_fit_results_g[q] if q < len(SSF_qtemps_fit_results_g) else [])
+
+                for rec in records:
+                    if not isinstance(rec, dict) or "temperature_mK" not in rec or "timestamp" not in rec:
+                        continue
+
+                    try:
+                        temp = float(rec["temperature_mK"])
+                        if not np.isfinite(temp) or temp >= 1000:
+                            continue
+
+                        t = rec["timestamp"]
+                        if isinstance(t, (int, float, np.integer, np.floating)):
+                            t = datetime.datetime.fromtimestamp(float(t))
+                        elif not isinstance(t, datetime.datetime):
+                            t = pd.to_datetime(t).to_pydatetime()
+
+                        if pd.isna(t):
+                            continue
+
+                    except (ValueError, TypeError, OverflowError, OSError):
+                        continue
+
+                    times_g[q].append(t)
+                    temps_g[q].append(temp)
 
         # ------------------------------------------------------------------
         # Fridge temperatures (global series, same for all qubits)
@@ -11797,7 +11876,7 @@ class combined_Qtemp_studies:
         # Make figure: 1 row per qubit
         # ------------------------------------------------------------------
         if fig_height is not None:
-            f_height = fig_height
+            f_height = fig_height + 2
         else:
             f_height = 8 * nrows
         fig, axes = plt.subplots(nrows, 1, figsize=(fig_width, f_height), sharex=True, constrained_layout=False)
@@ -11860,11 +11939,19 @@ class combined_Qtemp_studies:
             #     idx = np.argmin([abs((t - drop_time).total_seconds()) for t in times_RPM[q]])
             #     print(f"Qubit {q + 1} | Drop time: {drop_time} | Teff: {temps_RPM[q][idx]:.2f} ± {errs_RPM[q][idx]:.2f} mK")
 
-            ax.set_title(f"Qubit {q + 1}", loc="left", fontsize=fnt_sz + 4) # fontweight="bold"
-            ax.set_ylabel(r"$T_{eff}$ (mK)", fontsize=fnt_sz + 4, labelpad=16, color="black")
-            ax.tick_params(axis="y", labelsize=fnt_sz-2, colors="black")
-            ax.set_ylim(60, 170)
+            # For separate Teff axis
+            # ax.set_title(f"Qubit {q + 1}", loc="left", fontsize=fnt_sz + 4) # fontweight="bold"
+            # ax.set_ylabel(r"$T_{eff}$ (mK)", fontsize=fnt_sz + 4, labelpad=16, color="black")
+            # ax.tick_params(axis="y", labelsize=fnt_sz-2, colors="black")
+            # ax.set_ylim(60, 170)
+            # ax.yaxis.set_major_locator(mticker.LinearLocator(6))
+
+            # For combined mK (temperature) axis
+            ax.set_ylabel("Temperature (mK)", fontsize=fnt_sz + 4, labelpad=16, color="black")
+            ax.tick_params(axis="y", labelsize=fnt_sz - 2, colors="black")
+            ax.set_ylim(5, 250)  # Shared range for MCP1 and Teff
             ax.yaxis.set_major_locator(mticker.LinearLocator(6))
+
             ax.grid(False)
 
             #ax.xaxis.set_major_locator(mdates.AutoDateLocator())
@@ -11893,118 +11980,82 @@ class combined_Qtemp_studies:
             right_axes_offset = 0
             handles, labels = ax.get_legend_handles_labels()
 
-            # Fridge temp (global) on first right axis
+            # Fridge temp (global) on same axis as Teff
             fridge_ax = None
             if fridge_times is not None and fridge_temps is not None:
-                # ax.plot(
-                #     fridge_times,
-                #     fridge_temps,
-                #     color="green",
-                #     alpha=0.5,
-                #     linewidth=1.5,
-                #     label="Fridge MCP1 (mK)",
-                # )
-                ## To make the fridge temp have its own y axis:
-                fridge_ax = ax.twinx()
-                fridge_ax.plot(
+                ax.plot(
                     fridge_times,
                     fridge_temps,
-                    color="#009E73", # color-blind friendly green
-                    alpha=0.85,
+                    color="#009E73",
+                    alpha=0.5,
                     linewidth=3.0,
                     label="MCP1 Temperature (mK)",
                 )
 
-                # Optional: this is to plot a line at a certain temp to visualize steps
-                #temp_val = 20
-                #fridge_ax.axhline(y=temp_val, color="purple", linestyle="--", linewidth=3.0, alpha=0.8, label=f"{temp_val} mK, MCP1")
+                ## To make the fridge temp have its own y axis:
+                # fridge_ax = ax.twinx()
+                # fridge_ax.plot(
+                #     fridge_times,
+                #     fridge_temps,
+                #     color="#009E73",
+                #     alpha=0.85,
+                #     linewidth=3.0,
+                #     label="MCP1 Temperature (mK)",
+                # )
 
-                fridge_ax.set_ylabel("MCP1 Temperature (mK)", color="black", fontsize=fnt_sz + 4, labelpad=16)
-                fridge_ax.tick_params(axis="y", labelcolor="black", labelsize=fnt_sz-2, pad=8)
-                fridge_ax.set_ylim(3, 235)
-                fridge_ax.yaxis.set_major_locator(mticker.LinearLocator(6))
+                # Optional horizontal reference line
+                temp_val = 100
+                ax.axhline(y=temp_val, color="grey", linestyle="--",
+                                  linewidth=3.0, alpha=0.8, label=f"{temp_val} mK, MCP1")
 
-                # # Match Qtemps axis limits
+                ## To make the fridge temp have its own y axis:
+                # fridge_ax.set_ylabel("MCP1 Temperature (mK)", color="black", fontsize=fnt_sz + 4, labelpad=16)
+                # fridge_ax.tick_params(axis="y", labelcolor="black", labelsize=fnt_sz-2, pad=8)
+                # fridge_ax.set_ylim(3, 235)
+                # fridge_ax.yaxis.set_major_locator(mticker.LinearLocator(6))
+
+                # Match Qtemps axis limits
                 # fridge_ax.set_ylim(left_ymin, left_ymax)
-                #
-                # # Match Qtemps ticks
+
+                # Match Qtemps ticks
                 # fridge_ax.set_yticks(ax.get_yticks())
 
-                h2, l2 = fridge_ax.get_legend_handles_labels()
-                handles += h2
-                labels += l2
-                right_axes_offset = 1.0
+                # Legend handling for separate fridge axis
+                # h2, l2 = fridge_ax.get_legend_handles_labels()
+                # handles += h2
+                # labels += l2
+                # right_axes_offset = 1.0
 
-            # T1 (µs) on second right axis (per qubit)
-            if t1_times[q] and t1_values[q]:
+                # Legend handling for shared temperature axis
+                handles, labels = ax.get_legend_handles_labels()
+
+            # T1, T2 Ramsey, and T2 Echo on a shared right y-axis (µs)
+            if t1_times[q] or t2r_times[q] or t2e_times[q]:
                 t1_ax = ax.twinx()
                 t1_ax.spines["right"].set_position(("axes", 1.0 + 0.14 * right_axes_offset))
-                t1_ax.errorbar(
-                    t1_times[q],
-                    t1_values[q],
-                    yerr=t1_errors[q] if t1_errors[q] else None,
-                    marker="^",
-                    markersize=8,
-                    linestyle=ln_style,
-                    color="#0072B2",# color-blind friednly blue
-                    alpha=0.85,
-                    capsize=8,
-                    elinewidth=1,
-                    label="T1 (µs)",
-                )
-                t1_ax.set_ylabel(r"T$_1$ (µs)", color="black", fontsize=fnt_sz + 4, labelpad=24)
-                t1_ax.tick_params(axis="y", labelcolor="black", labelsize=fnt_sz-2, pad=12)
-                t1_ax.set_ylim(1, 93)
+
+                if t1_times[q] and t1_values[q]:
+                    t1_ax.errorbar(t1_times[q], t1_values[q], yerr=t1_errors[q] if t1_errors[q] else None,
+                                   marker="^", markersize=8, linestyle=ln_style, color="#0072B2",
+                                   alpha=0.85, capsize=8, elinewidth=1, label=r"T$_1$ (µs)")
+
+                if t2r_times[q] and t2r_values[q]:
+                    t1_ax.errorbar(t2r_times[q], t2r_values[q], yerr=t2r_errors[q] if t2r_errors[q] else None,
+                                   marker="v", markersize=8, linestyle=ln_style, color="darkorange",
+                                   alpha=0.8, capsize=8, elinewidth=1, label=r"T$_2$ Ramsey (µs)")
+
+                if t2e_times[q] and t2e_values[q]:
+                    t1_ax.plot(t2e_times[q], t2e_values[q], marker="D", markersize=8,
+                               linestyle=ln_style, color="#009E73", alpha=0.8, label=r"T$_2$ Echo (µs)")
+
+                t1_ax.set_ylabel(r"$T_1$, $T_2$ (µs)", color="black", fontsize=fnt_sz + 4, labelpad=24)
+                t1_ax.tick_params(axis="y", labelcolor="black", labelsize=fnt_sz - 2, pad=12)
+                t1_ax.set_ylim(bottom=0)
                 t1_ax.yaxis.set_major_locator(mticker.LinearLocator(6))
-                h3, l3 = t1_ax.get_legend_handles_labels()
-                handles += h3
-                labels += l3
-                right_axes_offset += 1
 
-            # T2 Ramsey (µs) on next right axis (per qubit)
-            if t2r_times[q] and t2r_values[q]:
-                t2r_ax = ax.twinx()
-                t2r_ax.spines["right"].set_position(("axes", 1.0 + 0.07 * right_axes_offset))
-                t2r_ax.errorbar(
-                    t2r_times[q],
-                    t2r_values[q],
-                    yerr=t2r_errors[q] if t2r_errors[q] else None,
-                    marker="v",
-                    markersize=8,
-                    linestyle=ln_style,
-                    color="darkorange",
-                    alpha=0.8,
-                    capsize=8,
-                    elinewidth=1,
-                    label=r"T$_2$ Ramsey (µs)",
-                )
-                t2r_ax.set_ylabel(r"T$_2$ Ramsey (µs)", color="darkorange", fontsize=fnt_sz + 4, labelpad=20)
-                t2r_ax.tick_params(axis="y", labelcolor="darkorange", labelsize=fnt_sz )
-                t2r_ax.yaxis.set_major_locator(mticker.LinearLocator(6))
-                h_t2r, l_t2r = t2r_ax.get_legend_handles_labels()
-                handles += h_t2r
-                labels += l_t2r
-                right_axes_offset += 1
-
-            # T2 Echo (µs) on next right axis (per qubit)
-            if t2e_times[q] and t2e_values[q]:
-                t2e_ax = ax.twinx()
-                t2e_ax.spines["right"].set_position(("axes", 1.0 + 0.05 * right_axes_offset))
-                t2e_ax.plot(
-                    t2e_times[q],
-                    t2e_values[q],
-                    marker="D",
-                    markersize=8,
-                    linestyle=ln_style,
-                    color="#009E73", # color-blind friendly green
-                    alpha=0.8,
-                    label="T2E (µs)",
-                )
-                t2e_ax.set_ylabel("T2E (µs)", color="#009E73", fontsize=fnt_sz)
-                t2e_ax.tick_params(axis="y", labelcolor="#009E73", labelsize=fnt_sz)
-                h_t2e, l_t2e = t2e_ax.get_legend_handles_labels()
-                handles += h_t2e
-                labels += l_t2e
+                h, l = t1_ax.get_legend_handles_labels()
+                handles += h
+                labels += l
                 right_axes_offset += 1
 
             # Qfreq (MHz) on third right axis (per qubit)
@@ -12048,7 +12099,7 @@ class combined_Qtemp_studies:
                 ax.set_zorder(1)
                 ax.patch.set_visible(False)
 
-                rf_ax.spines["right"].set_position(("axes", 1.0 + 0.053 * right_axes_offset))
+                rf_ax.spines["right"].set_position(("axes", 1.0 + 0.054 * right_axes_offset))
                 rf_ax.plot(
                     resfreq_times[q],
                     resfreq_values[q],
@@ -12056,11 +12107,11 @@ class combined_Qtemp_studies:
                     markersize=8,
                     linestyle=ln_style,
                     color="purple",
-                    alpha=0.8,
-                    label="Res freq (MHz)"
+                    alpha=0.95,
+                    label="Resonator Frequency (MHz)"
                 )
-                rf_ax.set_ylabel("Res freq (MHz)", color="purple", fontsize=fnt_sz)
-                rf_ax.tick_params(axis="y", labelcolor="purple", labelsize=fnt_sz)
+                rf_ax.set_ylabel("Resonator Frequency (MHz)", color="black", fontsize=fnt_sz + 4, labelpad=24)
+                rf_ax.tick_params(axis="y", labelcolor="black", labelsize=fnt_sz - 2, pad = 12)
                 rf_ax.yaxis.get_offset_text().set_visible(False)
                 rf_ax.yaxis.set_major_formatter(mticker.FormatStrFormatter("%.2f"))
                 h_rf, l_rf = rf_ax.get_legend_handles_labels()
@@ -12085,9 +12136,9 @@ class combined_Qtemp_studies:
                 leg = ax.legend(
                     handles,
                     labels,
-                    loc="lower center",
-                    bbox_to_anchor=(0.57, 0.0),
-                    fontsize=24,
+                    loc="lower center", # "lower center"
+                    bbox_to_anchor=(0.5, -1.0), # (0.57, 0.0)
+                    fontsize=22,
                     frameon=True,
                     fancybox=False
                 )
@@ -12108,15 +12159,15 @@ class combined_Qtemp_studies:
             ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d-%H"))
 
         # fig.suptitle("Qtemps, Fridge, T1, T2R, T2E, Qfreq, and Res Freq vs Time", fontsize=18)
-        fig.suptitle(r"Qubit Frequency, Effective Qubit Temperature, T$_1$, and MCP1 Temperature vs Time", fontsize=fnt_sz + 8, y=0.97)
-        fig.subplots_adjust(left=0.20, right=0.84, top=0.88, bottom=0.22, hspace=0.12) # left: smaller moves plots left
+        fig.suptitle(r"Effective Qubit Temperature, Coherence, Qubit Frequency, Resonator Frequency, and MCP1 Temperature vs Time", fontsize=fnt_sz + 8, y=0.97)
+        fig.subplots_adjust(left=0.15, right=0.84, top=0.88, bottom=0.44, hspace=0.12) # left: smaller moves plots left
 
         # Save
         paramvstime_dir = os.path.join(out_dir, "params_vs_time")
         os.makedirs(paramvstime_dir, exist_ok=True)
         stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         #out_path = os.path.join(paramvstime_dir, f"run{run_num}_Qtemps_Coherence_allQs_{stamp}.pdf")
-        out_path = os.path.join(paramvstime_dir, f"run{run_num}_T1_Qfreq_MCP1_Teff_vs_Time_{stamp}.pdf")
+        out_path = os.path.join(paramvstime_dir, f"run{run_num}_Coherence_MCP1_Teff_vs_Time_{stamp}.pdf")
         fig.savefig(out_path, facecolor="white")
         plt.close(fig)
         print("Saved combined methods plot: ", out_path)

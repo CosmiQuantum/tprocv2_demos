@@ -19,6 +19,8 @@ from scipy.stats import norm
 from scipy.optimize import curve_fit
 import matplotlib.dates as mdates
 from matplotlib.ticker import StrMethodFormatter, LinearLocator
+from match_h5files_to_pngs_get_timestamps import load_h5_png_map, create_h5_png_map
+from pathlib import Path
 
 class ResonatorFreqVsTime:
     def __init__(self, base_data_path, plots_path, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
@@ -255,9 +257,15 @@ class ResonatorFreqVsTime:
                 "dip_snr": dip_snr, "rms_residual": rms_residual, "chi2": chi2, "reduced_chi2": reduced_chi2,
                 "fit_amps": fit_amps}
 
-    def run(self,exp_extension='_ge', fit_resonators=False):
+    def run(self,exp_extension='_ge', fit_resonators=False, use_png_timestamps = False):
         # fit_resonators is to get kappa. No need to fit if you just want the resonator frequencies.
         import datetime
+
+        if use_png_timestamps:
+            # This is a setting used to extract the timestamps in the PNG file names instead of using the ones
+            # stored inside the H5 files (which mark when the file was saved, not when the measurement was done).
+            map_loader = load_h5_png_map()
+
         # ----------Load/get data------------------------
         resonator_centers = {i: [] for i in range(self.number_of_qubits)}
         date_times = {i: [] for i in range(self.number_of_qubits)}
@@ -278,6 +286,19 @@ class ResonatorFreqVsTime:
                 outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
             else:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+
+            if use_png_timestamps:
+                # --- Recreate and load the H5-PNG mapping for this date folder ---
+                map_path = os.path.join(timestamp_dir, "documentation/h5_png_timestamp_map.h5")
+
+                try:
+                    mapping_data = map_loader.load_map(map_path)
+                    print(f"[INFO] Successfully regenerated and loaded mapping at {map_path}.")
+                except FileNotFoundError:
+                    raise  # Preserve the error when required PNG files are missing
+                except Exception as e:
+                    print(f"[WARN] Failed to regenerate mapping: {e}")
+                    mapping_data = None
 
             # ------------------------------------------Load/Plot/Save Res Spec------------------------------------
             outerFolder_expt = outerFolder + f"/Data_h5/res{exp_extension}/"
@@ -334,12 +355,39 @@ class ResonatorFreqVsTime:
                             exp_config = None
 
                         if len(freq_pts) > 0:
-                            res_class_instance = ResonanceSpectroscopy(q_key, self.number_of_qubits, self.plots_path, round_num, self.save_figs)
-                            #res_spec_cfg = exp_config['res_spec']
+                            # --- use PNG filename timestamp from mapping if available ---
+                            # The PNG timestamp is more accurate than the H5 timestamp, which records when the file was saved.
+                            if use_png_timestamps:
+                                if mapping_data is None:
+                                    continue  # skip if no mapping file for this timestamp_dir
+
+                                # Mapping uses experiment='res_ge', qubit as 1-indexed
+                                qubit_in_map = int(q_key) + 1
+                                subset = map_loader.filter_by(mapping_data, experiment=f"res{exp_extension}",
+                                                              qubit=qubit_in_map, round=round_num)
+
+                                if len(subset) == 0:
+                                    continue  # skip if no mapping match for this qubit/round
+
+                                try:
+                                    png_ts = subset[0]["png_timestamp"]
+                                    if isinstance(png_ts, bytes):
+                                        png_ts = png_ts.decode()
+                                    png_dt = datetime.datetime.strptime(png_ts, "%Y-%m-%d_%H-%M-%S")
+                                    date_str = png_dt.strftime("%Y-%m-%d %H:%M:%S")  # from PNG file
+                                except (ValueError, TypeError, AttributeError):
+                                    continue  # skip if PNG timestamp has an invalid format
+                            else:
+                                date_str = date.strftime("%Y-%m-%d %H:%M:%S")  # og way, from H5 file
+
+                            res_class_instance = ResonanceSpectroscopy(q_key, self.number_of_qubits, self.plots_path,
+                                                                       round_num, self.save_figs)
+                            # res_spec_cfg = exp_config['res_spec']
                             res_freqs = res_class_instance.get_results(freq_pts, freq_center, amps)
 
-                            resonator_centers[q_key].extend([res_freqs[q_key]])
-                            date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
+                            # --- store accepted resonator results only after timestamp validation to keep arrays aligned ---
+                            resonator_centers[q_key].append(res_freqs[q_key])
+                            date_times[q_key].append(date_str)
 
                             if fit_resonators:
                                 q_idx = int(q_key)
@@ -347,14 +395,17 @@ class ResonatorFreqVsTime:
                                 fit_result = self.fit_resonator_lorentzian(absolute_freqs, amps[q_idx])
 
                                 if fit_result is not None:
-                                    fit_result["date"] = date.strftime("%Y-%m-%d %H:%M:%S")
+                                    fit_result["date"] = date_str
                                     fit_result["round_num"] = round_num
                                     fit_result["batch_num"] = batch_num
                                     resonator_fit_results[q_idx].append(fit_result)
 
-                                    print(f"Q{q_idx + 1}: f0 = {fit_result['f0_MHz']:.6f} MHz, kappa/2pi = {fit_result['kappa_MHz']:.6f} MHz, QL = {fit_result['Q_loaded']:.0f}, tau = {fit_result['tau_us']:.6f} us")
+                                    print(
+                                        f"Q{q_idx + 1}: f0 = {fit_result['f0_MHz']:.6f} MHz, kappa/2pi = {fit_result['kappa_MHz']:.6f} MHz, QL = {fit_result['Q_loaded']:.0f}, tau = {fit_result['tau_us']:.6f} us")
 
-                                    self.plot_resonator_fit(absolute_freqs, amps[q_idx], fit_result, q_idx, date, round_num, batch_num)
+                                    self.plot_resonator_fit(absolute_freqs, amps[q_idx], fit_result, q_idx,
+                                                            datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S"),
+                                                            round_num, batch_num)
                                 else:
                                     print(f"Q{q_idx + 1}: resonator fit failed.")
 
@@ -465,6 +516,94 @@ class ResonatorFreqVsTime:
         plt.tight_layout()
         plt.savefig(analysis_folder + f'Res_Freqs{exp_extension}.pdf', transparent=True, dpi=self.final_figure_quality)
         print('Plot saved to:', analysis_folder)
+
+    def plot_res_freqs_multirun(self, runs, rspec_vals_by_run, rspec_dates_by_run, rspec_errs_by_run=None,
+                                use_global_yaxis=True, show_legends=False):
+        from datetime import datetime
+
+        analysis_folder = os.path.join(self.plots_path, "features_vs_time/")
+        self.create_folder_if_not_exists(analysis_folder)
+
+        font = 18
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
+        padding_fraction = 0.15
+        n_runs = len(runs)
+        n_resonators = self.number_of_qubits
+
+        # One row per resonator, one column per run
+        fig, axes = plt.subplots(n_resonators, n_runs, figsize=(5 * n_runs, 3.5 * n_resonators), squeeze=False)
+        fig.suptitle('Resonator Frequencies (MHz) vs Time, Multirun', fontsize=font, y=1.02)
+
+        processed_data = {}
+        resonator_ywidths = {i: 0 for i in range(n_resonators)}
+
+        # ---------------- Process data ----------------
+        for run in runs:
+            for i in range(n_resonators):
+                x = rspec_dates_by_run[run][i]
+                y = rspec_vals_by_run[run][i]
+                err = rspec_errs_by_run[run][i] if rspec_errs_by_run is not None else [0] * len(y)
+
+                # Remove missing or invalid values and sort by timestamp
+                filtered = [(t, float(f), 0.0 if e is None else float(e)) for t, f, e in zip(x, y, err)
+                            if t is not None and f is not None and np.isfinite(float(f))]
+                if not filtered: continue
+
+                filtered.sort(key=lambda item: item[0])
+                sorted_x, sorted_y, sorted_err = zip(*filtered)
+                sorted_x = np.array(
+                    [datetime.strptime(t, "%Y-%m-%d %H:%M:%S") if isinstance(t, str) else t for t in sorted_x])
+                sorted_y = np.array(sorted_y, dtype=float)
+                sorted_err = np.array(sorted_err, dtype=float)
+
+                processed_data[(i, run)] = (sorted_x, sorted_y, sorted_err)
+
+                local_width = np.max(sorted_y + sorted_err) - np.min(sorted_y - sorted_err)
+                resonator_ywidths[i] = max(resonator_ywidths[i], local_width)
+
+        # ---------------- Plot data ----------------
+        for i in range(n_resonators):
+            for run_idx, run in enumerate(runs):
+                ax = axes[i, run_idx]
+                if (i, run) not in processed_data:
+                    ax.set_visible(False)
+                    continue
+
+                x, y, err = processed_data[(i, run)]
+                run_label = "9c" if run == 9.2 else run
+
+                ax.errorbar(x, y, yerr=err, fmt='o', markersize=4, color=colors[i % len(colors)],
+                            alpha=0.65, elinewidth=1, capsize=0, linestyle='none', label=f'Run {run_label}')
+
+                # Same y-axis width across runs for each resonator, with independent centers
+                local_min, local_max = np.min(y - err), np.max(y + err)
+                local_width = local_max - local_min
+                width = resonator_ywidths[i] if use_global_yaxis else local_width
+                width = max(width * (1 + 2 * padding_fraction), 0.002)
+                center = (local_min + local_max) / 2
+                ax.set_ylim(center - width / 2, center + width / 2)
+
+                # ---------------- Formatting ----------------
+                if i == 0: ax.set_title(f'Run {run_label}', fontsize=font)
+                if run_idx == 0: ax.set_ylabel(f'Resonator {i + 1}\nFreq (MHz)', fontsize=14)
+                if i == n_resonators - 1: ax.set_xlabel('Time', fontsize=14)
+
+                ax.xaxis.set_major_locator(LinearLocator(4))
+                ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
+                ax.tick_params(axis='both', which='major', labelsize=11)
+                plt.setp(ax.get_xticklabels(), rotation=45, ha='right', rotation_mode='anchor')
+
+                ymin, ymax = ax.get_ylim()
+                ax.set_yticks(np.linspace(ymin, ymax, 6))
+                ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.3f}"))
+
+                if show_legends: ax.legend(edgecolor='black', fontsize=10)
+
+        plt.tight_layout(rect=[0, 0, 1, 0.98])
+        save_path = os.path.join(analysis_folder, 'ResFreqs_multirun_grid.pdf')
+        plt.savefig(save_path, bbox_inches='tight')
+        print('Plot saved to:', save_path)
+        plt.close()
 
 
 

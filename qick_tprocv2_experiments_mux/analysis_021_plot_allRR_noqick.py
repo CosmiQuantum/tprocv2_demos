@@ -2196,32 +2196,17 @@ class PlotRR_noQick:
         cutoff_timestamp = datetime.datetime(2025, 4, 11, 19, 0).timestamp()  # when I started saving qubit freqs in the same files
 
         if use_png_timestamps:
-            # --- load the mapping HDF5 for this timestamp_dir, if it exists ---
+            # --- Recreate and load the H5-PNG mapping for this date folder ---
             map_path = os.path.join(timestamp_dir, "documentation/h5_png_timestamp_map.h5")
-            if os.path.exists(map_path):
+
+            try:
                 mapping_data = map_loader.load_map(map_path)
-            else:
-                print(f"[INFO] Mapping file not found at {map_path}.")
-                print(f"[INFO] Attempting to create a new mapping...")
-
-                # Instantiate mapping creator
-                mapper = create_h5_png_map()
-                try:
-                    # Run mapping creation for this timestamp_dir
-                    records = mapper.collect_matches(Path(timestamp_dir))
-
-                    # Save mapping to the expected path
-                    mapper.save_to_h5(Path(map_path), Path(timestamp_dir), records)
-
-                    # Load the newly created mapping
-                    mapping_data = map_loader.load_map(map_path)
-
-                    print(f"[INFO] Successfully created mapping at {map_path}.")
-
-                except Exception as e:
-                    print(f"[WARN] Failed to create mapping: {e}")
-                    # print("[WARN] Falling back to HDF5 timestamps instead.")
-                    mapping_data = None
+                print(f"[INFO] Successfully regenerated and loaded mapping at {map_path}.")
+            except FileNotFoundError:
+                raise  # Preserve the error when required PNG files are missing
+            except Exception as e:
+                print(f"[WARN] Failed to regenerate mapping: {e}")
+                mapping_data = None
 
         alpha = None  # angle from ssf, will be replaced with real angle if combine_IQ_signal = True
         if get_qtemp_data:
@@ -2296,7 +2281,13 @@ class PlotRR_noQick:
                     A_amp_IQ_err_Pe = None
                     A_amp_IQ_err_Pg = None
                     flagged = False
-                    date = datetime.datetime.fromtimestamp(load_data['q_temperatures'][q_key].get('Dates', [])[0][dataset])
+
+                    # Skip datasets with invalid H5 timestamps
+                    h5_timestamp = load_data['q_temperatures'][q_key].get('Dates', [])[0][dataset]
+                    if np.isnan(h5_timestamp):
+                        continue
+                    date = datetime.datetime.fromtimestamp(h5_timestamp)
+
                     round_num = load_data['q_temperatures'][q_key].get('Round Num', [])[0][dataset]
                     batch_num = load_data['q_temperatures'][q_key].get('Batch Num', [])[0][dataset]
 
@@ -2323,7 +2314,7 @@ class PlotRR_noQick:
                         # Get SSF candidates for this qubit
                         ssf_entries = ssf_by_qkey_and_time.get(int(q_key), [])
 
-                        if run_num == 7 or run_num == 8 or run_num == 4 or run_num == 5 or run_num == 9:
+                        if run_num == 7 or run_num == 8 or run_num == 4 or run_num == 5 or run_num == 9 or run_num == 9.2 or run_num == 9.3:
                             MAX_TIME_DIFF_SSF_RPM = 10.0  # seconds between saved h5 files in these runs
                         elif run_num == 6:
                             MAX_TIME_DIFF_SSF_RPM = 600
@@ -2627,41 +2618,32 @@ class PlotRR_noQick:
                             print(f"Error computing T_err for Q{q_key + 1}: {e}", flush = True)
                             continue
 
+                        # --- use PNG filename timestamp from mapping if available ---
+                        # The PNG timestamp is more accurate than the H5 timestamp for QUIET data before Run 9.
                         if use_png_timestamps:
-                            # --- use PNG filename timestamp from mapping if available ------
-                            # the reason for this is bc the png timestamp is more accurate than the h5 file ones before QUIET run 9
-                            if mapping_data is not None:
-                                # mapping uses experiment='t1_ge', qubit as 1-indexed
-                                qubit_in_map = q_key + 1
-                                subset = map_loader.filter_by(
-                                    mapping_data,
-                                    experiment="q_temperatures",
-                                    qubit=qubit_in_map,
-                                    round=round_num)
+                            if mapping_data is None:
+                                continue  # skip if no mapping file for this timestamp_dir
 
-                                if len(subset) > 0:
-                                    # pick the PNG with the latest timestamp (the second one, which corresponds to Pg)
-                                    latest_row = max(subset, key=lambda row: row["png_timestamp"])
-                                    png_ts = latest_row["png_timestamp"].decode()
+                            # Mapping uses experiment='q_temperatures', qubit as 1-indexed
+                            qubit_in_map = int(q_key) + 1
+                            subset = map_loader.filter_by(mapping_data, experiment="q_temperatures", qubit=qubit_in_map,
+                                                          round=round_num)
 
-                                    try:
-                                        png_dt = datetime.datetime.strptime(png_ts, "%Y-%m-%d_%H-%M-%S")
-                                        date_time = png_dt.timestamp()  # from png
-                                    except Exception:
-                                        # in case of weird format, fall back
-                                        # date_time = date.timestamp()  # from h5 file
-                                        continue  # skip
-                                else:
-                                    # no mapping match for this qubit/round, fall back
-                                    # date_time = date.timestamp() # from h5 file
-                                    continue  # skip
-                            else:
-                                # no mapping file for this timestamp_dir, fall back
-                                # date_time = date.timestamp()  # from h5 file
-                                continue  # skip
+                            if len(subset) == 0:
+                                continue  # skip if no mapping match for this qubit/round
 
+                            try:
+                                # Pick the PNG with the latest timestamp (Pg sequence)
+                                latest_row = max(subset, key=lambda row: row["png_timestamp"])
+                                png_ts = latest_row["png_timestamp"]
+                                if isinstance(png_ts, bytes):
+                                    png_ts = png_ts.decode()
+                                png_dt = datetime.datetime.strptime(png_ts, "%Y-%m-%d_%H-%M-%S")
+                                date_time = png_dt.timestamp()  # from PNG file
+                            except (ValueError, TypeError, AttributeError):
+                                continue  # skip if PNG timestamp has an invalid format
                         else:
-                            date_time = date.timestamp()  # og way, from h5 file
+                            date_time = date.timestamp()  # og way, from H5 file
 
                         if T_err is not None: # qubit index starts at zero
                             file_result['qubits'][int(q_key)] = { # You're accessing the 'qubits' dictionary inside file_result and adding info for the qubit

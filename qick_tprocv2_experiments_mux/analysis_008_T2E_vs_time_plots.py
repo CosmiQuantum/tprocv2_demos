@@ -23,6 +23,8 @@ from matplotlib.ticker import StrMethodFormatter
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
+from match_h5files_to_pngs_get_timestamps import load_h5_png_map, create_h5_png_map
+from pathlib import Path
 
 class T2eVsTime:
     def __init__(self, outerFolder_save_plots, run_number, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
@@ -228,8 +230,12 @@ class T2eVsTime:
         keep_ramsey = (delta_bic >= threshold)
         return keep_ramsey, delta_bic
 
-    def run(self,return_errs=False, t1_vals = None):
+    def run(self,return_errs=False, t1_vals = None, use_png_timestamps = False):
         import datetime
+
+        if use_png_timestamps:
+            # Use PNG filename timestamps instead of H5 timestamps.
+            map_loader = load_h5_png_map()
 
         # ----------Load/get data------------------------
         t2e_vals = {i: [] for i in range(self.number_of_qubits)}
@@ -242,13 +248,27 @@ class T2eVsTime:
 
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
-                outerFolder = f"/exp/cosmiq/data/QUIET/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
-                            # f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/" #daq01
-                #print('Looking inside: ', outerFolder)
+                timestamp_dir = f"/exp/cosmiq/data/QUIET/QICK_data/{self.run_name}/{folder_date}"
+                outerFolder = os.path.join(timestamp_dir, "study_data")
+                # f"/data/QICK_data/{self.run_name}/{folder_date}/study_data/" # daq01
             elif self.fridge.upper() == 'NEXUS':
-                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
+                timestamp_dir = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/{folder_date}"
+                outerFolder = timestamp_dir
             else:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+
+            if use_png_timestamps:
+                # --- Recreate and load the H5-PNG mapping for this date folder ---
+                map_path = os.path.join(timestamp_dir, "documentation/h5_png_timestamp_map.h5")
+
+                try:
+                    mapping_data = map_loader.load_map(map_path)
+                    print(f"[INFO] Successfully regenerated and loaded mapping at {map_path}.")
+                except FileNotFoundError:
+                    raise  # Preserve the error when required PNG files are missing
+                except Exception as e:
+                    print(f"[WARN] Failed to regenerate mapping: {e}")
+                    mapping_data = None
 
             # -------------------------------------------------------Load/Plot/Save T2E------------------------------------------
             outerFolder_expt = outerFolder + "/Data_h5/t2e_ge/"
@@ -285,7 +305,13 @@ class T2eVsTime:
                     for dataset in range(len(load_data['T2E'][q_key].get('Dates', [])[0])):
                         # T2 = load_data['T2E'][q_key].get('T2', [])[0][dataset]
                         # errors = load_data['T2E'][q_key].get('Errors', [])[0][dataset]
-                        date = datetime.datetime.fromtimestamp(load_data['T2E'][q_key].get('Dates', [])[0][dataset])
+
+                        # Skip datasets with invalid H5 timestamps
+                        h5_timestamp = load_data['T2E'][q_key].get('Dates', [])[0][dataset]
+                        if np.isnan(h5_timestamp):
+                            continue
+                        date = datetime.datetime.fromtimestamp(h5_timestamp)
+
                         I = self.process_h5_data(load_data['T2E'][q_key].get('I', [])[0][dataset].decode())
                         Q = self.process_h5_data(load_data['T2E'][q_key].get('Q', [])[0][dataset].decode())
                         delay_times = self.process_h5_data(
@@ -384,9 +410,35 @@ class T2eVsTime:
                             # If you want to plot the data that made it through, uncomment this:
                             #T2E_class_instance.t2_fit_iminuit(delay_times, I, Q, make_plots = True, title_ext = f"nrmse_score:{nrmse_score:.4f}")
 
-                            t2e_vals[q_key].extend([t2e_est])
-                            t2e_errs[q_key].extend([t2e_err])
-                            date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
+                            # --- use PNG filename timestamp from mapping if available ---
+                            # The PNG timestamp is more accurate than the H5 timestamp, which records when the file was saved.
+                            if use_png_timestamps:
+                                if mapping_data is None:
+                                    continue  # skip if no mapping file for this timestamp_dir
+
+                                # Mapping uses experiment='t2e_ge', qubit as 1-indexed
+                                qubit_in_map = int(q_key) + 1
+                                subset = map_loader.filter_by(mapping_data, experiment="t2e_ge", qubit=qubit_in_map,
+                                                              round=round_num)
+
+                                if len(subset) == 0:
+                                    continue  # skip if no mapping match for this qubit/round
+
+                                try:
+                                    png_ts = subset[0]["png_timestamp"]
+                                    if isinstance(png_ts, bytes):
+                                        png_ts = png_ts.decode()
+                                    png_dt = datetime.datetime.strptime(png_ts, "%Y-%m-%d_%H-%M-%S")
+                                    date_str = png_dt.strftime("%Y-%m-%d %H:%M:%S")  # from PNG file
+                                except (ValueError, TypeError, AttributeError):
+                                    continue  # skip if PNG timestamp has an invalid format
+                            else:
+                                date_str = date.strftime("%Y-%m-%d %H:%M:%S")  # og way, from H5 file
+
+                            # --- store accepted T2 Echo results only after timestamp validation to keep arrays aligned ---
+                            t2e_vals[q_key].append(t2e_est)
+                            t2e_errs[q_key].append(t2e_err)
+                            date_times[q_key].append(date_str)
 
                             del T2E_class_instance
                 del H5_class_instance

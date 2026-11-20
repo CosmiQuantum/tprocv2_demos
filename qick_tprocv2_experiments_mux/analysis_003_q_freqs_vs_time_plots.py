@@ -149,34 +149,17 @@ class QubitFreqsVsTime:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
             if use_png_timestamps:
-                # --- load the mapping HDF5 for this timestamp_dir, if it exists ---
+                # --- Recreate and load the H5-PNG mapping for this date folder ---
                 map_path = os.path.join(timestamp_dir, "documentation/h5_png_timestamp_map.h5")
-                if os.path.exists(map_path):
+
+                try:
                     mapping_data = map_loader.load_map(map_path)
-
-                else:
-                    print(f"[INFO] Mapping file not found at {map_path}.")
-                    print(f"[INFO] Attempting to create a new mapping...")
-
-                    # Instantiate mapping creator
-                    mapper = create_h5_png_map()
-
-                    try:
-                        # Run mapping creation for this timestamp_dir
-                        records = mapper.collect_matches(Path(timestamp_dir))
-
-                        # Save mapping to the expected path
-                        mapper.save_to_h5(Path(map_path), Path(timestamp_dir), records)
-
-                        # Load the newly created mapping
-                        mapping_data = map_loader.load_map(map_path)
-
-                        print(f"[INFO] Successfully created mapping at {map_path}.")
-
-                    except Exception as e:
-                        print(f"[WARN] Failed to create mapping: {e}")
-                        # print("[WARN] Falling back to HDF5 timestamps instead.")
-                        mapping_data = None
+                    print(f"[INFO] Successfully regenerated and loaded mapping at {map_path}.")
+                except FileNotFoundError:
+                    raise  # Preserve the error when required PNG files are missing
+                except Exception as e:
+                    print(f"[WARN] Failed to regenerate mapping: {e}")
+                    mapping_data = None
 
             # ------------------------------------------Load/Plot/Save Q Spec------------------------------------
             if '_' in exp_extension:
@@ -273,51 +256,43 @@ class QubitFreqsVsTime:
                             )
 
                             if good_fit:
-                                qubit_frequencies[q_key].extend([largest_amp_curve_mean])
-                                qspec_fit_errs[q_key].extend([qspec_fit_err])
-
-                                # # If you want to look at scans that made it through, uncomment this:
-                                #qspec_class_instance.plot_results(I, Q, freqs)
-
+                                # --- use PNG filename timestamp from mapping if available ---
+                                # The PNG timestamp is more accurate than the H5 timestamp, which records when the file was saved.
                                 if use_png_timestamps:
-                                    # --- use PNG filename timestamp from mapping if available ------
-                                    # the reason for this is bc the png timestamp is more accurate than the h5 file ones
-                                    if mapping_data is not None:
-                                        # mapping uses experiment='t1_ge', qubit as 1-indexed
-                                        qubit_in_map = q_key + 1
-                                        subset = map_loader.filter_by(
-                                            mapping_data,
-                                            experiment=f"qspec{exp_extension}",
-                                            qubit=qubit_in_map,
-                                            round=round_num)
+                                    if mapping_data is None:
+                                        continue  # skip if no mapping file for this timestamp_dir
 
-                                        if len(subset) > 0:
-                                            png_ts = subset[0]["png_timestamp"].decode()
-                                            try:
-                                                png_dt = datetime.datetime.strptime(png_ts, "%Y-%m-%d_%H-%M-%S")
-                                                date_str = png_dt.strftime("%Y-%m-%d %H:%M:%S")  # from png file
-                                            except Exception:
-                                                # in case of weird format, fall back
-                                                # date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
-                                                continue  # skip
-                                        else:
-                                            # no mapping match for this qubit/round, fall back
-                                            # date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
-                                            continue  # skip
-                                    else:
-                                        # no mapping file for this timestamp_dir, fall back
-                                        # date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
-                                        continue  # skip
-                                    date_times[q_key].append(date_str)
+                                    # Mapping uses experiment='qspec_ge', qubit as 1-indexed
+                                    qubit_in_map = int(q_key) + 1
+                                    subset = map_loader.filter_by(mapping_data, experiment=f"qspec{exp_extension}",qubit=qubit_in_map, round=round_num)
 
+                                    if len(subset) == 0:
+                                        continue  # skip if no mapping match for this qubit/round
+
+                                    try:
+                                        png_ts = subset[0]["png_timestamp"]
+                                        if isinstance(png_ts, bytes):
+                                            png_ts = png_ts.decode()
+                                        png_dt = datetime.datetime.strptime(png_ts, "%Y-%m-%d_%H-%M-%S")
+                                        date_str = png_dt.strftime("%Y-%m-%d %H:%M:%S")  # from PNG file
+                                    except (ValueError, TypeError, AttributeError):
+                                        continue  # skip if PNG timestamp has an invalid format
                                 else:
-                                    date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])  # og way, from h5 file
+                                    date_str = date.strftime("%Y-%m-%d %H:%M:%S")  # og way, from H5 file
 
+                                # --- store accepted Qspec results only after timestamp validation to keep arrays aligned ---
+                                qubit_frequencies[q_key].append(largest_amp_curve_mean)
+                                qspec_fit_errs[q_key].append(qspec_fit_err)
+                                date_times[q_key].append(date_str)
+
+                                # If you want to look at scans that made it through, uncomment this:
+                                # qspec_class_instance.plot_results(I, Q, freqs)
 
                             else:
                                 print("Cut a Qspec scan that did not pass quality cuts.")
-                                ## If you want to look at scans that failed quality cuts, uncomment this:
-                                #qspec_class_instance.plot_results(I, Q, freqs)
+                                # If you want to look at scans that failed quality cuts, uncomment this:
+                                # qspec_class_instance.plot_results(I, Q, freqs)
+
                             del qspec_class_instance
 
                 del H5_class_instance
@@ -596,6 +571,181 @@ class QubitFreqsVsTime:
         plt.tight_layout()
         plt.savefig(analysis_folder + f'{exp_extension}QFreqs_run{run_label}.pdf')
         print('Plot saved to:', analysis_folder)
+        plt.close()
+
+    def plot_with_errs_multirun(self, runs, qfreq_vals_by_run, qfreq_errs_by_run,
+                                qfreq_dates_by_run, use_global_yaxis=True,
+                                show_legends=False, exp_extension='ge'):
+        from datetime import datetime
+
+        analysis_folder = os.path.join(self.plots_path, "features_vs_time/")
+        self.create_folder_if_not_exists(analysis_folder)
+
+        font = 18
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'palevioletred']
+        padding_fraction = 0.15
+
+        n_runs = len(runs)
+        n_qubits = self.number_of_qubits
+
+        # One row per qubit, one column per run
+        fig, axes = plt.subplots(
+            n_qubits, n_runs,
+            figsize=(5 * n_runs, 3.5 * n_qubits),
+            squeeze=False
+        )
+
+        fig.suptitle(
+            f'{exp_extension} Qubit Frequencies (MHz) vs Time, Multirun',
+            fontsize=font,
+            y=1.02
+        )
+
+        # Store processed data by (qubit, run)
+        processed_data = {}
+        qubit_ywidths = {i: 0 for i in range(n_qubits)}
+
+        # ---------------- Process data ----------------
+        for run_idx, run in enumerate(runs):
+            for i in range(n_qubits):
+                x = qfreq_dates_by_run[run][i]
+                y = qfreq_vals_by_run[run][i]
+                err = qfreq_errs_by_run[run][i]
+
+                combined = sorted(zip(x, y, err), key=lambda t: t[0])
+                if not combined:
+                    continue
+
+                sorted_x, sorted_y, sorted_err = zip(*combined)
+
+                sorted_y, sorted_x, sorted_err = self.remove_none_values(
+                    sorted_y, sorted_x, sorted_err
+                )
+
+                if len(sorted_y) == 0:
+                    continue
+
+                sorted_x = np.array([
+                    datetime.strptime(t, "%Y-%m-%d %H:%M:%S")
+                    if isinstance(t, str) else t
+                    for t in sorted_x
+                ])
+
+                sorted_y = np.array(sorted_y, dtype=float)
+                sorted_err = np.array(sorted_err, dtype=float)
+
+                processed_data[(i, run)] = (sorted_x, sorted_y, sorted_err)
+
+                # Calculate the frequency range including error bars
+                local_min = np.min(sorted_y - sorted_err)
+                local_max = np.max(sorted_y + sorted_err)
+                local_width = local_max - local_min
+
+                # Largest frequency range across runs for this qubit
+                qubit_ywidths[i] = max(
+                    qubit_ywidths[i], local_width
+                )
+
+        # ---------------- Plot data ----------------
+        for i in range(n_qubits):
+            for run_idx, run in enumerate(runs):
+                ax = axes[i, run_idx]
+
+                if (i, run) not in processed_data:
+                    ax.set_visible(False)
+                    continue
+
+                x, y, err = processed_data[(i, run)]
+
+                run_label = "9c" if run == 9.2 else run
+
+                ax.errorbar(
+                    x, y, yerr=err,
+                    fmt='o',
+                    markersize=4,
+                    color=colors[i % len(colors)],
+                    alpha=0.65,
+                    elinewidth=1,
+                    capsize=0,
+                    linestyle='none',
+                    label=f'Run {run_label}'
+                )
+
+                # ---------------- Y-axis limits ----------------
+                local_min = np.min(y - err)
+                local_max = np.max(y + err)
+
+                if use_global_yaxis:
+                    # Same y-axis width across runs for the same qubit
+                    width = max(
+                        qubit_ywidths[i] * (1 + 2 * padding_fraction),
+                        0.002
+                    )
+                else:
+                    # Independent y-axis width for each run
+                    local_width = local_max - local_min
+                    width = max(
+                        local_width * (1 + 2 * padding_fraction),
+                        0.002
+                    )
+
+                # Center each subplot around its own frequency range
+                center = (local_min + local_max) / 2
+
+                ax.set_ylim(
+                    center - width / 2,
+                    center + width / 2
+                )
+
+                # ---------------- Formatting ----------------
+                if i == 0:
+                    ax.set_title(f'Run {run_label}', fontsize=font)
+
+                if run_idx == 0:
+                    ax.set_ylabel(
+                        f'Qubit {i + 1}\nFreq (MHz)',
+                        fontsize=14
+                    )
+
+                if i == n_qubits - 1:
+                    ax.set_xlabel('Time', fontsize=14)
+
+                ax.xaxis.set_major_locator(LinearLocator(4))
+                ax.xaxis.set_major_formatter(
+                    mdates.DateFormatter("%m-%d %H:%M")
+                )
+
+                ax.tick_params(
+                    axis='both',
+                    which='major',
+                    labelsize=11
+                )
+
+                plt.setp(
+                    ax.get_xticklabels(),
+                    rotation=45,
+                    ha='right',
+                    rotation_mode='anchor'
+                )
+
+                ymin, ymax = ax.get_ylim()
+                ax.set_yticks(np.linspace(ymin, ymax, 6))
+                ax.yaxis.set_major_formatter(
+                    StrMethodFormatter("{x:.3f}")
+                )
+
+                if show_legends:
+                    ax.legend(edgecolor='black', fontsize=10)
+
+        plt.tight_layout()
+
+        save_path = os.path.join(
+            analysis_folder,
+            f'{exp_extension}QFreqs_multirun_grid.pdf'
+        )
+
+        plt.savefig(save_path, bbox_inches='tight')
+        print('Plot saved to:', save_path)
         plt.close()
 
     def plot_with_errs_single_plot(self, date_times, qubit_frequencies, qspec_fit_err, show_legends):

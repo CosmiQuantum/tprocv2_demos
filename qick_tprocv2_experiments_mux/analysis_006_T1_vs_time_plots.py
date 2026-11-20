@@ -296,34 +296,17 @@ class T1VsTime:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
             if use_png_timestamps:
-                # --- load the mapping HDF5 for this timestamp_dir, if it exists ---
+                # --- Recreate and load the H5-PNG mapping for this date folder ---
                 map_path = os.path.join(timestamp_dir, "documentation/h5_png_timestamp_map.h5")
-                if os.path.exists(map_path):
+
+                try:
                     mapping_data = map_loader.load_map(map_path)
-
-                else:
-                    print(f"[INFO] Mapping file not found at {map_path}.")
-                    print(f"[INFO] Attempting to create a new mapping...")
-
-                    # Instantiate mapping creator
-                    mapper = create_h5_png_map()
-
-                    try:
-                        # Run mapping creation for this timestamp_dir
-                        records = mapper.collect_matches(Path(timestamp_dir))
-
-                        # Save mapping to the expected path
-                        mapper.save_to_h5(Path(map_path), Path(timestamp_dir), records)
-
-                        # Load the newly created mapping
-                        mapping_data = map_loader.load_map(map_path)
-
-                        print(f"[INFO] Successfully created mapping at {map_path}.")
-
-                    except Exception as e:
-                        print(f"[WARN] Failed to create mapping: {e}")
-                        # print("[WARN] Falling back to HDF5 timestamps instead.")
-                        mapping_data = None
+                    print(f"[INFO] Successfully regenerated and loaded mapping at {map_path}.")
+                except FileNotFoundError:
+                    raise  # Preserve the error when required PNG files are missing
+                except Exception as e:
+                    print(f"[WARN] Failed to regenerate mapping: {e}")
+                    mapping_data = None
 
             # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
             if '_' in exp_extension:
@@ -501,49 +484,42 @@ class T1VsTime:
                             #         f"Skipping T1 = {T1_est:.3f} µs because its error {T1_err:.3f} µs is >= 80% of its value.")
                             #     continue
 
-                            t1_vals[q_key].extend([T1_est])
-                            t1_errs[q_key].extend([T1_err])
-                            rounds[q_key].extend([round_num])
-                            res_lengths[q_key].extend([res_length])
+                            # --- use PNG filename timestamp from mapping if available ---
+                            # The PNG timestamp is more accurate than the H5 timestamp, which records when the file was saved.
+                            if use_png_timestamps:
+                                if mapping_data is None:
+                                    continue  # skip if no mapping file for this timestamp_dir
+
+                                # Mapping uses experiment='t1_ge', qubit as 1-indexed
+                                qubit_in_map = int(q_key) + 1
+                                subset = map_loader.filter_by(mapping_data, experiment=f"t1{exp_extension}",
+                                                              qubit=qubit_in_map, round=round_num)
+
+                                if len(subset) == 0:
+                                    continue  # skip if no mapping match for this qubit/round
+
+                                try:
+                                    png_ts = subset[0]["png_timestamp"]
+                                    if isinstance(png_ts, bytes):
+                                        png_ts = png_ts.decode()
+                                    png_dt = datetime.datetime.strptime(png_ts, "%Y-%m-%d_%H-%M-%S")
+                                    date_str = png_dt.strftime("%Y-%m-%d %H:%M:%S")  # from PNG file
+                                except (ValueError, TypeError, AttributeError):
+                                    continue  # skip if PNG timestamp has an invalid format
+                            else:
+                                date_str = date.strftime("%Y-%m-%d %H:%M:%S")  # og way, from H5 file
+
+                            # --- store accepted T1 results only after timestamp validation to keep arrays aligned ---
+                            t1_vals[q_key].append(T1_est)
+                            t1_errs[q_key].append(T1_err)
+                            rounds[q_key].append(round_num)
+                            res_lengths[q_key].append(res_length)
+                            date_times[q_key].append(date_str)
 
                             # --- store per-point errors too, only if we had process_shots ---
                             if process_shots:
                                 I_per_pt_errs[int(q_key)].append(I_errs)
                                 Q_per_pt_errs[int(q_key)].append(Q_errs)
-
-                            if use_png_timestamps: # date_times: not necessarily aligned when use_png_timestamps=True (should fix)
-                                # --- use PNG filename timestamp from mapping if available ------
-                                # the reason for this is bc the png timestamp is more accurate than the h5 file ones
-                                if mapping_data is not None:
-                                    # mapping uses experiment='t1_ge', qubit as 1-indexed
-                                    qubit_in_map = q_key + 1
-                                    subset = map_loader.filter_by(
-                                        mapping_data,
-                                        experiment=f"t1{exp_extension}",
-                                        qubit=qubit_in_map,
-                                        round=round_num)
-
-                                    if len(subset) > 0:
-                                        png_ts = subset[0]["png_timestamp"].decode()
-                                        try:
-                                            png_dt = datetime.datetime.strptime(png_ts, "%Y-%m-%d_%H-%M-%S")
-                                            date_str = png_dt.strftime("%Y-%m-%d %H:%M:%S") # from png file
-                                        except Exception:
-                                            # in case of weird format, fall back
-                                            # date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
-                                            continue # skip
-                                    else:
-                                        # no mapping match for this qubit/round, fall back
-                                        # date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
-                                        continue # skip
-                                else:
-                                    # no mapping file for this timestamp_dir, fall back
-                                    # date_str = date.strftime("%Y-%m-%d %H:%M:%S") # from h5 file
-                                    continue # skip
-                                date_times[q_key].append(date_str)
-
-                            else:
-                                date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])  # og way, from h5 file
 
                             del T1_class_instance
 
@@ -566,10 +542,10 @@ class T1VsTime:
             else:
                 return date_times, t1_vals, res_lengths
 
-    def run_act_reset(self, return_errs=False, process_shots=False, use_png_timestamps=False):
+    def run_act_reset(self, return_errs=False, process_shots=False, use_png_timestamps=False, exp_extension = "_ge"):
         import datetime
 
-        data_type = "t1_ge_active_reset_12corr"
+        data_type = f"t1_{exp_extension}_active_reset_12corr"
 
         if use_png_timestamps:
             map_loader = load_h5_png_map()
@@ -598,21 +574,17 @@ class T1VsTime:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
 
             if use_png_timestamps:
+                # --- Recreate and load the H5-PNG mapping for this date folder ---
                 map_path = os.path.join(timestamp_dir, "documentation/h5_png_timestamp_map.h5")
-                if os.path.exists(map_path):
+
+                try:
                     mapping_data = map_loader.load_map(map_path)
-                else:
-                    print(f"[INFO] Mapping file not found at {map_path}.")
-                    print("[INFO] Attempting to create a new mapping...")
-                    mapper = create_h5_png_map()
-                    try:
-                        records = mapper.collect_matches(Path(timestamp_dir))
-                        mapper.save_to_h5(Path(map_path), Path(timestamp_dir), records)
-                        mapping_data = map_loader.load_map(map_path)
-                        print(f"[INFO] Successfully created mapping at {map_path}.")
-                    except Exception as e:
-                        print(f"[WARN] Failed to create mapping: {e}")
-                        mapping_data = None
+                    print(f"[INFO] Successfully regenerated and loaded mapping at {map_path}.")
+                except FileNotFoundError:
+                    raise  # Preserve the error when required PNG files are missing
+                except Exception as e:
+                    print(f"[WARN] Failed to regenerate mapping: {e}")
+                    mapping_data = None
 
             outerFolder_expt = outerFolder + "/Data_h5/t1_ge_active_reset_12corr/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -757,36 +729,44 @@ class T1VsTime:
                             #     print(f"Skipping T1 = {T1_est:.3f} us because its error {T1_err:.3f} us is >= 80% of its value.")
                             #     continue
 
-                            t1_vals[q_idx].append(T1_est)
-                            t1_errs[q_idx].append(T1_err)
-                            res_lengths[q_idx].append(res_length)
-
-                            if process_shots:
-                                I_per_pt_errs[q_idx].append(I_errs)
-                                Q_per_pt_errs[q_idx].append(Q_errs)
-
+                            # --- use PNG filename timestamp from mapping if available ---
+                            # The PNG timestamp is more accurate than the H5 timestamp, which records when the file was saved.
                             if use_png_timestamps:
-                                if mapping_data is not None:
-                                    qubit_in_map = q_idx + 1
-                                    subset = map_loader.filter_by(mapping_data, experiment=data_type,
-                                                                  qubit=qubit_in_map, round=round_num)
+                                if mapping_data is None:
+                                    continue  # skip if no mapping file for this timestamp_dir
 
-                                    if len(subset) > 0:
-                                        png_ts = subset[0]["png_timestamp"].decode()
-                                        try:
-                                            png_dt = datetime.datetime.strptime(png_ts, "%Y-%m-%d_%H-%M-%S")
-                                            date_str = png_dt.strftime("%Y-%m-%d %H:%M:%S")
-                                        except Exception:
-                                            continue
-                                    else:
-                                        continue
-                                else:
-                                    continue
+                                # Mapping uses experiment='t1_ge', qubit as 1-indexed
+                                qubit_in_map = int(q_key) + 1
+                                subset = map_loader.filter_by(mapping_data, experiment=f"t1{exp_extension}",
+                                                              qubit=qubit_in_map, round=round_num)
 
-                                date_times[q_idx].append(date_str)
+                                if len(subset) == 0:
+                                    continue  # skip if no mapping match for this qubit/round
+
+                                try:
+                                    png_ts = subset[0]["png_timestamp"]
+                                    if isinstance(png_ts, bytes):
+                                        png_ts = png_ts.decode()
+                                    png_dt = datetime.datetime.strptime(png_ts, "%Y-%m-%d_%H-%M-%S")
+                                    date_str = png_dt.strftime("%Y-%m-%d %H:%M:%S")  # from PNG file
+                                except (ValueError, TypeError, AttributeError):
+                                    continue  # skip if PNG timestamp has an invalid format
                             else:
-                                date_times[q_idx].append(date.strftime("%Y-%m-%d %H:%M:%S"))
+                                date_str = date.strftime("%Y-%m-%d %H:%M:%S")  # og way, from H5 file
 
+                            # --- store accepted T1 results only after timestamp validation to keep arrays aligned ---
+                            t1_vals[q_key].append(T1_est)
+                            t1_errs[q_key].append(T1_err)
+                            rounds[q_key].append(round_num)
+                            res_lengths[q_key].append(res_length)
+                            date_times[q_key].append(date_str)
+
+                            # --- store per-point errors too, only if we had process_shots ---
+                            if process_shots:
+                                I_per_pt_errs[int(q_key)].append(I_errs)
+                                Q_per_pt_errs[int(q_key)].append(Q_errs)
+
+                            del T1_class_instance
                             del T1_class_instance
 
                 del H5_class_instance

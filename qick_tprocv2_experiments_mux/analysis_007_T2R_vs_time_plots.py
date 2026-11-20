@@ -21,6 +21,8 @@ from scipy.stats import norm
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
+from match_h5files_to_pngs_get_timestamps import load_h5_png_map, create_h5_png_map
+from pathlib import Path
 
 class T2rVsTime:
     def __init__(self, outerFolder_save_plots, run_number, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs,
@@ -226,24 +228,41 @@ class T2rVsTime:
         keep_ramsey = (delta_bic >= threshold)
         return keep_ramsey, delta_bic
 
-    def run(self,return_errs=False, t1_vals = None, return_rnds = False):
+    def run(self,return_errs=False, t1_vals = None, return_rnds = False, use_png_timestamps = False):
         import datetime
+
+        if use_png_timestamps:
+            # Use PNG filename timestamps instead of H5 timestamps.
+            map_loader = load_h5_png_map()
+
         # ----------Load/get data------------------------
         t2_vals = {i: [] for i in range(self.number_of_qubits)}
         t2_errs = {i: [] for i in range(self.number_of_qubits)}
-        date_times = {i: [] for i in range(self.number_of_qubits)} # timestamps of when files were saved
+        date_times = {i: [] for i in range(self.number_of_qubits)} # timestamps from H5 files or PNG filenames, depending on use_png_timestamps
         rounds = {i: [] for i in range(self.number_of_qubits)} # #RR data-taking round numbers
 
         for folder_date in self.top_folder_dates:
             if self.fridge.upper() == 'QUIET':
-                outerFolder = f"/exp/cosmiq/data/QUIET/QICK_data/{self.run_name}/" + folder_date + "/study_data/"
-                        # f"/exp/cosmiq/data/QUIET/QICK_data/{self.run_name}/" + folder_date + "/study_data/" # CEPH
-                        # f"/data/QICK_data/{self.run_name}/" + folder_date + "/study_data/" #daq01
-                #print('Looking inside: ', outerFolder)
+                timestamp_dir = f"/exp/cosmiq/data/QUIET/QICK_data/{self.run_name}/{folder_date}"
+                outerFolder = os.path.join(timestamp_dir, "study_data")
             elif self.fridge.upper() == 'NEXUS':
-                outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
+                timestamp_dir = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/{folder_date}"
+                outerFolder = timestamp_dir
             else:
                 raise ValueError("fridge must be either 'QUIET' or 'NEXUS'")
+
+            if use_png_timestamps:
+                # --- Recreate and load the H5-PNG mapping for this date folder ---
+                map_path = os.path.join(timestamp_dir, "documentation/h5_png_timestamp_map.h5")
+
+                try:
+                    mapping_data = map_loader.load_map(map_path)
+                    print(f"[INFO] Successfully regenerated and loaded mapping at {map_path}.")
+                except FileNotFoundError:
+                    raise  # Preserve the error when required PNG files are missing
+                except Exception as e:
+                    print(f"[WARN] Failed to regenerate mapping: {e}")
+                    mapping_data = None
 
             # -------------------------------------------------------Load/Plot/Save T2------------------------------------------
             outerFolder_expt = outerFolder + "/Data_h5/t2_ge/"
@@ -401,10 +420,37 @@ class T2rVsTime:
                             # If you want to plot the data that made it through, uncomment this:
                             #T2_class_instance.t2_fit_iminuit(delay_times, I, Q, make_plots = True, title_ext = f"NRMSE:{nrmse_score:.4f}")
 
-                            t2_vals[q_key].extend([t2r_est])
-                            t2_errs[q_key].extend([t2r_err])
-                            date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
-                            rounds[q_key].extend([round_num])
+                            # ----------- Choose timestamp -----------
+                            if use_png_timestamps:
+                                if mapping_data is None:
+                                    continue
+
+                                # Mapping uses experiment='t2_ge' and 1-indexed qubits.
+                                qubit_in_map = int(q_key) + 1
+                                subset = map_loader.filter_by(mapping_data, experiment="t2_ge", qubit=qubit_in_map,
+                                                              round=round_num)
+
+                                if len(subset) == 0:
+                                    print(f"[WARN] No PNG timestamp for Q{qubit_in_map}, round {round_num}. Skipping.")
+                                    continue
+
+                                try:
+                                    png_ts = subset[0]["png_timestamp"]
+                                    if isinstance(png_ts, bytes):
+                                        png_ts = png_ts.decode()
+                                    png_dt = datetime.datetime.strptime(png_ts, "%Y-%m-%d_%H-%M-%S")
+                                    date_str = png_dt.strftime("%Y-%m-%d %H:%M:%S")
+                                except (ValueError, TypeError, AttributeError) as e:
+                                    print(f"[WARN] Invalid PNG timestamp for Q{qubit_in_map}, round {round_num}: {e}")
+                                    continue
+                            else:
+                                date_str = date.strftime("%Y-%m-%d %H:%M:%S")
+
+                            # ----------- Store accepted results -----------
+                            t2_vals[q_key].append(t2r_est)
+                            t2_errs[q_key].append(t2r_err)
+                            date_times[q_key].append(date_str)
+                            rounds[q_key].append(round_num)
 
                             del T2_class_instance
 
