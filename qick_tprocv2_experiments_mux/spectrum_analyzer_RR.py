@@ -59,7 +59,7 @@ unmask = True  # Do you want to use the unmasking feature to increase resonator 
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 
-Qs_to_look_at = [5] # only list the qubits you want to do the RR for
+Qs_to_look_at = [0] # only list the qubits you want to do the RR for
 
 # Data saving info
 run_name = 'run9c'
@@ -67,11 +67,11 @@ device_name = '6transmon'
 substudy_txt_notes = ('Spectrum anlayzer measurements using the NEW Qick Box in run 10. \n')
 
 # set which of the following you'd like to run to 'True'
-run_flags = {"long_tof": False, "long_qdrive": True}
-stop_qubit_pulse = True
+run_flags = {"long_tof": True, "long_qdrive": False}
+stop_qubit_pulse = False
 
 # New post run-10
-res_gain = [0.811, 0.45, 0.345, 0.36, 0.73, 0.841]
+res_gain = [0.811, 0.45, 0.345, 0.36, 0.73, 0.841] # 0.811
 freq_offsets = [0.0,0.0,0.0,0.0,0.0,0.0]
 
 # Old (run 9)
