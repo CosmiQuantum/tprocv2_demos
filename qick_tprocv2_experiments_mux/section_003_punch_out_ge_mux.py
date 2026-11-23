@@ -56,6 +56,7 @@ class PunchOut:
         print(f'Punch Out configuration: ', self.config)
 
     def run(self, soccfg, soc, start_gain, stop_gain, num_points, DAC_att, ADC_att, plot_Center_shift = True, plot_res_sweeps = True):
+
         fpts = self.exp_cfg["start"] + self.exp_cfg["step_size"] * np.arange(self.exp_cfg["steps"])
         fcenter = self.config['res_freq_ge']
 
@@ -65,7 +66,7 @@ class PunchOut:
             self.plot_center_shift(resonance_vals, power_sweep, DAC_att, ADC_att)
 
         if plot_res_sweeps:
-            self.plot_res_sweeps(fpts, fcenter, frequency_sweeps, power_sweep, DAC_att, ADC_att,)
+            self.plot_res_sweeps(fpts, fcenter, frequency_sweeps, power_sweep, DAC_att, ADC_att, self.config['reps'])
 
         return
 
@@ -129,7 +130,7 @@ class PunchOut:
         plt.close()
         return
 
-    def plot_res_sweeps(self, fpts, fcenter, frequency_sweeps, power_sweep, DAC_att, ADC_att):
+    def plot_res_sweeps(self, fpts, fcenter, frequency_sweeps, power_sweep, DAC_att, ADC_att, reps):
         plt.figure(figsize=(12, 8))
 
         # Set larger font sizes
@@ -153,7 +154,7 @@ class PunchOut:
                 plt.legend(loc='upper left', fontsize='6', title='Gain')
 
         # Add a main title to the figure
-        plt.suptitle(f"Resonance At Various Probe Gains DAC_Att_{DAC_att}, ADC_ATT_{ADC_att}", fontsize=24, y=0.95)
+        plt.suptitle(f"Probe Gains Sweep, {reps} reps, DAC_Att_{DAC_att}, ADC_ATT_{ADC_att}", fontsize=24, y=0.95)
 
         plt.tight_layout(pad=2.0)
         outerFolder_expt = os.path.join(self.outerFolder, "punch_out")

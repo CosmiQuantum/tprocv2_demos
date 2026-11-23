@@ -36,7 +36,7 @@ from analysis_014_temp_calcsandplots_cosmiqgpvm import SSFTempCalcAndPlots
 ################################################ Run Configurations ####################################################
 st = time.time()
 
-n = 1000000 # number of rounds
+n = 1 # number of rounds
 use_iminuit_instead = True # for fitting, curve fit when False, iminuit when True
 pre_optimize = False # ignore
 freq_offset_steps = 10 # ignore
@@ -51,7 +51,7 @@ signal = 'None'  # 'I', or 'Q' depending on where the signal is (after optimizat
 save_figs = True  # save plots for everything as you go along the RR script?
 live_plot = False  # Not currently working in this branch. for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
 fit_data = True  # fit the data here and save or plot the fits?
-save_data_h5 = True  # save all of the data to h5 files?
+save_data_h5 = False  # save all of the data to h5 files?
 
 verbose = True  # print everything to the console in real time, good for debugging, bad for memory
 qick_verbose = True  # qick verbose prints the progress bar for each qick experiment as it is happening (the red bar that fills out as more experiment rounds/reps are being done)
@@ -73,27 +73,23 @@ save_shots_t2e = True
 save_shots_qspec_ef = True
 save_shots_rspec_ef = True
 
-Qs_to_look_at = [0,4,5] # only list the qubits you want to do the RR for.
+Qs_to_look_at = [4,5] # only list the qubits you want to do the RR for.
 
 # Data saving info
-run_name = 'run10'
+run_name = 'run11'
 device_name = '6transmon'
 substudy_txt_notes = ('Qubit environment is still cooling.\n')
 
 # set which of the following you'd like to run to 'True'
 
-run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
-             "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
-             "rabi_pop_meas": True, "ef_Rabi": False, "t1": True, "t2r": True, "t2e": True}
-
-# run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
-#              "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
-#              "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
+run_flags = {"tof": True, "res_spec": True, "q_spec": False, "rabi": False, "ss": False,
+             "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
+             "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
 
 # For 25dB DAC
 res_leng_vals = [5.3, 8.0, 8.7, 8.8, 5.7, 5.48]
 res_gain = [0.811, 0.23, 0.345, 0.36, 0.73, 0.841]
-freq_offsets =[-0.2000,-0.0222,-0.2000,0.1111,-0.2000,-0.2000]
+freq_offsets =[0,0,0,0,0,0]
 
 #DO NOT CHANGE THESE: They are flags to keep track of what happened in RR along the way
 ef_res_any = False # did ef res spec run succesfully for any of the qubits?
@@ -114,8 +110,8 @@ meas_time_RR = {}
 
 ################################################ Data Saving Setup ##################################################
 # Folders
-study = 'round_robin_benchmark' #qubit_checkouts, round_robin_benchmark
-sub_study = 'new_QICKBox_warm_filters_Q1Q5Q6_opt' # Q1_cooldown_data, debugging_rspec_noise, Q1Q3Q5Q6_cooldown_data, new_QICK_box_optimizing, new_QICKBox_warm_filters_Q1Q5Q6
+study = 'round_robin_benchmark'
+sub_study = 'resonator_checkouts'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):

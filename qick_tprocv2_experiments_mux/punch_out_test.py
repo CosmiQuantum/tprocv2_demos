@@ -23,9 +23,9 @@ print('DAC atten: ', DAC_att)
 ADC_att=17
 print('ADC atten: ', ADC_att)
 
-substudy = f'punchout_{DAC_att}dBDAC_newQICKbox_wfilters'
+substudy = f'punchout_{DAC_att}dBDAC'
 
-outerFolder = os.path.join(f"/data/QICK_data/run10/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
+outerFolder = os.path.join(f"/data/QICK_data/run11/6transmon/readout_optimization/{substudy}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/")
 outerfolder_plots = outerFolder + "/documentation/"
 
 os.makedirs(outerfolder_plots, exist_ok=True)
@@ -48,7 +48,7 @@ for QubitIndex in Qs:
     increase_geres_reps = False
     increase_geres_reps_to = None
 
-    start_gain, stop_gain, num_points = 0.3, 0.5, 5
+    start_gain, stop_gain, num_points = 0.2, 0.5, 5
 
     # if QubitIndex == 0:
     #     start_gain, stop_gain, num_points =  0.70, 0.86, 5 # 0.8, 0.97, 5
