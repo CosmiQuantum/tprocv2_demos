@@ -51,7 +51,7 @@ signal = 'None'  # 'I', or 'Q' depending on where the signal is (after optimizat
 save_figs = True  # save plots for everything as you go along the RR script?
 live_plot = False  # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
 fit_data = True  # fit the data here and save or plot the fits?
-save_data_h5 = True  # save all of the data to h5 files?
+save_data_h5 = False  # save all of the data to h5 files?
 
 verbose = True  # print everything to the console in real time, good for debugging, bad for memory
 qick_verbose = True  # qick verbose prints the progress bar for each qick experiment as it is happening (the red bar that fills out as more experiment rounds/reps are being done)
@@ -62,10 +62,10 @@ unmask = True  # Do you want to use the unmasking feature to increase resonator 
 save_shots_gerabi = False  # save IQ shots instead of averaged IQ data? for ge rabi
 save_shots_efrabi = False  # NOT implemented yet in this experiment. If you want to use this add code block to ef rabi experiment.
 
-Qs_to_look_at = [0] # only list the qubits you want to do the RR for
+Qs_to_look_at = [4,5] # only list the qubits you want to do the RR for
 
 # Data saving info
-run_name = 'run9d'
+run_name = 'run11'
 device_name = '6transmon'
 substudy_txt_notes = ('Checking status of qubits.\n')
 
@@ -74,11 +74,11 @@ substudy_txt_notes = ('Checking status of qubits.\n')
 # run_flags = {"tof": False, "res_spec": True, "q_spec": True, "rabi": True, "ss": True,
 #              "ef_res_spec": True, "ss_gef": False, "ef_q_spec": True,
 #              "rabi_pop_meas": True, "ef_Rabi": False, "t1": False, "t2r": True, "t2e": True}
-run_flags = {"tof": True, "res_spec": False, "q_spec": False, "rabi": False, "ss": False,
+run_flags = {"tof": True, "res_spec": True, "q_spec": False, "rabi": False, "ss": False,
              "ef_res_spec": False, "ss_gef": False, "ef_q_spec": False,
              "rabi_pop_meas": False, "ef_Rabi": False, "t1": False, "t2r": False, "t2e": False}
 
-# For 25dB DAC, 7/19/2026
+# For 25dB DAC
 res_leng_vals = [5.4, 6.6, 6.0, 6.8, 6.8, 7.0]
 res_gain = [0.8164, 0.8, 0.8419, 0.6156, 0.8, 0.82] # Q1: 0.8164
 freq_offsets =[-0.1556, -0.1111, -0.2,-0.0222,-0.2111,-0.1556]
@@ -94,7 +94,7 @@ meas_time_RR = {}
 ################################################ Data Saving Setup ##################################################
 # Folders
 study = 'round_robin_benchmark' #qubit_checkouts, round_robin_benchmark
-sub_study = 'tof_ringdown_inv' #batch2_post_1stopt_25dbDAC, opt_sigmas_gains_reps_steps, opt_AB_paper_data
+sub_study = 'resonator_checkouts_FR9B'
 data_set = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 if not os.path.exists(f"/data/QICK_data/{run_name}/"):
@@ -229,12 +229,18 @@ while j < n:
                 increase_geres_reps_to = None
                 use_savgol_smoothing_rspec = False
 
-                if QubitIndex == 5:
-                    increase_geres_reps = True
-                    increase_geres_reps_to = 400 #400
-                # if QubitIndex == 3:
+                # if QubitIndex == 5:
                 #     increase_geres_reps = True
-                #     increase_geres_reps_to = 600
+                #     increase_geres_reps_to = 400 #400
+                if QubitIndex == 3:
+                    increase_geres_reps = True
+                    increase_geres_reps_to = 1800
+                if QubitIndex == 1:
+                    increase_geres_reps = True
+                    increase_geres_reps_to = 1800
+                if QubitIndex == 2:
+                    increase_geres_reps = True
+                    increase_geres_reps_to = 1800
                 # if QubitIndex == 4:
                 #     use_savgol_smoothing_rspec = True
                 #     increase_geres_reps = True
