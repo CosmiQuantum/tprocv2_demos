@@ -46,7 +46,7 @@ use_png_timestamps = False
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 final_figure_quality = 600
 
-run_num_list = [6,7,8] # options: 4,5,6,7,8,9, 9.2 (run 9c), 9.3 (run 9d), 10
+run_num_list = [8] # options: 4,5,6,7,8,9, 9.2 (run 9c), 9.3 (run 9d), 10
 t1_vals_by_run  = {}
 res_lengths_by_run = {}
 t2r_vals_by_run = {}
@@ -541,7 +541,7 @@ for run_number in run_num_list:
     ################################################ 01: Get all data ######################################################
     res_spec_vs_time = ResonatorFreqVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
                                            save_figs, fit_saved, signal, run_name, FRIDGE)
-    date_times_res_spec, res_freqs = res_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = use_png_timestamps)
+    date_times_res_spec, res_freqs = res_spec_vs_time.run(exp_extension='_ef', use_png_timestamps = use_png_timestamps)
 
     # q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
     #                                   save_figs, fit_saved, signal, run_name, FRIDGE)
@@ -628,8 +628,8 @@ for run_number in run_num_list:
             #plot_t2r = True, plot_t2e = False, plot_rabis_Qtemps = False)
 
 ########################################### 03: Resonator Freqs vs Time Plots ###########################################
-#res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends, use_global_yaxis = True)
-res_spec_vs_time.plot_res_freqs_multirun(runs = run_num_list,rspec_vals_by_run = rspec_vals_by_run, rspec_dates_by_run = rspec_dates_by_run, rspec_errs_by_run = None, use_global_yaxis=True)
+res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends, use_global_yaxis = True)
+#res_spec_vs_time.plot_res_freqs_multirun(runs = run_num_list,rspec_vals_by_run = rspec_vals_by_run, rspec_dates_by_run = rspec_dates_by_run, rspec_errs_by_run = None, use_global_yaxis=True)
 # ######################################### 04: Qubit Freqs vs Time Plots #############################################
 #q_spec_vs_time.plot_without_errs(date_times_q_spec, q_freqs,show_legends)
 #q_spec_vs_time.plot_with_errs(run_number,date_times_q_spec, q_freqs, qspec_fit_err, show_legends, use_global_yaxis=False) # shows error bars, do this one!!

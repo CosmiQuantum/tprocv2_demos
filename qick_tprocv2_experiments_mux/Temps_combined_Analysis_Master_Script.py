@@ -89,8 +89,8 @@ london_flags = {"get_qfreqs_resfreqs_qtemps": False}
 alt_ssf_analysis_flags = {"jupyter_method_Arianna": False, "iminuit_method": False}
 
 # For coherence-qubit temps combined analysis. These flags act on their own, no need to set anything above to True.
-coh_qtemp_ana_flags = {"run_qtemps_section": True, "run_coherence_section": True, "use_cached_qtemp_files": True, "use_cached_coherence_files": True, "create_cached_qtemp_files": False,"create_cached_coherence_files": False, "load_mcp1_temps": True,
-                       "plot_qtemps_t1_ftemps_qfreq": True, "plot_RPM_qtemps_qfreq_fridge_only": False, "plot_SSF_qtemps_qfreq_fridge_only": False,
+coh_qtemp_ana_flags = {"run_qtemps_section": False, "run_coherence_section": True, "use_cached_qtemp_files": False, "use_cached_coherence_files": True, "create_cached_qtemp_files": False,"create_cached_coherence_files": False, "load_mcp1_temps": True,
+                       "plot_qtemps_t1_ftemps_qfreq": True, "plot_qtemps_coh_qfreq_vs_ftemps": False, "plot_RPM_qtemps_qfreq_fridge_only": False, "plot_SSF_qtemps_qfreq_fridge_only": False,
                        "SSF_lims_per_scan_viaSSF": False, "SSF_lims_per_scan_viaRPM": False}
 
 ############################################################################## Set up #######################################################################################################################
@@ -214,25 +214,25 @@ base_dir_run8 = "/exp/cosmiq/data/QUIET/QICK_data/run8/6transmon/round_robin" # 
     #r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # Arianna's pc
 
 # all AB paper data: (specify up to the day only)
-# target_dates_qtemps_RPM_run8 = [
-#   "2025-10-19",
-#   "2025-10-20",
-#   "2025-10-23",
-#   "2025-10-24",
-#   "2025-10-27",
-#   "2025-10-28",
-#   "2025-10-29",
-#   "2025-10-31",
-#   "2025-11-01"
-# ]
+target_dates_qtemps_RPM_run8 = [
+  "2025-10-19",
+  "2025-10-20",
+  "2025-10-23",
+  "2025-10-24",
+  "2025-10-27",
+  "2025-10-28",
+  "2025-10-29",
+  "2025-10-31",
+  "2025-11-01"
+]
 
 # Temp sweep data:
-target_dates_qtemps_RPM_run8 = [
-  "2025-11-18",
-  "2025-11-19",
-  "2025-11-20",
-  "2025-11-21"
-]
+# target_dates_qtemps_RPM_run8 = [
+#   "2025-11-18",
+#   "2025-11-19",
+#   "2025-11-20",
+#   "2025-11-21"
+# ]
 
 # To save plots
 r8_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
@@ -248,17 +248,17 @@ outerFolder_qtemps_plots_run8 = f"{r8_plts_prefix}/rpm_qtemps"
 
 # Substudy name on the file path, doesn't have to be exact, it will look for these key terms in the name. THese are substudies.
 # For all AB paper data:
-# filter_keywords_run8 = ["AB_Paper_Data_24hrs", "ABpaperdata2ndbatch_21dB_DACatten_Q1to5", "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots",
-#                         "ABpaperdata3rdbatch_21dB_DACatten_Q1to5", "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional",
-#                         "ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional", "ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional",
-#                         "ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt", "19dB_DAC_testdata_allQs"]
+filter_keywords_run8 = ["AB_Paper_Data_24hrs", "ABpaperdata2ndbatch_21dB_DACatten_Q1to5", "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots",
+                        "ABpaperdata3rdbatch_21dB_DACatten_Q1to5", "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional",
+                        "ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional", "ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional",
+                        "ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt", "19dB_DAC_testdata_allQs"]
 
 # for debugging and testing
 # filter_keywords_run8 = ["AB_paper_datadump_for_analysis"]
 
 # # For run 8 temp sweep data:
-filter_keywords_run8 = ["temperature_sweep_run8_25dBDAC_onechan_day1", "temperature_sweep_run8_25dBDAC_onechan_day2",
-                        "temperature_sweep_run8_25dBDAC_onechan_day3", "temp_sweep_run8_25dBDAC_onechan_day4_175mK"]
+# filter_keywords_run8 = ["temperature_sweep_run8_25dBDAC_onechan_day1", "temperature_sweep_run8_25dBDAC_onechan_day2",
+#                         "temperature_sweep_run8_25dBDAC_onechan_day3", "temp_sweep_run8_25dBDAC_onechan_day4_175mK"]
 
 #-----------------------------------------------------------------------run 9------------------------------------------------------------
 #Base path of where the data is stored up to the Study Name (round_robin_benchmark)
@@ -600,54 +600,54 @@ r8_path_prefix = "/exp/cosmiq/data/QUIET/QICK_data/run8"
                 # r"C:\Users\Arianna\Documents\Grad\Research\CosmicQ\QUIET\run8" # Arianna's local pc
 
 # All AB paper data
-# paths_SSFmethods_run8 = [ # for daq01 case, need to make CEPH version
-#   f"{r8_path_prefix}/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_11-09-32",
-#   f"{r8_path_prefix}6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_12-05-25",
-#   f"{r8_path_prefix}/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_19-43-00",
-#   f"{r8_path_prefix}/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_20-25-18",
-#   f"{r8_path_prefix}/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-20_12-10-19",
-#
-#   f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata2ndbatch_21dB_DACatten_Q1to5/2025-10-23_00-49-28",
-#
-#   f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5/2025-10-23_14-47-22",
-#
-#   f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/2025-10-24_01-41-30",
-#
-#   f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional/2025-10-24_13-58-37",
-#
-#   f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional/2025-10-27_14-15-40",
-#   f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional/2025-10-27_14-24-29",
-#
-#   f"{r8_path_prefix}6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/2025-10-27_22-04-57",
-#
-#   f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-28_21-57-47",
-#   f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-29_18-38-25",
-#   f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-29_23-48-45",
-#
-#   f"{r8_path_prefix}/6transmon/round_robin/18dB_DAC_testdata_allQs_exceptQ4/2025-10-31_01-54-57",
-#
-#   f"{r8_path_prefix}/6transmon/round_robin/19dB_DAC_testdata_allQs/2025-10-31_20-40-11",
-#   f"{r8_path_prefix}/6transmon/round_robin/19dB_DAC_testdata_allQs/2025-11-01_12-54-55"
-# ]
+paths_SSFmethods_run8 = [ # for daq01 case, need to make CEPH version
+  f"{r8_path_prefix}/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_11-09-32",
+  f"{r8_path_prefix}6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_12-05-25",
+  f"{r8_path_prefix}/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_19-43-00",
+  f"{r8_path_prefix}/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-19_20-25-18",
+  f"{r8_path_prefix}/6transmon/round_robin/AB_Paper_Data_24hrs/2025-10-20_12-10-19",
+
+  f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata2ndbatch_21dB_DACatten_Q1to5/2025-10-23_00-49-28",
+
+  f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5/2025-10-23_14-47-22",
+
+  f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/2025-10-24_01-41-30",
+
+  f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional/2025-10-24_13-58-37",
+
+  f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional/2025-10-27_14-15-40",
+  f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional/2025-10-27_14-24-29",
+
+  f"{r8_path_prefix}6transmon/round_robin/ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/2025-10-27_22-04-57",
+
+  f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-28_21-57-47",
+  f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-29_18-38-25",
+  f"{r8_path_prefix}/6transmon/round_robin/ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-29_23-48-45",
+
+  f"{r8_path_prefix}/6transmon/round_robin/18dB_DAC_testdata_allQs_exceptQ4/2025-10-31_01-54-57",
+
+  f"{r8_path_prefix}/6transmon/round_robin/19dB_DAC_testdata_allQs/2025-10-31_20-40-11",
+  f"{r8_path_prefix}/6transmon/round_robin/19dB_DAC_testdata_allQs/2025-11-01_12-54-55"
+]
 
 # Temperature sweep data (except the 200mK dataset bc no qubits visible)
-paths_SSFmethods_run8 =[
-            f"{r8_path_prefix}/6transmon/round_robin/temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_08-39-37",
-            f"{r8_path_prefix}/6transmon/round_robin/temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_09-02-01",
-            f"{r8_path_prefix}/6transmon/round_robin/temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_12-40-59",
-            f"{r8_path_prefix}/6transmon/round_robin/temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_14-26-01",
-            f"{r8_path_prefix}/6transmon/round_robin/temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_14-48-11",
-
-            f"{r8_path_prefix}/6transmon/round_robin/temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_08-04-25",
-            f"{r8_path_prefix}/6transmon/round_robin/temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-00-00",
-            f"{r8_path_prefix}/6transmon/round_robin/temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-27-04",
-
-            f"{r8_path_prefix}/6transmon/round_robin/temperature_sweep_run8_25dBDAC_onechan_day3/2025-11-20_07-31-49",
-
-            f"{r8_path_prefix}/6transmon/round_robin/temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-01-57",
-            f"{r8_path_prefix}/6transmon/round_robin/temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-33-09",
-            f"{r8_path_prefix}/6transmon/round_robin/temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-45-17",
-            f"{r8_path_prefix}/6transmon/round_robin/temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-54-05"]
+# paths_SSFmethods_run8 =[
+#             f"{r8_path_prefix}/6transmon/round_robin/temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_08-39-37",
+#             f"{r8_path_prefix}/6transmon/round_robin/temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_09-02-01",
+#             f"{r8_path_prefix}/6transmon/round_robin/temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_12-40-59",
+#             f"{r8_path_prefix}/6transmon/round_robin/temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_14-26-01",
+#             f"{r8_path_prefix}/6transmon/round_robin/temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_14-48-11",
+#
+#             f"{r8_path_prefix}/6transmon/round_robin/temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_08-04-25",
+#             f"{r8_path_prefix}/6transmon/round_robin/temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-00-00",
+#             f"{r8_path_prefix}/6transmon/round_robin/temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-27-04",
+#
+#             f"{r8_path_prefix}/6transmon/round_robin/temperature_sweep_run8_25dBDAC_onechan_day3/2025-11-20_07-31-49",
+#
+#             f"{r8_path_prefix}/6transmon/round_robin/temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-01-57",
+#             f"{r8_path_prefix}/6transmon/round_robin/temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-33-09",
+#             f"{r8_path_prefix}/6transmon/round_robin/temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-45-17",
+#             f"{r8_path_prefix}/6transmon/round_robin/temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-54-05"]
 
 # To save plots
 r8_plts_prefix = "/home/acolonce/Documents/analysis" #cosmiqserver01
@@ -1072,53 +1072,53 @@ if coh_qtemp_ana_flags["run_coherence_section"]:
         # "/data/QICK_data/run8/6transmon/analysis" #daq01
 
         # all of run 8 data
-        # top_folder_dates = [
-        #     "AB_Paper_Data_24hrs/2025-10-19_11-09-32",  # only T1 shots, no T1 QICK-averaged IQ data
-        #     "AB_Paper_Data_24hrs/2025-10-19_12-05-25",  # only T1 shots, no T1 QICK-averaged IQ data
-        #     "AB_Paper_Data_24hrs/2025-10-19_19-43-00",  # only T1 shots, no T1 QICK-averaged IQ data
-        #     "AB_Paper_Data_24hrs/2025-10-19_20-25-18",  # only T1 shots, no T1 QICK-averaged IQ data
-        #     "AB_Paper_Data_24hrs/2025-10-20_12-10-19",  # only T1 shots, no T1 QICK-averaged IQ data
-        #
-        #     "ABpaperdata2ndbatch_21dB_DACatten_Q1to5/2025-10-23_00-49-28",
-        #     # only T1 shots, no T1 QICK-averaged IQ data
-        #
-        #     "ABpaperdata3rdbatch_21dB_DACatten_Q1to5/2025-10-23_14-47-22",
-        #     # only T1 shots, no T1 QICK-averaged IQ data
-        #     # "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/2025-10-24_01-41-30",  # no T1 shots saved, only QICK averaged IQ data. Leave commented out. Need to debug script to incorporate this
-        #     "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional/2025-10-24_13-58-37",
-        #     # From this point forward, both T1 shots and averaged IQ arrays were saved
-        #     "ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional/2025-10-27_14-15-40",
-        #     "ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional/2025-10-27_14-24-29",
-        #     "ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/2025-10-27_22-04-57",
-        #
-        #     "ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-28_21-57-47",
-        #     "ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-29_18-38-25",
-        #     "ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-29_23-48-45",
-        #
-        #     "18dB_DAC_testdata_allQs_exceptQ4/2025-10-31_01-54-57",
-        #
-        #     "19dB_DAC_testdata_allQs/2025-10-31_20-40-11",
-        #     "19dB_DAC_testdata_allQs/2025-11-01_12-54-55",
-        # ]
+        top_folder_dates = [
+            "AB_Paper_Data_24hrs/2025-10-19_11-09-32",  # only T1 shots, no T1 QICK-averaged IQ data
+            "AB_Paper_Data_24hrs/2025-10-19_12-05-25",  # only T1 shots, no T1 QICK-averaged IQ data
+            "AB_Paper_Data_24hrs/2025-10-19_19-43-00",  # only T1 shots, no T1 QICK-averaged IQ data
+            "AB_Paper_Data_24hrs/2025-10-19_20-25-18",  # only T1 shots, no T1 QICK-averaged IQ data
+            "AB_Paper_Data_24hrs/2025-10-20_12-10-19",  # only T1 shots, no T1 QICK-averaged IQ data
+
+            "ABpaperdata2ndbatch_21dB_DACatten_Q1to5/2025-10-23_00-49-28",
+            # only T1 shots, no T1 QICK-averaged IQ data
+
+            "ABpaperdata3rdbatch_21dB_DACatten_Q1to5/2025-10-23_14-47-22",
+            # only T1 shots, no T1 QICK-averaged IQ data
+            # "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_not1shots/2025-10-24_01-41-30",  # no T1 shots saved, only QICK averaged IQ data. Leave commented out. Need to debug script to incorporate this
+            "ABpaperdata3rdbatch_21dB_DACatten_Q1to5_t1shots_optional/2025-10-24_13-58-37",
+            # From this point forward, both T1 shots and averaged IQ arrays were saved
+            "ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional/2025-10-27_14-15-40",
+            "ABpaperdata3rdbatch_21dB_DACatten_Q6_t1shots_optional/2025-10-27_14-24-29",
+            "ABpaperdata3rdbatch_21dB_DACatten_Q1to6_t1shots_optional/2025-10-27_22-04-57",
+
+            "ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-28_21-57-47",
+            "ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-29_18-38-25",
+            "ABpaperdata_21dB_DACatten_Q1to6_t1shots_optional_newopt/2025-10-29_23-48-45",
+
+            "18dB_DAC_testdata_allQs_exceptQ4/2025-10-31_01-54-57",
+
+            "19dB_DAC_testdata_allQs/2025-10-31_20-40-11",
+            "19dB_DAC_testdata_allQs/2025-11-01_12-54-55",
+        ]
 
         # All run 8 qubit temperature sweep data except the 200mK step bc no qubits visible
-        top_folder_dates = [
-            "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_08-39-37",
-            "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_09-02-01",
-            "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_12-40-59",
-            "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_14-26-01",
-            "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_14-48-11",
-
-            "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_08-04-25",
-            "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-00-00",
-            "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-27-04",
-
-            "temperature_sweep_run8_25dBDAC_onechan_day3/2025-11-20_07-31-49",
-
-            "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-01-57",
-            "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-33-09",
-            "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-45-17",
-            "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-54-05"]
+        # top_folder_dates = [
+        #     "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_08-39-37",
+        #     "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_09-02-01",
+        #     "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_12-40-59",
+        #     "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_14-26-01",
+        #     "temperature_sweep_run8_25dBDAC_onechan_day1/2025-11-18_14-48-11",
+        #
+        #     "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_08-04-25",
+        #     "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-00-00",
+        #     "temperature_sweep_run8_25dBDAC_onechan_day2/2025-11-19_11-27-04",
+        #
+        #     "temperature_sweep_run8_25dBDAC_onechan_day3/2025-11-20_07-31-49",
+        #
+        #     "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-01-57",
+        #     "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-33-09",
+        #     "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-45-17",
+        #     "temp_sweep_run8_25dBDAC_onechan_day4_175mK/2025-11-21_08-54-05"]
 
     elif run_num == 7:
         process_shots_t1ge = False
@@ -2199,8 +2199,8 @@ t2e_vals = None
 Pe_dist_err_dict = None
 
 restrict_time = True
-start_time = datetime.datetime(2025, 11, 18, 6, 0) # (2025, 11, 18, 6, 0)
-end_time = datetime.datetime(2025, 11, 21, 12, 0) # (2025, 11, 21, 12, 0)
+start_time = datetime.datetime(2025, 10, 18, 0, 0) # (2025, 11, 18, 6, 0)
+end_time = datetime.datetime(2025, 11, 4, 0, 0) # (2025, 11, 21, 12, 0)
 run_num_list = [8]
 run6_subfolder="both" # only used for run6 MCP1 csv file data loading. Options: "pre-science-run", "science-run" or "both"
 run8_temp_sweep = True
@@ -2233,13 +2233,16 @@ date_times_t1_by_run = {}
 t2r_vals_by_run = {}
 t2e_vals_by_run = {}
 qfreq_vals_by_run = {}
+qfreq_ef_vals_by_run = {}
 resfreq_vals_by_run = {}
+resfreq_ef_vals_by_run = {}
 
 t1_errs_by_run  = {}
 t1_res_lengths_by_run = {}
 t2r_errs_by_run = {}
 t2e_errs_by_run = {}
 qfreq_errs_by_run = {}
+qfreq_errs_ef_by_run = {}
 
 all_files_Qtemp_results_RPMs_by_run = {}
 # ------------ Initialize class for combined analysis ------------------
@@ -2535,11 +2538,17 @@ if coh_qtemp_ana_flags["load_mcp1_temps"]:
 if coh_qtemp_ana_flags["run_coherence_section"]:
     for run_num in run_num_list:
         coherence_cache_dir = f"/home/acolonce/Documents/analysis/cached_processed_data/run{run_num}/"
-        (   date_times_res_spec,
+        (
+            date_times_res_spec,
             res_freqs,
+            date_times_res_spec_ef,
+            res_freqs_ef,
             date_times_q_spec,
             q_freqs,
             qspec_fit_err,
+            date_times_q_spec_ef,
+            q_freqs_ef,
+            qspec_fit_err_ef,
             date_times_t1,
             t1_vals,
             t1_fit_err,
@@ -2550,8 +2559,8 @@ if coh_qtemp_ana_flags["run_coherence_section"]:
             date_times_t2e,
             t2e_vals,
             t2e_fit_err,
-            I_per_pt_errs, #T1
-            Q_per_pt_errs, #T1
+            I_per_pt_errs, # T1
+            Q_per_pt_errs, # T1
         ) = combined_studies.get_or_create_processed_coherence_inputs(
             run_number=run_num,
             run_name=run_name,
@@ -2569,8 +2578,9 @@ if coh_qtemp_ana_flags["run_coherence_section"]:
             plots_path=plots_path,
             per_pt_errs_t1=per_pt_errs_t1,
             process_shots_t1ge=process_shots_t1ge,
-            use_png_timestamps = use_png_timestamps)
-        
+            use_png_timestamps=use_png_timestamps
+        )
+
         # ---------------- Another option: store results per run for downstream plotting ----------------
         t1_vals_by_run[run_num] = t1_vals
         t1_errs_by_run[run_num] = t1_fit_err
@@ -2583,10 +2593,15 @@ if coh_qtemp_ana_flags["run_coherence_section"]:
         t2e_vals_by_run[run_num] = t2e_vals
         t2e_errs_by_run[run_num] = t2e_fit_err
 
-        qfreq_vals_by_run[run_num] = q_freqs
-        qfreq_errs_by_run[run_num] = qspec_fit_err
+        qfreq_vals_by_run[run_num] = q_freqs # g-e
+        qfreq_errs_by_run[run_num] = qspec_fit_err #g-e
 
-        resfreq_vals_by_run[run_num] = res_freqs
+        resfreq_vals_by_run[run_num] = res_freqs # g-e
+
+        qfreq_ef_vals_by_run[run_num] = q_freqs_ef # ef
+        qfreq_errs_ef_by_run[run_num] = qspec_fit_err_ef # ef
+
+        resfreq_ef_vals_by_run[run_num] = res_freqs_ef # ef
 
 if coh_qtemp_ana_flags["SSF_lims_per_scan_viaSSF"]:
 
@@ -2610,7 +2625,7 @@ if coh_qtemp_ana_flags["SSF_lims_per_scan_viaSSF"]:
         )
     )
 
-if coh_qtemp_ana_flags["plot_qtemps_t1_ftemps_qfreq"]:
+if coh_qtemp_ana_flags["plot_qtemps_t1_ftemps_qfreq"]: # #ftemps = fridge temps
     if len(run_num_list) != 1:
         raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
                          "This plotting section is only set up to process one run at a time at the moment.")
@@ -2619,33 +2634,76 @@ if coh_qtemp_ana_flags["plot_qtemps_t1_ftemps_qfreq"]:
 
     combined_studies.plot_qtemps_and_coherence_res(
         comb_plots_path,
-        SSF_qtemps_fit_results_g = fit_results_g,
-        all_files_Qtemp_results_RPMs= all_files_Qtemp_results_RPMs,
-        fridge_temps=mcp1_temps,
-        fridge_dates=mcp1_dates,
-        t1_vals=t1_vals,
-        t1_dates=date_times_t1,
-        t1_fit_err = t1_fit_err,
+        # SSF_qtemps_fit_results_g = fit_results_g,
+        # all_files_Qtemp_results_RPMs= all_files_Qtemp_results_RPMs,
+        # fridge_temps=mcp1_temps,
+        # fridge_dates=mcp1_dates,
+        # t1_vals=t1_vals,
+        # t1_dates=date_times_t1,
+        # t1_fit_err = t1_fit_err,
         qfreqs_vals=q_freqs,
         qfreqs_dates=date_times_q_spec,
-        qfreqs_errs=qspec_fit_err, # new
-        resfreqs_vals= res_freqs,
-        resfreqs_dates= date_times_res_spec,
+        qfreqs_errs=qspec_fit_err,
+        # resfreqs_vals= res_freqs,
+        # resfreqs_dates= date_times_res_spec,
         t2r_vals=t2r_vals,
         t2r_dates=date_times_t2r,
         t2r_errs=t2r_fit_err,
-        t2e_vals=t2e_vals,
-        t2e_dates=date_times_t2e,
+        # t2e_vals=t2e_vals,
+        # t2e_dates=date_times_t2e,
+        # qfreqs_ef_vals=q_freqs_ef,
+        # qfreqs_ef_dates=date_times_q_spec_ef,
+        # qfreqs_ef_errs=qspec_fit_err_ef,
+        # resfreqs_ef_vals=res_freqs_ef,
+        # resfreqs_ef_dates=date_times_res_spec_ef,
         restrict_time_xaxis=restrict_time,
         start_time=start_time,
         end_time=end_time,
         plot_extra_event_lines=False,
         run_num = f"{run_num_list[0]}",
-        qubits_to_plot = [0],
+        qubits_to_plot = [3,5], #0-based indexing
         fig_width=30, # 30
-        fig_height = 14, # 14
-        fnt_sz = 26, # 26
+        fig_height = 20, # 14
+        fnt_sz = 30, # 26
     )
+
+if coh_qtemp_ana_flags["plot_qtemps_coh_qfreq_vs_ftemps"]: #ftemps = fridge temps
+    if len(run_num_list) != 1:
+        raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "
+                         "This plotting section is only set up to process one run at a time.")
+
+    comb_plots_path = "/home/acolonce/Documents/analysis/combined_qtemps/qtemps_and_coherence/"
+
+    combined_studies.plot_temperature_sweep_per_qubit(
+        out_dir=comb_plots_path,
+        SSF_qtemps_fit_results_g=fit_results_g,
+        all_files_Qtemp_results_RPMs=all_files_Qtemp_results_RPMs,
+        fridge_temps=mcp1_temps,
+        fridge_dates=mcp1_dates,
+        t1_vals=t1_vals,
+        t1_dates=date_times_t1,
+        t1_fit_err=t1_fit_err,
+        t2r_vals=t2r_vals,
+        t2r_dates=date_times_t2r,
+        t2r_errs=t2r_fit_err,
+        t2e_vals=t2e_vals,
+        t2e_dates=date_times_t2e,
+        qfreqs_vals=q_freqs,
+        qfreqs_dates=date_times_q_spec,
+        qfreqs_errs=qspec_fit_err,
+        qfreqs_ef_vals=q_freqs_ef,
+        qfreqs_ef_dates=date_times_q_spec_ef,
+        qfreqs_ef_errs=qspec_fit_err_ef,
+        run_num=run_num_list[0],
+        qubits_to_plot=[0],
+        fig_width=12,
+        fig_height=16,
+        fnt_sz=16,
+        baseline_n=10, # how many datapoints to average to get baseline qubit freq values
+        max_match_minutes=5, # None means each meas is matched to its nearest MCP1 temperature reading regardless of time separation
+        plot_population = True
+    )
+
 if coh_qtemp_ana_flags["plot_RPM_qtemps_qfreq_fridge_only"]:
     if len(run_num_list) != 1:
         raise ValueError(f"Expected exactly 1 run in 'run_num_list', but got {len(run_num_list)}. "

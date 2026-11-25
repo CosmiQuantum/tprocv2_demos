@@ -5349,9 +5349,14 @@ class combined_Qtemp_studies:
             run_name,
             date_times_res_spec,
             res_freqs,
+            date_times_res_spec_ef,
+            res_freqs_ef,
             date_times_q_spec,
             q_freqs,
             qspec_fit_err,
+            date_times_q_spec_ef,
+            q_freqs_ef,
+            qspec_fit_err_ef,
             date_times_t1,
             t1_vals,
             t1_fit_err,
@@ -5369,8 +5374,10 @@ class combined_Qtemp_studies:
         Save processed coherence inputs for one run.
 
         Each coherence metric is saved to a separate pickle file:
-            - resonator spectroscopy
-            - qubit spectroscopy
+            - resonator spectroscopy (g-e)
+            - qubit spectroscopy (g-e)
+            - ef resonator spectroscopy
+            - ef qubit spectroscopy
             - T1
             - T2 Ramsey
             - T2 Echo
@@ -5384,19 +5391,34 @@ class combined_Qtemp_studies:
             Name of the run. Used in the filename so each run gets separate cache files.
 
         date_times_res_spec : list
-            Timestamps for resonator spectroscopy measurements.
+            Timestamps for resonator spectroscopy measurements. g-e transition.
 
         res_freqs : list or dict
-            Resonator frequency values.
+            Resonator frequency values. g-e transition.
+
+        date_times_res_spec_ef : list
+            Timestamps for resonator spectroscopy measurements. e-f transition.
+
+        res_freqs_ef : list or dict
+            Resonator frequency values. e-f transition.
 
         date_times_q_spec : list
-            Timestamps for qubit spectroscopy measurements.
+            Timestamps for qubit spectroscopy measurements. g-e transition.
 
         q_freqs : list or dict
-            Qubit frequency values.
+            Qubit frequency values. g-e transition.
 
         qspec_fit_err : list or dict
-            Qubit spectroscopy fit errors.
+            Qubit spectroscopy fit errors. g-e transition.
+
+        date_times_q_spec_ef : list
+            Timestamps for qubit spectroscopy measurements. e-f transition.
+
+        q_freqs_ef : list or dict
+            Qubit frequency values. e-f transition.
+
+        qspec_fit_err_ef : list or dict
+            Qubit spectroscopy fit errors. e-f transition.
 
         date_times_t1 : list
             Timestamps for T1 measurements.
@@ -5447,9 +5469,17 @@ class combined_Qtemp_studies:
                 coherence_cache_dir,
                 f"{run_name}_processed_res_spec.pkl"
             ),
+            "res_spec_ef": os.path.join(
+                coherence_cache_dir,
+                f"{run_name}_processed_res_spec_ef.pkl"
+            ),
             "qspec": os.path.join(
                 coherence_cache_dir,
                 f"{run_name}_processed_qspec.pkl"
+            ),
+            "qspec_ef": os.path.join(
+                coherence_cache_dir,
+                f"{run_name}_processed_qspec_ef.pkl"
             ),
             "t1": os.path.join(
                 coherence_cache_dir,
@@ -5470,10 +5500,21 @@ class combined_Qtemp_studies:
             "res_freqs": res_freqs,
         }
 
+        res_spec_data_ef = {
+            "date_times_res_spec": date_times_res_spec_ef,
+            "res_freqs": res_freqs_ef,
+        }
+
         qspec_data = {
             "date_times_q_spec": date_times_q_spec,
             "q_freqs": q_freqs,
             "qspec_fit_err": qspec_fit_err,
+        }
+
+        qspec_data_ef = {
+            "date_times_q_spec": date_times_q_spec_ef,
+            "q_freqs": q_freqs_ef,
+            "qspec_fit_err": qspec_fit_err_ef,
         }
 
         t1_data = {
@@ -5499,7 +5540,9 @@ class combined_Qtemp_studies:
 
         data_to_save = {
             "res_spec": res_spec_data,
+            "res_spec_ef": res_spec_data_ef,
             "qspec": qspec_data,
+            "qspec_ef": qspec_data_ef,
             "t1": t1_data,
             "t2r": t2r_data,
             "t2e": t2e_data,
@@ -5517,7 +5560,9 @@ class combined_Qtemp_studies:
     def load_processed_coherence_inputs(
             self,
             res_spec_path,
+            res_spec_ef_path,
             qspec_path,
+            qspec_ef_path,
             t1_path,
             t2r_path,
             t2e_path,
@@ -5530,8 +5575,14 @@ class combined_Qtemp_studies:
         res_spec_path : str
             Path to the saved resonator spectroscopy pickle file.
 
+        res_spec_ef_path : str
+            Path to the saved e-f resonator spectroscopy pickle file.
+
         qspec_path : str
             Path to the saved qubit spectroscopy pickle file.
+
+        qspec_ef_path : str
+            Path to the saved e-f qubit spectroscopy pickle file.
 
         t1_path : str
             Path to the saved T1 pickle file.
@@ -5545,19 +5596,34 @@ class combined_Qtemp_studies:
         Returns
         -------
         date_times_res_spec : list
-            Timestamps for resonator spectroscopy measurements.
+            Timestamps for resonator spectroscopy measurements. g-e transition.
 
         res_freqs : list or dict
-            Resonator frequency values.
+            Resonator frequency values. g-e transition.
+
+        date_times_res_spec_ef : list
+            Timestamps for resonator spectroscopy measurements. e-f transition.
+
+        res_freqs_ef : list or dict
+            Resonator frequency values. e-f transition.
 
         date_times_q_spec : list
-            Timestamps for qubit spectroscopy measurements.
+            Timestamps for qubit spectroscopy measurements. g-e transition.
 
         q_freqs : list or dict
-            Qubit frequency values.
+            Qubit frequency values. g-e transition.
 
         qspec_fit_err : list or dict
-            Qubit spectroscopy fit errors.
+            Qubit spectroscopy fit errors. g-e transition.
+
+        date_times_q_spec_ef : list
+            Timestamps for qubit spectroscopy measurements, e-f transition.
+
+        q_freqs_ef : list or dict
+            Qubit frequency values, e-f transition.
+
+        qspec_fit_err_ef : list or dict
+            Qubit spectroscopy fit errors, e-f transition.
 
         date_times_t1 : list
             Timestamps for T1 measurements.
@@ -5599,8 +5665,14 @@ class combined_Qtemp_studies:
         with open(res_spec_path, "rb") as f:
             res_spec_data = pickle.load(f)
 
+        with open(res_spec_ef_path, "rb") as f:
+            res_spec_ef_data = pickle.load(f)
+
         with open(qspec_path, "rb") as f:
             qspec_data = pickle.load(f)
+
+        with open(qspec_ef_path, "rb") as f:
+            qspec_ef_data = pickle.load(f)
 
         with open(t1_path, "rb") as f:
             t1_data = pickle.load(f)
@@ -5611,11 +5683,17 @@ class combined_Qtemp_studies:
         with open(t2e_path, "rb") as f:
             t2e_data = pickle.load(f)
 
-        print("Loaded processed resonator spectroscopy results from:")
+        print("Loaded processed g-e resonator spectroscopy results from:")
         print(res_spec_path)
 
-        print("Loaded processed qubit spectroscopy results from:")
+        print("Loaded processed e-f resonator spectroscopy results from:")
+        print(res_spec_ef_path)
+
+        print("Loaded processed g-e qubit spectroscopy results from:")
         print(qspec_path)
+
+        print("Loaded processed e-f qubit spectroscopy results from:")
+        print(qspec_ef_path)
 
         print("Loaded processed T1 results from:")
         print(t1_path)
@@ -5629,9 +5707,16 @@ class combined_Qtemp_studies:
         date_times_res_spec = res_spec_data["date_times_res_spec"]
         res_freqs = res_spec_data["res_freqs"]
 
+        date_times_res_spec_ef = res_spec_ef_data["date_times_res_spec"]
+        res_freqs_ef = res_spec_ef_data["res_freqs"]
+
         date_times_q_spec = qspec_data["date_times_q_spec"]
         q_freqs = qspec_data["q_freqs"]
         qspec_fit_err = qspec_data["qspec_fit_err"]
+
+        date_times_q_spec_ef = qspec_ef_data["date_times_q_spec"]
+        q_freqs_ef = qspec_ef_data["q_freqs"]
+        qspec_fit_err_ef = qspec_ef_data["qspec_fit_err"]
 
         date_times_t1 = t1_data["date_times_t1"]
         t1_vals = t1_data["t1_vals"]
@@ -5652,9 +5737,14 @@ class combined_Qtemp_studies:
         return (
             date_times_res_spec,
             res_freqs,
+            date_times_res_spec_ef,
+            res_freqs_ef,
             date_times_q_spec,
             q_freqs,
             qspec_fit_err,
+            date_times_q_spec_ef,
+            q_freqs_ef,
+            qspec_fit_err_ef,
             date_times_t1,
             t1_vals,
             t1_fit_err,
@@ -5698,8 +5788,10 @@ class combined_Qtemp_studies:
         Returns
         -------
         date_times_res_spec, res_freqs,
+        date_times_res_spec_ef, res_freqs_ef,
         date_times_q_spec, q_freqs, qspec_fit_err,
-        date_times_t1, t1_vals, t1_fit_err, res_lengths
+        date_times_q_spec_ef, q_freqs_ef, qspec_fit_err_ef,
+        date_times_t1, t1_vals, t1_fit_err, res_lengths,
         date_times_t2r, t2r_vals, t2r_fit_err,
         date_times_t2e, t2e_vals, t2e_fit_err,
         I_per_pt_errs, Q_per_pt_errs
@@ -5709,30 +5801,15 @@ class combined_Qtemp_studies:
 
         cache_prefix = f"run{run_number}"
 
-        res_spec_cache_path = os.path.join(
-            coherence_cache_dir,
-            f"{cache_prefix}_processed_res_spec.pkl"
-        )
+        res_spec_cache_path = os.path.join(coherence_cache_dir, f"{cache_prefix}_processed_res_spec.pkl")
+        res_spec_ef_cache_path = os.path.join(coherence_cache_dir, f"{cache_prefix}_processed_res_spec_ef.pkl")
 
-        qspec_cache_path = os.path.join(
-            coherence_cache_dir,
-            f"{cache_prefix}_processed_qspec.pkl"
-        )
+        qspec_cache_path = os.path.join(coherence_cache_dir, f"{cache_prefix}_processed_qspec.pkl")
+        qspec_ef_cache_path = os.path.join(coherence_cache_dir, f"{cache_prefix}_processed_qspec_ef.pkl")
 
-        t1_cache_path = os.path.join(
-            coherence_cache_dir,
-            f"{cache_prefix}_processed_t1.pkl"
-        )
-
-        t2r_cache_path = os.path.join(
-            coherence_cache_dir,
-            f"{cache_prefix}_processed_t2r.pkl"
-        )
-
-        t2e_cache_path = os.path.join(
-            coherence_cache_dir,
-            f"{cache_prefix}_processed_t2e.pkl"
-        )
+        t1_cache_path = os.path.join(coherence_cache_dir, f"{cache_prefix}_processed_t1.pkl")
+        t2r_cache_path = os.path.join(coherence_cache_dir, f"{cache_prefix}_processed_t2r.pkl")
+        t2e_cache_path = os.path.join(coherence_cache_dir, f"{cache_prefix}_processed_t2e.pkl")
 
         # ------------------------------------------------------------
         # Option 1: Load cached processed coherence files
@@ -5740,128 +5817,54 @@ class combined_Qtemp_studies:
         if coh_qtemp_ana_flags["use_cached_coherence_files"]:
             return self.load_processed_coherence_inputs(
                 res_spec_path=res_spec_cache_path,
+                res_spec_ef_path=res_spec_ef_cache_path,
                 qspec_path=qspec_cache_path,
+                qspec_ef_path=qspec_ef_cache_path,
                 t1_path=t1_cache_path,
                 t2r_path=t2r_cache_path,
                 t2e_path=t2e_cache_path,
             )
+        # ------------------------------------------------------------
+        # Option 2: Process coherence data normally
+        # ------------------------------------------------------------
         else:
-            # ------------------------------------------------------------
-            # Option 2: Process coherence data normally
-            # ------------------------------------------------------------
-            res_spec_vs_time = ResonatorFreqVsTime(
-                data_path,
-                plots_path,
-                figure_quality,
-                final_figure_quality,
-                tot_num_of_qubits,
-                top_folder_dates,
-                save_figs,
-                fit_saved,
-                signal,
-                run_name,
-                FRIDGE
-            )
+            res_spec_vs_time = ResonatorFreqVsTime(data_path, plots_path, figure_quality, final_figure_quality,
+                                                   tot_num_of_qubits, top_folder_dates, save_figs, fit_saved, signal,
+                                                   run_name, FRIDGE)
+            date_times_res_spec, res_freqs = res_spec_vs_time.run(exp_extension="_ge",
+                                                                  use_png_timestamps=use_png_timestamps)
+            date_times_res_spec_ef, res_freqs_ef = res_spec_vs_time.run(exp_extension="_ef",
+                                                                        use_png_timestamps=use_png_timestamps)
 
-            date_times_res_spec, res_freqs = res_spec_vs_time.run(exp_extension='_ge', use_png_timestamps = use_png_timestamps)
+            q_spec_vs_time = QubitFreqsVsTime(data_path, plots_path, figure_quality, final_figure_quality,
+                                              tot_num_of_qubits, top_folder_dates, save_figs, fit_saved, signal,
+                                              run_name, FRIDGE)
+            date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(exp_extension="_ge",use_png_timestamps=use_png_timestamps)
+            date_times_q_spec_ef, q_freqs_ef, qspec_fit_err_ef = q_spec_vs_time.run(exp_extension="_ef",use_png_timestamps=use_png_timestamps)
 
-            q_spec_vs_time = QubitFreqsVsTime(
-                data_path,
-                plots_path,
-                figure_quality,
-                final_figure_quality,
-                tot_num_of_qubits,
-                top_folder_dates,
-                save_figs,
-                fit_saved,
-                signal,
-                run_name,
-                FRIDGE
-            )
-
-            date_times_q_spec, q_freqs, qspec_fit_err = q_spec_vs_time.run(
-                exp_extension="_ge",
-                use_png_timestamps=use_png_timestamps
-            )
-
-            t1_vs_time = T1VsTime(
-                plots_path,
-                figure_quality,
-                final_figure_quality,
-                tot_num_of_qubits,
-                top_folder_dates,
-                save_figs,
-                fit_saved,
-                signal,
-                run_name,
-                FRIDGE,
-                run_number,
-                per_pt_errs=per_pt_errs_t1
-            )
-
+            t1_vs_time = T1VsTime(plots_path, figure_quality, final_figure_quality, tot_num_of_qubits, top_folder_dates,
+                                  save_figs, fit_saved, signal, run_name, FRIDGE, run_number,
+                                  per_pt_errs=per_pt_errs_t1)
             I_per_pt_errs = None
             Q_per_pt_errs = None
 
             if per_pt_errs_t1 and process_shots_t1ge:
-                (
-                    date_times_t1,
-                    t1_vals,
-                    t1_fit_err,
-                    I_per_pt_errs,
-                    Q_per_pt_errs,
-                    res_lengths
-                ) = t1_vs_time.run(
-                    return_errs=True,
-                    exp_extension="_ge",
-                    process_shots=process_shots_t1ge,
-                    use_png_timestamps = use_png_timestamps
-                )
+                date_times_t1, t1_vals, t1_fit_err, I_per_pt_errs, Q_per_pt_errs, res_lengths = t1_vs_time.run(
+                    return_errs=True, exp_extension="_ge", process_shots=process_shots_t1ge,
+                    use_png_timestamps=use_png_timestamps)
             else:
-                date_times_t1, t1_vals, t1_fit_err, res_lengths = t1_vs_time.run(
-                    return_errs=True,
-                    exp_extension="_ge",
-                    use_png_timestamps = use_png_timestamps
-                )
+                date_times_t1, t1_vals, t1_fit_err, res_lengths = t1_vs_time.run(return_errs=True, exp_extension="_ge",
+                                                                                 use_png_timestamps=use_png_timestamps)
 
-            t2r_vs_time = T2rVsTime(
-                plots_path,
-                run_number,
-                figure_quality,
-                final_figure_quality,
-                tot_num_of_qubits,
-                top_folder_dates,
-                save_figs,
-                fit_saved,
-                signal,
-                run_name,
-                FRIDGE
-            )
+            t2r_vs_time = T2rVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits,
+                                    top_folder_dates, save_figs, fit_saved, signal, run_name, FRIDGE)
+            date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(return_errs=True, t1_vals=t1_vals,
+                                                                    use_png_timestamps=use_png_timestamps)
 
-            date_times_t2r, t2r_vals, t2r_fit_err = t2r_vs_time.run(
-                return_errs=True,
-                t1_vals=t1_vals,
-                use_png_timestamps = use_png_timestamps
-            )
-
-            t2e_vs_time = T2eVsTime(
-                plots_path,
-                run_number,
-                figure_quality,
-                final_figure_quality,
-                tot_num_of_qubits,
-                top_folder_dates,
-                save_figs,
-                fit_saved,
-                signal,
-                run_name,
-                FRIDGE
-            )
-
-            date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(
-                return_errs=True,
-                t1_vals=t1_vals,
-                use_png_timestamps = use_png_timestamps
-            )
+            t2e_vs_time = T2eVsTime(plots_path, run_number, figure_quality, final_figure_quality, tot_num_of_qubits,
+                                    top_folder_dates, save_figs, fit_saved, signal, run_name, FRIDGE)
+            date_times_t2e, t2e_vals, t2e_fit_err = t2e_vs_time.run(return_errs=True, t1_vals=t1_vals,
+                                                                    use_png_timestamps=use_png_timestamps)
 
             # ------------------------------------------------------------
             # Optionally save processed coherence files
@@ -5872,13 +5875,18 @@ class combined_Qtemp_studies:
                     run_name=cache_prefix,
                     date_times_res_spec=date_times_res_spec,
                     res_freqs=res_freqs,
+                    date_times_res_spec_ef=date_times_res_spec_ef,
+                    res_freqs_ef=res_freqs_ef,
                     date_times_q_spec=date_times_q_spec,
                     q_freqs=q_freqs,
                     qspec_fit_err=qspec_fit_err,
+                    date_times_q_spec_ef=date_times_q_spec_ef,
+                    q_freqs_ef=q_freqs_ef,
+                    qspec_fit_err_ef=qspec_fit_err_ef,
                     date_times_t1=date_times_t1,
                     t1_vals=t1_vals,
                     t1_fit_err=t1_fit_err,
-                    t1_res_lengths = res_lengths,
+                    t1_res_lengths=res_lengths,
                     date_times_t2r=date_times_t2r,
                     t2r_vals=t2r_vals,
                     t2r_fit_err=t2r_fit_err,
@@ -5890,23 +5898,14 @@ class combined_Qtemp_studies:
                 )
 
         return (
-            date_times_res_spec,
-            res_freqs,
-            date_times_q_spec,
-            q_freqs,
-            qspec_fit_err,
-            date_times_t1,
-            t1_vals,
-            t1_fit_err,
-            res_lengths, # from T1 scans
-            date_times_t2r,
-            t2r_vals,
-            t2r_fit_err,
-            date_times_t2e,
-            t2e_vals,
-            t2e_fit_err,
-            I_per_pt_errs,
-            Q_per_pt_errs,
+            date_times_res_spec, res_freqs,
+            date_times_res_spec_ef, res_freqs_ef,
+            date_times_q_spec, q_freqs, qspec_fit_err,
+            date_times_q_spec_ef, q_freqs_ef, qspec_fit_err_ef,
+            date_times_t1, t1_vals, t1_fit_err, res_lengths,
+            date_times_t2r, t2r_vals, t2r_fit_err,
+            date_times_t2e, t2e_vals, t2e_fit_err,
+            I_per_pt_errs, Q_per_pt_errs,
         )
 
     def save_processed_ssf_rpm_inputs(self,
@@ -11627,6 +11626,7 @@ class combined_Qtemp_studies:
                                       all_files_Qtemp_results_RPMs = None, fridge_temps = None, fridge_dates = None,
                                       t1_vals = None, t1_dates = None, t1_fit_err = None, qfreqs_vals = None, qfreqs_dates = None, qfreqs_errs = None, resfreqs_vals=None,
                                         resfreqs_dates=None, t2r_vals=None, t2r_dates=None, t2r_errs=None, t2e_vals=None, t2e_dates=None,
+                                      qfreqs_ef_vals=None, qfreqs_ef_dates=None, qfreqs_ef_errs=None, resfreqs_ef_vals=None, resfreqs_ef_dates=None,
                                       restrict_time_xaxis=False, start_time = None, end_time = None, plot_extra_event_lines=False,
                                       rad_events_plot_lines=False, run_num ="", qubits_to_plot = [], fig_width = 26, fig_height = None, fnt_sz = 26):
         """
@@ -11787,6 +11787,32 @@ class combined_Qtemp_studies:
                 resfreq_values[q] = list(np.array(q_vals)[order])
 
         # ------------------------------------------------------------------
+        # e-f Qubit AND ef resonator frequencies (optional)
+        # ------------------------------------------------------------------
+        def prepare_ef_freqs(vals, dates, errs=None):
+            times = {q: [] for q in range(num_qubits)}
+            values = {q: [] for q in range(num_qubits)}
+            errors = {q: [] for q in range(num_qubits)}
+
+            if vals is not None and dates is not None:
+                for q in qubits_to_plot:
+                    if q >= len(vals) or q >= len(dates):
+                        continue
+                    if len(vals[q]) == 0 or len(dates[q]) == 0:
+                        continue
+                    q_times = [datetime.datetime.strptime(d, "%Y-%m-%d %H:%M:%S") if isinstance(d, str) else d for d in dates[q]]
+                    order = np.argsort(q_times)
+                    times[q] = list(np.array(q_times)[order])
+                    values[q] = list(np.array(vals[q])[order])
+                    if errs is not None and q < len(errs) and errs[q] is not None and len(errs[q]) == len(q_times):
+                        errors[q] = list(np.array(errs[q])[order])
+
+            return times, values, errors
+
+        qfreq_ef_times, qfreq_ef_values, qfreq_ef_errors = prepare_ef_freqs(qfreqs_ef_vals, qfreqs_ef_dates, qfreqs_ef_errs)
+        resfreq_ef_times, resfreq_ef_values, _ = prepare_ef_freqs(resfreqs_ef_vals, resfreqs_ef_dates)
+
+        # ------------------------------------------------------------------
         # T2 Ramsey per qubit (2D lists: t2r_dates[q] -> list[str], t2r_vals[q] -> list[float])
         # ------------------------------------------------------------------
         t2r_times = {q: [] for q in range(num_qubits)}
@@ -11843,8 +11869,10 @@ class combined_Qtemp_studies:
             has_t2e = bool(t2e_times[q])
             has_qf = bool(qfreq_times[q])
             has_rf = bool(resfreq_times[q])
+            has_qf_ef = bool(qfreq_ef_times[q])
+            has_rf_ef = bool(resfreq_ef_times[q])
 
-            if has_rpm or has_ssf or has_t1 or has_t2r or has_t2e or has_qf or has_rf:
+            if has_rpm or has_ssf or has_t1 or has_t2r or has_t2e or has_qf or has_rf or has_qf_ef or has_rf_ef:
                 qubits_to_plot.append(q)
 
         if not qubits_to_plot:
@@ -11878,7 +11906,8 @@ class combined_Qtemp_studies:
         if fig_height is not None:
             f_height = fig_height + 2
         else:
-            f_height = 8 * nrows
+            f_height = 14 * nrows
+
         fig, axes = plt.subplots(nrows, 1, figsize=(fig_width, f_height), sharex=True, constrained_layout=False)
         ln_style = "none"
 
@@ -11958,8 +11987,7 @@ class combined_Qtemp_studies:
             # locator = mdates.AutoDateLocator(minticks=7, maxticks=9)
             # ax.xaxis.set_major_locator(locator)
             #ax.xaxis.set_major_formatter(date_fmt) # full timestamp
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
-            ax.tick_params(axis="x", rotation=45, labelsize=fnt_sz, pad=8)
+            ax.tick_params(axis="x", rotation=45, labelsize=fnt_sz, pad=8, length=10, width=2)
 
             # ax.tick_params(axis="x", labelbottom=False) # for x axis labels for each subplot
             # ax.set_xlabel("Time", fontsize=fnt_sz)
@@ -11967,8 +11995,8 @@ class combined_Qtemp_studies:
             #ax.tick_params(axis="y", labelsize=fnt_sz)
 
             # Temporarily hide effective-temperature y-axis
-            # ax.set_ylabel("")
-            # ax.tick_params(axis="y", left=False, labelleft=False)
+            ax.set_ylabel("")
+            ax.tick_params(axis="y", left=False, labelleft=False)
 
             # left_ymin, left_ymax = ax.get_ylim() # get y limits to use them for fridge y axis too
             if restrict_time_xaxis:
@@ -12041,15 +12069,15 @@ class combined_Qtemp_studies:
 
                 if t2r_times[q] and t2r_values[q]:
                     t1_ax.errorbar(t2r_times[q], t2r_values[q], yerr=t2r_errors[q] if t2r_errors[q] else None,
-                                   marker="v", markersize=8, linestyle=ln_style, color="darkorange",
-                                   alpha=0.8, capsize=8, elinewidth=1, label=r"T$_2$ Ramsey (µs)")
+                                   marker="v", markersize=8, linestyle=ln_style, color="#D55E00",
+                                   alpha=0.8, capsize=8, elinewidth=1, label=r"T$_2^{Ramsey}$")
 
                 if t2e_times[q] and t2e_values[q]:
                     t1_ax.plot(t2e_times[q], t2e_values[q], marker="D", markersize=8,
                                linestyle=ln_style, color="#009E73", alpha=0.8, label=r"T$_2$ Echo (µs)")
 
-                t1_ax.set_ylabel(r"$T_1$, $T_2$ (µs)", color="black", fontsize=fnt_sz + 4, labelpad=24)
-                t1_ax.tick_params(axis="y", labelcolor="black", labelsize=fnt_sz - 2, pad=12)
+                t1_ax.set_ylabel(r"$T_2^{Ramsey}$ (µs)", color="black", fontsize=fnt_sz + 6, labelpad=24)
+                t1_ax.tick_params(axis="y", labelcolor="black", labelsize=fnt_sz, pad=12)
                 t1_ax.set_ylim(bottom=0)
                 t1_ax.yaxis.set_major_locator(mticker.LinearLocator(6))
 
@@ -12063,7 +12091,7 @@ class combined_Qtemp_studies:
                 qf_ax = ax.twinx()
                 qf_ax.spines["right"].set_visible(False)
                 qf_ax.spines["left"].set_visible(True)
-                qf_ax.spines["left"].set_position(("outward", 140))
+                qf_ax.spines["left"].set_position(("outward", 0)) # 140
                 qf_ax.yaxis.set_label_position("left")
                 qf_ax.yaxis.tick_left()
 
@@ -12071,17 +12099,19 @@ class combined_Qtemp_studies:
                     qfreq_times[q],
                     qfreq_values[q],
                     yerr=qfreq_errors[q] if qfreq_errors[q] else None,
-                    marker="s",
+                    marker="o",
                     markersize=8,
+                    markeredgecolor="black",
+                    markeredgewidth=1.5,
                     linestyle=ln_style,
-                    color="black",
+                    color="darkgrey",
                     alpha=0.85,
                     capsize=8,
                     elinewidth=1,
-                    label="Qubit Frequency (MHz)",
+                    label="g-e Qubit Freq.",
                 )
-                qf_ax.set_ylabel("Qubit Frequency (MHz)", color="black", fontsize=fnt_sz + 4, labelpad=24)
-                qf_ax.tick_params(axis="y", labelcolor="black", labelsize=fnt_sz-2, pad=12)
+                qf_ax.set_ylabel("g-e Qubit Freq. (MHz)", color="black", fontsize=fnt_sz + 4, labelpad=24)
+                qf_ax.tick_params(axis="y", labelcolor="black", labelsize=fnt_sz, pad=12)
                 qf_ax.yaxis.set_major_locator(mticker.LinearLocator(6))
                 qf_ax.yaxis.get_offset_text().set_visible(False)
                 qf_ax.yaxis.set_major_formatter(mticker.FormatStrFormatter("%.2f")) # Force 2-decimal formatting
@@ -12090,30 +12120,57 @@ class combined_Qtemp_studies:
                 labels += l4
                 right_axes_offset += 1
 
-            # Resonator freq (MHz) on next right axis (per qubit)
-            if resfreq_times[q] and resfreq_values[q]:
+            # e-f Qubit frequency (MHz) on separate left axis
+            if qfreq_ef_times[q] and qfreq_ef_values[q]:
+                qf_ef_ax = ax.twinx()
+                qf_ef_ax.spines["right"].set_visible(False)
+                qf_ef_ax.spines["left"].set_visible(True)
+                qf_ef_ax.spines["left"].set_position(("outward", 342))
+                qf_ef_ax.yaxis.set_label_position("left")
+                qf_ef_ax.yaxis.tick_left()
+
+                qf_ef_ax.errorbar(
+                    qfreq_ef_times[q], qfreq_ef_values[q],
+                    yerr=qfreq_ef_errors[q] if qfreq_ef_errors[q] else None,
+                    marker="D", markersize=8, linestyle=ln_style,
+                    color="blue", alpha=0.95, capsize=8, elinewidth=1,
+                    label="e-f Qubit Frequency (MHz)"
+                )
+
+                qf_ef_ax.set_ylabel("e-f Qubit Frequency (MHz)", color="black", fontsize=fnt_sz + 4, labelpad=24)
+                qf_ef_ax.tick_params(axis="y", labelcolor="black", labelsize=fnt_sz-2, pad=12)
+                qf_ef_ax.yaxis.set_major_locator(mticker.LinearLocator(6))
+                qf_ef_ax.yaxis.get_offset_text().set_visible(False)
+                qf_ef_ax.yaxis.set_major_formatter(mticker.FormatStrFormatter("%.2f"))
+
+                h_ef, l_ef = qf_ef_ax.get_legend_handles_labels()
+                handles += h_ef
+                labels += l_ef
+
+            # Resonator frequencies (g-e and e-f) on shared right axis
+            if resfreq_times[q] or resfreq_ef_times[q]:
                 rf_ax = ax.twinx()
 
-                # Keep resonator data behind the legend
                 rf_ax.set_zorder(0)
                 ax.set_zorder(1)
                 ax.patch.set_visible(False)
 
                 rf_ax.spines["right"].set_position(("axes", 1.0 + 0.054 * right_axes_offset))
-                rf_ax.plot(
-                    resfreq_times[q],
-                    resfreq_values[q],
-                    marker="o",
-                    markersize=8,
-                    linestyle=ln_style,
-                    color="purple",
-                    alpha=0.95,
-                    label="Resonator Frequency (MHz)"
-                )
-                rf_ax.set_ylabel("Resonator Frequency (MHz)", color="black", fontsize=fnt_sz + 4, labelpad=24)
-                rf_ax.tick_params(axis="y", labelcolor="black", labelsize=fnt_sz - 2, pad = 12)
+
+                if resfreq_times[q] and resfreq_values[q]:
+                    rf_ax.plot(resfreq_times[q], resfreq_values[q], marker="o", markersize=8,
+                               linestyle=ln_style, color="purple", alpha=0.95, label="g-e Resonator Frequency (MHz)")
+
+                if resfreq_ef_times[q] and resfreq_ef_values[q]:
+                    rf_ax.plot(resfreq_ef_times[q], resfreq_ef_values[q], marker="s", markersize=8,
+                               linestyle=ln_style, color="red", alpha=0.95,
+                               label="e-f Resonator Frequency (MHz)")
+
+                rf_ax.set_ylabel("g & e Resonator Frequency (MHz)", color="black", fontsize=fnt_sz + 4, labelpad=24)
+                rf_ax.tick_params(axis="y", labelcolor="black", labelsize=fnt_sz - 2, pad=12)
                 rf_ax.yaxis.get_offset_text().set_visible(False)
                 rf_ax.yaxis.set_major_formatter(mticker.FormatStrFormatter("%.2f"))
+
                 h_rf, l_rf = rf_ax.get_legend_handles_labels()
                 handles += h_rf
                 labels += l_rf
@@ -12136,13 +12193,12 @@ class combined_Qtemp_studies:
                 leg = ax.legend(
                     handles,
                     labels,
-                    loc="lower center", # "lower center"
-                    bbox_to_anchor=(0.5, -1.0), # (0.57, 0.0)
-                    fontsize=22,
+                    loc="upper center",
+                    fontsize=fnt_sz,
                     frameon=True,
                     fancybox=False
                 )
-                # Force legend to be drawn on top of the data
+
                 leg.set_zorder(10000000)
 
                 frame = leg.get_frame()
@@ -12156,11 +12212,13 @@ class combined_Qtemp_studies:
         xticks = np.linspace(x0, x1, 8)
         for ax in axes:
             ax.set_xticks(xticks)
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d-%H"))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
+            plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
 
         # fig.suptitle("Qtemps, Fridge, T1, T2R, T2E, Qfreq, and Res Freq vs Time", fontsize=18)
-        fig.suptitle(r"Effective Qubit Temperature, Coherence, Qubit Frequency, Resonator Frequency, and MCP1 Temperature vs Time", fontsize=fnt_sz + 8, y=0.97)
-        fig.subplots_adjust(left=0.15, right=0.84, top=0.88, bottom=0.44, hspace=0.12) # left: smaller moves plots left
+        #fig.suptitle(r"Effective Qubit Temperature, Coherence, Qubit Frequency, Resonator Frequency, and MCP1 Temperature vs Time", fontsize=fnt_sz + 8, y=0.97)
+        #fig.subplots_adjust(left=0.15, right=0.84, top=0.88, bottom=0.44, hspace=0.12) # left: smaller moves plots left
+        fig.subplots_adjust(left=0.12, right=0.90, top=0.96, bottom=0.15, hspace=0.14)
 
         # Save
         paramvstime_dir = os.path.join(out_dir, "params_vs_time")
@@ -12172,3 +12230,443 @@ class combined_Qtemp_studies:
         plt.close(fig)
         print("Saved combined methods plot: ", out_path)
         return out_path
+
+    def plot_temperature_sweep_per_qubit(self, out_dir, SSF_qtemps_fit_results_g=None,
+                                         all_files_Qtemp_results_RPMs=None, fridge_temps=None, fridge_dates=None,
+                                         t1_vals=None, t1_dates=None, t1_fit_err=None,
+                                         t2r_vals=None, t2r_dates=None, t2r_errs=None,
+                                         t2e_vals=None, t2e_dates=None,
+                                         qfreqs_vals=None, qfreqs_dates=None, qfreqs_errs=None,
+                                         qfreqs_ef_vals=None, qfreqs_ef_dates=None, qfreqs_ef_errs=None,
+                                         qubits_to_plot=None, run_num=float, fig_width=11, fig_height=16,
+                                         fnt_sz=20, baseline_n=5, max_match_minutes=None, plot_population = False):
+        """
+        One PDF per qubit, three panels vs nearest-in-time MCP1 temperature:
+          (a) RPM/SSF effective temperature and MCP1 equality line
+          (b) T1, T2 Ramsey and T2 Echo
+          (c) Delta f_ge and Delta f_ef, relative to the mean of the first
+              baseline_n chronologically ordered measurements of each transition.
+
+        Data layouts are the same as plot_qtemps_and_coherence_res.
+        Dates may be datetime objects, Unix seconds or parseable strings.
+        max_match_minutes=None accepts the nearest MCP1 reading at any separation.
+        """
+        if fridge_temps is None or fridge_dates is None:
+            raise ValueError("fridge_temps and fridge_dates are required.")
+        if baseline_n < 1:
+            raise ValueError("baseline_n must be >= 1")
+
+        num_qubits = self.number_of_qubits
+        qubits = list(range(num_qubits)) if qubits_to_plot is None else list(qubits_to_plot)
+        output_dir = os.path.join(out_dir, "params_vs_MCP1_temperature")
+        os.makedirs(output_dir, exist_ok=True)
+
+        def to_datetime(value):
+            if isinstance(value, datetime.datetime):
+                return value.replace(tzinfo=None) if value.tzinfo else value
+            if isinstance(value, (int, float, np.integer, np.floating)):
+                return datetime.datetime.fromtimestamp(float(value))
+            result = pd.to_datetime(value)
+            if pd.isna(result):
+                raise ValueError("Invalid timestamp")
+            result = result.to_pydatetime()
+            return result.replace(tzinfo=None) if result.tzinfo else result
+
+        # Sort and validate MCP1 readings.
+        fridge_pairs = []
+        for d, temp in zip(fridge_dates, fridge_temps):
+            try:
+                t, y = to_datetime(d), float(temp)
+                if np.isfinite(y):
+                    fridge_pairs.append((t, y))
+            except (TypeError, ValueError, OverflowError, OSError):
+                pass
+
+        if not fridge_pairs:
+            raise ValueError("No valid MCP1 temperature/timestamp pairs provided.")
+
+        fridge_pairs.sort(key=lambda p: p[0])
+        fridge_ns = np.array([pd.Timestamp(t).value for t, _ in fridge_pairs], dtype=np.int64)
+        fridge_y = np.array([y for _, y in fridge_pairs], dtype=float)
+
+        def get_qubit(container, q):
+            if container is None:
+                return []
+            if isinstance(container, dict):
+                value = container.get(q, container.get(str(q), []))
+                return [] if value is None else value
+            return container[q] if q < len(container) and container[q] is not None else []
+
+        def align_to_fridge(rows):
+            aligned = []
+            for t, y, err in sorted(rows, key=lambda p: p[0]):
+                timestamp = pd.Timestamp(t).value
+                i = int(np.searchsorted(fridge_ns, timestamp))
+                options = [j for j in (i - 1, i) if 0 <= j < len(fridge_ns)]
+                idx = min(options, key=lambda j: abs(int(fridge_ns[j]) - int(timestamp)))
+                minutes = abs(int(fridge_ns[idx]) - int(timestamp)) / 60e9
+
+                if max_match_minutes is not None and minutes > max_match_minutes:
+                    continue
+                aligned.append((t, fridge_y[idx], y, err))
+            return aligned
+
+        def data_series(q, values, dates, errors=None):
+            vals, dts, errs = get_qubit(values, q), get_qubit(dates, q), get_qubit(errors, q)
+            rows = []
+            for i, (d, v) in enumerate(zip(dts, vals)):
+                try:
+                    t, v = to_datetime(d), float(v)
+                    if not np.isfinite(v):
+                        continue
+                    e = float(errs[i]) if i < len(errs) and errs[i] is not None else np.nan
+                    if not np.isfinite(e) or e < 0:
+                        e = np.nan
+                    rows.append((t, v, e))
+                except (TypeError, ValueError, OverflowError, OSError):
+                    pass
+            return align_to_fridge(rows)
+
+        def plot_series(ax, rows, label, color, marker, relative=False):
+            if not rows:
+                return False
+
+            x = np.array([r[1] for r in rows], dtype=float)
+            y = np.array([r[2] for r in rows], dtype=float)
+            err = np.array([r[3] for r in rows], dtype=float)
+
+            # Subtract the initial MEAN frequency, independently for g-e and e-f.
+            if relative:
+                initial_mean = np.mean(y[:baseline_n])
+                y = y - initial_mean
+
+            yerr = np.where(np.isfinite(err), err, 0.0) if np.isfinite(err).any() else None
+
+            ax.errorbar(x, y, yerr=yerr, fmt=marker, ls="none", ms=5.2,
+                        color=color, markeredgecolor="black", markeredgewidth=0.35,
+                        capsize=2.5, elinewidth=0.8, alpha=0.85, label=label)
+            return True
+
+        outputs = {}
+
+        for q in qubits:
+            if not 0 <= q < num_qubits:
+                print(f"[WARN] Skipping invalid qubit index {q}")
+                continue
+
+            # RPM effective temperatures.
+            rpm_rows = []
+            if all_files_Qtemp_results_RPMs is not None:
+                for record in all_files_Qtemp_results_RPMs:
+                    d = record.get("qubits", {}).get(q, record.get("qubits", {}).get(str(q)))
+                    if not d:
+                        continue
+                    try:
+                        t = to_datetime(d["date"])
+
+                        if plot_population:
+                            y = float(d["P_e"]) * 100.0
+                            e = float(d.get("P_e_err_total", np.nan)) * 100.0
+                            valid = np.isfinite(y) and 0 <= y <= 100
+                        else:
+                            y = float(d["T_mK"])
+                            e = float(d.get("T_mK_err", np.nan))
+                            valid = np.isfinite(y) and 0 < y < 600
+
+                        if valid:
+                            rpm_rows.append((t, y, e if np.isfinite(e) and e >= 0 else np.nan))
+
+                    except (ValueError, TypeError, OverflowError, OSError, KeyError):
+                        pass
+
+            rpm_rows = align_to_fridge(rpm_rows)
+
+            # SSF effective temperatures.
+            ssf_rows = []
+            for rec in get_qubit(SSF_qtemps_fit_results_g, q):
+                if not isinstance(rec, dict):
+                    continue
+                try:
+                    t = to_datetime(rec["timestamp"])
+
+                    if plot_population:
+                        y = float(rec["Pe"]) * 100.0
+                        e = float(rec.get("total_sigma_Pe", np.nan)) * 100.0
+                        valid = np.isfinite(y) and 0 <= y <= 100
+                    else:
+                        y = float(rec["temperature_mK"])
+                        e = float(rec.get("temperature_err_mK", np.nan))
+                        valid = np.isfinite(y) and 0 < y < 1000
+
+                    if valid:
+                        ssf_rows.append((t, y, e if np.isfinite(e) and e >= 0 else np.nan))
+
+                except (KeyError, ValueError, TypeError, OverflowError, OSError):
+                    pass
+
+            ssf_rows = align_to_fridge(ssf_rows)
+
+            # Single-shot fidelity.
+            fidelity_rows = []
+            for rec in get_qubit(SSF_qtemps_fit_results_g, q):
+                if not isinstance(rec, dict):
+                    continue
+                try:
+                    t = to_datetime(rec["timestamp"]) #ssf_SNR
+                    fidelity = float(rec["ssf_fid"])
+
+                    # Convert fractional fidelity to percentage if needed.
+                    if 0 <= fidelity <= 1:
+                        fidelity *= 100.0
+
+                    if np.isfinite(fidelity) and 0 <= fidelity <= 100:
+                        fidelity_rows.append((t, fidelity, np.nan))
+
+                except (KeyError, ValueError, TypeError, OverflowError, OSError):
+                    pass
+
+            fidelity_rows = align_to_fridge(fidelity_rows)
+
+            # Coherence.
+            t1_rows = data_series(q, t1_vals, t1_dates, t1_fit_err)
+            t2r_rows = data_series(q, t2r_vals, t2r_dates, t2r_errs)
+            t2e_rows = data_series(q, t2e_vals, t2e_dates)
+
+            # Qubit spectroscopy.
+            ge_rows = data_series(q, qfreqs_vals, qfreqs_dates, qfreqs_errs)
+            ef_rows = data_series(q, qfreqs_ef_vals, qfreqs_ef_dates, qfreqs_ef_errs)
+
+            if not any((rpm_rows, ssf_rows, t1_rows, t2r_rows, t2e_rows, ge_rows, ef_rows, fidelity_rows)):
+                print(f"[WARN] No valid data for qubit {q + 1}; skipping.")
+                continue
+
+            fig, axes = plt.subplots(4, 1, figsize=(fig_width, fig_height), sharex=True)
+            ax_temp, ax_coh, ax_freq, ax_fidelity = axes
+
+            # -------------------- (a) Effective temperature --------------------
+            xmin, xmax = float(min(fridge_y)), float(max(fridge_y))
+
+
+            if plot_population:
+                # Experimental excited-state populations (%)
+                plot_series(ax_temp, rpm_rows, r"RPM $P_e$", "brown", "o")
+                plot_series(ax_temp, ssf_rows, r"SSF $P_e$", "#E69F00", "D")
+
+                # -------------------- Theoretical population models --------------------
+                # - Match each g-e measurement to the nearest e-f measurement within max_pair_seconds.
+                # - Prevent reuse of e-f measurements to ensure one-to-one matching.
+                # - Assign MCP1 temperature using the reading closest to the qfreqs midpoint timestamp.
+                # - Reject pairs if their MCP1 temperatures differ by more than 3 mK.
+                # - Calculate two-level equilibrium, three-level equilibrium, and three-level RPM predictions.
+                # - Print matching statistics, including rejected pairs and time separations.
+                # -----------------------------------------------------------------------
+                h = 6.62607015e-34
+                kB = 1.380649e-23
+                max_pair_seconds = 60
+                max_temp_difference_mK = 3
+
+                # Extract valid spectroscopy timestamps (ns) and frequencies (MHz)
+                ge_data = sorted([(pd.Timestamp(r[0]).value, float(r[2])) for r in ge_rows if np.isfinite(r[2]) and r[2] > 0], key=lambda x: x[0])
+                ef_data = sorted([(pd.Timestamp(r[0]).value, float(r[2])) for r in ef_rows if np.isfinite(r[2]) and r[2] > 0], key=lambda x: x[0])
+
+                def nearest_fridge_temp(timestamp_ns):
+                    idx = np.searchsorted(fridge_ns, timestamp_ns)
+                    candidates = [i for i in (idx - 1, idx) if 0 <= i < len(fridge_ns)]
+                    nearest = min(candidates, key=lambda i: abs(int(fridge_ns[i]) - int(timestamp_ns)))
+                    return float(fridge_y[nearest])
+
+                # Match spectroscopy measurements one-to-one in time
+                matched_data, used_ef = [], set()
+                rejected_time, rejected_temp = 0, 0
+
+                if ge_data and ef_data:
+                    ef_times = np.array([r[0] for r in ef_data], dtype=np.int64)
+
+                    for t_ge, f_ge in ge_data:
+                        idx = np.searchsorted(ef_times, t_ge)
+                        candidates = [i for i in (idx - 1, idx) if 0 <= i < len(ef_times) and i not in used_ef]
+                        if not candidates:
+                            rejected_time += 1
+                            continue
+
+                        nearest = min(candidates, key=lambda i: abs(int(ef_times[i]) - int(t_ge)))
+                        t_ef, f_ef = ef_data[nearest]
+                        dt_seconds = abs(int(t_ge) - int(t_ef)) / 1e9
+
+                        if dt_seconds > max_pair_seconds:
+                            rejected_time += 1
+                            continue
+
+                        T_ge, T_ef = nearest_fridge_temp(t_ge), nearest_fridge_temp(t_ef)
+                        if abs(T_ge - T_ef) > max_temp_difference_mK:
+                            rejected_temp += 1
+                            continue
+
+                        midpoint = int(t_ge) + (int(t_ef) - int(t_ge)) // 2
+                        T_mcp1 = nearest_fridge_temp(midpoint)
+                        if T_mcp1 <= 0:
+                            rejected_temp += 1
+                            continue
+
+                        matched_data.append((T_mcp1, f_ge, f_ef, dt_seconds))
+                        used_ef.add(nearest)
+
+                print(f"Qubit {q + 1}: {len(matched_data)} matched spectroscopy pairs")
+                print(f"  Rejected by time/missing partner: {rejected_time}")
+                print(f"  Rejected by MCP1 temperature: {rejected_temp}")
+
+                if matched_data:
+                    print(f"  Mean time separation: {np.mean([r[3] for r in matched_data]):.2f} s")
+                    print(f"  Maximum time separation: {np.max([r[3] for r in matched_data]):.2f} s")
+
+                    T_model_mK = np.array([r[0] for r in matched_data], dtype=float)
+                    f_ge_Hz = np.array([r[1] for r in matched_data], dtype=float) * 1e6
+                    f_ef_Hz = np.array([r[2] for r in matched_data], dtype=float) * 1e6
+                    T_model_K = T_model_mK * 1e-3
+
+                    # Two-level thermal equilibrium
+                    w_e_2L = np.exp(-h * f_ge_Hz / (kB * T_model_K))
+                    Pe_2level = w_e_2L / (1.0 + w_e_2L)
+
+                    # Three-level thermal equilibrium
+                    w_g = np.ones_like(T_model_K)
+                    w_e = np.exp(-h * f_ge_Hz / (kB * T_model_K))
+                    w_f = np.exp(-h * (f_ge_Hz + f_ef_Hz) / (kB * T_model_K))
+                    Z = w_g + w_e + w_f
+                    Pg, Pe, Pf = w_g / Z, w_e / Z, w_f / Z
+                    Pe_3level = Pe
+
+                    # Three-level RPM prediction
+                    Pe_RPM_3level = (Pe - Pf) / (Pg + Pe - 2.0 * Pf)
+
+                    # Sort by MCP1 temperature for plotting
+                    order = np.argsort(T_model_mK)
+                    T_model_mK = T_model_mK[order]
+
+                    ax_temp.plot(T_model_mK, 100.0 * Pe_2level[order], "--", color="0.45", lw=1.4, label=r"Two-level equilibrium $P_e$")
+                    ax_temp.plot(T_model_mK, 100.0 * Pe_3level[order], "-", color="red", lw=1.6, label=r"Three-level equilibrium $P_e$")
+                    ax_temp.plot(T_model_mK, 100.0 * Pe_RPM_3level[order], "-", color="black", lw=1.6, label=r"Three-level RPM-estimated $P_e$")
+
+                    # Test: add a small y-axis offset to the third model curve
+                    #ax_temp.plot(T_model_mK, 100.0 * Pe_2level[order] + 5.0, "--", color="green", lw=1.4,label=r"Two-level equilibrium $P_e$ + 5%")
+                    #ax_temp.plot(T_model_mK, 100.0 * Pe_RPM_3level[order] + 5.0, "-.", color="blue", lw=1.6, label=r"Three-level RPM-estimated $P_e$ + 5%")
+                else:
+                    print(f"[WARN] No valid spectroscopy pairs within {max_pair_seconds} s for Qubit {q + 1}")
+
+
+                ax_temp.set_ylabel(r"$P_e$ (%)",fontsize=fnt_sz + 4)
+                ax_temp.set_ylim(bottom=0)
+
+
+            else:
+                # Experimental effective temperatures (mK)
+                plot_series(ax_temp, rpm_rows, r"RPM $T_{\mathrm{eff}}$", "brown", "o")
+                plot_series(ax_temp, ssf_rows, r"SSF $T_{\mathrm{eff}}$", "#E69F00", "D")
+
+                # Thermal-equilibrium reference
+                ax_temp.plot(
+                    [xmin, xmax], [xmin, xmax],
+                    "--", color="0.45", lw=1.4,
+                    label=r"$T_{\mathrm{eff}}=T_{\mathrm{MCP1}}$"
+                )
+
+                ax_temp.set_ylabel(r"Effective temperature (mK)", fontsize=fnt_sz + 4)
+                ax_temp.set_ylim(bottom=0)
+
+            # -------------------- (b) Coherence --------------------
+            plot_series(ax_coh, t1_rows, r"$T_1$", "#0072B2", "^")
+            plot_series(ax_coh, t2r_rows, r"$T_{2,\mathrm{Ramsey}}$", "#D55E00", "v")
+            plot_series(ax_coh, t2e_rows, r"$T_{2,\mathrm{Echo}}$", "#009E73", "D")
+
+            ax_coh.set_ylabel(r"Coherence time ($\mu$s)", fontsize=fnt_sz + 4)
+            ax_coh.set_ylim(bottom=0)
+
+            # -------------------- (c) Qubit frequency shifts --------------------
+            plot_series(ax_freq, ge_rows, r"$\Delta f_{ge}$", "darkgray", "s", relative=True)
+            plot_series(ax_freq, ef_rows, r"$\Delta f_{ef}$", "#CC79A7", "o", relative=True)
+
+            #ax_freq.axhline(0, color="0.6", lw=1, ls="--")
+            ax_freq.set_ylabel(r"Qubit freq. shift (MHz)", fontsize=fnt_sz + 4)
+
+            # -------------------- (d) Single-shot fidelity --------------------
+            plot_series(ax_fidelity, fidelity_rows, "Single-shot fidelity", "#7B3294", "D")
+
+            ax_fidelity.set_ylabel("SSF(%)", fontsize=fnt_sz + 4)
+
+            # -------------------- Formatting --------------------
+            for ax, panel in zip(axes, ["(a)", "(b)", "(c)", "(d)"]):
+                ax.text(0.985, 0.05, panel, transform=ax.transAxes,
+                        va="bottom", ha="right", fontweight="bold", fontsize=fnt_sz + 2)
+                ax.tick_params(axis="both", labelsize=fnt_sz - 6)
+                ax.tick_params(axis="x", labelbottom=True)
+                ax.grid(alpha=0.17)
+
+                handles, labels = ax.get_legend_handles_labels()
+                if handles:
+                    ax.legend(fontsize=fnt_sz - 2, loc="best", frameon=False)
+
+                ax.set_xlim(xmin - 4, 200)
+                ax.set_xlabel("MCP1 stage temperature (mK)", fontsize=fnt_sz)
+
+            # fig.suptitle(f"Run {run_num - 3} | Qubit {q + 1}: temperature-sweep response", # uses AB paper run labels atm
+            #              fontsize=fnt_sz + 4)
+            fig.tight_layout(rect=(0, 0, 1, 0.97), h_pad=1.8)
+
+            suffix = f"run{run_num}_Q{q + 1}_temperature_sweep.pdf"
+            path = os.path.join(output_dir, suffix)
+            fig.savefig(path, bbox_inches="tight", facecolor="white")
+            plt.close(fig)
+
+            outputs[q] = path
+            print("Saved:", path)
+
+        return outputs
+
+    def thermal_population_three_states(self, T_mK, f_ge_MHz, f_ef_MHz):
+        """
+        Three-state thermal equilibrium model (g, e, f).
+
+        Parameters:
+            T_mK: MCP1 temperature(s) in mK
+            f_ge_MHz: g-e transition frequency in MHz
+            f_ef_MHz: e-f transition frequency in MHz
+
+        Returns:
+            Pe_true: actual thermal e-state population
+            Pe_RPM: predicted RPM amplitude ratio
+            Pf: thermal f-state population
+
+        All populations are returned as fractions, not percentages.
+        """
+        h = 6.62607015e-34
+        kB = 1.380649e-23
+
+        T = np.asarray(T_mK, dtype=float) * 1e-3
+        f_ge = np.asarray(f_ge_MHz, dtype=float) * 1e6
+        f_ef = np.asarray(f_ef_MHz, dtype=float) * 1e6
+
+        # Relative energy levels
+        Eg = 0.0
+        Ee = h * f_ge
+        Ef = h * (f_ge + f_ef)
+
+        # Boltzmann weights
+        wg = np.ones_like(T)
+        we = np.exp(-Ee / (kB * T))
+        wf = np.exp(-Ef / (kB * T))
+
+        Z = wg + we + wf
+
+        # Thermal populations
+        Pg = wg / Z
+        Pe = we / Z
+        Pf = wf / Z
+
+        # Actual thermal excited-state population
+        Pe_true = Pe
+
+        # Expected RPM ratio (ideal population-difference response)
+        Pe_RPM = (Pe - Pf) / (Pg + Pe - 2.0 * Pf)
+
+        return Pe_true, Pe_RPM, Pf
+

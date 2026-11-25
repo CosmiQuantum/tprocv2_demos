@@ -337,12 +337,13 @@ class ResonatorFreqVsTime:
                         date = datetime.datetime.fromtimestamp(
                             load_data[f'res{exp_extension}'][q_key].get('Dates', [])[0][dataset])  # single date per dataset
 
-                        freq_pts = self.process_h5_data(load_data[f'res{exp_extension}'][q_key].get('freq_pts', [])[0][
-                                                       dataset].decode())  # comes in as an array but put into a byte string, need to convert to list
-                        freq_center = self.process_h5_data(load_data[f'res{exp_extension}'][q_key].get('freq_center', [])[0][
-                                                          dataset].decode())  # comes in as an array but put into a string, need to convert to list
-                        freqs_found = self.string_to_float_list(load_data[f'res{exp_extension}'][q_key].get('Found Freqs', [])[0][
-                                                               dataset].decode())  # comes in as a list of floats in string format, need to convert
+                        freq_pts = self.process_h5_data(load_data[f'res{exp_extension}'][q_key].get('freq_pts', [])[0][dataset].decode())  # comes in as an array but put into a byte string, need to convert to list
+
+                        raw_freq_center = load_data[f'res{exp_extension}'][q_key].get('freq_center', [])[0][dataset].decode()
+                        cleaned_freq_center = raw_freq_center.replace("np.float64(", "").replace(")", "")
+                        freq_center = self.process_h5_data(cleaned_freq_center)
+
+                        freqs_found = self.string_to_float_list(load_data[f'res{exp_extension}'][q_key].get('Found Freqs', [])[0][dataset].decode())  # comes in as a list of floats in string format, need to convert
                         amps = self.process_string_of_nested_lists(load_data[f'res{exp_extension}'][q_key].get('Amps', [])[0][dataset].decode())  # list of lists
                         round_num = load_data[f'res{exp_extension}'][q_key].get('Round Num', [])[0][dataset]  # already a float
                         batch_num = load_data[f'res{exp_extension}'][q_key].get('Batch Num', [])[0][dataset]
@@ -380,8 +381,7 @@ class ResonatorFreqVsTime:
                             else:
                                 date_str = date.strftime("%Y-%m-%d %H:%M:%S")  # og way, from H5 file
 
-                            res_class_instance = ResonanceSpectroscopy(q_key, self.number_of_qubits, self.plots_path,
-                                                                       round_num, self.save_figs)
+                            res_class_instance = ResonanceSpectroscopy(q_key, self.number_of_qubits, self.plots_path,round_num, self.save_figs)
                             # res_spec_cfg = exp_config['res_spec']
                             res_freqs = res_class_instance.get_results(freq_pts, freq_center, amps)
 
